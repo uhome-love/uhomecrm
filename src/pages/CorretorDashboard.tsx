@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Zap, Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, History, ArrowRight } from "lucide-react";
+import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useCorretorDailyStats, useCorretorDailyGoals, useDailyMotivation } from "@/hooks/useCorretorDailyStats";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
@@ -17,64 +19,81 @@ export default function CorretorDashboard() {
   const { stats } = useCorretorDailyStats();
   const { goals, saveGoals } = useCorretorDailyGoals();
   const motivation = useDailyMotivation();
+  const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("inicio");
+  const [activeTab, setActiveTab] = useState("central");
+  const [nome, setNome] = useState("");
   const [metaLig, setMetaLig] = useState(goals?.meta_ligacoes?.toString() || "30");
   const [metaAprov, setMetaAprov] = useState(goals?.meta_aproveitados?.toString() || "5");
   const [editing, setEditing] = useState(!goals);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("nome").eq("user_id", user.id).single().then(({ data }) => {
+      if (data?.nome) setNome(data.nome.split(" ")[0]);
+    });
+  }, [user]);
+
+  useEffect(() => {
+    setMetaLig(goals?.meta_ligacoes?.toString() || "30");
+    setMetaAprov(goals?.meta_aproveitados?.toString() || "5");
+    setEditing(!goals);
+  }, [goals]);
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
   const progLig = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
+  const metaSalva = !!goals;
 
   const handleSaveGoals = async () => {
     await saveGoals(parseInt(metaLig) || 30, parseInt(metaAprov) || 5);
     setEditing(false);
-    toast.success("Meta do dia salva!");
+    toast.success("Meta do dia salva! Agora você pode iniciar as ligações.");
+  };
+
+  const handleTabChange = (tab: string) => {
+    if (tab === "discagem" && !metaSalva) {
+      toast.warning("Defina sua meta do dia antes de iniciar a discagem!");
+      return;
+    }
+    setActiveTab(tab);
   };
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
-            <Zap className="h-6 w-6 text-primary" /> Central do Corretor
-          </h1>
-          <p className="text-sm text-muted-foreground">Foco, meta e execução. Seu dia começa aqui.</p>
-        </div>
-        {activeTab === "inicio" && (
-          <Button
-            size="lg"
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-            onClick={() => setActiveTab("discagem")}
-          >
-            <Phone className="h-4 w-4" /> Iniciar Discagem
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        )}
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground">
+          {nome ? (
+            <>Bem-vindo, <span className="text-primary">{nome}</span>!</>
+          ) : (
+            <>Bem-vindo, <span className="text-primary">Corretor</span>!</>
+          )}
+        </h1>
+        <p className="text-sm text-muted-foreground">Central do Corretor — foco, meta e execução</p>
       </div>
 
-      {/* Unified Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-4 h-auto">
-          <TabsTrigger value="inicio" className="gap-1.5 text-xs">
-            <Target className="h-3.5 w-3.5" /> Início
+          <TabsTrigger value="central" className="gap-1.5 text-xs py-2">
+            <Target className="h-3.5 w-3.5" /> Central
           </TabsTrigger>
-          <TabsTrigger value="discagem" className="gap-1.5 text-xs">
+          <TabsTrigger value="discagem" className="gap-1.5 text-xs py-2" disabled={!metaSalva}>
+            {!metaSalva && <Lock className="h-3 w-3" />}
             <Phone className="h-3.5 w-3.5" /> Discagem
           </TabsTrigger>
-          <TabsTrigger value="aproveitados" className="gap-1.5 text-xs">
+          <TabsTrigger value="aproveitados" className="gap-1.5 text-xs py-2">
             <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
           </TabsTrigger>
-          <TabsTrigger value="ranking" className="gap-1.5 text-xs">
+          <TabsTrigger value="ranking" className="gap-1.5 text-xs py-2">
             <Trophy className="h-3.5 w-3.5" /> Ranking
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Tab: Início ── */}
-        <TabsContent value="inicio" className="space-y-4 mt-4">
+        {/* ── Tab: Central ── */}
+        <TabsContent value="central" className="space-y-4 mt-4">
           {/* Motivation */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
@@ -93,27 +112,42 @@ export default function CorretorDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Daily Goals */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="lg:col-span-2">
-              <Card className="h-full">
+              <Card className={`h-full ${!metaSalva ? "ring-2 ring-primary/40 border-primary/30" : ""}`}>
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                       <Target className="h-4 w-4 text-primary" /> Meta do Dia
+                      {!metaSalva && (
+                        <Badge variant="destructive" className="text-[10px] h-5 animate-pulse">
+                          Obrigatória
+                        </Badge>
+                      )}
                     </h3>
-                    {goals && !editing && (
+                    {metaSalva && !editing && (
                       <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(true)}>Editar</Button>
                     )}
                   </div>
+
                   {editing ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] text-muted-foreground uppercase">Meta Ligações</label>
-                        <Input type="number" value={metaLig} onChange={e => setMetaLig(e.target.value)} className="h-9 mt-1" />
+                    <div className="space-y-3">
+                      {!metaSalva && (
+                        <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                          ⚠️ Defina sua meta antes de iniciar as ligações. A aba Discagem será liberada após salvar.
+                        </p>
+                      )}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground uppercase">Meta Ligações</label>
+                          <Input type="number" value={metaLig} onChange={e => setMetaLig(e.target.value)} className="h-9 mt-1" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-muted-foreground uppercase">Meta Aproveitados</label>
+                          <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-9 mt-1" />
+                        </div>
+                        <Button size="sm" className="col-span-2" onClick={handleSaveGoals}>
+                          {metaSalva ? "Atualizar Meta" : "Salvar Meta e Liberar Discagem"}
+                        </Button>
                       </div>
-                      <div>
-                        <label className="text-[10px] text-muted-foreground uppercase">Meta Aproveitados</label>
-                        <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-9 mt-1" />
-                      </div>
-                      <Button size="sm" className="col-span-2" onClick={handleSaveGoals}>Salvar Meta do Dia</Button>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -176,18 +210,24 @@ export default function CorretorDashboard() {
             </div>
           </motion.div>
 
-          {/* CTA to start dialing */}
+          {/* CTA */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card className="border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 to-emerald-500/10">
-              <CardContent className="p-6 text-center space-y-3">
-                <Phone className="h-10 w-10 text-emerald-600 mx-auto" />
-                <h3 className="text-lg font-bold text-foreground">Pronto para começar?</h3>
-                <p className="text-sm text-muted-foreground">Selecione uma lista e entre no Modo Missão com scripts editáveis em tempo real.</p>
-                <Button size="lg" className="gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => setActiveTab("discagem")}>
-                  <Phone className="h-4 w-4" /> Iniciar Discagem <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
+            {metaSalva ? (
+              <Button
+                size="lg"
+                className="w-full h-14 gap-2 text-base bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => setActiveTab("discagem")}
+              >
+                <Phone className="h-5 w-5" /> Iniciar Discagem <ArrowRight className="h-5 w-5" />
+              </Button>
+            ) : (
+              <Card className="border-muted bg-muted/30">
+                <CardContent className="p-4 text-center">
+                  <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Salve sua meta do dia acima para liberar a discagem</p>
+                </CardContent>
+              </Card>
+            )}
           </motion.div>
         </TabsContent>
 
