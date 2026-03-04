@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Zap } from "lucide-react";
+import { Sparkles, Zap, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CsvUploader from "@/components/CsvUploader";
@@ -179,14 +179,23 @@ export default function Index() {
             </h1>
           </div>
           {step === "dashboard" && (
-            <Button
-              onClick={classifyAllLeads}
-              disabled={classifyingAll}
-              className="gap-2"
-            >
-              <Sparkles className={`h-4 w-4 ${classifyingAll ? "animate-pulse-soft" : ""}`} />
-              {classifyingAll ? "Classificando..." : "Classificar Todos"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => { setStep("upload"); setLeads([]); setCsvData([]); setCsvHeaders([]); }}
+                className="gap-1.5"
+              >
+                <Upload className="h-4 w-4" /> Reimportar
+              </Button>
+              <Button
+                onClick={classifyAllLeads}
+                disabled={classifyingAll}
+                className="gap-2"
+              >
+                <Sparkles className={`h-4 w-4 ${classifyingAll ? "animate-pulse-soft" : ""}`} />
+                {classifyingAll ? "Classificando..." : "Classificar Todos"}
+              </Button>
+            </div>
           )}
         </div>
       </header>
