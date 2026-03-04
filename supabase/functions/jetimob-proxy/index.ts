@@ -45,6 +45,30 @@ serve(async (req) => {
       });
     }
 
+    if (action === "list_leads") {
+      const JETIMOB_LEADS_URL_KEY = Deno.env.get("JETIMOB_LEADS_URL_KEY");
+      if (!JETIMOB_LEADS_URL_KEY) throw new Error("JETIMOB_LEADS_URL_KEY is not configured");
+
+      const response = await fetch(
+        `https://api.jetimob.com/leads/${JETIMOB_LEADS_URL_KEY}`,
+        { headers: { "Accept": "application/json" } }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Jetimob Leads API error:", response.status, text);
+        return new Response(
+          JSON.stringify({ error: `Erro ao buscar leads: ${response.status}` }),
+          { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const data = await response.json();
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "list_imoveis") {
       const response = await fetch(
         `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/todos?v=6&page=1&pageSize=50`,

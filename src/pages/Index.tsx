@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Zap, Upload, Send, LogOut } from "lucide-react";
+import { Sparkles, Zap, Upload, Send, LogOut, CloudDownload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CsvUploader from "@/components/CsvUploader";
@@ -29,6 +29,7 @@ export default function Index() {
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [reactivationFilter, setReactivationFilter] = useState<number | null>(null);
   const [tasks, setTasks] = useState<LeadTask[]>([]);
+  const [importingFromApi, setImportingFromApi] = useState(false);
 
   const handleDataParsed = useCallback((data: LeadCSVRow[], headers: string[]) => {
     setCsvData(data);
@@ -61,6 +62,39 @@ export default function Index() {
       };
     } catch {
       return null;
+    }
+  }, []);
+
+  const handleImportFromApi = useCallback(async () => {
+    setImportingFromApi(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+        body: { action: "list_leads" },
+      });
+      if (error) throw error;
+      const apiLeads = Array.isArray(data) ? data : [];
+      if (apiLeads.length === 0) {
+        toast.warning("Nenhum lead encontrado na API.");
+        return;
+      }
+      const mapped: Lead[] = apiLeads.map((l: any, i: number) => ({
+        id: String(l.id || i + 1),
+        nome: l.full_name || "",
+        email: l.emails?.[0] || "",
+        telefone: l.phones?.[0] || "",
+        interesse: l.subject || "",
+        origem: "API Jetimob",
+        ultimoContato: "",
+        status: "",
+      }));
+      setLeads(mapped);
+      setStep("dashboard");
+      toast.success(`${mapped.length} leads importados da API Jetimob!`);
+    } catch (err) {
+      console.error("API import error:", err);
+      toast.error("Erro ao importar leads da API Jetimob.");
+    } finally {
+      setImportingFromApi(false);
     }
   }, []);
 
@@ -266,6 +300,24 @@ export default function Index() {
               </p>
             </motion.div>
             <CsvUploader onDataParsed={handleDataParsed} />
+            <div className="mt-4 flex items-center gap-4">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground">ou</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <Button
+              variant="outline"
+              className="mt-4 w-full gap-2"
+              disabled={importingFromApi}
+              onClick={handleImportFromApi}
+            >
+              {importingFromApi ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CloudDownload className="h-4 w-4" />
+              )}
+              {importingFromApi ? "Importando da API..." : "Importar Leads da API Jetimob"}
+            </Button>
           </div>
         )}
 
