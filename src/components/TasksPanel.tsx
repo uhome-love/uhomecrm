@@ -10,17 +10,11 @@ interface TasksPanelProps {
   onTaskStatusChange: (taskId: string, status: LeadTask["status"]) => void;
 }
 
-const PRIORITY_CONFIG = {
-  alta: { label: "Alta", className: "bg-priority-high/10 text-priority-high border-priority-high/20" },
-  media: { label: "Média", className: "bg-priority-medium/10 text-priority-medium border-priority-medium/20" },
-  baixa: { label: "Baixa", className: "bg-priority-low/10 text-priority-low border-priority-low/20" },
-  frio: { label: "Frio", className: "bg-info/10 text-info border-info/20" },
-  perdido: { label: "Perdido", className: "bg-muted text-muted-foreground border-border" },
-};
+import { PRIORITY_CONFIG } from "@/lib/leadUtils";
 
 const TASK_ICONS: Record<string, typeof Phone> = {
-  "Ligar hoje": Phone,
-  "Enviar follow-up": MessageSquare,
+  "Ligar AGORA": Phone,
+  "Enviar follow-up hoje": MessageSquare,
   "Incluir em campanha": Mail,
   "Reativar com oferta": Gift,
   "Última tentativa": Archive,
