@@ -296,7 +296,7 @@ export default function Index() {
               <Zap className="h-5 w-5 text-primary-foreground" />
             </div>
             <h1 className="font-display text-xl font-bold text-foreground">
-              LeadRecovery<span className="text-primary">UhomeAI</span>
+              Uhome <span className="text-primary">Gestão e IA</span>
             </h1>
           </div>
           <div className="flex items-center gap-2">

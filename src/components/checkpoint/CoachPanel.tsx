@@ -70,7 +70,7 @@ export default function CoachPanel() {
               <Bot className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-display font-semibold text-foreground">Coach de Performance UHome</h3>
+              <h3 className="font-display font-semibold text-foreground">Coach de Performance Uhome</h3>
               <p className="text-xs text-muted-foreground">IA que analisa o desempenho semanal e gera feedbacks</p>
             </div>
           </div>

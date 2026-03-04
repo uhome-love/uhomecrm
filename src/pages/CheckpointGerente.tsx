@@ -63,7 +63,7 @@ export default function CheckpointGerente() {
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground">
           {nome ? (
-            <>Olá <span className="text-primary">{nome}</span>, bem-vindo(a) à sua ferramenta de IA da <span className="text-primary">UHome</span></>
+            <>Olá <span className="text-primary">{nome}</span>, bem-vindo(a) ao <span className="text-primary">Uhome Gestão e IA</span></>
           ) : (
             <>Checkpoint do <span className="text-primary">Gerente</span></>
           )}
