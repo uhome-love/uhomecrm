@@ -1,3 +1,5 @@
+export type LeadPriority = "muito_quente" | "quente" | "morno" | "frio" | "perdido";
+
 export interface Lead {
   id: string;
   nome: string;
@@ -7,10 +9,13 @@ export interface Lead {
   origem: string;
   ultimoContato: string;
   status: string;
-  prioridade?: "alta" | "media" | "baixa" | "frio" | "perdido";
+  prioridade?: LeadPriority;
   mensagemGerada?: string;
   canalEnvio?: "whatsapp" | "email" | "ambos";
   imovel?: ImovelJetimob;
+  corretor?: string;
+  etapa?: string;
+  dataCriacao?: string;
 }
 
 export interface ImovelJetimob {

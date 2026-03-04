@@ -1,4 +1,4 @@
-import { Users, Sparkles, TrendingUp, MessageSquare, Snowflake, XCircle } from "lucide-react";
+import { Users, Sparkles, TrendingUp, MessageSquare, Flame, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Lead } from "@/types/lead";
 
@@ -9,48 +9,18 @@ interface StatsCardsProps {
 export default function StatsCards({ leads }: StatsCardsProps) {
   const total = leads.length;
   const withMessage = leads.filter((l) => l.mensagemGerada).length;
-  const highPriority = leads.filter((l) => l.prioridade === "alta").length;
+  const muitoQuente = leads.filter((l) => l.prioridade === "muito_quente").length;
+  const quente = leads.filter((l) => l.prioridade === "quente").length;
   const classified = leads.filter((l) => l.prioridade).length;
-  const cold = leads.filter((l) => l.prioridade === "frio").length;
-  const lost = leads.filter((l) => l.prioridade === "perdido").length;
+  const reactivated = leads.filter((l) => l.status === "reativado" || l.status === "respondido").length;
 
   const stats = [
-    {
-      label: "Total de Leads",
-      value: total,
-      icon: Users,
-      accent: "bg-primary/10 text-primary",
-    },
-    {
-      label: "Alta Prioridade",
-      value: highPriority,
-      icon: TrendingUp,
-      accent: "bg-destructive/10 text-destructive",
-    },
-    {
-      label: "Classificados",
-      value: classified,
-      icon: Sparkles,
-      accent: "bg-accent/10 text-accent",
-    },
-    {
-      label: "Frios",
-      value: cold,
-      icon: Snowflake,
-      accent: "bg-info/10 text-info",
-    },
-    {
-      label: "Perdidos",
-      value: lost,
-      icon: XCircle,
-      accent: "bg-muted text-muted-foreground",
-    },
-    {
-      label: "Mensagens Geradas",
-      value: withMessage,
-      icon: MessageSquare,
-      accent: "bg-warning/10 text-warning",
-    },
+    { label: "Total de Leads", value: total, icon: Users, accent: "bg-primary/10 text-primary" },
+    { label: "🔥 Muito Quentes", value: muitoQuente, icon: Flame, accent: "bg-destructive/10 text-destructive" },
+    { label: "🟠 Quentes", value: quente, icon: TrendingUp, accent: "bg-primary/10 text-primary" },
+    { label: "Classificados", value: classified, icon: Sparkles, accent: "bg-accent/10 text-accent" },
+    { label: "Reativados", value: reactivated, icon: RotateCcw, accent: "bg-success/10 text-success" },
+    { label: "Mensagens Geradas", value: withMessage, icon: MessageSquare, accent: "bg-warning/10 text-warning" },
   ];
 
   return (
