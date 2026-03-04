@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, Loader2, ArrowRight, Building2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
@@ -95,6 +96,7 @@ export default function ImportListPanel() {
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ total: number; lists: { emp: string; inserted: number; duplicates: number; invalid: number }[] } | null>(null);
+  const [selectedEmps, setSelectedEmps] = useState<Set<string>>(new Set());
 
   // Detected segments - computed for review step
   const detectedSegments = useMemo(
@@ -166,7 +168,10 @@ export default function ImportListPanel() {
     const results: { emp: string; inserted: number; duplicates: number; invalid: number }[] = [];
 
     try {
-      for (const [emp, subs] of Object.entries(finalSegments)) {
+      const segmentsToImport = Object.fromEntries(
+        Object.entries(finalSegments).filter(([emp]) => selectedEmps.has(emp))
+      );
+      for (const [emp, subs] of Object.entries(segmentsToImport)) {
         // Get rows for this empreendimento
         const empCol = mapping.empreendimento ? headers.indexOf(mapping.empreendimento) : -1;
         const empRows = empCol >= 0
@@ -329,6 +334,9 @@ export default function ImportListPanel() {
                     return;
                   }
                 }
+                // Auto-select all empreendimentos when entering review
+                const segs = mapping.empreendimento ? detectEmpreendimentos(rawData, headers, mapping) : { [guessFromFilename(fileName) || fileName.replace(/\.(csv|txt)$/i, "")]: [{ campanha: null, origem: null, count: rawData.length }] };
+                setSelectedEmps(new Set(Object.keys(segs)));
                 setStep("review");
               }}
               disabled={!mapping.nome}
@@ -342,66 +350,109 @@ export default function ImportListPanel() {
   }
 
   if (step === "review") {
-    const totalLeads = Object.values(finalSegments).reduce(
+    const selectedSegments = Object.fromEntries(
+      Object.entries(finalSegments).filter(([emp]) => selectedEmps.has(emp))
+    );
+    const totalLeads = Object.values(selectedSegments).reduce(
       (sum, subs) => sum + subs.reduce((s, sub) => s + sub.count, 0), 0
     );
+    const allEmps = Object.keys(finalSegments);
+    const allSelected = allEmps.length === selectedEmps.size;
+
+    const toggleEmp = (emp: string) => {
+      setSelectedEmps(prev => {
+        const next = new Set(prev);
+        if (next.has(emp)) next.delete(emp); else next.add(emp);
+        return next;
+      });
+    };
+
+    const toggleAll = () => {
+      if (allSelected) setSelectedEmps(new Set());
+      else setSelectedEmps(new Set(allEmps));
+    };
 
     return (
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Layers className="h-5 w-5 text-primary" /> Segmentação Automática
+            <Layers className="h-5 w-5 text-primary" /> Selecionar Empreendimentos
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {totalLeads} leads identificados em {Object.keys(finalSegments).length} empreendimento(s)
+            {allEmps.length} empreendimento(s) detectado(s) — selecione quais deseja importar
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm text-foreground">
-            <p className="font-semibold flex items-center gap-2 mb-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              Esta importação gerou:
-            </p>
-            <div className="space-y-2">
-              {Object.entries(finalSegments).map(([emp, subs]) => {
-                const total = subs.reduce((s, sub) => s + sub.count, 0);
-                const campaigns = subs.filter(s => s.campanha).map(s => s.campanha);
-                const origins = subs.filter(s => s.origem).map(s => s.origem);
-                const uniqueCampaigns = [...new Set(campaigns)];
-                const uniqueOrigins = [...new Set(origins)];
+          {/* Select all toggle */}
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 border border-border">
+            <Checkbox
+              id="select-all"
+              checked={allSelected}
+              onCheckedChange={toggleAll}
+            />
+            <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
+              {allSelected ? "Desmarcar todos" : "Selecionar todos"}
+            </label>
+            <Badge variant="outline" className="ml-auto text-xs">
+              {selectedEmps.size}/{allEmps.length} selecionado(s)
+            </Badge>
+          </div>
 
-                return (
-                  <div key={emp} className="bg-background rounded-lg p-3 border border-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-bold text-foreground">{emp}</h4>
-                      <Badge variant="outline" className="text-xs">{total} leads</Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {uniqueCampaigns.length > 0 && uniqueCampaigns.map(c => (
-                        <Badge key={c} variant="secondary" className="text-[10px]">📢 {c}</Badge>
-                      ))}
-                      {uniqueOrigins.length > 0 && uniqueOrigins.map(o => (
-                        <Badge key={o} variant="secondary" className="text-[10px]">🌐 {o}</Badge>
-                      ))}
-                      {uniqueCampaigns.length === 0 && uniqueOrigins.length === 0 && (
-                        <span className="text-[10px] text-muted-foreground">Sem campanha/origem identificada</span>
-                      )}
+          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+            {Object.entries(finalSegments).map(([emp, subs]) => {
+              const total = subs.reduce((s, sub) => s + sub.count, 0);
+              const campaigns = [...new Set(subs.filter(s => s.campanha).map(s => s.campanha))];
+              const origins = [...new Set(subs.filter(s => s.origem).map(s => s.origem))];
+              const isSelected = selectedEmps.has(emp);
+
+              return (
+                <div
+                  key={emp}
+                  className={`rounded-lg p-3 border transition-colors cursor-pointer ${
+                    isSelected
+                      ? "bg-primary/5 border-primary/30"
+                      : "bg-muted/20 border-border opacity-60"
+                  }`}
+                  onClick={() => toggleEmp(emp)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleEmp(emp)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-bold text-foreground text-sm">{emp}</h4>
+                        <Badge variant="outline" className="text-xs shrink-0">{total} leads</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {campaigns.map(c => (
+                          <Badge key={c} variant="secondary" className="text-[10px]">📢 {c}</Badge>
+                        ))}
+                        {origins.map(o => (
+                          <Badge key={o} variant="secondary" className="text-[10px]">🌐 {o}</Badge>
+                        ))}
+                        {campaigns.length === 0 && origins.length === 0 && (
+                          <span className="text-[10px] text-muted-foreground">Sem campanha/origem identificada</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2.5">
-            <CheckCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-            Cada empreendimento será uma lista separada. Duplicados serão removidos automaticamente.
+            <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
+            Cada empreendimento selecionado será uma lista separada. Duplicados serão removidos automaticamente.
           </div>
 
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setStep("map")}>Voltar</Button>
-            <Button onClick={handleImport} disabled={importing}>
-              {importing ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Importando...</> : `Importar ${totalLeads} leads em ${Object.keys(finalSegments).length} lista(s)`}
+            <Button onClick={handleImport} disabled={importing || selectedEmps.size === 0}>
+              {importing ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Importando...</> : `Importar ${totalLeads} leads em ${selectedEmps.size} lista(s)`}
             </Button>
           </div>
         </CardContent>
