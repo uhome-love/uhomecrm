@@ -17,7 +17,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { action, jetimob_user_id, email, nome, senha } = await req.json();
+    const { action, jetimob_user_id, email, nome, senha, gerente_id } = await req.json();
 
     // Verify caller is admin
     const authHeader = req.headers.get("Authorization");
@@ -103,10 +103,20 @@ serve(async (req) => {
         .from("user_roles")
         .upsert({ user_id: newUser.user.id, role: "corretor" }, { onConflict: "user_id,role" });
 
+      // Link broker to manager's team
+      if (gerente_id) {
+        const { error: teamError } = await supabase
+          .from("team_members")
+          .insert({ gerente_id, nome, status: "ativo" });
+        if (teamError) {
+          console.error("Team member insert error:", teamError);
+        }
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
         user_id: newUser.user.id,
-        message: `Usuário ${nome} criado com sucesso!` 
+        message: `Usuário ${nome} criado e vinculado ao gerente com sucesso!` 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
