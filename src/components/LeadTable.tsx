@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, MessageSquare, Mail, Phone, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, MessageSquare, Mail, Phone, ChevronDown, ChevronUp, Home, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Lead } from "@/types/lead";
 
@@ -53,8 +53,33 @@ export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: L
                 </div>
               </TableCell>
               <TableCell>
-                <p className="text-sm text-foreground">{lead.interesse}</p>
-                <p className="text-xs text-muted-foreground">Último: {lead.ultimoContato}</p>
+                {lead.imovel ? (
+                  <div className="flex items-start gap-2">
+                    {lead.imovel.imagem_thumb && (
+                      <img
+                        src={lead.imovel.imagem_thumb}
+                        alt={lead.imovel.codigo}
+                        className="h-10 w-14 rounded object-cover shrink-0"
+                      />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-foreground flex items-center gap-1">
+                        <Home className="h-3 w-3" /> {lead.imovel.codigo}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {lead.imovel.tipo} • {lead.imovel.dormitorios}d • {lead.imovel.garagens}v
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-0.5">
+                        <MapPin className="h-2.5 w-2.5" /> {lead.imovel.endereco_bairro}, {lead.imovel.endereco_cidade}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-foreground">{lead.interesse || "—"}</p>
+                    <p className="text-xs text-muted-foreground">Último: {lead.ultimoContato}</p>
+                  </div>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex flex-col gap-1">

@@ -26,8 +26,36 @@ export default function Index() {
     setStep("map");
   }, []);
 
+  const fetchImovelData = useCallback(async (codigo: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+        body: { action: "get_imovel", codigo },
+      });
+      if (error || !data) return null;
+      // Handle both single object and array response
+      const imovel = Array.isArray(data.data) ? data.data[0] : data;
+      if (!imovel?.codigo) return null;
+      return {
+        codigo: imovel.codigo,
+        contrato: imovel.contrato || "",
+        descricao_anuncio: imovel.descricao_anuncio || "",
+        endereco_bairro: imovel.endereco_bairro || "",
+        endereco_cidade: imovel.endereco_cidade || "",
+        endereco_logradouro: imovel.endereco_logradouro || "",
+        dormitorios: imovel.dormitorios || 0,
+        garagens: imovel.garagens || 0,
+        area_privativa: imovel.area_privativa || 0,
+        valor: imovel.valor || imovel.valor_venda || imovel.valor_locacao || 0,
+        imagem_thumb: imovel.imagens?.[0]?.link_thumb || "",
+        tipo: imovel.tipo || "",
+      };
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleMappingComplete = useCallback(
-    (mapping: Record<string, string>) => {
+    async (mapping: Record<string, string>) => {
       const mapped: Lead[] = csvData.map((row, i) => ({
         id: String(i + 1),
         nome: row[mapping.nome] || "",
@@ -41,8 +69,30 @@ export default function Index() {
       setLeads(mapped);
       setStep("dashboard");
       toast.success(`${mapped.length} leads importados com sucesso!`);
+
+      // Fetch imóvel data for leads that have a código
+      const leadsWithCodigo = mapped.filter((l) => l.interesse);
+      if (leadsWithCodigo.length > 0) {
+        toast.info(`Buscando ${leadsWithCodigo.length} imóveis no Jetimob...`);
+        const uniqueCodigos = [...new Set(leadsWithCodigo.map((l) => l.interesse))];
+        const imovelCache: Record<string, any> = {};
+
+        for (const codigo of uniqueCodigos) {
+          const imovel = await fetchImovelData(codigo);
+          if (imovel) imovelCache[codigo] = imovel;
+        }
+
+        setLeads((prev) =>
+          prev.map((l) =>
+            l.interesse && imovelCache[l.interesse]
+              ? { ...l, imovel: imovelCache[l.interesse] }
+              : l
+          )
+        );
+        toast.success(`${Object.keys(imovelCache).length} imóveis encontrados!`);
+      }
     },
-    [csvData]
+    [csvData, fetchImovelData]
   );
 
   const generateMessage = useCallback(async (lead: Lead) => {
@@ -53,7 +103,9 @@ export default function Index() {
           type: "message",
           lead: {
             nome: lead.nome,
-            interesse: lead.interesse,
+            interesse: lead.imovel
+              ? `${lead.imovel.tipo} ${lead.imovel.codigo} - ${lead.imovel.dormitorios} dormitórios, ${lead.imovel.endereco_bairro}, ${lead.imovel.endereco_cidade} (${lead.imovel.contrato})`
+              : lead.interesse,
             origem: lead.origem,
             ultimoContato: lead.ultimoContato,
             status: lead.status,
