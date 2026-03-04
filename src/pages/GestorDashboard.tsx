@@ -13,6 +13,7 @@ import QuickFilters from "@/components/QuickFilters";
 import CampaignsPanel from "@/components/CampaignsPanel";
 import EmpreendimentoGroup from "@/components/EmpreendimentoGroup";
 import CorretorRanking from "@/components/CorretorRanking";
+import RecoveryAgentPanel from "@/components/RecoveryAgentPanel";
 import { getDaysSinceContact, calculateRecoveryScore, type QuickFilter } from "@/lib/leadUtils";
 import type { Lead, LeadPriority } from "@/types/lead";
 import { supabase } from "@/integrations/supabase/client";
@@ -291,6 +292,7 @@ export default function GestorDashboard() {
           </div>
 
           <StatsCards leads={leads} />
+          <RecoveryAgentPanel leads={leads} />
           <QuickFilters active={quickFilter} onChange={setQuickFilter} counts={filterCounts} />
           <ReactivationPanel leads={leads} onFilterByDays={(days) => setReactivationFilter(days || null)} activeFilter={reactivationFilter} />
           <CampaignsPanel leads={leads} onGenerateMessages={handleBulkGenerateMessages} generatingBulk={generatingBulk} />
