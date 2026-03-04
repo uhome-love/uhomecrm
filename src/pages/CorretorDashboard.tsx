@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
+import ScoringLegend from "@/components/oferta-ativa/ScoringLegend";
 import { toast } from "sonner";
 
 export default function CorretorDashboard() {
@@ -208,6 +209,11 @@ export default function CorretorDashboard() {
                 </Card>
               ))}
             </div>
+          </motion.div>
+
+          {/* Scoring Legend */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+            <ScoringLegend />
           </motion.div>
 
           {/* CTA */}
