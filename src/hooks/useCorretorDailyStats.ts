@@ -76,11 +76,6 @@ export interface CorretorGoals {
   meta_ligacoes: number;
   meta_aproveitados: number;
   observacao: string | null;
-  status: string;
-  aprovado_por: string | null;
-  meta_ligacoes_aprovada: number | null;
-  meta_aproveitados_aprovada: number | null;
-  feedback_gerente: string | null;
 }
 
 export function useCorretorDailyGoals() {
@@ -112,13 +107,13 @@ export function useCorretorDailyGoals() {
       meta_ligacoes: metaLigacoes,
       meta_aproveitados: metaAproveitados,
       observacao: observacao || null,
-      status: "pendente",
+      status: "ativo",
     };
 
     if (goals) {
       await supabase
         .from("corretor_daily_goals")
-        .update({ ...payload, status: "pendente" })
+        .update(payload)
         .eq("id", goals.id);
     } else {
       await supabase
@@ -128,15 +123,7 @@ export function useCorretorDailyGoals() {
     refetch();
   };
 
-  // Effective goals: use approved values if available, otherwise use the corretor's own
-  const effectiveGoals = goals ? {
-    meta_ligacoes: goals.meta_ligacoes_aprovada ?? goals.meta_ligacoes,
-    meta_aproveitados: goals.meta_aproveitados_aprovada ?? goals.meta_aproveitados,
-    status: goals.status,
-    feedback_gerente: goals.feedback_gerente,
-  } : null;
-
-  return { goals, isLoading, saveGoals, refetch, effectiveGoals };
+  return { goals, isLoading, saveGoals, refetch };
 }
 
 export function useDailyMotivation() {

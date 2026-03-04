@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock, Clock, ThumbsUp, AlertCircle, LogOut } from "lucide-react";
+import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock, LogOut } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 export default function CorretorDashboard() {
   const { stats } = useCorretorDailyStats();
-  const { goals, saveGoals, effectiveGoals } = useCorretorDailyGoals();
+  const { goals, saveGoals } = useCorretorDailyGoals();
   const motivation = useDailyMotivation();
   const { user } = useAuth();
 
@@ -42,17 +42,16 @@ export default function CorretorDashboard() {
     setEditing(!goals);
   }, [goals]);
 
-  const metaLigacoes = effectiveGoals?.meta_ligacoes || goals?.meta_ligacoes || 30;
-  const metaAproveitados = effectiveGoals?.meta_aproveitados || goals?.meta_aproveitados || 5;
+  const metaLigacoes = goals?.meta_ligacoes || 30;
+  const metaAproveitados = goals?.meta_aproveitados || 5;
   const progLig = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
   const metaSalva = !!goals;
-  const goalStatus = goals?.status || "pendente";
 
   const handleSaveGoals = async () => {
     await saveGoals(parseInt(metaLig) || 30, parseInt(metaAprov) || 5);
     setEditing(false);
-    toast.success("Meta enviada para aprovação do gerente!");
+    toast.success("Meta do dia salva! Discagem liberada.");
   };
 
   const handleTabChange = (tab: string) => {
@@ -79,30 +78,6 @@ export default function CorretorDashboard() {
       toast.error("Erro ao finalizar: " + err.message);
     } finally {
       setFinalizando(false);
-    }
-  };
-
-  const statusBadge = () => {
-    if (!goals) return null;
-    switch (goalStatus) {
-      case "aprovado":
-        return (
-          <Badge className="gap-1 text-[10px] h-5 bg-success/15 text-success border-success/30" variant="outline">
-            <ThumbsUp className="h-3 w-3" /> Aprovado pelo gerente
-          </Badge>
-        );
-      case "ajustado":
-        return (
-          <Badge className="gap-1 text-[10px] h-5 bg-warning/15 text-warning border-warning/30" variant="outline">
-            <AlertCircle className="h-3 w-3" /> Ajustado pelo gerente
-          </Badge>
-        );
-      default:
-        return (
-          <Badge className="gap-1 text-[10px] h-5 bg-muted text-muted-foreground" variant="outline">
-            <Clock className="h-3 w-3" /> Aguardando aprovação
-          </Badge>
-        );
     }
   };
 
@@ -169,38 +144,16 @@ export default function CorretorDashboard() {
                         </Badge>
                       )}
                     </h3>
-                    <div className="flex items-center gap-2">
-                      {statusBadge()}
-                      {metaSalva && !editing && (
-                        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(true)}>Editar</Button>
-                      )}
-                    </div>
+                    {metaSalva && !editing && (
+                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(true)}>Editar</Button>
+                    )}
                   </div>
-
-                  {/* Gerente feedback */}
-                  {goals?.feedback_gerente && (
-                    <div className="flex items-start gap-2 p-2.5 rounded-lg bg-warning/5 border border-warning/20">
-                      <AlertCircle className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-[10px] font-semibold text-warning uppercase">Feedback do Gerente</p>
-                        <p className="text-xs text-foreground mt-0.5">{goals.feedback_gerente}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Show adjusted values if gerente changed them */}
-                  {goalStatus === "ajustado" && goals?.meta_ligacoes_aprovada != null && (
-                    <div className="flex items-center gap-4 p-2 rounded-lg bg-muted/50 text-xs">
-                      <span className="text-muted-foreground">Sua sugestão: {goals.meta_ligacoes} lig / {goals.meta_aproveitados} aprov</span>
-                      <span className="text-foreground font-medium">→ Ajustado para: {goals.meta_ligacoes_aprovada} lig / {goals.meta_aproveitados_aprovada} aprov</span>
-                    </div>
-                  )}
 
                   {editing ? (
                     <div className="space-y-3">
                       {!metaSalva && (
                         <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
-                          ⚠️ Defina sua meta e envie para aprovação do gerente. A aba Discagem será liberada após salvar.
+                          ⚠️ Defina sua meta do dia. A aba Discagem será liberada após salvar.
                         </p>
                       )}
                       <div className="grid grid-cols-2 gap-3">
@@ -213,7 +166,7 @@ export default function CorretorDashboard() {
                           <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-9 mt-1" />
                         </div>
                         <Button size="sm" className="col-span-2" onClick={handleSaveGoals}>
-                          {metaSalva ? "Reenviar para Aprovação" : "Salvar Meta e Liberar Discagem"}
+                          {metaSalva ? "Atualizar Meta" : "Salvar Meta e Liberar Discagem"}
                         </Button>
                       </div>
                     </div>

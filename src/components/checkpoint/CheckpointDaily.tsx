@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Copy, Lock, RotateCcw, Save, ChevronLeft, ChevronRight, UserPlus, Plus, RefreshCw, ThumbsUp, Pencil } from "lucide-react";
+import { Calendar, Copy, Lock, RotateCcw, Save, ChevronLeft, ChevronRight, UserPlus, Plus, RefreshCw, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -64,19 +64,13 @@ export default function CheckpointDaily() {
   const [realtimeHighlight, setRealtimeHighlight] = useState<string | null>(null);
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Corretor goals approval
-  interface PendingGoal {
-    id: string;
-    corretor_id: string;
+  // Corretor goals (read-only view for gerente)
+  interface CorretorGoalInfo {
     corretor_nome: string;
     meta_ligacoes: number;
     meta_aproveitados: number;
-    status: string;
-    meta_ligacoes_ajustada: string;
-    meta_aproveitados_ajustada: string;
-    feedback: string;
   }
-  const [pendingGoals, setPendingGoals] = useState<PendingGoal[]>([]);
+  const [corretorGoals, setCorretorGoals] = useState<Record<string, CorretorGoalInfo>>({});
 
   const quickAddCorretor = async () => {
     if (!user || !quickName.trim()) { toast.error("Informe o nome."); return; }
@@ -216,9 +210,9 @@ export default function CheckpointDaily() {
   };
 
   // Load pending corretor goals for this date
-  const loadPendingGoals = useCallback(async () => {
+  // Load corretor goals (read-only for gerente context)
+  const loadCorretorGoals = useCallback(async () => {
     if (!user) return;
-    // Get team members with user_id linked
     const { data: team } = await supabase
       .from("team_members")
       .select("id, nome, user_id")
@@ -226,7 +220,7 @@ export default function CheckpointDaily() {
       .eq("status", "ativo")
       .not("user_id", "is", null);
 
-    if (!team || team.length === 0) { setPendingGoals([]); return; }
+    if (!team || team.length === 0) { setCorretorGoals({}); return; }
 
     const userIds = team.filter(t => t.user_id).map(t => t.user_id!);
     const { data: goals } = await supabase
@@ -235,46 +229,23 @@ export default function CheckpointDaily() {
       .in("corretor_id", userIds)
       .eq("data", date);
 
-    if (!goals || goals.length === 0) { setPendingGoals([]); return; }
+    if (!goals || goals.length === 0) { setCorretorGoals({}); return; }
 
-    const mapped: PendingGoal[] = goals.map((g: any) => {
+    const mapped: Record<string, CorretorGoalInfo> = {};
+    for (const g of goals as any[]) {
       const member = team.find(t => t.user_id === g.corretor_id);
-      return {
-        id: g.id,
-        corretor_id: g.corretor_id,
-        corretor_nome: member?.nome || "Corretor",
-        meta_ligacoes: g.meta_ligacoes,
-        meta_aproveitados: g.meta_aproveitados,
-        status: g.status,
-        meta_ligacoes_ajustada: (g.meta_ligacoes_aprovada ?? g.meta_ligacoes).toString(),
-        meta_aproveitados_ajustada: (g.meta_aproveitados_aprovada ?? g.meta_aproveitados).toString(),
-        feedback: g.feedback_gerente || "",
-      };
-    });
-    setPendingGoals(mapped);
+      if (member) {
+        mapped[member.id] = {
+          corretor_nome: member.nome,
+          meta_ligacoes: g.meta_ligacoes,
+          meta_aproveitados: g.meta_aproveitados,
+        };
+      }
+    }
+    setCorretorGoals(mapped);
   }, [user, date]);
 
-  const approveGoal = async (goal: PendingGoal) => {
-    const ligAprovada = parseInt(goal.meta_ligacoes_ajustada) || goal.meta_ligacoes;
-    const aprovAprovada = parseInt(goal.meta_aproveitados_ajustada) || goal.meta_aproveitados;
-    const isAdjusted = ligAprovada !== goal.meta_ligacoes || aprovAprovada !== goal.meta_aproveitados;
-
-    await supabase
-      .from("corretor_daily_goals")
-      .update({
-        status: isAdjusted ? "ajustado" : "aprovado",
-        aprovado_por: user!.id,
-        meta_ligacoes_aprovada: ligAprovada,
-        meta_aproveitados_aprovada: aprovAprovada,
-        feedback_gerente: goal.feedback || null,
-      })
-      .eq("id", goal.id);
-
-    toast.success(`Meta de ${goal.corretor_nome} ${isAdjusted ? "ajustada" : "aprovada"}!`);
-    loadPendingGoals();
-  };
-
-  useEffect(() => { loadCheckpoint(); loadPendingGoals(); }, [loadCheckpoint, loadPendingGoals]);
+  useEffect(() => { loadCheckpoint(); loadCorretorGoals(); }, [loadCheckpoint, loadCorretorGoals]);
 
   // Realtime: auto-sync when new OA attempts are inserted
   useEffect(() => {
