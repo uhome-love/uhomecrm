@@ -164,6 +164,62 @@ export type Database = {
         }
         Relationships: []
       }
+      corretor_reports: {
+        Row: {
+          conteudo_relatorio: string
+          contexto_gerente: string
+          corretor_id: string
+          corretor_nome: string
+          created_at: string
+          dados_metricas: Json
+          gerente_id: string
+          id: string
+          observacoes: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          periodo_tipo: string
+          score_performance: number | null
+        }
+        Insert: {
+          conteudo_relatorio: string
+          contexto_gerente: string
+          corretor_id: string
+          corretor_nome: string
+          created_at?: string
+          dados_metricas?: Json
+          gerente_id: string
+          id?: string
+          observacoes?: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          periodo_tipo?: string
+          score_performance?: number | null
+        }
+        Update: {
+          conteudo_relatorio?: string
+          contexto_gerente?: string
+          corretor_id?: string
+          corretor_nome?: string
+          created_at?: string
+          dados_metricas?: Json
+          gerente_id?: string
+          id?: string
+          observacoes?: string | null
+          periodo_fim?: string
+          periodo_inicio?: string
+          periodo_tipo?: string
+          score_performance?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corretor_reports_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_settings: {
         Row: {
           id: string

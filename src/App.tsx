@@ -13,6 +13,7 @@ import AdminPanel from "./pages/AdminPanel";
 import CheckpointGerente from "./pages/CheckpointGerente";
 import CeoDashboard from "./pages/CeoDashboard";
 import ScriptsGenerator from "./pages/ScriptsGenerator";
+import RelatorioCorretor from "./pages/RelatorioCorretor";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -83,6 +84,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <ScriptsGenerator />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/relatorios"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <RelatorioCorretor />
                   </AppLayout>
                 </ProtectedRoute>
               }
