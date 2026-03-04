@@ -17,7 +17,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { action, jetimob_user_id, email, nome, senha, gerente_id, role } = await req.json();
+    const { action, jetimob_user_id, email, nome, senha, gerente_id, role, target_user_id } = await req.json();
 
     // Verify caller is admin
     const authHeader = req.headers.get("Authorization");
@@ -132,6 +132,19 @@ serve(async (req) => {
         user_id: newUser.user.id,
         message: `${roleLabel} ${nome} criado com sucesso!` 
       }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "delete_user") {
+      if (!target_user_id) throw new Error("ID do usuário não informado");
+      if (target_user_id === caller.id) throw new Error("Você não pode excluir a si mesmo");
+
+      // Delete user from auth (cascades to profiles, user_roles via FK)
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(target_user_id);
+      if (deleteError) throw new Error(`Erro ao excluir usuário: ${deleteError.message}`);
+
+      return new Response(JSON.stringify({ success: true, message: "Usuário excluído com sucesso!" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Shield, Trash2, Loader2, UserPlus, MessageSquare, CheckCircle, XCircle, Settings } from "lucide-react";
+import { Shield, Trash2, Loader2, UserPlus, MessageSquare, CheckCircle, XCircle, Settings, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -203,6 +203,24 @@ export default function AdminPanel() {
     setLookupId(""); setNewEmail(""); setNewNome(""); setNewSenha(""); setSelectedGerente(""); setNewRole("corretor");
   };
 
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDeleteUser = useCallback(async (user: UserWithRole) => {
+    if (!confirm(`Tem certeza que deseja excluir o usuário "${user.nome || user.email}" permanentemente? Esta ação não pode ser desfeita.`)) return;
+    setDeleting(user.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-broker-user", {
+        body: { action: "delete_user", target_user_id: user.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(data?.message || "Usuário excluído!");
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao excluir usuário.");
+    } finally { setDeleting(null); }
+  }, [fetchUsers]);
+
   const roleBadgeColor: Record<AppRole, string> = {
     admin: "bg-destructive/10 text-destructive border-destructive/20",
     gestor: "bg-primary/10 text-primary border-primary/20",
@@ -300,16 +318,28 @@ export default function AdminPanel() {
                     ))}
                   </div>
                 </div>
-                <Select onValueChange={(v) => addRole(user.user_id, v as AppRole)} disabled={addingRole === user.user_id}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Adicionar papel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">🛡️ Admin</SelectItem>
-                    <SelectItem value="gestor">📊 Gestor</SelectItem>
-                    <SelectItem value="corretor">👤 Corretor</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select onValueChange={(v) => addRole(user.user_id, v as AppRole)} disabled={addingRole === user.user_id}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Adicionar papel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">🛡️ Admin</SelectItem>
+                      <SelectItem value="gestor">📊 Gestor</SelectItem>
+                      <SelectItem value="corretor">👤 Corretor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                    onClick={() => handleDeleteUser(user)}
+                    disabled={deleting === user.user_id}
+                    title="Excluir usuário"
+                  >
+                    {deleting === user.user_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
 
               <div className="flex items-center gap-3 pt-2 border-t border-border">
