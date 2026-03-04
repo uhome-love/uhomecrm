@@ -35,7 +35,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
-import logoUhomeFull from "@/assets/logo-uhome-full.png";
+import logoSymbol from "@/assets/logo-uhome-symbol.png";
+import logoHorizontal from "@/assets/logo-uhome-horizontal.png";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -135,12 +136,12 @@ export function AppSidebar() {
         {/* Logo Section */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
           {collapsed ? (
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary/15 shrink-0">
-              <img src={logoUhomeFull} alt="UHome" className="h-6 w-auto brightness-0 invert opacity-80" />
+            <div className="flex h-10 w-10 items-center justify-center shrink-0">
+              <img src={logoSymbol} alt="UHome" className="h-10 w-auto" />
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <img src={logoUhomeFull} alt="UHome" className="h-8 w-auto brightness-0 invert opacity-90" />
+              <img src={logoHorizontal} alt="UHome" className="h-10 w-auto" />
               <div className="flex flex-col">
                 <span className="text-[10px] font-semibold text-sidebar-primary tracking-wider uppercase">Gestão & IA</span>
               </div>
