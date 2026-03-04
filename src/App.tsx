@@ -9,6 +9,7 @@ import AppLayout from "@/components/AppLayout";
 import GestorDashboard from "./pages/GestorDashboard";
 import CorretorDashboard from "./pages/CorretorDashboard";
 import AdminPanel from "./pages/AdminPanel";
+import CheckpointGerente from "./pages/CheckpointGerente";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -49,6 +50,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <CorretorDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkpoint"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CheckpointGerente />
                   </AppLayout>
                 </ProtectedRoute>
               }

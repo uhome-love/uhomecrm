@@ -8,3 +8,15 @@ verify_jwt = false
 
 [functions.whatsapp-send]
 verify_jwt = false
+
+[functions.checkpoint-coach]
+verify_jwt = false
+
+[functions.whatsapp-360dialog]
+verify_jwt = false
+
+[functions.recovery-agent]
+verify_jwt = false
+
+[functions.create-broker-user]
+verify_jwt = false

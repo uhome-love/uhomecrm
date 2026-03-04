@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   Shield,
+  ClipboardCheck,
   LogOut,
   User,
 } from "lucide-react";
@@ -32,7 +33,10 @@ export function AppSidebar() {
 
   const mainItems = [
     ...(isGestor
-      ? [{ title: "Painel Gestão", url: "/gestao", icon: LayoutDashboard }]
+      ? [
+          { title: "Painel Gestão", url: "/gestao", icon: LayoutDashboard },
+          { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+        ]
       : []),
     { title: "Minhas Tarefas", url: "/corretor", icon: ClipboardList },
   ];
