@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   ClipboardList,
   Shield,
-  Zap,
   LogOut,
   User,
 } from "lucide-react";
@@ -45,14 +44,12 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        {/* Logo */}
-        <div className="flex items-center gap-2 p-4 border-b border-sidebar-border">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-warm shrink-0">
-            <Zap className="h-4 w-4 text-primary-foreground" />
-          </div>
+        {/* Logo UHome */}
+        <div className="flex items-center gap-2.5 p-4 border-b border-sidebar-border">
+          <img src="/logo-uhome.svg" alt="UHome" className="h-8 w-auto shrink-0" />
           {!collapsed && (
-            <span className="font-display text-sm font-bold text-sidebar-foreground">
-              LeadRecovery<span className="text-primary">AI</span>
+            <span className="font-display text-xs font-medium text-sidebar-foreground/60 tracking-wide uppercase">
+              Lead Recovery
             </span>
           )}
         </div>
