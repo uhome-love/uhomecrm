@@ -97,6 +97,10 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" },
         },
+        "pulse-row": {
+          "0%, 100%": { backgroundColor: "transparent" },
+          "50%": { backgroundColor: "hsl(var(--primary) / 0.15)" },
+        },
         "shimmer": {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
