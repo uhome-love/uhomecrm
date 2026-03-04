@@ -83,8 +83,8 @@ const App = () => (
             <Route path="/ranking" element={<ProtectedPage roles={["gestor", "admin"]}><RankingComercial /></ProtectedPage>} />
             <Route path="/oferta-ativa" element={<ProtectedPage roles={["corretor", "gestor", "admin"]}><OfertaAtiva /></ProtectedPage>} />
 
-            {/* Corretor — corretor + gestor + admin */}
-            <Route path="/corretor" element={<ProtectedPage roles={["corretor", "gestor", "admin"]}><CorretorDashboard /></ProtectedPage>} />
+            {/* Corretor — todos autenticados */}
+            <Route path="/corretor" element={<ProtectedPage><CorretorDashboard /></ProtectedPage>} />
 
             {/* CEO / Admin only */}
             <Route path="/ceo" element={<ProtectedPage roles={["admin"]}><CeoDashboard /></ProtectedPage>} />
