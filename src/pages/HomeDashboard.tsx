@@ -4,12 +4,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
 import { useMarketing, getCanalLabel } from "@/hooks/useMarketing";
+import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import {
   Sparkles, TrendingUp, Users, Trophy, Target, BarChart3, AlertTriangle,
   CalendarDays, RotateCcw, ArrowRight, Building2, FileText, Eye, DollarSign,
-  Megaphone, Flame, ArrowUpRight,
+  Megaphone, Flame, ArrowUpRight, Bell, AlertCircle, Info,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import IaCoreAction from "@/components/IaCoreAction";
@@ -28,6 +29,7 @@ export default function HomeDashboard() {
   const filterGerenteId = isAdmin ? undefined : user?.id;
   const { gerentes, companyTotals, allCorretores, loading } = useCeoData(period as CeoPeriod, undefined, undefined, filterGerenteId);
   const { channelStats, totals: mktTotals } = useMarketing();
+  const { alerts: smartAlerts } = useSmartAlerts();
 
   // PDN hot deals
   const [pdnHot, setPdnHot] = useState({ propostas: 0, docs: 0, visitaRecente: 0 });
@@ -250,13 +252,29 @@ export default function HomeDashboard() {
             </motion.div>
           </div>
 
-          {/* 7. Alertas da IA */}
-          {alerts.length > 0 && (
+          {/* 7. Smart Alerts */}
+          {(smartAlerts.length > 0 || alerts.length > 0) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={`${card} border-warning/30`}>
-              <SectionHeader icon={AlertTriangle} title="Alertas da IA" iconColor="text-warning" />
+              <SectionHeader icon={Bell} title={`Alertas Importantes (${smartAlerts.length + alerts.length})`} iconColor="text-warning" />
               <div className="p-4 space-y-2">
+                {smartAlerts.map(a => (
+                  <div key={a.id} className={`flex items-start gap-3 p-3 rounded-lg border ${a.severity === "critical" ? "border-destructive/30 bg-destructive/5" : a.severity === "warning" ? "border-warning/30 bg-warning/5" : "border-border bg-muted/30"}`}>
+                    {a.severity === "critical" ? <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      : a.severity === "warning" ? <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                      : <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{a.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{a.description}</p>
+                    </div>
+                    {a.action && (
+                      <button onClick={() => navigate(a.action!.url)} className="text-xs text-primary font-semibold hover:underline shrink-0 whitespace-nowrap">
+                        {a.action.label}
+                      </button>
+                    )}
+                  </div>
+                ))}
                 {alerts.map((a, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm">
+                  <div key={`ia-${i}`} className="flex items-start gap-2 text-sm pl-1">
                     <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
                     <span className="text-muted-foreground">{a}</span>
                   </div>

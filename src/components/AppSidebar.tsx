@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   ClipboardCheck,
@@ -33,6 +34,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSmartAlerts } from "@/hooks/useSmartAlerts";
+import { toast } from "sonner";
 import logoUhome from "@/assets/logo-uhome.png";
 
 export function AppSidebar() {
@@ -40,6 +43,22 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const { isGestor, isAdmin } = useUserRole();
+  const { alerts, badges } = useSmartAlerts();
+  const toastShown = useRef(false);
+
+  // Show toast for critical alerts on first load
+  useEffect(() => {
+    if (toastShown.current || alerts.length === 0) return;
+    toastShown.current = true;
+    const critical = alerts.filter(a => a.severity === "critical");
+    if (critical.length > 0) {
+      setTimeout(() => {
+        critical.forEach(a => {
+          toast.warning(a.title, { description: a.description, duration: 8000 });
+        });
+      }, 1500);
+    }
+  }, [alerts]);
 
   const homeItems = [
     { title: "Início", url: "/", icon: Home },
@@ -78,21 +97,29 @@ export function AppSidebar() {
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
-                <NavLink
-                  to={item.url}
-                  end
-                  className="hover:bg-sidebar-accent/60 transition-colors rounded-lg"
-                  activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-2 border-sidebar-primary"
-                >
-                  <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
-                  {!collapsed && <span className="text-[13px]">{item.title}</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {items.map((item) => {
+            const badgeCount = badges[item.url] || 0;
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to={item.url}
+                    end
+                    className="hover:bg-sidebar-accent/60 transition-colors rounded-lg relative"
+                    activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-2 border-sidebar-primary"
+                  >
+                    <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="text-[13px]">{item.title}</span>}
+                    {badgeCount > 0 && (
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                        {badgeCount}
+                      </span>
+                    )}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
