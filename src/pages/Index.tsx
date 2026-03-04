@@ -11,6 +11,9 @@ import ReactivationPanel from "@/components/ReactivationPanel";
 import BulkWhatsAppDialog from "@/components/BulkWhatsAppDialog";
 import TasksPanel from "@/components/TasksPanel";
 import QuickFilters from "@/components/QuickFilters";
+import CampaignsPanel from "@/components/CampaignsPanel";
+import EmpreendimentoGroup from "@/components/EmpreendimentoGroup";
+import CorretorRanking from "@/components/CorretorRanking";
 import { generateTasksForLeads, type LeadTask } from "@/lib/taskGenerator";
 import { getDaysSinceContact, type QuickFilter } from "@/lib/leadUtils";
 import type { Lead, LeadPriority } from "@/types/lead";
@@ -42,6 +45,8 @@ export default function Index() {
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("todos");
   const [tasks, setTasks] = useState<LeadTask[]>([]);
   const [importingFromApi, setImportingFromApi] = useState(false);
+  const [interesseFilter, setInteresseFilter] = useState<string | null>(null);
+  const [generatingBulk, setGeneratingBulk] = useState(false);
 
   const handleDataParsed = useCallback((data: Record<string, string>[], headers: string[]) => {
     setCsvData(data);
@@ -232,17 +237,46 @@ export default function Index() {
         return true;
       });
     }
+    // Apply interesse/empreendimento filter
+    if (interesseFilter) {
+      result = result.filter((l) => {
+        const key = l.imovel?.codigo
+          ? `${l.imovel.tipo} ${l.imovel.codigo} — ${l.imovel.endereco_bairro}`
+          : l.interesse || "Sem interesse definido";
+        return key === interesseFilter;
+      });
+    }
     return result;
-  }, [leads, quickFilter, reactivationFilter]);
+  }, [leads, quickFilter, reactivationFilter, interesseFilter]);
 
   const handleTaskStatusChange = useCallback((taskId: string, status: LeadTask["status"]) => {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status } : t)));
   }, []);
 
-  const handleAtacarLeads = useCallback(() => {
-    setQuickFilter("followup_hoje");
-    toast.info("🔥 Mostrando leads quentes para atacar hoje!");
-  }, []);
+  const handleBulkGenerateMessages = useCallback(async (leadIds: string[]) => {
+    setGeneratingBulk(true);
+    let success = 0;
+    for (const id of leadIds) {
+      const lead = leads.find((l) => l.id === id);
+      if (!lead) continue;
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-followup", {
+          body: {
+            type: "message",
+            lead: { nome: lead.nome, interesse: lead.interesse, origem: lead.origem, ultimoContato: lead.ultimoContato, status: lead.status },
+          },
+        });
+        if (!error && data?.message) {
+          setLeads((prev) => prev.map((l) => l.id === id ? { ...l, mensagemGerada: data.message, prioridade: mapPriority(data.priority) } : l));
+          success++;
+        }
+      } catch {}
+      // Delay to avoid rate limiting
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    setGeneratingBulk(false);
+    toast.success(`${success} mensagens geradas com sucesso!`);
+  }, [leads]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -269,7 +303,7 @@ export default function Index() {
                   <Sparkles className={`h-4 w-4 ${classifyingAll ? "animate-pulse-soft" : ""}`} />
                   {classifyingAll ? "Classificando..." : "Classificar Todos"}
                 </Button>
-                <Button onClick={handleAtacarLeads} className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                <Button onClick={() => { setQuickFilter("followup_hoje"); toast.info("🔥 Mostrando leads quentes para atacar hoje!"); }} className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                   <Flame className="h-4 w-4" /> ATACAR LEADS HOJE
                 </Button>
               </>
@@ -314,6 +348,11 @@ export default function Index() {
             <StatsCards leads={leads} />
             <QuickFilters active={quickFilter} onChange={setQuickFilter} counts={filterCounts} />
             <ReactivationPanel leads={leads} onFilterByDays={(days) => setReactivationFilter(days || null)} activeFilter={reactivationFilter} />
+            <CampaignsPanel leads={leads} onGenerateMessages={handleBulkGenerateMessages} generatingBulk={generatingBulk} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <EmpreendimentoGroup leads={leads} onFilterByInteresse={setInteresseFilter} activeInteresse={interesseFilter} />
+              <CorretorRanking leads={leads} />
+            </div>
             <TasksPanel tasks={tasks} onTaskStatusChange={handleTaskStatusChange} />
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{filteredLeads.length} de {leads.length} leads</p>
