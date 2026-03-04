@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Copy, Lock, RotateCcw, Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Copy, Lock, RotateCcw, Save, ChevronLeft, ChevronRight, UserPlus, Plus } from "lucide-react";
 
 interface TeamMember { id: string; nome: string; equipe: string | null; status: string; }
 interface CheckpointLine {
@@ -53,7 +53,23 @@ export default function CheckpointDaily() {
   const [lines, setLines] = useState<CheckpointLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showAddCorretor, setShowAddCorretor] = useState(false);
+  const [quickName, setQuickName] = useState("");
+  const [quickEquipe, setQuickEquipe] = useState("");
+  const [adding, setAdding] = useState(false);
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const quickAddCorretor = async () => {
+    if (!user || !quickName.trim()) { toast.error("Informe o nome."); return; }
+    setAdding(true);
+    const { error } = await supabase.from("team_members").insert({
+      gerente_id: user.id, nome: quickName.trim(), equipe: quickEquipe.trim() || null,
+    });
+    if (error) { toast.error("Erro ao adicionar."); setAdding(false); return; }
+    setQuickName(""); setQuickEquipe(""); setShowAddCorretor(false); setAdding(false);
+    toast.success("Corretor adicionado!");
+    loadCheckpoint();
+  };
 
   const loadCheckpoint = useCallback(async () => {
     if (!user) return;
@@ -208,11 +224,31 @@ export default function CheckpointDaily() {
 
   if (loading) return <div className="text-center py-12 text-muted-foreground">Carregando checkpoint...</div>;
 
+  const QuickAddForm = () => (
+    <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
+      <div className="flex gap-3 items-end">
+        <div className="flex-1">
+          <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
+          <Input value={quickName} onChange={(e) => setQuickName(e.target.value)} placeholder="Nome do corretor" onKeyDown={(e) => e.key === "Enter" && quickAddCorretor()} />
+        </div>
+        <div className="w-36">
+          <label className="text-xs text-muted-foreground mb-1 block">Equipe (opcional)</label>
+          <Input value={quickEquipe} onChange={(e) => setQuickEquipe(e.target.value)} placeholder="Ex: Equipe A" />
+        </div>
+        <Button onClick={quickAddCorretor} disabled={adding || !quickName.trim()} size="sm" className="gap-1.5">
+          <Plus className="h-4 w-4" /> Incluir
+        </Button>
+        <Button onClick={() => setShowAddCorretor(false)} variant="ghost" size="sm">Cancelar</Button>
+      </div>
+    </div>
+  );
+
   if (lines.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 space-y-4">
         <p className="text-muted-foreground mb-2">Nenhum corretor ativo no time.</p>
-        <p className="text-sm text-muted-foreground">Vá na aba "Meu Time" e adicione corretores.</p>
+        <p className="text-sm text-muted-foreground">Adicione corretores abaixo ou na aba "Meu Time".</p>
+        <QuickAddForm />
       </div>
     );
   }
@@ -239,6 +275,9 @@ export default function CheckpointDaily() {
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
+          <Button size="sm" variant="outline" onClick={() => setShowAddCorretor(!showAddCorretor)} className="gap-1.5 text-xs">
+            <UserPlus className="h-3.5 w-3.5" /> Incluir corretor
+          </Button>
           <Button size="sm" variant="outline" onClick={duplicateYesterday} className="gap-1.5 text-xs" disabled={metasLocked}>
             <Copy className="h-3.5 w-3.5" /> Copiar ontem
           </Button>
@@ -260,6 +299,8 @@ export default function CheckpointDaily() {
           )}
         </div>
       </div>
+
+      {showAddCorretor && <QuickAddForm />}
 
       {/* Spreadsheet */}
       <div className="rounded-xl border border-border bg-card shadow-card overflow-x-auto">
