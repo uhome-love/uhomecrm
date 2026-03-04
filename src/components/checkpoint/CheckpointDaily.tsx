@@ -213,6 +213,20 @@ export default function CheckpointDaily() {
     toast.success("Dia fechado!");
   };
 
+  const reopenMetas = async () => {
+    if (!checkpointId) return;
+    await supabase.from("checkpoints").update({ status: "aberto" }).eq("id", checkpointId);
+    setCheckpointStatus("aberto");
+    toast.info("Metas desbloqueadas para edição.");
+  };
+
+  const reopenDay = async () => {
+    if (!checkpointId) return;
+    await supabase.from("checkpoints").update({ status: "metas_publicadas" }).eq("id", checkpointId);
+    setCheckpointStatus("metas_publicadas");
+    toast.info("Dia reaberto para edição de resultados.");
+  };
+
   const changeDate = (delta: number) => {
     const [y, m, d] = date.split("-").map(Number);
     const newDate = new Date(y, m - 1, d + delta);
@@ -293,8 +307,18 @@ export default function CheckpointDaily() {
             </Button>
           )}
           {checkpointStatus === "metas_publicadas" && (
-            <Button size="sm" onClick={closeDay} className="gap-1.5 text-xs bg-success hover:bg-success/90 text-success-foreground">
-              <Lock className="h-3.5 w-3.5" /> Fechar dia
+            <>
+              <Button size="sm" variant="outline" onClick={reopenMetas} className="gap-1.5 text-xs text-warning border-warning/30 hover:bg-warning/10">
+                <RotateCcw className="h-3.5 w-3.5" /> Editar metas
+              </Button>
+              <Button size="sm" onClick={closeDay} className="gap-1.5 text-xs bg-success hover:bg-success/90 text-success-foreground">
+                <Lock className="h-3.5 w-3.5" /> Fechar dia
+              </Button>
+            </>
+          )}
+          {checkpointStatus === "fechado" && (
+            <Button size="sm" variant="outline" onClick={reopenDay} className="gap-1.5 text-xs text-warning border-warning/30 hover:bg-warning/10">
+              <RotateCcw className="h-3.5 w-3.5" /> Reabrir dia
             </Button>
           )}
         </div>
