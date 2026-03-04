@@ -2,28 +2,61 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import AppLayout from "@/components/AppLayout";
-import HomeDashboard from "./pages/HomeDashboard";
-import GestorDashboard from "./pages/GestorDashboard";
-import CorretorDashboard from "./pages/CorretorDashboard";
-import AdminPanel from "./pages/AdminPanel";
-import CheckpointGerente from "./pages/CheckpointGerente";
-import CeoDashboard from "./pages/CeoDashboard";
-import ScriptsGenerator from "./pages/ScriptsGenerator";
-import RelatorioCorretor from "./pages/RelatorioCorretor";
-import FunilDashboard from "./pages/FunilDashboard";
-import ForecastDashboard from "./pages/ForecastDashboard";
-import PdnDashboard from "./pages/PdnDashboard";
-import MarketingDashboard from "./pages/MarketingDashboard";
-import RankingComercial from "./pages/RankingComercial";
-import AuditDashboard from "./pages/AuditDashboard";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
+// Lazy load all pages
+const HomeDashboard = lazy(() => import("./pages/HomeDashboard"));
+const GestorDashboard = lazy(() => import("./pages/GestorDashboard"));
+const CorretorDashboard = lazy(() => import("./pages/CorretorDashboard"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const CheckpointGerente = lazy(() => import("./pages/CheckpointGerente"));
+const CeoDashboard = lazy(() => import("./pages/CeoDashboard"));
+const ScriptsGenerator = lazy(() => import("./pages/ScriptsGenerator"));
+const RelatorioCorretor = lazy(() => import("./pages/RelatorioCorretor"));
+const FunilDashboard = lazy(() => import("./pages/FunilDashboard"));
+const ForecastDashboard = lazy(() => import("./pages/ForecastDashboard"));
+const PdnDashboard = lazy(() => import("./pages/PdnDashboard"));
+const MarketingDashboard = lazy(() => import("./pages/MarketingDashboard"));
+const RankingComercial = lazy(() => import("./pages/RankingComercial"));
+const AuditDashboard = lazy(() => import("./pages/AuditDashboard"));
+
 const queryClient = new QueryClient();
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+}
+
+// Helper to wrap a page with layout + auth + role protection
+function ProtectedPage({ children, roles }: { children: React.ReactNode; roles?: ("admin" | "gestor" | "corretor")[] }) {
+  if (roles) {
+    return (
+      <RoleProtectedRoute allowedRoles={roles}>
+        <AppLayout>
+          <Suspense fallback={<PageLoader />}>{children}</Suspense>
+        </AppLayout>
+      </RoleProtectedRoute>
+    );
+  }
+  return (
+    <ProtectedRoute>
+      <AppLayout>
+        <Suspense fallback={<PageLoader />}>{children}</Suspense>
+      </AppLayout>
+    </ProtectedRoute>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,146 +67,29 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <HomeDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/gestao"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <GestorDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/corretor"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <CorretorDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/checkpoint"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <CheckpointGerente />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/ceo"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <CeoDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/scripts"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <ScriptsGenerator />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/relatorios"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <RelatorioCorretor />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/funil"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <FunilDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/previsao"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <ForecastDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/pdn"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <PdnDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/marketing"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <MarketingDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/ranking"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <RankingComercial />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <AdminPanel />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/auditoria"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <AuditDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
+
+            {/* Acessível a todos os autenticados */}
+            <Route path="/" element={<ProtectedPage><HomeDashboard /></ProtectedPage>} />
+
+            {/* Gestão Comercial — gestor + admin */}
+            <Route path="/checkpoint" element={<ProtectedPage roles={["gestor", "admin"]}><CheckpointGerente /></ProtectedPage>} />
+            <Route path="/pdn" element={<ProtectedPage roles={["gestor", "admin"]}><PdnDashboard /></ProtectedPage>} />
+            <Route path="/previsao" element={<ProtectedPage roles={["gestor", "admin"]}><ForecastDashboard /></ProtectedPage>} />
+            <Route path="/funil" element={<ProtectedPage roles={["gestor", "admin"]}><FunilDashboard /></ProtectedPage>} />
+            <Route path="/scripts" element={<ProtectedPage roles={["gestor", "admin"]}><ScriptsGenerator /></ProtectedPage>} />
+            <Route path="/gestao" element={<ProtectedPage roles={["gestor", "admin"]}><GestorDashboard /></ProtectedPage>} />
+            <Route path="/relatorios" element={<ProtectedPage roles={["gestor", "admin"]}><RelatorioCorretor /></ProtectedPage>} />
+            <Route path="/ranking" element={<ProtectedPage roles={["gestor", "admin"]}><RankingComercial /></ProtectedPage>} />
+
+            {/* Corretor — corretor + gestor + admin */}
+            <Route path="/corretor" element={<ProtectedPage roles={["corretor", "gestor", "admin"]}><CorretorDashboard /></ProtectedPage>} />
+
+            {/* CEO / Admin only */}
+            <Route path="/ceo" element={<ProtectedPage roles={["admin"]}><CeoDashboard /></ProtectedPage>} />
+            <Route path="/marketing" element={<ProtectedPage roles={["admin"]}><MarketingDashboard /></ProtectedPage>} />
+            <Route path="/auditoria" element={<ProtectedPage roles={["admin"]}><AuditDashboard /></ProtectedPage>} />
+            <Route path="/admin" element={<ProtectedPage roles={["admin"]}><AdminPanel /></ProtectedPage>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
