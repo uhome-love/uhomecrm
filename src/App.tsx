@@ -19,6 +19,7 @@ import ForecastDashboard from "./pages/ForecastDashboard";
 import PdnDashboard from "./pages/PdnDashboard";
 import MarketingDashboard from "./pages/MarketingDashboard";
 import RankingComercial from "./pages/RankingComercial";
+import AuditDashboard from "./pages/AuditDashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -159,6 +160,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <AdminPanel />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/auditoria"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <AuditDashboard />
                   </AppLayout>
                 </ProtectedRoute>
               }

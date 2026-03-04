@@ -87,6 +87,7 @@ export function AppSidebar() {
   const adminItems = isAdmin
     ? [
         { title: "Administração", url: "/admin", icon: Shield },
+        { title: "Auditoria & Saúde", url: "/auditoria", icon: ClipboardCheck },
       ]
     : [];
 
