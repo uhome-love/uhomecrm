@@ -38,7 +38,7 @@ export default function HomeDashboard() {
           Olá{nome ? `, ${nome}` : ""}! 👋
         </h1>
         <p className="text-primary-foreground/80 mt-2 text-sm max-w-lg">
-          Bem-vindo(a) ao <strong>UHOME IA</strong> — sua plataforma inteligente de gestão comercial imobiliária.
+          Bem-vindo(a) ao <strong>Uhome Gestão e IA</strong> — sua plataforma inteligente de gestão comercial imobiliária.
         </p>
       </div>
 

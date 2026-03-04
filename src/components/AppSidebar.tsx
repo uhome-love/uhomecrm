@@ -54,12 +54,12 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        {/* Logo UHome */}
+        {/* Logo Uhome */}
         <div className="flex items-center gap-2.5 p-4 border-b border-sidebar-border">
-          <img src="/logo-uhome.svg" alt="UHome" className="h-8 w-auto shrink-0" />
+          <img src="/logo-uhome.svg" alt="Uhome Gestão e IA" className="h-8 w-auto shrink-0" />
           {!collapsed && (
             <span className="font-display text-xs font-medium text-sidebar-foreground/60 tracking-wide uppercase">
-              Lead Recovery
+              Gestão e IA
             </span>
           )}
         </div>

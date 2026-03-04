@@ -80,7 +80,7 @@ export default function CeoAdvisor() {
       {!analysis && !generating && (
         <div className="rounded-xl border border-border bg-card shadow-card p-8 text-center">
           <Bot className="h-12 w-12 text-primary/30 mx-auto mb-3" />
-          <h3 className="font-display font-semibold text-foreground mb-1">UHOME IA – CEO Advisor</h3>
+          <h3 className="font-display font-semibold text-foreground mb-1">Uhome Gestão e IA – CEO Advisor</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             Selecione o período e clique em "Gerar Análise" para receber insights estratégicos, diagnósticos por gerente e corretor, e ações recomendadas.
           </p>

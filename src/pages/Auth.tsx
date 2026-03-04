@@ -74,7 +74,7 @@ export default function Auth() {
         <div className="flex flex-col items-center mb-8">
           <img src="/logo-uhome.svg" alt="UHome" className="h-10 w-auto mb-4" />
           <h1 className="font-display text-xl font-bold text-foreground">
-            Lead Recovery <span className="text-primary">AI</span>
+            Uhome <span className="text-primary">Gestão e IA</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isLogin ? "Entre na sua conta" : "Crie sua conta"}
