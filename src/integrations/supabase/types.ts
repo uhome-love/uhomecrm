@@ -1212,6 +1212,10 @@ export type Database = {
         Returns: number
       }
       cleanup_expired_locks: { Args: never; Returns: number }
+      finalizar_trabalho_corretor: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -599,7 +599,7 @@ export default function CheckpointDaily() {
             <tr className="border-b border-border bg-muted/40">
               <th className="text-left px-3 py-2 font-display font-semibold sticky left-0 bg-muted/40 z-10 min-w-[140px]">Corretor</th>
               <th colSpan={4} className="text-center px-2 py-1 font-display font-semibold text-primary border-l border-border">METAS DO DIA</th>
-              <th colSpan={6} className="text-center px-2 py-1 font-display font-semibold text-success border-l border-border">RESULTADO DO DIA</th>
+              <th colSpan={5} className="text-center px-2 py-1 font-display font-semibold text-success border-l border-border">RESULTADO DO DIA</th>
               <th className="text-center px-2 py-1 font-display font-semibold border-l border-border">ST</th>
             </tr>
             <tr className="border-b border-border bg-muted/20">
@@ -611,7 +611,6 @@ export default function CheckpointDaily() {
               <th className="px-2 py-1.5 text-center min-w-[100px]">Obs Gerente</th>
               {/* Result cols */}
               <th className="px-2 py-1.5 text-center border-l border-border min-w-[60px]">Ligações</th>
-              <th className="px-2 py-1.5 text-center min-w-[60px]">Leads</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">V.Marc</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">V.Real</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">Propostas</th>
@@ -656,7 +655,6 @@ export default function CheckpointDaily() {
                   <td className="px-1 py-1"><Input className="h-7 text-xs px-1" value={line.obs_gerente} onChange={(e) => updateLine(idx, "obs_gerente", e.target.value)} disabled={metasLocked} placeholder="..." /></td>
                   {/* Resultados */}
                   <td className="px-1 py-1 border-l border-border"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_ligacoes ?? ""} onChange={(e) => updateLine(idx, "real_ligacoes", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
-                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_leads ?? ""} onChange={(e) => updateLine(idx, "real_leads", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
                   <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_visitas_marcadas ?? ""} onChange={(e) => updateLine(idx, "real_visitas_marcadas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
                   <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_visitas_realizadas ?? ""} onChange={(e) => updateLine(idx, "real_visitas_realizadas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
                   <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_propostas ?? ""} onChange={(e) => updateLine(idx, "real_propostas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardCheck, Users, BarChart3, Bot, CheckSquare, FileText, Bell, AlertTriangle } from "lucide-react";
+import { ClipboardCheck, Users, BarChart3, Bot, CheckSquare, FileText, Bell, AlertTriangle, CheckCircle } from "lucide-react";
 import CheckpointDaily from "@/components/checkpoint/CheckpointDaily";
 import TeamManagement from "@/components/checkpoint/TeamManagement";
 import CheckpointReports from "@/components/checkpoint/CheckpointReports";
@@ -8,6 +8,7 @@ import CoachPanel from "@/components/checkpoint/CoachPanel";
 import ManagerChecklist from "@/components/checkpoint/ManagerChecklist";
 import JetimobPaste from "@/components/checkpoint/JetimobPaste";
 import MetasMensaisProgress from "@/components/checkpoint/MetasMensaisProgress";
+import CheckpointAproveitados from "@/components/checkpoint/CheckpointAproveitados";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -112,9 +113,12 @@ export default function CheckpointGerente() {
       <MetasMensaisProgress />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-7 h-auto">
           <TabsTrigger value="checkpoint" className="gap-1.5 text-xs py-2">
             <ClipboardCheck className="h-3.5 w-3.5" /> Checkpoint
+          </TabsTrigger>
+          <TabsTrigger value="aproveitados" className="gap-1.5 text-xs py-2">
+            <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
           </TabsTrigger>
           <TabsTrigger value="time" className="gap-1.5 text-xs py-2">
             <Users className="h-3.5 w-3.5" /> Meu Time
@@ -135,6 +139,9 @@ export default function CheckpointGerente() {
 
         <TabsContent value="checkpoint" className="mt-4">
           <CheckpointDaily />
+        </TabsContent>
+        <TabsContent value="aproveitados" className="mt-4">
+          <CheckpointAproveitados />
         </TabsContent>
         <TabsContent value="time" className="mt-4">
           <TeamManagement />

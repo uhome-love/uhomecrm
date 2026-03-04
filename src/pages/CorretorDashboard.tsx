@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock, Clock, ThumbsUp, AlertCircle } from "lucide-react";
+import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock, Clock, ThumbsUp, AlertCircle, LogOut } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ export default function CorretorDashboard() {
   const [metaLig, setMetaLig] = useState(goals?.meta_ligacoes?.toString() || "30");
   const [metaAprov, setMetaAprov] = useState(goals?.meta_aproveitados?.toString() || "5");
   const [editing, setEditing] = useState(!goals);
+  const [finalizando, setFinalizando] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -60,6 +61,25 @@ export default function CorretorDashboard() {
       return;
     }
     setActiveTab(tab);
+  };
+
+  const handleFinalizarTrabalho = async () => {
+    if (!user) return;
+    setFinalizando(true);
+    try {
+      const { data, error } = await supabase.rpc("finalizar_trabalho_corretor", { p_user_id: user.id });
+      if (error) throw error;
+      const result = data as any;
+      if (result?.success) {
+        toast.success(`Trabalho finalizado! ${result.tentativas} tentativas e ${result.aproveitados} aproveitados enviados ao gerente.`);
+      } else {
+        toast.error(result?.message || "Erro ao finalizar trabalho.");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao finalizar: " + err.message);
+    } finally {
+      setFinalizando(false);
+    }
   };
 
   const statusBadge = () => {
@@ -266,13 +286,24 @@ export default function CorretorDashboard() {
           {/* CTA */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             {metaSalva ? (
-              <Button
-                size="lg"
-                className="w-full h-14 gap-2 text-base bg-emerald-600 hover:bg-emerald-700"
-                onClick={() => setActiveTab("discagem")}
-              >
-                <Phone className="h-5 w-5" /> Iniciar Discagem <ArrowRight className="h-5 w-5" />
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  size="lg"
+                  className="flex-1 h-14 gap-2 text-base bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => setActiveTab("discagem")}
+                >
+                  <Phone className="h-5 w-5" /> Iniciar Discagem <ArrowRight className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 gap-2 text-base border-destructive/30 text-destructive hover:bg-destructive/10"
+                  onClick={handleFinalizarTrabalho}
+                  disabled={finalizando || stats.tentativas === 0}
+                >
+                  <LogOut className="h-5 w-5" /> {finalizando ? "Enviando..." : "Finalizar Trabalho"}
+                </Button>
+              </div>
             ) : (
               <Card className="border-muted bg-muted/30">
                 <CardContent className="p-4 text-center">
