@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useOAListas, useOAFila, type OALista } from "@/hooks/useOfertaAtiva";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, ArrowLeft, Loader2, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Phone, ArrowLeft, Loader2, Users, Search } from "lucide-react";
 import DialingModeWithScript from "./DialingModeWithScript";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,8 +61,19 @@ function ListaCard({ lista, onSelect }: { lista: OALista; onSelect: () => void }
 export default function CorretorListSelection() {
   const { listas, isLoading } = useOAListas();
   const [selectedLista, setSelectedLista] = useState<OALista | null>(null);
+  const [search, setSearch] = useState("");
 
   const liberadas = listas.filter(l => l.status === "liberada");
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return liberadas;
+    const q = search.toLowerCase();
+    return liberadas.filter(l =>
+      l.empreendimento.toLowerCase().includes(q) ||
+      (l.campanha?.toLowerCase().includes(q)) ||
+      l.nome.toLowerCase().includes(q)
+    );
+  }, [liberadas, search]);
 
   if (selectedLista) {
     return (
@@ -92,11 +104,27 @@ export default function CorretorListSelection() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-        <Users className="h-4 w-4" /> Escolha uma lista para trabalhar
-      </h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Users className="h-4 w-4" /> Escolha uma lista ({liberadas.length} liberadas)
+        </h3>
+      </div>
+      {liberadas.length > 6 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por empreendimento ou campanha..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
+      {filtered.length === 0 && search && (
+        <p className="text-sm text-muted-foreground text-center py-4">Nenhuma lista encontrada para "{search}"</p>
+      )}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {liberadas.map(lista => (
+        {filtered.map(lista => (
           <ListaCard key={lista.id} lista={lista} onSelect={() => setSelectedLista(lista)} />
         ))}
       </div>
