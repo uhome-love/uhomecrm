@@ -60,10 +60,13 @@ export function AppSidebar() {
     }
   }, [alerts]);
 
-  const homeItems = [
-    { title: "Início", url: "/", icon: Home },
-    { title: "Central do Corretor", url: "/corretor", icon: Phone },
-  ];
+  const homeItems = isGestor || isAdmin
+    ? [
+        { title: "Início", url: "/", icon: Home },
+      ]
+    : [
+        { title: "Central do Corretor", url: "/corretor", icon: Phone },
+      ];
 
   const gestorItems = isGestor
     ? [
