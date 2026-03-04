@@ -37,7 +37,12 @@ function autoMap(headers: string[]) {
   return result;
 }
 
-/** Extract unique empreendimentos from data */
+/** Normalize string for grouping: lowercase, remove accents, trim */
+function normalizeForGrouping(s: string): string {
+  return s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+}
+
+/** Extract unique empreendimentos from data, merging similar names */
 function detectEmpreendimentos(
   rows: string[][],
   headers: string[],
@@ -47,27 +52,37 @@ function detectEmpreendimentos(
   const campCol = mapping.campanha ? headers.indexOf(mapping.campanha) : -1;
   const origemCol = mapping.origem ? headers.indexOf(mapping.origem) : -1;
 
-  // Group by empreendimento → sublists by campanha/origem
+  // Group by normalized empreendimento name
   const groups: Record<string, Map<string, { campanha: string | null; origem: string | null; count: number }>> = {};
+  const displayNames: Record<string, string> = {};
+  // Map raw emp values to their normalized key for later row matching
+  const normMap: Record<string, string> = {};
 
   for (const row of rows) {
-    const emp = empCol >= 0 ? (row[empCol]?.trim() || "Sem empreendimento") : "Sem empreendimento";
+    const rawEmp = empCol >= 0 ? (row[empCol]?.trim() || "Sem empreendimento") : "Sem empreendimento";
+    const normEmp = normalizeForGrouping(rawEmp);
     const camp = campCol >= 0 ? (row[campCol]?.trim() || null) : null;
     const orig = origemCol >= 0 ? (row[origemCol]?.trim() || null) : null;
     const key = `${camp || ""}|${orig || ""}`;
 
-    if (!groups[emp]) groups[emp] = new Map();
-    const existing = groups[emp].get(key);
+    normMap[rawEmp] = normEmp;
+    if (!displayNames[normEmp] || rawEmp.length > displayNames[normEmp].length) {
+      displayNames[normEmp] = rawEmp;
+    }
+
+    if (!groups[normEmp]) groups[normEmp] = new Map();
+    const existing = groups[normEmp].get(key);
     if (existing) {
       existing.count++;
     } else {
-      groups[emp].set(key, { campanha: camp, origem: orig, count: 1 });
+      groups[normEmp].set(key, { campanha: camp, origem: orig, count: 1 });
     }
   }
 
   const result: Record<string, { campanha: string | null; origem: string | null; count: number }[]> = {};
-  for (const [emp, subs] of Object.entries(groups)) {
-    result[emp] = Array.from(subs.values());
+  for (const [normEmp, subs] of Object.entries(groups)) {
+    const displayName = displayNames[normEmp] || normEmp;
+    result[displayName] = Array.from(subs.values());
   }
   return result;
 }
@@ -173,10 +188,11 @@ export default function ImportListPanel() {
         Object.entries(finalSegments).filter(([emp]) => selectedEmps.has(emp))
       );
       for (const [emp, subs] of Object.entries(segmentsToImport)) {
-        // Get rows for this empreendimento
+        // Get rows for this empreendimento using normalized matching
         const empCol = mapping.empreendimento ? headers.indexOf(mapping.empreendimento) : -1;
+        const normEmp = normalizeForGrouping(emp);
         const empRows = empCol >= 0
-          ? rawData.filter(row => (row[empCol]?.trim() || "Sem empreendimento") === emp)
+          ? rawData.filter(row => normalizeForGrouping(row[empCol]?.trim() || "Sem empreendimento") === normEmp)
           : rawData;
 
         // Use custom names if provided
