@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Trash2, Loader2, UserPlus, Search, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { Shield, Trash2, Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,8 +29,6 @@ export default function AdminPanel() {
   // Create user dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [lookupId, setLookupId] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [brokerInfo, setBrokerInfo] = useState<{ broker_name: string | null; lead_count: number } | null>(null);
   const [newEmail, setNewEmail] = useState("");
   const [newNome, setNewNome] = useState("");
   const [newSenha, setNewSenha] = useState("");
@@ -85,28 +83,6 @@ export default function AdminPanel() {
     else { toast.success("ID Jetimob salvo!"); setEditingJetimob(null); fetchUsers(); }
   }, [jetimobInput, fetchUsers]);
 
-  // Lookup broker in Jetimob
-  const handleLookup = useCallback(async () => {
-    if (!lookupId.trim()) return;
-    setLookupLoading(true);
-    setBrokerInfo(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-broker-user", {
-        body: { action: "lookup_broker", jetimob_user_id: lookupId.trim() },
-      });
-      if (error) throw error;
-      setBrokerInfo(data);
-      if (data.broker_name) {
-        setNewNome(data.broker_name);
-        // Generate suggested email
-        const slug = data.broker_name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ".").replace(/[^a-z.]/g, "");
-        setNewEmail(`${slug}@uhome.imb.br`);
-      }
-      toast.success(data.broker_name ? `Corretor encontrado: ${data.broker_name}` : "ID não encontrado nos leads, preencha manualmente.");
-    } catch (err: any) {
-      toast.error(err?.message || "Erro ao buscar corretor.");
-    } finally { setLookupLoading(false); }
-  }, [lookupId]);
 
   // Create user
   const handleCreate = useCallback(async () => {
@@ -130,7 +106,7 @@ export default function AdminPanel() {
   }, [lookupId, newEmail, newNome, newSenha, fetchUsers]);
 
   const resetForm = () => {
-    setLookupId(""); setBrokerInfo(null); setNewEmail(""); setNewNome(""); setNewSenha("");
+    setLookupId(""); setNewEmail(""); setNewNome(""); setNewSenha("");
   };
 
   const roleBadgeColor: Record<AppRole, string> = {
@@ -218,36 +194,11 @@ export default function AdminPanel() {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Step 1: Lookup */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">ID do Corretor no Jetimob</Label>
-              <div className="flex gap-2">
-                <Input value={lookupId} onChange={(e) => setLookupId(e.target.value)} placeholder="Ex: 96468" className="flex-1" />
-                <Button onClick={handleLookup} disabled={lookupLoading || !lookupId.trim()} variant="outline" className="gap-1.5">
-                  {lookupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  Buscar
-                </Button>
-              </div>
-            </div>
-
-            {/* Broker info */}
-            <AnimatePresence>
-              {brokerInfo && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {brokerInfo.broker_name || "Nome não encontrado"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {brokerInfo.lead_count} leads vinculados no Jetimob
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Step 2: User details */}
             <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">ID do Corretor no Jetimob</Label>
+                <Input value={lookupId} onChange={(e) => setLookupId(e.target.value)} placeholder="Ex: 96468" />
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">Nome</Label>
                 <Input value={newNome} onChange={(e) => setNewNome(e.target.value)} placeholder="Nome completo" />
