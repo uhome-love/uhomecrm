@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { tipo, empreendimento, tipo_empreendimento, diferenciais, situacao_lead, objetivo, tom } = await req.json();
+    const { tipo, empreendimento, tipo_empreendimento, diferenciais, situacao_lead, objetivo, tom, prompt_personalizado } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -56,7 +56,7 @@ REGRAS:
 - Tipo: ${tipo_empreendimento || "não especificado"}
 - Diferenciais: ${diferenciais || "não especificado"}
 - Situação do lead: ${situacao_lead}
-- Objetivo da ligação: ${objetivo}`;
+- Objetivo da ligação: ${objetivo}${prompt_personalizado ? `\n\nINSTRUÇÕES ADICIONAIS DO GERENTE:\n${prompt_personalizado}` : ""}`;
     } else {
       systemPrompt = `Você é um especialista em vendas imobiliárias da UHome. Gere mensagens de follow-up para WhatsApp com alta taxa de resposta.
 
@@ -87,7 +87,7 @@ FORMATO OBRIGATÓRIO:
 - Empreendimento: ${empreendimento}
 - Situação do lead: ${situacao_lead}
 - Tom da mensagem: ${tom || "consultivo"}
-- Objetivo: ${objetivo}`;
+- Objetivo: ${objetivo}${prompt_personalizado ? `\n\nINSTRUÇÕES ADICIONAIS DO GERENTE:\n${prompt_personalizado}` : ""}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

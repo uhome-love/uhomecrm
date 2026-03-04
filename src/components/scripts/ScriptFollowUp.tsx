@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2, Sparkles, Copy, Save, RefreshCw } from "lucide-react";
@@ -41,6 +42,7 @@ export default function ScriptFollowUp() {
   const [situacao, setSituacao] = useState("");
   const [tom, setTom] = useState("");
   const [objetivo, setObjetivo] = useState("");
+  const [promptPersonalizado, setPromptPersonalizado] = useState("");
   const [resultado, setResultado] = useState("");
   const [generating, setGenerating] = useState(false);
 
@@ -59,6 +61,7 @@ export default function ScriptFollowUp() {
         situacao_lead: situacao,
         tom,
         objetivo,
+        prompt_personalizado: promptPersonalizado,
       },
     });
 
@@ -131,6 +134,18 @@ export default function ScriptFollowUp() {
                 {OBJETIVOS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Instruções personalizadas para a IA</Label>
+            <Textarea
+              placeholder="Ex: quero mensagens mais curtas e diretas, sem emojis. Foque em gerar curiosidade..."
+              value={promptPersonalizado}
+              onChange={e => setPromptPersonalizado(e.target.value)}
+              rows={3}
+              className="text-xs"
+            />
+            <p className="text-[10px] text-muted-foreground">Opcional — descreva como quer o resultado: mais dinâmico, sem emojis, com urgência, etc.</p>
           </div>
 
           <Button onClick={generate} disabled={generating} className="w-full gap-2">

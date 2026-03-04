@@ -35,6 +35,7 @@ export default function ScriptLigacao() {
   const [diferenciais, setDiferenciais] = useState("");
   const [situacao, setSituacao] = useState("");
   const [objetivo, setObjetivo] = useState("");
+  const [promptPersonalizado, setPromptPersonalizado] = useState("");
   const [resultado, setResultado] = useState("");
   const [generating, setGenerating] = useState(false);
 
@@ -54,6 +55,7 @@ export default function ScriptLigacao() {
         diferenciais,
         situacao_lead: situacao,
         objetivo,
+        prompt_personalizado: promptPersonalizado,
       },
     });
 
@@ -132,6 +134,18 @@ export default function ScriptLigacao() {
                 {OBJETIVOS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Instruções personalizadas para a IA</Label>
+            <Textarea
+              placeholder="Ex: quero um script mais objetivo e direto, sem enrolação. Foque em gerar urgência. Use linguagem jovem..."
+              value={promptPersonalizado}
+              onChange={e => setPromptPersonalizado(e.target.value)}
+              rows={3}
+              className="text-xs"
+            />
+            <p className="text-[10px] text-muted-foreground">Opcional — descreva como quer o resultado: mais curto, mais dinâmico, com urgência, etc.</p>
           </div>
 
           <Button onClick={generate} disabled={generating} className="w-full gap-2">
