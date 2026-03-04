@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Phone, Upload, Trophy, Settings, CheckCircle, LayoutGrid } from "lucide-react";
+import { Phone, Upload, Trophy, Settings, CheckCircle, FileText } from "lucide-react";
 import ImportListPanel from "@/components/oferta-ativa/ImportListPanel";
 import CampaignManager from "@/components/oferta-ativa/CampaignManager";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
+import TemplateManager from "@/components/oferta-ativa/TemplateManager";
 
 export default function OfertaAtiva() {
   const { isAdmin, isGestor, isCorretor } = useUserRole();
@@ -25,7 +26,7 @@ export default function OfertaAtiva() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 h-auto">
           {isAdmin && (
             <TabsTrigger value="importar" className="gap-1.5 text-xs">
               <Upload className="h-3.5 w-3.5" /> Importar
@@ -45,6 +46,11 @@ export default function OfertaAtiva() {
           <TabsTrigger value="ranking" className="gap-1.5 text-xs">
             <Trophy className="h-3.5 w-3.5" /> Ranking
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="templates" className="gap-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5" /> Templates
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {isAdmin && (
@@ -66,6 +72,11 @@ export default function OfertaAtiva() {
         <TabsContent value="ranking">
           <RankingPanel />
         </TabsContent>
+        {isAdmin && (
+          <TabsContent value="templates">
+            <TemplateManager />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

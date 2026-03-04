@@ -7,6 +7,7 @@ import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, H
 import { toast } from "sonner";
 import AttemptModal from "./AttemptModal";
 import ScriptPanel from "./ScriptPanel";
+import AttemptHistory from "./AttemptHistory";
 
 interface Props {
   lista: OALista;
@@ -162,6 +163,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 )}
                 {lead.observacoes && <span className="italic">"{lead.observacoes}"</span>}
               </div>
+
+              {/* Attempt History */}
+              {lead.tentativas_count > 0 && <AttemptHistory leadId={lead.id} />}
 
               {/* Action Buttons */}
               <div className="grid grid-cols-3 gap-2 pt-1">

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, Loader2, ArrowRight, Building2, Layers } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { useOAListas, importLeadsToLista, normalizeTelefone } from "@/hooks/useOfertaAtiva";
 
 const FIELD_MAP: Record<string, string[]> = {
@@ -125,8 +126,32 @@ export default function ImportListPanel() {
         },
         skipEmptyLines: true,
       });
+    } else if (ext === "xlsx" || ext === "xls") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
+          if (jsonData.length < 2) { toast.error("Arquivo vazio"); return; }
+          const headerRow = (jsonData[0] as any[]).map(String);
+          const dataRows = jsonData.slice(1).filter((r: any) => r.some((c: any) => c != null && String(c).trim())).map((r: any) => r.map(String));
+          setHeaders(headerRow);
+          setRawData(dataRows);
+          const auto = autoMap(headerRow);
+          setMapping(auto);
+          setFileName(file.name);
+          setStep("map");
+          toast.success(`${dataRows.length} linhas encontradas (XLSX), ${Object.keys(auto).length} campos auto-mapeados`);
+        } catch {
+          toast.error("Erro ao ler arquivo XLSX");
+        }
+      };
+      reader.readAsArrayBuffer(file);
     } else {
-      toast.error("Use arquivos CSV. Para XLSX, salve como CSV primeiro.");
+      toast.error("Use arquivos CSV ou XLSX.");
     }
   }, []);
 
@@ -211,7 +236,7 @@ export default function ImportListPanel() {
             onClick={() => {
               const input = document.createElement("input");
               input.type = "file";
-              input.accept = ".csv,.txt";
+              input.accept = ".csv,.txt,.xlsx,.xls";
               input.onchange = (e: any) => {
                 const file = e.target.files[0];
                 if (file) handleFile(file);
@@ -220,8 +245,8 @@ export default function ImportListPanel() {
             }}
           >
             <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-lg font-medium text-foreground">Arraste um CSV aqui ou clique para selecionar</p>
-            <p className="text-sm text-muted-foreground mt-1">O sistema identifica automaticamente empreendimentos e segmenta as listas</p>
+            <p className="text-lg font-medium text-foreground">Arraste um CSV ou XLSX aqui ou clique para selecionar</p>
+            <p className="text-sm text-muted-foreground mt-1">Suporta CSV, TXT e XLSX — identifica automaticamente empreendimentos e segmenta as listas</p>
           </div>
         </CardContent>
       </Card>
