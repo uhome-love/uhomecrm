@@ -17,6 +17,7 @@ import RelatorioCorretor from "./pages/RelatorioCorretor";
 import FunilDashboard from "./pages/FunilDashboard";
 import ForecastDashboard from "./pages/ForecastDashboard";
 import PdnDashboard from "./pages/PdnDashboard";
+import MarketingDashboard from "./pages/MarketingDashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -127,6 +128,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <PdnDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/marketing"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <MarketingDashboard />
                   </AppLayout>
                 </ProtectedRoute>
               }

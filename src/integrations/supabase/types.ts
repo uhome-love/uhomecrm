@@ -506,6 +506,122 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_entries: {
+        Row: {
+          anuncio: string | null
+          campanha: string | null
+          canal: string
+          cliques: number | null
+          conversoes: number | null
+          cpc: number | null
+          cpl: number | null
+          created_at: string
+          ctr: number | null
+          empreendimento: string | null
+          id: string
+          impressoes: number | null
+          investimento: number | null
+          leads_gerados: number | null
+          periodo: string | null
+          propostas: number | null
+          report_id: string | null
+          updated_at: string
+          user_id: string
+          vendas: number | null
+          visitas: number | null
+        }
+        Insert: {
+          anuncio?: string | null
+          campanha?: string | null
+          canal?: string
+          cliques?: number | null
+          conversoes?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          ctr?: number | null
+          empreendimento?: string | null
+          id?: string
+          impressoes?: number | null
+          investimento?: number | null
+          leads_gerados?: number | null
+          periodo?: string | null
+          propostas?: number | null
+          report_id?: string | null
+          updated_at?: string
+          user_id: string
+          vendas?: number | null
+          visitas?: number | null
+        }
+        Update: {
+          anuncio?: string | null
+          campanha?: string | null
+          canal?: string
+          cliques?: number | null
+          conversoes?: number | null
+          cpc?: number | null
+          cpl?: number | null
+          created_at?: string
+          ctr?: number | null
+          empreendimento?: string | null
+          id?: string
+          impressoes?: number | null
+          investimento?: number | null
+          leads_gerados?: number | null
+          periodo?: string | null
+          propostas?: number | null
+          report_id?: string | null
+          updated_at?: string
+          user_id?: string
+          vendas?: number | null
+          visitas?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_entries_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_reports: {
+        Row: {
+          canal: string
+          created_at: string
+          dados_brutos: Json | null
+          id: string
+          nome_arquivo: string
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          resumo_ia: string | null
+          user_id: string
+        }
+        Insert: {
+          canal?: string
+          created_at?: string
+          dados_brutos?: Json | null
+          id?: string
+          nome_arquivo: string
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          resumo_ia?: string | null
+          user_id: string
+        }
+        Update: {
+          canal?: string
+          created_at?: string
+          dados_brutos?: Json | null
+          id?: string
+          nome_arquivo?: string
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          resumo_ia?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pdn_entries: {
         Row: {
           corretor: string | null

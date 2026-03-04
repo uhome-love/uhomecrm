@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.uhome-ia-core]
 verify_jwt = false
+
+[functions.parse-marketing-report]
+verify_jwt = false

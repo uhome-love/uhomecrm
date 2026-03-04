@@ -11,6 +11,7 @@ import {
   Filter,
   TrendingUp,
   FileSpreadsheet,
+  BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -55,6 +56,7 @@ export function AppSidebar() {
   const ceoItems = isAdmin
     ? [
         { title: "Dashboard CEO", url: "/ceo", icon: Crown },
+        { title: "Inteligência Marketing", url: "/marketing", icon: BarChart3 },
       ]
     : [];
 
