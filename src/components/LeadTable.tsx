@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, MessageSquare, Mail, Phone, ChevronDown, ChevronUp, Home, MapPin, Clock, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Sparkles, MessageSquare, Mail, Phone, ChevronDown, ChevronUp, Home, MapPin, Clock, ExternalLink, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import type { Lead } from "@/types/lead";
@@ -14,6 +14,8 @@ interface LeadTableProps {
   onGenerateMessage: (lead: Lead) => void;
   loadingLeadId: string | null;
 }
+
+const PAGE_SIZE = 25;
 
 function TimeBadge({ ultimoContato }: { ultimoContato: string }) {
   const days = getDaysSinceContact(ultimoContato);
@@ -35,23 +37,68 @@ function buildWhatsAppLink(telefone: string, mensagem: string): string {
 
 export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: LeadTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return leads;
+    const q = search.toLowerCase();
+    return leads.filter(
+      (l) =>
+        l.nome.toLowerCase().includes(q) ||
+        l.telefone?.toLowerCase().includes(q) ||
+        l.email?.toLowerCase().includes(q) ||
+        l.interesse?.toLowerCase().includes(q) ||
+        l.corretor?.toLowerCase().includes(q) ||
+        l.imovel?.codigo?.toLowerCase().includes(q)
+    );
+  }, [leads, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
+  // Reset page when search or leads change
+  const handleSearch = (val: string) => {
+    setSearch(val);
+    setPage(0);
+  };
 
   const handleOpenWhatsApp = (lead: Lead) => {
-    if (!lead.mensagemGerada) {
-      toast.error("Gere a mensagem antes de enviar.");
-      return;
-    }
-    if (!lead.telefone) {
-      toast.error("Lead sem telefone cadastrado.");
-      return;
-    }
-    const url = buildWhatsAppLink(lead.telefone, lead.mensagemGerada);
-    window.open(url, "_blank");
+    if (!lead.mensagemGerada) { toast.error("Gere a mensagem antes de enviar."); return; }
+    if (!lead.telefone) { toast.error("Lead sem telefone cadastrado."); return; }
+    window.open(buildWhatsAppLink(lead.telefone, lead.mensagemGerada), "_blank");
     toast.success(`WhatsApp aberto para ${lead.nome}!`);
   };
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
+      {/* Search + pagination header */}
+      <div className="flex items-center gap-3 p-3 border-b border-border bg-muted/30">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, telefone, interesse..."
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+          <span>{filtered.length} leads</span>
+          <span className="mx-1">•</span>
+          <span>Página {safePage + 1} de {totalPages}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
@@ -64,7 +111,13 @@ export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: L
           </TableRow>
         </TableHeader>
         <TableBody>
-          {leads.map((lead) => (
+          {paged.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                {search ? "Nenhum lead encontrado para essa busca." : "Nenhum lead disponível."}
+              </TableCell>
+            </TableRow>
+          ) : paged.map((lead) => (
             <motion.tr
               key={lead.id}
               initial={{ opacity: 0 }}
@@ -138,8 +191,7 @@ export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: L
                         <p className="text-sm whitespace-pre-wrap text-foreground leading-relaxed">{lead.mensagemGerada}</p>
                         <div className="mt-3 flex gap-2">
                           <Button size="sm" className="gap-1.5 text-xs" onClick={() => handleOpenWhatsApp(lead)}>
-                            <ExternalLink className="h-3 w-3" />
-                            Enviar WhatsApp
+                            <ExternalLink className="h-3 w-3" /> Enviar WhatsApp
                           </Button>
                           <Button size="sm" variant="outline" className="gap-1.5 text-xs">
                             <Mail className="h-3 w-3" /> E-mail
@@ -154,6 +206,39 @@ export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: L
           ))}
         </TableBody>
       </Table>
+
+      {/* Bottom pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20">
+          <p className="text-xs text-muted-foreground">
+            Mostrando {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="outline" className="h-7 text-xs" disabled={safePage === 0} onClick={() => setPage(0)}>
+              Primeira
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const start = Math.max(0, Math.min(safePage - 2, totalPages - 5));
+              const p = start + i;
+              if (p >= totalPages) return null;
+              return (
+                <Button key={p} size="sm" variant={p === safePage ? "default" : "outline"} className="h-7 w-7 p-0 text-xs" onClick={() => setPage(p)}>
+                  {p + 1}
+                </Button>
+              );
+            })}
+            <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)}>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs" disabled={safePage >= totalPages - 1} onClick={() => setPage(totalPages - 1)}>
+              Última
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
