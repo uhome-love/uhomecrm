@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 40" fill="none">
-  <circle cx="20" cy="20" r="18" stroke="#5B6ABF" stroke-width="2.5" fill="none"/>
-  <text x="12" y="27" font-family="Inter, sans-serif" font-size="20" font-weight="700" fill="#5B6ABF">U</text>
-  <text x="44" y="28" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#2D3142">Home.</text>
+  <circle cx="20" cy="20" r="18" stroke="#4E6BFF" stroke-width="2.5" fill="none"/>
+  <text x="12" y="27" font-family="Inter, sans-serif" font-size="20" font-weight="700" fill="#4E6BFF">U</text>
+  <text x="44" y="28" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1F2A44">Home.</text>
 </svg>

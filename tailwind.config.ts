@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "DM Sans", "sans-serif"],
-        display: ["Inter", "DM Sans", "sans-serif"],
+        sans: ["Inter", "Plus Jakarta Sans", "sans-serif"],
+        display: ["Plus Jakarta Sans", "Inter", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -97,11 +97,16 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" },
         },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
+        "shimmer": "shimmer 3s ease-in-out infinite",
       },
     },
   },

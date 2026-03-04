@@ -12,6 +12,8 @@ import {
   TrendingUp,
   FileSpreadsheet,
   BarChart3,
+  CalendarDays,
+  Sparkles,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -30,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import logoUhome from "@/assets/logo-uhome.png";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -68,7 +71,9 @@ export function AppSidebar() {
 
   const renderGroup = (label: string, items: typeof homeItems) => (
     <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold mb-1">
+        {label}
+      </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
@@ -77,11 +82,11 @@ export function AppSidebar() {
                 <NavLink
                   to={item.url}
                   end
-                  className="hover:bg-sidebar-accent/50"
-                  activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                  className="hover:bg-sidebar-accent/60 transition-colors rounded-lg"
+                  activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-2 border-sidebar-primary"
                 >
-                  <item.icon className="mr-2 h-4 w-4" />
-                  {!collapsed && <span>{item.title}</span>}
+                  <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
+                  {!collapsed && <span className="text-[13px]">{item.title}</span>}
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -94,30 +99,37 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 p-4 border-b border-sidebar-border">
-          <img src="/logo-uhome.svg" alt="Uhome Gestão e IA" className="h-8 w-auto shrink-0" />
+        {/* Logo Section */}
+        <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary/15 shrink-0">
+            <Sparkles className="h-5 w-5 text-sidebar-primary" />
+          </div>
           {!collapsed && (
-            <span className="font-display text-xs font-medium text-sidebar-foreground/60 tracking-wide uppercase">
-              Gestão e IA
-            </span>
+            <div>
+              <p className="font-display text-sm font-bold text-sidebar-foreground tracking-tight">
+                UHOME IA
+              </p>
+              <p className="text-[10px] text-sidebar-foreground/40 font-medium">
+                Inteligência & Gestão
+              </p>
+            </div>
           )}
         </div>
 
         {renderGroup("Principal", homeItems)}
-        {gestorItems.length > 0 && renderGroup("Ferramentas Gerente", gestorItems)}
-        {ceoItems.length > 0 && renderGroup("Ferramentas CEO", ceoItems)}
-        {adminItems.length > 0 && renderGroup("Administração", adminItems)}
+        {gestorItems.length > 0 && renderGroup("Gestão Comercial", gestorItems)}
+        {ceoItems.length > 0 && renderGroup("Inteligência CEO", ceoItems)}
+        {adminItems.length > 0 && renderGroup("Sistema", adminItems)}
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center gap-2 p-3 border-t border-sidebar-border">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sidebar-accent shrink-0">
-            <User className="h-3.5 w-3.5 text-sidebar-foreground" />
+        <div className="flex items-center gap-2.5 p-3 border-t border-sidebar-border">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary/20 shrink-0">
+            <User className="h-3.5 w-3.5 text-sidebar-primary" />
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-foreground truncate">
+              <p className="text-[11px] font-medium text-sidebar-foreground truncate">
                 {user?.email}
               </p>
             </div>
@@ -126,7 +138,7 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             onClick={signOut}
-            className="h-7 w-7 p-0 shrink-0 text-sidebar-foreground hover:text-destructive"
+            className="h-7 w-7 p-0 shrink-0 text-sidebar-foreground/50 hover:text-destructive hover:bg-transparent"
           >
             <LogOut className="h-3.5 w-3.5" />
           </Button>

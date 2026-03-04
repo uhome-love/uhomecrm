@@ -139,7 +139,7 @@ export default function UhomeIaAssistant() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center transition-shadow"
+            className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full gradient-brand text-primary-foreground shadow-glow hover:shadow-elevated flex items-center justify-center transition-all"
             title="UHOME IA"
           >
             <Bot className="h-6 w-6" />
@@ -158,7 +158,7 @@ export default function UhomeIaAssistant() {
             className="fixed bottom-6 right-6 z-50 w-[420px] max-h-[600px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground">
+            <div className="flex items-center justify-between px-4 py-3 gradient-brand text-primary-foreground">
               <div className="flex items-center gap-2">
                 <Bot className="h-5 w-5" />
                 <div>

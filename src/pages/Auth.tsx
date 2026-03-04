@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, Loader2 } from "lucide-react";
+import { Mail, Lock, User, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,23 +67,21 @@ export default function Auth() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-primary/50" />
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary-foreground/10 blur-3xl animate-pulse" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] rounded-full bg-primary-foreground/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-[30%] right-[10%] w-[30%] h-[30%] rounded-full bg-primary-foreground/8 blur-2xl animate-pulse" style={{ animationDelay: "2s" }} />
+      {/* Deep navy gradient background */}
+      <div className="absolute inset-0 gradient-hero" />
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-3xl animate-pulse" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] rounded-full bg-primary/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
-      {/* Grid pattern overlay */}
+      {/* Subtle grid */}
       <div
-        className="absolute inset-0 opacity-[0.04]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: "linear-gradient(hsl(var(--primary-foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary-foreground)) 1px, transparent 1px)",
           backgroundSize: "60px 60px",
         }}
       />
 
-      {/* Content */}
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -96,9 +94,9 @@ export default function Auth() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            className="mb-4"
+            className="mb-5"
           >
-            <img src={logoUhome} alt="UHome" className="h-16 w-auto drop-shadow-lg" />
+            <img src={logoUhome} alt="UHome" className="h-14 w-auto drop-shadow-lg" />
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -106,11 +104,14 @@ export default function Auth() {
             transition={{ delay: 0.35 }}
             className="text-center"
           >
-            <h1 className="font-display text-2xl font-bold text-primary-foreground tracking-tight">
-              UHOME GESTÃO E IA
-            </h1>
-            <p className="text-sm text-primary-foreground/70 mt-1">
-              Plataforma inteligente de gestão comercial imobiliária
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Sparkles className="h-4 w-4 text-primary-foreground/60" />
+              <h1 className="font-display text-2xl font-bold text-primary-foreground tracking-tight">
+                UHOME IA
+              </h1>
+            </div>
+            <p className="text-sm text-primary-foreground/50">
+              Plataforma de inteligência e gestão comercial
             </p>
           </motion.div>
         </div>
@@ -124,7 +125,7 @@ export default function Auth() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="rounded-2xl border border-primary-foreground/10 bg-card/95 backdrop-blur-xl p-7 shadow-2xl space-y-5">
               <div className="text-center mb-2">
-                <h2 className="font-display font-semibold text-lg text-foreground">
+                <h2 className="font-display font-bold text-lg text-foreground">
                   {isLogin ? "Acesse sua conta" : "Crie sua conta"}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -182,14 +183,14 @@ export default function Auth() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-11 gap-2 text-sm font-semibold" disabled={submitting}>
+              <Button type="submit" className="w-full h-11 gap-2 text-sm font-bold gradient-brand border-0 shadow-glow hover:opacity-90 transition-opacity" disabled={submitting}>
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isLogin ? "Entrar" : "Criar conta"}
               </Button>
             </div>
           </form>
 
-          <p className="text-center text-sm text-primary-foreground/80 mt-5">
+          <p className="text-center text-sm text-primary-foreground/70 mt-5">
             {isLogin ? "Não tem conta?" : "Já tem conta?"}{" "}
             <button
               onClick={() => setIsLogin(!isLogin)}
@@ -200,8 +201,7 @@ export default function Auth() {
           </p>
         </motion.div>
 
-        {/* Footer */}
-        <p className="text-center text-xs text-primary-foreground/40 mt-8">
+        <p className="text-center text-xs text-primary-foreground/30 mt-8">
           © {new Date().getFullYear()} UHome. Todos os direitos reservados.
         </p>
       </motion.div>
