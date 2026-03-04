@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, MessageSquare, Mail, Phone, ChevronDown, ChevronUp, Home, MapPin } from "lucide-react";
+import { Sparkles, MessageSquare, Mail, Phone, ChevronDown, ChevronUp, Home, MapPin, Send, Loader2, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import type { Lead } from "@/types/lead";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LeadTableProps {
   leads: Lead[];
@@ -25,6 +27,51 @@ function PriorityBadge({ priority }: { priority?: Lead["prioridade"] }) {
 
 export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: LeadTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState<string | null>(null);
+  const [sentLeads, setSentLeads] = useState<Set<string>>(new Set());
+
+  const handleSendWhatsApp = async (lead: Lead) => {
+    if (!lead.mensagemGerada) {
+      toast.error("Gere a mensagem antes de enviar.");
+      return;
+    }
+    if (!lead.telefone) {
+      toast.error("Lead sem telefone cadastrado.");
+      return;
+    }
+
+    setSendingWhatsApp(lead.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-send", {
+        body: {
+          telefone: lead.telefone,
+          mensagem: lead.mensagemGerada,
+          nome: lead.nome,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.requires_template) {
+        toast.warning("Fora da janela de 24h. É necessário um template aprovado pela Meta para iniciar a conversa.", {
+          duration: 6000,
+        });
+        return;
+      }
+
+      if (data?.success) {
+        setSentLeads((prev) => new Set(prev).add(lead.id));
+        toast.success(`Mensagem enviada para ${lead.nome} via WhatsApp!`);
+      } else {
+        throw new Error(data?.error || "Erro desconhecido");
+      }
+    } catch (err: any) {
+      console.error("WhatsApp send error:", err);
+      toast.error(err.message || "Erro ao enviar mensagem pelo WhatsApp.");
+    } finally {
+      setSendingWhatsApp(null);
+    }
+  };
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
@@ -143,8 +190,24 @@ export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: L
                           {lead.mensagemGerada}
                         </p>
                         <div className="mt-3 flex gap-2">
-                          <Button size="sm" className="gap-1.5 text-xs">
-                            <Phone className="h-3 w-3" /> WhatsApp
+                          <Button
+                            size="sm"
+                            className="gap-1.5 text-xs"
+                            disabled={sendingWhatsApp === lead.id || sentLeads.has(lead.id)}
+                            onClick={() => handleSendWhatsApp(lead)}
+                          >
+                            {sendingWhatsApp === lead.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : sentLeads.has(lead.id) ? (
+                              <Check className="h-3 w-3" />
+                            ) : (
+                              <Send className="h-3 w-3" />
+                            )}
+                            {sendingWhatsApp === lead.id
+                              ? "Enviando..."
+                              : sentLeads.has(lead.id)
+                              ? "Enviado ✓"
+                              : "Enviar WhatsApp"}
                           </Button>
                           <Button size="sm" variant="outline" className="gap-1.5 text-xs">
                             <Mail className="h-3 w-3" /> E-mail
