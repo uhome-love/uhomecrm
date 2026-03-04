@@ -175,7 +175,7 @@ export default function Index() {
               <Zap className="h-5 w-5 text-primary-foreground" />
             </div>
             <h1 className="font-display text-xl font-bold text-foreground">
-              LeadRecovery<span className="text-primary">AI</span>
+              LeadRecovery<span className="text-primary">UhomeAI</span>
             </h1>
           </div>
           {step === "dashboard" && (
