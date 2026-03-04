@@ -49,11 +49,10 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
   const [filterDocs, setFilterDocs] = useState("");
   const [filterEmpreendimento, setFilterEmpreendimento] = useState("");
   const [filterCorretor, setFilterCorretor] = useState("");
-  const [filterEquipe, setFilterEquipe] = useState("");
 
   const uniqueEmpreendimentos = [...new Set(entries.map(e => e.empreendimento).filter(Boolean))];
   const uniqueCorretores = [...new Set(entries.map(e => e.corretor).filter(Boolean))];
-  const uniqueEquipes = [...new Set(entries.map(e => e.equipe).filter(Boolean))];
+  
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -64,8 +63,8 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
   };
 
   const handleExportCsv = () => {
-    const headers = ["Nome", "UND", "Empreendimento", "Docs", "Temperatura", "Corretor", "Equipe", "Último Contato", "Data Visita"];
-    const rows = entries.map(e => [e.nome, e.und, e.empreendimento, e.docs_status, e.temperatura, e.corretor, e.equipe, e.ultimo_contato, e.data_visita]);
+    const headers = ["Nome", "Und", "Empreendimento", "Docs", "Temperatura", "Corretor", "Último Contato", "Data Visita"];
+    const rows = entries.map(e => [e.nome, e.und, e.empreendimento, e.docs_status, e.temperatura, e.corretor, e.ultimo_contato, e.data_visita]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${(c || "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -111,14 +110,14 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
       </div>
       <table>
         <thead><tr>
-          <th>Nome</th><th>UND</th><th>Empreendimento</th><th>Docs</th><th>Temp.</th><th>Corretor</th><th>Equipe</th><th>Último Contato</th><th>Data</th>
+          <th>Nome</th><th>Und</th><th>Empreendimento</th><th>Docs</th><th>Temp.</th><th>Corretor</th><th>Último Contato</th><th>Data</th>
         </tr></thead>
         <tbody>
           ${entries.map(e => `<tr>
             <td>${e.nome || ""}</td><td>${e.und || ""}</td><td>${e.empreendimento || ""}</td>
             <td>${DOCS_LABELS[e.docs_status] || e.docs_status}</td>
             <td class="${e.temperatura}">${TEMP_LABELS[e.temperatura] || e.temperatura}</td>
-            <td>${e.corretor || ""}</td><td>${e.equipe || ""}</td>
+            <td>${e.corretor || ""}</td>
             <td>${e.ultimo_contato || ""}</td><td>${e.data_visita || ""}</td>
           </tr>`).join("")}
         </tbody>
@@ -256,7 +255,6 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
           filterDocs={filterDocs}
           filterEmpreendimento={filterEmpreendimento}
           filterCorretor={filterCorretor}
-          filterEquipe={filterEquipe}
         />
       )}
 
