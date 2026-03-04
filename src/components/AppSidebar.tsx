@@ -6,6 +6,7 @@ import {
   User,
   Crown,
   Home,
+  FileEdit,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -38,6 +39,7 @@ export function AppSidebar() {
       ? [
           { title: "Recuperação de Leads", url: "/gestao", icon: LayoutDashboard },
           { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+          { title: "Scripts & Follow Ups", url: "/scripts", icon: FileEdit },
         ]
       : []),
   ];

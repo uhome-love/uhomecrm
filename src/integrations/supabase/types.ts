@@ -408,6 +408,45 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_scripts: {
+        Row: {
+          conteudo: string
+          created_at: string
+          empreendimento: string
+          id: string
+          objetivo: string | null
+          situacao_lead: string | null
+          tipo: string
+          tipo_abordagem: string | null
+          titulo: string | null
+          user_id: string
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string
+          empreendimento: string
+          id?: string
+          objetivo?: string | null
+          situacao_lead?: string | null
+          tipo?: string
+          tipo_abordagem?: string | null
+          titulo?: string | null
+          user_id: string
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          empreendimento?: string
+          id?: string
+          objetivo?: string | null
+          situacao_lead?: string | null
+          tipo?: string
+          tipo_abordagem?: string | null
+          titulo?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string
