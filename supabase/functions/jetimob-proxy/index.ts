@@ -49,17 +49,28 @@ serve(async (req) => {
       const JETIMOB_LEADS_URL_KEY = Deno.env.get("JETIMOB_LEADS_URL_KEY");
       if (!JETIMOB_LEADS_URL_KEY) throw new Error("JETIMOB_LEADS_URL_KEY is not configured");
 
+      const JETIMOB_LEADS_PRIVATE_KEY = Deno.env.get("JETIMOB_LEADS_PRIVATE_KEY");
+
+      const headers: Record<string, string> = { 
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      };
+      if (JETIMOB_LEADS_PRIVATE_KEY) {
+        headers["PRIVATE_KEY"] = JETIMOB_LEADS_PRIVATE_KEY;
+      }
+      console.log("Trying header 'PRIVATE_KEY'");
+
       const response = await fetch(
         `https://api.jetimob.com/leads/${JETIMOB_LEADS_URL_KEY}`,
-        { headers: { "Accept": "application/json" } }
+        { headers }
       );
 
       if (!response.ok) {
         const text = await response.text();
         console.error("Jetimob Leads API error:", response.status, text);
         return new Response(
-          JSON.stringify({ error: `Erro ao buscar leads: ${response.status}` }),
-          { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: `Erro ao buscar leads: ${response.status}`, details: text }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
