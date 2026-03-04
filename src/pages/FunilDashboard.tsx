@@ -115,7 +115,7 @@ export default function FunilDashboard() {
     if (cpIds.length > 0) {
       const { data: linesData } = await supabase
         .from("checkpoint_lines")
-        .select("corretor_id, real_leads, real_ligacoes, real_visitas_marcadas, real_visitas_realizadas, real_propostas, real_vgv_gerado, real_vgv_assinado")
+        .select("corretor_id, real_leads, real_ligacoes, real_visitas_marcadas, real_visitas_realizadas, real_propostas")
         .in("checkpoint_id", cpIds);
       lines = linesData || [];
     }
@@ -124,7 +124,7 @@ export default function FunilDashboard() {
     const { data: team } = await supabase.from("team_members").select("id, nome").eq("gerente_id", user.id);
     const teamMap = new Map((team || []).map((t: any) => [t.id, t.nome]));
 
-    // Aggregate
+    // Aggregate checkpoint data (without VGV)
     const by_corretor: AggregatedData["by_corretor"] = {};
     let totals = { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
 
@@ -140,8 +140,6 @@ export default function FunilDashboard() {
         visitas_marcadas: l.real_visitas_marcadas || 0,
         visitas_realizadas: l.real_visitas_realizadas || 0,
         propostas: l.real_propostas || 0,
-        vgv_gerado: Number(l.real_vgv_gerado || 0),
-        vgv_assinado: Number(l.real_vgv_assinado || 0),
       };
       for (const k of Object.keys(vals) as (keyof typeof vals)[]) {
         c[k] += vals[k];
@@ -149,16 +147,33 @@ export default function FunilDashboard() {
       }
     }
 
-    // Get PDN data for the month
+    // Get PDN data for VGV (source of truth)
     const mesKey = `${start.slice(0, 7)}`;
     const { data: pdns } = await supabase
       .from("pdn_entries")
-      .select("id, vgv, situacao")
+      .select("id, vgv, situacao, corretor")
       .eq("gerente_id", user.id)
       .eq("mes", mesKey);
 
     const pdn_negocios = (pdns || []).length;
     const pdn_vgv = (pdns || []).reduce((sum: number, p: any) => sum + Number(p.vgv || 0), 0);
+
+    // VGV from PDN by situacao
+    const vgv_gerado = (pdns || []).filter((p: any) => p.situacao === "gerado").reduce((s: number, p: any) => s + Number(p.vgv || 0), 0);
+    const vgv_assinado = (pdns || []).filter((p: any) => p.situacao === "assinado").reduce((s: number, p: any) => s + Number(p.vgv || 0), 0);
+    totals.vgv_gerado = vgv_gerado;
+    totals.vgv_assinado = vgv_assinado;
+
+    // Distribute VGV by corretor from PDN
+    for (const p of (pdns || [])) {
+      if (!p.corretor || !p.vgv) continue;
+      // Find corretor by name match in by_corretor
+      const match = Object.entries(by_corretor).find(([_, c]) => c.nome === p.corretor);
+      if (match) {
+        if (p.situacao === "gerado") match[1].vgv_gerado += Number(p.vgv);
+        if (p.situacao === "assinado") match[1].vgv_assinado += Number(p.vgv);
+      }
+    }
 
     return { ...totals, pdn_negocios, pdn_vgv, by_corretor };
   }, [user]);

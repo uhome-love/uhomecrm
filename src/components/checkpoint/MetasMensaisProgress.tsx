@@ -61,15 +61,24 @@ export default function MetasMensaisProgress() {
       if (cpIds.length > 0) {
         const { data: lines } = await supabase
           .from("checkpoint_lines")
-          .select("real_vgv_assinado, real_visitas_marcadas, real_visitas_realizadas")
+          .select("real_visitas_marcadas, real_visitas_realizadas")
           .in("checkpoint_id", cpIds);
 
         (lines || []).forEach((l) => {
-          realVgv += Number(l.real_vgv_assinado || 0);
           realVisitasMarcadas += Number(l.real_visitas_marcadas || 0);
           realVisitasRealizadas += Number(l.real_visitas_realizadas || 0);
         });
       }
+
+      // VGV Assinado comes from PDN (source of truth)
+      const { data: pdns } = await supabase
+        .from("pdn_entries")
+        .select("vgv, situacao")
+        .eq("gerente_id", user.id)
+        .eq("mes", mesAtual)
+        .eq("situacao", "assinado");
+
+      realVgv = (pdns || []).reduce((sum, p) => sum + Number(p.vgv || 0), 0);
 
       setData({
         metaVgv: Number(meta.meta_vgv_assinado),
