@@ -13,7 +13,7 @@ import QuickFilters from "@/components/QuickFilters";
 import CampaignsPanel from "@/components/CampaignsPanel";
 import EmpreendimentoGroup from "@/components/EmpreendimentoGroup";
 import CorretorRanking from "@/components/CorretorRanking";
-import { getDaysSinceContact, type QuickFilter } from "@/lib/leadUtils";
+import { getDaysSinceContact, calculateRecoveryScore, type QuickFilter } from "@/lib/leadUtils";
 import type { Lead, LeadPriority } from "@/types/lead";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -55,13 +55,17 @@ export default function GestorDashboard() {
       if (error) throw error;
       const apiLeads = Array.isArray(data?.result) ? data.result : Array.isArray(data) ? data : [];
       if (apiLeads.length === 0) { toast.warning("Nenhum lead encontrado na API."); return; }
-      const mapped: Lead[] = apiLeads.map((l: any, i: number) => ({
-        id: String(l.id || i + 1), nome: l.full_name || "", email: l.emails?.[0] || "",
-        telefone: l.phones?.[0] || "", interesse: l.message || l.subject || "",
-        origem: l.campaign_id ? `Campanha ${l.campaign_id}` : "API Jetimob",
-        ultimoContato: l.created_at ? new Date(l.created_at).toLocaleDateString("pt-BR") : "",
-        status: l.stage || "", corretor: l.broker_name || "", etapa: l.stage || "", dataCriacao: l.created_at || "",
-      }));
+      const mapped: Lead[] = apiLeads.map((l: any, i: number) => {
+        const lead: Lead = {
+          id: String(l.id || i + 1), nome: l.full_name || "", email: l.emails?.[0] || "",
+          telefone: l.phones?.[0] || "", interesse: l.message || l.subject || "",
+          origem: l.campaign_id ? `Campanha ${l.campaign_id}` : "API Jetimob",
+          ultimoContato: l.created_at ? new Date(l.created_at).toLocaleDateString("pt-BR") : "",
+          status: l.stage || "", corretor: l.broker_name || "", etapa: l.stage || "", dataCriacao: l.created_at || "",
+        };
+        lead.recoveryScore = calculateRecoveryScore(lead);
+        return lead;
+      });
       setLeads(mapped);
       setStep("dashboard");
       toast.success(`${mapped.length} leads importados da API Jetimob!`);
@@ -72,11 +76,15 @@ export default function GestorDashboard() {
   }, []);
 
   const handleMappingComplete = useCallback(async (mapping: Record<string, string>) => {
-    const mapped: Lead[] = csvData.map((row, i) => ({
-      id: String(i + 1), nome: row[mapping.nome] || "", email: row[mapping.email] || "",
-      telefone: row[mapping.telefone] || "", interesse: row[mapping.interesse] || "",
-      origem: row[mapping.origem] || "", ultimoContato: row[mapping.ultimoContato] || "", status: row[mapping.status] || "",
-    }));
+    const mapped: Lead[] = csvData.map((row, i) => {
+      const lead: Lead = {
+        id: String(i + 1), nome: row[mapping.nome] || "", email: row[mapping.email] || "",
+        telefone: row[mapping.telefone] || "", interesse: row[mapping.interesse] || "",
+        origem: row[mapping.origem] || "", ultimoContato: row[mapping.ultimoContato] || "", status: row[mapping.status] || "",
+      };
+      lead.recoveryScore = calculateRecoveryScore(lead);
+      return lead;
+    });
     setLeads(mapped);
     setStep("dashboard");
     setShowMapper(false);
@@ -143,16 +151,18 @@ export default function GestorDashboard() {
 
   // Filter counts
   const filterCounts = useMemo(() => {
-    const counts: Record<QuickFilter, number> = { todos: leads.length, muito_quentes: 0, followup_hoje: 0, "7dias": 0, "15dias": 0, "30dias": 0, "90dias": 0 };
+    const counts: Record<QuickFilter, number> = { todos: leads.length, muito_quentes: 0, followup_hoje: 0, "7dias": 0, "15dias": 0, "30dias": 0, "90dias": 0, top50: Math.min(50, leads.length), esquecidos: 0, com_interesse: 0, com_telefone: 0 };
     leads.forEach((l) => {
       if (l.prioridade === "muito_quente") counts.muito_quentes++;
+      if (l.interesse && l.interesse.trim().length > 2) counts.com_interesse++;
+      if (l.telefone && l.telefone.replace(/\D/g, "").length >= 8) counts.com_telefone++;
       const days = getDaysSinceContact(l.ultimoContato);
       if (days !== null) {
         if (days >= 7 && days < 15) counts["7dias"]++;
         if (days >= 15 && days < 30) counts["15dias"]++;
         if (days >= 30 && days < 60) counts["30dias"]++;
-        if (days >= 90) counts["90dias"]++;
-      } else { counts["90dias"]++; }
+        if (days >= 90) { counts["90dias"]++; counts.esquecidos++; }
+      } else { counts["90dias"]++; counts.esquecidos++; }
       if (l.prioridade === "muito_quente" || l.prioridade === "quente") counts.followup_hoje++;
     });
     return counts;
@@ -161,18 +171,25 @@ export default function GestorDashboard() {
   const filteredLeads = useMemo(() => {
     let result = leads;
     if (quickFilter !== "todos") {
-      result = result.filter((l) => {
-        const days = getDaysSinceContact(l.ultimoContato);
-        switch (quickFilter) {
-          case "muito_quentes": return l.prioridade === "muito_quente";
-          case "followup_hoje": return l.prioridade === "muito_quente" || l.prioridade === "quente";
-          case "7dias": return days !== null && days >= 7 && days < 15;
-          case "15dias": return days !== null && days >= 15 && days < 30;
-          case "30dias": return days !== null && days >= 30 && days < 60;
-          case "90dias": return days === null || days >= 90;
-          default: return true;
-        }
-      });
+      if (quickFilter === "top50") {
+        result = [...result].sort((a, b) => (b.recoveryScore || 0) - (a.recoveryScore || 0)).slice(0, 50);
+      } else {
+        result = result.filter((l) => {
+          const days = getDaysSinceContact(l.ultimoContato);
+          switch (quickFilter) {
+            case "muito_quentes": return l.prioridade === "muito_quente";
+            case "followup_hoje": return l.prioridade === "muito_quente" || l.prioridade === "quente";
+            case "com_interesse": return l.interesse && l.interesse.trim().length > 2;
+            case "com_telefone": return l.telefone && l.telefone.replace(/\D/g, "").length >= 8;
+            case "esquecidos": return days === null || days >= 90;
+            case "7dias": return days !== null && days >= 7 && days < 15;
+            case "15dias": return days !== null && days >= 15 && days < 30;
+            case "30dias": return days !== null && days >= 30 && days < 60;
+            case "90dias": return days === null || days >= 90;
+            default: return true;
+          }
+        });
+      }
     }
     if (reactivationFilter && reactivationFilter > 0) {
       result = result.filter((l) => {
@@ -199,14 +216,15 @@ export default function GestorDashboard() {
   // KPI cards for gestão
   const kpis = useMemo(() => {
     const withPhone = leads.filter((l) => l.telefone).length;
-    const readyToContact = leads.filter((l) => l.telefone && (l.prioridade === "muito_quente" || l.prioridade === "quente")).length;
-    const muitoQuentes = leads.filter((l) => l.prioridade === "muito_quente").length;
-    const withVisitPotential = leads.filter((l) => l.imovel && (l.prioridade === "muito_quente" || l.prioridade === "quente")).length;
+    const highScore = leads.filter((l) => (l.recoveryScore || 0) >= 80).length;
+    const goodScore = leads.filter((l) => (l.recoveryScore || 0) >= 60 && (l.recoveryScore || 0) < 80).length;
+    const readyToContact = leads.filter((l) => l.telefone && (l.recoveryScore || 0) >= 60).length;
+    const avgScore = leads.length > 0 ? Math.round(leads.reduce((sum, l) => sum + (l.recoveryScore || 0), 0) / leads.length) : 0;
     return [
-      { label: "Leads com alto potencial", value: muitoQuentes, icon: "🔥", color: "bg-destructive/10 text-destructive border-destructive/20" },
-      { label: "Prontos para contato", value: readyToContact, icon: "📞", color: "bg-accent/10 text-accent border-accent/20" },
-      { label: "Com chance de visita", value: withVisitPotential, icon: "🏠", color: "bg-primary/10 text-primary border-primary/20" },
-      { label: "Com telefone válido", value: withPhone, icon: "📱", color: "bg-info/10 text-info border-info/20" },
+      { label: "Oportunidade Alta (80+)", value: highScore, icon: "🟢", color: "bg-success/10 text-success border-success/20" },
+      { label: "Oportunidade Boa (60-79)", value: goodScore, icon: "🔵", color: "bg-accent/10 text-accent border-accent/20" },
+      { label: "Prontos p/ contato (60+)", value: readyToContact, icon: "📞", color: "bg-primary/10 text-primary border-primary/20" },
+      { label: "Score Médio", value: avgScore, icon: "📊", color: "bg-warning/10 text-warning border-warning/20" },
     ];
   }, [leads]);
 

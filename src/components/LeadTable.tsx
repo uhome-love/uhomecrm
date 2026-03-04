@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import type { Lead } from "@/types/lead";
 import PriorityBadge from "@/components/PriorityBadge";
+import ScoreBadge from "@/components/ScoreBadge";
 import { getDaysSinceContact, getTimeSinceContactLabel, getTimeSinceContactColor } from "@/lib/leadUtils";
 
 interface LeadTableProps {
@@ -106,6 +107,7 @@ export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: L
             <TableHead className="font-display font-semibold">Interesse</TableHead>
             <TableHead className="font-display font-semibold">Contato</TableHead>
             <TableHead className="font-display font-semibold">Tempo s/ contato</TableHead>
+            <TableHead className="font-display font-semibold">Score</TableHead>
             <TableHead className="font-display font-semibold">Prioridade</TableHead>
             <TableHead className="font-display font-semibold text-right">Ações</TableHead>
           </TableRow>
@@ -113,7 +115,7 @@ export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: L
         <TableBody>
           {paged.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                 {search ? "Nenhum lead encontrado para essa busca." : "Nenhum lead disponível."}
               </TableCell>
             </TableRow>
@@ -166,6 +168,9 @@ export default function LeadTable({ leads, onGenerateMessage, loadingLeadId }: L
               </TableCell>
               <TableCell>
                 <TimeBadge ultimoContato={lead.ultimoContato} />
+              </TableCell>
+              <TableCell>
+                <ScoreBadge score={lead.recoveryScore} />
               </TableCell>
               <TableCell>
                 <PriorityBadge priority={lead.prioridade} />

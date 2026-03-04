@@ -118,6 +118,7 @@ export type Database = {
           nome: string
           origem: string | null
           prioridade: Database["public"]["Enums"]["lead_priority"] | null
+          recovery_score: number | null
           status: string | null
           telefone: string | null
           ultimo_contato: string | null
@@ -135,6 +136,7 @@ export type Database = {
           nome: string
           origem?: string | null
           prioridade?: Database["public"]["Enums"]["lead_priority"] | null
+          recovery_score?: number | null
           status?: string | null
           telefone?: string | null
           ultimo_contato?: string | null
@@ -152,6 +154,7 @@ export type Database = {
           nome?: string
           origem?: string | null
           prioridade?: Database["public"]["Enums"]["lead_priority"] | null
+          recovery_score?: number | null
           status?: string | null
           telefone?: string | null
           ultimo_contato?: string | null
@@ -224,6 +227,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_recovery_score: {
+        Args: {
+          p_email: string
+          p_interesse: string
+          p_origem: string
+          p_telefone: string
+          p_ultimo_contato: string
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -231,6 +244,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalculate_all_scores: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "gestor" | "corretor"

@@ -1,5 +1,7 @@
 export type LeadPriority = "muito_quente" | "quente" | "morno" | "frio" | "perdido";
 
+export type ScoreClassification = "alta" | "boa" | "media" | "baixa";
+
 export interface Lead {
   id: string;
   nome: string;
@@ -16,6 +18,7 @@ export interface Lead {
   corretor?: string;
   etapa?: string;
   dataCriacao?: string;
+  recoveryScore?: number;
 }
 
 export interface ImovelJetimob {
