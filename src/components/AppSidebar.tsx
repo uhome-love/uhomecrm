@@ -33,36 +33,66 @@ import { useUserRole } from "@/hooks/useUserRole";
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
   const { user, signOut } = useAuth();
   const { isGestor, isAdmin } = useUserRole();
 
-  const mainItems = [
+  const homeItems = [
     { title: "Início", url: "/", icon: Home },
-    ...(isGestor
-      ? [
-          { title: "Recuperação de Leads", url: "/gestao", icon: LayoutDashboard },
-          { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
-          { title: "Scripts & Follow Ups", url: "/scripts", icon: FileEdit },
-          { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
-          { title: "Funil Comercial", url: "/funil", icon: Filter },
-          { title: "Forecast IA", url: "/previsao", icon: TrendingUp },
-          { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
-        ]
-      : []),
   ];
+
+  const gestorItems = isGestor
+    ? [
+        { title: "Recuperação de Leads", url: "/gestao", icon: LayoutDashboard },
+        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+        { title: "Scripts & Follow Ups", url: "/scripts", icon: FileEdit },
+        { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+        { title: "Funil Comercial", url: "/funil", icon: Filter },
+        { title: "Forecast IA", url: "/previsao", icon: TrendingUp },
+        { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
+      ]
+    : [];
+
+  const ceoItems = isAdmin
+    ? [
+        { title: "Dashboard CEO", url: "/ceo", icon: Crown },
+      ]
+    : [];
 
   const adminItems = isAdmin
     ? [
-        { title: "Dashboard CEO", url: "/ceo", icon: Crown },
         { title: "Administração", url: "/admin", icon: Shield },
       ]
     : [];
 
+  const renderGroup = (label: string, items: typeof homeItems) => (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to={item.url}
+                  end
+                  className="hover:bg-sidebar-accent/50"
+                  activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                >
+                  <item.icon className="mr-2 h-4 w-4" />
+                  {!collapsed && <span>{item.title}</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        {/* Logo Uhome */}
+        {/* Logo */}
         <div className="flex items-center gap-2.5 p-4 border-b border-sidebar-border">
           <img src="/logo-uhome.svg" alt="Uhome Gestão e IA" className="h-8 w-auto shrink-0" />
           {!collapsed && (
@@ -72,53 +102,10 @@ export function AppSidebar() {
           )}
         </div>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {adminItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Sistema</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        end
-                        className="hover:bg-sidebar-accent/50"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderGroup("Principal", homeItems)}
+        {gestorItems.length > 0 && renderGroup("Ferramentas Gerente", gestorItems)}
+        {ceoItems.length > 0 && renderGroup("Ferramentas CEO", ceoItems)}
+        {adminItems.length > 0 && renderGroup("Administração", adminItems)}
       </SidebarContent>
 
       <SidebarFooter>
