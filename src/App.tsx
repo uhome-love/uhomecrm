@@ -27,6 +27,7 @@ const PdnDashboard = lazy(() => import("./pages/PdnDashboard"));
 const MarketingDashboard = lazy(() => import("./pages/MarketingDashboard"));
 const RankingComercial = lazy(() => import("./pages/RankingComercial"));
 const AuditDashboard = lazy(() => import("./pages/AuditDashboard"));
+const OfertaAtiva = lazy(() => import("./pages/OfertaAtiva"));
 
 const queryClient = new QueryClient();
 
@@ -80,6 +81,7 @@ const App = () => (
             <Route path="/gestao" element={<ProtectedPage roles={["gestor", "admin"]}><GestorDashboard /></ProtectedPage>} />
             <Route path="/relatorios" element={<ProtectedPage roles={["gestor", "admin"]}><RelatorioCorretor /></ProtectedPage>} />
             <Route path="/ranking" element={<ProtectedPage roles={["gestor", "admin"]}><RankingComercial /></ProtectedPage>} />
+            <Route path="/oferta-ativa" element={<ProtectedPage roles={["corretor", "gestor", "admin"]}><OfertaAtiva /></ProtectedPage>} />
 
             {/* Corretor — corretor + gestor + admin */}
             <Route path="/corretor" element={<ProtectedPage roles={["corretor", "gestor", "admin"]}><CorretorDashboard /></ProtectedPage>} />

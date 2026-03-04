@@ -673,6 +673,224 @@ export type Database = {
         }
         Relationships: []
       }
+      oferta_ativa_leads: {
+        Row: {
+          cadastrado_jetimob: boolean
+          cadastrado_jetimob_em: string | null
+          campanha: string | null
+          corretor_id: string | null
+          created_at: string
+          data_lead: string | null
+          email: string | null
+          empreendimento: string | null
+          id: string
+          jetimob_id: string | null
+          lista_id: string
+          motivo_descarte: string | null
+          nome: string
+          observacoes: string | null
+          origem: string | null
+          proxima_tentativa_apos: string | null
+          status: string
+          telefone: string | null
+          telefone_normalizado: string | null
+          telefone2: string | null
+          tentativas_count: number
+          ultima_tentativa: string | null
+          updated_at: string
+        }
+        Insert: {
+          cadastrado_jetimob?: boolean
+          cadastrado_jetimob_em?: string | null
+          campanha?: string | null
+          corretor_id?: string | null
+          created_at?: string
+          data_lead?: string | null
+          email?: string | null
+          empreendimento?: string | null
+          id?: string
+          jetimob_id?: string | null
+          lista_id: string
+          motivo_descarte?: string | null
+          nome: string
+          observacoes?: string | null
+          origem?: string | null
+          proxima_tentativa_apos?: string | null
+          status?: string
+          telefone?: string | null
+          telefone_normalizado?: string | null
+          telefone2?: string | null
+          tentativas_count?: number
+          ultima_tentativa?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cadastrado_jetimob?: boolean
+          cadastrado_jetimob_em?: string | null
+          campanha?: string | null
+          corretor_id?: string | null
+          created_at?: string
+          data_lead?: string | null
+          email?: string | null
+          empreendimento?: string | null
+          id?: string
+          jetimob_id?: string | null
+          lista_id?: string
+          motivo_descarte?: string | null
+          nome?: string
+          observacoes?: string | null
+          origem?: string | null
+          proxima_tentativa_apos?: string | null
+          status?: string
+          telefone?: string | null
+          telefone_normalizado?: string | null
+          telefone2?: string | null
+          tentativas_count?: number
+          ultima_tentativa?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_leads_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_listas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oferta_ativa_listas: {
+        Row: {
+          campanha: string | null
+          cooldown_dias: number
+          created_at: string
+          criado_por: string
+          empreendimento: string
+          id: string
+          max_tentativas: number
+          nome: string
+          origem: string | null
+          status: string
+          total_leads: number
+          updated_at: string
+        }
+        Insert: {
+          campanha?: string | null
+          cooldown_dias?: number
+          created_at?: string
+          criado_por: string
+          empreendimento: string
+          id?: string
+          max_tentativas?: number
+          nome: string
+          origem?: string | null
+          status?: string
+          total_leads?: number
+          updated_at?: string
+        }
+        Update: {
+          campanha?: string | null
+          cooldown_dias?: number
+          created_at?: string
+          criado_por?: string
+          empreendimento?: string
+          id?: string
+          max_tentativas?: number
+          nome?: string
+          origem?: string | null
+          status?: string
+          total_leads?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      oferta_ativa_templates: {
+        Row: {
+          canal: string
+          conteudo: string
+          created_at: string
+          criado_por: string
+          empreendimento: string | null
+          id: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          canal: string
+          conteudo: string
+          created_at?: string
+          criado_por: string
+          empreendimento?: string | null
+          id?: string
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          canal?: string
+          conteudo?: string
+          created_at?: string
+          criado_por?: string
+          empreendimento?: string | null
+          id?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      oferta_ativa_tentativas: {
+        Row: {
+          canal: string
+          corretor_id: string
+          created_at: string
+          empreendimento: string | null
+          feedback: string
+          id: string
+          lead_id: string
+          lista_id: string | null
+          pontos: number
+          resultado: string
+        }
+        Insert: {
+          canal: string
+          corretor_id: string
+          created_at?: string
+          empreendimento?: string | null
+          feedback: string
+          id?: string
+          lead_id: string
+          lista_id?: string | null
+          pontos?: number
+          resultado: string
+        }
+        Update: {
+          canal?: string
+          corretor_id?: string
+          created_at?: string
+          empreendimento?: string | null
+          feedback?: string
+          id?: string
+          lead_id?: string
+          lista_id?: string | null
+          pontos?: number
+          resultado?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oferta_ativa_tentativas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oferta_ativa_tentativas_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_listas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdn_entries: {
         Row: {
           corretor: string | null

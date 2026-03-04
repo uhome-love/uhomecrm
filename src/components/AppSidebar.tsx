@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Sparkles,
   Trophy,
+  Phone,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -68,6 +69,7 @@ export function AppSidebar() {
     ? [
         { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
         { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
+        { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
         { title: "Forecast IA", url: "/previsao", icon: TrendingUp },
         { title: "Funil Comercial", url: "/funil", icon: Filter },
         { title: "Scripts & Follow Ups", url: "/scripts", icon: FileEdit },

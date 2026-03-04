@@ -1,0 +1,221 @@
+import { useState } from "react";
+import { useOAFila, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, ChevronRight, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import AttemptModal from "./AttemptModal";
+
+interface Props {
+  lista: OALista;
+  onBack: () => void;
+}
+
+export default function DialingMode({ lista, onBack }: Props) {
+  const { fila, isLoading, refetch } = useOAFila(lista.id);
+  const { registrar } = useOARegistrarTentativa();
+  const { templates } = useOATemplates(lista.empreendimento);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [actionTaken, setActionTaken] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const lead = fila[currentIndex];
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado!`);
+  };
+
+  const handleAction = (canal: string) => {
+    if (!lead) return;
+    setActionTaken(canal);
+
+    if (canal === "ligacao" && lead.telefone) {
+      window.open(`tel:${lead.telefone}`, "_self");
+    } else if (canal === "whatsapp" && lead.telefone) {
+      const phone = lead.telefone.replace(/\D/g, "");
+      const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
+      const template = templates.find(t => t.canal === "whatsapp" && t.tipo === "primeiro_contato");
+      const msg = template
+        ? template.conteudo.replace("{nome}", lead.nome).replace("{empreendimento}", lead.empreendimento || "")
+        : `Olá ${lead.nome}! Vi que você se interessou pelo ${lead.empreendimento || "nosso empreendimento"}. Podemos conversar?`;
+      window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+    } else if (canal === "email" && lead.email) {
+      const template = templates.find(t => t.canal === "email" && t.tipo === "primeiro_contato");
+      const subject = `${lead.empreendimento || "Oportunidade"} - Informações`;
+      const body = template
+        ? template.conteudo.replace("{nome}", lead.nome).replace("{empreendimento}", lead.empreendimento || "")
+        : `Olá ${lead.nome},\n\nGostaria de apresentar mais detalhes sobre o ${lead.empreendimento || "empreendimento"}.\n\nPodemos agendar uma conversa?`;
+      window.open(`mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, "_blank");
+    }
+
+    // After action, require result registration
+    setTimeout(() => setShowModal(true), 500);
+  };
+
+  const handleResultSubmit = async (resultado: string, feedback: string) => {
+    if (!lead || !actionTaken) return;
+    await registrar(lead, actionTaken, resultado, feedback, lista);
+    setShowModal(false);
+    setActionTaken(null);
+
+    // Move to next lead
+    if (currentIndex < fila.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      refetch();
+      setCurrentIndex(0);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
+
+  if (!lead) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
+          <p className="font-bold text-lg text-foreground">Fila concluída! 🎉</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Todos os leads disponíveis de <strong>{lista.empreendimento}</strong> já foram trabalhados.
+          </p>
+          <Button className="mt-4" onClick={onBack}>Voltar às listas</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Progress bar */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>Lead {currentIndex + 1} de {fila.length}</span>
+        <span className="font-semibold text-primary">{lista.empreendimento}</span>
+      </div>
+      <div className="w-full bg-muted rounded-full h-2">
+        <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${((currentIndex + 1) / fila.length) * 100}%` }} />
+      </div>
+
+      {/* Lead Card */}
+      <Card className="border-2 border-primary/20">
+        <CardContent className="p-5 space-y-4">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                {lead.nome}
+              </h2>
+              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                <Building2 className="h-3.5 w-3.5" />
+                {lead.empreendimento}
+                {lead.campanha && <span>· {lead.campanha}</span>}
+                {lead.origem && <span>· {lead.origem}</span>}
+              </div>
+            </div>
+            {lead.tentativas_count > 0 && (
+              <Badge variant="outline" className="text-xs gap-1">
+                <History className="h-3 w-3" /> {lead.tentativas_count} tent.
+              </Badge>
+            )}
+          </div>
+
+          {/* Contact info */}
+          <div className="grid gap-2">
+            {lead.telefone && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
+                <div>
+                  <p className="text-xs text-muted-foreground">Telefone principal</p>
+                  <p className="text-lg font-mono font-bold text-foreground">{lead.telefone}</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => copyToClipboard(lead.telefone!, "Telefone")}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            {lead.telefone2 && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
+                <div>
+                  <p className="text-xs text-muted-foreground">Telefone secundário</p>
+                  <p className="text-base font-mono text-foreground">{lead.telefone2}</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => copyToClipboard(lead.telefone2!, "Telefone 2")}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            {lead.email && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border">
+                <div>
+                  <p className="text-xs text-muted-foreground">E-mail</p>
+                  <p className="text-sm text-foreground">{lead.email}</p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => copyToClipboard(lead.email!, "E-mail")}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Extra info */}
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {lead.data_lead && (
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Lead de {lead.data_lead}</span>
+            )}
+            {lead.observacoes && (
+              <span className="italic">"{lead.observacoes}"</span>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-3 gap-3 pt-2">
+            <Button
+              size="lg"
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 h-14 text-base"
+              onClick={() => handleAction("ligacao")}
+              disabled={!!actionTaken && !showModal}
+            >
+              <Phone className="h-5 w-5" /> Ligar
+            </Button>
+            <Button
+              size="lg"
+              className="gap-2 bg-green-600 hover:bg-green-700 h-14 text-base"
+              onClick={() => handleAction("whatsapp")}
+              disabled={!!actionTaken && !showModal}
+            >
+              <MessageCircle className="h-5 w-5" /> WhatsApp
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2 h-14 text-base"
+              onClick={() => handleAction("email")}
+              disabled={!lead.email || (!!actionTaken && !showModal)}
+            >
+              <Mail className="h-5 w-5" /> E-mail
+            </Button>
+          </div>
+
+          {actionTaken && !showModal && (
+            <div className="text-center text-sm text-muted-foreground animate-pulse">
+              Registre o resultado para continuar...
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Attempt Modal */}
+      {showModal && (
+        <AttemptModal
+          open={showModal}
+          onClose={() => { setShowModal(false); setActionTaken(null); }}
+          onSubmit={handleResultSubmit}
+          leadName={lead.nome}
+        />
+      )}
+    </div>
+  );
+}
