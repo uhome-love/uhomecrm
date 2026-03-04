@@ -49,32 +49,29 @@ serve(async (req) => {
       const JETIMOB_LEADS_URL_KEY = Deno.env.get("JETIMOB_LEADS_URL_KEY");
       if (!JETIMOB_LEADS_URL_KEY) throw new Error("JETIMOB_LEADS_URL_KEY is not configured");
 
+      const url = `https://api.jetimob.com/leads/${JETIMOB_LEADS_URL_KEY}`;
       const JETIMOB_LEADS_PRIVATE_KEY = Deno.env.get("JETIMOB_LEADS_PRIVATE_KEY");
+      console.log("Fetching leads from:", url, "with private key:", JETIMOB_LEADS_PRIVATE_KEY ? "present" : "missing");
 
-      const headers: Record<string, string> = { 
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      };
-      if (JETIMOB_LEADS_PRIVATE_KEY) {
-        headers["PRIVATE_KEY"] = JETIMOB_LEADS_PRIVATE_KEY;
-      }
-      console.log("Trying header 'PRIVATE_KEY'");
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { 
+          "Accept": "application/json",
+          ...(JETIMOB_LEADS_PRIVATE_KEY ? { "Authorization": JETIMOB_LEADS_PRIVATE_KEY } : {}),
+        },
+      });
 
-      const response = await fetch(
-        `https://api.jetimob.com/leads/${JETIMOB_LEADS_URL_KEY}`,
-        { headers }
-      );
+      const text = await response.text();
+      console.log("Jetimob Leads response status:", response.status, "body:", text.substring(0, 500));
 
       if (!response.ok) {
-        const text = await response.text();
-        console.error("Jetimob Leads API error:", response.status, text);
         return new Response(
           JSON.stringify({ error: `Erro ao buscar leads: ${response.status}`, details: text }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const data = await response.json();
+      const data = JSON.parse(text);
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
