@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Copy, Lock, RotateCcw, Save, ChevronLeft, ChevronRight, UserPlus, Plus } from "lucide-react";
+import { Calendar, Copy, Lock, RotateCcw, Save, ChevronLeft, ChevronRight, UserPlus, Plus, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-interface TeamMember { id: string; nome: string; equipe: string | null; status: string; }
+interface TeamMember { id: string; nome: string; equipe: string | null; status: string; user_id: string | null; }
 interface CheckpointLine {
   id?: string;
   corretor_id: string;
@@ -20,6 +21,7 @@ interface CheckpointLine {
   real_ligacoes: number | null; real_presenca: string | null; real_visitas_marcadas: number | null;
   real_visitas_realizadas: number | null; real_propostas: number | null;
   real_leads: number | null; obs_dia: string | null; status_dia: string | null;
+  has_oa_data?: boolean;
 }
 
 function calcStatusDia(line: CheckpointLine): string {
@@ -72,6 +74,40 @@ export default function CheckpointDaily() {
     loadCheckpoint();
   };
 
+  // Fetch OA stats for linked team members on a given date
+  const fetchOAStats = useCallback(async (members: TeamMember[], targetDate: string) => {
+    const linkedMembers = members.filter(m => m.user_id);
+    if (linkedMembers.length === 0) return {};
+
+    const userIds = linkedMembers.map(m => m.user_id!);
+    const dayStart = `${targetDate}T00:00:00.000Z`;
+    const dayEnd = `${targetDate}T23:59:59.999Z`;
+
+    const { data: tentativas } = await supabase
+      .from("oferta_ativa_tentativas")
+      .select("corretor_id, canal, resultado")
+      .in("corretor_id", userIds)
+      .gte("created_at", dayStart)
+      .lte("created_at", dayEnd);
+
+    // Map user_id -> { ligacoes, leads_aproveitados }
+    const stats: Record<string, { ligacoes: number; leads: number }> = {};
+    for (const t of (tentativas || [])) {
+      if (!stats[t.corretor_id]) stats[t.corretor_id] = { ligacoes: 0, leads: 0 };
+      stats[t.corretor_id].ligacoes++;
+      if (t.resultado === "com_interesse") stats[t.corretor_id].leads++;
+    }
+
+    // Map back to team_member.id
+    const result: Record<string, { ligacoes: number; leads: number }> = {};
+    for (const m of linkedMembers) {
+      if (m.user_id && stats[m.user_id]) {
+        result[m.id] = stats[m.user_id];
+      }
+    }
+    return result;
+  }, []);
+
   const loadCheckpoint = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -79,6 +115,9 @@ export default function CheckpointDaily() {
     // Get team members
     const { data: team } = await supabase.from("team_members").select("*").eq("gerente_id", user.id).eq("status", "ativo").order("nome");
     const members = (team || []) as TeamMember[];
+
+    // Fetch OA stats for linked members
+    const oaStats = await fetchOAStats(members, date);
 
     // Get or create checkpoint
     let { data: cp } = await supabase.from("checkpoints").select("*").eq("gerente_id", user.id).eq("data", date).maybeSingle();
@@ -100,6 +139,7 @@ export default function CheckpointDaily() {
     const allLines: CheckpointLine[] = [];
     for (const m of members) {
       const existing = linesMap.get(m.id);
+      const oa = oaStats[m.id];
       if (existing) {
         allLines.push({
           id: existing.id, corretor_id: m.id, corretor_nome: m.nome,
@@ -107,10 +147,13 @@ export default function CheckpointDaily() {
           meta_visitas_marcadas: existing.meta_visitas_marcadas ?? 0, meta_visitas_realizadas: existing.meta_visitas_realizadas ?? 0,
           meta_propostas: existing.meta_propostas ?? 0, meta_leads: existing.meta_leads ?? 0,
           obs_gerente: existing.obs_gerente ?? "",
-          real_ligacoes: existing.real_ligacoes, real_presenca: existing.real_presenca,
+          real_ligacoes: oa ? oa.ligacoes : existing.real_ligacoes,
+          real_presenca: existing.real_presenca,
           real_visitas_marcadas: existing.real_visitas_marcadas, real_visitas_realizadas: existing.real_visitas_realizadas,
           real_propostas: existing.real_propostas,
-          real_leads: existing.real_leads, obs_dia: existing.obs_dia, status_dia: existing.status_dia,
+          real_leads: oa ? oa.leads : existing.real_leads,
+          obs_dia: existing.obs_dia, status_dia: existing.status_dia,
+          has_oa_data: !!oa,
         });
       } else {
         // Insert new line
@@ -122,16 +165,39 @@ export default function CheckpointDaily() {
           meta_ligacoes: 0, meta_presenca: "sim", meta_visitas_marcadas: 0,
           meta_visitas_realizadas: 0, meta_propostas: 0,
           meta_leads: 0,
-          obs_gerente: "", real_ligacoes: null, real_presenca: null,
+          obs_gerente: "", 
+          real_ligacoes: oa ? oa.ligacoes : null, 
+          real_presenca: null,
           real_visitas_marcadas: null, real_visitas_realizadas: null,
           real_propostas: null,
-          real_leads: null, obs_dia: null, status_dia: null,
+          real_leads: oa ? oa.leads : null, 
+          obs_dia: null, status_dia: null,
+          has_oa_data: !!oa,
         });
       }
     }
     setLines(allLines);
     setLoading(false);
-  }, [user, date]);
+  }, [user, date, fetchOAStats]);
+
+  const syncOAData = async () => {
+    if (!user) return;
+    const { data: team } = await supabase.from("team_members").select("*").eq("gerente_id", user.id).eq("status", "ativo");
+    const members = (team || []) as TeamMember[];
+    const oaStats = await fetchOAStats(members, date);
+    if (Object.keys(oaStats).length === 0) {
+      toast.info("Nenhum corretor vinculado tem dados da Oferta Ativa hoje.");
+      return;
+    }
+    setLines(prev => prev.map(line => {
+      const oa = oaStats[line.corretor_id];
+      if (!oa) return line;
+      const updated = { ...line, real_ligacoes: oa.ligacoes, real_leads: oa.leads, has_oa_data: true };
+      updated.status_dia = calcStatusDia(updated);
+      return updated;
+    }));
+    toast.success("Dados da Oferta Ativa sincronizados!");
+  };
 
   useEffect(() => { loadCheckpoint(); }, [loadCheckpoint]);
 
@@ -292,6 +358,9 @@ export default function CheckpointDaily() {
           <Button size="sm" variant="outline" onClick={() => setShowAddCorretor(!showAddCorretor)} className="gap-1.5 text-xs">
             <UserPlus className="h-3.5 w-3.5" /> Incluir corretor
           </Button>
+          <Button size="sm" variant="outline" onClick={syncOAData} className="gap-1.5 text-xs">
+            <RefreshCw className="h-3.5 w-3.5" /> Sincronizar OA
+          </Button>
           <Button size="sm" variant="outline" onClick={duplicateYesterday} className="gap-1.5 text-xs" disabled={metasLocked}>
             <Copy className="h-3.5 w-3.5" /> Copiar ontem
           </Button>
@@ -358,7 +427,14 @@ export default function CheckpointDaily() {
               const isFalta = line.meta_presenca === "falta";
               return (
                 <tr key={line.corretor_id} className={`border-b border-border hover:bg-muted/10 transition-colors ${isFalta ? "opacity-50 bg-destructive/5" : ""}`}>
-                  <td className="px-3 py-1.5 font-medium text-foreground sticky left-0 bg-card z-10">{line.corretor_nome}</td>
+                  <td className="px-3 py-1.5 font-medium text-foreground sticky left-0 bg-card z-10">
+                    <div className="flex items-center gap-1.5">
+                      {line.corretor_nome}
+                      {line.has_oa_data && (
+                        <Badge variant="outline" className="text-[8px] h-4 px-1 border-primary/30 text-primary">OA</Badge>
+                      )}
+                    </div>
+                  </td>
                   {/* Metas */}
                   <td className="px-1 py-1 border-l border-border"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_ligacoes} onChange={(e) => updateLine(idx, "meta_ligacoes", Number(e.target.value))} disabled={metasLocked} /></td>
                   <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_visitas_marcadas} onChange={(e) => updateLine(idx, "meta_visitas_marcadas", Number(e.target.value))} disabled={metasLocked} /></td>
