@@ -84,6 +84,25 @@ export default function CampaignManager() {
     }
   }, [selected, deleteLista]);
 
+  const [bulkActioning, setBulkActioning] = useState(false);
+
+  const handleBulkStatus = useCallback(async (newStatus: string) => {
+    if (selected.size === 0) return;
+    const label = newStatus === "liberada" ? "liberar" : newStatus === "pausada" ? "pausar" : "encerrar";
+    if (!confirm(`Deseja ${label} ${selected.size} lista(s)?`)) return;
+    setBulkActioning(true);
+    try {
+      for (const id of selected) {
+        await updateLista(id, { status: newStatus } as any);
+      }
+      toast.success(`${selected.size} lista(s) ${newStatus === "liberada" ? "liberada(s)" : newStatus === "pausada" ? "pausada(s)" : "encerrada(s)"}!`);
+    } catch {
+      toast.error("Erro ao atualizar listas.");
+    } finally {
+      setBulkActioning(false);
+    }
+  }, [selected, updateLista]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
@@ -123,16 +142,36 @@ export default function CampaignManager() {
             {selected.size}/{listas.length}
           </Badge>
           {selected.size > 0 && (
-            <Button
-              size="sm"
-              variant="destructive"
-              className="ml-auto gap-1.5 text-xs h-7"
-              onClick={handleBulkDelete}
-              disabled={bulkDeleting}
-            >
-              {bulkDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-              Excluir {selected.size} selecionada(s)
-            </Button>
+            <>
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs h-7 bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => handleBulkStatus("liberada")}
+                disabled={bulkActioning}
+              >
+                {bulkActioning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                Liberar {selected.size}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs h-7 text-amber-600"
+                onClick={() => handleBulkStatus("pausada")}
+                disabled={bulkActioning}
+              >
+                <Pause className="h-3.5 w-3.5" /> Pausar {selected.size}
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="ml-auto gap-1.5 text-xs h-7"
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+              >
+                {bulkDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                Excluir {selected.size}
+              </Button>
+            </>
           )}
         </div>
       )}
