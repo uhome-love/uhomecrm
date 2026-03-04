@@ -14,7 +14,187 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      lead_messages: {
+        Row: {
+          canal: Database["public"]["Enums"]["message_channel"]
+          enviado_em: string
+          erro: string | null
+          id: string
+          lead_id: string
+          mensagem: string
+          status: Database["public"]["Enums"]["message_status"]
+          user_id: string
+        }
+        Insert: {
+          canal: Database["public"]["Enums"]["message_channel"]
+          enviado_em?: string
+          erro?: string | null
+          id?: string
+          lead_id: string
+          mensagem: string
+          status?: Database["public"]["Enums"]["message_status"]
+          user_id: string
+        }
+        Update: {
+          canal?: Database["public"]["Enums"]["message_channel"]
+          enviado_em?: string
+          erro?: string | null
+          id?: string
+          lead_id?: string
+          mensagem?: string
+          status?: Database["public"]["Enums"]["message_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_tasks: {
+        Row: {
+          concluida_em: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          lead_id: string
+          prioridade: Database["public"]["Enums"]["lead_priority"] | null
+          status: Database["public"]["Enums"]["task_status"]
+          titulo: string
+          updated_at: string
+          user_id: string
+          vence_em: string | null
+        }
+        Insert: {
+          concluida_em?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          lead_id: string
+          prioridade?: Database["public"]["Enums"]["lead_priority"] | null
+          status?: Database["public"]["Enums"]["task_status"]
+          titulo: string
+          updated_at?: string
+          user_id: string
+          vence_em?: string | null
+        }
+        Update: {
+          concluida_em?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          lead_id?: string
+          prioridade?: Database["public"]["Enums"]["lead_priority"] | null
+          status?: Database["public"]["Enums"]["task_status"]
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+          vence_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          atualizado_em: string
+          email: string | null
+          id: string
+          imovel_codigo: string | null
+          imovel_data: Json | null
+          importado_em: string
+          interesse: string | null
+          mensagem_gerada: string | null
+          nome: string
+          origem: string | null
+          prioridade: Database["public"]["Enums"]["lead_priority"] | null
+          status: string | null
+          telefone: string | null
+          ultimo_contato: string | null
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          email?: string | null
+          id?: string
+          imovel_codigo?: string | null
+          imovel_data?: Json | null
+          importado_em?: string
+          interesse?: string | null
+          mensagem_gerada?: string | null
+          nome: string
+          origem?: string | null
+          prioridade?: Database["public"]["Enums"]["lead_priority"] | null
+          status?: string | null
+          telefone?: string | null
+          ultimo_contato?: string | null
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          email?: string | null
+          id?: string
+          imovel_codigo?: string | null
+          imovel_data?: Json | null
+          importado_em?: string
+          interesse?: string | null
+          mensagem_gerada?: string | null
+          nome?: string
+          origem?: string | null
+          prioridade?: Database["public"]["Enums"]["lead_priority"] | null
+          status?: string | null
+          telefone?: string | null
+          ultimo_contato?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          cargo: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +203,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      lead_priority: "alta" | "media" | "baixa" | "frio" | "perdido"
+      message_channel: "whatsapp" | "sms" | "email"
+      message_status: "pendente" | "enviado" | "entregue" | "falhou"
+      task_status: "pendente" | "em_andamento" | "concluida" | "cancelada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +333,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      lead_priority: ["alta", "media", "baixa", "frio", "perdido"],
+      message_channel: ["whatsapp", "sms", "email"],
+      message_status: ["pendente", "enviado", "entregue", "falhou"],
+      task_status: ["pendente", "em_andamento", "concluida", "cancelada"],
+    },
   },
 } as const
