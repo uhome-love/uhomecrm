@@ -1,660 +1,475 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserRole } from "@/hooks/useUserRole";
-import { toast } from "sonner";
+import { useUhomeIa } from "@/hooks/useUhomeIa";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Copy, Sparkles, TrendingUp, TrendingDown, Minus, BarChart3, History, Trash2, Eraser } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Loader2, BarChart3, TrendingUp, TrendingDown, Minus, Sparkles, Users, Filter } from "lucide-react";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
+import { motion } from "framer-motion";
 
-type FunnelEntry = {
-  id: string;
-  gerente_id: string;
-  periodo_tipo: string;
-  periodo_inicio: string;
-  periodo_fim: string;
-  leads_gerados: number;
-  propostas_geradas: number;
-  vendas_fechadas: number;
-  vgv_vendido: number;
-  investimento_midia: number;
-  custo_medio_lead: number;
-  observacoes: string | null;
-  corretor_nome: string | null;
-  taxa_proposta: number;
-  taxa_venda: number;
-  taxa_fechamento: number;
-  cpl_real: number;
-  cac_estimado: number;
-  analise_ia: string | null;
-  created_at: string;
-};
+type PeriodoTipo = "semanal" | "mensal";
 
-function getWeekRange(date: Date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const start = new Date(d.setDate(diff));
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  return {
-    start: start.toISOString().split("T")[0],
-    end: end.toISOString().split("T")[0],
-  };
+function fmtCurrency(v: number) {
+  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
+  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(1).replace(".", ",")}K`;
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
-
-function getMonthRange(year: number, month: number) {
-  const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 0);
-  return {
-    start: start.toISOString().split("T")[0],
-    end: end.toISOString().split("T")[0],
-  };
+function fmtPct(v: number) {
+  if (!isFinite(v) || isNaN(v)) return "—";
+  return `${v.toFixed(1)}%`;
 }
-
 function TrendIcon({ current, previous }: { current: number; previous: number }) {
   if (current > previous) return <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />;
   if (current < previous) return <TrendingDown className="h-3.5 w-3.5 text-destructive" />;
   return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
 }
-
 function variacao(atual: number, anterior: number) {
   if (anterior === 0) return atual > 0 ? "+∞%" : "—";
   const pct = ((atual - anterior) / anterior * 100).toFixed(1);
   return `${Number(pct) > 0 ? "+" : ""}${pct}%`;
 }
 
+interface AggregatedData {
+  leads: number;
+  ligacoes: number;
+  visitas_marcadas: number;
+  visitas_realizadas: number;
+  propostas: number;
+  vgv_gerado: number;
+  vgv_assinado: number;
+  pdn_negocios: number;
+  pdn_vgv: number;
+  by_corretor: Record<string, {
+    nome: string;
+    leads: number;
+    ligacoes: number;
+    visitas_marcadas: number;
+    visitas_realizadas: number;
+    propostas: number;
+    vgv_gerado: number;
+    vgv_assinado: number;
+  }>;
+}
+
 export default function FunilDashboard() {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
-  const [tab, setTab] = useState("checkin");
-  const [periodoTipo, setPeriodoTipo] = useState("diario");
-  const [periodoInicio, setPeriodoInicio] = useState(new Date().toISOString().split("T")[0]);
-  const [periodoFim, setPeriodoFim] = useState(new Date().toISOString().split("T")[0]);
-  const [leadsGerados, setLeadsGerados] = useState(0);
-  const [propostasGeradas, setPropostasGeradas] = useState(0);
-  const [vendasFechadas, setVendasFechadas] = useState(0);
-  const [vgvVendido, setVgvVendido] = useState(0);
-  const [investimentoMidia, setInvestimentoMidia] = useState(0);
-  const [custoMedioLead, setCustoMedioLead] = useState(25);
-  const [observacoes, setObservacoes] = useState("");
-  const [corretorNome, setCorretorNome] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [entries, setEntries] = useState<FunnelEntry[]>([]);
-  const [loadingEntries, setLoadingEntries] = useState(true);
-  const [currentAnalysis, setCurrentAnalysis] = useState<string | null>(null);
-  const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+  const { analyze, loading: iaLoading } = useUhomeIa();
+  const [periodoTipo, setPeriodoTipo] = useState<PeriodoTipo>("semanal");
+  const [refDate, setRefDate] = useState(new Date().toISOString().split("T")[0]);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<AggregatedData | null>(null);
+  const [prevData, setPrevData] = useState<AggregatedData | null>(null);
+  const [filterCorretor, setFilterCorretor] = useState("all");
+  const [iaReport, setIaReport] = useState<string | null>(null);
   const [teamMembers, setTeamMembers] = useState<{ id: string; nome: string }[]>([]);
-  const [filterCorretor, setFilterCorretor] = useState("");
 
-  // Auto-set period dates
-  useEffect(() => {
-    if (periodoTipo === "diario") {
-      setPeriodoFim(periodoInicio);
-    } else if (periodoTipo === "semanal") {
-      const { start, end } = getWeekRange(new Date(periodoInicio + "T12:00:00"));
-      setPeriodoInicio(start);
-      setPeriodoFim(end);
-    } else if (periodoTipo === "mensal") {
-      const d = new Date(periodoInicio + "T12:00:00");
-      const { start, end } = getMonthRange(d.getFullYear(), d.getMonth());
-      setPeriodoInicio(start);
-      setPeriodoFim(end);
+  const { startDate, endDate, prevStartDate, prevEndDate } = useMemo(() => {
+    const d = new Date(refDate + "T12:00:00");
+    if (periodoTipo === "semanal") {
+      const s = startOfWeek(d, { weekStartsOn: 1 });
+      const e = endOfWeek(d, { weekStartsOn: 1 });
+      const ps = startOfWeek(subWeeks(d, 1), { weekStartsOn: 1 });
+      const pe = endOfWeek(subWeeks(d, 1), { weekStartsOn: 1 });
+      return {
+        startDate: format(s, "yyyy-MM-dd"),
+        endDate: format(e, "yyyy-MM-dd"),
+        prevStartDate: format(ps, "yyyy-MM-dd"),
+        prevEndDate: format(pe, "yyyy-MM-dd"),
+      };
+    } else {
+      const s = startOfMonth(d);
+      const e = endOfMonth(d);
+      const ps = startOfMonth(subMonths(d, 1));
+      const pe = endOfMonth(subMonths(d, 1));
+      return {
+        startDate: format(s, "yyyy-MM-dd"),
+        endDate: format(e, "yyyy-MM-dd"),
+        prevStartDate: format(ps, "yyyy-MM-dd"),
+        prevEndDate: format(pe, "yyyy-MM-dd"),
+      };
     }
-  }, [periodoTipo, periodoInicio]);
+  }, [periodoTipo, refDate]);
 
-  // Load team members
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("team_members").select("id, nome").eq("status", "ativo").order("nome").then(({ data }) => {
-      setTeamMembers((data as { id: string; nome: string }[]) || []);
+  const aggregateCheckpoint = useCallback(async (start: string, end: string): Promise<AggregatedData> => {
+    if (!user) return { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0, pdn_negocios: 0, pdn_vgv: 0, by_corretor: {} };
+
+    // Get checkpoints in range
+    const { data: cps } = await supabase
+      .from("checkpoints")
+      .select("id, data")
+      .eq("gerente_id", user.id)
+      .gte("data", start)
+      .lte("data", end);
+
+    const cpIds = (cps || []).map((c: any) => c.id);
+
+    let lines: any[] = [];
+    if (cpIds.length > 0) {
+      const { data: linesData } = await supabase
+        .from("checkpoint_lines")
+        .select("corretor_id, real_leads, real_ligacoes, real_visitas_marcadas, real_visitas_realizadas, real_propostas, real_vgv_gerado, real_vgv_assinado")
+        .in("checkpoint_id", cpIds);
+      lines = linesData || [];
+    }
+
+    // Get team members for names
+    const { data: team } = await supabase.from("team_members").select("id, nome").eq("gerente_id", user.id);
+    const teamMap = new Map((team || []).map((t: any) => [t.id, t.nome]));
+
+    // Aggregate
+    const by_corretor: AggregatedData["by_corretor"] = {};
+    let totals = { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
+
+    for (const l of lines) {
+      const nome = teamMap.get(l.corretor_id) || "Desconhecido";
+      if (!by_corretor[l.corretor_id]) {
+        by_corretor[l.corretor_id] = { nome, leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
+      }
+      const c = by_corretor[l.corretor_id];
+      const vals = {
+        leads: l.real_leads || 0,
+        ligacoes: l.real_ligacoes || 0,
+        visitas_marcadas: l.real_visitas_marcadas || 0,
+        visitas_realizadas: l.real_visitas_realizadas || 0,
+        propostas: l.real_propostas || 0,
+        vgv_gerado: Number(l.real_vgv_gerado || 0),
+        vgv_assinado: Number(l.real_vgv_assinado || 0),
+      };
+      for (const k of Object.keys(vals) as (keyof typeof vals)[]) {
+        c[k] += vals[k];
+        totals[k] += vals[k];
+      }
+    }
+
+    // Get PDN data for the month
+    const mesKey = `${start.slice(0, 7)}`;
+    const { data: pdns } = await supabase
+      .from("pdn_entries")
+      .select("id, vgv, situacao")
+      .eq("gerente_id", user.id)
+      .eq("mes", mesKey);
+
+    const pdn_negocios = (pdns || []).length;
+    const pdn_vgv = (pdns || []).reduce((sum: number, p: any) => sum + Number(p.vgv || 0), 0);
+
+    return { ...totals, pdn_negocios, pdn_vgv, by_corretor };
+  }, [user]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const [current, prev] = await Promise.all([
+      aggregateCheckpoint(startDate, endDate),
+      aggregateCheckpoint(prevStartDate, prevEndDate),
+    ]);
+    setData(current);
+    setPrevData(prev);
+
+    // Load team members
+    if (user) {
+      const { data: team } = await supabase.from("team_members").select("id, nome").eq("gerente_id", user.id).eq("status", "ativo").order("nome");
+      setTeamMembers((team as any[]) || []);
+    }
+
+    setLoading(false);
+  }, [aggregateCheckpoint, startDate, endDate, prevStartDate, prevEndDate, user]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleIaAnalysis = async () => {
+    if (!data) return;
+    const report = await analyze({
+      module: "funil",
+      prompt: `Analise o funil comercial do período ${startDate} a ${endDate}:
+
+DADOS DO CHECKPOINT:
+- Leads: ${data.leads}
+- Ligações: ${data.ligacoes}
+- Visitas Marcadas: ${data.visitas_marcadas}
+- Visitas Realizadas: ${data.visitas_realizadas}
+- Propostas: ${data.propostas}
+- VGV Gerado: R$ ${data.vgv_gerado}
+- VGV Assinado: R$ ${data.vgv_assinado}
+
+DADOS DO PDN:
+- Negócios ativos: ${data.pdn_negocios}
+- VGV potencial PDN: R$ ${data.pdn_vgv}
+
+POR CORRETOR:
+${Object.values(data.by_corretor).map(c => `${c.nome}: ${c.leads} leads, ${c.ligacoes} lig, ${c.visitas_realizadas} vis, ${c.propostas} prop, VGV ger R$${c.vgv_gerado}, VGV ass R$${c.vgv_assinado}`).join("\n")}
+
+${prevData ? `PERÍODO ANTERIOR: Leads ${prevData.leads}, Propostas ${prevData.propostas}, VGV Gerado R$ ${prevData.vgv_gerado}` : ""}
+
+Faça análise de gargalos, taxas de conversão, destaque corretores com melhor e pior performance, e dê ações concretas.`,
+      context: data,
     });
-  }, [user]);
-
-  // Load entries
-  const loadEntries = useCallback(async () => {
-    if (!user) return;
-    setLoadingEntries(true);
-    const { data } = await supabase
-      .from("funnel_entries")
-      .select("*")
-      .order("periodo_inicio", { ascending: false })
-      .limit(50);
-    setEntries((data as FunnelEntry[]) || []);
-    setLoadingEntries(false);
-  }, [user]);
-
-  useEffect(() => { loadEntries(); }, [loadEntries]);
-
-  // Previous entry for comparison
-  const previousEntry = useMemo(() => {
-    if (entries.length < 2) return null;
-    // Find entry before current period
-    return entries.find(e => e.periodo_fim < periodoInicio) || null;
-  }, [entries, periodoInicio]);
-
-  // Calculated metrics
-  const metrics = useMemo(() => {
-    const taxaProposta = leadsGerados > 0 ? ((propostasGeradas / leadsGerados) * 100) : 0;
-    const taxaVenda = leadsGerados > 0 ? ((vendasFechadas / leadsGerados) * 100) : 0;
-    const taxaFechamento = propostasGeradas > 0 ? ((vendasFechadas / propostasGeradas) * 100) : 0;
-    const cplReal = leadsGerados > 0 ? investimentoMidia / leadsGerados : 0;
-    const cacEstimado = vendasFechadas > 0 ? investimentoMidia / vendasFechadas : 0;
-    const leadsEstimados = custoMedioLead > 0 ? Math.floor(investimentoMidia / custoMedioLead) : 0;
-    const invPorProposta = propostasGeradas > 0 ? investimentoMidia / propostasGeradas : 0;
-    return { taxaProposta, taxaVenda, taxaFechamento, cplReal, cacEstimado, leadsEstimados, invPorProposta };
-  }, [leadsGerados, propostasGeradas, vendasFechadas, investimentoMidia, custoMedioLead]);
-
-  const handleSave = useCallback(async () => {
-    if (!user) return;
-    setSaving(true);
-    try {
-      const payload = {
-        gerente_id: user.id,
-        periodo_tipo: periodoTipo,
-        periodo_inicio: periodoInicio,
-        periodo_fim: periodoFim,
-        leads_gerados: leadsGerados,
-        propostas_geradas: propostasGeradas,
-        vendas_fechadas: vendasFechadas,
-        vgv_vendido: vgvVendido,
-        investimento_midia: investimentoMidia,
-        custo_medio_lead: custoMedioLead,
-        observacoes: observacoes || null,
-        corretor_nome: corretorNome || null,
-      };
-
-      if (currentEntryId) {
-        const { error } = await supabase.from("funnel_entries").update(payload).eq("id", currentEntryId);
-        if (error) throw error;
-        toast.success("Registro atualizado!");
-      } else {
-        const { data, error } = await supabase.from("funnel_entries").insert(payload).select().single();
-        if (error) throw error;
-        setCurrentEntryId(data.id);
-        toast.success("Registro salvo!");
-      }
-      await loadEntries();
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar.");
-    } finally { setSaving(false); }
-  }, [user, periodoTipo, periodoInicio, periodoFim, leadsGerados, propostasGeradas, vendasFechadas, vgvVendido, investimentoMidia, custoMedioLead, observacoes, corretorNome, currentEntryId, loadEntries]);
-
-  const handleDuplicate = useCallback(() => {
-    if (entries.length === 0) { toast.warning("Sem registros anteriores."); return; }
-    const prev = entries[0];
-    setLeadsGerados(prev.leads_gerados);
-    setPropostasGeradas(prev.propostas_geradas);
-    setVendasFechadas(prev.vendas_fechadas);
-    setVgvVendido(prev.vgv_vendido);
-    setInvestimentoMidia(prev.investimento_midia);
-    setCustoMedioLead(prev.custo_medio_lead);
-    setCorretorNome(prev.corretor_nome || "");
-    setObservacoes("");
-    setCurrentEntryId(null);
-    toast.info("Dados do período anterior duplicados. Ajuste e salve.");
-  }, [entries]);
-
-  const handleAnalyze = useCallback(async () => {
-    if (leadsGerados === 0 && propostasGeradas === 0) {
-      toast.warning("Preencha ao menos leads ou propostas.");
-      return;
-    }
-    // Save first if needed
-    if (!currentEntryId) await handleSave();
-
-    setAnalyzing(true);
-    try {
-      const entryData = {
-        periodo_inicio: periodoInicio,
-        periodo_fim: periodoFim,
-        leads_gerados: leadsGerados,
-        propostas_geradas: propostasGeradas,
-        vendas_fechadas: vendasFechadas,
-        vgv_vendido: vgvVendido,
-        investimento_midia: investimentoMidia,
-        custo_medio_lead: custoMedioLead,
-        observacoes,
-      };
-
-      const { data, error } = await supabase.functions.invoke("funnel-coach", {
-        body: { entry: entryData, previousEntry },
-      });
-      if (error) throw error;
-      const analysis = data.analysis;
-      setCurrentAnalysis(analysis);
-
-      // Save analysis to entry
-      if (currentEntryId) {
-        await supabase.from("funnel_entries").update({ analise_ia: analysis }).eq("id", currentEntryId);
-      }
-      await loadEntries();
-      toast.success("Análise gerada!");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao gerar análise.");
-    } finally { setAnalyzing(false); }
-  }, [leadsGerados, propostasGeradas, vendasFechadas, vgvVendido, investimentoMidia, custoMedioLead, observacoes, periodoInicio, periodoFim, previousEntry, currentEntryId, handleSave, loadEntries]);
-
-  const loadEntry = useCallback((entry: FunnelEntry) => {
-    setPeriodoTipo(entry.periodo_tipo);
-    setPeriodoInicio(entry.periodo_inicio);
-    setPeriodoFim(entry.periodo_fim);
-    setLeadsGerados(entry.leads_gerados);
-    setPropostasGeradas(entry.propostas_geradas);
-    setVendasFechadas(entry.vendas_fechadas);
-    setVgvVendido(entry.vgv_vendido);
-    setInvestimentoMidia(entry.investimento_midia);
-    setCustoMedioLead(entry.custo_medio_lead);
-    setCorretorNome(entry.corretor_nome || "");
-    setObservacoes(entry.observacoes || "");
-    setCurrentAnalysis(entry.analise_ia || null);
-    setCurrentEntryId(entry.id);
-    setTab("checkin");
-  }, []);
-
-  const fmtCurrency = (v: number) => {
-    if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-    if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(1).replace(".", ",")}K`;
-    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    setIaReport(report);
   };
-  const fmtPct = (v: number) => `${v.toFixed(1)}%`;
+
+  // Filtered data for display
+  const displayData = useMemo(() => {
+    if (!data) return null;
+    if (filterCorretor === "all") return data;
+    const c = data.by_corretor[filterCorretor];
+    if (!c) return data;
+    return { ...data, leads: c.leads, ligacoes: c.ligacoes, visitas_marcadas: c.visitas_marcadas, visitas_realizadas: c.visitas_realizadas, propostas: c.propostas, vgv_gerado: c.vgv_gerado, vgv_assinado: c.vgv_assinado };
+  }, [data, filterCorretor]);
+
+  const metrics = useMemo(() => {
+    if (!displayData) return { taxaProposta: 0, taxaVenda: 0, taxaFechamento: 0 };
+    const taxaProposta = displayData.leads > 0 ? (displayData.propostas / displayData.leads) * 100 : 0;
+    const taxaFechamento = displayData.propostas > 0 ? (displayData.vgv_assinado / displayData.vgv_gerado) * 100 : 0;
+    return { taxaProposta, taxaVenda: 0, taxaFechamento };
+  }, [displayData]);
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  const corretores = data ? Object.entries(data.by_corretor) : [];
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">
-          Funil <span className="text-primary">Leads → Propostas → Vendas</span>
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Painel macro de gestão do funil comercial
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-primary" />
+            Funil Comercial
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Visão consolidada dos dados do Checkpoint e PDN
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Select value={periodoTipo} onValueChange={(v) => setPeriodoTipo(v as PeriodoTipo)}>
+            <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="semanal">Semanal</SelectItem>
+              <SelectItem value="mensal">Mensal</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input type="date" value={refDate} onChange={(e) => setRefDate(e.target.value)} className="w-40 h-9" />
+          {corretores.length > 0 && (
+            <Select value={filterCorretor} onValueChange={setFilterCorretor}>
+              <SelectTrigger className="w-40 h-9"><SelectValue placeholder="Filtrar corretor" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {corretores.map(([id, c]) => <SelectItem key={id} value={id}>{c.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          <Button variant="secondary" size="sm" onClick={handleIaAnalysis} disabled={iaLoading || !data} className="gap-1.5">
+            <Sparkles className="h-4 w-4" />
+            {iaLoading ? "Analisando..." : "Análise IA"}
+          </Button>
+        </div>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="checkin" className="gap-1.5 text-xs py-2">
-            <Save className="h-3.5 w-3.5" /> Check-in
-          </TabsTrigger>
-          <TabsTrigger value="dashboard" className="gap-1.5 text-xs py-2">
-            <BarChart3 className="h-3.5 w-3.5" /> Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="historico" className="gap-1.5 text-xs py-2">
-            <History className="h-3.5 w-3.5" /> Histórico
-          </TabsTrigger>
-        </TabsList>
+      <p className="text-xs text-muted-foreground">
+        Período: <strong>{format(new Date(startDate + "T12:00:00"), "dd/MM/yyyy")} — {format(new Date(endDate + "T12:00:00"), "dd/MM/yyyy")}</strong>
+      </p>
 
-        {/* ===== CHECK-IN TAB ===== */}
-        <TabsContent value="checkin" className="mt-4 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Form */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-lg">Registro do Funil</CardTitle>
-                <CardDescription>Preencha os dados macro do período</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Period selector */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <Label>Tipo de período</Label>
-                    <Select value={periodoTipo} onValueChange={setPeriodoTipo}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="diario">Diário</SelectItem>
-                        <SelectItem value="semanal">Semanal</SelectItem>
-                        <SelectItem value="mensal">Mensal</SelectItem>
-                        <SelectItem value="customizado">Customizado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Data início</Label>
-                    <Input type="date" value={periodoInicio} onChange={e => setPeriodoInicio(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Data fim</Label>
-                    <Input type="date" value={periodoFim} onChange={e => setPeriodoFim(e.target.value)} disabled={periodoTipo !== "customizado"} />
-                  </div>
-                </div>
+      {displayData && (
+        <Tabs defaultValue="overview">
+          <TabsList>
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="corretores">Por Corretor</TabsTrigger>
+            <TabsTrigger value="pdn">PDN</TabsTrigger>
+          </TabsList>
 
-                {/* Corretor selector */}
-                <div>
-                  <Label>Corretor</Label>
-                  <Select value={corretorNome} onValueChange={setCorretorNome}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o corretor" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Geral (sem corretor)</SelectItem>
-                      {teamMembers.map(m => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {/* OVERVIEW */}
+          <TabsContent value="overview" className="mt-4 space-y-6">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              {[
+                { label: "Leads", value: displayData.leads, prev: prevData?.leads },
+                { label: "Ligações", value: displayData.ligacoes, prev: prevData?.ligacoes },
+                { label: "V. Marcadas", value: displayData.visitas_marcadas, prev: prevData?.visitas_marcadas },
+                { label: "V. Realizadas", value: displayData.visitas_realizadas, prev: prevData?.visitas_realizadas },
+                { label: "Propostas", value: displayData.propostas, prev: prevData?.propostas },
+                { label: "VGV Gerado", value: displayData.vgv_gerado, prev: prevData?.vgv_gerado, currency: true },
+                { label: "VGV Assinado", value: displayData.vgv_assinado, prev: prevData?.vgv_assinado, currency: true },
+              ].map((c) => (
+                <Card key={c.label}>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground">{c.label}</p>
+                    <p className="text-lg font-bold">{c.currency ? fmtCurrency(c.value) : c.value}</p>
+                    {c.prev !== undefined && c.prev !== null && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <TrendIcon current={c.value} previous={c.prev} />
+                        <span className="text-xs text-muted-foreground">{variacao(c.value, c.prev)}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-                {/* Main fields */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div>
-                    <Label>Leads gerados</Label>
-                    <Input type="number" min={0} value={leadsGerados} onChange={e => setLeadsGerados(Number(e.target.value))} />
-                  </div>
-                  <div>
-                    <Label>Propostas geradas</Label>
-                    <Input type="number" min={0} value={propostasGeradas} onChange={e => setPropostasGeradas(Number(e.target.value))} />
-                  </div>
-                  <div>
-                    <Label>Vendas fechadas</Label>
-                    <Input type="number" min={0} value={vendasFechadas} onChange={e => setVendasFechadas(Number(e.target.value))} />
-                  </div>
-                  <div>
-                    <Label>VGV vendido (R$)</Label>
-                    <Input type="number" min={0} value={vgvVendido} onChange={e => setVgvVendido(Number(e.target.value))} />
-                  </div>
-                  <div>
-                    <Label>Investimento mídia (R$)</Label>
-                    <Input type="number" min={0} value={investimentoMidia} onChange={e => setInvestimentoMidia(Number(e.target.value))} />
-                  </div>
-                  <div>
-                    <Label>CPL médio (R$)</Label>
-                    <Input type="number" min={0} value={custoMedioLead} onChange={e => setCustoMedioLead(Number(e.target.value))} />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Observações do gerente</Label>
-                  <Textarea placeholder="Ex.: campanha pausada, time com faltas, evento especial..." value={observacoes} onChange={e => setObservacoes(e.target.value)} rows={2} />
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={handleSave} disabled={saving} className="gap-1.5">
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    {currentEntryId ? "Atualizar" : "Salvar"}
-                  </Button>
-                  <Button variant="outline" onClick={handleDuplicate} className="gap-1.5">
-                    <Copy className="h-4 w-4" /> Duplicar anterior
-                  </Button>
-                  <Button variant="secondary" onClick={handleAnalyze} disabled={analyzing} className="gap-1.5">
-                    {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {analyzing ? "Analisando..." : "Gerar análise com IA"}
-                  </Button>
-                  <Button variant="ghost" onClick={() => { setCurrentEntryId(null); setLeadsGerados(0); setPropostasGeradas(0); setVendasFechadas(0); setVgvVendido(0); setInvestimentoMidia(0); setCustoMedioLead(25); setObservacoes(""); setCorretorNome(""); setCurrentAnalysis(null); }} className="gap-1.5">
-                    <Eraser className="h-4 w-4" /> Limpar campos
-                  </Button>
-                  {currentEntryId && (
-                    <Button variant="ghost" className="gap-1.5 text-destructive hover:text-destructive" onClick={async () => {
-                      if (!confirm("Tem certeza que deseja apagar este registro?")) return;
-                      const { error } = await supabase.from("funnel_entries").delete().eq("id", currentEntryId);
-                      if (error) { toast.error("Erro ao apagar."); return; }
-                      setCurrentEntryId(null); setLeadsGerados(0); setPropostasGeradas(0); setVendasFechadas(0); setVgvVendido(0); setInvestimentoMidia(0); setCustoMedioLead(25); setObservacoes(""); setCorretorNome(""); setCurrentAnalysis(null);
-                      await loadEntries();
-                      toast.success("Registro apagado!");
-                    }}>
-                      <Trash2 className="h-4 w-4" /> Apagar registro
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Live metrics sidebar */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Taxas do Funil</CardTitle></CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Lead → Proposta</span><span className="font-semibold">{fmtPct(metrics.taxaProposta)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Lead → Venda</span><span className="font-semibold">{fmtPct(metrics.taxaVenda)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Proposta → Venda</span><span className="font-semibold">{fmtPct(metrics.taxaFechamento)}</span></div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Métricas Financeiras</CardTitle></CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">CPL real</span><span className="font-semibold">{metrics.cplReal > 0 ? fmtCurrency(metrics.cplReal) : "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">CAC estimado</span><span className="font-semibold">{metrics.cacEstimado > 0 ? fmtCurrency(metrics.cacEstimado) : "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Inv/Proposta</span><span className="font-semibold">{metrics.invPorProposta > 0 ? fmtCurrency(metrics.invPorProposta) : "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Leads estimados</span><span className="font-semibold">{metrics.leadsEstimados}</span></div>
-                </CardContent>
-              </Card>
-
-              {/* Funnel visual */}
+            {/* Funnel visual + Rates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Funil Visual</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-1">
                     <div className="bg-primary/20 rounded-t-lg p-3 text-center">
                       <p className="text-xs text-muted-foreground">Leads</p>
-                      <p className="text-lg font-bold text-foreground">{leadsGerados}</p>
+                      <p className="text-lg font-bold">{displayData.leads}</p>
                     </div>
                     <div className="text-center text-xs text-muted-foreground">↓ {fmtPct(metrics.taxaProposta)}</div>
                     <div className="bg-warning/20 p-3 text-center mx-4">
                       <p className="text-xs text-muted-foreground">Propostas</p>
-                      <p className="text-lg font-bold text-foreground">{propostasGeradas}</p>
+                      <p className="text-lg font-bold">{displayData.propostas}</p>
                     </div>
-                    <div className="text-center text-xs text-muted-foreground">↓ {fmtPct(metrics.taxaFechamento)}</div>
-                    <div className="bg-emerald-500/20 rounded-b-lg p-3 text-center mx-8">
-                      <p className="text-xs text-muted-foreground">Vendas</p>
-                      <p className="text-lg font-bold text-foreground">{vendasFechadas}</p>
+                    <div className="text-center text-xs text-muted-foreground">↓</div>
+                    <div className="bg-success/20 rounded-b-lg p-3 text-center mx-8">
+                      <p className="text-xs text-muted-foreground">VGV Assinado</p>
+                      <p className="text-lg font-bold">{fmtCurrency(displayData.vgv_assinado)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Taxas de Conversão</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Lead → Proposta</span>
+                    <span className="font-semibold">{fmtPct(metrics.taxaProposta)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">VGV Assinado / Gerado</span>
+                    <span className="font-semibold">{fmtPct(metrics.taxaFechamento)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Visitas Realizadas / Marcadas</span>
+                    <span className="font-semibold">{fmtPct(displayData.visitas_marcadas > 0 ? (displayData.visitas_realizadas / displayData.visitas_marcadas) * 100 : 0)}</span>
+                  </div>
+                  <div className="pt-3 border-t border-border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Negócios PDN</span>
+                      <span className="font-semibold">{displayData.pdn_negocios}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-sm text-muted-foreground">VGV PDN (potencial)</span>
+                      <span className="font-semibold">{fmtCurrency(displayData.pdn_vgv)}</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </TabsContent>
 
-          {/* AI Analysis */}
-          {currentAnalysis && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" /> Análise do Funil Coach
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown>{currentAnalysis}</ReactMarkdown>
+          {/* POR CORRETOR */}
+          <TabsContent value="corretores" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Performance por Corretor
+                </CardTitle>
+                <CardDescription>Dados agregados do checkpoint no período</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {corretores.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Sem dados de checkpoint no período.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Corretor</TableHead>
+                          <TableHead className="text-xs text-right">Leads</TableHead>
+                          <TableHead className="text-xs text-right">Ligações</TableHead>
+                          <TableHead className="text-xs text-right">V. Marc</TableHead>
+                          <TableHead className="text-xs text-right">V. Real</TableHead>
+                          <TableHead className="text-xs text-right">Propostas</TableHead>
+                          <TableHead className="text-xs text-right">VGV Ger.</TableHead>
+                          <TableHead className="text-xs text-right">VGV Ass.</TableHead>
+                          <TableHead className="text-xs text-right">Taxa L→P</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {corretores.map(([id, c]) => (
+                          <TableRow key={id}>
+                            <TableCell className="font-medium text-xs">{c.nome}</TableCell>
+                            <TableCell className="text-right text-xs">{c.leads}</TableCell>
+                            <TableCell className="text-right text-xs">{c.ligacoes}</TableCell>
+                            <TableCell className="text-right text-xs">{c.visitas_marcadas}</TableCell>
+                            <TableCell className="text-right text-xs">{c.visitas_realizadas}</TableCell>
+                            <TableCell className="text-right text-xs">{c.propostas}</TableCell>
+                            <TableCell className="text-right text-xs">{fmtCurrency(c.vgv_gerado)}</TableCell>
+                            <TableCell className="text-right text-xs">{fmtCurrency(c.vgv_assinado)}</TableCell>
+                            <TableCell className="text-right text-xs">{fmtPct(c.leads > 0 ? (c.propostas / c.leads) * 100 : 0)}</TableCell>
+                          </TableRow>
+                        ))}
+                        {/* Totals row */}
+                        <TableRow className="bg-muted/30 font-semibold">
+                          <TableCell className="text-xs">TOTAL</TableCell>
+                          <TableCell className="text-right text-xs">{data!.leads}</TableCell>
+                          <TableCell className="text-right text-xs">{data!.ligacoes}</TableCell>
+                          <TableCell className="text-right text-xs">{data!.visitas_marcadas}</TableCell>
+                          <TableCell className="text-right text-xs">{data!.visitas_realizadas}</TableCell>
+                          <TableCell className="text-right text-xs">{data!.propostas}</TableCell>
+                          <TableCell className="text-right text-xs">{fmtCurrency(data!.vgv_gerado)}</TableCell>
+                          <TableCell className="text-right text-xs">{fmtCurrency(data!.vgv_assinado)}</TableCell>
+                          <TableCell className="text-right text-xs">{fmtPct(data!.leads > 0 ? (data!.propostas / data!.leads) * 100 : 0)}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </TabsContent>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* ===== DASHBOARD TAB ===== */}
-        <TabsContent value="dashboard" className="mt-4 space-y-6">
-          {entries.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum registro ainda. Faça seu primeiro check-in!</CardContent></Card>
-          ) : (
-            <>
-              {/* Latest entry cards */}
-              {(() => {
-                const latest = entries[0];
-                const prev = entries[1] || null;
-                const cards = [
-                  { label: "Leads", value: latest.leads_gerados, prev: prev?.leads_gerados },
-                  { label: "Propostas", value: latest.propostas_geradas, prev: prev?.propostas_geradas },
-                  { label: "Vendas", value: latest.vendas_fechadas, prev: prev?.vendas_fechadas },
-                  { label: "VGV", value: latest.vgv_vendido, prev: prev?.vgv_vendido, currency: true },
-                  { label: "Investimento", value: latest.investimento_midia, prev: prev?.investimento_midia, currency: true },
-                  { label: "CPL Real", value: latest.cpl_real, prev: prev?.cpl_real, currency: true },
-                  { label: "CAC Estimado", value: latest.cac_estimado, prev: prev?.cac_estimado, currency: true },
-                ];
-                return (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                    {cards.map(c => (
-                      <Card key={c.label}>
-                        <CardContent className="p-4">
-                          <p className="text-xs text-muted-foreground">{c.label}</p>
-                          <p className="text-lg font-bold">{c.currency ? fmtCurrency(c.value) : c.value}</p>
-                          {c.prev !== undefined && c.prev !== null && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <TrendIcon current={c.value} previous={c.prev} />
-                              <span className="text-xs text-muted-foreground">{variacao(c.value, c.prev)}</span>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+          {/* PDN */}
+          <TabsContent value="pdn" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Dados do PDN</CardTitle>
+                <CardDescription>Negócios em andamento no mês de referência</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-6 rounded-lg bg-primary/10">
+                    <p className="text-3xl font-bold text-primary">{displayData.pdn_negocios}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Negócios ativos</p>
                   </div>
-                );
-              })()}
-
-              {/* Comparison table */}
-              {entries.length >= 2 && (
-                <Card>
-                  <CardHeader><CardTitle className="text-base">Comparativo: Último vs Anterior</CardTitle></CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2 font-medium">Métrica</th>
-                            <th className="text-right py-2 font-medium">Anterior</th>
-                            <th className="text-right py-2 font-medium">Atual</th>
-                            <th className="text-right py-2 font-medium">Variação</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            { label: "Leads", k: "leads_gerados" },
-                            { label: "Propostas", k: "propostas_geradas" },
-                            { label: "Vendas", k: "vendas_fechadas" },
-                            { label: "VGV", k: "vgv_vendido", currency: true },
-                            { label: "Investimento", k: "investimento_midia", currency: true },
-                            { label: "Taxa Proposta", k: "taxa_proposta", pct: true },
-                            { label: "Taxa Fechamento", k: "taxa_fechamento", pct: true },
-                          ].map(row => {
-                            const atual = (entries[0] as any)[row.k] ?? 0;
-                            const anterior = (entries[1] as any)[row.k] ?? 0;
-                            return (
-                              <tr key={row.k} className="border-b last:border-0">
-                                <td className="py-2">{row.label}</td>
-                                <td className="text-right">{row.currency ? fmtCurrency(anterior) : row.pct ? fmtPct(anterior) : anterior}</td>
-                                <td className="text-right font-semibold">{row.currency ? fmtCurrency(atual) : row.pct ? fmtPct(atual) : atual}</td>
-                                <td className="text-right">
-                                  <span className="flex items-center justify-end gap-1">
-                                    <TrendIcon current={atual} previous={anterior} />
-                                    {variacao(atual, anterior)}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Funnel visual from latest */}
-              <Card>
-                <CardHeader><CardTitle className="text-base">Funil do Último Período</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="bg-primary/20 rounded-lg p-4 text-center min-w-[100px]">
-                      <p className="text-xs text-muted-foreground">Leads</p>
-                      <p className="text-2xl font-bold">{entries[0].leads_gerados}</p>
-                    </div>
-                    <div className="text-center">
-                      <span className="text-xs text-muted-foreground">→ {fmtPct(entries[0].taxa_proposta)}</span>
-                    </div>
-                    <div className="bg-warning/20 rounded-lg p-4 text-center min-w-[100px]">
-                      <p className="text-xs text-muted-foreground">Propostas</p>
-                      <p className="text-2xl font-bold">{entries[0].propostas_geradas}</p>
-                    </div>
-                    <div className="text-center">
-                      <span className="text-xs text-muted-foreground">→ {fmtPct(entries[0].taxa_fechamento)}</span>
-                    </div>
-                    <div className="bg-emerald-500/20 rounded-lg p-4 text-center min-w-[100px]">
-                      <p className="text-xs text-muted-foreground">Vendas</p>
-                      <p className="text-2xl font-bold">{entries[0].vendas_fechadas}</p>
-                    </div>
+                  <div className="text-center p-6 rounded-lg bg-success/10">
+                    <p className="text-3xl font-bold text-success">{fmtCurrency(displayData.pdn_vgv)}</p>
+                    <p className="text-sm text-muted-foreground mt-1">VGV potencial</p>
                   </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
-        </TabsContent>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
 
-        {/* ===== HISTÓRICO TAB ===== */}
-        <TabsContent value="historico" className="mt-4">
+      {/* IA Report */}
+      {iaReport && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-base">Histórico do Funil</CardTitle>
-                <CardDescription>Todos os registros salvos</CardDescription>
-              </div>
-              {(() => {
-                const corretores = [...new Set(entries.map(e => e.corretor_nome).filter(Boolean))];
-                if (corretores.length === 0) return null;
-                return (
-                  <Select value={filterCorretor} onValueChange={v => setFilterCorretor(v === "all" ? "" : v)}>
-                    <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Filtrar corretor" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {corretores.map(c => <SelectItem key={c!} value={c!}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                );
-              })()}
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" /> Análise do Funil Coach
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {loadingEntries ? (
-                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-              ) : entries.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Nenhum registro encontrado.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 font-medium">Período</th>
-                        <th className="text-left py-2 font-medium">Corretor</th>
-                        <th className="text-right py-2 font-medium">Leads</th>
-                        <th className="text-right py-2 font-medium">Propostas</th>
-                        <th className="text-right py-2 font-medium">Vendas</th>
-                        <th className="text-right py-2 font-medium">VGV</th>
-                        <th className="text-right py-2 font-medium">Invest.</th>
-                        <th className="text-right py-2 font-medium">CPL</th>
-                        <th className="text-right py-2 font-medium">CAC</th>
-                        <th className="text-center py-2 font-medium">IA</th>
-                        <th className="py-2"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(filterCorretor ? entries.filter(e => e.corretor_nome === filterCorretor) : entries).map(e => (
-                        <tr key={e.id} className="border-b last:border-0 hover:bg-muted/50 cursor-pointer" onClick={() => loadEntry(e)}>
-                          <td className="py-2">
-                            <span className="text-xs uppercase text-muted-foreground">{e.periodo_tipo}</span><br />
-                            <span className="text-xs">{e.periodo_inicio} → {e.periodo_fim}</span>
-                          </td>
-                          <td className="py-2 text-xs">{e.corretor_nome || <span className="text-muted-foreground">Geral</span>}</td>
-                          <td className="text-right">{e.leads_gerados}</td>
-                          <td className="text-right">{e.propostas_geradas}</td>
-                          <td className="text-right">{e.vendas_fechadas}</td>
-                          <td className="text-right">{fmtCurrency(e.vgv_vendido)}</td>
-                          <td className="text-right">{fmtCurrency(e.investimento_midia)}</td>
-                          <td className="text-right">{fmtCurrency(e.cpl_real)}</td>
-                          <td className="text-right">{fmtCurrency(e.cac_estimado)}</td>
-                          <td className="text-center">{e.analise_ia ? "✅" : "—"}</td>
-                          <td><Button size="sm" variant="ghost" className="text-xs">Abrir</Button></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown>{iaReport}</ReactMarkdown>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </motion.div>
+      )}
     </div>
   );
 }

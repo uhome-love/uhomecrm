@@ -15,10 +15,11 @@ interface CheckpointLine {
   corretor_nome: string;
   meta_ligacoes: number; meta_presenca: string; meta_visitas_marcadas: number;
   meta_visitas_realizadas: number; meta_propostas: number; meta_vgv_gerado: number; meta_vgv_assinado: number;
+  meta_leads: number;
   obs_gerente: string;
   real_ligacoes: number | null; real_presenca: string | null; real_visitas_marcadas: number | null;
   real_visitas_realizadas: number | null; real_propostas: number | null; real_vgv_gerado: number | null;
-  real_vgv_assinado: number | null; obs_dia: string | null; status_dia: string | null;
+  real_vgv_assinado: number | null; real_leads: number | null; obs_dia: string | null; status_dia: string | null;
 }
 
 function calcStatusDia(line: CheckpointLine): string {
@@ -105,12 +106,13 @@ export default function CheckpointDaily() {
           meta_ligacoes: existing.meta_ligacoes ?? 0, meta_presenca: existing.meta_presenca ?? "sim",
           meta_visitas_marcadas: existing.meta_visitas_marcadas ?? 0, meta_visitas_realizadas: existing.meta_visitas_realizadas ?? 0,
           meta_propostas: existing.meta_propostas ?? 0, meta_vgv_gerado: Number(existing.meta_vgv_gerado ?? 0),
-          meta_vgv_assinado: Number(existing.meta_vgv_assinado ?? 0), obs_gerente: existing.obs_gerente ?? "",
+          meta_vgv_assinado: Number(existing.meta_vgv_assinado ?? 0), meta_leads: existing.meta_leads ?? 0,
+          obs_gerente: existing.obs_gerente ?? "",
           real_ligacoes: existing.real_ligacoes, real_presenca: existing.real_presenca,
           real_visitas_marcadas: existing.real_visitas_marcadas, real_visitas_realizadas: existing.real_visitas_realizadas,
           real_propostas: existing.real_propostas, real_vgv_gerado: existing.real_vgv_gerado != null ? Number(existing.real_vgv_gerado) : null,
           real_vgv_assinado: existing.real_vgv_assinado != null ? Number(existing.real_vgv_assinado) : null,
-          obs_dia: existing.obs_dia, status_dia: existing.status_dia,
+          real_leads: existing.real_leads, obs_dia: existing.obs_dia, status_dia: existing.status_dia,
         });
       } else {
         // Insert new line
@@ -121,10 +123,11 @@ export default function CheckpointDaily() {
           id: newLine?.id, corretor_id: m.id, corretor_nome: m.nome,
           meta_ligacoes: 0, meta_presenca: "sim", meta_visitas_marcadas: 0,
           meta_visitas_realizadas: 0, meta_propostas: 0, meta_vgv_gerado: 0, meta_vgv_assinado: 0,
+          meta_leads: 0,
           obs_gerente: "", real_ligacoes: null, real_presenca: null,
           real_visitas_marcadas: null, real_visitas_realizadas: null,
           real_propostas: null, real_vgv_gerado: null, real_vgv_assinado: null,
-          obs_dia: null, status_dia: null,
+          real_leads: null, obs_dia: null, status_dia: null,
         });
       }
     }
@@ -155,11 +158,13 @@ export default function CheckpointDaily() {
         meta_ligacoes: line.meta_ligacoes, meta_presenca: line.meta_presenca,
         meta_visitas_marcadas: line.meta_visitas_marcadas, meta_visitas_realizadas: line.meta_visitas_realizadas,
         meta_propostas: line.meta_propostas, meta_vgv_gerado: line.meta_vgv_gerado,
-        meta_vgv_assinado: line.meta_vgv_assinado, obs_gerente: line.obs_gerente,
+        meta_vgv_assinado: line.meta_vgv_assinado, meta_leads: line.meta_leads,
+        obs_gerente: line.obs_gerente,
         real_ligacoes: line.real_ligacoes, real_presenca: line.real_presenca,
         real_visitas_marcadas: line.real_visitas_marcadas, real_visitas_realizadas: line.real_visitas_realizadas,
         real_propostas: line.real_propostas, real_vgv_gerado: line.real_vgv_gerado,
-        real_vgv_assinado: line.real_vgv_assinado, obs_dia: line.obs_dia,
+        real_vgv_assinado: line.real_vgv_assinado, real_leads: line.real_leads,
+        obs_dia: line.obs_dia,
         status_dia: calcStatusDia(line),
       }).eq("id", line.id);
     }
@@ -192,7 +197,7 @@ export default function CheckpointDaily() {
     setLines((prev) => prev.map((l) => ({
       ...l, real_ligacoes: null, real_presenca: null, real_visitas_marcadas: null,
       real_visitas_realizadas: null, real_propostas: null, real_vgv_gerado: null,
-      real_vgv_assinado: null, obs_dia: null, status_dia: null,
+      real_vgv_assinado: null, real_leads: null, obs_dia: null, status_dia: null,
     })));
     toast.info("Resultados zerados (salve para confirmar).");
   };
@@ -309,7 +314,7 @@ export default function CheckpointDaily() {
             <tr className="border-b border-border bg-muted/40">
               <th className="text-left px-3 py-2 font-display font-semibold sticky left-0 bg-muted/40 z-10 min-w-[140px]">Corretor</th>
               <th colSpan={4} className="text-center px-2 py-1 font-display font-semibold text-primary border-l border-border">METAS DO DIA</th>
-              <th colSpan={7} className="text-center px-2 py-1 font-display font-semibold text-success border-l border-border">RESULTADO DO DIA</th>
+              <th colSpan={8} className="text-center px-2 py-1 font-display font-semibold text-success border-l border-border">RESULTADO DO DIA</th>
               <th className="text-center px-2 py-1 font-display font-semibold border-l border-border">ST</th>
             </tr>
             <tr className="border-b border-border bg-muted/20">
@@ -321,6 +326,7 @@ export default function CheckpointDaily() {
               <th className="px-2 py-1.5 text-center min-w-[100px]">Obs Gerente</th>
               {/* Result cols */}
               <th className="px-2 py-1.5 text-center border-l border-border min-w-[60px]">Ligações</th>
+              <th className="px-2 py-1.5 text-center min-w-[60px]">Leads</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">V.Marc</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">V.Real</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">Propostas</th>
@@ -353,6 +359,7 @@ export default function CheckpointDaily() {
                   <td className="px-1 py-1"><Input className="h-7 text-xs px-1" value={line.obs_gerente} onChange={(e) => updateLine(idx, "obs_gerente", e.target.value)} disabled={metasLocked} placeholder="..." /></td>
                   {/* Resultados */}
                   <td className="px-1 py-1 border-l border-border"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_ligacoes ?? ""} onChange={(e) => updateLine(idx, "real_ligacoes", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
+                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_leads ?? ""} onChange={(e) => updateLine(idx, "real_leads", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
                   <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_visitas_marcadas ?? ""} onChange={(e) => updateLine(idx, "real_visitas_marcadas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
                   <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_visitas_realizadas ?? ""} onChange={(e) => updateLine(idx, "real_visitas_realizadas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
                   <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_propostas ?? ""} onChange={(e) => updateLine(idx, "real_propostas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>

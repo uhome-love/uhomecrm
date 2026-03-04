@@ -95,6 +95,7 @@ export type Database = {
           corretor_id: string
           created_at: string
           id: string
+          meta_leads: number | null
           meta_ligacoes: number | null
           meta_presenca: string | null
           meta_propostas: number | null
@@ -104,6 +105,7 @@ export type Database = {
           meta_visitas_realizadas: number | null
           obs_dia: string | null
           obs_gerente: string | null
+          real_leads: number | null
           real_ligacoes: number | null
           real_presenca: string | null
           real_propostas: number | null
@@ -119,6 +121,7 @@ export type Database = {
           corretor_id: string
           created_at?: string
           id?: string
+          meta_leads?: number | null
           meta_ligacoes?: number | null
           meta_presenca?: string | null
           meta_propostas?: number | null
@@ -128,6 +131,7 @@ export type Database = {
           meta_visitas_realizadas?: number | null
           obs_dia?: string | null
           obs_gerente?: string | null
+          real_leads?: number | null
           real_ligacoes?: number | null
           real_presenca?: string | null
           real_propostas?: number | null
@@ -143,6 +147,7 @@ export type Database = {
           corretor_id?: string
           created_at?: string
           id?: string
+          meta_leads?: number | null
           meta_ligacoes?: number | null
           meta_presenca?: string | null
           meta_propostas?: number | null
@@ -152,6 +157,7 @@ export type Database = {
           meta_visitas_realizadas?: number | null
           obs_dia?: string | null
           obs_gerente?: string | null
+          real_leads?: number | null
           real_ligacoes?: number | null
           real_presenca?: string | null
           real_propostas?: number | null
