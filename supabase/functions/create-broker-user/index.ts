@@ -17,7 +17,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { action, jetimob_user_id, email, nome, senha, gerente_id } = await req.json();
+    const { action, jetimob_user_id, email, nome, senha, gerente_id, role } = await req.json();
 
     // Verify caller is admin
     const authHeader = req.headers.get("Authorization");
@@ -71,9 +71,11 @@ serve(async (req) => {
     }
 
     if (action === "create_user") {
-      if (!email || !nome || !senha || !jetimob_user_id) {
-        throw new Error("Dados incompletos: email, nome, senha e jetimob_user_id são obrigatórios");
+      if (!email || !nome || !senha) {
+        throw new Error("Dados incompletos: email, nome e senha são obrigatórios");
       }
+
+      const assignedRole = role === "gestor" ? "gestor" : "corretor";
 
       // Create auth user
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
@@ -86,25 +88,36 @@ serve(async (req) => {
       if (createError) throw new Error(`Erro ao criar usuário: ${createError.message}`);
 
       // Update profile with jetimob_user_id (trigger auto-creates profile)
-      // Small delay to ensure trigger has run
       await new Promise((r) => setTimeout(r, 500));
+
+      const profileUpdate: Record<string, string> = { nome };
+      if (jetimob_user_id) profileUpdate.jetimob_user_id = jetimob_user_id;
 
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ jetimob_user_id, nome })
+        .update(profileUpdate)
         .eq("user_id", newUser.user.id);
 
       if (profileError) {
         console.error("Profile update error:", profileError);
       }
 
-      // Assign corretor role (trigger should do this, but ensure)
+      // Remove default corretor role if assigning gestor
+      if (assignedRole !== "corretor") {
+        await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", newUser.user.id)
+          .eq("role", "corretor");
+      }
+
+      // Assign role
       await supabase
         .from("user_roles")
-        .upsert({ user_id: newUser.user.id, role: "corretor" }, { onConflict: "user_id,role" });
+        .upsert({ user_id: newUser.user.id, role: assignedRole }, { onConflict: "user_id,role" });
 
-      // Link broker to manager's team
-      if (gerente_id) {
+      // Link to manager's team (only for corretores)
+      if (gerente_id && assignedRole === "corretor") {
         const { error: teamError } = await supabase
           .from("team_members")
           .insert({ gerente_id, nome, status: "ativo" });
@@ -113,10 +126,11 @@ serve(async (req) => {
         }
       }
 
+      const roleLabel = assignedRole === "gestor" ? "Gerente" : "Corretor";
       return new Response(JSON.stringify({ 
         success: true, 
         user_id: newUser.user.id,
-        message: `Usuário ${nome} criado e vinculado ao gerente com sucesso!` 
+        message: `${roleLabel} ${nome} criado com sucesso!` 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

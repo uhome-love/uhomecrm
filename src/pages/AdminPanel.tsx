@@ -32,6 +32,7 @@ export default function AdminPanel() {
   const [newEmail, setNewEmail] = useState("");
   const [newNome, setNewNome] = useState("");
   const [newSenha, setNewSenha] = useState("");
+  const [newRole, setNewRole] = useState<"corretor" | "gestor">("corretor");
   const [selectedGerente, setSelectedGerente] = useState("");
   const [gestores, setGestores] = useState<{ user_id: string; nome: string }[]>([]);
   const [creating, setCreating] = useState(false);
@@ -168,13 +169,24 @@ export default function AdminPanel() {
 
   // Create user
   const handleCreate = useCallback(async () => {
-    if (!newEmail || !newNome || !newSenha || !lookupId || !selectedGerente) {
-      toast.error("Preencha todos os campos, incluindo o gerente."); return;
+    if (!newEmail || !newNome || !newSenha) {
+      toast.error("Preencha nome, email e senha."); return;
+    }
+    if (newRole === "corretor" && !selectedGerente) {
+      toast.error("Selecione o gerente para vincular o corretor."); return;
     }
     setCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-broker-user", {
-        body: { action: "create_user", jetimob_user_id: lookupId.trim(), email: newEmail, nome: newNome, senha: newSenha, gerente_id: selectedGerente },
+        body: {
+          action: "create_user",
+          jetimob_user_id: lookupId.trim() || null,
+          email: newEmail,
+          nome: newNome,
+          senha: newSenha,
+          gerente_id: newRole === "corretor" ? selectedGerente : null,
+          role: newRole,
+        },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -185,10 +197,10 @@ export default function AdminPanel() {
     } catch (err: any) {
       toast.error(err?.message || "Erro ao criar usuário.");
     } finally { setCreating(false); }
-  }, [lookupId, newEmail, newNome, newSenha, selectedGerente, fetchUsers]);
+  }, [lookupId, newEmail, newNome, newSenha, newRole, selectedGerente, fetchUsers]);
 
   const resetForm = () => {
-    setLookupId(""); setNewEmail(""); setNewNome(""); setNewSenha(""); setSelectedGerente("");
+    setLookupId(""); setNewEmail(""); setNewNome(""); setNewSenha(""); setSelectedGerente(""); setNewRole("corretor");
   };
 
   const roleBadgeColor: Record<AppRole, string> = {
@@ -261,7 +273,7 @@ export default function AdminPanel() {
             <h2 className="font-display text-xl font-bold text-foreground">Administração de Usuários</h2>
           </div>
           <Button onClick={() => { resetForm(); setCreateOpen(true); }} className="gap-2">
-            <UserPlus className="h-4 w-4" /> Criar Corretor
+            <UserPlus className="h-4 w-4" /> Criar Usuário
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">Gerencie papéis, permissões e vínculo com o Jetimob</p>
@@ -323,18 +335,25 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* Create Broker User Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">Criar Corretor pelo ID Jetimob</DialogTitle>
+            <DialogTitle className="font-display">Criar Usuário</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium">ID do Corretor no Jetimob</Label>
-                <Input value={lookupId} onChange={(e) => setLookupId(e.target.value)} placeholder="Ex: 96468" />
+                <Label className="text-sm font-medium">Tipo de Usuário</Label>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as "corretor" | "gestor")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="corretor">👤 Corretor</SelectItem>
+                    <SelectItem value="gestor">📊 Gerente</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">Nome</Label>
@@ -342,35 +361,45 @@ export default function AdminPanel() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">Email</Label>
-                <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="corretor@uhome.imb.br" />
+                <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="usuario@uhome.imb.br" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">Senha inicial</Label>
                 <Input type="text" value={newSenha} onChange={(e) => setNewSenha(e.target.value)} placeholder="Senha temporária" />
-                <p className="text-[11px] text-muted-foreground">O corretor poderá alterar depois</p>
+                <p className="text-[11px] text-muted-foreground">O usuário poderá alterar depois</p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">Vincular ao Gerente</Label>
-                <Select value={selectedGerente} onValueChange={setSelectedGerente}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o gerente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {gestores.map((g) => (
-                      <SelectItem key={g.user_id} value={g.user_id}>{g.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[11px] text-muted-foreground">Somente este gerente verá o corretor no time dele</p>
+                <Label className="text-sm">ID Jetimob <span className="text-muted-foreground">(opcional)</span></Label>
+                <Input value={lookupId} onChange={(e) => setLookupId(e.target.value)} placeholder="Ex: 96468" />
               </div>
+              {newRole === "corretor" && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Vincular ao Gerente</Label>
+                  <Select value={selectedGerente} onValueChange={setSelectedGerente}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o gerente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {gestores.map((g) => (
+                        <SelectItem key={g.user_id} value={g.user_id}>{g.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">Somente este gerente verá o corretor no time dele</p>
+                </div>
+              )}
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={creating || !newEmail || !newNome || !newSenha || !lookupId || !selectedGerente} className="gap-1.5">
+            <Button
+              onClick={handleCreate}
+              disabled={creating || !newEmail || !newNome || !newSenha || (newRole === "corretor" && !selectedGerente)}
+              className="gap-1.5"
+            >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-              {creating ? "Criando..." : "Criar Corretor"}
+              {creating ? "Criando..." : `Criar ${newRole === "gestor" ? "Gerente" : "Corretor"}`}
             </Button>
           </DialogFooter>
         </DialogContent>
