@@ -72,7 +72,7 @@ export default function Index() {
         body: { action: "list_leads" },
       });
       if (error) throw error;
-      const apiLeads = Array.isArray(data) ? data : [];
+      const apiLeads = Array.isArray(data?.result) ? data.result : Array.isArray(data) ? data : [];
       if (apiLeads.length === 0) {
         toast.warning("Nenhum lead encontrado na API.");
         return;
@@ -82,9 +82,9 @@ export default function Index() {
         nome: l.full_name || "",
         email: l.emails?.[0] || "",
         telefone: l.phones?.[0] || "",
-        interesse: l.subject || "",
-        origem: "API Jetimob",
-        ultimoContato: "",
+        interesse: l.message || l.subject || "",
+        origem: l.campaign_id ? `Campanha ${l.campaign_id}` : "API Jetimob",
+        ultimoContato: l.created_at ? new Date(l.created_at).toLocaleDateString("pt-BR") : "",
         status: "",
       }));
       setLeads(mapped);

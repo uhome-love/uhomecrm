@@ -51,13 +51,12 @@ serve(async (req) => {
 
       const url = `https://api.jetimob.com/leads/${JETIMOB_LEADS_URL_KEY}`;
       const JETIMOB_LEADS_PRIVATE_KEY = Deno.env.get("JETIMOB_LEADS_PRIVATE_KEY");
-      console.log("Fetching leads from:", url, "with private key:", JETIMOB_LEADS_PRIVATE_KEY ? "present" : "missing");
+      if (!JETIMOB_LEADS_PRIVATE_KEY) throw new Error("JETIMOB_LEADS_PRIVATE_KEY is not configured");
 
       const response = await fetch(url, {
         method: "GET",
         headers: { 
-          "Accept": "application/json",
-          ...(JETIMOB_LEADS_PRIVATE_KEY ? { "Authorization": JETIMOB_LEADS_PRIVATE_KEY } : {}),
+          "Authorization-Key": JETIMOB_LEADS_PRIVATE_KEY,
         },
       });
 
