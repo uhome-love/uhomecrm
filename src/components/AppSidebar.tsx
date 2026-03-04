@@ -81,13 +81,13 @@ export function AppSidebar() {
     ? [
         { title: "Dashboard CEO", url: "/ceo", icon: Crown },
         { title: "Inteligência Marketing", url: "/marketing", icon: BarChart3 },
+        { title: "Auditoria & Saúde", url: "/auditoria", icon: Shield },
       ]
     : [];
 
   const adminItems = isAdmin
     ? [
         { title: "Administração", url: "/admin", icon: Shield },
-        { title: "Auditoria & Saúde", url: "/auditoria", icon: ClipboardCheck },
       ]
     : [];
 
