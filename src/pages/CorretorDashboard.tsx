@@ -67,9 +67,9 @@ export default function CorretorDashboard() {
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground">
           {nome ? (
-            <>Bem-vindo, <span className="text-primary">{nome}</span>!</>
+            <>Bem-vindo(a), <span className="text-primary">{nome}</span>!</>
           ) : (
-            <>Bem-vindo, <span className="text-primary">Corretor</span>!</>
+            <>Bem-vindo(a), <span className="text-primary">Corretor</span>!</>
           )}
         </h1>
         <p className="text-sm text-muted-foreground">Central do Corretor — foco, meta e execução</p>
