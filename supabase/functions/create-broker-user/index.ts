@@ -158,11 +158,60 @@ serve(async (req) => {
       if (!target_user_id) throw new Error("ID do usuário não informado");
       if (target_user_id === caller.id) throw new Error("Você não pode excluir a si mesmo");
 
-      // Delete user from auth (cascades to profiles, user_roles via FK)
+      // Delete all user data across the system before removing auth user
+      const deletions = [
+        supabase.from("lead_messages").delete().eq("user_id", target_user_id),
+        supabase.from("lead_tasks").delete().eq("user_id", target_user_id),
+        supabase.from("leads").delete().eq("user_id", target_user_id),
+        supabase.from("saved_scripts").delete().eq("user_id", target_user_id),
+        supabase.from("corretor_daily_goals").delete().eq("corretor_id", target_user_id),
+        supabase.from("oferta_ativa_tentativas").delete().eq("corretor_id", target_user_id),
+        supabase.from("oferta_ativa_leads").delete().eq("corretor_id", target_user_id),
+        supabase.from("team_members").delete().eq("user_id", target_user_id),
+        supabase.from("audit_log").delete().eq("user_id", target_user_id),
+        supabase.from("marketing_entries").delete().eq("user_id", target_user_id),
+        supabase.from("marketing_reports").delete().eq("user_id", target_user_id),
+        supabase.from("corretor_reports").delete().eq("gerente_id", target_user_id),
+        supabase.from("funnel_entries").delete().eq("gerente_id", target_user_id),
+        supabase.from("pdn_entries").delete().eq("gerente_id", target_user_id),
+        supabase.from("manager_checklist").delete().eq("gerente_id", target_user_id),
+        supabase.from("ceo_metas_mensais").delete().eq("gerente_id", target_user_id),
+      ];
+
+      // Delete checkpoint_lines before checkpoints (FK dependency)
+      const { data: userCheckpoints } = await supabase
+        .from("checkpoints")
+        .select("id")
+        .eq("gerente_id", target_user_id);
+
+      if (userCheckpoints && userCheckpoints.length > 0) {
+        const checkpointIds = userCheckpoints.map((c: any) => c.id);
+        await supabase.from("checkpoint_lines").delete().in("checkpoint_id", checkpointIds);
+      }
+      await supabase.from("checkpoints").delete().eq("gerente_id", target_user_id);
+
+      // Run all other deletions in parallel
+      const results = await Promise.allSettled(deletions);
+      const errors = results.filter((r) => r.status === "rejected");
+      if (errors.length > 0) {
+        console.error("Some deletions failed:", errors);
+      }
+
+      // Also unlink oferta_ativa_leads where this user was attending
+      await supabase
+        .from("oferta_ativa_leads")
+        .update({ em_atendimento_por: null, em_atendimento_ate: null })
+        .eq("em_atendimento_por", target_user_id);
+
+      // Remove profile and roles
+      await supabase.from("user_roles").delete().eq("user_id", target_user_id);
+      await supabase.from("profiles").delete().eq("user_id", target_user_id);
+
+      // Finally delete auth user
       const { error: deleteError } = await supabase.auth.admin.deleteUser(target_user_id);
       if (deleteError) throw new Error(`Erro ao excluir usuário: ${deleteError.message}`);
 
-      return new Response(JSON.stringify({ success: true, message: "Usuário excluído com sucesso!" }), {
+      return new Response(JSON.stringify({ success: true, message: "Usuário excluído com sucesso! Todos os dados foram removidos." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
