@@ -14,6 +14,123 @@ export type Database = {
   }
   public: {
     Tables: {
+      checkpoint_lines: {
+        Row: {
+          checkpoint_id: string
+          corretor_id: string
+          created_at: string
+          id: string
+          meta_ligacoes: number | null
+          meta_presenca: string | null
+          meta_propostas: number | null
+          meta_vgv_assinado: number | null
+          meta_vgv_gerado: number | null
+          meta_visitas_marcadas: number | null
+          meta_visitas_realizadas: number | null
+          obs_dia: string | null
+          obs_gerente: string | null
+          real_ligacoes: number | null
+          real_presenca: string | null
+          real_propostas: number | null
+          real_vgv_assinado: number | null
+          real_vgv_gerado: number | null
+          real_visitas_marcadas: number | null
+          real_visitas_realizadas: number | null
+          status_dia: string | null
+          updated_at: string
+        }
+        Insert: {
+          checkpoint_id: string
+          corretor_id: string
+          created_at?: string
+          id?: string
+          meta_ligacoes?: number | null
+          meta_presenca?: string | null
+          meta_propostas?: number | null
+          meta_vgv_assinado?: number | null
+          meta_vgv_gerado?: number | null
+          meta_visitas_marcadas?: number | null
+          meta_visitas_realizadas?: number | null
+          obs_dia?: string | null
+          obs_gerente?: string | null
+          real_ligacoes?: number | null
+          real_presenca?: string | null
+          real_propostas?: number | null
+          real_vgv_assinado?: number | null
+          real_vgv_gerado?: number | null
+          real_visitas_marcadas?: number | null
+          real_visitas_realizadas?: number | null
+          status_dia?: string | null
+          updated_at?: string
+        }
+        Update: {
+          checkpoint_id?: string
+          corretor_id?: string
+          created_at?: string
+          id?: string
+          meta_ligacoes?: number | null
+          meta_presenca?: string | null
+          meta_propostas?: number | null
+          meta_vgv_assinado?: number | null
+          meta_vgv_gerado?: number | null
+          meta_visitas_marcadas?: number | null
+          meta_visitas_realizadas?: number | null
+          obs_dia?: string | null
+          obs_gerente?: string | null
+          real_ligacoes?: number | null
+          real_presenca?: string | null
+          real_propostas?: number | null
+          real_vgv_assinado?: number | null
+          real_vgv_gerado?: number | null
+          real_visitas_marcadas?: number | null
+          real_visitas_realizadas?: number | null
+          status_dia?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkpoint_lines_checkpoint_id_fkey"
+            columns: ["checkpoint_id"]
+            isOneToOne: false
+            referencedRelation: "checkpoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkpoint_lines_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkpoints: {
+        Row: {
+          created_at: string
+          data: string
+          gerente_id: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          gerente_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          gerente_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       integration_settings: {
         Row: {
           id: string
@@ -189,6 +306,36 @@ export type Database = {
         }
         Relationships: []
       }
+      manager_checklist: {
+        Row: {
+          concluido: boolean
+          concluido_em: string | null
+          created_at: string
+          data: string
+          gerente_id: string
+          id: string
+          item: string
+        }
+        Insert: {
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          data: string
+          gerente_id: string
+          id?: string
+          item: string
+        }
+        Update: {
+          concluido?: boolean
+          concluido_em?: string | null
+          created_at?: string
+          data?: string
+          gerente_id?: string
+          id?: string
+          item?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -225,6 +372,36 @@ export type Database = {
           telefone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          equipe: string | null
+          gerente_id: string
+          id: string
+          nome: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          equipe?: string | null
+          gerente_id: string
+          id?: string
+          nome: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          equipe?: string | null
+          gerente_id?: string
+          id?: string
+          nome?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
