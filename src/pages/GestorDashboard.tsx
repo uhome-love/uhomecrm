@@ -14,8 +14,10 @@ import CampaignsPanel from "@/components/CampaignsPanel";
 import EmpreendimentoGroup from "@/components/EmpreendimentoGroup";
 import CorretorRanking from "@/components/CorretorRanking";
 import RecoveryAgentPanel from "@/components/RecoveryAgentPanel";
+import RecoveryDashboard from "@/components/recovery/RecoveryDashboard";
+import RecoveredLeadAlert from "@/components/recovery/RecoveredLeadAlert";
 import { getDaysSinceContact, calculateRecoveryScore, type QuickFilter } from "@/lib/leadUtils";
-import type { Lead, LeadPriority } from "@/types/lead";
+import type { Lead, LeadPriority, StatusRecuperacao } from "@/types/lead";
 import { supabase } from "@/integrations/supabase/client";
 import { useLeadsPersistence } from "@/hooks/useLeadsPersistence";
 
@@ -41,6 +43,9 @@ export default function GestorDashboard() {
   const [generatingBulk, setGeneratingBulk] = useState(false);
   const [showMapper, setShowMapper] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusRecuperacao | null>(null);
+  const [recoveredLead, setRecoveredLead] = useState<Lead | null>(null);
+  const [showRecoveredAlert, setShowRecoveredAlert] = useState(false);
 
   const step = (!hasLeads && !loadingLeads) || showUpload ? "upload" : "dashboard";
 
@@ -64,6 +69,7 @@ export default function GestorDashboard() {
           origem: l.campaign_id ? `Campanha ${l.campaign_id}` : "API Jetimob",
           ultimoContato: l.created_at ? new Date(l.created_at).toLocaleDateString("pt-BR") : "",
           status: l.stage || "", corretor: l.broker_name || "", etapa: l.stage || "", dataCriacao: l.created_at || "",
+          statusRecuperacao: "pendente",
         };
         lead.recoveryScore = calculateRecoveryScore(lead);
         return lead;
@@ -83,6 +89,7 @@ export default function GestorDashboard() {
         id: String(i + 1), nome: row[mapping.nome] || "", email: row[mapping.email] || "",
         telefone: row[mapping.telefone] || "", interesse: row[mapping.interesse] || "",
         origem: row[mapping.origem] || "", ultimoContato: row[mapping.ultimoContato] || "", status: row[mapping.status] || "",
+        statusRecuperacao: "pendente",
       };
       lead.recoveryScore = calculateRecoveryScore(lead);
       return lead;
@@ -157,6 +164,15 @@ export default function GestorDashboard() {
     setShowUpload(false);
   }, [deleteAllLeads]);
 
+  const handleUpdateLead = useCallback(async (leadId: string, updates: Partial<Lead>) => {
+    await updateLead(leadId, updates);
+  }, [updateLead]);
+
+  const handleLeadRecovered = useCallback((lead: Lead) => {
+    setRecoveredLead({ ...lead, statusRecuperacao: "recuperado" });
+    setShowRecoveredAlert(true);
+  }, []);
+
   // Filter counts
   const filterCounts = useMemo(() => {
     const counts: Record<QuickFilter, number> = { todos: leads.length, muito_quentes: 0, followup_hoje: 0, "7dias": 0, "15dias": 0, "30dias": 0, "90dias": 0, top50: Math.min(50, leads.length), esquecidos: 0, com_interesse: 0, com_telefone: 0 };
@@ -178,6 +194,12 @@ export default function GestorDashboard() {
 
   const filteredLeads = useMemo(() => {
     let result = leads;
+    
+    // Status filter
+    if (statusFilter) {
+      result = result.filter((l) => l.statusRecuperacao === statusFilter);
+    }
+    
     if (quickFilter !== "todos") {
       if (quickFilter === "top50") {
         result = [...result].sort((a, b) => (b.recoveryScore || 0) - (a.recoveryScore || 0)).slice(0, 50);
@@ -219,19 +241,16 @@ export default function GestorDashboard() {
       });
     }
     return result;
-  }, [leads, quickFilter, reactivationFilter, interesseFilter]);
+  }, [leads, quickFilter, reactivationFilter, interesseFilter, statusFilter]);
 
-  const kpis = useMemo(() => {
-    const highScore = leads.filter((l) => (l.recoveryScore || 0) >= 80).length;
-    const goodScore = leads.filter((l) => (l.recoveryScore || 0) >= 60 && (l.recoveryScore || 0) < 80).length;
-    const readyToContact = leads.filter((l) => l.telefone && (l.recoveryScore || 0) >= 60).length;
-    const avgScore = leads.length > 0 ? Math.round(leads.reduce((sum, l) => sum + (l.recoveryScore || 0), 0) / leads.length) : 0;
-    return [
-      { label: "Oportunidade Alta (80+)", value: highScore, icon: "🟢", color: "bg-success/10 text-success border-success/20" },
-      { label: "Oportunidade Boa (60-79)", value: goodScore, icon: "🔵", color: "bg-accent/10 text-accent border-accent/20" },
-      { label: "Prontos p/ contato (60+)", value: readyToContact, icon: "📞", color: "bg-primary/10 text-primary border-primary/20" },
-      { label: "Score Médio", value: avgScore, icon: "📊", color: "bg-warning/10 text-warning border-warning/20" },
-    ];
+  // Status filter buttons
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    leads.forEach((l) => {
+      const s = l.statusRecuperacao || "pendente";
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    return counts;
   }, [leads]);
 
   if (loadingLeads) {
@@ -248,10 +267,10 @@ export default function GestorDashboard() {
         <div className="max-w-2xl mx-auto space-y-6">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
             <h2 className="font-display text-2xl font-bold text-foreground">
-              Painel de <span className="text-primary">Gestão</span>
+              Recuperação de <span className="text-primary">Leads</span>
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Importe leads para análise estratégica e geração de campanhas
+              Importe leads não aproveitados do Jetimob para recuperação com IA
             </p>
           </motion.div>
 
@@ -281,6 +300,16 @@ export default function GestorDashboard() {
 
       {step === "dashboard" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-xl font-bold text-foreground">
+                Recuperação de Leads
+              </h2>
+              <p className="text-sm text-muted-foreground">Máquina de recuperação de leads não aproveitados</p>
+            </div>
+          </div>
+
           {/* Action bar */}
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={() => { setQuickFilter("followup_hoje"); toast.info("🔥 Leads quentes para atacar hoje!"); }} className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground">
@@ -303,18 +332,34 @@ export default function GestorDashboard() {
             </div>
           </div>
 
-          {/* Strategic KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {kpis.map((kpi) => (
-              <motion.div key={kpi.label} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className={`rounded-xl border p-4 ${kpi.color}`}>
-                <span className="text-2xl">{kpi.icon}</span>
-                <p className="text-2xl font-display font-bold mt-1">{kpi.value}</p>
-                <p className="text-xs opacity-80">{kpi.label}</p>
-              </motion.div>
-            ))}
+          {/* Recovery Dashboard */}
+          <RecoveryDashboard leads={leads} />
+
+          {/* Status filter bar */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground">Status:</span>
+            <Button size="sm" variant={!statusFilter ? "default" : "outline"} className="h-7 text-xs" onClick={() => setStatusFilter(null)}>
+              Todos ({leads.length})
+            </Button>
+            {([
+              { key: "pendente" as const, label: "⏳ Pendente", color: "" },
+              { key: "contato_realizado" as const, label: "📞 Contatado", color: "" },
+              { key: "respondeu" as const, label: "💬 Respondeu", color: "" },
+              { key: "reativado" as const, label: "🔄 Reativado", color: "" },
+              { key: "recuperado" as const, label: "✅ Recuperado", color: "" },
+              { key: "sem_interesse" as const, label: "❌ Sem Interesse", color: "" },
+              { key: "numero_invalido" as const, label: "📵 Inválido", color: "" },
+            ] as const).map((s) => {
+              const count = statusCounts[s.key] || 0;
+              if (count === 0) return null;
+              return (
+                <Button key={s.key} size="sm" variant={statusFilter === s.key ? "default" : "outline"} className="h-7 text-xs" onClick={() => setStatusFilter(statusFilter === s.key ? null : s.key)}>
+                  {s.label} ({count})
+                </Button>
+              );
+            })}
           </div>
 
-          <StatsCards leads={leads} />
           <RecoveryAgentPanel leads={leads} />
           <QuickFilters active={quickFilter} onChange={setQuickFilter} counts={filterCounts} />
           <ReactivationPanel leads={leads} onFilterByDays={(days) => setReactivationFilter(days || null)} activeFilter={reactivationFilter} />
@@ -328,11 +373,18 @@ export default function GestorDashboard() {
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">{filteredLeads.length} de {leads.length} leads</p>
           </div>
-          <LeadTable leads={filteredLeads} onGenerateMessage={generateMessage} loadingLeadId={loadingLeadId} />
+          <LeadTable 
+            leads={filteredLeads} 
+            onGenerateMessage={generateMessage} 
+            loadingLeadId={loadingLeadId}
+            onUpdateLead={handleUpdateLead}
+            onLeadRecovered={handleLeadRecovered}
+          />
         </motion.div>
       )}
 
       <BulkWhatsAppDialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen} leads={leads} />
+      <RecoveredLeadAlert lead={recoveredLead} open={showRecoveredAlert} onOpenChange={setShowRecoveredAlert} />
     </div>
   );
 }

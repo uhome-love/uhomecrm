@@ -3,6 +3,7 @@ import { Upload, FileSpreadsheet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import type { LeadCSVRow } from "@/types/lead";
 
 interface CsvUploaderProps {
@@ -17,14 +18,29 @@ export default function CsvUploader({ onDataParsed }: CsvUploaderProps) {
   const handleFile = useCallback(
     (file: File) => {
       setFileName(file.name);
-      Papa.parse<LeadCSVRow>(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const headers = results.meta.fields ?? [];
-          onDataParsed(results.data, headers);
-        },
-      });
+      const ext = file.name.split(".").pop()?.toLowerCase();
+
+      if (ext === "xlsx" || ext === "xls") {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json<LeadCSVRow>(sheet, { defval: "" });
+          const headers = jsonData.length > 0 ? Object.keys(jsonData[0]) : [];
+          onDataParsed(jsonData, headers);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        Papa.parse<LeadCSVRow>(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const headers = results.meta.fields ?? [];
+            onDataParsed(results.data, headers);
+          },
+        });
+      }
     },
     [onDataParsed]
   );
@@ -96,10 +112,10 @@ export default function CsvUploader({ onDataParsed }: CsvUploaderProps) {
               </div>
               <div>
                 <p className="font-medium text-foreground">
-                  Arraste seu arquivo CSV aqui
+                  Arraste seu arquivo aqui
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  ou clique para selecionar da sua máquina
+                  CSV ou XLSX • Exportado do Jetimob ou qualquer planilha
                 </p>
               </div>
               <Button
@@ -115,7 +131,7 @@ export default function CsvUploader({ onDataParsed }: CsvUploaderProps) {
         <input
           ref={inputRef}
           type="file"
-          accept=".csv,.txt"
+          accept=".csv,.txt,.xlsx,.xls"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];

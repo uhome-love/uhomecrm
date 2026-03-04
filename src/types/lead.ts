@@ -2,6 +2,10 @@ export type LeadPriority = "muito_quente" | "quente" | "morno" | "frio" | "perdi
 
 export type ScoreClassification = "alta" | "boa" | "media" | "baixa";
 
+export type StatusRecuperacao = "pendente" | "contato_realizado" | "respondeu" | "reativado" | "sem_interesse" | "numero_invalido" | "recuperado";
+
+export type TipoSituacao = "sem_contato" | "parou_responder" | "pediu_info_sumiu" | "lead_antigo" | "pos_visita_sem_retorno";
+
 export interface Lead {
   id: string;
   nome: string;
@@ -19,6 +23,10 @@ export interface Lead {
   etapa?: string;
   dataCriacao?: string;
   recoveryScore?: number;
+  statusRecuperacao?: StatusRecuperacao;
+  tipoSituacao?: TipoSituacao;
+  corretorResponsavel?: string;
+  observacoes?: string;
 }
 
 export interface ImovelJetimob {

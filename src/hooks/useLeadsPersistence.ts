@@ -24,6 +24,10 @@ function dbRowToLead(row: any): Lead {
     corretor: undefined,
     etapa: undefined,
     dataCriacao: row.importado_em || "",
+    statusRecuperacao: row.status_recuperacao || "pendente",
+    tipoSituacao: row.tipo_situacao || undefined,
+    corretorResponsavel: row.corretor_responsavel || undefined,
+    observacoes: row.observacoes || undefined,
   };
   if (!lead.recoveryScore) {
     lead.recoveryScore = calculateRecoveryScore(lead);
@@ -132,6 +136,10 @@ export function useLeadsPersistence() {
       dbUpdates.prioridade = prioMap[updates.prioridade] || "media";
     }
     if (updates.recoveryScore !== undefined) dbUpdates.recovery_score = updates.recoveryScore;
+    if (updates.statusRecuperacao !== undefined) dbUpdates.status_recuperacao = updates.statusRecuperacao;
+    if (updates.tipoSituacao !== undefined) dbUpdates.tipo_situacao = updates.tipoSituacao;
+    if (updates.corretorResponsavel !== undefined) dbUpdates.corretor_responsavel = updates.corretorResponsavel;
+    if (updates.observacoes !== undefined) dbUpdates.observacoes = updates.observacoes;
 
     if (Object.keys(dbUpdates).length > 0) {
       dbUpdates.atualizado_em = new Date().toISOString();
