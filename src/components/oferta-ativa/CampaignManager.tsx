@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Settings, Play, Pause, StopCircle, Users, Loader2 } from "lucide-react";
+import { Settings, Play, Pause, StopCircle, Users, Loader2, Trash2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -48,7 +48,7 @@ function ListaStats({ listaId }: { listaId: string }) {
 }
 
 export default function CampaignManager() {
-  const { listas, isLoading, updateLista } = useOAListas();
+  const { listas, isLoading, updateLista, deleteLista } = useOAListas();
   const { isAdmin } = useUserRole();
 
   if (isLoading) {
@@ -111,10 +111,22 @@ export default function CampaignManager() {
                       </Button>
                     )}
                     {lista.status !== "encerrada" && (
-                      <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-red-600" onClick={() => updateLista(lista.id, { status: "encerrada" } as any)}>
+                      <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-destructive" onClick={() => updateLista(lista.id, { status: "encerrada" } as any)}>
                         <StopCircle className="h-3 w-3" /> Encerrar
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 text-xs h-7 text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => {
+                        if (confirm(`Excluir a lista "${lista.nome}" e todos os seus leads? Esta ação não pode ser desfeita.`)) {
+                          deleteLista(lista.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" /> Excluir
+                    </Button>
                   </div>
                 )}
               </div>

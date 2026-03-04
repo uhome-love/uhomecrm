@@ -121,7 +121,16 @@ export function useOAListas() {
     queryClient.invalidateQueries({ queryKey: ["oa-listas"] });
   }, [queryClient]);
 
-  return { listas, isLoading, createLista, updateLista };
+  const deleteLista = useCallback(async (id: string) => {
+    // Delete leads first (FK constraint)
+    await supabase.from("oferta_ativa_leads").delete().eq("lista_id", id);
+    const { error } = await supabase.from("oferta_ativa_listas").delete().eq("id", id);
+    if (error) { toast.error("Erro ao excluir lista"); return; }
+    toast.success("Lista excluída!");
+    queryClient.invalidateQueries({ queryKey: ["oa-listas"] });
+  }, [queryClient]);
+
+  return { listas, isLoading, createLista, updateLista, deleteLista };
 }
 
 // ─── Hook: Leads de uma lista ───
