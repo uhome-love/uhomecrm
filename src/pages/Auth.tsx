@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Zap, Mail, Lock, User, Loader2 } from "lucide-react";
+import { Mail, Lock, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,11 +72,9 @@ export default function Auth() {
         className="w-full max-w-sm"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl gradient-warm mb-4">
-            <Zap className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            LeadRecovery<span className="text-primary">UhomeAI</span>
+          <img src="/logo-uhome.svg" alt="UHome" className="h-10 w-auto mb-4" />
+          <h1 className="font-display text-xl font-bold text-foreground">
+            Lead Recovery <span className="text-primary">AI</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isLogin ? "Entre na sua conta" : "Crie sua conta"}
