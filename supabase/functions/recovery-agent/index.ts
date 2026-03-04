@@ -15,7 +15,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { leads_summary } = await req.json();
+    const { leads_summary, mode } = await req.json();
 
     if (!leads_summary) {
       return new Response(JSON.stringify({ error: "leads_summary is required" }), {
@@ -24,25 +24,40 @@ serve(async (req) => {
       });
     }
 
-    const prompt = `Você é o Recovery AI Agent — um agente de inteligência especializado em recuperação de leads imobiliários.
+    const systemPrompt = `Você é o Recovery Manager AI — um agente de inteligência especializado em recuperação de leads imobiliários que foram perdidos, não aproveitados ou esquecidos.
 
-Analise os dados consolidados abaixo e gere:
+Regras importantes:
+- NUNCA trate leads como novos. Eles JÁ existiam e pararam de responder.
+- Foque em RETOMAR o interesse, trazer novidades, oferecer ajuda, gerar resposta e marcar visita.
+- Seja direto, use dados concretos e priorize ações de alto impacto.
+- Responda sempre em português brasileiro.
+- Classifique o tipo de situação de cada grupo: lead sem contato, lead que parou de responder, lead que pediu info e sumiu, lead antigo, lead pós-visita sem retorno.`;
+
+    const prompt = `Analise os dados consolidados da base de leads não aproveitados abaixo e gere:
 
 1. **INSIGHTS** (5-8 insights estratégicos)
    - Cada insight deve ser uma frase curta e direta com dados concretos
    - Foque em oportunidades de recuperação
+   - Identifique padrões: quais empreendimentos têm mais potencial, quais origens geram leads mais qualificados
    - Use números reais dos dados
 
-2. **CAMPANHAS SUGERIDAS** (3-5 campanhas)
+2. **CAMPANHAS SUGERIDAS** (3-5 campanhas de recuperação)
    - Nome da campanha
-   - Descrição curta (1 frase)
+   - Descrição curta com abordagem de REATIVAÇÃO (retomar interesse, trazer novidade, oferecer ajuda)
    - Público-alvo (quantidade estimada de leads)
    - Prioridade (alta/média/baixa)
-   - Canal recomendado (whatsapp/email/sms)
+   - Canal recomendado (whatsapp/email/sms/ligacao)
+   - Tipo de mensagem sugerida (retomar_interesse/novidade/ajuda/marcar_visita)
 
 3. **AÇÕES PRIORITÁRIAS** (3-5 ações imediatas)
-   - O que fazer agora para maximizar conversão
+   - O que fazer agora para maximizar recuperação
    - Ordenadas por impacto
+   - Cada ação deve ser específica e mensurável
+
+4. **ESTRATÉGIA DE RECUPERAÇÃO**
+   - Quais leads atacar primeiro e por quê
+   - Quais empreendimentos têm maior potencial de recuperação
+   - Sugestão de sequência de contato (1º WhatsApp, 2º ligação, etc.)
 
 DADOS CONSOLIDADOS:
 ${leads_summary}`;
@@ -56,10 +71,7 @@ ${leads_summary}`;
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          {
-            role: "system",
-            content: "Você é o Recovery AI Agent, um agente de inteligência para recuperação de leads imobiliários. Responda sempre em português brasileiro. Seja direto e use dados concretos.",
-          },
+          { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
         ],
         tools: [
@@ -67,7 +79,7 @@ ${leads_summary}`;
             type: "function",
             function: {
               name: "recovery_analysis",
-              description: "Return the complete recovery analysis with insights, campaigns and actions",
+              description: "Return the complete recovery analysis with insights, campaigns, actions and strategy",
               parameters: {
                 type: "object",
                 properties: {
@@ -93,7 +105,8 @@ ${leads_summary}`;
                         description: { type: "string" },
                         target_count: { type: "number", description: "Estimated number of leads to target" },
                         priority: { type: "string", enum: ["alta", "media", "baixa"] },
-                        channel: { type: "string", enum: ["whatsapp", "email", "sms"] },
+                        channel: { type: "string", enum: ["whatsapp", "email", "sms", "ligacao"] },
+                        approach_type: { type: "string", enum: ["retomar_interesse", "novidade", "ajuda", "marcar_visita"], description: "Type of recovery approach" },
                       },
                       required: ["name", "description", "target_count", "priority", "channel"],
                       additionalProperties: false,
@@ -104,20 +117,30 @@ ${leads_summary}`;
                     items: {
                       type: "object",
                       properties: {
-                        action: { type: "string", description: "What to do" },
+                        action: { type: "string", description: "What to do - specific and measurable" },
                         impact: { type: "string", enum: ["alto", "medio", "baixo"] },
-                        reason: { type: "string", description: "Why this action matters" },
+                        reason: { type: "string", description: "Why this action matters for recovery" },
                       },
                       required: ["action", "impact", "reason"],
                       additionalProperties: false,
                     },
                   },
+                  strategy: {
+                    type: "object",
+                    properties: {
+                      attack_first: { type: "string", description: "Which leads to attack first and why" },
+                      top_empreendimentos: { type: "string", description: "Which empreendimentos have most recovery potential" },
+                      contact_sequence: { type: "string", description: "Suggested contact sequence (1st WhatsApp, 2nd call, etc.)" },
+                    },
+                    required: ["attack_first", "top_empreendimentos", "contact_sequence"],
+                    additionalProperties: false,
+                  },
                   summary: {
                     type: "string",
-                    description: "A 1-2 sentence executive summary of the analysis",
+                    description: "A 2-3 sentence executive summary of the recovery analysis",
                   },
                 },
-                required: ["insights", "campaigns", "actions", "summary"],
+                required: ["insights", "campaigns", "actions", "strategy", "summary"],
                 additionalProperties: false,
               },
             },
@@ -156,7 +179,7 @@ ${leads_summary}`;
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       result = jsonMatch
         ? JSON.parse(jsonMatch[0])
-        : { insights: [], campaigns: [], actions: [], summary: content };
+        : { insights: [], campaigns: [], actions: [], strategy: {}, summary: content };
     }
 
     return new Response(JSON.stringify(result), {

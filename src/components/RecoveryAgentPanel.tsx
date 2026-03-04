@@ -32,10 +32,17 @@ interface Action {
   reason: string;
 }
 
+interface AgentStrategy {
+  attack_first: string;
+  top_empreendimentos: string;
+  contact_sequence: string;
+}
+
 interface AgentAnalysis {
   insights: Insight[];
   campaigns: Campaign[];
   actions: Action[];
+  strategy?: AgentStrategy;
   summary: string;
 }
 
@@ -161,7 +168,7 @@ export default function RecoveryAgentPanel({ leads }: RecoveryAgentPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<AgentAnalysis | null>(null);
-  const [activeTab, setActiveTab] = useState<"insights" | "campaigns" | "actions">("insights");
+  const [activeTab, setActiveTab] = useState<"insights" | "campaigns" | "actions" | "strategy">("insights");
 
   const handleAnalyze = useCallback(async () => {
     if (leads.length === 0) {
@@ -209,7 +216,7 @@ export default function RecoveryAgentPanel({ leads }: RecoveryAgentPanelProps) {
           </div>
           <div className="text-left">
             <h3 className="font-display font-bold text-foreground text-sm flex items-center gap-2">
-              Recovery AI Agent
+              Recovery Manager AI
               <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
                 IA
               </Badge>
@@ -281,6 +288,7 @@ export default function RecoveryAgentPanel({ leads }: RecoveryAgentPanelProps) {
                       { key: "insights" as const, label: "Insights", icon: Zap, count: analysis.insights.length },
                       { key: "campaigns" as const, label: "Campanhas", icon: Megaphone, count: analysis.campaigns.length },
                       { key: "actions" as const, label: "Ações", icon: TrendingUp, count: analysis.actions.length },
+                      { key: "strategy" as const, label: "Estratégia", icon: Zap, count: analysis.strategy ? 1 : 0 },
                     ]).map((tab) => (
                       <button
                         key={tab.key}
@@ -390,6 +398,28 @@ export default function RecoveryAgentPanel({ leads }: RecoveryAgentPanelProps) {
                           </motion.div>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {/* Strategy Tab */}
+                  {activeTab === "strategy" && analysis.strategy && (
+                    <div className="space-y-3">
+                      {[
+                        { title: "🎯 Quem atacar primeiro", content: analysis.strategy.attack_first },
+                        { title: "🏢 Empreendimentos com maior potencial", content: analysis.strategy.top_empreendimentos },
+                        { title: "📋 Sequência de contato recomendada", content: analysis.strategy.contact_sequence },
+                      ].map((item, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.08 }}
+                          className="rounded-lg border border-border bg-card p-4"
+                        >
+                          <h4 className="font-display font-semibold text-foreground text-sm mb-2">{item.title}</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{item.content}</p>
+                        </motion.div>
+                      ))}
                     </div>
                   )}
                 </>

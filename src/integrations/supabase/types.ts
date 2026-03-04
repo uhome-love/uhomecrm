@@ -341,6 +341,7 @@ export type Database = {
       leads: {
         Row: {
           atualizado_em: string
+          corretor_responsavel: string | null
           email: string | null
           id: string
           imovel_codigo: string | null
@@ -349,16 +350,20 @@ export type Database = {
           interesse: string | null
           mensagem_gerada: string | null
           nome: string
+          observacoes: string | null
           origem: string | null
           prioridade: Database["public"]["Enums"]["lead_priority"] | null
           recovery_score: number | null
           status: string | null
+          status_recuperacao: string | null
           telefone: string | null
+          tipo_situacao: string | null
           ultimo_contato: string | null
           user_id: string
         }
         Insert: {
           atualizado_em?: string
+          corretor_responsavel?: string | null
           email?: string | null
           id?: string
           imovel_codigo?: string | null
@@ -367,16 +372,20 @@ export type Database = {
           interesse?: string | null
           mensagem_gerada?: string | null
           nome: string
+          observacoes?: string | null
           origem?: string | null
           prioridade?: Database["public"]["Enums"]["lead_priority"] | null
           recovery_score?: number | null
           status?: string | null
+          status_recuperacao?: string | null
           telefone?: string | null
+          tipo_situacao?: string | null
           ultimo_contato?: string | null
           user_id: string
         }
         Update: {
           atualizado_em?: string
+          corretor_responsavel?: string | null
           email?: string | null
           id?: string
           imovel_codigo?: string | null
@@ -385,11 +394,14 @@ export type Database = {
           interesse?: string | null
           mensagem_gerada?: string | null
           nome?: string
+          observacoes?: string | null
           origem?: string | null
           prioridade?: Database["public"]["Enums"]["lead_priority"] | null
           recovery_score?: number | null
           status?: string | null
+          status_recuperacao?: string | null
           telefone?: string | null
+          tipo_situacao?: string | null
           ultimo_contato?: string | null
           user_id?: string
         }
