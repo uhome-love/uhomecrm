@@ -60,6 +60,7 @@ export default function CheckpointDaily() {
   const [quickName, setQuickName] = useState("");
   const [quickEquipe, setQuickEquipe] = useState("");
   const [adding, setAdding] = useState(false);
+  const [realtimeHighlight, setRealtimeHighlight] = useState<string | null>(null);
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
 
   const quickAddCorretor = async () => {
@@ -235,6 +236,10 @@ export default function CheckpointDaily() {
 
           const oaStats = await fetchOAStats(members, date);
           if (Object.keys(oaStats).length === 0) return;
+
+          // Highlight the updated corretor row
+          setRealtimeHighlight(linkedMember.id);
+          setTimeout(() => setRealtimeHighlight(null), 3000);
 
           setLines(prev => prev.map(line => {
             const oa = oaStats[line.corretor_id];
@@ -477,10 +482,17 @@ export default function CheckpointDaily() {
           <tbody>
             {lines.map((line, idx) => {
               const isFalta = line.meta_presenca === "falta";
+               const isHighlighted = realtimeHighlight === line.corretor_id;
               return (
-                <tr key={line.corretor_id} className={`border-b border-border hover:bg-muted/10 transition-colors ${isFalta ? "opacity-50 bg-destructive/5" : ""}`}>
+                <tr key={line.corretor_id} className={`border-b border-border hover:bg-muted/10 transition-colors ${isFalta ? "opacity-50 bg-destructive/5" : ""} ${isHighlighted ? "animate-[pulse-row_1.5s_ease-in-out_2] bg-primary/10" : ""}`}>
                   <td className="px-3 py-1.5 font-medium text-foreground sticky left-0 bg-card z-10">
                     <div className="flex items-center gap-1.5">
+                      {isHighlighted && (
+                        <span className="relative flex h-2.5 w-2.5 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                        </span>
+                      )}
                       {line.corretor_nome}
                       {line.has_oa_data && (
                         <Badge variant="outline" className="text-[8px] h-4 px-1 border-primary/30 text-primary">OA</Badge>
