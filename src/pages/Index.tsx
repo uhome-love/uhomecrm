@@ -77,7 +77,9 @@ export default function Index() {
         toast.warning("Nenhum lead encontrado na API.");
         return;
       }
-      const mapped: Lead[] = apiLeads.map((l: any, i: number) => ({
+      // Limit to first 500 leads for performance - full list available via pagination later
+      const limitedLeads = apiLeads.slice(0, 500);
+      const mapped: Lead[] = limitedLeads.map((l: any, i: number) => ({
         id: String(l.id || i + 1),
         nome: l.full_name || "",
         email: l.emails?.[0] || "",
@@ -89,7 +91,7 @@ export default function Index() {
       }));
       setLeads(mapped);
       setStep("dashboard");
-      toast.success(`${mapped.length} leads importados da API Jetimob!`);
+      toast.success(`${mapped.length} leads importados (de ${apiLeads.length} total) da API Jetimob!`);
     } catch (err) {
       console.error("API import error:", err);
       toast.error("Erro ao importar leads da API Jetimob.");
