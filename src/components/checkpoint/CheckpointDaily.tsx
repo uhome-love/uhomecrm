@@ -308,63 +308,69 @@ export default function CheckpointDaily() {
           <thead>
             <tr className="border-b border-border bg-muted/40">
               <th className="text-left px-3 py-2 font-display font-semibold sticky left-0 bg-muted/40 z-10 min-w-[140px]">Corretor</th>
-              <th colSpan={8} className="text-center px-2 py-1 font-display font-semibold text-primary border-l border-border">METAS</th>
-              <th colSpan={9} className="text-center px-2 py-1 font-display font-semibold text-success border-l border-border">RESULTADOS</th>
+              <th colSpan={4} className="text-center px-2 py-1 font-display font-semibold text-primary border-l border-border">METAS DO DIA</th>
+              <th colSpan={7} className="text-center px-2 py-1 font-display font-semibold text-success border-l border-border">RESULTADO DO DIA</th>
+              <th className="text-center px-2 py-1 font-display font-semibold border-l border-border">ST</th>
             </tr>
             <tr className="border-b border-border bg-muted/20">
               <th className="px-3 py-1.5 text-left sticky left-0 bg-muted/20 z-10"></th>
               {/* Meta cols */}
-              <th className="px-2 py-1.5 text-center border-l border-border min-w-[60px]">Lig.</th>
-              <th className="px-2 py-1.5 text-center min-w-[60px]">Pres.</th>
-              <th className="px-2 py-1.5 text-center min-w-[60px]">V.Marc</th>
-              <th className="px-2 py-1.5 text-center min-w-[60px]">V.Real</th>
-              <th className="px-2 py-1.5 text-center min-w-[60px]">Prop.</th>
-              <th className="px-2 py-1.5 text-center min-w-[80px]">VGV Ger.</th>
-              <th className="px-2 py-1.5 text-center min-w-[80px]">VGV Ass.</th>
-              <th className="px-2 py-1.5 text-center min-w-[100px]">Obs</th>
+              <th className="px-2 py-1.5 text-center border-l border-border min-w-[60px]">Ligações</th>
+              <th className="px-2 py-1.5 text-center min-w-[60px]">V.Marcar</th>
+              <th className="px-2 py-1.5 text-center min-w-[70px]">Presença</th>
+              <th className="px-2 py-1.5 text-center min-w-[100px]">Obs Gerente</th>
               {/* Result cols */}
-              <th className="px-2 py-1.5 text-center border-l border-border min-w-[60px]">Lig.</th>
-              <th className="px-2 py-1.5 text-center min-w-[60px]">Pres.</th>
+              <th className="px-2 py-1.5 text-center border-l border-border min-w-[60px]">Ligações</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">V.Marc</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">V.Real</th>
-              <th className="px-2 py-1.5 text-center min-w-[60px]">Prop.</th>
-              <th className="px-2 py-1.5 text-center min-w-[80px]">VGV Ger.</th>
-              <th className="px-2 py-1.5 text-center min-w-[80px]">VGV Ass.</th>
-              <th className="px-2 py-1.5 text-center min-w-[100px]">Obs</th>
-              <th className="px-2 py-1.5 text-center min-w-[70px]">Status</th>
+              <th className="px-2 py-1.5 text-center min-w-[60px]">Propostas</th>
+              <th className="px-2 py-1.5 text-center min-w-[90px]">VGV Ger. (mês)</th>
+              <th className="px-2 py-1.5 text-center min-w-[90px]">VGV Ass. (mês)</th>
+              <th className="px-2 py-1.5 text-center min-w-[100px]">Obs Dia</th>
+              <th className="px-2 py-1.5 text-center border-l border-border min-w-[70px]">Status</th>
             </tr>
           </thead>
           <tbody>
-            {lines.map((line, idx) => (
-              <tr key={line.corretor_id} className="border-b border-border hover:bg-muted/10 transition-colors">
-                <td className="px-3 py-1.5 font-medium text-foreground sticky left-0 bg-card z-10">{line.corretor_nome}</td>
-                {/* Meta inputs */}
-                <td className="px-1 py-1 border-l border-border"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_ligacoes} onChange={(e) => updateLine(idx, "meta_ligacoes", Number(e.target.value))} disabled={metasLocked} /></td>
-                <td className="px-1 py-1"><Input className="h-7 text-xs text-center px-1" value={line.meta_presenca} onChange={(e) => updateLine(idx, "meta_presenca", e.target.value)} disabled={metasLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_visitas_marcadas} onChange={(e) => updateLine(idx, "meta_visitas_marcadas", Number(e.target.value))} disabled={metasLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_visitas_realizadas} onChange={(e) => updateLine(idx, "meta_visitas_realizadas", Number(e.target.value))} disabled={metasLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_propostas} onChange={(e) => updateLine(idx, "meta_propostas", Number(e.target.value))} disabled={metasLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_vgv_gerado} onChange={(e) => updateLine(idx, "meta_vgv_gerado", Number(e.target.value))} disabled={metasLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_vgv_assinado} onChange={(e) => updateLine(idx, "meta_vgv_assinado", Number(e.target.value))} disabled={metasLocked} /></td>
-                <td className="px-1 py-1"><Input className="h-7 text-xs px-1" value={line.obs_gerente} onChange={(e) => updateLine(idx, "obs_gerente", e.target.value)} disabled={metasLocked} placeholder="..." /></td>
-                {/* Result inputs */}
-                <td className="px-1 py-1 border-l border-border"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_ligacoes ?? ""} onChange={(e) => updateLine(idx, "real_ligacoes", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked} /></td>
-                <td className="px-1 py-1"><Input className="h-7 text-xs text-center px-1" value={line.real_presenca ?? ""} onChange={(e) => updateLine(idx, "real_presenca", e.target.value || null)} disabled={resultsLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_visitas_marcadas ?? ""} onChange={(e) => updateLine(idx, "real_visitas_marcadas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_visitas_realizadas ?? ""} onChange={(e) => updateLine(idx, "real_visitas_realizadas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_propostas ?? ""} onChange={(e) => updateLine(idx, "real_propostas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_vgv_gerado ?? ""} onChange={(e) => updateLine(idx, "real_vgv_gerado", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked} /></td>
-                <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_vgv_assinado ?? ""} onChange={(e) => updateLine(idx, "real_vgv_assinado", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked} /></td>
-                <td className="px-1 py-1"><Input className="h-7 text-xs px-1" value={line.obs_dia ?? ""} onChange={(e) => updateLine(idx, "obs_dia", e.target.value || null)} disabled={resultsLocked} placeholder="..." /></td>
-                <td className="px-1 py-1 text-center">
-                  {line.status_dia && (
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${statusColors[line.status_dia] || ""}`}>
-                      {line.status_dia}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {lines.map((line, idx) => {
+              const isFalta = line.meta_presenca === "falta";
+              return (
+                <tr key={line.corretor_id} className={`border-b border-border hover:bg-muted/10 transition-colors ${isFalta ? "opacity-50 bg-destructive/5" : ""}`}>
+                  <td className="px-3 py-1.5 font-medium text-foreground sticky left-0 bg-card z-10">{line.corretor_nome}</td>
+                  {/* Metas */}
+                  <td className="px-1 py-1 border-l border-border"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_ligacoes} onChange={(e) => updateLine(idx, "meta_ligacoes", Number(e.target.value))} disabled={metasLocked} /></td>
+                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_visitas_marcadas} onChange={(e) => updateLine(idx, "meta_visitas_marcadas", Number(e.target.value))} disabled={metasLocked} /></td>
+                  <td className="px-1 py-1 text-center">
+                    <Button
+                      size="sm"
+                      variant={isFalta ? "destructive" : "outline"}
+                      className="h-7 text-[10px] w-full gap-1"
+                      onClick={() => updateLine(idx, "meta_presenca", isFalta ? "sim" : "falta")}
+                      disabled={metasLocked}
+                    >
+                      {isFalta ? "❌ Falta" : "✅ Presente"}
+                    </Button>
+                  </td>
+                  <td className="px-1 py-1"><Input className="h-7 text-xs px-1" value={line.obs_gerente} onChange={(e) => updateLine(idx, "obs_gerente", e.target.value)} disabled={metasLocked} placeholder="..." /></td>
+                  {/* Resultados */}
+                  <td className="px-1 py-1 border-l border-border"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_ligacoes ?? ""} onChange={(e) => updateLine(idx, "real_ligacoes", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
+                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_visitas_marcadas ?? ""} onChange={(e) => updateLine(idx, "real_visitas_marcadas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
+                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_visitas_realizadas ?? ""} onChange={(e) => updateLine(idx, "real_visitas_realizadas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
+                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_propostas ?? ""} onChange={(e) => updateLine(idx, "real_propostas", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} /></td>
+                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_vgv_gerado ?? ""} onChange={(e) => updateLine(idx, "real_vgv_gerado", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} placeholder="R$" /></td>
+                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.real_vgv_assinado ?? ""} onChange={(e) => updateLine(idx, "real_vgv_assinado", e.target.value ? Number(e.target.value) : null)} disabled={resultsLocked || isFalta} placeholder="R$" /></td>
+                  <td className="px-1 py-1"><Input className="h-7 text-xs px-1" value={line.obs_dia ?? ""} onChange={(e) => updateLine(idx, "obs_dia", e.target.value || null)} disabled={resultsLocked} placeholder="..." /></td>
+                  <td className="px-1 py-1 text-center border-l border-border">
+                    {isFalta ? (
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold border bg-destructive/10 text-destructive border-destructive/30">Falta</span>
+                    ) : line.status_dia ? (
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${statusColors[line.status_dia] || ""}`}>
+                        {line.status_dia}
+                      </span>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
