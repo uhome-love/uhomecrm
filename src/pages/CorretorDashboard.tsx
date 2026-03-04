@@ -18,7 +18,7 @@ export default function CorretorDashboard() {
   const { goals, saveGoals } = useCorretorDailyGoals();
   const motivation = useDailyMotivation();
 
-  const [activeTab, setActiveTab] = useState("discagem");
+  const [activeTab, setActiveTab] = useState("inicio");
   const [metaLig, setMetaLig] = useState(goals?.meta_ligacoes?.toString() || "30");
   const [metaAprov, setMetaAprov] = useState(goals?.meta_aproveitados?.toString() || "5");
   const [editing, setEditing] = useState(!goals);
