@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, X, Send, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { X, Send, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import ReactMarkdown from "react-markdown";
+import homiMascot from "@/assets/homi-mascot.png";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -131,7 +132,7 @@ export default function UhomeIaAssistant() {
 
   return (
     <>
-      {/* FAB */}
+      {/* FAB — Homi mascot */}
       <AnimatePresence>
         {!open && (
           <motion.button
@@ -139,10 +140,19 @@ export default function UhomeIaAssistant() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full gradient-brand text-primary-foreground shadow-glow hover:shadow-elevated flex items-center justify-center transition-all"
-            title="UHOME IA"
+            className="fixed bottom-6 right-6 z-50 group"
+            title="Fale com o Homi"
           >
-            <Bot className="h-6 w-6" />
+            {/* Glow ring */}
+            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-30" style={{ animationDuration: "3s" }} />
+            <div className="relative h-16 w-16 rounded-full bg-card border-2 border-primary/30 shadow-elevated hover:shadow-glow transition-all duration-300 flex items-center justify-center overflow-hidden hover:scale-110">
+              <img src={homiMascot} alt="Homi" className="h-14 w-14 object-contain" />
+            </div>
+            {/* Tooltip */}
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+              Fale com o Homi 💬
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-foreground" />
+            </div>
           </motion.button>
         )}
       </AnimatePresence>
@@ -159,11 +169,13 @@ export default function UhomeIaAssistant() {
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 gradient-brand text-primary-foreground">
-              <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-primary-foreground/20 border border-primary-foreground/30 flex items-center justify-center overflow-hidden shrink-0">
+                  <img src={homiMascot} alt="Homi" className="h-8 w-8 object-contain" />
+                </div>
                 <div>
-                  <p className="text-sm font-bold">UHOME IA</p>
-                  <p className="text-[10px] opacity-80">Cérebro do Sistema • {userRole === "ceo" ? "Modo CEO" : "Modo Gerente"}</p>
+                  <p className="text-sm font-bold tracking-tight">Homi</p>
+                  <p className="text-[10px] opacity-80">Assistente IA da UHome • {userRole === "ceo" ? "Modo CEO" : "Modo Gerente"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -179,16 +191,20 @@ export default function UhomeIaAssistant() {
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px] max-h-[380px]">
               {messages.length === 0 ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground text-center">
-                    Olá! Sou a <strong>UHOME IA</strong>. Como posso ajudar?
-                  </p>
+                <div className="space-y-4">
+                  {/* Welcome with Homi */}
+                  <div className="flex flex-col items-center gap-2 py-2">
+                    <img src={homiMascot} alt="Homi" className="h-20 w-20 object-contain" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Olá! Eu sou o <strong className="text-primary">Homi</strong>, seu assistente inteligente da UHome. Como posso ajudar?
+                    </p>
+                  </div>
                   <div className="space-y-1.5">
                     {actions.map((a) => (
                       <button
                         key={a.label}
                         onClick={() => send(a.prompt)}
-                        className="w-full text-left text-xs px-3 py-2 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                        className="w-full text-left text-xs px-3 py-2.5 rounded-xl border border-border hover:bg-accent/50 hover:border-primary/30 transition-all"
                       >
                         {a.label}
                       </button>
@@ -197,11 +213,16 @@ export default function UhomeIaAssistant() {
                 </div>
               ) : (
                 messages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
+                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} gap-2`}>
+                    {msg.role === "assistant" && (
+                      <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden shrink-0 mt-0.5">
+                        <img src={homiMascot} alt="Homi" className="h-6 w-6 object-contain" />
+                      </div>
+                    )}
+                    <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
                       msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-muted rounded-bl-md"
                     }`}>
                       {msg.role === "assistant" ? (
                         <div className="prose prose-sm max-w-none dark:prose-invert [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
@@ -215,9 +236,16 @@ export default function UhomeIaAssistant() {
                 ))
               )}
               {isLoading && messages[messages.length - 1]?.role === "user" && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-xl px-3 py-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <div className="flex justify-start gap-2">
+                  <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden shrink-0">
+                    <img src={homiMascot} alt="Homi" className="h-6 w-6 object-contain animate-pulse" />
+                  </div>
+                  <div className="bg-muted rounded-xl rounded-bl-md px-3 py-2">
+                    <div className="flex gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
                   </div>
                 </div>
               )}
@@ -226,16 +254,16 @@ export default function UhomeIaAssistant() {
             {/* Quick actions when in conversation */}
             {messages.length > 0 && !isLoading && (
               <div className="px-4 pb-1 flex gap-1.5 overflow-x-auto">
-                <button onClick={() => send("Gere um checklist do dia.")} className="shrink-0 text-[10px] px-2 py-1 rounded-full border border-border hover:bg-muted/50 transition-colors">
+                <button onClick={() => send("Gere um checklist do dia.")} className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-border hover:bg-accent/50 hover:border-primary/30 transition-all">
                   📋 Checklist
                 </button>
-                <button onClick={() => send("Gere um plano de ação para 7 dias.")} className="shrink-0 text-[10px] px-2 py-1 rounded-full border border-border hover:bg-muted/50 transition-colors">
+                <button onClick={() => send("Gere um plano de ação para 7 dias.")} className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-border hover:bg-accent/50 hover:border-primary/30 transition-all">
                   🎯 Plano 7 dias
                 </button>
-                <button onClick={() => send("Gere um script de ligação.")} className="shrink-0 text-[10px] px-2 py-1 rounded-full border border-border hover:bg-muted/50 transition-colors">
+                <button onClick={() => send("Gere um script de ligação.")} className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-border hover:bg-accent/50 hover:border-primary/30 transition-all">
                   📞 Script
                 </button>
-                <button onClick={() => send("Gere mensagens de follow-up para WhatsApp.")} className="shrink-0 text-[10px] px-2 py-1 rounded-full border border-border hover:bg-muted/50 transition-colors">
+                <button onClick={() => send("Gere mensagens de follow-up para WhatsApp.")} className="shrink-0 text-[10px] px-2.5 py-1 rounded-full border border-border hover:bg-accent/50 hover:border-primary/30 transition-all">
                   💬 Follow-up
                 </button>
               </div>
@@ -249,11 +277,11 @@ export default function UhomeIaAssistant() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Pergunte à UHOME IA..."
-                  className="min-h-[40px] max-h-[80px] resize-none text-sm"
+                  placeholder="Pergunte ao Homi..."
+                  className="min-h-[40px] max-h-[80px] resize-none text-sm rounded-xl"
                   rows={1}
                 />
-                <Button onClick={() => send(input)} disabled={!input.trim() || isLoading} size="sm" className="h-10 w-10 p-0 shrink-0">
+                <Button onClick={() => send(input)} disabled={!input.trim() || isLoading} size="sm" className="h-10 w-10 p-0 shrink-0 rounded-xl">
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>

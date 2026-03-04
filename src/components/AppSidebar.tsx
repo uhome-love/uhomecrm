@@ -13,7 +13,6 @@ import {
   FileSpreadsheet,
   BarChart3,
   CalendarDays,
-  Sparkles,
   Trophy,
   Phone,
 } from "lucide-react";
@@ -36,7 +35,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
-import logoUhome from "@/assets/logo-uhome.png";
+import logoUhomeFull from "@/assets/logo-uhome-full.png";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -135,17 +134,16 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Logo Section */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary/15 shrink-0">
-            <Sparkles className="h-5 w-5 text-sidebar-primary" />
-          </div>
-          {!collapsed && (
-            <div>
-              <p className="font-display text-sm font-bold text-sidebar-foreground tracking-tight">
-                UHOME IA
-              </p>
-              <p className="text-[10px] text-sidebar-foreground/40 font-medium">
-                Inteligência & Gestão
-              </p>
+          {collapsed ? (
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sidebar-primary/15 shrink-0">
+              <img src={logoUhomeFull} alt="UHome" className="h-6 w-auto brightness-0 invert opacity-80" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <img src={logoUhomeFull} alt="UHome" className="h-8 w-auto brightness-0 invert opacity-90" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold text-sidebar-primary tracking-wider uppercase">Gestão & IA</span>
+              </div>
             </div>
           )}
         </div>
