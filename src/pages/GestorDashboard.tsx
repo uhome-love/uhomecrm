@@ -15,6 +15,7 @@ import EmpreendimentoGroup from "@/components/EmpreendimentoGroup";
 import CorretorRanking from "@/components/CorretorRanking";
 import RecoveryAgentPanel from "@/components/RecoveryAgentPanel";
 import RecoveryDashboard from "@/components/recovery/RecoveryDashboard";
+import IaCoreAction from "@/components/IaCoreAction";
 import RecoveredLeadAlert from "@/components/recovery/RecoveredLeadAlert";
 import { getDaysSinceContact, calculateRecoveryScore, type QuickFilter } from "@/lib/leadUtils";
 import type { Lead, LeadPriority, StatusRecuperacao } from "@/types/lead";
@@ -334,6 +335,14 @@ export default function GestorDashboard() {
 
           {/* Recovery Dashboard */}
           <RecoveryDashboard leads={leads} />
+          
+          {/* IA Core Analysis */}
+          <IaCoreAction
+            module="recovery"
+            label="Análise IA dos Leads"
+            prompt={`Analise minha base de ${leads.length} leads de recuperação. ${leads.filter(l => l.prioridade === "muito_quente" || l.prioridade === "quente").length} são quentes. ${leads.filter(l => l.statusRecuperacao === "recuperado").length} foram recuperados. Dê um diagnóstico e plano de ação para hoje.`}
+            context={{ totalLeads: leads.length, statusCounts: Object.fromEntries(Object.entries(leads.reduce((acc: Record<string, number>, l) => { const s = l.statusRecuperacao || "pendente"; acc[s] = (acc[s] || 0) + 1; return acc; }, {}))) }}
+          />
 
           {/* Status filter bar */}
           <div className="flex items-center gap-2 flex-wrap">
