@@ -166,6 +166,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          jetimob_user_id: string | null
           nome: string
           telefone: string | null
           updated_at: string
@@ -177,6 +178,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          jetimob_user_id?: string | null
           nome?: string
           telefone?: string | null
           updated_at?: string
@@ -188,6 +190,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          jetimob_user_id?: string | null
           nome?: string
           telefone?: string | null
           updated_at?: string

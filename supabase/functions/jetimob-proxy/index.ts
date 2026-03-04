@@ -15,7 +15,8 @@ serve(async (req) => {
     const JETIMOB_API_KEY = Deno.env.get("JETIMOB_API_KEY");
     if (!JETIMOB_API_KEY) throw new Error("JETIMOB_API_KEY is not configured");
 
-    const { action, codigo } = await req.json();
+    const body = await req.json();
+    const { action, codigo, broker_id } = body;
 
     if (action === "get_imovel") {
       const response = await fetch(
@@ -53,6 +54,8 @@ serve(async (req) => {
       const JETIMOB_LEADS_PRIVATE_KEY = Deno.env.get("JETIMOB_LEADS_PRIVATE_KEY");
       if (!JETIMOB_LEADS_PRIVATE_KEY) throw new Error("JETIMOB_LEADS_PRIVATE_KEY is not configured");
 
+      // broker_id already extracted from body above
+
       const response = await fetch(url, {
         method: "GET",
         headers: { 
@@ -70,7 +73,19 @@ serve(async (req) => {
         );
       }
 
-      const data = JSON.parse(text);
+      let data = JSON.parse(text);
+      
+      // Filter by broker_id if provided (corretor filtering)
+      if (broker_id) {
+        const results = Array.isArray(data?.result) ? data.result : Array.isArray(data) ? data : [];
+        const filtered = results.filter((lead: any) => {
+          const responsavelId = lead.broker_id || lead.responsavel_id || lead.user_id;
+          return String(responsavelId) === String(broker_id);
+        });
+        data = { result: filtered };
+        console.log(`Filtered leads for broker ${broker_id}: ${filtered.length} of ${results.length}`);
+      }
+
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

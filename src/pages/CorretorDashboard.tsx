@@ -1,13 +1,14 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Phone, MessageSquare, Home, Sparkles, ExternalLink, Clock, CheckCircle2, Loader2, CloudDownload } from "lucide-react";
+import { Phone, MessageSquare, Home, Sparkles, ExternalLink, Clock, CheckCircle2, Loader2, CloudDownload, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import PriorityBadge from "@/components/PriorityBadge";
-import { getDaysSinceContact, getTimeSinceContactLabel, getTimeSinceContactColor } from "@/lib/leadUtils";
+import { getDaysSinceContact } from "@/lib/leadUtils";
 import type { Lead, LeadPriority } from "@/types/lead";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 function mapPriority(p: string): LeadPriority {
   const map: Record<string, LeadPriority> = {
@@ -24,42 +25,82 @@ function buildWhatsAppLink(telefone: string, mensagem: string): string {
 }
 
 export default function CorretorDashboard() {
+  const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
-  const [importingFromApi, setImportingFromApi] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [jetimobUserId, setJetimobUserId] = useState<string | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
-  const handleImportFromApi = useCallback(async () => {
-    setImportingFromApi(true);
+  // Fetch the corretor's jetimob_user_id from profile
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("jetimob_user_id")
+        .eq("user_id", user.id)
+        .single();
+      setJetimobUserId(data?.jetimob_user_id || null);
+      setProfileLoaded(true);
+    };
+    fetchProfile();
+  }, [user]);
+
+  // Auto-load leads when profile is ready
+  useEffect(() => {
+    if (!profileLoaded) return;
+    if (!jetimobUserId) {
+      setLoading(false);
+      return;
+    }
+    loadLeads();
+  }, [profileLoaded, jetimobUserId]);
+
+  const loadLeads = useCallback(async () => {
+    if (!jetimobUserId) return;
+    setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("jetimob-proxy", { body: { action: "list_leads" } });
+      const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+        body: { action: "list_leads", broker_id: jetimobUserId },
+      });
       if (error) throw error;
       const apiLeads = Array.isArray(data?.result) ? data.result : Array.isArray(data) ? data : [];
-      if (apiLeads.length === 0) { toast.warning("Nenhum lead encontrado."); return; }
-      const mapped: Lead[] = apiLeads.map((l: any, i: number) => ({
-        id: String(l.id || i + 1), nome: l.full_name || "", email: l.emails?.[0] || "",
-        telefone: l.phones?.[0] || "", interesse: l.message || l.subject || "",
-        origem: l.campaign_id ? `Campanha ${l.campaign_id}` : "API Jetimob",
-        ultimoContato: l.created_at ? new Date(l.created_at).toLocaleDateString("pt-BR") : "",
-        status: l.stage || "", corretor: l.broker_name || "",
-      }));
+      
+      // Filter: only leads with phone or email
+      const mapped: Lead[] = apiLeads
+        .filter((l: any) => (l.phones?.[0] || l.emails?.[0]))
+        .map((l: any, i: number) => ({
+          id: String(l.id || i + 1), nome: l.full_name || "", email: l.emails?.[0] || "",
+          telefone: l.phones?.[0] || "", interesse: l.message || l.subject || "",
+          origem: l.campaign_id ? `Campanha ${l.campaign_id}` : "API Jetimob",
+          ultimoContato: l.created_at ? new Date(l.created_at).toLocaleDateString("pt-BR") : "",
+          status: l.stage || "", corretor: l.broker_name || "",
+        }));
       setLeads(mapped);
 
-      // Auto-classify
-      toast.info("Classificando leads com IA...");
-      const { data: classData } = await supabase.functions.invoke("generate-followup", {
-        body: { type: "classify", leads: mapped.slice(0, 100).map((l) => ({ id: l.id, nome: l.nome, interesse: l.interesse, origem: l.origem, ultimoContato: l.ultimoContato, status: l.status, temTelefone: !!l.telefone, temEmail: !!l.email })) },
-      });
-      if (classData?.classifications) {
-        const cls = classData.classifications as Array<{ id: string; priority: string }>;
-        setLeads((prev) => prev.map((l) => {
-          const c = cls.find((cl) => cl.id === l.id);
-          return c ? { ...l, prioridade: mapPriority(c.priority) } : l;
-        }));
+      if (mapped.length > 0) {
+        // Auto-classify first batch
+        const batch = mapped.slice(0, 50);
+        const { data: classData } = await supabase.functions.invoke("generate-followup", {
+          body: { type: "classify", leads: batch.map((l) => ({ id: l.id, nome: l.nome, interesse: l.interesse, origem: l.origem, ultimoContato: l.ultimoContato, status: l.status, temTelefone: !!l.telefone, temEmail: !!l.email })) },
+        });
+        if (classData?.classifications) {
+          const cls = classData.classifications as Array<{ id: string; priority: string }>;
+          setLeads((prev) => prev.map((l) => {
+            const c = cls.find((cl) => cl.id === l.id);
+            return c ? { ...l, prioridade: mapPriority(c.priority) } : l;
+          }));
+        }
+        toast.success(`${mapped.length} leads carregados!`);
+      } else {
+        toast.info("Nenhum lead encontrado para você.");
       }
-      toast.success(`${mapped.length} leads carregados!`);
-    } catch { toast.error("Erro ao importar leads."); } finally { setImportingFromApi(false); }
-  }, []);
+    } catch {
+      toast.error("Erro ao carregar leads.");
+    } finally { setLoading(false); }
+  }, [jetimobUserId]);
 
   const generateMessage = useCallback(async (lead: Lead) => {
     setLoadingLeadId(lead.id);
@@ -91,37 +132,51 @@ export default function CorretorDashboard() {
     const active = leads.filter((l) => !completedIds.has(l.id));
     const ligar = active.filter((l) => l.telefone && (l.prioridade === "muito_quente" || l.prioridade === "quente") && !l.mensagemGerada);
     const whatsapp = active.filter((l) => l.telefone && l.mensagemGerada);
-    const visita = active.filter((l) => l.imovel && (l.prioridade === "muito_quente"));
-    const gerarMsg = active.filter((l) => !l.mensagemGerada && l.prioridade && l.prioridade !== "perdido");
-    return { ligar, whatsapp, visita, gerarMsg };
+    const visita = active.filter((l) => l.imovel && l.prioridade === "muito_quente");
+    return { ligar, whatsapp, visita };
   }, [leads, completedIds]);
 
-  if (leads.length === 0) {
+  // No jetimob_user_id configured
+  if (profileLoaded && !jetimobUserId) {
     return (
       <div className="p-6 flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-          <h2 className="font-display text-2xl font-bold text-foreground">
-            Painel do <span className="text-primary">Corretor</span>
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Suas tarefas do dia organizadas para máxima produtividade</p>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 mx-auto mb-4">
+            <AlertCircle className="h-6 w-6 text-warning" />
+          </div>
+          <h2 className="font-display text-xl font-bold text-foreground">Configuração Pendente</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Seu perfil ainda não está vinculado ao Jetimob. Peça ao administrador para configurar seu <strong>ID do Jetimob</strong> no painel de administração.
+          </p>
         </motion.div>
-        <Button onClick={handleImportFromApi} disabled={importingFromApi} className="gap-2" size="lg">
-          {importingFromApi ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
-          {importingFromApi ? "Carregando leads..." : "Carregar Meus Leads"}
-        </Button>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Carregando seus leads do Jetimob...</p>
       </div>
     );
   }
 
   const totalTasks = taskGroups.ligar.length + taskGroups.whatsapp.length + taskGroups.visita.length;
+  const allTasks = [...taskGroups.ligar, ...taskGroups.whatsapp, ...taskGroups.visita];
+  // Deduplicate (a lead can appear in multiple groups)
+  const uniqueTasks = Array.from(new Map(allTasks.map((l) => [l.id, l])).values());
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-foreground">Tarefas do Dia</h2>
-          <p className="text-sm text-muted-foreground">{totalTasks} tarefas pendentes • {completedIds.size} concluídas</p>
+          <p className="text-sm text-muted-foreground">{uniqueTasks.length} tarefas pendentes • {completedIds.size} concluídas • {leads.length} leads na base</p>
         </div>
+        <Button variant="outline" size="sm" onClick={loadLeads} className="gap-1.5">
+          <CloudDownload className="h-3.5 w-3.5" /> Atualizar
+        </Button>
       </div>
 
       {/* Task summary cards */}
@@ -162,10 +217,14 @@ export default function CorretorDashboard() {
       </div>
 
       {/* Task list */}
+      {uniqueTasks.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p className="text-sm">Nenhuma tarefa pendente. Todos os leads estão atualizados! 🎉</p>
+        </div>
+      )}
+
       <div className="space-y-3">
-        {[...taskGroups.ligar, ...taskGroups.whatsapp, ...taskGroups.visita].slice(0, 30).map((lead, i) => {
-          const isWhatsapp = !!lead.mensagemGerada;
-          const isVisita = !!lead.imovel && lead.prioridade === "muito_quente";
+        {uniqueTasks.slice(0, 30).map((lead, i) => {
           const days = getDaysSinceContact(lead.ultimoContato);
           const dayLabel = days !== null ? `${days}d sem contato` : "sem data";
 
