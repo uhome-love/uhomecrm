@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Plus, Trash2, UserPlus, Link2, Unlink, Check } from "lucide-react";
+import { Plus, Trash2, UserPlus, Link2, Unlink, Check, Users, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,6 +37,7 @@ export default function TeamManagement() {
   const [newEquipe, setNewEquipe] = useState("");
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
   const [linkingMemberId, setLinkingMemberId] = useState<string | null>(null);
+  const [filterEquipe, setFilterEquipe] = useState<string>("all");
 
   const loadTeam = useCallback(async () => {
     if (!user) return;
@@ -136,6 +137,33 @@ export default function TeamManagement() {
     (u) => !linkedUserIds.includes(u.user_id)
   );
 
+  // Equipe filter & stats
+  const equipes = Array.from(new Set(members.map((m) => m.equipe).filter(Boolean))) as string[];
+  const filteredMembers = filterEquipe === "all" 
+    ? members 
+    : filterEquipe === "sem_equipe"
+    ? members.filter((m) => !m.equipe)
+    : members.filter((m) => m.equipe === filterEquipe);
+
+  const equipeStats = equipes.map((eq) => {
+    const membersInEquipe = members.filter((m) => m.equipe === eq);
+    return {
+      equipe: eq,
+      total: membersInEquipe.length,
+      ativos: membersInEquipe.filter((m) => m.status === "ativo").length,
+      vinculados: membersInEquipe.filter((m) => m.user_id).length,
+    };
+  });
+  const semEquipe = members.filter((m) => !m.equipe);
+  if (semEquipe.length > 0) {
+    equipeStats.push({
+      equipe: "Sem equipe",
+      total: semEquipe.length,
+      ativos: semEquipe.filter((m) => m.status === "ativo").length,
+      vinculados: semEquipe.filter((m) => m.user_id).length,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-6 shadow-card">
@@ -174,25 +202,75 @@ export default function TeamManagement() {
         </p>
       </div>
 
+      {/* Equipe Stats */}
+      {equipeStats.length > 1 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {equipeStats.map((s) => (
+            <button
+              key={s.equipe}
+              onClick={() => setFilterEquipe(s.equipe === "Sem equipe" ? "sem_equipe" : s.equipe)}
+              className={`rounded-xl border p-4 text-left transition-all hover:shadow-md ${
+                (filterEquipe === s.equipe || (filterEquipe === "sem_equipe" && s.equipe === "Sem equipe"))
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "border-border bg-card hover:border-muted-foreground/30"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">{s.equipe}</span>
+              </div>
+              <div className="flex gap-3 text-xs text-muted-foreground">
+                <span><strong className="text-foreground">{s.ativos}</strong> ativos</span>
+                <span><strong className="text-foreground">{s.vinculados}</strong> vinc.</span>
+                <span>{s.total} total</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-        <div className="p-4 border-b border-border bg-muted/30">
+        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
           <h3 className="font-display font-semibold text-foreground">
-            Meu Time ({members.filter((m) => m.status === "ativo").length}{" "}
-            ativos)
+            Meu Time ({filteredMembers.filter((m) => m.status === "ativo").length} ativos)
           </h3>
+          <div className="flex items-center gap-2">
+            {filterEquipe !== "all" && (
+              <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setFilterEquipe("all")}>
+                Limpar filtro
+              </Button>
+            )}
+            <Select value={filterEquipe} onValueChange={setFilterEquipe}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <Filter className="h-3 w-3 mr-1" />
+                <SelectValue placeholder="Filtrar equipe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas equipes</SelectItem>
+                {equipes.map((eq) => (
+                  <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+                ))}
+                {semEquipe.length > 0 && (
+                  <SelectItem value="sem_equipe">Sem equipe</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         {loading ? (
           <div className="p-8 text-center text-muted-foreground">
             Carregando...
           </div>
-        ) : members.length === 0 ? (
+        ) : filteredMembers.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
-            Nenhum corretor cadastrado. Adicione acima.
+            {members.length === 0 
+              ? "Nenhum corretor cadastrado. Adicione acima."
+              : "Nenhum corretor nesta equipe."}
           </div>
         ) : (
           <div className="divide-y divide-border">
             <AnimatePresence>
-              {members.map((m) => {
+              {filteredMembers.map((m) => {
                 const linkedProfile = m.user_id
                   ? systemUsers.find((u) => u.user_id === m.user_id)
                   : null;
@@ -229,13 +307,13 @@ export default function TeamManagement() {
                             Manual
                           </Badge>
                         )}
+                        {m.equipe && (
+                          <Badge variant="secondary" className="text-[10px] h-5">
+                            {m.equipe}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {m.equipe && (
-                          <p className="text-xs text-muted-foreground">
-                            {m.equipe}
-                          </p>
-                        )}
                         {linkedProfile?.email && (
                           <p className="text-xs text-muted-foreground">
                             • {linkedProfile.email}
