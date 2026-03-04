@@ -27,6 +27,7 @@ type FunnelEntry = {
   investimento_midia: number;
   custo_medio_lead: number;
   observacoes: string | null;
+  corretor_nome: string | null;
   taxa_proposta: number;
   taxa_venda: number;
   taxa_fechamento: number;
@@ -84,12 +85,15 @@ export default function FunilDashboard() {
   const [investimentoMidia, setInvestimentoMidia] = useState(0);
   const [custoMedioLead, setCustoMedioLead] = useState(25);
   const [observacoes, setObservacoes] = useState("");
+  const [corretorNome, setCorretorNome] = useState("");
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [entries, setEntries] = useState<FunnelEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [currentAnalysis, setCurrentAnalysis] = useState<string | null>(null);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<{ id: string; nome: string }[]>([]);
+  const [filterCorretor, setFilterCorretor] = useState("");
 
   // Auto-set period dates
   useEffect(() => {
@@ -106,6 +110,14 @@ export default function FunilDashboard() {
       setPeriodoFim(end);
     }
   }, [periodoTipo, periodoInicio]);
+
+  // Load team members
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("team_members").select("id, nome").eq("status", "ativo").order("nome").then(({ data }) => {
+      setTeamMembers((data as { id: string; nome: string }[]) || []);
+    });
+  }, [user]);
 
   // Load entries
   const loadEntries = useCallback(async () => {
@@ -157,6 +169,7 @@ export default function FunilDashboard() {
         investimento_midia: investimentoMidia,
         custo_medio_lead: custoMedioLead,
         observacoes: observacoes || null,
+        corretor_nome: corretorNome || null,
       };
 
       if (currentEntryId) {
@@ -173,7 +186,7 @@ export default function FunilDashboard() {
     } catch (err: any) {
       toast.error(err.message || "Erro ao salvar.");
     } finally { setSaving(false); }
-  }, [user, periodoTipo, periodoInicio, periodoFim, leadsGerados, propostasGeradas, vendasFechadas, vgvVendido, investimentoMidia, custoMedioLead, observacoes, currentEntryId, loadEntries]);
+  }, [user, periodoTipo, periodoInicio, periodoFim, leadsGerados, propostasGeradas, vendasFechadas, vgvVendido, investimentoMidia, custoMedioLead, observacoes, corretorNome, currentEntryId, loadEntries]);
 
   const handleDuplicate = useCallback(() => {
     if (entries.length === 0) { toast.warning("Sem registros anteriores."); return; }
@@ -184,6 +197,7 @@ export default function FunilDashboard() {
     setVgvVendido(prev.vgv_vendido);
     setInvestimentoMidia(prev.investimento_midia);
     setCustoMedioLead(prev.custo_medio_lead);
+    setCorretorNome(prev.corretor_nome || "");
     setObservacoes("");
     setCurrentEntryId(null);
     toast.info("Dados do período anterior duplicados. Ajuste e salve.");
@@ -239,6 +253,7 @@ export default function FunilDashboard() {
     setVgvVendido(entry.vgv_vendido);
     setInvestimentoMidia(entry.investimento_midia);
     setCustoMedioLead(entry.custo_medio_lead);
+    setCorretorNome(entry.corretor_nome || "");
     setObservacoes(entry.observacoes || "");
     setCurrentAnalysis(entry.analise_ia || null);
     setCurrentEntryId(entry.id);
@@ -310,6 +325,18 @@ export default function FunilDashboard() {
                   </div>
                 </div>
 
+                {/* Corretor selector */}
+                <div>
+                  <Label>Corretor</Label>
+                  <Select value={corretorNome} onValueChange={setCorretorNome}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o corretor" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Geral (sem corretor)</SelectItem>
+                      {teamMembers.map(m => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Main fields */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div>
@@ -356,7 +383,7 @@ export default function FunilDashboard() {
                     {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     {analyzing ? "Analisando..." : "Gerar análise com IA"}
                   </Button>
-                  <Button variant="ghost" onClick={() => { setCurrentEntryId(null); setLeadsGerados(0); setPropostasGeradas(0); setVendasFechadas(0); setVgvVendido(0); setInvestimentoMidia(0); setCustoMedioLead(25); setObservacoes(""); setCurrentAnalysis(null); }} className="gap-1.5">
+                  <Button variant="ghost" onClick={() => { setCurrentEntryId(null); setLeadsGerados(0); setPropostasGeradas(0); setVendasFechadas(0); setVgvVendido(0); setInvestimentoMidia(0); setCustoMedioLead(25); setObservacoes(""); setCorretorNome(""); setCurrentAnalysis(null); }} className="gap-1.5">
                     <Eraser className="h-4 w-4" /> Limpar campos
                   </Button>
                   {currentEntryId && (
@@ -364,7 +391,7 @@ export default function FunilDashboard() {
                       if (!confirm("Tem certeza que deseja apagar este registro?")) return;
                       const { error } = await supabase.from("funnel_entries").delete().eq("id", currentEntryId);
                       if (error) { toast.error("Erro ao apagar."); return; }
-                      setCurrentEntryId(null); setLeadsGerados(0); setPropostasGeradas(0); setVendasFechadas(0); setVgvVendido(0); setInvestimentoMidia(0); setCustoMedioLead(25); setObservacoes(""); setCurrentAnalysis(null);
+                      setCurrentEntryId(null); setLeadsGerados(0); setPropostasGeradas(0); setVendasFechadas(0); setVgvVendido(0); setInvestimentoMidia(0); setCustoMedioLead(25); setObservacoes(""); setCorretorNome(""); setCurrentAnalysis(null);
                       await loadEntries();
                       toast.success("Registro apagado!");
                     }}>
@@ -559,9 +586,24 @@ export default function FunilDashboard() {
         {/* ===== HISTÓRICO TAB ===== */}
         <TabsContent value="historico" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Histórico do Funil</CardTitle>
-              <CardDescription>Todos os registros salvos</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Histórico do Funil</CardTitle>
+                <CardDescription>Todos os registros salvos</CardDescription>
+              </div>
+              {(() => {
+                const corretores = [...new Set(entries.map(e => e.corretor_nome).filter(Boolean))];
+                if (corretores.length === 0) return null;
+                return (
+                  <Select value={filterCorretor} onValueChange={v => setFilterCorretor(v === "all" ? "" : v)}>
+                    <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Filtrar corretor" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {corretores.map(c => <SelectItem key={c!} value={c!}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
             </CardHeader>
             <CardContent>
               {loadingEntries ? (
@@ -574,6 +616,7 @@ export default function FunilDashboard() {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-2 font-medium">Período</th>
+                        <th className="text-left py-2 font-medium">Corretor</th>
                         <th className="text-right py-2 font-medium">Leads</th>
                         <th className="text-right py-2 font-medium">Propostas</th>
                         <th className="text-right py-2 font-medium">Vendas</th>
@@ -586,12 +629,13 @@ export default function FunilDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {entries.map(e => (
+                      {(filterCorretor ? entries.filter(e => e.corretor_nome === filterCorretor) : entries).map(e => (
                         <tr key={e.id} className="border-b last:border-0 hover:bg-muted/50 cursor-pointer" onClick={() => loadEntry(e)}>
                           <td className="py-2">
                             <span className="text-xs uppercase text-muted-foreground">{e.periodo_tipo}</span><br />
                             <span className="text-xs">{e.periodo_inicio} → {e.periodo_fim}</span>
                           </td>
+                          <td className="py-2 text-xs">{e.corretor_nome || <span className="text-muted-foreground">Geral</span>}</td>
                           <td className="text-right">{e.leads_gerados}</td>
                           <td className="text-right">{e.propostas_geradas}</td>
                           <td className="text-right">{e.vendas_fechadas}</td>

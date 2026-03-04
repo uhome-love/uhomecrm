@@ -1,0 +1,1 @@
+ALTER TABLE public.funnel_entries ADD COLUMN corretor_nome TEXT DEFAULT NULL;

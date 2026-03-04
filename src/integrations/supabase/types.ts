@@ -224,6 +224,7 @@ export type Database = {
         Row: {
           analise_ia: string | null
           cac_estimado: number | null
+          corretor_nome: string | null
           cpl_real: number | null
           created_at: string
           custo_medio_lead: number
@@ -246,6 +247,7 @@ export type Database = {
         Insert: {
           analise_ia?: string | null
           cac_estimado?: number | null
+          corretor_nome?: string | null
           cpl_real?: number | null
           created_at?: string
           custo_medio_lead?: number
@@ -268,6 +270,7 @@ export type Database = {
         Update: {
           analise_ia?: string | null
           cac_estimado?: number | null
+          corretor_nome?: string | null
           cpl_real?: number | null
           created_at?: string
           custo_medio_lead?: number
