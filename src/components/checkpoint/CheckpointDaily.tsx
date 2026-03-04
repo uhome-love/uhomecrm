@@ -214,9 +214,9 @@ export default function CheckpointDaily() {
   };
 
   const changeDate = (delta: number) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() + delta);
-    setDate(format(d, "yyyy-MM-dd"));
+    const [y, m, d] = date.split("-").map(Number);
+    const newDate = new Date(y, m - 1, d + delta);
+    setDate(format(newDate, "yyyy-MM-dd"));
   };
 
   const metasLocked = checkpointStatus === "metas_publicadas" || checkpointStatus === "fechado";
