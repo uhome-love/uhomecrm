@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Upload, Send, CloudDownload, Loader2, Flame, Phone, MessageSquare, Home, TrendingUp, Users, BarChart3 } from "lucide-react";
+import { Sparkles, Upload, Send, CloudDownload, Loader2, Flame, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CsvUploader from "@/components/CsvUploader";
@@ -17,8 +17,7 @@ import RecoveryAgentPanel from "@/components/RecoveryAgentPanel";
 import { getDaysSinceContact, calculateRecoveryScore, type QuickFilter } from "@/lib/leadUtils";
 import type { Lead, LeadPriority } from "@/types/lead";
 import { supabase } from "@/integrations/supabase/client";
-
-type Step = "upload" | "dashboard";
+import { useLeadsPersistence } from "@/hooks/useLeadsPersistence";
 
 function mapPriority(p: string): LeadPriority {
   const map: Record<string, LeadPriority> = {
@@ -29,10 +28,9 @@ function mapPriority(p: string): LeadPriority {
 }
 
 export default function GestorDashboard() {
-  const [step, setStep] = useState<Step>("upload");
+  const { leads, setLeads, loading: loadingLeads, hasLeads, saveLeads, updateLead, deleteAllLeads } = useLeadsPersistence();
   const [csvData, setCsvData] = useState<Record<string, string>[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
-  const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
   const [classifyingAll, setClassifyingAll] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
@@ -42,6 +40,9 @@ export default function GestorDashboard() {
   const [interesseFilter, setInteresseFilter] = useState<string | null>(null);
   const [generatingBulk, setGeneratingBulk] = useState(false);
   const [showMapper, setShowMapper] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+
+  const step = (!hasLeads && !loadingLeads) || showUpload ? "upload" : "dashboard";
 
   const handleDataParsed = useCallback((data: Record<string, string>[], headers: string[]) => {
     setCsvData(data);
@@ -67,14 +68,14 @@ export default function GestorDashboard() {
         lead.recoveryScore = calculateRecoveryScore(lead);
         return lead;
       });
-      setLeads(mapped);
-      setStep("dashboard");
-      toast.success(`${mapped.length} leads importados da API Jetimob!`);
+      await saveLeads(mapped);
+      setShowUpload(false);
+      toast.success(`${mapped.length} leads importados e salvos!`);
     } catch (err) {
       console.error("API import error:", err);
       toast.error("Erro ao importar leads da API Jetimob.");
     } finally { setImportingFromApi(false); }
-  }, []);
+  }, [saveLeads]);
 
   const handleMappingComplete = useCallback(async (mapping: Record<string, string>) => {
     const mapped: Lead[] = csvData.map((row, i) => {
@@ -86,11 +87,11 @@ export default function GestorDashboard() {
       lead.recoveryScore = calculateRecoveryScore(lead);
       return lead;
     });
-    setLeads(mapped);
-    setStep("dashboard");
+    const savedLeads = await saveLeads(mapped);
     setShowMapper(false);
-    toast.success(`${mapped.length} leads importados com sucesso!`);
-  }, [csvData]);
+    setShowUpload(false);
+    toast.success(`${savedLeads.length} leads importados e salvos no banco!`);
+  }, [csvData, saveLeads]);
 
   const generateMessage = useCallback(async (lead: Lead) => {
     setLoadingLeadId(lead.id);
@@ -108,10 +109,11 @@ export default function GestorDashboard() {
         },
       });
       if (error) throw error;
-      setLeads((prev) => prev.map((l) => l.id === lead.id ? { ...l, mensagemGerada: data.message, prioridade: mapPriority(data.priority) } : l));
+      const prio = mapPriority(data.priority);
+      await updateLead(lead.id, { mensagemGerada: data.message, prioridade: prio });
       toast.success("Mensagem gerada!");
     } catch { toast.error("Erro ao gerar mensagem."); } finally { setLoadingLeadId(null); }
-  }, []);
+  }, [updateLead]);
 
   const classifyAllLeads = useCallback(async () => {
     setClassifyingAll(true);
@@ -121,13 +123,12 @@ export default function GestorDashboard() {
       });
       if (error) throw error;
       const classifications = data.classifications as Array<{ id: string; priority: string }>;
-      setLeads((prev) => prev.map((l) => {
-        const c = classifications.find((cl) => cl.id === l.id);
-        return c ? { ...l, prioridade: mapPriority(c.priority) } : l;
-      }));
+      for (const c of classifications) {
+        await updateLead(c.id, { prioridade: mapPriority(c.priority) });
+      }
       toast.success("Leads classificados!");
     } catch { toast.error("Erro ao classificar."); } finally { setClassifyingAll(false); }
-  }, [leads]);
+  }, [leads, updateLead]);
 
   const handleBulkGenerateMessages = useCallback(async (leadIds: string[]) => {
     setGeneratingBulk(true);
@@ -140,7 +141,7 @@ export default function GestorDashboard() {
           body: { type: "message", lead: { nome: lead.nome, interesse: lead.interesse, origem: lead.origem, ultimoContato: lead.ultimoContato, status: lead.status } },
         });
         if (!error && data?.message) {
-          setLeads((prev) => prev.map((l) => l.id === id ? { ...l, mensagemGerada: data.message, prioridade: mapPriority(data.priority) } : l));
+          await updateLead(id, { mensagemGerada: data.message, prioridade: mapPriority(data.priority) });
           success++;
         }
       } catch {}
@@ -148,7 +149,13 @@ export default function GestorDashboard() {
     }
     setGeneratingBulk(false);
     toast.success(`${success} mensagens geradas!`);
-  }, [leads]);
+  }, [leads, updateLead]);
+
+  const handleDeleteAll = useCallback(async () => {
+    if (!confirm("Tem certeza que deseja apagar todos os leads? Esta ação não pode ser desfeita.")) return;
+    await deleteAllLeads();
+    setShowUpload(false);
+  }, [deleteAllLeads]);
 
   // Filter counts
   const filterCounts = useMemo(() => {
@@ -214,9 +221,7 @@ export default function GestorDashboard() {
     return result;
   }, [leads, quickFilter, reactivationFilter, interesseFilter]);
 
-  // KPI cards for gestão
   const kpis = useMemo(() => {
-    const withPhone = leads.filter((l) => l.telefone).length;
     const highScore = leads.filter((l) => (l.recoveryScore || 0) >= 80).length;
     const goodScore = leads.filter((l) => (l.recoveryScore || 0) >= 60 && (l.recoveryScore || 0) < 80).length;
     const readyToContact = leads.filter((l) => l.telefone && (l.recoveryScore || 0) >= 60).length;
@@ -228,6 +233,14 @@ export default function GestorDashboard() {
       { label: "Score Médio", value: avgScore, icon: "📊", color: "bg-warning/10 text-warning border-warning/20" },
     ];
   }, [leads]);
+
+  if (loadingLeads) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -256,6 +269,11 @@ export default function GestorDashboard() {
                 {importingFromApi ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
                 {importingFromApi ? "Importando..." : "Importar da API Jetimob"}
               </Button>
+              {hasLeads && (
+                <Button variant="ghost" className="w-full" onClick={() => setShowUpload(false)}>
+                  ← Voltar para os leads
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -275,9 +293,14 @@ export default function GestorDashboard() {
             <Button variant="outline" onClick={() => setBulkDialogOpen(true)} className="gap-1.5">
               <Send className="h-4 w-4" /> Disparo em Massa
             </Button>
-            <Button variant="ghost" onClick={() => { setStep("upload"); setLeads([]); setQuickFilter("todos"); }} className="gap-1.5 ml-auto">
-              <Upload className="h-4 w-4" /> Reimportar
-            </Button>
+            <div className="flex items-center gap-2 ml-auto">
+              <Button variant="ghost" onClick={() => setShowUpload(true)} className="gap-1.5">
+                <Upload className="h-4 w-4" /> Importar mais
+              </Button>
+              <Button variant="ghost" onClick={handleDeleteAll} className="gap-1.5 text-destructive hover:text-destructive">
+                <Trash2 className="h-4 w-4" /> Apagar todos
+              </Button>
+            </div>
           </div>
 
           {/* Strategic KPIs */}
