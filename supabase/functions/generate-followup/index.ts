@@ -19,10 +19,14 @@ serve(async (req) => {
 
     if (type === "message") {
       const prompt = `Você é um corretor de imóveis especialista em recuperação de leads.
-Gere uma mensagem de follow-up personalizada e persuasiva para resgatar este lead.
-A mensagem deve ser curta (máximo 3 parágrafos), amigável e profissional.
-Inclua referência ao interesse do lead e crie urgência sem ser agressivo.
-Também classifique a prioridade deste lead: "alta", "media" ou "baixa" com base em quão recente foi o último contato e no nível de interesse.
+Gere uma mensagem de follow-up para reativar este lead.
+
+REGRAS DA MENSAGEM:
+- Máximo 2 frases
+- Tom humano e natural
+- Não parecer spam
+- Finalizar com uma pergunta
+- Ser personalizada com os dados do lead
 
 Dados do lead:
 - Nome: ${lead.nome}
@@ -31,8 +35,18 @@ Dados do lead:
 - Último contato: ${lead.ultimoContato}
 - Status: ${lead.status}
 
-Responda EXATAMENTE neste formato JSON:
-{"message": "sua mensagem aqui", "priority": "alta|media|baixa"}`;
+Também classifique a prioridade considerando:
+- Data do último contato (mais recente = maior prioridade)
+- Interesse no imóvel (específico = maior prioridade)
+- Origem do lead (Meta Ads/landing page = maior prioridade)
+- Presença de telefone e email
+
+Classificações possíveis:
+- "alta": lead recente (<15 dias), interesse claro, dados completos
+- "media": lead moderado (15-30 dias), algum interesse
+- "baixa": lead antigo (30-60 dias), interesse vago
+- "frio": lead muito antigo (60-90 dias), sem interação recente
+- "perdido": lead >90 dias sem contato ou sem dados suficientes`;
 
       const response = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -57,8 +71,8 @@ Responda EXATAMENTE neste formato JSON:
                   parameters: {
                     type: "object",
                     properties: {
-                      message: { type: "string", description: "The personalized follow-up message" },
-                      priority: { type: "string", enum: ["alta", "media", "baixa"] },
+                      message: { type: "string", description: "The personalized follow-up message (max 2 sentences, ending with a question)" },
+                      priority: { type: "string", enum: ["alta", "media", "baixa", "frio", "perdido"] },
                     },
                     required: ["message", "priority"],
                     additionalProperties: false,
@@ -94,7 +108,6 @@ Responda EXATAMENTE neste formato JSON:
       if (toolCall) {
         result = JSON.parse(toolCall.function.arguments);
       } else {
-        // Fallback: try to parse from content
         const content = aiData.choices?.[0]?.message?.content || "";
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         result = jsonMatch ? JSON.parse(jsonMatch[0]) : { message: content, priority: "media" };
@@ -109,7 +122,7 @@ Responda EXATAMENTE neste formato JSON:
       const leadsInfo = leads
         .map(
           (l: any) =>
-            `ID: ${l.id} | Nome: ${l.nome} | Interesse: ${l.interesse} | Origem: ${l.origem} | Último contato: ${l.ultimoContato} | Status: ${l.status}`
+            `ID: ${l.id} | Nome: ${l.nome} | Interesse: ${l.interesse} | Origem: ${l.origem} | Último contato: ${l.ultimoContato} | Status: ${l.status} | Tem telefone: ${l.temTelefone ? "sim" : "não"} | Tem email: ${l.temEmail ? "sim" : "não"}`
         )
         .join("\n");
 
@@ -130,8 +143,20 @@ Responda EXATAMENTE neste formato JSON:
               },
               {
                 role: "user",
-                content: `Classifique cada lead abaixo por prioridade de resgate (alta, media, baixa).
-Considere: recência do último contato, tipo de interesse, e origem do lead.
+                content: `Classifique cada lead abaixo em 5 níveis de prioridade.
+
+CRITÉRIOS DE CLASSIFICAÇÃO:
+- "alta": lead recente (<15 dias), interesse claro em imóvel específico, dados de contato completos
+- "media": lead moderado (15-30 dias), algum interesse demonstrado
+- "baixa": lead antigo (30-60 dias), interesse vago ou genérico
+- "frio": lead muito antigo (60-90 dias), sem interação recente
+- "perdido": lead >90 dias sem contato, sem dados suficientes, ou sem interesse identificável
+
+CONSIDERE:
+- Data do último contato (quanto mais recente, maior prioridade)
+- Especificidade do interesse (código de imóvel > tipo genérico > sem interesse)
+- Origem do lead (Meta Ads/formulário > orgânico > indefinido)
+- Presença de telefone e email (ambos > apenas um > nenhum)
 
 Leads:
 ${leadsInfo}`,
@@ -142,7 +167,7 @@ ${leadsInfo}`,
                 type: "function",
                 function: {
                   name: "classify_leads",
-                  description: "Classify all leads by recovery priority",
+                  description: "Classify all leads by recovery priority into 5 levels",
                   parameters: {
                     type: "object",
                     properties: {
@@ -152,7 +177,7 @@ ${leadsInfo}`,
                           type: "object",
                           properties: {
                             id: { type: "string" },
-                            priority: { type: "string", enum: ["alta", "media", "baixa"] },
+                            priority: { type: "string", enum: ["alta", "media", "baixa", "frio", "perdido"] },
                           },
                           required: ["id", "priority"],
                           additionalProperties: false,

@@ -7,7 +7,7 @@ export interface Lead {
   origem: string;
   ultimoContato: string;
   status: string;
-  prioridade?: "alta" | "media" | "baixa";
+  prioridade?: "alta" | "media" | "baixa" | "frio" | "perdido";
   mensagemGerada?: string;
   canalEnvio?: "whatsapp" | "email" | "ambos";
   imovel?: ImovelJetimob;

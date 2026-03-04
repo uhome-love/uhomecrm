@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Zap, Upload, Send, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import CsvUploader from "@/components/CsvUploader";
 import ColumnMapper from "@/components/ColumnMapper";
 import LeadTable from "@/components/LeadTable";
 import StatsCards from "@/components/StatsCards";
+import ReactivationPanel from "@/components/ReactivationPanel";
+import { getDaysSinceContact } from "@/components/ReactivationPanel";
 import BulkWhatsAppDialog from "@/components/BulkWhatsAppDialog";
 import type { Lead, LeadCSVRow } from "@/types/lead";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +25,7 @@ export default function Index() {
   const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
   const [classifyingAll, setClassifyingAll] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [reactivationFilter, setReactivationFilter] = useState<number | null>(null);
 
   const handleDataParsed = useCallback((data: LeadCSVRow[], headers: string[]) => {
     setCsvData(data);
@@ -146,13 +149,15 @@ export default function Index() {
             origem: l.origem,
             ultimoContato: l.ultimoContato,
             status: l.status,
+            temTelefone: !!l.telefone,
+            temEmail: !!l.email,
           })),
         },
       });
       if (error) throw error;
       const classifications = data.classifications as Array<{
         id: string;
-        priority: "alta" | "media" | "baixa";
+        priority: "alta" | "media" | "baixa" | "frio" | "perdido";
       }>;
       setLeads((prev) =>
         prev.map((l) => {
@@ -168,6 +173,20 @@ export default function Index() {
       setClassifyingAll(false);
     }
   }, [leads]);
+
+  const filteredLeads = useMemo(() => {
+    if (!reactivationFilter || reactivationFilter === 0) return leads;
+    return leads.filter((lead) => {
+      const days = getDaysSinceContact(lead.ultimoContato);
+      if (days === null) return reactivationFilter === 90;
+      if (reactivationFilter === 90) return days >= 90;
+      if (reactivationFilter === 60) return days >= 60 && days < 90;
+      if (reactivationFilter === 30) return days >= 30 && days < 60;
+      if (reactivationFilter === 15) return days >= 15 && days < 30;
+      if (reactivationFilter === 7) return days >= 7 && days < 15;
+      return true;
+    });
+  }, [leads, reactivationFilter]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -254,8 +273,13 @@ export default function Index() {
             className="space-y-6"
           >
             <StatsCards leads={leads} />
-            <LeadTable
+            <ReactivationPanel
               leads={leads}
+              onFilterByDays={(days) => setReactivationFilter(days || null)}
+              activeFilter={reactivationFilter}
+            />
+            <LeadTable
+              leads={filteredLeads}
               onGenerateMessage={generateMessage}
               loadingLeadId={loadingLeadId}
             />

@@ -20,6 +20,8 @@ function PriorityBadge({ priority }: { priority?: Lead["prioridade"] }) {
     alta: { label: "Alta", className: "bg-priority-high/10 text-priority-high border-priority-high/20" },
     media: { label: "Média", className: "bg-priority-medium/10 text-priority-medium border-priority-medium/20" },
     baixa: { label: "Baixa", className: "bg-priority-low/10 text-priority-low border-priority-low/20" },
+    frio: { label: "Frio", className: "bg-info/10 text-info border-info/20" },
+    perdido: { label: "Perdido", className: "bg-muted text-muted-foreground border-border" },
   };
   const c = config[priority];
   return <Badge variant="outline" className={c.className}>{c.label}</Badge>;
