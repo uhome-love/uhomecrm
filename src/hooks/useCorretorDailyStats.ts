@@ -69,6 +69,20 @@ export function useCorretorDailyStats() {
   };
 }
 
+export interface CorretorGoals {
+  id: string;
+  corretor_id: string;
+  data: string;
+  meta_ligacoes: number;
+  meta_aproveitados: number;
+  observacao: string | null;
+  status: string;
+  aprovado_por: string | null;
+  meta_ligacoes_aprovada: number | null;
+  meta_aproveitados_aprovada: number | null;
+  feedback_gerente: string | null;
+}
+
 export function useCorretorDailyGoals() {
   const { user } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
@@ -83,10 +97,11 @@ export function useCorretorDailyGoals() {
         .eq("data", today)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data as CorretorGoals | null;
     },
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 
   const saveGoals = async (metaLigacoes: number, metaAproveitados: number, observacao?: string) => {
@@ -97,12 +112,13 @@ export function useCorretorDailyGoals() {
       meta_ligacoes: metaLigacoes,
       meta_aproveitados: metaAproveitados,
       observacao: observacao || null,
+      status: "pendente",
     };
 
     if (goals) {
       await supabase
         .from("corretor_daily_goals")
-        .update(payload)
+        .update({ ...payload, status: "pendente" })
         .eq("id", goals.id);
     } else {
       await supabase
@@ -112,7 +128,15 @@ export function useCorretorDailyGoals() {
     refetch();
   };
 
-  return { goals, isLoading, saveGoals };
+  // Effective goals: use approved values if available, otherwise use the corretor's own
+  const effectiveGoals = goals ? {
+    meta_ligacoes: goals.meta_ligacoes_aprovada ?? goals.meta_ligacoes,
+    meta_aproveitados: goals.meta_aproveitados_aprovada ?? goals.meta_aproveitados,
+    status: goals.status,
+    feedback_gerente: goals.feedback_gerente,
+  } : null;
+
+  return { goals, isLoading, saveGoals, refetch, effectiveGoals };
 }
 
 export function useDailyMotivation() {
@@ -142,7 +166,6 @@ export function useDailyMotivation() {
 
       if (data) return data.mensagem;
 
-      // Use deterministic fallback based on day
       const dayOfYear = Math.floor(
         (new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
       );

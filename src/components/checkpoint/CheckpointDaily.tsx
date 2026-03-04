@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Copy, Lock, RotateCcw, Save, ChevronLeft, ChevronRight, UserPlus, Plus, RefreshCw } from "lucide-react";
+import { Calendar, Copy, Lock, RotateCcw, Save, ChevronLeft, ChevronRight, UserPlus, Plus, RefreshCw, ThumbsUp, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 interface TeamMember { id: string; nome: string; equipe: string | null; status: string; user_id: string | null; }
 interface CheckpointLine {
@@ -62,6 +63,20 @@ export default function CheckpointDaily() {
   const [adding, setAdding] = useState(false);
   const [realtimeHighlight, setRealtimeHighlight] = useState<string | null>(null);
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Corretor goals approval
+  interface PendingGoal {
+    id: string;
+    corretor_id: string;
+    corretor_nome: string;
+    meta_ligacoes: number;
+    meta_aproveitados: number;
+    status: string;
+    meta_ligacoes_ajustada: string;
+    meta_aproveitados_ajustada: string;
+    feedback: string;
+  }
+  const [pendingGoals, setPendingGoals] = useState<PendingGoal[]>([]);
 
   const quickAddCorretor = async () => {
     if (!user || !quickName.trim()) { toast.error("Informe o nome."); return; }
@@ -200,7 +215,66 @@ export default function CheckpointDaily() {
     toast.success("Dados da Oferta Ativa sincronizados!");
   };
 
-  useEffect(() => { loadCheckpoint(); }, [loadCheckpoint]);
+  // Load pending corretor goals for this date
+  const loadPendingGoals = useCallback(async () => {
+    if (!user) return;
+    // Get team members with user_id linked
+    const { data: team } = await supabase
+      .from("team_members")
+      .select("id, nome, user_id")
+      .eq("gerente_id", user.id)
+      .eq("status", "ativo")
+      .not("user_id", "is", null);
+
+    if (!team || team.length === 0) { setPendingGoals([]); return; }
+
+    const userIds = team.filter(t => t.user_id).map(t => t.user_id!);
+    const { data: goals } = await supabase
+      .from("corretor_daily_goals")
+      .select("*")
+      .in("corretor_id", userIds)
+      .eq("data", date);
+
+    if (!goals || goals.length === 0) { setPendingGoals([]); return; }
+
+    const mapped: PendingGoal[] = goals.map((g: any) => {
+      const member = team.find(t => t.user_id === g.corretor_id);
+      return {
+        id: g.id,
+        corretor_id: g.corretor_id,
+        corretor_nome: member?.nome || "Corretor",
+        meta_ligacoes: g.meta_ligacoes,
+        meta_aproveitados: g.meta_aproveitados,
+        status: g.status,
+        meta_ligacoes_ajustada: (g.meta_ligacoes_aprovada ?? g.meta_ligacoes).toString(),
+        meta_aproveitados_ajustada: (g.meta_aproveitados_aprovada ?? g.meta_aproveitados).toString(),
+        feedback: g.feedback_gerente || "",
+      };
+    });
+    setPendingGoals(mapped);
+  }, [user, date]);
+
+  const approveGoal = async (goal: PendingGoal) => {
+    const ligAprovada = parseInt(goal.meta_ligacoes_ajustada) || goal.meta_ligacoes;
+    const aprovAprovada = parseInt(goal.meta_aproveitados_ajustada) || goal.meta_aproveitados;
+    const isAdjusted = ligAprovada !== goal.meta_ligacoes || aprovAprovada !== goal.meta_aproveitados;
+
+    await supabase
+      .from("corretor_daily_goals")
+      .update({
+        status: isAdjusted ? "ajustado" : "aprovado",
+        aprovado_por: user!.id,
+        meta_ligacoes_aprovada: ligAprovada,
+        meta_aproveitados_aprovada: aprovAprovada,
+        feedback_gerente: goal.feedback || null,
+      })
+      .eq("id", goal.id);
+
+    toast.success(`Meta de ${goal.corretor_nome} ${isAdjusted ? "ajustada" : "aprovada"}!`);
+    loadPendingGoals();
+  };
+
+  useEffect(() => { loadCheckpoint(); loadPendingGoals(); }, [loadCheckpoint, loadPendingGoals]);
 
   // Realtime: auto-sync when new OA attempts are inserted
   useEffect(() => {
@@ -451,6 +525,72 @@ export default function CheckpointDaily() {
       </div>
 
       {showAddCorretor && <QuickAddForm />}
+
+      {/* Corretor Goals Approval */}
+      {pendingGoals.length > 0 && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+          <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <ThumbsUp className="h-4 w-4 text-primary" />
+            Metas dos Corretores — Aprovação
+            <Badge variant="secondary" className="text-[10px] h-5">
+              {pendingGoals.filter(g => g.status === "pendente").length} pendente(s)
+            </Badge>
+          </h4>
+          <div className="space-y-2">
+            {pendingGoals.map((goal) => (
+              <div key={goal.id} className={`flex items-center gap-3 p-3 rounded-lg border ${
+                goal.status === "pendente" ? "bg-card border-warning/30" : 
+                goal.status === "aprovado" ? "bg-success/5 border-success/20" : "bg-warning/5 border-warning/20"
+              }`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-foreground">{goal.corretor_nome}</span>
+                    <Badge variant="outline" className={`text-[10px] h-5 ${
+                      goal.status === "aprovado" ? "border-success/30 text-success" :
+                      goal.status === "ajustado" ? "border-warning/30 text-warning" :
+                      "border-muted-foreground/30 text-muted-foreground"
+                    }`}>
+                      {goal.status === "aprovado" ? "✅ Aprovado" : goal.status === "ajustado" ? "✏️ Ajustado" : "⏳ Pendente"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Sugeriu: <strong>{goal.meta_ligacoes}</strong> ligações, <strong>{goal.meta_aproveitados}</strong> aproveitados
+                  </p>
+                </div>
+                {goal.status === "pendente" && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        value={goal.meta_ligacoes_ajustada}
+                        onChange={(e) => setPendingGoals(prev => prev.map(g => g.id === goal.id ? { ...g, meta_ligacoes_ajustada: e.target.value } : g))}
+                        className="h-7 w-16 text-xs text-center"
+                        title="Meta ligações"
+                      />
+                      <Input
+                        type="number"
+                        value={goal.meta_aproveitados_ajustada}
+                        onChange={(e) => setPendingGoals(prev => prev.map(g => g.id === goal.id ? { ...g, meta_aproveitados_ajustada: e.target.value } : g))}
+                        className="h-7 w-16 text-xs text-center"
+                        title="Meta aproveitados"
+                      />
+                    </div>
+                    <Input
+                      value={goal.feedback}
+                      onChange={(e) => setPendingGoals(prev => prev.map(g => g.id === goal.id ? { ...g, feedback: e.target.value } : g))}
+                      className="h-7 w-40 text-xs"
+                      placeholder="Feedback (opcional)"
+                    />
+                    <Button size="sm" className="h-7 gap-1 text-xs" onClick={() => approveGoal(goal)}>
+                      <ThumbsUp className="h-3 w-3" /> Aprovar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Spreadsheet */}
       <div className="rounded-xl border border-border bg-card shadow-card overflow-x-auto">

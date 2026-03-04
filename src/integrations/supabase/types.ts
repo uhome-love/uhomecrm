@@ -214,33 +214,48 @@ export type Database = {
       }
       corretor_daily_goals: {
         Row: {
+          aprovado_por: string | null
           corretor_id: string
           created_at: string
           data: string
+          feedback_gerente: string | null
           id: string
           meta_aproveitados: number
+          meta_aproveitados_aprovada: number | null
           meta_ligacoes: number
+          meta_ligacoes_aprovada: number | null
           observacao: string | null
+          status: string
           updated_at: string
         }
         Insert: {
+          aprovado_por?: string | null
           corretor_id: string
           created_at?: string
           data?: string
+          feedback_gerente?: string | null
           id?: string
           meta_aproveitados?: number
+          meta_aproveitados_aprovada?: number | null
           meta_ligacoes?: number
+          meta_ligacoes_aprovada?: number | null
           observacao?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
+          aprovado_por?: string | null
           corretor_id?: string
           created_at?: string
           data?: string
+          feedback_gerente?: string | null
           id?: string
           meta_aproveitados?: number
+          meta_aproveitados_aprovada?: number | null
           meta_ligacoes?: number
+          meta_ligacoes_aprovada?: number | null
           observacao?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
