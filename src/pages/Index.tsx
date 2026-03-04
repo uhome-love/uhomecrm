@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Zap, Upload } from "lucide-react";
+import { Sparkles, Zap, Upload, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import CsvUploader from "@/components/CsvUploader";
 import ColumnMapper from "@/components/ColumnMapper";
 import LeadTable from "@/components/LeadTable";
 import StatsCards from "@/components/StatsCards";
+import BulkWhatsAppDialog from "@/components/BulkWhatsAppDialog";
 import type { Lead, LeadCSVRow } from "@/types/lead";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,6 +20,7 @@ export default function Index() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
   const [classifyingAll, setClassifyingAll] = useState(false);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
   const handleDataParsed = useCallback((data: LeadCSVRow[], headers: string[]) => {
     setCsvData(data);
@@ -188,6 +190,13 @@ export default function Index() {
                 <Upload className="h-4 w-4" /> Reimportar
               </Button>
               <Button
+                variant="outline"
+                onClick={() => setBulkDialogOpen(true)}
+                className="gap-1.5"
+              >
+                <Send className="h-4 w-4" /> Disparo em Massa
+              </Button>
+              <Button
                 onClick={classifyAllLeads}
                 disabled={classifyingAll}
                 className="gap-2"
@@ -241,6 +250,12 @@ export default function Index() {
           </motion.div>
         )}
       </main>
+
+      <BulkWhatsAppDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        leads={leads}
+      />
     </div>
   );
 }
