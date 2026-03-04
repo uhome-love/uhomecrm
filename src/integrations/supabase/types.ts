@@ -744,6 +744,8 @@ export type Database = {
           corretor_id: string | null
           created_at: string
           data_lead: string | null
+          em_atendimento_ate: string | null
+          em_atendimento_por: string | null
           email: string | null
           empreendimento: string | null
           id: string
@@ -769,6 +771,8 @@ export type Database = {
           corretor_id?: string | null
           created_at?: string
           data_lead?: string | null
+          em_atendimento_ate?: string | null
+          em_atendimento_por?: string | null
           email?: string | null
           empreendimento?: string | null
           id?: string
@@ -794,6 +798,8 @@ export type Database = {
           corretor_id?: string | null
           created_at?: string
           data_lead?: string | null
+          em_atendimento_ate?: string | null
+          em_atendimento_por?: string | null
           email?: string | null
           empreendimento?: string | null
           id?: string

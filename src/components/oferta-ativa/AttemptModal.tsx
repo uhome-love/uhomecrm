@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { PhoneOff, ThumbsDown, ThumbsUp, AlertCircle } from "lucide-react";
+import { PhoneOff, ThumbsDown, ThumbsUp, AlertCircle, PhoneMissed } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
 }
 
 const RESULTS = [
+  { key: "nao_atendeu", label: "Não atendeu", icon: PhoneMissed, color: "border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600" },
   { key: "numero_errado", label: "Número errado", icon: PhoneOff, color: "border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-600" },
   { key: "sem_interesse", label: "Sem interesse", icon: ThumbsDown, color: "border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600" },
   { key: "com_interesse", label: "Com interesse", icon: ThumbsUp, color: "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600" },
@@ -32,7 +33,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-lg">Resultado da tentativa</DialogTitle>
           <p className="text-sm text-muted-foreground">Lead: <strong>{leadName}</strong></p>
@@ -40,7 +41,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
 
         <div className="space-y-4">
           {/* Result options */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {RESULTS.map(r => {
               const Icon = r.icon;
               const selected = resultado === r.key;
@@ -77,6 +78,13 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
             </div>
           </div>
 
+          {resultado === "nao_atendeu" && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700">
+              <PhoneMissed className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>O lead <strong>voltará para a fila</strong> após o período de cooldown. Será tentado novamente até atingir o limite máximo.</span>
+            </div>
+          )}
+
           {resultado === "com_interesse" && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700">
               <ThumbsUp className="h-4 w-4 shrink-0 mt-0.5" />
@@ -87,7 +95,14 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
           {resultado === "numero_errado" && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-700">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>Este lead será <strong>removido permanentemente</strong> da fila.</span>
+              <span>Este lead será <strong>removido permanentemente</strong> da fila e o telefone será bloqueado.</span>
+            </div>
+          )}
+
+          {resultado === "sem_interesse" && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700">
+              <ThumbsDown className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>Este lead será <strong>removido definitivamente</strong> da fila.</span>
             </div>
           )}
 

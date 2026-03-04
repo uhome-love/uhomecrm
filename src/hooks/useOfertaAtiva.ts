@@ -150,7 +150,7 @@ export function useOALeads(listaId?: string) {
   return { leads, isLoading };
 }
 
-// ─── Hook: Fila do corretor ───
+// ─── Hook: Fila do corretor (with concurrency lock) ───
 export function useOAFila(listaId: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -163,8 +163,9 @@ export function useOAFila(listaId: string) {
         .from("oferta_ativa_leads")
         .select("*")
         .eq("lista_id", listaId)
-        .eq("status", "na_fila")
+        .in("status", ["na_fila", "em_cooldown"])
         .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`)
+        .or(`em_atendimento_por.is.null,em_atendimento_por.eq.${user!.id},em_atendimento_ate.lt.${now}`)
         .order("data_lead", { ascending: false })
         .limit(100);
       if (error) throw error;
@@ -173,7 +174,32 @@ export function useOAFila(listaId: string) {
     enabled: !!listaId && !!user,
   });
 
-  return { fila, isLoading, refetch: () => queryClient.invalidateQueries({ queryKey: ["oa-fila", listaId] }) };
+  // Lock a lead when corretor starts working on it (5 min timeout)
+  const lockLead = useCallback(async (leadId: string) => {
+    if (!user) return;
+    const lockUntil = new Date();
+    lockUntil.setMinutes(lockUntil.getMinutes() + 5);
+    await supabase.from("oferta_ativa_leads").update({
+      em_atendimento_por: user.id,
+      em_atendimento_ate: lockUntil.toISOString(),
+    } as any).eq("id", leadId);
+  }, [user]);
+
+  // Release lock
+  const unlockLead = useCallback(async (leadId: string) => {
+    await supabase.from("oferta_ativa_leads").update({
+      em_atendimento_por: null,
+      em_atendimento_ate: null,
+    } as any).eq("id", leadId);
+  }, []);
+
+  return {
+    fila,
+    isLoading,
+    lockLead,
+    unlockLead,
+    refetch: () => queryClient.invalidateQueries({ queryKey: ["oa-fila", listaId] }),
+  };
 }
 
 // ─── Hook: Registrar tentativa ───
@@ -190,10 +216,11 @@ export function useOARegistrarTentativa() {
   ) => {
     if (!user) return;
 
-    // Calculate points
-    let pontos = 1; // base
+    // Calculate points — "numero_errado" is neutral (0), not penalizing
+    let pontos = 1; // base for any attempt
     if (resultado === "com_interesse") pontos = 3;
-    if (resultado === "numero_errado") pontos = -1;
+    if (resultado === "numero_errado") pontos = 0;
+    if (resultado === "nao_atendeu") pontos = 1;
 
     // Insert attempt
     const { error: errTent } = await supabase.from("oferta_ativa_tentativas").insert({
@@ -213,6 +240,8 @@ export function useOARegistrarTentativa() {
     const updates: Record<string, any> = {
       tentativas_count: lead.tentativas_count + 1,
       ultima_tentativa: new Date().toISOString(),
+      em_atendimento_por: null,
+      em_atendimento_ate: null,
     };
 
     if (resultado === "numero_errado") {
@@ -224,11 +253,9 @@ export function useOARegistrarTentativa() {
     } else if (resultado === "com_interesse") {
       updates.status = "aproveitado";
       updates.corretor_id = user.id;
-    }
-
-    // Apply cooldown for "sem_resposta" (not used in current 3-option model but ready)
-    const maxTentativas = lista?.max_tentativas || 3;
-    if (resultado !== "com_interesse" && resultado !== "numero_errado" && resultado !== "sem_interesse") {
+    } else if (resultado === "nao_atendeu") {
+      // Apply cooldown and max attempts
+      const maxTentativas = lista?.max_tentativas || 3;
       if (lead.tentativas_count + 1 >= maxTentativas) {
         updates.status = "descartado";
         updates.motivo_descarte = "max_tentativas";
@@ -392,13 +419,24 @@ export async function importLeadsToLista(
     origem?: string;
   }>
 ) {
-  // Fetch existing normalized phones + emails for dedup
-  const { data: existing } = await supabase
-    .from("oferta_ativa_leads")
-    .select("telefone_normalizado, email");
-
-  const existingPhones = new Set((existing || []).map(e => e.telefone_normalizado).filter(Boolean));
-  const existingEmails = new Set((existing || []).map(e => e.email?.toLowerCase()).filter(Boolean));
+  // Fetch ALL existing normalized phones + emails for dedup (paginated to bypass 1000-row limit)
+  const existingPhones = new Set<string>();
+  const existingEmails = new Set<string>();
+  let page = 0;
+  const PAGE_SIZE = 1000;
+  while (true) {
+    const { data: batch } = await supabase
+      .from("oferta_ativa_leads")
+      .select("telefone_normalizado, email")
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    if (!batch || batch.length === 0) break;
+    for (const e of batch) {
+      if (e.telefone_normalizado) existingPhones.add(e.telefone_normalizado);
+      if (e.email) existingEmails.add(e.email.toLowerCase());
+    }
+    if (batch.length < PAGE_SIZE) break;
+    page++;
+  }
 
   const seenPhones = new Set<string>();
   const seenEmails = new Set<string>();
@@ -451,9 +489,16 @@ export async function importLeadsToLista(
     else inserted += batch.length;
   }
 
-  // Update lista total
+  // Fix: Fetch current total and ADD inserted count (not overwrite)
+  const { data: currentLista } = await supabase
+    .from("oferta_ativa_listas")
+    .select("total_leads")
+    .eq("id", listaId)
+    .single();
+  const currentTotal = currentLista?.total_leads || 0;
+
   await supabase.from("oferta_ativa_listas").update({
-    total_leads: inserted,
+    total_leads: currentTotal + inserted,
   } as any).eq("id", listaId);
 
   return { inserted, duplicates: dupCount, invalid: toInsert.filter(l => l.status === "descartado").length };

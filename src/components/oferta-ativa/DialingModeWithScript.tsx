@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useOAFila, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export default function DialingModeWithScript({ lista, onBack }: Props) {
-  const { fila, isLoading, refetch } = useOAFila(lista.id);
+  const { fila, isLoading, lockLead, unlockLead, refetch } = useOAFila(lista.id);
   const { registrar } = useOARegistrarTentativa();
   const { templates } = useOATemplates(lista.empreendimento);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -23,6 +23,21 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [showModal, setShowModal] = useState(false);
 
   const lead = fila[currentIndex];
+
+  // Lock lead when it becomes active
+  const prevLeadIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (lead && lead.id !== prevLeadIdRef.current) {
+      prevLeadIdRef.current = lead.id;
+      lockLead(lead.id);
+    }
+    return () => {
+      // Unlock on unmount if lead was locked
+      if (prevLeadIdRef.current) {
+        unlockLead(prevLeadIdRef.current);
+      }
+    };
+  }, [lead?.id, lockLead, unlockLead]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
