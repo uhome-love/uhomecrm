@@ -220,6 +220,75 @@ export type Database = {
           },
         ]
       }
+      funnel_entries: {
+        Row: {
+          analise_ia: string | null
+          cac_estimado: number | null
+          cpl_real: number | null
+          created_at: string
+          custo_medio_lead: number
+          gerente_id: string
+          id: string
+          investimento_midia: number
+          leads_gerados: number
+          observacoes: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          periodo_tipo: string
+          propostas_geradas: number
+          taxa_fechamento: number | null
+          taxa_proposta: number | null
+          taxa_venda: number | null
+          updated_at: string
+          vendas_fechadas: number
+          vgv_vendido: number
+        }
+        Insert: {
+          analise_ia?: string | null
+          cac_estimado?: number | null
+          cpl_real?: number | null
+          created_at?: string
+          custo_medio_lead?: number
+          gerente_id: string
+          id?: string
+          investimento_midia?: number
+          leads_gerados?: number
+          observacoes?: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          periodo_tipo?: string
+          propostas_geradas?: number
+          taxa_fechamento?: number | null
+          taxa_proposta?: number | null
+          taxa_venda?: number | null
+          updated_at?: string
+          vendas_fechadas?: number
+          vgv_vendido?: number
+        }
+        Update: {
+          analise_ia?: string | null
+          cac_estimado?: number | null
+          cpl_real?: number | null
+          created_at?: string
+          custo_medio_lead?: number
+          gerente_id?: string
+          id?: string
+          investimento_midia?: number
+          leads_gerados?: number
+          observacoes?: string | null
+          periodo_fim?: string
+          periodo_inicio?: string
+          periodo_tipo?: string
+          propostas_geradas?: number
+          taxa_fechamento?: number | null
+          taxa_proposta?: number | null
+          taxa_venda?: number | null
+          updated_at?: string
+          vendas_fechadas?: number
+          vgv_vendido?: number
+        }
+        Relationships: []
+      }
       integration_settings: {
         Row: {
           id: string

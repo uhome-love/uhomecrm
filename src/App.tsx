@@ -14,6 +14,7 @@ import CheckpointGerente from "./pages/CheckpointGerente";
 import CeoDashboard from "./pages/CeoDashboard";
 import ScriptsGenerator from "./pages/ScriptsGenerator";
 import RelatorioCorretor from "./pages/RelatorioCorretor";
+import FunilDashboard from "./pages/FunilDashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -94,6 +95,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <RelatorioCorretor />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/funil"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <FunilDashboard />
                   </AppLayout>
                 </ProtectedRoute>
               }
