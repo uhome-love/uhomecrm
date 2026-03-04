@@ -7,21 +7,24 @@ import IaCoreAction from "@/components/IaCoreAction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Copy, Download, Search, FileSpreadsheet, Sparkles } from "lucide-react";
-import { format, subMonths, addMonths } from "date-fns";
+import { Plus, Copy, Download, Search, FileSpreadsheet, Sparkles, FileDown } from "lucide-react";
+import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 function getMonthTabs() {
+  // Start from March 2026, go up to current month (and one future month for creation)
+  const startDate = new Date(2026, 2, 1); // March 2026
   const now = new Date();
   const tabs: { key: string; label: string }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = subMonths(now, i);
+  let d = new Date(startDate);
+  while (d <= now) {
     const key = format(d, "yyyy-MM");
     const label = `${MONTH_NAMES[d.getMonth()]}/${d.getFullYear()}`;
     tabs.push({ key, label });
+    d = addMonths(d, 1);
   }
   return tabs;
 }
@@ -72,6 +75,63 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
     a.click();
     URL.revokeObjectURL(url);
     toast.success("CSV exportado!");
+  };
+
+  const DOCS_LABELS: Record<string, string> = { doc_completa: "DOC COMPLETA", em_andamento: "EM ANDAMENTO", sem_docs: "SEM DOCS" };
+  const TEMP_LABELS: Record<string, string> = { quente: "QUENTE", morno: "MORNO", frio: "FRIO" };
+
+  const handleExportPdf = () => {
+    const mesLabel = monthTabs.find(t => t.key === selectedMes)?.label || selectedMes;
+    const html = `
+      <html><head><title>PDN - ${mesLabel}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; font-size: 11px; }
+        h1 { font-size: 18px; margin-bottom: 4px; }
+        h2 { font-size: 13px; color: #666; margin-bottom: 16px; }
+        .stats { display: flex; gap: 12px; margin-bottom: 16px; }
+        .stat { border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px; text-align: center; }
+        .stat b { display: block; font-size: 18px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #ddd; padding: 5px 8px; text-align: left; }
+        th { background: #f5f5f5; font-weight: 600; }
+        .quente { color: #dc2626; font-weight: 600; }
+        .morno { color: #ca8a04; font-weight: 600; }
+        .frio { color: #2563eb; font-weight: 600; }
+        @media print { body { padding: 0; } }
+      </style></head><body>
+      <h1>PDN — Planilha de Desenvolvimento de Negócios</h1>
+      <h2>${mesLabel} · ${entries.length} registros</h2>
+      <div class="stats">
+        <div class="stat"><b>${stats.quente}</b>Quentes</div>
+        <div class="stat"><b>${stats.morno}</b>Mornos</div>
+        <div class="stat"><b>${stats.frio}</b>Frios</div>
+        <div class="stat"><b>${stats.doc_completa}</b>Doc Completa</div>
+        <div class="stat"><b>${stats.em_andamento}</b>Em Andamento</div>
+        <div class="stat"><b>${stats.sem_docs}</b>Sem Docs</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Nome</th><th>UND</th><th>Empreendimento</th><th>Docs</th><th>Temp.</th><th>Corretor</th><th>Equipe</th><th>Último Contato</th><th>Data</th>
+        </tr></thead>
+        <tbody>
+          ${entries.map(e => `<tr>
+            <td>${e.nome || ""}</td><td>${e.und || ""}</td><td>${e.empreendimento || ""}</td>
+            <td>${DOCS_LABELS[e.docs_status] || e.docs_status}</td>
+            <td class="${e.temperatura}">${TEMP_LABELS[e.temperatura] || e.temperatura}</td>
+            <td>${e.corretor || ""}</td><td>${e.equipe || ""}</td>
+            <td>${e.ultimo_contato || ""}</td><td>${e.data_visita || ""}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+      </body></html>
+    `;
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      setTimeout(() => win.print(), 500);
+    }
+    toast.success("PDF pronto para impressão!");
   };
 
   const contextForIa = {
@@ -175,6 +235,9 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
         )}
         <Button size="sm" variant="outline" className="gap-1 text-xs h-8" onClick={handleExportCsv}>
           <Download className="h-3.5 w-3.5" /> CSV
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1 text-xs h-8" onClick={handleExportPdf}>
+          <FileDown className="h-3.5 w-3.5" /> PDF
         </Button>
       </div>
 
