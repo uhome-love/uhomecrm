@@ -26,6 +26,13 @@ serve(async (req) => {
       if (!response.ok) {
         const text = await response.text();
         console.error("Jetimob API error:", response.status, text);
+        // Return 200 with null data for not-found properties so the client handles gracefully
+        if (response.status === 404) {
+          return new Response(
+            JSON.stringify({ data: null, not_found: true }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         return new Response(
           JSON.stringify({ error: `Erro ao buscar imóvel: ${response.status}` }),
           { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
