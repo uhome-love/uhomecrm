@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, ClipboardCheck, Crown, Shield, ArrowRight } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, Crown, Shield, ArrowRight, FileText, MessageSquare } from "lucide-react";
 
 export default function HomeDashboard() {
   const { user } = useAuth();
@@ -23,6 +23,8 @@ export default function HomeDashboard() {
     ...(isGestor ? [
       { title: "Recuperação de Leads", description: "Gerencie e recupere leads com IA", icon: LayoutDashboard, url: "/gestao", color: "bg-primary/10 text-primary" },
       { title: "Checkpoint do Gerente", description: "Metas diárias e resultados do time", icon: ClipboardCheck, url: "/checkpoint", color: "bg-success/10 text-success" },
+      { title: "Scripts de Ligação", description: "Gere roteiros de ligação com IA", icon: FileText, url: "/scripts", color: "bg-accent/10 text-accent" },
+      { title: "Follow Ups", description: "Mensagens de follow-up para WhatsApp", icon: MessageSquare, url: "/scripts", color: "bg-secondary/10 text-secondary-foreground" },
     ] : []),
     ...(isAdmin ? [
       { title: "Dashboard CEO", description: "Visão macro consolidada da empresa", icon: Crown, url: "/ceo", color: "bg-warning/10 text-warning" },
