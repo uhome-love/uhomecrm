@@ -32,6 +32,8 @@ export default function AdminPanel() {
   const [newEmail, setNewEmail] = useState("");
   const [newNome, setNewNome] = useState("");
   const [newSenha, setNewSenha] = useState("");
+  const [selectedGerente, setSelectedGerente] = useState("");
+  const [gestores, setGestores] = useState<{ user_id: string; nome: string }[]>([]);
   const [creating, setCreating] = useState(false);
 
   // 360dialog config
@@ -76,7 +78,16 @@ export default function AdminPanel() {
     }
   }, []);
 
-  useEffect(() => { fetchUsers(); fetchDialogConfig(); }, [fetchUsers, fetchDialogConfig]);
+  const fetchGestores = useCallback(async () => {
+    const { data: gestorRoles } = await supabase.from("user_roles").select("user_id").in("role", ["gestor", "admin"]);
+    if (gestorRoles) {
+      const ids = gestorRoles.map(r => r.user_id);
+      const { data: profiles } = await supabase.from("profiles").select("user_id, nome").in("user_id", ids);
+      if (profiles) setGestores(profiles.map(p => ({ user_id: p.user_id, nome: p.nome || p.user_id })));
+    }
+  }, []);
+
+  useEffect(() => { fetchUsers(); fetchDialogConfig(); fetchGestores(); }, [fetchUsers, fetchDialogConfig, fetchGestores]);
 
   const addRole = useCallback(async (userId: string, role: AppRole) => {
     setAddingRole(userId);
@@ -157,13 +168,13 @@ export default function AdminPanel() {
 
   // Create user
   const handleCreate = useCallback(async () => {
-    if (!newEmail || !newNome || !newSenha || !lookupId) {
-      toast.error("Preencha todos os campos."); return;
+    if (!newEmail || !newNome || !newSenha || !lookupId || !selectedGerente) {
+      toast.error("Preencha todos os campos, incluindo o gerente."); return;
     }
     setCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-broker-user", {
-        body: { action: "create_user", jetimob_user_id: lookupId.trim(), email: newEmail, nome: newNome, senha: newSenha },
+        body: { action: "create_user", jetimob_user_id: lookupId.trim(), email: newEmail, nome: newNome, senha: newSenha, gerente_id: selectedGerente },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -174,10 +185,10 @@ export default function AdminPanel() {
     } catch (err: any) {
       toast.error(err?.message || "Erro ao criar usuário.");
     } finally { setCreating(false); }
-  }, [lookupId, newEmail, newNome, newSenha, fetchUsers]);
+  }, [lookupId, newEmail, newNome, newSenha, selectedGerente, fetchUsers]);
 
   const resetForm = () => {
-    setLookupId(""); setNewEmail(""); setNewNome(""); setNewSenha("");
+    setLookupId(""); setNewEmail(""); setNewNome(""); setNewSenha(""); setSelectedGerente("");
   };
 
   const roleBadgeColor: Record<AppRole, string> = {
@@ -338,12 +349,26 @@ export default function AdminPanel() {
                 <Input type="text" value={newSenha} onChange={(e) => setNewSenha(e.target.value)} placeholder="Senha temporária" />
                 <p className="text-[11px] text-muted-foreground">O corretor poderá alterar depois</p>
               </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Vincular ao Gerente</Label>
+                <Select value={selectedGerente} onValueChange={setSelectedGerente}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o gerente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {gestores.map((g) => (
+                      <SelectItem key={g.user_id} value={g.user_id}>{g.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">Somente este gerente verá o corretor no time dele</p>
+              </div>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={creating || !newEmail || !newNome || !newSenha || !lookupId} className="gap-1.5">
+            <Button onClick={handleCreate} disabled={creating || !newEmail || !newNome || !newSenha || !lookupId || !selectedGerente} className="gap-1.5">
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
               {creating ? "Criando..." : "Criar Corretor"}
             </Button>
