@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { PhoneOff, ThumbsDown, ThumbsUp, AlertCircle, PhoneMissed } from "lucide-react";
+import { PhoneOff, ThumbsDown, ThumbsUp, AlertCircle, PhoneMissed, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (resultado: string, feedback: string) => void;
+  onSubmit: (resultado: string, feedback: string) => Promise<void> | void;
   leadName: string;
 }
 
@@ -22,13 +22,19 @@ const RESULTS = [
 export default function AttemptModal({ open, onClose, onSubmit, leadName }: Props) {
   const [resultado, setResultado] = useState<string>("");
   const [feedback, setFeedback] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (!resultado) { toast.error("Selecione um resultado"); return; }
+  const handleSubmit = async () => {
+    if (!resultado || submitting) return;
     if (feedback.trim().length < 10) { toast.error("Feedback mínimo de 10 caracteres"); return; }
-    onSubmit(resultado, feedback.trim());
-    setResultado("");
-    setFeedback("");
+    setSubmitting(true);
+    try {
+      await onSubmit(resultado, feedback.trim());
+      setResultado("");
+      setFeedback("");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -107,11 +113,12 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
           )}
 
           <Button
-            className="w-full"
-            disabled={!resultado || feedback.trim().length < 10}
+            className="w-full gap-2"
+            disabled={!resultado || feedback.trim().length < 10 || submitting}
             onClick={handleSubmit}
           >
-            Registrar e ir para próximo lead
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {submitting ? "Registrando..." : "Registrar e ir para próximo lead"}
           </Button>
         </div>
       </DialogContent>

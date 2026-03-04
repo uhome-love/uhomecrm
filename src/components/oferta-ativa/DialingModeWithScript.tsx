@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target } from "lucide-react";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useCorretorDailyStats, useCorretorDailyGoals } from "@/hooks/useCorretorDailyStats";
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,6 +28,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [actionTaken, setActionTaken] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [lockStatus, setLockStatus] = useState<"idle" | "locking" | "locked" | "failed">("idle");
+  const [submitting, setSubmitting] = useState(false);
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
@@ -36,15 +38,30 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   const lead = fila[currentIndex];
 
-  // Lock lead when it becomes active
+  // Lock lead when it becomes active — atomic lock
   const prevLeadIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (lead && lead.id !== prevLeadIdRef.current) {
       prevLeadIdRef.current = lead.id;
-      lockLead(lead.id);
+      setLockStatus("locking");
+      lockLead(lead.id).then(result => {
+        if (result.locked) {
+          setLockStatus("locked");
+        } else {
+          setLockStatus("failed");
+          if (result.reason === "locked_by_another") {
+            toast.error("Lead em atendimento por outro corretor. Avançando...");
+            // Skip to next lead
+            setTimeout(() => {
+              if (currentIndex < fila.length - 1) {
+                setCurrentIndex(prev => prev + 1);
+              }
+            }, 1000);
+          }
+        }
+      });
     }
     return () => {
-      // Unlock on unmount if lead was locked
       if (prevLeadIdRef.current) {
         unlockLead(prevLeadIdRef.current);
       }
@@ -80,17 +97,27 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   };
 
   const handleResultSubmit = async (resultado: string, feedback: string) => {
-    if (!lead || !actionTaken) return;
-    await registrar(lead, actionTaken, resultado, feedback, lista);
-    setShowModal(false);
-    setActionTaken(null);
-    queryClient.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
+    if (!lead || !actionTaken || submitting) return;
+    setSubmitting(true);
+    try {
+      const result = await registrar(lead, actionTaken, resultado, feedback, lista);
+      if (!result.success) {
+        // If approval failed, don't advance
+        setSubmitting(false);
+        return;
+      }
+      setShowModal(false);
+      setActionTaken(null);
+      queryClient.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
 
-    if (currentIndex < fila.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      refetch();
-      setCurrentIndex(0);
+      if (currentIndex < fila.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+      } else {
+        refetch();
+        setCurrentIndex(0);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -143,6 +170,21 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       </div>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Lead {currentIndex + 1} de {fila.length}</span>
+        {lockStatus === "locked" && (
+          <Badge variant="outline" className="gap-1 text-[10px] border-emerald-500/30 text-emerald-600">
+            <Lock className="h-3 w-3" /> Reservado para você
+          </Badge>
+        )}
+        {lockStatus === "locking" && (
+          <Badge variant="outline" className="gap-1 text-[10px]">
+            <Loader2 className="h-3 w-3 animate-spin" /> Reservando...
+          </Badge>
+        )}
+        {lockStatus === "failed" && (
+          <Badge variant="outline" className="gap-1 text-[10px] border-destructive/30 text-destructive">
+            <Lock className="h-3 w-3" /> Bloqueado por outro corretor
+          </Badge>
+        )}
       </div>
       <div className="w-full bg-muted rounded-full h-2">
         <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${((currentIndex + 1) / fila.length) * 100}%` }} />
@@ -227,7 +269,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   size="lg"
                   className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-12 text-sm"
                   onClick={() => handleAction("ligacao")}
-                  disabled={!!actionTaken && !showModal}
+                  disabled={lockStatus !== "locked" || (!!actionTaken && !showModal)}
                 >
                   <Phone className="h-4 w-4" /> Ligar
                 </Button>
@@ -235,7 +277,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   size="lg"
                   className="gap-1.5 bg-green-600 hover:bg-green-700 h-12 text-sm"
                   onClick={() => handleAction("whatsapp")}
-                  disabled={!!actionTaken && !showModal}
+                  disabled={lockStatus !== "locked" || (!!actionTaken && !showModal)}
                 >
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </Button>
@@ -244,7 +286,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   variant="outline"
                   className="gap-1.5 h-12 text-sm"
                   onClick={() => handleAction("email")}
-                  disabled={!lead.email || (!!actionTaken && !showModal)}
+                  disabled={lockStatus !== "locked" || !lead.email || (!!actionTaken && !showModal)}
                 >
                   <Mail className="h-4 w-4" /> E-mail
                 </Button>

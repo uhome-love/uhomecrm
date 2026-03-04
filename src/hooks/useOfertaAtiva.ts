@@ -158,6 +158,9 @@ export function useOAFila(listaId: string) {
   const { data: fila = [], isLoading } = useQuery({
     queryKey: ["oa-fila", listaId],
     queryFn: async () => {
+      // First clean up expired locks server-side
+      await supabase.rpc("cleanup_expired_locks");
+
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("oferta_ativa_leads")
@@ -174,15 +177,19 @@ export function useOAFila(listaId: string) {
     enabled: !!listaId && !!user,
   });
 
-  // Lock a lead when corretor starts working on it (5 min timeout)
-  const lockLead = useCallback(async (leadId: string) => {
-    if (!user) return;
-    const lockUntil = new Date();
-    lockUntil.setMinutes(lockUntil.getMinutes() + 5);
-    await supabase.from("oferta_ativa_leads").update({
-      em_atendimento_por: user.id,
-      em_atendimento_ate: lockUntil.toISOString(),
-    } as any).eq("id", leadId);
+  // Atomic lock via DB function — prevents race conditions
+  const lockLead = useCallback(async (leadId: string): Promise<{ locked: boolean; reason?: string }> => {
+    if (!user) return { locked: false, reason: "no_user" };
+    const { data, error } = await supabase.rpc("lock_lead_atomic", {
+      p_lead_id: leadId,
+      p_corretor_id: user.id,
+      p_lock_minutes: 5,
+    });
+    if (error) {
+      console.error("Lock error:", error);
+      return { locked: false, reason: "error" };
+    }
+    return data as { locked: boolean; reason?: string };
   }, [user]);
 
   // Release lock
@@ -213,12 +220,49 @@ export function useOARegistrarTentativa() {
     resultado: string,
     feedback: string,
     lista?: OALista
-  ) => {
-    if (!user) return;
+  ): Promise<{ success: boolean; reason?: string }> => {
+    if (!user) return { success: false, reason: "no_user" };
 
-    // Calculate points — "numero_errado" is neutral (0), not penalizing
-    let pontos = 1; // base for any attempt
-    if (resultado === "com_interesse") pontos = 3;
+    // For "com_interesse" use the exclusive approval DB function
+    if (resultado === "com_interesse") {
+      const { data, error } = await supabase.rpc("aprovar_lead_exclusivo", {
+        p_lead_id: lead.id,
+        p_corretor_id: user.id,
+        p_feedback: feedback,
+        p_canal: canal,
+        p_lista_id: lead.lista_id,
+        p_empreendimento: lead.empreendimento,
+      });
+
+      if (error) {
+        console.error("Approval error:", error);
+        toast.error("Erro ao aprovar lead");
+        return { success: false, reason: "error" };
+      }
+
+      const result = data as { success: boolean; reason?: string };
+      if (!result.success) {
+        if (result.reason === "already_approved") {
+          toast.error("Este lead já foi aproveitado por outro corretor!");
+        } else if (result.reason === "phone_already_approved") {
+          toast.error("Um lead com este telefone já foi aproveitado!");
+        } else {
+          toast.error("Lead indisponível para aprovação");
+        }
+        return result;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["oa-fila"] });
+      queryClient.invalidateQueries({ queryKey: ["oa-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["oa-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["oa-ranking"] });
+      queryClient.invalidateQueries({ queryKey: ["oa-aproveitados"] });
+      toast.success("🎉 Lead aproveitado com exclusividade!");
+      return { success: true };
+    }
+
+    // For other results, use the normal flow
+    let pontos = 1;
     if (resultado === "numero_errado") pontos = 0;
     if (resultado === "nao_atendeu") pontos = 1;
 
@@ -234,7 +278,11 @@ export function useOARegistrarTentativa() {
       pontos,
     } as any);
 
-    if (errTent) { toast.error("Erro ao registrar tentativa"); console.error(errTent); return; }
+    if (errTent) {
+      toast.error("Erro ao registrar tentativa");
+      console.error(errTent);
+      return { success: false, reason: "insert_error" };
+    }
 
     // Update lead based on result
     const updates: Record<string, any> = {
@@ -250,11 +298,7 @@ export function useOARegistrarTentativa() {
     } else if (resultado === "sem_interesse") {
       updates.status = "descartado";
       updates.motivo_descarte = "sem_interesse";
-    } else if (resultado === "com_interesse") {
-      updates.status = "aproveitado";
-      updates.corretor_id = user.id;
     } else if (resultado === "nao_atendeu") {
-      // Apply cooldown and max attempts
       const maxTentativas = lista?.max_tentativas || 3;
       if (lead.tentativas_count + 1 >= maxTentativas) {
         updates.status = "descartado";
@@ -275,7 +319,8 @@ export function useOARegistrarTentativa() {
     queryClient.invalidateQueries({ queryKey: ["oa-leads"] });
     queryClient.invalidateQueries({ queryKey: ["oa-stats"] });
     queryClient.invalidateQueries({ queryKey: ["oa-ranking"] });
-    toast.success(resultado === "com_interesse" ? "🎉 Lead aproveitado!" : "Tentativa registrada");
+    toast.success("Tentativa registrada");
+    return { success: true };
   }, [user, queryClient]);
 
   return { registrar };

@@ -1175,6 +1175,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      aprovar_lead_exclusivo: {
+        Args: {
+          p_canal: string
+          p_corretor_id: string
+          p_empreendimento?: string
+          p_feedback: string
+          p_lead_id: string
+          p_lista_id?: string
+        }
+        Returns: Json
+      }
       calculate_recovery_score: {
         Args: {
           p_email: string
@@ -1185,12 +1196,21 @@ export type Database = {
         }
         Returns: number
       }
+      cleanup_expired_locks: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      lock_lead_atomic: {
+        Args: {
+          p_corretor_id: string
+          p_lead_id: string
+          p_lock_minutes?: number
+        }
+        Returns: Json
       }
       recalculate_all_scores: { Args: never; Returns: undefined }
     }
