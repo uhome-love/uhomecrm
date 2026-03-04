@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.generate-corretor-report]
 verify_jwt = false
+
+[functions.funnel-coach]
+verify_jwt = false

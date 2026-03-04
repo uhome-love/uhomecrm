@@ -8,6 +8,7 @@ import {
   Home,
   FileEdit,
   FileBarChart,
+  Filter,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -42,6 +43,7 @@ export function AppSidebar() {
           { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
           { title: "Scripts & Follow Ups", url: "/scripts", icon: FileEdit },
           { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+          { title: "Funil Comercial", url: "/funil", icon: Filter },
         ]
       : []),
   ];
