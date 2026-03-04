@@ -415,6 +415,30 @@ export default function ImportListPanel() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Global campaign name */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-1.5">
+            <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+              📢 Nome da Campanha (aplicar a todas)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ex: Meta Ads Março 2026"
+                className="h-8 text-sm flex-1"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCustomNames(prev => {
+                    const next = { ...prev };
+                    for (const emp of Object.keys(next)) {
+                      next[emp] = { ...next[emp], campanha: val };
+                    }
+                    return next;
+                  });
+                }}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">Preencha aqui para definir a mesma campanha para todas as listas, ou edite individualmente abaixo.</p>
+          </div>
+
           {/* Select all toggle */}
           <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 border border-border">
             <Checkbox
