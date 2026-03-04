@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -6,31 +7,21 @@ export type AppRole = "admin" | "gestor" | "corretor";
 
 export function useUserRole() {
   const { user } = useAuth();
-  const [roles, setRoles] = useState<AppRole[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) {
-      setRoles([]);
-      setLoading(false);
-      return;
-    }
-
-    const fetchRoles = async () => {
-      setLoading(true);
+  const { data: roles = [], isLoading: loading } = useQuery({
+    queryKey: ["user-roles", user?.id],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id);
-
-      if (!error && data) {
-        setRoles(data.map((r) => r.role as AppRole));
-      }
-      setLoading(false);
-    };
-
-    fetchRoles();
-  }, [user]);
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return (data || []).map((r) => r.role as AppRole);
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 min cache
+    gcTime: 10 * 60 * 1000,
+  });
 
   const hasRole = useCallback(
     (role: AppRole) => roles.includes(role),
