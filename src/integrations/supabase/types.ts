@@ -506,6 +506,72 @@ export type Database = {
         }
         Relationships: []
       }
+      pdn_entries: {
+        Row: {
+          corretor: string | null
+          created_at: string
+          data_proxima_acao: string | null
+          data_visita: string | null
+          docs_status: string
+          empreendimento: string | null
+          equipe: string | null
+          gerente_id: string
+          id: string
+          mes: string
+          nome: string
+          observacoes: string | null
+          proxima_acao: string | null
+          temperatura: string
+          tipo_visita: string | null
+          ultimo_contato: string | null
+          und: string | null
+          updated_at: string
+          valor_potencial: number | null
+        }
+        Insert: {
+          corretor?: string | null
+          created_at?: string
+          data_proxima_acao?: string | null
+          data_visita?: string | null
+          docs_status?: string
+          empreendimento?: string | null
+          equipe?: string | null
+          gerente_id: string
+          id?: string
+          mes: string
+          nome: string
+          observacoes?: string | null
+          proxima_acao?: string | null
+          temperatura?: string
+          tipo_visita?: string | null
+          ultimo_contato?: string | null
+          und?: string | null
+          updated_at?: string
+          valor_potencial?: number | null
+        }
+        Update: {
+          corretor?: string | null
+          created_at?: string
+          data_proxima_acao?: string | null
+          data_visita?: string | null
+          docs_status?: string
+          empreendimento?: string | null
+          equipe?: string | null
+          gerente_id?: string
+          id?: string
+          mes?: string
+          nome?: string
+          observacoes?: string | null
+          proxima_acao?: string | null
+          temperatura?: string
+          tipo_visita?: string | null
+          ultimo_contato?: string | null
+          und?: string | null
+          updated_at?: string
+          valor_potencial?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

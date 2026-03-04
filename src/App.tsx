@@ -16,6 +16,7 @@ import ScriptsGenerator from "./pages/ScriptsGenerator";
 import RelatorioCorretor from "./pages/RelatorioCorretor";
 import FunilDashboard from "./pages/FunilDashboard";
 import ForecastDashboard from "./pages/ForecastDashboard";
+import PdnDashboard from "./pages/PdnDashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -116,6 +117,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <ForecastDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pdn"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <PdnDashboard />
                   </AppLayout>
                 </ProtectedRoute>
               }

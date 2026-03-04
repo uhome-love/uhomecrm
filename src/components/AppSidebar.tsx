@@ -10,6 +10,7 @@ import {
   FileBarChart,
   Filter,
   TrendingUp,
+  FileSpreadsheet,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -46,6 +47,7 @@ export function AppSidebar() {
           { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
           { title: "Funil Comercial", url: "/funil", icon: Filter },
           { title: "Forecast IA", url: "/previsao", icon: TrendingUp },
+          { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
         ]
       : []),
   ];
