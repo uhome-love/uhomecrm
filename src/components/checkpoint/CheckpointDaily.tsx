@@ -201,6 +201,58 @@ export default function CheckpointDaily() {
 
   useEffect(() => { loadCheckpoint(); }, [loadCheckpoint]);
 
+  // Realtime: auto-sync when new OA attempts are inserted
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('checkpoint-oa-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'oferta_ativa_tentativas',
+        },
+        async (payload) => {
+          // Check if this attempt belongs to any linked team member
+          const corretorId = (payload.new as any)?.corretor_id;
+          if (!corretorId) return;
+
+          // Only sync if we have a line for this corretor
+          const hasLinkedMember = lines.some(l => l.has_oa_data || l.corretor_id);
+          if (!hasLinkedMember) return;
+
+          // Fetch fresh OA stats and update lines
+          const { data: team } = await supabase
+            .from("team_members")
+            .select("*")
+            .eq("gerente_id", user.id)
+            .eq("status", "ativo");
+          const members = (team || []) as TeamMember[];
+          const linkedMember = members.find(m => m.user_id === corretorId);
+          if (!linkedMember) return;
+
+          const oaStats = await fetchOAStats(members, date);
+          if (Object.keys(oaStats).length === 0) return;
+
+          setLines(prev => prev.map(line => {
+            const oa = oaStats[line.corretor_id];
+            if (!oa) return line;
+            const updated = { ...line, real_ligacoes: oa.ligacoes, real_leads: oa.leads, has_oa_data: true };
+            updated.status_dia = calcStatusDia(updated);
+            return updated;
+          }));
+          toast.info("📡 Dados da OA atualizados em tempo real!");
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, date, lines, fetchOAStats]);
+
   const updateLine = (idx: number, field: keyof CheckpointLine, value: any) => {
     setLines((prev) => {
       const next = [...prev];
