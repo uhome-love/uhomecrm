@@ -23,8 +23,7 @@ const CheckpointGerente = lazy(() => import("./pages/CheckpointGerente"));
 const CeoDashboard = lazy(() => import("./pages/CeoDashboard"));
 const ScriptsGenerator = lazy(() => import("./pages/ScriptsGenerator"));
 const RelatorioCorretor = lazy(() => import("./pages/RelatorioCorretor"));
-const FunilDashboard = lazy(() => import("./pages/FunilDashboard"));
-const ForecastDashboard = lazy(() => import("./pages/ForecastDashboard"));
+const CentralDados = lazy(() => import("./pages/CentralDados"));
 const PdnDashboard = lazy(() => import("./pages/PdnDashboard"));
 const MarketingDashboard = lazy(() => import("./pages/MarketingDashboard"));
 const RankingComercial = lazy(() => import("./pages/RankingComercial"));
@@ -76,8 +75,7 @@ const App = () => (
             {/* Gestão Comercial — gestor + admin */}
             <Route path="/checkpoint" element={<ProtectedPage roles={["gestor", "admin"]}><CheckpointGerente /></ProtectedPage>} />
             <Route path="/pdn" element={<ProtectedPage roles={["gestor", "admin"]}><PdnDashboard /></ProtectedPage>} />
-            <Route path="/previsao" element={<ProtectedPage roles={["gestor", "admin"]}><ForecastDashboard /></ProtectedPage>} />
-            <Route path="/funil" element={<ProtectedPage roles={["gestor", "admin"]}><FunilDashboard /></ProtectedPage>} />
+            <Route path="/central-dados" element={<ProtectedPage roles={["gestor", "admin"]}><CentralDados /></ProtectedPage>} />
             <Route path="/scripts" element={<ProtectedPage roles={["gestor", "admin"]}><ScriptsGenerator /></ProtectedPage>} />
             <Route path="/gestao" element={<ProtectedPage roles={["gestor", "admin"]}><GestorDashboard /></ProtectedPage>} />
             <Route path="/relatorios" element={<ProtectedPage roles={["gestor", "admin"]}><RelatorioCorretor /></ProtectedPage>} />
