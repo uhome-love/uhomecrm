@@ -18,6 +18,7 @@ import FunilDashboard from "./pages/FunilDashboard";
 import ForecastDashboard from "./pages/ForecastDashboard";
 import PdnDashboard from "./pages/PdnDashboard";
 import MarketingDashboard from "./pages/MarketingDashboard";
+import RankingComercial from "./pages/RankingComercial";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -138,6 +139,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <MarketingDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ranking"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <RankingComercial />
                   </AppLayout>
                 </ProtectedRoute>
               }
