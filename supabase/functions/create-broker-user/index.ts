@@ -118,11 +118,29 @@ serve(async (req) => {
 
       // Link to manager's team (only for corretores)
       if (gerente_id && assignedRole === "corretor") {
-        const { error: teamError } = await supabase
+        // Check if there's an existing team_member with same name to link
+        const { data: existingMember } = await supabase
           .from("team_members")
-          .insert({ gerente_id, nome, status: "ativo" });
-        if (teamError) {
-          console.error("Team member insert error:", teamError);
+          .select("id")
+          .eq("gerente_id", gerente_id)
+          .ilike("nome", nome.trim())
+          .is("user_id", null)
+          .maybeSingle();
+
+        if (existingMember) {
+          // Link existing manual entry to the new user
+          await supabase
+            .from("team_members")
+            .update({ user_id: newUser.user.id, status: "ativo" })
+            .eq("id", existingMember.id);
+        } else {
+          // Create new team member entry
+          const { error: teamError } = await supabase
+            .from("team_members")
+            .insert({ gerente_id, nome, status: "ativo", user_id: newUser.user.id });
+          if (teamError) {
+            console.error("Team member insert error:", teamError);
+          }
         }
       }
 
