@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import UhomeIaAssistant from "@/components/UhomeIaAssistant";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+      <UhomeIaAssistant />
     </SidebarProvider>
   );
 }
