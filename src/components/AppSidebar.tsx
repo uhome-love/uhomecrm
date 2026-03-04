@@ -63,6 +63,7 @@ export function AppSidebar() {
 
   const homeItems = [
     { title: "Início", url: "/", icon: Home },
+    { title: "Minha Área", url: "/corretor", icon: User },
   ];
 
   const gestorItems = isGestor

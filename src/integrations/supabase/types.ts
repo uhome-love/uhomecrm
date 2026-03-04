@@ -212,6 +212,69 @@ export type Database = {
         }
         Relationships: []
       }
+      corretor_daily_goals: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          data: string
+          id: string
+          meta_aproveitados: number
+          meta_ligacoes: number
+          observacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          data?: string
+          id?: string
+          meta_aproveitados?: number
+          meta_ligacoes?: number
+          observacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          data?: string
+          id?: string
+          meta_aproveitados?: number
+          meta_ligacoes?: number
+          observacao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      corretor_motivations: {
+        Row: {
+          autor: string | null
+          created_at: string
+          criado_por: string | null
+          data: string
+          fixada: boolean
+          id: string
+          mensagem: string
+        }
+        Insert: {
+          autor?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          fixada?: boolean
+          id?: string
+          mensagem: string
+        }
+        Update: {
+          autor?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          fixada?: boolean
+          id?: string
+          mensagem?: string
+        }
+        Relationships: []
+      }
       corretor_reports: {
         Row: {
           conteudo_relatorio: string
