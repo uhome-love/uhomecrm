@@ -3,6 +3,7 @@ import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Phone, MapPin, Target, FileText, DollarSign, TrendingUp, Percent } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import CeoMetasMensais from "./CeoMetasMensais";
 
 export default function CeoOverview() {
   const [period, setPeriod] = useState<CeoPeriod>("semana");
@@ -81,6 +82,9 @@ export default function CeoOverview() {
               );
             })}
           </div>
+
+          {/* Metas Mensais CEO */}
+          <CeoMetasMensais />
 
           {/* Comparativo por Gerente */}
           <div className="rounded-xl border border-border bg-card shadow-card overflow-x-auto">

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ceo_metas_mensais: {
+        Row: {
+          created_at: string
+          gerente_id: string
+          id: string
+          mes: string
+          meta_vgv_assinado: number
+          meta_visitas_marcadas: number
+          meta_visitas_realizadas: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          gerente_id: string
+          id?: string
+          mes: string
+          meta_vgv_assinado?: number
+          meta_visitas_marcadas?: number
+          meta_visitas_realizadas?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          gerente_id?: string
+          id?: string
+          mes?: string
+          meta_vgv_assinado?: number
+          meta_visitas_marcadas?: number
+          meta_visitas_realizadas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checkpoint_lines: {
         Row: {
           checkpoint_id: string
