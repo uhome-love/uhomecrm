@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, Loader2, ArrowRight, Building2, Layers } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, Loader2, ArrowRight, Building2, Layers, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
@@ -97,6 +97,7 @@ export default function ImportListPanel() {
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ total: number; lists: { emp: string; inserted: number; duplicates: number; invalid: number }[] } | null>(null);
   const [selectedEmps, setSelectedEmps] = useState<Set<string>>(new Set());
+  const [customNames, setCustomNames] = useState<Record<string, { emp: string; campanha: string }>>({});
 
   // Detected segments - computed for review step
   const detectedSegments = useMemo(
@@ -178,15 +179,23 @@ export default function ImportListPanel() {
           ? rawData.filter(row => (row[empCol]?.trim() || "Sem empreendimento") === emp)
           : rawData;
 
-        // Determine dominant campanha/origem for list name
-        const mainCamp = subs.sort((a, b) => b.count - a.count)[0];
-        const listName = `${emp}${mainCamp.campanha ? ` - ${mainCamp.campanha}` : ""}`;
+        // Use custom names if provided
+        const custom = customNames[emp];
+        const empName = custom?.emp?.trim() || emp;
+        const campName = custom?.campanha?.trim() || subs.sort((a, b) => b.count - a.count)[0]?.campanha || null;
+        const mainOrig = subs.sort((a, b) => b.count - a.count)[0]?.origem || null;
+        const listName = `${empName}${campName ? ` - ${campName}` : ""}`;
+
+        // Validate: require empreendimento name
+        if (!empName || empName === emp) {
+          // If the original emp looks like a code (short or numeric), warn
+        }
 
         const lista = await createLista({
           nome: listName,
-          empreendimento: emp,
-          campanha: mainCamp.campanha,
-          origem: mainCamp.origem,
+          empreendimento: empName,
+          campanha: campName,
+          origem: mainOrig,
         });
         if (!lista) continue;
 
@@ -200,19 +209,19 @@ export default function ImportListPanel() {
           // Preserve per-row campanha/origem
           if (mapping.campanha) {
             const idx = headers.indexOf(mapping.campanha);
-            if (idx !== -1) obj.campanha = row[idx]?.trim() || mainCamp.campanha || "";
+            if (idx !== -1) obj.campanha = row[idx]?.trim() || campName || "";
           }
           if (mapping.origem) {
             const idx = headers.indexOf(mapping.origem);
-            if (idx !== -1) obj.origem = row[idx]?.trim() || mainCamp.origem || "";
+            if (idx !== -1) obj.origem = row[idx]?.trim() || mainOrig || "";
           }
           return obj;
         }).filter(r => r.nome);
 
         const res = await importLeadsToLista(
-          lista.id, emp, mainCamp.campanha, mainCamp.origem, rows
+          lista.id, empName, campName, mainOrig, rows
         );
-        results.push({ emp, ...res });
+        results.push({ emp: empName, ...res });
       }
 
       setResult({ total: results.reduce((s, r) => s + r.inserted, 0), lists: results });
@@ -337,6 +346,13 @@ export default function ImportListPanel() {
                 // Auto-select all empreendimentos when entering review
                 const segs = mapping.empreendimento ? detectEmpreendimentos(rawData, headers, mapping) : { [guessFromFilename(fileName) || fileName.replace(/\.(csv|txt)$/i, "")]: [{ campanha: null, origem: null, count: rawData.length }] };
                 setSelectedEmps(new Set(Object.keys(segs)));
+                // Init custom names with detected values
+                const names: Record<string, { emp: string; campanha: string }> = {};
+                for (const [emp, subs] of Object.entries(segs)) {
+                  const mainCamp = subs.sort((a, b) => b.count - a.count)[0];
+                  names[emp] = { emp, campanha: mainCamp.campanha || "" };
+                }
+                setCustomNames(names);
                 setStep("review");
               }}
               disabled={!mapping.nome}
@@ -408,34 +424,55 @@ export default function ImportListPanel() {
               return (
                 <div
                   key={emp}
-                  className={`rounded-lg p-3 border transition-colors cursor-pointer ${
+                  className={`rounded-lg p-3 border transition-colors ${
                     isSelected
                       ? "bg-primary/5 border-primary/30"
                       : "bg-muted/20 border-border opacity-60"
                   }`}
-                  onClick={() => toggleEmp(emp)}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start gap-3">
                     <Checkbox
                       checked={isSelected}
                       onCheckedChange={() => toggleEmp(emp)}
-                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1"
                     />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-bold text-foreground text-sm">{emp}</h4>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground font-mono">Código original: {emp}</span>
                         <Badge variant="outline" className="text-xs shrink-0">{total} leads</Badge>
                       </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-0.5 block">Nome do Empreendimento</label>
+                          <Input
+                            value={customNames[emp]?.emp || ""}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setCustomNames(prev => ({ ...prev, [emp]: { ...prev[emp], emp: e.target.value } }));
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="Ex: Residencial Aurora"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-muted-foreground mb-0.5 block">Nome da Campanha</label>
+                          <Input
+                            value={customNames[emp]?.campanha || ""}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setCustomNames(prev => ({ ...prev, [emp]: { ...prev[emp], campanha: e.target.value } }));
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="Ex: Meta Ads Março"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {campaigns.map(c => (
-                          <Badge key={c} variant="secondary" className="text-[10px]">📢 {c}</Badge>
-                        ))}
                         {origins.map(o => (
                           <Badge key={o} variant="secondary" className="text-[10px]">🌐 {o}</Badge>
                         ))}
-                        {campaigns.length === 0 && origins.length === 0 && (
-                          <span className="text-[10px] text-muted-foreground">Sem campanha/origem identificada</span>
-                        )}
                       </div>
                     </div>
                   </div>
