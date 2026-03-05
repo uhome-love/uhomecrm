@@ -27,6 +27,13 @@ export default function HomeDashboard() {
   const [nome, setNome] = useState("");
   const [period, setPeriod] = useState<Period>("semana");
 
+  // Corretor should never see Centro de Comando — redirect to /corretor
+  useEffect(() => {
+    if (!isAdmin && !isGestor) {
+      navigate("/corretor", { replace: true });
+    }
+  }, [isAdmin, isGestor, navigate]);
+
   const filterGerenteId = isAdmin ? undefined : user?.id;
   const { gerentes, companyTotals, allCorretores, loading } = useCeoData(period as CeoPeriod, undefined, undefined, filterGerenteId);
   const { channelStats, totals: mktTotals } = useMarketing();
