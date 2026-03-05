@@ -59,7 +59,7 @@ export default function CheckpointGerente() {
   }, [user]);
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground">
           {nome ? (

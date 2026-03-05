@@ -9,7 +9,7 @@ export default function ScriptsGenerator() {
   const [activeTab, setActiveTab] = useState("ligacao");
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground">
           Gerador de <span className="text-primary">Scripts & Follow Ups</span>
