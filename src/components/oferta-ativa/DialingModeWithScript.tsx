@@ -167,11 +167,19 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         return;
       }
 
+      // Celebration for aproveitado
+      if (resultado === "com_interesse") {
+        toast.success("🎉 APROVEITADO! +3 pontos! Mandou bem!", { duration: 4000 });
+      } else if (resultado === "nao_atendeu") {
+        toast("📞 Não atendeu — lead volta à fila com cooldown", { duration: 2000 });
+      } else if (resultado === "sem_interesse") {
+        toast("👋 Sem interesse — lead removido da fila", { duration: 2000 });
+      }
+
       // Se marcou visita, incrementar real_visitas_marcadas no checkpoint
       if (visitaMarcada && user) {
         try {
           const today = new Date().toISOString().split("T")[0];
-          // Find team_member for this user
           const { data: tm } = await supabase
             .from("team_members")
             .select("id, gerente_id")
@@ -180,7 +188,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             .maybeSingle();
 
           if (tm) {
-            // Find or create today's checkpoint
             let { data: cp } = await supabase
               .from("checkpoints")
               .select("id")
@@ -198,7 +205,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             }
 
             if (cp) {
-              // Get current line
               const { data: line } = await supabase
                 .from("checkpoint_lines")
                 .select("id, real_visitas_marcadas")
