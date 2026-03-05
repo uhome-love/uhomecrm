@@ -16,6 +16,7 @@ import AttemptModal from "./AttemptModal";
 import ScriptPanel from "./ScriptPanel";
 import AttemptHistory from "./AttemptHistory";
 import ScoringLegend from "./ScoringLegend";
+import RecentCallsHistory from "./RecentCallsHistory";
 import { motion, AnimatePresence } from "framer-motion";
 
 /** Format Brazilian phone */
@@ -752,6 +753,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   )}
                 </div>
               )}
+
+              {/* Recent Calls History */}
+              <RecentCallsHistory />
 
               {/* Objeções Rápidas */}
               <Collapsible>
