@@ -169,11 +169,9 @@ export function AppSidebar() {
               <img src={logoSymbol} alt="UHome" className="h-12 w-auto transition-transform duration-300 hover:scale-105" />
             </div>
           ) : (
-            <div className="flex items-center gap-2.5 animate-slide-in-left">
+            <div className="flex flex-col items-start gap-1 animate-slide-in-left">
               <img src={logoHorizontal} alt="UHome" className="h-14 w-auto" />
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-sidebar-primary tracking-[0.12em] uppercase">Gestão & IA</span>
-              </div>
+              <span className="text-[13px] font-bold text-sidebar-primary tracking-[0.14em] uppercase pl-0.5">Gestão & IA</span>
             </div>
           )}
         </div>
