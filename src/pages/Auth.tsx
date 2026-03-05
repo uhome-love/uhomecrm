@@ -172,20 +172,20 @@ export default function Auth() {
         className="relative z-10 w-full max-w-[420px] px-5"
       >
         {/* ─── LOGO AREA ─── */}
-        <div className="flex flex-col items-center mb-10">
+        <div className="flex flex-col items-center mb-6">
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="relative mb-5"
+            className="relative mb-4"
           >
             {/* Glow behind logo */}
-            <div className="absolute inset-0 -m-4 rounded-full bg-[hsl(229,100%,64%/0.12)] blur-[40px]" />
+            <div className="absolute inset-0 -m-6 rounded-full bg-[hsl(229,100%,64%/0.15)] blur-[50px]" />
             <img
               src={uhomeSalesLogo}
               alt="UhomeSales"
-              className="relative h-28 w-auto object-contain drop-shadow-[0_0_50px_hsl(229,100%,64%,0.3)]"
-              style={{ clipPath: "inset(15% 0 12% 0)", marginTop: "-10px", marginBottom: "-10px" }}
+              className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.35)]"
+              style={{ height: "140px", clipPath: "inset(12% 0 10% 0)", marginTop: "-8px", marginBottom: "-8px" }}
             />
           </motion.div>
 
