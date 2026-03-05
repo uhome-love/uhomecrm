@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import {
   TrendingUp, Users, Trophy, Target, BarChart3, AlertTriangle,
   CalendarDays, RotateCcw, ArrowRight, Building2, FileText, Eye, DollarSign,
-  Megaphone, Flame, ArrowUpRight, Bell, AlertCircle, Info,
+  Megaphone, Flame, ArrowUpRight, Bell, AlertCircle, Info, ClipboardCheck,
 } from "lucide-react";
 import homiMascot from "@/assets/homi-mascot.png";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,10 +40,17 @@ export default function HomeDashboard() {
   const { channelStats, totals: mktTotals } = useMarketing();
   const { alerts: smartAlerts } = useSmartAlerts();
 
-  // PDN hot deals
-  const [pdnHot, setPdnHot] = useState({ propostas: 0, docs: 0, visitaRecente: 0 });
+  // PDN full stats
+  const [pdnStats, setPdnStats] = useState({
+    propostas: 0, docs: 0, visitaRecente: 0,
+    total_visitas: 0, quente: 0, morno: 0, frio: 0,
+    total_gerados: 0, total_assinados: 0, total_caidos: 0,
+    vgv_gerado: 0, vgv_assinado: 0, vgv_caido: 0,
+  });
   // Lead recovery
   const [recovery, setRecovery] = useState({ reativados: 0, respondidos: 0, visitas: 0 });
+  // Checkpoint daily stats
+  const [cpStats, setCpStats] = useState({ total_checkpoints: 0, total_corretores: 0, presentes: 0, ausentes: 0 });
 
   useEffect(() => {
     if (!user) return;
@@ -56,21 +63,54 @@ export default function HomeDashboard() {
   const fetchPdn = useCallback(async () => {
     if (!user) return;
     const mesAtual = format(new Date(), "yyyy-MM");
-    let q = supabase.from("pdn_entries").select("situacao, docs_status, data_visita, temperatura").eq("mes", mesAtual);
+    let q = supabase.from("pdn_entries").select("situacao, docs_status, data_visita, temperatura, vgv, motivo_queda").eq("mes", mesAtual);
     if (!isAdmin) q = q.eq("gerente_id", user.id);
     const { data } = await q;
     if (!data) return;
     const now = new Date();
     const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
     const visitas = data.filter(d => d.situacao === "visita");
-    setPdnHot({
-      propostas: data.filter(d => d.situacao === "gerado").length,
+    const gerados = data.filter(d => d.situacao === "gerado");
+    const assinados = data.filter(d => d.situacao === "assinado");
+    const caidos = data.filter(d => d.situacao === "caiu");
+    setPdnStats({
+      propostas: gerados.length,
       docs: visitas.filter(d => d.docs_status === "sem_docs" || d.docs_status === "em_andamento").length,
       visitaRecente: data.filter(d => d.data_visita && new Date(d.data_visita) >= fiveDaysAgo).length,
+      total_visitas: visitas.length,
+      quente: visitas.filter(d => d.temperatura === "quente").length,
+      morno: visitas.filter(d => d.temperatura === "morno").length,
+      frio: visitas.filter(d => d.temperatura === "frio").length,
+      total_gerados: gerados.length,
+      total_assinados: assinados.length,
+      total_caidos: caidos.length,
+      vgv_gerado: gerados.reduce((s, e) => s + Number(e.vgv || 0), 0),
+      vgv_assinado: assinados.reduce((s, e) => s + Number(e.vgv || 0), 0),
+      vgv_caido: caidos.reduce((s, e) => s + Number(e.vgv || 0), 0),
     });
   }, [user, isAdmin]);
 
   useEffect(() => { fetchPdn(); }, [fetchPdn]);
+
+  // Fetch checkpoint daily summary
+  const fetchCheckpoint = useCallback(async () => {
+    if (!user) return;
+    const today = format(new Date(), "yyyy-MM-dd");
+    let cpQ = supabase.from("checkpoints").select("id").eq("data", today);
+    if (!isAdmin) cpQ = cpQ.eq("gerente_id", user.id);
+    const { data: cps } = await cpQ;
+    const cpIds = (cps || []).map(c => c.id);
+    if (cpIds.length === 0) {
+      setCpStats({ total_checkpoints: cps?.length || 0, total_corretores: 0, presentes: 0, ausentes: 0 });
+      return;
+    }
+    const { data: lines } = await supabase.from("checkpoint_lines").select("real_presenca").in("checkpoint_id", cpIds);
+    const total = (lines || []).length;
+    const presentes = (lines || []).filter(l => l.real_presenca === "sim" || l.real_presenca === "presente").length;
+    setCpStats({ total_checkpoints: cps?.length || 0, total_corretores: total, presentes, ausentes: total - presentes });
+  }, [user, isAdmin]);
+
+  useEffect(() => { fetchCheckpoint(); }, [fetchCheckpoint]);
 
   // Realtime: auto-refresh on PDN or checkpoint changes
   useEffect(() => {
@@ -86,9 +126,11 @@ export default function HomeDashboard() {
       .channel("home-checkpoint-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "checkpoint_lines" }, () => {
         reload();
+        fetchCheckpoint();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "checkpoints" }, () => {
         reload();
+        fetchCheckpoint();
       })
       .subscribe();
 
@@ -96,7 +138,7 @@ export default function HomeDashboard() {
       supabase.removeChannel(pdnChannel);
       supabase.removeChannel(cpChannel);
     };
-  }, [fetchPdn, reload]);
+  }, [fetchPdn, fetchCheckpoint, reload]);
 
   // Fetch lead recovery
   useEffect(() => {
@@ -140,11 +182,12 @@ export default function HomeDashboard() {
   }, [channelStats, mktTotals, gerentes, recovery]);
 
   const iaContext = useMemo(() => {
-    const funnel = `Funil: Visitas Marcadas ${companyTotals.real_visitas_marcadas}, Visitas Realizadas ${companyTotals.real_visitas_realizadas}, Propostas ${companyTotals.real_propostas}, VGV Assinado R$ ${companyTotals.real_vgv_assinado.toLocaleString("pt-BR")}`;
+    const funnel = `Funil: Ligações ${companyTotals.real_ligacoes}/${companyTotals.meta_ligacoes}, Visitas Marcadas ${companyTotals.real_visitas_marcadas}/${companyTotals.meta_visitas_marcadas}, Visitas Realizadas ${companyTotals.real_visitas_realizadas}/${companyTotals.meta_visitas_realizadas}, Propostas ${companyTotals.real_propostas}/${companyTotals.meta_propostas}, VGV Gerado R$ ${companyTotals.real_vgv_gerado.toLocaleString("pt-BR")}, VGV Assinado R$ ${companyTotals.real_vgv_assinado.toLocaleString("pt-BR")}`;
     const mkt = channelStats.map(c => `${getCanalLabel(c.canal)}: Inv R$ ${c.investimento.toLocaleString("pt-BR")}, Leads ${c.leads}, CPL R$ ${c.cpl?.toFixed(0) || "-"}`).join("; ");
     const teams = sortedTimes.map((t, i) => `${i + 1}. Equipe ${t.gerente_nome}: VGV R$ ${t.totals.real_vgv_assinado.toLocaleString("pt-BR")}, Propostas ${t.totals.real_propostas}`).join("; ");
-    return `Período: ${periodLabels[period]}\n${funnel}\nMarketing: ${mkt}\nTimes: ${teams}\nNegócios quentes: ${pdnHot.propostas} propostas, ${pdnHot.docs} docs pendentes\nRecuperação: ${recovery.reativados} reativados, ${recovery.respondidos} respostas`;
-  }, [companyTotals, channelStats, sortedTimes, period, pdnHot, recovery]);
+    const pdnCtx = `PDN: ${pdnStats.total_visitas} negócios, ${pdnStats.quente} quentes, ${pdnStats.total_gerados} gerados (R$ ${pdnStats.vgv_gerado.toLocaleString("pt-BR")}), ${pdnStats.total_assinados} assinados (R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}), ${pdnStats.total_caidos} caídos (R$ ${pdnStats.vgv_caido.toLocaleString("pt-BR")})`;
+    return `Período: ${periodLabels[period]}\n${funnel}\n${pdnCtx}\nMarketing: ${mkt}\nTimes: ${teams}\nRecuperação: ${recovery.reativados} reativados, ${recovery.respondidos} respostas`;
+  }, [companyTotals, channelStats, sortedTimes, period, pdnStats, recovery]);
 
   const card = "rounded-xl border border-border bg-card shadow-card";
 
@@ -238,7 +281,7 @@ export default function HomeDashboard() {
             </motion.div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
             {/* 4. Marketing */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className={card}>
               <SectionHeader icon={Megaphone} title="Marketing" action={isAdmin ? { label: "Ver detalhes", onClick: () => navigate("/marketing") } : undefined} />
@@ -264,15 +307,51 @@ export default function HomeDashboard() {
 
             {/* 5. Negócios Quentes */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={card}>
-              <SectionHeader icon={Flame} title="Negócios Quentes" action={{ label: "Ver PDN", onClick: () => navigate("/pdn") }} />
-              <div className="p-4 space-y-3">
-                <HotStat icon={FileText} label="Propostas enviadas" value={pdnHot.propostas} color="text-primary" />
-                <HotStat icon={Building2} label="Aguardando docs" value={pdnHot.docs} color="text-warning" />
-                <HotStat icon={Eye} label="Visita recente (5d)" value={pdnHot.visitaRecente} color="text-success" />
-                <div className="pt-2 border-t border-border/50">
-                  <p className="text-xs text-muted-foreground">
-                    Total negócios quentes: <span className="font-bold text-foreground">{pdnHot.propostas + pdnHot.docs + pdnHot.visitaRecente}</span>
-                  </p>
+              <SectionHeader icon={Flame} title="PDN — Negócios" action={{ label: "Ver PDN", onClick: () => navigate("/pdn") }} />
+              <div className="p-4 space-y-2">
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="text-center rounded-lg bg-muted/30 p-2">
+                    <p className="text-lg font-display font-bold text-foreground">{pdnStats.total_visitas}</p>
+                    <p className="text-[10px] text-muted-foreground">Negócios</p>
+                  </div>
+                  <div className="text-center rounded-lg bg-warning/10 p-2">
+                    <p className="text-lg font-display font-bold text-warning">{pdnStats.total_gerados}</p>
+                    <p className="text-[10px] text-muted-foreground">Gerados</p>
+                  </div>
+                  <div className="text-center rounded-lg bg-success/10 p-2">
+                    <p className="text-lg font-display font-bold text-success">{pdnStats.total_assinados}</p>
+                    <p className="text-[10px] text-muted-foreground">Assinados</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1"><Flame className="h-3 w-3 text-destructive" /> Quentes</span>
+                    <span className="font-bold">{pdnStats.quente}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">🟡 Mornos</span>
+                    <span className="font-bold">{pdnStats.morno}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">🔵 Frios</span>
+                    <span className="font-bold">{pdnStats.frio}</span>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-border/50 space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">VGV Gerado</span>
+                    <span className="font-bold text-warning">R$ {(pdnStats.vgv_gerado / 1000).toFixed(0)}k</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">VGV Assinado</span>
+                    <span className="font-bold text-success">R$ {(pdnStats.vgv_assinado / 1000).toFixed(0)}k</span>
+                  </div>
+                  {pdnStats.total_caidos > 0 && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">❌ Caídos ({pdnStats.total_caidos})</span>
+                      <span className="font-bold text-destructive">R$ {(pdnStats.vgv_caido / 1000).toFixed(0)}k</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -284,6 +363,35 @@ export default function HomeDashboard() {
                 <HotStat icon={RotateCcw} label="Leads reativados" value={recovery.reativados} color="text-primary" />
                 <HotStat icon={ArrowUpRight} label="Respostas recebidas" value={recovery.respondidos} color="text-success" />
                 <HotStat icon={CalendarDays} label="Visitas geradas" value={recovery.visitas} color="text-warning" />
+              </div>
+            </motion.div>
+
+            {/* Checkpoint do Dia */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={card}>
+              <SectionHeader icon={ClipboardCheck} title="Checkpoint Hoje" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
+              <div className="p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="text-center rounded-lg bg-primary/10 p-2">
+                    <p className="text-lg font-display font-bold text-primary">{cpStats.total_checkpoints}</p>
+                    <p className="text-[10px] text-muted-foreground">Checkpoints</p>
+                  </div>
+                  <div className="text-center rounded-lg bg-muted/30 p-2">
+                    <p className="text-lg font-display font-bold text-foreground">{cpStats.total_corretores}</p>
+                    <p className="text-[10px] text-muted-foreground">Corretores</p>
+                  </div>
+                </div>
+                <HotStat icon={Users} label="Presentes" value={cpStats.presentes} color="text-success" />
+                <HotStat icon={AlertTriangle} label="Ausentes" value={cpStats.ausentes} color="text-destructive" />
+                <div className="pt-2 border-t border-border/50">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Ligações (checkpoint)</span>
+                    <span className="font-bold">{companyTotals.real_ligacoes}</span>
+                  </div>
+                  <div className="flex justify-between text-xs mt-1">
+                    <span className="text-muted-foreground">Propostas (checkpoint)</span>
+                    <span className="font-bold">{companyTotals.real_propostas}</span>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
