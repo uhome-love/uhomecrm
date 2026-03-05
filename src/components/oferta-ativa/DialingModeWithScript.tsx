@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, Lock, CalendarCheck } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, Lock, CalendarCheck, Zap, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useCorretorDailyStats, useCorretorDailyGoals } from "@/hooks/useCorretorDailyStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -368,6 +369,31 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   Registre o resultado para continuar...
                 </div>
               )}
+
+              {/* Objeções Rápidas */}
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Zap className="h-4 w-4 text-amber-500" /> OBJEÇÕES RÁPIDAS
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2 space-y-2">
+                  {[
+                    { objecao: "Já tenho corretor", resposta: "Entendo! Meu papel não é substituir ninguém, mas complementar. Posso te mostrar condições exclusivas deste empreendimento que talvez seu corretor não tenha acesso." },
+                    { objecao: "Não tenho interesse", resposta: "Sem problemas! Só por curiosidade, o que te fez preencher o formulário? Às vezes temos condições que mudam a perspectiva." },
+                    { objecao: "Estou sem tempo agora", resposta: "Claro! Posso te ligar em outro horário? Leva menos de 2 minutos. Qual o melhor horário pra você?" },
+                    { objecao: "Está muito caro", resposta: "Entendo sua preocupação. Temos planos de pagamento facilitados e condições especiais de lançamento. Posso te mostrar uma simulação rápida?" },
+                    { objecao: "Preciso falar com meu cônjuge", resposta: "Faz todo sentido! Que tal agendarmos uma visita juntos? Assim vocês podem conhecer o empreendimento e tirar todas as dúvidas de uma vez." },
+                    { objecao: "Já comprei outro imóvel", resposta: "Parabéns pela aquisição! Muitos dos nossos clientes investem em um segundo imóvel para renda. Já pensou nisso?" },
+                  ].map((item, i) => (
+                    <div key={i} className="p-3 rounded-lg border border-border bg-background">
+                      <p className="text-xs font-bold text-destructive mb-1">❌ "{item.objecao}"</p>
+                      <p className="text-xs text-foreground">✅ {item.resposta}</p>
+                    </div>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
         </div>
