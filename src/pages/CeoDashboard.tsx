@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Trophy, FileText, AlertTriangle, TrendingUp, CheckCircle } from "lucide-react";
+import { BarChart3, Trophy, FileText, AlertTriangle, TrendingUp, CheckCircle, Phone } from "lucide-react";
 import homiMascot from "@/assets/homi-mascot.png";
 import CeoOverview from "@/components/ceo/CeoOverview";
 import CeoRankings from "@/components/ceo/CeoRankings";
@@ -9,6 +9,7 @@ import CeoAdvisor from "@/components/ceo/CeoAdvisor";
 import CeoAlerts from "@/components/ceo/CeoAlerts";
 import CeoForecastPanel from "@/components/forecast/CeoForecastPanel";
 import CeoVendasAssinadas from "@/components/ceo/CeoVendasAssinadas";
+import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 
 export default function CeoDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -28,7 +29,7 @@ export default function CeoDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7 h-auto">
+        <TabsList className="grid w-full grid-cols-8 h-auto">
           <TabsTrigger value="overview" className="gap-1.5 text-xs py-2">
             <BarChart3 className="h-3.5 w-3.5" /> Visão Geral
           </TabsTrigger>
@@ -40,6 +41,9 @@ export default function CeoDashboard() {
           </TabsTrigger>
           <TabsTrigger value="rankings" className="gap-1.5 text-xs py-2">
             <Trophy className="h-3.5 w-3.5" /> Rankings
+          </TabsTrigger>
+          <TabsTrigger value="oferta-ativa" className="gap-1.5 text-xs py-2">
+            <Phone className="h-3.5 w-3.5" /> Oferta Ativa
           </TabsTrigger>
           <TabsTrigger value="reports" className="gap-1.5 text-xs py-2">
             <FileText className="h-3.5 w-3.5" /> Relatórios
@@ -56,6 +60,7 @@ export default function CeoDashboard() {
         <TabsContent value="vendas" className="mt-4"><CeoVendasAssinadas /></TabsContent>
         <TabsContent value="forecast" className="mt-4"><CeoForecastPanel /></TabsContent>
         <TabsContent value="rankings" className="mt-4"><CeoRankings /></TabsContent>
+        <TabsContent value="oferta-ativa" className="mt-4"><RankingOfertaAtiva /></TabsContent>
         <TabsContent value="reports" className="mt-4"><CeoReports /></TabsContent>
         <TabsContent value="advisor" className="mt-4"><CeoAdvisor /></TabsContent>
         <TabsContent value="alerts" className="mt-4"><CeoAlerts /></TabsContent>
