@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock, LogOut, Sparkles, Star, Zap, TrendingUp } from "lucide-react";
+import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock, LogOut, Sparkles, Star, Zap, TrendingUp, BarChart3, Loader2 as Loader2Icon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelecti
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import ScoringLegend from "@/components/oferta-ativa/ScoringLegend";
+const CorretorWeeklySummary = lazy(() => import("@/components/corretor/CorretorWeeklySummary"));
 import {
   AlertDialog,
   AlertDialogAction,
@@ -241,7 +242,7 @@ export default function CorretorDashboard() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-5 h-auto">
           <TabsTrigger value="central" className="gap-1.5 text-xs py-2">
             <Target className="h-3.5 w-3.5" /> Central
           </TabsTrigger>
@@ -254,6 +255,9 @@ export default function CorretorDashboard() {
           </TabsTrigger>
           <TabsTrigger value="ranking" className="gap-1.5 text-xs py-2">
             <Trophy className="h-3.5 w-3.5" /> Ranking
+          </TabsTrigger>
+          <TabsTrigger value="resumo" className="gap-1.5 text-xs py-2">
+            <BarChart3 className="h-3.5 w-3.5" /> Resumo
           </TabsTrigger>
         </TabsList>
 
@@ -513,6 +517,12 @@ export default function CorretorDashboard() {
         {/* ── Tab: Ranking ── */}
         <TabsContent value="ranking" className="mt-4">
           <RankingPanel />
+        </TabsContent>
+        {/* ── Tab: Resumo Semanal ── */}
+        <TabsContent value="resumo" className="mt-4">
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2Icon className="h-6 w-6 animate-spin text-primary" /></div>}>
+            <CorretorWeeklySummary />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
