@@ -10,33 +10,42 @@ import { useAuth } from "@/hooks/useAuth";
 import uhomeSalesLogo from "@/assets/uhomesales-logo.png";
 import homiMascot from "@/assets/homi-mascot.png";
 
-/* ─── Floating particle component ─── */
+/* ─── Static CSS particles (no JS animation overhead) ─── */
+const particleStyle = `
+@keyframes float-up {
+  0% { opacity: 0; transform: translateY(0); }
+  30% { opacity: 0.5; }
+  100% { opacity: 0; transform: translateY(-80px); }
+}
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: hsl(229 100% 72%);
+  animation: float-up var(--d) var(--delay) ease-in-out infinite;
+}
+`;
+
 function Particles() {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {Array.from({ length: 30 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full bg-[hsl(229,100%,72%)]"
-          style={{
-            width: Math.random() * 3 + 1,
-            height: Math.random() * 3 + 1,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -(Math.random() * 80 + 40)],
-            opacity: [0, 0.6, 0],
-          }}
-          transition={{
-            duration: Math.random() * 6 + 4,
-            repeat: Infinity,
-            delay: Math.random() * 5,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
+    <>
+      <style>{particleStyle}</style>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="particle"
+            style={{
+              width: (i % 3) + 1.5,
+              height: (i % 3) + 1.5,
+              left: `${(i * 8.3) % 100}%`,
+              top: `${(i * 13.7) % 100}%`,
+              "--d": `${5 + (i % 4) * 2}s`,
+              "--delay": `${(i * 0.7) % 5}s`,
+            } as React.CSSProperties}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 
