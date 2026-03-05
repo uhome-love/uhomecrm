@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import uhomeSalesLogo from "@/assets/uhomesales-logo.png";
-import homiMascot from "@/assets/homi-mascot.png";
+// Use public/ paths for predictable URLs that can be preloaded in index.html
+const uhomeSalesLogo = "/images/uhomesales-logo.png";
+const homiMascot = "/images/homi-mascot.png";
 
 /* ─── CSS-only animations (zero JS overhead) ─── */
 const animationStyles = `
@@ -189,9 +190,10 @@ export default function Auth() {
             <img
               src={uhomeSalesLogo}
               alt="UhomeSales"
-              width={300}
-              height={200}
+              width={525}
+              height={350}
               fetchPriority="high"
+              decoding="async"
               className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.4)]"
               style={{ height: "200px", clipPath: "inset(10% 0 8% 0)", margin: "-22px 0" }}
             />
