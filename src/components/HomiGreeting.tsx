@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Bot } from "lucide-react";
 import homiMascot from "@/assets/homi-mascot.png";
@@ -55,7 +55,7 @@ function pickRandom<T>(arr: T[]): T {
 
 const STORAGE_KEY = "homi_last_greeting";
 
-export default function HomiGreeting() {
+function HomiGreetingInner() {
   const { user } = useAuth();
   const { isAdmin, isGestor } = useUserRole();
   const [show, setShow] = useState(false);
@@ -86,7 +86,7 @@ export default function HomiGreeting() {
         setTip(pickRandom(roleTips[role]));
 
         localStorage.setItem(STORAGE_KEY, today);
-        setTimeout(() => setShow(true), 800);
+        setTimeout(() => setShow(true), 300);
       });
   }, [user, isAdmin, isGestor]);
 
@@ -143,3 +143,6 @@ export default function HomiGreeting() {
     </AnimatePresence>
   );
 }
+
+const HomiGreeting = memo(HomiGreetingInner);
+export default HomiGreeting;

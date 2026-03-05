@@ -139,30 +139,23 @@ export default function UhomeIaAssistant() {
 
   return (
     <>
-      {/* FAB — Homi mascot */}
-      <AnimatePresence>
-        {!open && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 z-50 group"
-            title="Fale com o Homi"
-          >
-            {/* Glow ring */}
-            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-30" style={{ animationDuration: "3s" }} />
-            <div className="relative h-18 w-18 rounded-full bg-card border-2 border-primary/30 shadow-elevated hover:shadow-glow transition-all duration-300 flex items-center justify-center overflow-hidden hover:scale-110" style={{ height: "4.5rem", width: "4.5rem" }}>
-              <img src={homiMascot} alt="Homi" className="h-16 w-16 object-contain" />
-            </div>
-            {/* Tooltip */}
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-              Fale com o Homi 💬
-              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-foreground" />
-            </div>
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* FAB — Homi mascot (no AnimatePresence for initial render speed) */}
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="fixed bottom-6 right-6 z-50 group"
+          title="Fale com o Homi"
+        >
+          <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-30" style={{ animationDuration: "3s" }} />
+          <div className="relative rounded-full bg-card border-2 border-primary/30 shadow-elevated hover:shadow-glow transition-all duration-200 flex items-center justify-center overflow-hidden hover:scale-110" style={{ height: "4.5rem", width: "4.5rem" }}>
+            <img src={homiMascot} alt="Homi" className="h-16 w-16 object-contain" />
+          </div>
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+            Fale com o Homi 💬
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-foreground" />
+          </div>
+        </button>
+      )}
 
       {/* Panel */}
       <AnimatePresence>

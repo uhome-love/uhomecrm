@@ -1,9 +1,8 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import UhomeIaAssistant from "@/components/UhomeIaAssistant";
-import HomiGreeting from "@/components/HomiGreeting";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { lazy, Suspense } from "react";
 import { User, Settings, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +15,9 @@ import {
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import homiMascot from "@/assets/homi-mascot.png";
+
+const UhomeIaAssistant = lazy(() => import("@/components/UhomeIaAssistant"));
+const HomiGreeting = lazy(() => import("@/components/HomiGreeting"));
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -82,8 +84,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-      <UhomeIaAssistant />
-      <HomiGreeting />
+      <Suspense fallback={null}>
+        <UhomeIaAssistant />
+        <HomiGreeting />
+      </Suspense>
     </SidebarProvider>
   );
 }
