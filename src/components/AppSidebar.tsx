@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   ClipboardCheck,
@@ -16,6 +16,8 @@ import {
   Trophy,
   Phone,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import AvatarUpload from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -45,6 +47,20 @@ export function AppSidebar() {
   const { isGestor, isAdmin } = useUserRole();
   const { alerts, badges } = useSmartAlerts();
   const toastShown = useRef(false);
+  const [profile, setProfile] = useState<{ nome: string; avatar_url: string | null }>({ nome: "", avatar_url: null });
+
+  // Fetch profile for avatar
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("nome, avatar_url")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setProfile({ nome: data.nome, avatar_url: data.avatar_url });
+      });
+  }, [user]);
 
   // Show toast for critical alerts on first load
   useEffect(() => {
@@ -157,13 +173,16 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <div className="flex items-center gap-2.5 p-3 border-t border-sidebar-border">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary/20 shrink-0">
-            <User className="h-3.5 w-3.5 text-sidebar-primary" />
-          </div>
+          <AvatarUpload
+            avatarUrl={profile.avatar_url}
+            nome={profile.nome || user?.email || ""}
+            size="sm"
+            onUploaded={(url) => setProfile(p => ({ ...p, avatar_url: url }))}
+          />
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-medium text-sidebar-foreground truncate">
-                {user?.email}
+                {profile.nome || user?.email}
               </p>
             </div>
           )}
