@@ -96,8 +96,11 @@ export default function HomeDashboard() {
   const fetchCheckpoint = useCallback(async () => {
     if (!user) return;
     const today = format(new Date(), "yyyy-MM-dd");
-    const todayStart = `${today}T00:00:00`;
-    const todayEnd = `${today}T23:59:59`;
+
+    // For OA tentativas, use ISO timestamps based on current day boundaries
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1);
 
     // Checkpoint data
     let cpQ = supabase.from("checkpoints").select("id").eq("data", today);
@@ -116,8 +119,8 @@ export default function HomeDashboard() {
     const { data: oaTentativas } = await supabase
       .from("oferta_ativa_tentativas")
       .select("resultado")
-      .gte("created_at", todayStart)
-      .lte("created_at", todayEnd);
+      .gte("created_at", startOfToday.toISOString())
+      .lte("created_at", endOfToday.toISOString());
 
     const oa_ligacoes = (oaTentativas || []).length;
     const oa_aproveitados = (oaTentativas || []).filter(t => t.resultado === "com_interesse").length;
