@@ -69,8 +69,8 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
             })}
           </div>
 
-          {/* Marquei Visita checkbox — always visible when a result is selected */}
-          {resultado && (
+          {/* Marquei Visita — aparece sempre que um resultado é selecionado */}
+          {resultado !== "" && (
             <div
               className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                 visitaMarcada
