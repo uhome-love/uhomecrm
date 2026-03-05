@@ -67,21 +67,15 @@ export default function Auth() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Clean modern background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(229,100%,64%)] via-[hsl(229,78%,40%)] to-[hsl(224,44%,12%)]" />
-      {/* Subtle geometric accents */}
+      {/* Dark elegant background */}
+      <div className="absolute inset-0 bg-[hsl(224,44%,8%)]" />
+      {/* Radial glow behind logo area */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-[-30%] right-[-15%] w-[70%] h-[70%] rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-white/3 blur-3xl" />
+        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-[hsl(229,100%,64%/0.12)] blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-[hsl(260,70%,55%/0.08)] blur-[100px]" />
       </div>
-      {/* Grid pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
-          backgroundSize: "80px 80px",
-        }}
-      />
+      {/* Subtle noise texture */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
 
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.96 }}
@@ -92,12 +86,12 @@ export default function Auth() {
         {/* Logo & branding */}
         <div className="flex flex-col items-center mb-10">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="mb-5 bg-white/15 backdrop-blur-md rounded-3xl p-6 border border-white/20 shadow-2xl"
+            transition={{ delay: 0.15, duration: 0.5, ease: "easeOut" }}
+            className="mb-6"
           >
-            <img src={uhomeSalesLogo} alt="UhomeSales" className="h-36 w-auto drop-shadow-2xl" />
+            <img src={uhomeSalesLogo} alt="UhomeSales" className="h-40 w-auto drop-shadow-[0_0_40px_hsl(229,100%,64%,0.35)]" />
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -105,7 +99,7 @@ export default function Auth() {
             transition={{ delay: 0.35 }}
             className="text-center"
           >
-            <p className="text-base text-white/80 font-semibold tracking-wide drop-shadow-lg">
+            <p className="text-sm text-white/40 font-medium tracking-[0.15em] uppercase">
               Plataforma de vendas imobiliárias de alta performance
             </p>
           </motion.div>
@@ -118,27 +112,27 @@ export default function Auth() {
           transition={{ delay: 0.4, duration: 0.4 }}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="rounded-2xl border border-white/10 bg-white/95 backdrop-blur-xl p-7 shadow-2xl space-y-5">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.07] backdrop-blur-xl p-7 shadow-2xl space-y-5">
               <div className="text-center mb-2">
-                <h2 className="font-display font-bold text-xl text-foreground">
+                <h2 className="font-display font-bold text-xl text-white">
                   {isLogin ? "Acesse sua conta" : "Crie sua conta"}
                 </h2>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-white/50 mt-1">
                   {isLogin ? "Entre com suas credenciais" : "Preencha seus dados para começar"}
                 </p>
               </div>
 
               {!isLogin && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="nome" className="text-sm font-medium">Nome</Label>
+                  <Label htmlFor="nome" className="text-sm font-medium text-white/70">Nome</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                     <Input
                       id="nome"
                       placeholder="Seu nome completo"
                       value={nome}
                       onChange={(e) => setNome(e.target.value)}
-                      className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary"
+                      className="pl-10 h-11 rounded-xl bg-white/[0.06] border-white/10 text-white placeholder:text-white/25 focus:border-primary focus:bg-white/[0.1]"
                       required={!isLogin}
                     />
                   </div>
@@ -146,32 +140,32 @@ export default function Auth() {
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                <Label htmlFor="email" className="text-sm font-medium text-white/70">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary"
+                    className="pl-10 h-11 rounded-xl bg-white/[0.06] border-white/10 text-white placeholder:text-white/25 focus:border-primary focus:bg-white/[0.1]"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-white/70">Senha</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                   <Input
                     id="password"
                     type="password"
                     placeholder="Mínimo 6 caracteres"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary"
+                    className="pl-10 h-11 rounded-xl bg-white/[0.06] border-white/10 text-white placeholder:text-white/25 focus:border-primary focus:bg-white/[0.1]"
                     minLength={6}
                     required
                   />
