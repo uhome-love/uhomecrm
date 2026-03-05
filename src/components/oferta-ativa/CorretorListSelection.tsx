@@ -120,7 +120,7 @@ function ListaCard({ lista, onSelect }: { lista: OALista; onSelect: () => void }
         )}
 
         <Button size="sm" className="w-full gap-1.5" disabled={!hasLeads}>
-          <Phone className="h-3.5 w-3.5" /> {hasLeads ? "Começar Discagem" : "Lista Esgotada"}
+          <Phone className="h-3.5 w-3.5" /> {hasLeads ? "Iniciar o Call" : "Lista Esgotada"}
         </Button>
       </CardContent>
     </Card>
