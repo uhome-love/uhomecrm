@@ -1,14 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, TrendingDown, Minus, Trophy, Phone, CheckCircle, Flame, Target, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, TrendingUp, TrendingDown, Minus, Trophy, Phone, CheckCircle, Flame, Target, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart, Area,
 } from "recharts";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, isSameWeek } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface DayData {
   date: string;
@@ -24,35 +27,28 @@ interface DayData {
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function useWeeklyData() {
+function useWeeklyData(weekStart: Date) {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["corretor-weekly-summary", user?.id],
+    queryKey: ["corretor-weekly-summary", user?.id, weekStart.toISOString()],
     queryFn: async () => {
-      const now = new Date();
-      const days: DayData[] = [];
-
-      // Get start of current week (Monday)
-      const dayOfWeek = now.getDay();
-      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      const monday = new Date(now);
-      monday.setDate(now.getDate() + mondayOffset);
+      const monday = new Date(weekStart);
       monday.setHours(0, 0, 0, 0);
 
-      const endOfWeek = new Date(monday);
-      endOfWeek.setDate(monday.getDate() + 7);
+      const endOfWeekDate = new Date(monday);
+      endOfWeekDate.setDate(monday.getDate() + 7);
 
       const { data, error } = await supabase
         .from("oferta_ativa_tentativas")
         .select("canal, resultado, pontos, created_at")
         .eq("corretor_id", user!.id)
         .gte("created_at", monday.toISOString())
-        .lt("created_at", endOfWeek.toISOString());
+        .lt("created_at", endOfWeekDate.toISOString());
 
       if (error) throw error;
 
-      // Group by day
+      const days: DayData[] = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
@@ -72,17 +68,7 @@ function useWeeklyData() {
         const emails = dayItems.filter((t) => t.canal === "email").length;
         const taxa = tentativas > 0 ? Math.round((aproveitados / tentativas) * 100) : 0;
 
-        days.push({
-          date: dateStr,
-          label: `${dayLabel}\n${dayNum}`,
-          tentativas,
-          aproveitados,
-          pontos,
-          ligacoes,
-          whatsapps,
-          emails,
-          taxa,
-        });
+        days.push({ date: dateStr, label: `${dayLabel}\n${dayNum}`, tentativas, aproveitados, pontos, ligacoes, whatsapps, emails, taxa });
       }
 
       // Previous week for comparison
@@ -141,7 +127,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function CorretorWeeklySummary() {
-  const { data, isLoading } = useWeeklyData();
+  const [selectedWeek, setSelectedWeek] = useState(() => 
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
+  const isCurrentWeek = isSameWeek(selectedWeek, new Date(), { weekStartsOn: 1 });
+
+  const { data, isLoading } = useWeeklyData(selectedWeek);
 
   const totals = useMemo(() => {
     if (!data) return { tentativas: 0, aproveitados: 0, pontos: 0, taxa: 0, melhorDia: "" };
@@ -152,6 +143,9 @@ export default function CorretorWeeklySummary() {
     const melhorDia = data.days.reduce((best, d) => (d.pontos > best.pontos ? d : best), data.days[0]);
     return { tentativas, aproveitados, pontos, taxa, melhorDia: melhorDia?.label?.replace("\n", " ") || "" };
   }, [data]);
+
+  const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
+  const weekLabel = `${format(selectedWeek, "dd/MM", { locale: ptBR })} — ${format(weekEnd, "dd/MM", { locale: ptBR })}`;
 
   if (isLoading) {
     return (
@@ -165,6 +159,28 @@ export default function CorretorWeeklySummary() {
 
   return (
     <div className="space-y-4">
+      {/* Week Navigation */}
+      <div className="flex items-center justify-between">
+        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSelectedWeek(prev => subWeeks(prev, 1))}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-foreground">{weekLabel}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {isCurrentWeek ? "Semana atual" : format(selectedWeek, "'Semana de' dd 'de' MMMM", { locale: ptBR })}
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="h-8 w-8" 
+          disabled={isCurrentWeek}
+          onClick={() => setSelectedWeek(prev => addWeeks(prev, 1))}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
