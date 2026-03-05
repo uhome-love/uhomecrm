@@ -487,9 +487,6 @@ export default function CheckpointDaily() {
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
-          <Button size="sm" variant="outline" onClick={() => setShowAddCorretor(!showAddCorretor)} className="gap-1.5 text-xs">
-            <UserPlus className="h-3.5 w-3.5" /> Incluir corretor
-          </Button>
           <Button size="sm" variant="outline" onClick={syncOAData} className="gap-1.5 text-xs">
             <RefreshCw className="h-3.5 w-3.5" /> Sincronizar OA
           </Button>
