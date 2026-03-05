@@ -171,33 +171,33 @@ export default function Auth() {
         transition={{ duration: 0.8 }}
         className="relative z-10 w-full max-w-[420px] px-5"
       >
-        {/* ─── LOGO AREA ─── */}
-        <div className="flex flex-col items-center mb-6">
+        {/* ─── LOGO ─── */}
+        <div className="flex flex-col items-center mb-5">
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="relative mb-4"
+            initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            transition={{ delay: 0.05, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="relative"
           >
-            {/* Glow behind logo */}
-            <div className="absolute inset-0 -m-6 rounded-full bg-[hsl(229,100%,64%/0.15)] blur-[50px]" />
+            <div className="absolute inset-0 -m-8 rounded-full bg-[hsl(229,100%,64%/0.18)] blur-[60px]" />
             <img
               src={uhomeSalesLogo}
               alt="UhomeSales"
-              className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.35)]"
-              style={{ height: "140px", clipPath: "inset(12% 0 10% 0)", marginTop: "-8px", marginBottom: "-8px" }}
+              className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.4)]"
+              style={{ height: "170px", clipPath: "inset(10% 0 8% 0)", margin: "-12px 0" }}
             />
           </motion.div>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-[11px] text-white/30 font-medium tracking-[0.25em] uppercase text-center"
-          >
-            Plataforma de vendas imobiliárias de alta performance
-          </motion.p>
         </div>
+
+        {/* ─── TAGLINE ─── */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="text-[10px] text-white/25 font-medium tracking-[0.3em] uppercase text-center mb-6"
+        >
+          Plataforma de vendas imobiliárias de alta performance
+        </motion.p>
 
         {/* ─── LOGIN CARD ─── */}
         <motion.div
