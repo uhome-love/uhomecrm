@@ -57,6 +57,7 @@ export default function CorretorDashboard() {
   const metaVisitasM = goals?.meta_visitas_marcadas || 3;
   const progLig = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
+  const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitasM) * 100));
   const metaSalva = !!goals;
 
   const handleSaveGoals = async () => {
@@ -200,6 +201,13 @@ export default function CorretorDashboard() {
                           <span className="font-bold text-foreground">{stats.aproveitados} / {metaAproveitados}</span>
                         </div>
                         <Progress value={progAprov} className="h-2.5" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">Visitas a Marcar</span>
+                          <span className="font-bold text-foreground">{stats.visitas_marcadas} / {metaVisitasM}</span>
+                        </div>
+                        <Progress value={progVisitas} className="h-2.5" />
                       </div>
                     </div>
                   )}
