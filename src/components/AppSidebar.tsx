@@ -92,7 +92,7 @@ export function AppSidebar() {
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
         { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
         { title: "Central de Dados", url: "/central-dados", icon: BarChart3 },
-        { title: "Scripts & Follow Ups", url: "/scripts", icon: FileEdit },
+        { title: "Scripts", url: "/scripts", icon: FileEdit },
         
         { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
         { title: "Ranking Comercial", url: "/ranking", icon: Trophy },
