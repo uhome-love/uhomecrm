@@ -36,8 +36,10 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
+  const metaVisitas = goals?.meta_visitas_marcadas || 3;
   const progLig = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
+  const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitas) * 100));
 
   const lead = fila[currentIndex];
 
@@ -205,7 +207,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     <div className="space-y-3">
       {/* Daily Progress Mini-Summary with Goals */}
       <div className="p-3 rounded-xl border border-border bg-card shadow-card space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-1.5 text-sm">
             <Flame className="h-4 w-4 text-primary" />
             <span className="font-semibold text-foreground">{stats.tentativas}</span>
@@ -216,13 +218,19 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             <span className="font-semibold text-foreground">{stats.aproveitados}</span>
             <span className="text-muted-foreground text-xs">/ {metaAproveitados} aproveitados</span>
           </div>
+          <div className="flex items-center gap-1.5 text-sm">
+            <CalendarCheck className="h-4 w-4 text-amber-500" />
+            <span className="font-semibold text-foreground">{stats.visitas_marcadas}</span>
+            <span className="text-muted-foreground text-xs">/ {metaVisitas} visitas</span>
+          </div>
           {stats.tentativas >= metaLigacoes && (
             <Badge variant="secondary" className="text-[10px] gap-1">🔥 Missão cumprida!</Badge>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Progress value={progLig} className="h-1.5" />
           <Progress value={progAprov} className="h-1.5" />
+          <Progress value={progVisitas} className="h-1.5" />
         </div>
       </div>
 

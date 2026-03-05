@@ -23,8 +23,10 @@ export default function CorretorHome() {
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
+  const metaVisitasMarcar = goals?.meta_visitas_marcadas || 3;
   const progLig = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
+  const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitasMarcar) * 100));
 
   const handleSaveGoals = async () => {
     await saveGoals(parseInt(metaLig) || 30, parseInt(metaAprov) || 5, parseInt(metaVisitas) || 3);
@@ -102,6 +104,13 @@ export default function CorretorHome() {
                     <span className="font-bold text-foreground">{stats.aproveitados} / {metaAproveitados}</span>
                   </div>
                   <Progress value={progAprov} className="h-2.5" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">Visitas a Marcar</span>
+                    <span className="font-bold text-foreground">{stats.visitas_marcadas} / {metaVisitasMarcar}</span>
+                  </div>
+                  <Progress value={progVisitas} className="h-2.5" />
                 </div>
               </div>
             )}

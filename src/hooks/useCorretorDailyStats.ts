@@ -13,6 +13,7 @@ export interface CorretorDailyStats {
   tentativas: number;
   pontos: number;
   taxa_aproveitamento: number;
+  visitas_marcadas: number;
 }
 
 export function useCorretorDailyStats() {
@@ -36,6 +37,7 @@ export function useCorretorDailyStats() {
         ligacoes: 0, whatsapps: 0, emails: 0,
         aproveitados: 0, sem_interesse: 0, numero_errado: 0,
         tentativas: 0, pontos: 0, taxa_aproveitamento: 0,
+        visitas_marcadas: 0,
       };
 
       for (const t of data || []) {
@@ -53,6 +55,40 @@ export function useCorretorDailyStats() {
         ? Math.round((s.aproveitados / s.tentativas) * 100)
         : 0;
 
+      // Count visitas_marcadas from checkpoint_lines
+      try {
+        const { data: tm } = await supabase
+          .from("team_members")
+          .select("id, gerente_id")
+          .eq("user_id", user!.id)
+          .eq("status", "ativo")
+          .maybeSingle();
+
+        if (tm) {
+          const { data: cp } = await supabase
+            .from("checkpoints")
+            .select("id")
+            .eq("gerente_id", tm.gerente_id)
+            .eq("data", today.toISOString().split("T")[0])
+            .maybeSingle();
+
+          if (cp) {
+            const { data: line } = await supabase
+              .from("checkpoint_lines")
+              .select("real_visitas_marcadas")
+              .eq("checkpoint_id", cp.id)
+              .eq("corretor_id", tm.id)
+              .maybeSingle();
+
+            if (line?.real_visitas_marcadas) {
+              s.visitas_marcadas = line.real_visitas_marcadas;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao buscar visitas marcadas:", err);
+      }
+
       return s;
     },
     enabled: !!user,
@@ -65,6 +101,7 @@ export function useCorretorDailyStats() {
       ligacoes: 0, whatsapps: 0, emails: 0,
       aproveitados: 0, sem_interesse: 0, numero_errado: 0,
       tentativas: 0, pontos: 0, taxa_aproveitamento: 0,
+      visitas_marcadas: 0,
     },
     isLoading,
   };
