@@ -464,7 +464,7 @@ export default function CorretorDashboard() {
                   className="flex-1 h-14 gap-2 text-base bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:shadow-xl transition-all"
                   onClick={() => setActiveTab("discagem")}
                 >
-                  <Phone className="h-5 w-5" /> Iniciar Discagem <ArrowRight className="h-5 w-5" />
+                  <Phone className="h-5 w-5" /> Iniciar o Call <ArrowRight className="h-5 w-5" />
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
