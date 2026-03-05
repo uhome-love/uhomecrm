@@ -393,6 +393,75 @@ function AssinadoSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate
   );
 }
 
+// ─── CAIU ───
+function CaiuSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, onDelete, onAdd }: {
+  rows: PdnEntry[]; readOnly?: boolean; selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void; onUpdate: (id: string, u: Record<string, any>) => void;
+  onDelete: (id: string) => void; onAdd: () => void;
+}) {
+  const totalVgv = rows.reduce((s, e) => s + (e.vgv || 0), 0);
+  return (
+    <div className="rounded border border-border bg-card overflow-x-auto">
+      <div className="flex items-center justify-between bg-destructive/10 border-b border-border px-3 py-2">
+        <h3 className="text-sm font-bold text-destructive">❌ CAIU</h3>
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span>{rows.length} registros</span>
+          <span className="font-semibold text-foreground">VGV perdido: {formatBRL(totalVgv)}</span>
+          {!readOnly && (
+            <Button size="sm" variant="outline" className="h-6 text-[11px] gap-1" onClick={onAdd}>
+              <Plus className="h-3 w-3" /> Linha
+            </Button>
+          )}
+        </div>
+      </div>
+      <table className="w-full text-xs border-collapse" style={{ tableLayout: "fixed" }}>
+        <colgroup>
+          {!readOnly && <col style={{ width: 30 }} />}
+          <col style={{ width: "20%" }} />
+          <col style={{ width: 55 }} />
+          <col style={{ width: "16%" }} />
+          <col style={{ width: 110 }} />
+          <col style={{ width: "30%" }} />
+          {!readOnly && <col style={{ width: 36 }} />}
+        </colgroup>
+        <thead>
+          <tr className="border-b border-border bg-muted/60">
+            {!readOnly && <th className="px-1 py-1.5 border-r border-border" />}
+            <th className={thClass}>Nome</th>
+            <th className={`${thClass} text-center`}>Und</th>
+            <th className={thClass}>Produto</th>
+            <th className={`${thClass} text-right`}>VGV (R$)</th>
+            <th className={thClass}>Motivo da Queda</th>
+            {!readOnly && <th className="px-1 py-1.5" />}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((e, i) => (
+            <tr key={e.id} className={`border-b border-border hover:bg-muted/20 group align-top ${i % 2 ? "bg-muted/5" : ""}`}>
+              {!readOnly && <td className="px-1 py-1 text-center border-r border-border"><Checkbox checked={selectedIds.has(e.id)} onCheckedChange={() => onToggleSelect(e.id)} /></td>}
+              <td className={tdClass}>{readOnly ? <span className="px-1">{e.nome}</span> : <Cell value={e.nome} field="nome" id={e.id} onUpdate={onUpdate} placeholder="Nome" />}</td>
+              <td className={`${tdClass} text-center`}>{readOnly ? e.und : <Cell value={e.und || ""} field="und" id={e.id} onUpdate={onUpdate} className="text-center" placeholder="—" />}</td>
+              <td className={tdClass}>{readOnly ? <span className="px-1">{e.empreendimento}</span> : <Cell value={e.empreendimento || ""} field="empreendimento" id={e.id} onUpdate={onUpdate} placeholder="Produto" />}</td>
+              <td className={`${tdClass} text-right`}>
+                {readOnly ? <span className="px-1">{formatBRL(e.vgv)}</span> : (
+                  <CurrencyCell value={e.vgv} field="vgv" id={e.id} onUpdate={onUpdate} />
+                )}
+              </td>
+              <td className={tdClass}>{readOnly ? <span className="whitespace-pre-wrap px-1">{e.motivo_queda}</span> : <TextCell value={(e as any).motivo_queda || ""} field="motivo_queda" id={e.id} onUpdate={onUpdate} placeholder="Motivo da queda..." />}</td>
+              {!readOnly && (
+                <td className="px-1 py-0.5">
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive opacity-0 group-hover:opacity-100" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                </td>
+              )}
+            </tr>
+          ))}
+          {rows.length === 0 && <tr><td colSpan={readOnly ? 5 : 7} className="text-center py-6 text-muted-foreground">Nenhum negócio perdido.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ─── Main Component ───
 export default function PdnTable({ entries, readOnly, selectedIds, onToggleSelect, onUpdate, onDelete, onAdd, searchTerm, filterCorretor }: Props) {
   const filtered = entries.filter(e => {
@@ -404,12 +473,14 @@ export default function PdnTable({ entries, readOnly, selectedIds, onToggleSelec
   const visitas = filtered.filter(e => e.situacao === "visita");
   const gerados = filtered.filter(e => e.situacao === "gerado");
   const assinados = filtered.filter(e => e.situacao === "assinado");
+  const caidos = filtered.filter(e => e.situacao === "caiu");
 
   return (
     <div className="space-y-6">
       <VisitaSection rows={visitas} readOnly={readOnly} selectedIds={selectedIds} onToggleSelect={onToggleSelect} onUpdate={onUpdate} onDelete={onDelete} onAdd={() => onAdd("visita")} />
       <GeradoSection rows={gerados} readOnly={readOnly} selectedIds={selectedIds} onToggleSelect={onToggleSelect} onUpdate={onUpdate} onDelete={onDelete} onAdd={() => onAdd("gerado")} />
       <AssinadoSection rows={assinados} readOnly={readOnly} selectedIds={selectedIds} onToggleSelect={onToggleSelect} onUpdate={onUpdate} onDelete={onDelete} onAdd={() => onAdd("assinado")} />
+      <CaiuSection rows={caidos} readOnly={readOnly} selectedIds={selectedIds} onToggleSelect={onToggleSelect} onUpdate={onUpdate} onDelete={onDelete} onAdd={() => onAdd("caiu")} />
     </div>
   );
 }
