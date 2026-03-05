@@ -8,6 +8,7 @@ import {
   Crown,
   Home,
   FileEdit,
+  Bot,
   FileBarChart,
   TrendingUp,
   FileSpreadsheet,
@@ -83,6 +84,7 @@ export function AppSidebar() {
       ]
     : [
         { title: "Central do Corretor", url: "/corretor", icon: Phone },
+        { title: "HOMI Assistente", url: "/homi", icon: Bot },
         { title: "Resumo Semanal", url: "/corretor/resumo", icon: BarChart3 },
       ];
 

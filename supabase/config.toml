@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.parse-marketing-report]
 verify_jwt = false
+
+[functions.homi-assistant]
+verify_jwt = false
