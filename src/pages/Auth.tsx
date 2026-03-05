@@ -172,7 +172,7 @@ export default function Auth() {
         className="relative z-10 w-full max-w-[420px] px-5"
       >
         {/* ─── LOGO ─── */}
-        <div className="flex flex-col items-center mb-2">
+        <div className="flex flex-col items-center mb-0">
           <motion.div
             initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
@@ -184,7 +184,7 @@ export default function Auth() {
               src={uhomeSalesLogo}
               alt="UhomeSales"
               className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.4)]"
-              style={{ height: "170px", clipPath: "inset(10% 0 8% 0)", margin: "-12px 0" }}
+              style={{ height: "200px", clipPath: "inset(10% 0 8% 0)", margin: "-16px 0" }}
             />
           </motion.div>
         </div>
