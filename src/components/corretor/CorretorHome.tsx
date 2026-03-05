@@ -37,9 +37,9 @@ export default function CorretorHome() {
 
   // Gamification level
   const totalPontos = stats.pontos;
-  const level = totalPontos >= 100 ? "Lenda" : totalPontos >= 50 ? "Top Closer" : totalPontos >= 30 ? "Elite" : totalPontos >= 15 ? "Pro" : "Iniciante";
-  const levelColor = totalPontos >= 100 ? "text-amber-500" : totalPontos >= 50 ? "text-purple-500" : totalPontos >= 30 ? "text-primary" : totalPontos >= 15 ? "text-emerald-500" : "text-muted-foreground";
-  const nextLevel = totalPontos >= 100 ? 100 : totalPontos >= 50 ? 100 : totalPontos >= 30 ? 50 : totalPontos >= 15 ? 30 : 15;
+  const level = totalPontos >= 50 ? "👑 Lenda" : totalPontos >= 30 ? "⭐ Mestre" : totalPontos >= 15 ? "🔥 Veterano" : totalPontos >= 5 ? "💪 Ativo" : "🌱 Iniciante";
+  const levelColor = totalPontos >= 50 ? "text-amber-500" : totalPontos >= 30 ? "text-purple-500" : totalPontos >= 15 ? "text-orange-500" : totalPontos >= 5 ? "text-emerald-500" : "text-muted-foreground";
+  const nextLevel = totalPontos >= 50 ? 50 : totalPontos >= 30 ? 50 : totalPontos >= 15 ? 30 : totalPontos >= 5 ? 15 : 5;
   const levelProgress = Math.min(100, Math.round((totalPontos / nextLevel) * 100));
 
   return (
