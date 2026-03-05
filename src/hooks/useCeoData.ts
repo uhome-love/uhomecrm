@@ -89,7 +89,8 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     const { data: cps } = await cpQuery;
 
     const cpIds = (cps || []).map(c => c.id);
-    const gerenteIdsFromCps = [...new Set((cps || []).map(c => c.gerente_id))];
+    // Only include gerente_ids that actually have the 'gestor' role (exclude admin-only like CEO)
+    const gerenteIdsFromCps = [...new Set((cps || []).map(c => c.gerente_id))].filter(id => gerenteUserIds.has(id));
     
     // Even with no checkpoints, still load PDN data
     // Get gerente IDs from either checkpoints or the filter
