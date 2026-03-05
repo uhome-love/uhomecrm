@@ -49,8 +49,8 @@ export default function HomeDashboard() {
   });
   // Lead recovery
   const [recovery, setRecovery] = useState({ reativados: 0, respondidos: 0, visitas: 0 });
-  // Checkpoint daily stats
-  const [cpStats, setCpStats] = useState({ total_checkpoints: 0, total_corretores: 0, presentes: 0, ausentes: 0 });
+  // Checkpoint daily stats + OA realtime
+  const [cpStats, setCpStats] = useState({ total_checkpoints: 0, total_corretores: 0, presentes: 0, ausentes: 0, oa_ligacoes: 0, oa_aproveitados: 0 });
 
   useEffect(() => {
     if (!user) return;
@@ -96,18 +96,40 @@ export default function HomeDashboard() {
   const fetchCheckpoint = useCallback(async () => {
     if (!user) return;
     const today = format(new Date(), "yyyy-MM-dd");
+    const todayStart = `${today}T00:00:00`;
+    const todayEnd = `${today}T23:59:59`;
+
+    // Checkpoint data
     let cpQ = supabase.from("checkpoints").select("id").eq("data", today);
     if (!isAdmin) cpQ = cpQ.eq("gerente_id", user.id);
     const { data: cps } = await cpQ;
     const cpIds = (cps || []).map(c => c.id);
-    if (cpIds.length === 0) {
-      setCpStats({ total_checkpoints: cps?.length || 0, total_corretores: 0, presentes: 0, ausentes: 0 });
-      return;
+
+    let total = 0, presentes = 0;
+    if (cpIds.length > 0) {
+      const { data: lines } = await supabase.from("checkpoint_lines").select("real_presenca").in("checkpoint_id", cpIds);
+      total = (lines || []).length;
+      presentes = (lines || []).filter(l => l.real_presenca === "sim" || l.real_presenca === "presente").length;
     }
-    const { data: lines } = await supabase.from("checkpoint_lines").select("real_presenca").in("checkpoint_id", cpIds);
-    const total = (lines || []).length;
-    const presentes = (lines || []).filter(l => l.real_presenca === "sim" || l.real_presenca === "presente").length;
-    setCpStats({ total_checkpoints: cps?.length || 0, total_corretores: total, presentes, ausentes: total - presentes });
+
+    // OA tentativas do dia (fonte em tempo real de ligações)
+    const { data: oaTentativas } = await supabase
+      .from("oferta_ativa_tentativas")
+      .select("resultado")
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd);
+
+    const oa_ligacoes = (oaTentativas || []).length;
+    const oa_aproveitados = (oaTentativas || []).filter(t => t.resultado === "com_interesse").length;
+
+    setCpStats({
+      total_checkpoints: cps?.length || 0,
+      total_corretores: total,
+      presentes,
+      ausentes: total - presentes,
+      oa_ligacoes,
+      oa_aproveitados,
+    });
   }, [user, isAdmin]);
 
   useEffect(() => { fetchCheckpoint(); }, [fetchCheckpoint]);
@@ -130,6 +152,9 @@ export default function HomeDashboard() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "checkpoints" }, () => {
         reload();
+        fetchCheckpoint();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "oferta_ativa_tentativas" }, () => {
         fetchCheckpoint();
       })
       .subscribe();
@@ -382,12 +407,20 @@ export default function HomeDashboard() {
                 </div>
                 <HotStat icon={Users} label="Presentes" value={cpStats.presentes} color="text-success" />
                 <HotStat icon={AlertTriangle} label="Ausentes" value={cpStats.ausentes} color="text-destructive" />
-                <div className="pt-2 border-t border-border/50">
+                <div className="pt-2 border-t border-border/50 space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Ligações OA (hoje)</span>
+                    <span className="font-bold text-primary">{cpStats.oa_ligacoes}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Aproveitados OA (hoje)</span>
+                    <span className="font-bold text-success">{cpStats.oa_aproveitados}</span>
+                  </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Ligações (checkpoint)</span>
                     <span className="font-bold">{companyTotals.real_ligacoes}</span>
                   </div>
-                  <div className="flex justify-between text-xs mt-1">
+                  <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Propostas (checkpoint)</span>
                     <span className="font-bold">{companyTotals.real_propostas}</span>
                   </div>
