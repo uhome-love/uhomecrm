@@ -164,32 +164,36 @@ export default function HomeDashboard() {
 
   useEffect(() => { fetchCheckpoint(); }, [fetchCheckpoint]);
 
-  // Realtime: auto-refresh on PDN or checkpoint changes
+  // Realtime: auto-refresh with debounce to prevent event storms
   useEffect(() => {
+    let pdnTimer: ReturnType<typeof setTimeout> | null = null;
+    let cpTimer: ReturnType<typeof setTimeout> | null = null;
+    const DEBOUNCE_MS = 1500;
+
+    const debouncedPdn = () => {
+      if (pdnTimer) clearTimeout(pdnTimer);
+      pdnTimer = setTimeout(() => { fetchPdn(); reload(); }, DEBOUNCE_MS);
+    };
+    const debouncedCp = () => {
+      if (cpTimer) clearTimeout(cpTimer);
+      cpTimer = setTimeout(() => { reload(); fetchCheckpoint(); }, DEBOUNCE_MS);
+    };
+
     const pdnChannel = supabase
       .channel("home-pdn-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "pdn_entries" }, () => {
-        fetchPdn();
-        reload();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pdn_entries" }, debouncedPdn)
       .subscribe();
 
     const cpChannel = supabase
       .channel("home-checkpoint-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoint_lines" }, () => {
-        reload();
-        fetchCheckpoint();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoints" }, () => {
-        reload();
-        fetchCheckpoint();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "oferta_ativa_tentativas" }, () => {
-        fetchCheckpoint();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoint_lines" }, debouncedCp)
+      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoints" }, debouncedCp)
+      .on("postgres_changes", { event: "*", schema: "public", table: "oferta_ativa_tentativas" }, debouncedCp)
       .subscribe();
 
     return () => {
+      if (pdnTimer) clearTimeout(pdnTimer);
+      if (cpTimer) clearTimeout(cpTimer);
       supabase.removeChannel(pdnChannel);
       supabase.removeChannel(cpChannel);
     };
@@ -443,7 +447,7 @@ export default function HomeDashboard() {
                     <span className="font-bold text-primary">{cpStats.oa_ligacoes}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Aproveitados OA (hoje)</span>
+                    <span className="text-muted-foreground">Interessados OA (hoje)</span>
                     <span className="font-bold text-success">{cpStats.oa_aproveitados}</span>
                   </div>
                   <div className="flex justify-between text-xs">

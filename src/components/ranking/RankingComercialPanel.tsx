@@ -36,7 +36,7 @@ export default function RankingComercialPanel() {
   const { isAdmin, isGestor } = useUserRole();
   const { user } = useAuth();
   const [period, setPeriod] = useState<PeriodOption>("semana");
-  const [metric, setMetric] = useState<RankMetric>("score");
+  const [metric, setMetric] = useState<RankMetric>("vgv_assinado");
 
   const filterGerenteId = isAdmin ? undefined : user?.id;
   const { gerentes, allCorretores, loading } = useCeoData(period as CeoPeriod, undefined, undefined, filterGerenteId);
@@ -111,7 +111,7 @@ export default function RankingComercialPanel() {
         <div>
           <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
             <Trophy className="h-6 w-6 text-warning" />
-            Ranking Comercial
+            Ranking Comercial (VGV)
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isAdmin ? "Visão completa da empresa" : "Ranking da sua equipe"}

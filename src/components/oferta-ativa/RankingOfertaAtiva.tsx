@@ -195,7 +195,7 @@ export default function RankingOfertaAtiva() {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <ThumbsUp className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs text-muted-foreground">Aproveitados</span>
+              <span className="text-xs text-muted-foreground">Interessados</span>
             </div>
             <p className="text-2xl font-bold text-emerald-600">{totals.aproveitados}</p>
           </CardContent>
@@ -251,7 +251,7 @@ export default function RankingOfertaAtiva() {
                     <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
                       <span>📞 {c.ligacoes} lig.</span>
                       <span>💬 {c.whatsapps} wpp</span>
-                      <span className="text-emerald-600">✅ {c.aproveitados} aprov.</span>
+                      <span className="text-emerald-600">✅ {c.aproveitados} int.</span>
                       <span>❌ {c.sem_interesse} s/int.</span>
                       <span>📵 {c.nao_atendeu} n/at.</span>
                     </div>
