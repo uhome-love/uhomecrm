@@ -115,13 +115,13 @@ export function AppSidebar() {
       ]
     : [];
 
-  const renderGroup = (label: string, items: typeof homeItems) => (
-    <SidebarGroup>
-      <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold mb-1">
+  const renderGroup = (label: string, items: typeof homeItems, index: number) => (
+    <SidebarGroup key={label} className="animate-fade-in" style={{ animationDelay: `${index * 80}ms` }}>
+      <SidebarGroupLabel className="text-sidebar-foreground/35 uppercase text-[10px] tracking-[0.15em] font-bold mb-1.5 px-3">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className="space-y-0.5">
           {items.map((item) => {
             const badgeCount = badges[item.url] || 0;
             return (
@@ -130,13 +130,15 @@ export function AppSidebar() {
                   <NavLink
                     to={item.url}
                     end
-                    className="hover:bg-sidebar-accent/60 transition-colors rounded-lg relative"
-                    activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-2 border-sidebar-primary"
+                    className="group/nav hover:bg-sidebar-accent/70 transition-all duration-200 rounded-lg relative py-2.5 px-3"
+                    activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary shadow-[inset_0_0_20px_hsl(231_100%_65%/0.05)]"
                   >
-                    <item.icon className="mr-2.5 h-4 w-4 shrink-0" />
-                    {!collapsed && <span className="text-[13px]">{item.title}</span>}
+                    <item.icon className="mr-2.5 h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                    {!collapsed && (
+                      <span className="text-[13px] transition-colors duration-200">{item.title}</span>
+                    )}
                     {badgeCount > 0 && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 animate-pulse-soft">
                         {badgeCount}
                       </span>
                     )}
@@ -150,33 +152,37 @@ export function AppSidebar() {
     </SidebarGroup>
   );
 
+  const groups = [
+    { label: "Principal", items: homeItems },
+    ...(gestorItems.length > 0 ? [{ label: "Gestão Comercial", items: gestorItems }] : []),
+    ...(ceoItems.length > 0 ? [{ label: "Inteligência CEO", items: ceoItems }] : []),
+    ...(adminItems.length > 0 ? [{ label: "Sistema", items: adminItems }] : []),
+  ];
+
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent>
+      <SidebarContent className="scrollbar-thin">
         {/* Logo Section */}
-        <div className="flex items-center gap-3 px-4 py-6 border-b border-sidebar-border">
+        <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border/50">
           {collapsed ? (
             <div className="flex h-12 w-12 items-center justify-center shrink-0">
-              <img src={logoSymbol} alt="UHome" className="h-12 w-auto" />
+              <img src={logoSymbol} alt="UHome" className="h-12 w-auto transition-transform duration-300 hover:scale-105" />
             </div>
           ) : (
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 animate-slide-in-left">
               <img src={logoHorizontal} alt="UHome" className="h-14 w-auto" />
               <div className="flex flex-col">
-                <span className="text-[10px] font-semibold text-sidebar-primary tracking-wider uppercase">Gestão & IA</span>
+                <span className="text-[10px] font-bold text-sidebar-primary tracking-[0.12em] uppercase">Gestão & IA</span>
               </div>
             </div>
           )}
         </div>
 
-        {renderGroup("Principal", homeItems)}
-        {gestorItems.length > 0 && renderGroup("Gestão Comercial", gestorItems)}
-        {ceoItems.length > 0 && renderGroup("Inteligência CEO", ceoItems)}
-        {adminItems.length > 0 && renderGroup("Sistema", adminItems)}
+        {groups.map((g, i) => renderGroup(g.label, g.items, i))}
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center gap-2.5 p-3 border-t border-sidebar-border">
+        <div className="flex items-center gap-2.5 p-3 border-t border-sidebar-border/50 bg-sidebar-accent/20">
           <AvatarUpload
             avatarUrl={profile.avatar_url}
             nome={profile.nome || user?.email || ""}
@@ -185,8 +191,11 @@ export function AppSidebar() {
           />
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium text-sidebar-foreground truncate">
+              <p className="text-[11px] font-semibold text-sidebar-foreground truncate">
                 {profile.nome || user?.email}
+              </p>
+              <p className="text-[9px] text-sidebar-foreground/40 font-medium uppercase tracking-wider">
+                {isAdmin ? "Admin" : isGestor ? "Gestor" : "Corretor"}
               </p>
             </div>
           )}
@@ -194,7 +203,7 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             onClick={signOut}
-            className="h-7 w-7 p-0 shrink-0 text-sidebar-foreground/50 hover:text-destructive hover:bg-transparent"
+            className="h-7 w-7 p-0 shrink-0 text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all duration-200 rounded-lg"
           >
             <LogOut className="h-3.5 w-3.5" />
           </Button>
