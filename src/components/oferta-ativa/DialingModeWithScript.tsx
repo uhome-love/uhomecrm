@@ -80,8 +80,10 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     if (!lead) return;
     setActionTaken(canal);
 
-    if (canal === "ligacao" && lead.telefone) {
-      window.open(`tel:${lead.telefone}`, "_self");
+    if (canal === "ligacao") {
+      // Não redireciona — corretor liga manualmente pelo celular
+      setTimeout(() => setShowModal(true), 300);
+      return;
     } else if (canal === "whatsapp" && lead.telefone) {
       const phone = lead.telefone.replace(/\D/g, "");
       const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
