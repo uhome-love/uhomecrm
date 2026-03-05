@@ -6,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-// Use public/ paths for predictable URLs that can be preloaded in index.html
+// Use public/ path for predictable URL that can be preloaded in index.html
 const uhomeSalesLogo = "/images/uhomesales-logo.png";
-const homiMascot = "/images/homi-mascot.png";
 
 /* ─── CSS-only animations (zero JS overhead) ─── */
 const animationStyles = `
@@ -330,14 +329,7 @@ export default function Auth() {
         <div className="flex items-center justify-center gap-2.5 mt-10 anim-fade-in anim-delay-2">
           <div className="relative anim-gentle-bounce">
             <div className="absolute inset-0 -m-1 rounded-full bg-[hsl(229,100%,64%/0.15)] blur-md" />
-            <img
-              src={homiMascot}
-              alt="Homi"
-              width={32}
-              height={32}
-              loading="lazy"
-              className="relative h-8 w-8 object-contain"
-            />
+            <span className="relative text-2xl" role="img" aria-label="Homi">🏠</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3 w-3 text-[hsl(229,100%,64%/0.5)]" />
