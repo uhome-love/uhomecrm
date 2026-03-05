@@ -67,10 +67,23 @@ ARGUMENTOS DE VENDA: Morar em condomínio com estrutura de resort, lazer complet
 ESTRATÉGIA DE CONVERSÃO: 1) Entender perfil. 2) Apresentar conceito de condomínio resort. 3) Destacar estrutura de lazer. 4) Convidar para conhecer. Pergunta final: "Faz sentido você conhecer o projeto pessoalmente? Prefere durante a semana ou no fim de semana?"
 OBJETIVO: Converter leads em visitas. A visita aumenta significativamente a conversão porque o cliente visualiza a infraestrutura completa.`,
 
-  "Orygem": `EMPREENDIMENTO: Orygem
-Conceito inovador de moradia com design contemporâneo e diferenciais exclusivos. Projeto com identidade própria e proposta diferenciada no mercado.
-DIFERENCIAIS: Design contemporâneo, conceito inovador, diferenciais exclusivos.
-ESTRATÉGIA: Despertar curiosidade pelo conceito único. Convidar para visita para experimentar a proposta.`,
+  "Orygem": `EMPREENDIMENTO: Orygem Residence Club
+INCORPORADORA: Encorp Empreendimentos
+LOCALIZAÇÃO: Av. Engenheiro Ludolfo Boehl, 931 – Bairro Teresópolis – Porto Alegre/RS
+CONCEITO: Condomínio fechado de casas que combina natureza, segurança e infraestrutura de lazer completa. Para quem quer morar em casa com mais espaço e privacidade dentro de condomínio seguro com estrutura de clube. Qualidade de vida, áreas verdes e ambiente ideal para famílias.
+TIPOLOGIAS: Casas de 2 e 3 dormitórios. Metragens: 150m² e 173m². Todas com 3 pavimentos e 2 vagas de garagem.
+CARACTERÍSTICAS: Pátio privativo com churrasqueira, opção de terraço no 3º pavimento, espera para lareira, espera para piscina ou spa, ambientes amplos e integrados, projeto moderno com 3 pavimentos.
+LAZER DO CONDOMÍNIO: Piscina adulto e infantil, spa, academia, salão de festas, espaço gourmet, brinquedoteca, playground, quadra esportiva, beach tennis, sala de jogos, coworking, quiosques gourmet, fogo de chão, pet place, áreas de convivência ao ar livre.
+LOCALIZAÇÃO DETALHADA: Bairro Teresópolis, região residencial com fácil acesso às principais vias. Acesso rápido à zona sul e zona norte. Próximo de escolas, supermercados e serviços.
+PERFIL DE CLIENTE IDEAL: Sair do apartamento e morar em casa, mais espaço para família, segurança de condomínio, pátio privativo, natureza e áreas verdes, qualidade de vida. Famílias com filhos, casais que buscam mais espaço, upgrade de moradia.
+DIFERENCIAIS PRINCIPAIS: Condomínio fechado de casas, casas amplas com 3 pavimentos, pátio privativo, lazer completo, contato com natureza, projeto moderno, segurança.
+OBJEÇÕES E RESPOSTAS:
+- "Prefiro apartamento" → Orygem oferece liberdade de morar em casa COM segurança de condomínio.
+- "Região mais afastada" → Bairro com boa mobilidade, mais espaço e qualidade de vida que regiões centrais.
+- "Valor mais alto que apartamento" → Comparar com custo de casas em regiões centrais + destacar espaço e infraestrutura.
+ARGUMENTOS DE VENDA: Morar em casa com segurança de condomínio, mais espaço para família, pátio privativo, lazer completo, qualidade de vida e natureza.
+ESTRATÉGIA DE CONVERSÃO: 1) Entender perfil. 2) Explicar conceito de condomínio de casas. 3) Mostrar diferenciais de espaço e lazer. 4) Convidar para visita. Pergunta final: "Faz sentido eu te mostrar o projeto pessoalmente? Prefere durante a semana ou no fim de semana?"
+OBJETIVO: Converter leads em visitas. A visita é essencial para entender o conceito e visualizar o espaço das casas.`,
 
   "Casa Bastian": `EMPREENDIMENTO: Casa Bastian
 Residencial de alto padrão com acabamentos diferenciados e projeto arquitetônico único. Produto premium para clientes exigentes.
