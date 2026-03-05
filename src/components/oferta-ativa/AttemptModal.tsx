@@ -31,7 +31,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
     if (feedback.trim().length < 10) { toast.error("Feedback mínimo de 10 caracteres"); return; }
     setSubmitting(true);
     try {
-      await onSubmit(resultado, feedback.trim(), resultado === "com_interesse" ? visitaMarcada : false);
+      await onSubmit(resultado, feedback.trim(), visitaMarcada);
       setResultado("");
       setFeedback("");
       setVisitaMarcada(false);
@@ -57,7 +57,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
               return (
                 <button
                   key={r.key}
-                  onClick={() => { setResultado(r.key); if (r.key !== "com_interesse") setVisitaMarcada(false); }}
+                  onClick={() => setResultado(r.key)}
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                     selected ? `${r.color} ring-2 ring-offset-2 ring-current` : "border-border hover:border-muted-foreground/30"
                   }`}
@@ -69,8 +69,8 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
             })}
           </div>
 
-          {/* Marquei Visita checkbox — only when com_interesse */}
-          {resultado === "com_interesse" && (
+          {/* Marquei Visita checkbox — always visible when a result is selected */}
+          {resultado && (
             <div
               className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                 visitaMarcada
