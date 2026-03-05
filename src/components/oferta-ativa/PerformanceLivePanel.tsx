@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Activity, Users, Phone, ThumbsUp, AlertTriangle, TrendingUp, Zap } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 interface CorretorLive {
   corretor_id: string;
@@ -36,14 +36,41 @@ interface Props {
   teamOnly?: boolean;
 }
 
+function getTodayStart() {
+  const d = new Date();
+  d.setHours(3, 0, 0, 0);
+  if (d > new Date()) d.setDate(d.getDate() - 1);
+  return d.toISOString();
+}
+
 export default function PerformanceLivePanel({ teamOnly = false }: Props) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [now, setNow] = useState(new Date());
+  const todayStartRef = useRef(getTodayStart());
 
+  // Refresh "now" every 30s for status calculations
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Subscribe to realtime changes on tentativas for instant updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("oa-live-tentativas")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "oferta_ativa_tentativas" },
+        () => {
+          // Invalidate live data on any new attempt
+          queryClient.invalidateQueries({ queryKey: ["oa-performance-live"] });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   // Fetch team member user_ids when teamOnly
   const { data: teamMemberUserIds } = useQuery({
@@ -57,55 +84,65 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
       return (data || []).map(t => t.user_id).filter(Boolean) as string[];
     },
     enabled: !!user && teamOnly,
+    staleTime: 60000,
   });
 
-  const todayStart = new Date();
-  todayStart.setHours(3, 0, 0, 0);
-  if (todayStart > now) todayStart.setDate(todayStart.getDate() - 1);
-
   const teamFilter = teamOnly ? teamMemberUserIds : null;
-  // Don't fetch until team is loaded when teamOnly
   const ready = !teamOnly || (teamFilter && teamFilter.length > 0);
 
   const { data: liveData, isLoading } = useQuery({
-    queryKey: ["oa-performance-live", todayStart.toISOString(), now.getTime(), teamFilter?.join(",") ?? "all"],
+    queryKey: ["oa-performance-live", todayStartRef.current, teamFilter?.join(",") ?? "all"],
     queryFn: async () => {
+      const todayStart = todayStartRef.current;
+      const currentNow = new Date();
+
+      // 1. Fetch all today's tentativas in one query
       let tentativasQuery = supabase
         .from("oferta_ativa_tentativas")
         .select("corretor_id, canal, resultado, created_at")
-        .gte("created_at", todayStart.toISOString())
+        .gte("created_at", todayStart)
         .order("created_at", { ascending: false });
 
       if (teamFilter && teamFilter.length > 0) {
         tentativasQuery = tentativasQuery.in("corretor_id", teamFilter);
       }
 
-      const { data: tentativas } = await tentativasQuery;
-
-      // Active locks
-      const { data: activeLocks } = await supabase
+      // 2. Fetch active locks
+      const locksQuery = supabase
         .from("oferta_ativa_leads")
         .select("em_atendimento_por, em_atendimento_ate")
         .not("em_atendimento_por", "is", null)
-        .gt("em_atendimento_ate", now.toISOString());
+        .gt("em_atendimento_ate", currentNow.toISOString());
 
-      let filteredLocks = activeLocks || [];
+      // 3. Fetch listas
+      const listasQuery = supabase
+        .from("oferta_ativa_listas")
+        .select("id, nome, empreendimento, total_leads, status")
+        .eq("status", "liberada");
+
+      // Run all 3 in parallel
+      const [tentativasRes, locksRes, listasRes] = await Promise.all([
+        tentativasQuery,
+        locksQuery,
+        listasQuery,
+      ]);
+
+      const tentativas = tentativasRes.data || [];
+      let activeLocks = locksRes.data || [];
+      const listas = listasRes.data || [];
+
       if (teamFilter) {
-        filteredLocks = filteredLocks.filter(l => teamFilter.includes(l.em_atendimento_por!));
+        activeLocks = activeLocks.filter(l => teamFilter.includes(l.em_atendimento_por!));
       }
-      const activeCorretorIds = new Set(filteredLocks.map(l => l.em_atendimento_por));
+      const activeCorretorIds = new Set(activeLocks.map(l => l.em_atendimento_por));
 
       // Group by corretor
       const byCorretor: Record<string, {
-        corretor_id: string;
-        tentativas: number;
-        aproveitados: number;
-        ultima_tentativa: string | null;
-        ligacoes: number;
-        whatsapps: number;
+        corretor_id: string; tentativas: number; aproveitados: number;
+        ultima_tentativa: string | null; ligacoes: number; whatsapps: number;
       }> = {};
 
-      for (const t of tentativas || []) {
+      for (const t of tentativas) {
         if (!byCorretor[t.corretor_id]) {
           byCorretor[t.corretor_id] = {
             corretor_id: t.corretor_id, tentativas: 0, aproveitados: 0,
@@ -122,7 +159,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
         }
       }
 
-      // Profiles
+      // Fetch profiles for all relevant IDs
       const allIds = new Set([...Object.keys(byCorretor), ...activeCorretorIds].filter(Boolean) as string[]);
       const profileMap: Record<string, string> = {};
       if (allIds.size > 0) {
@@ -145,7 +182,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
 
       const corretores: CorretorLive[] = Object.values(byCorretor).map(c => {
         const minutosParado = c.ultima_tentativa
-          ? differenceInMinutes(now, new Date(c.ultima_tentativa))
+          ? differenceInMinutes(currentNow, new Date(c.ultima_tentativa))
           : 999;
         let status: CorretorLive["status"] = "parado";
         if (activeCorretorIds.has(c.corretor_id)) status = "discando";
@@ -156,34 +193,40 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
       const statusOrder = { discando: 0, ativo: 1, parado: 2 };
       corretores.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || b.tentativas - a.tentativas);
 
-      // Lista progress
-      const { data: listas } = await supabase
-        .from("oferta_ativa_listas")
-        .select("id, nome, empreendimento, total_leads, status")
-        .eq("status", "liberada");
+      // 4. Fetch ALL leads for active listas in ONE query instead of N queries
+      const listaIds = listas.map(l => l.id);
+      let listaProgress: ListaProgress[] = [];
 
-      const listaProgress: ListaProgress[] = [];
-      for (const lista of listas || []) {
-        const { data: leads } = await supabase
+      if (listaIds.length > 0) {
+        const { data: allLeads } = await supabase
           .from("oferta_ativa_leads")
-          .select("status")
-          .eq("lista_id", lista.id);
-        const all = leads || [];
-        const na_fila = all.filter(l => l.status === "na_fila").length;
-        const aproveitados = all.filter(l => l.status === "aproveitado" || l.status === "concluido").length;
-        const descartados = all.filter(l => l.status === "descartado").length;
-        const em_cooldown = all.filter(l => l.status === "em_cooldown").length;
-        const total = all.length;
-        const worked = aproveitados + descartados;
-        listaProgress.push({
-          lista_id: lista.id, nome: lista.nome, empreendimento: lista.empreendimento,
-          total, na_fila, aproveitados, descartados, em_cooldown,
-          percent_complete: total > 0 ? Math.round((worked / total) * 100) : 0,
+          .select("lista_id, status")
+          .in("lista_id", listaIds);
+
+        const leadsByLista: Record<string, Array<{ status: string }>> = {};
+        for (const lead of allLeads || []) {
+          if (!leadsByLista[lead.lista_id]) leadsByLista[lead.lista_id] = [];
+          leadsByLista[lead.lista_id].push(lead);
+        }
+
+        listaProgress = listas.map(lista => {
+          const all = leadsByLista[lista.id] || [];
+          const na_fila = all.filter(l => l.status === "na_fila").length;
+          const aproveitados = all.filter(l => l.status === "aproveitado" || l.status === "concluido").length;
+          const descartados = all.filter(l => l.status === "descartado").length;
+          const em_cooldown = all.filter(l => l.status === "em_cooldown").length;
+          const total = all.length;
+          const worked = aproveitados + descartados;
+          return {
+            lista_id: lista.id, nome: lista.nome, empreendimento: lista.empreendimento,
+            total, na_fila, aproveitados, descartados, em_cooldown,
+            percent_complete: total > 0 ? Math.round((worked / total) * 100) : 0,
+          };
         });
       }
 
-      const totalTentativas = tentativas?.length || 0;
-      const totalAproveitados = (tentativas || []).filter(t => t.resultado === "com_interesse").length;
+      const totalTentativas = tentativas.length;
+      const totalAproveitados = tentativas.filter(t => t.resultado === "com_interesse").length;
       const taxaConversao = totalTentativas > 0 ? Math.round((totalAproveitados / totalTentativas) * 100) : 0;
       const corretoresAtivos = corretores.filter(c => c.status !== "parado").length;
       const corretoresParados = corretores.filter(c => c.status === "parado" && c.minutos_parado > 20).length;
@@ -196,7 +239,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
     },
     enabled: !!user && !!ready,
     refetchInterval: 30000,
-    staleTime: 15000,
+    staleTime: 10000,
   });
 
   if (isLoading || (teamOnly && !teamMemberUserIds)) {
@@ -246,7 +289,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
           <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
         </span>
         <span className="text-xs font-medium text-muted-foreground">
-          {teamOnly ? "Minha equipe · " : ""}Atualização a cada 30s · {format(now, "HH:mm:ss")}
+          {teamOnly ? "Minha equipe · " : ""}Tempo real · {format(now, "HH:mm:ss")}
         </span>
       </div>
 
