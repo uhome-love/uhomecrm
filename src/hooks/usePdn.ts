@@ -5,7 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-export type PdnSituacao = "visita" | "gerado" | "assinado";
+export type PdnSituacao = "visita" | "gerado" | "assinado" | "caiu";
 
 export interface PdnEntry {
   id: string;
@@ -29,6 +29,7 @@ export interface PdnEntry {
   vgv: number | null;
   quando_assina: string | null;
   status_pagamento: string | null;
+  motivo_queda: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -139,6 +140,7 @@ export function usePdn(selectedMes?: string, filterGerenteId?: string) {
   const visitas = entries.filter(e => e.situacao === "visita");
   const gerados = entries.filter(e => e.situacao === "gerado");
   const assinados = entries.filter(e => e.situacao === "assinado");
+  const caidos = entries.filter(e => e.situacao === "caiu");
 
   const stats = {
     total: entries.length,
@@ -151,8 +153,10 @@ export function usePdn(selectedMes?: string, filterGerenteId?: string) {
     total_visitas: visitas.length,
     total_gerados: gerados.length,
     total_assinados: assinados.length,
+    total_caidos: caidos.length,
     vgv_gerado: gerados.reduce((s, e) => s + (e.vgv || 0), 0),
     vgv_assinado: assinados.reduce((s, e) => s + (e.vgv || 0), 0),
+    vgv_caido: caidos.reduce((s, e) => s + (e.vgv || 0), 0),
   };
 
   return { entries, loading, stats, addEntry, updateEntry, deleteEntry, copyToCurrentMonth, reload: load, currentMes };

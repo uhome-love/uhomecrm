@@ -990,6 +990,7 @@ export type Database = {
           gerente_id: string
           id: string
           mes: string
+          motivo_queda: string | null
           nome: string
           observacoes: string | null
           proxima_acao: string | null
@@ -1015,6 +1016,7 @@ export type Database = {
           gerente_id: string
           id?: string
           mes: string
+          motivo_queda?: string | null
           nome: string
           observacoes?: string | null
           proxima_acao?: string | null
@@ -1040,6 +1042,7 @@ export type Database = {
           gerente_id?: string
           id?: string
           mes?: string
+          motivo_queda?: string | null
           nome?: string
           observacoes?: string | null
           proxima_acao?: string | null

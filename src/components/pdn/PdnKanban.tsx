@@ -3,7 +3,8 @@ import { type PdnEntry, type PdnSituacao } from "@/hooks/usePdn";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { GripVertical, Flame, Thermometer, Snowflake, Building2, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { GripVertical, Flame, Thermometer, Snowflake, Building2, User, X } from "lucide-react";
 
 interface Props {
   entries: PdnEntry[];
@@ -13,10 +14,11 @@ interface Props {
   filterCorretor: string;
 }
 
-const COLUMNS: { key: PdnSituacao; label: string; icon: string; color: string; border: string }[] = [
-  { key: "visita", label: "📋 Negócios (Visita)", icon: "📋", color: "bg-primary/10 text-primary", border: "border-primary/30" },
-  { key: "gerado", label: "📄 Gerados", icon: "📄", color: "bg-amber-500/10 text-amber-600", border: "border-amber-500/30" },
-  { key: "assinado", label: "✅ Assinados", icon: "✅", color: "bg-emerald-500/10 text-emerald-600", border: "border-emerald-500/30" },
+const COLUMNS: { key: PdnSituacao; label: string; color: string; border: string }[] = [
+  { key: "visita", label: "📋 Negócios (Visita)", color: "bg-primary/10 text-primary", border: "border-primary/30" },
+  { key: "gerado", label: "📄 Gerados", color: "bg-amber-500/10 text-amber-600", border: "border-amber-500/30" },
+  { key: "assinado", label: "✅ Assinados", color: "bg-emerald-500/10 text-emerald-600", border: "border-emerald-500/30" },
+  { key: "caiu", label: "❌ Caiu", color: "bg-destructive/10 text-destructive", border: "border-destructive/30" },
 ];
 
 const TEMP_CONFIG: Record<string, { icon: React.ReactNode; class: string; label: string }> = {
@@ -33,6 +35,7 @@ function formatBRL(v: number | null) {
 export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, filterCorretor }: Props) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<PdnSituacao | null>(null);
+  const [editingMotivo, setEditingMotivo] = useState<string | null>(null);
   const dragRef = useRef<string | null>(null);
 
   const filtered = entries.filter(e => {
@@ -72,7 +75,14 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
     if (!id || readOnly) return;
     const entry = entries.find(en => en.id === id);
     if (!entry || entry.situacao === targetSituacao) return;
-    onUpdate(id, { situacao: targetSituacao });
+
+    if (targetSituacao === "caiu") {
+      // When dropping to "caiu", prompt for motivo
+      onUpdate(id, { situacao: targetSituacao });
+      setEditingMotivo(id);
+    } else {
+      onUpdate(id, { situacao: targetSituacao, motivo_queda: null });
+    }
     dragRef.current = null;
   };
 
@@ -83,7 +93,7 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 min-h-[400px]">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 min-h-[400px]">
       {grouped.map(col => (
         <div
           key={col.key}
@@ -111,6 +121,8 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
               {col.items.map(entry => {
                 const temp = TEMP_CONFIG[entry.temperatura] || TEMP_CONFIG.morno;
                 const isDragged = draggedId === entry.id;
+                const isCaiu = entry.situacao === "caiu";
+
                 return (
                   <Card
                     key={entry.id}
@@ -119,7 +131,7 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
                     onDragEnd={handleDragEnd}
                     className={`p-3 cursor-grab active:cursor-grabbing transition-all hover:shadow-md ${
                       isDragged ? "opacity-40 scale-95" : "opacity-100"
-                    } ${!readOnly ? "hover:border-primary/40" : ""}`}
+                    } ${!readOnly ? "hover:border-primary/40" : ""} ${isCaiu ? "border-destructive/20 bg-destructive/5" : ""}`}
                   >
                     <div className="flex items-start gap-2">
                       {!readOnly && (
@@ -131,11 +143,16 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
                           {entry.nome || <span className="text-muted-foreground italic">Sem nome</span>}
                         </p>
 
-                        {/* Empreendimento + Und */}
-                        {(entry.empreendimento || entry.und) && (
+                        {/* Und */}
+                        {entry.und && (
+                          <p className="text-[11px] text-muted-foreground">Und: {entry.und}</p>
+                        )}
+
+                        {/* Empreendimento (Produto) */}
+                        {entry.empreendimento && (
                           <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                             <Building2 className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{entry.empreendimento}{entry.und ? ` · ${entry.und}` : ""}</span>
+                            <span className="truncate">{entry.empreendimento}</span>
                           </div>
                         )}
 
@@ -147,15 +164,50 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
                           </div>
                         )}
 
-                        {/* Bottom row: temperature + VGV */}
-                        <div className="flex items-center justify-between gap-2 pt-1">
-                          <Badge variant="outline" className={`text-[10px] h-5 gap-1 ${temp.class}`}>
-                            {temp.icon} {temp.label}
-                          </Badge>
-                          {entry.vgv ? (
-                            <span className="text-[11px] font-bold text-foreground">{formatBRL(entry.vgv)}</span>
-                          ) : null}
-                        </div>
+                        {/* VGV */}
+                        {entry.vgv ? (
+                          <p className="text-[11px] font-bold text-foreground">{formatBRL(entry.vgv)}</p>
+                        ) : null}
+
+                        {/* Motivo da queda (only for "caiu") */}
+                        {isCaiu && (
+                          <div className="mt-1">
+                            {editingMotivo === entry.id ? (
+                              <Input
+                                autoFocus
+                                className="h-7 text-xs"
+                                placeholder="Motivo da queda..."
+                                defaultValue={entry.motivo_queda || ""}
+                                onBlur={(e) => {
+                                  onUpdate(entry.id, { motivo_queda: e.target.value });
+                                  setEditingMotivo(null);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    onUpdate(entry.id, { motivo_queda: (e.target as HTMLInputElement).value });
+                                    setEditingMotivo(null);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <p
+                                className="text-[11px] text-destructive/80 italic cursor-pointer hover:underline"
+                                onClick={() => !readOnly && setEditingMotivo(entry.id)}
+                              >
+                                {entry.motivo_queda ? `❌ ${entry.motivo_queda}` : "Clique para informar motivo da queda"}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Bottom row: temperature */}
+                        {!isCaiu && (
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <Badge variant="outline" className={`text-[10px] h-5 gap-1 ${temp.class}`}>
+                              {temp.icon} {temp.label}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Card>
