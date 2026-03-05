@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Shield, Trash2, Loader2, UserPlus, MessageSquare, CheckCircle, XCircle, Settings, UserX } from "lucide-react";
+import { Shield, Trash2, Loader2, UserPlus, MessageSquare, CheckCircle, XCircle, Settings, UserX, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,6 +36,15 @@ export default function AdminPanel() {
   const [selectedGerente, setSelectedGerente] = useState("");
   const [gestores, setGestores] = useState<{ user_id: string; nome: string }[]>([]);
   const [creating, setCreating] = useState(false);
+
+  // Edit user dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUser, setEditUser] = useState<UserWithRole | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editSenha, setEditSenha] = useState("");
+  const [editJetimob, setEditJetimob] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // 360dialog config
   const [dialogApiKey, setDialogApiKey] = useState("");
@@ -203,6 +212,36 @@ export default function AdminPanel() {
     setLookupId(""); setNewEmail(""); setNewNome(""); setNewSenha(""); setSelectedGerente(""); setNewRole("corretor");
   };
 
+  const openEdit = (user: UserWithRole) => {
+    setEditUser(user);
+    setEditNome(user.nome);
+    setEditEmail(user.email);
+    setEditJetimob(user.jetimob_user_id || "");
+    setEditSenha("");
+    setEditOpen(true);
+  };
+
+  const handleEdit = useCallback(async () => {
+    if (!editUser) return;
+    setSaving(true);
+    try {
+      const body: Record<string, any> = { action: "update_user", target_user_id: editUser.user_id };
+      if (editNome !== editUser.nome) body.nome = editNome;
+      if (editEmail !== editUser.email) body.email = editEmail;
+      if (editJetimob !== (editUser.jetimob_user_id || "")) body.jetimob_user_id = editJetimob;
+      if (editSenha) body.senha = editSenha;
+
+      const { data, error } = await supabase.functions.invoke("create-broker-user", { body });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(data?.message || "Usuário atualizado!");
+      setEditOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao atualizar usuário.");
+    } finally { setSaving(false); }
+  }, [editUser, editNome, editEmail, editSenha, editJetimob, fetchUsers]);
+
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const handleDeleteUser = useCallback(async (user: UserWithRole) => {
@@ -332,6 +371,15 @@ export default function AdminPanel() {
                   <Button
                     size="icon"
                     variant="ghost"
+                    className="text-primary hover:text-primary hover:bg-primary/10 shrink-0"
+                    onClick={() => openEdit(user)}
+                    title="Editar usuário"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
                     className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                     onClick={() => handleDeleteUser(user)}
                     disabled={deleting === user.user_id}
@@ -430,6 +478,42 @@ export default function AdminPanel() {
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
               {creating ? "Criando..." : `Criar ${newRole === "gestor" ? "Gerente" : "Corretor"}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Nome</Label>
+                <Input value={editNome} onChange={(e) => setEditNome(e.target.value)} placeholder="Nome completo" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Email</Label>
+                <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="email@uhome.imb.br" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Nova Senha <span className="text-muted-foreground">(deixe vazio para manter)</span></Label>
+                <Input type="text" value={editSenha} onChange={(e) => setEditSenha(e.target.value)} placeholder="Nova senha" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">ID Jetimob</Label>
+                <Input value={editJetimob} onChange={(e) => setEditJetimob(e.target.value)} placeholder="Ex: 96468" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleEdit} disabled={saving || !editNome || !editEmail} className="gap-1.5">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+              {saving ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </DialogContent>
