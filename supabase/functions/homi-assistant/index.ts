@@ -91,9 +91,22 @@ DIFERENCIAIS: Alto padrão, acabamentos premium, arquitetura única, exclusivida
 ESTRATÉGIA: Posicionar como produto exclusivo. Convidar para visita personalizada para apreciar os detalhes.`,
 
   "Shift": `EMPREENDIMENTO: Shift
-Conceito jovem e moderno, ideal para quem busca praticidade. Voltado para público jovem, profissionais e investidores.
-DIFERENCIAIS: Conceito jovem, praticidade, localização estratégica, bom para investimento.
-ESTRATÉGIA: Destacar praticidade e estilo de vida. Para investidores, destacar rentabilidade. Convidar para conhecer.`,
+INCORPORADORA: Vanguard (Grupo Plaenge)
+LOCALIZAÇÃO: Rua Silva Jardim, 21 – Bairro Auxiliadora – Porto Alegre/RS (esquina com Rua 24 de Outubro)
+CONCEITO: Empreendimento contemporâneo de studios e apartamentos compactos. Conceito "Life on Demand": morar com praticidade, mobilidade e flexibilidade em imóvel funcional e bem localizado. Atende quem quer morar sozinho em bairro central E investidores que buscam alta demanda de locação.
+TIPOLOGIAS: Studios: ~24m² a 48m². Apartamentos 1 dormitório com suíte: ~75m² a 108m². Plantas otimizadas com ambientes integrados e funcionais. Opções garden.
+CARACTERÍSTICAS: Plantas compactas e inteligentes, ambientes integrados, design contemporâneo, ótima iluminação natural, opções de studios e 1 dormitório, unidades garden.
+LAZER DO CONDOMÍNIO: Piscina, academia (fitness center), coworking, lavanderia compartilhada, lounge, espaço gourmet, bicicletário, áreas de convivência, market interno.
+LOCALIZAÇÃO DETALHADA: Bairro Auxiliadora, uma das regiões mais valorizadas de POA. Restaurantes, cafés, academias, supermercados, hospitais, comércio. Próximo ao Moinhos de Vento e Parcão. Mobilidade a pé e estilo de vida urbano.
+PERFIL DE CLIENTE IDEAL: Morar sozinho em região central, praticidade, mobilidade urbana, imóvel moderno e funcional. Investidores, estudantes, jovens profissionais, executivos da região central.
+DIFERENCIAIS PRINCIPAIS: Localização premium em bairro nobre (Auxiliadora), projeto moderno, alta demanda para locação, moradia urbana compacta, infraestrutura completa.
+OBJEÇÕES E RESPOSTAS:
+- "Apartamento pequeno" → Conceito de moradia urbana funcional, infraestrutura complementa o espaço do apto.
+- "Prefiro algo maior" → Existem unidades de 1 dormitório maiores + opções garden.
+- "É mais para investimento?" → Atende tanto investidores quanto moradores que querem praticidade e mobilidade.
+ARGUMENTOS DE VENDA: Morar em região mais valorizada da cidade, alta demanda de locação, conceito moderno, imóvel compacto com infraestrutura, ótima opção para investimento.
+ESTRATÉGIA DE CONVERSÃO: 1) Entender se busca moradia ou investimento. 2) Destacar localização e mobilidade. 3) Explicar conceito de studio moderno. 4) Convidar para visita. Pergunta final: "Faz sentido você conhecer o projeto pessoalmente? Prefere durante a semana ou no fim de semana?"
+OBJETIVO: Converter leads em visitas. A visita ajuda a entender o conceito de studio moderno e visualizar potencial de moradia ou investimento.`,
 
   "Lake Eyre": `EMPREENDIMENTO: Lake Eyre
 LOCALIZAÇÃO: Av. Diário de Notícias – Bairro Cristal – Porto Alegre/RS (dentro do Golden Lake, primeiro bairro privativo de POA)
