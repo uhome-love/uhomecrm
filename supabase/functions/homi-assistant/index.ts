@@ -83,9 +83,21 @@ DIFERENCIAIS: Conceito jovem, praticidade, localização estratégica, bom para 
 ESTRATÉGIA: Destacar praticidade e estilo de vida. Para investidores, destacar rentabilidade. Convidar para conhecer.`,
 
   "Lake Eyre": `EMPREENDIMENTO: Lake Eyre
-Residencial com vista privilegiada, sofisticação e áreas de lazer premium. Produto de alto padrão com experiência de moradia diferenciada.
-DIFERENCIAIS: Vista privilegiada, sofisticação, lazer premium, exclusividade.
-ESTRATÉGIA: Criar desejo pela experiência de moradia. Convidar para visita para ver a vista e os espaços.`,
+LOCALIZAÇÃO: Av. Diário de Notícias – Bairro Cristal – Porto Alegre/RS (dentro do Golden Lake, primeiro bairro privativo de POA)
+CONCEITO: Empreendimento residencial de ALTO PADRÃO dentro do bairro planejado Golden Lake (~163 mil m²). Sofisticação, exclusividade e qualidade de vida às margens do Guaíba, próximo ao BarraShoppingSul. Arquitetura contemporânea, infraestrutura completa e integração com natureza.
+TIPOLOGIAS: Apartamentos de 3 e 4 suítes. Metragens: 127m², 143m², 176m², 186m². Coberturas até ~326m². Unidades com lareira, churrasqueira, grandes varandas, vista permanente para o Guaíba.
+CARACTERÍSTICAS: Amplas áreas sociais integradas, suítes espaçosas, hall privativo, grandes aberturas, iluminação natural, lareira e churrasqueira, vista privilegiada para o Guaíba, plantas amplas e sofisticadas.
+LAZER DO CONDOMÍNIO: Piscinas adulto e infantil, piscina aquecida e olímpica, spa e área de relaxamento, beauty center, academia completa, salão de festas, espaço gourmet, brinquedoteca, playground, quadra esportiva, beach tennis, coworking, sala de reuniões, pet place, mini mercado, áreas verdes e bosque, espaços de convivência.
+LOCALIZAÇÃO DETALHADA: Bairro Cristal, dentro do Golden Lake, próximo ao BarraShoppingSul e Orla do Guaíba. Fácil acesso ao centro e zona sul. Golden Lake é bairro planejado com diversos condomínios de alto padrão com infraestrutura integrada.
+PERFIL DE CLIENTE IDEAL: Imóveis de alto padrão, exclusividade e sofisticação, morar próximo ao Guaíba, apartamentos amplos, condomínio com infraestrutura completa, segurança e qualidade de vida. Famílias de alto padrão, executivos, investidores imobiliários.
+DIFERENCIAIS PRINCIPAIS: Localização privilegiada próxima ao Guaíba, dentro do Golden Lake (bairro privativo), aptos amplos 3-4 suítes, vista permanente Guaíba, lazer completo, arquitetura contemporânea, conceito de bairro privativo.
+OBJEÇÕES E RESPOSTAS:
+- "Valor alto" → Empreendimento de alto padrão dentro de bairro planejado exclusivo com forte potencial de valorização.
+- "Prefiro casa" → Apartamentos oferecem metragem ampla + infraestrutura de lazer e segurança que muitas casas não possuem.
+- "Não conheço o Golden Lake" → Explicar conceito de bairro privativo com segurança, lazer, natureza e infraestrutura completa.
+ARGUMENTOS DE VENDA: Morar em um dos bairros mais exclusivos de POA, vista para o Guaíba, lazer completo, projeto sofisticado, proximidade do BarraShoppingSul, conceito de bairro planejado.
+ESTRATÉGIA DE CONVERSÃO: 1) Entender perfil e faixa de investimento. 2) Apresentar conceito do Golden Lake. 3) Destacar exclusividade e vista Guaíba. 4) Convidar para visita. Pergunta final: "Faz sentido você conhecer o projeto pessoalmente? Prefere durante a semana ou no fim de semana?"
+OBJETIVO: Converter leads em visitas. A visita é essencial para entender o conceito do Golden Lake e visualizar a exclusividade.`,
 
   "Las Casas": `EMPREENDIMENTO: Las Casas
 Casas em condomínio fechado com segurança, privacidade e qualidade de vida. Conceito similar a Casa Tua: liberdade de casa + segurança de condomínio.
