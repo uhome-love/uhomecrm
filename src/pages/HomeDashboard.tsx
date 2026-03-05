@@ -98,10 +98,9 @@ export default function HomeDashboard() {
     if (!user) return;
     const today = format(new Date(), "yyyy-MM-dd");
 
-    // For OA tentativas, use ISO timestamps based on current day boundaries
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1);
+    // Explicit BRT (-03:00) day boundaries to match server-side timezone
+    const startOfToday = `${today}T00:00:00-03:00`;
+    const endOfToday = `${today}T23:59:59.999-03:00`;
 
     // Checkpoint data
     let cpQ = supabase.from("checkpoints").select("id").eq("data", today);
@@ -120,8 +119,8 @@ export default function HomeDashboard() {
     let oaQuery = supabase
       .from("oferta_ativa_tentativas")
       .select("resultado, corretor_id")
-      .gte("created_at", startOfToday.toISOString())
-      .lte("created_at", endOfToday.toISOString());
+      .gte("created_at", startOfToday)
+      .lte("created_at", endOfToday);
 
     // If gestor (not admin), restrict to team members only
     if (!isAdmin) {
@@ -168,15 +167,16 @@ export default function HomeDashboard() {
   useEffect(() => {
     let pdnTimer: ReturnType<typeof setTimeout> | null = null;
     let cpTimer: ReturnType<typeof setTimeout> | null = null;
-    const DEBOUNCE_MS = 1500;
+    const DEBOUNCE_PDN_MS = 1500;
+    const DEBOUNCE_CP_MS = 500; // Faster for checkpoint — gestor expects near-instant feedback
 
     const debouncedPdn = () => {
       if (pdnTimer) clearTimeout(pdnTimer);
-      pdnTimer = setTimeout(() => { fetchPdn(); reload(); }, DEBOUNCE_MS);
+      pdnTimer = setTimeout(() => { fetchPdn(); reload(); }, DEBOUNCE_PDN_MS);
     };
     const debouncedCp = () => {
       if (cpTimer) clearTimeout(cpTimer);
-      cpTimer = setTimeout(() => { reload(); fetchCheckpoint(); }, DEBOUNCE_MS);
+      cpTimer = setTimeout(() => { reload(); fetchCheckpoint(); }, DEBOUNCE_CP_MS);
     };
 
     const pdnChannel = supabase
