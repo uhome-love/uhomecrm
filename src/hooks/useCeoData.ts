@@ -80,7 +80,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
 
     // Get all profiles with cargo=gerente or gestor role
     const { data: profiles } = await supabase.from("profiles").select("user_id, nome");
-    const { data: gerenteRoles } = await supabase.from("user_roles").select("user_id").in("role", ["gestor", "admin"]);
+    const { data: gerenteRoles } = await supabase.from("user_roles").select("user_id").eq("role", "gestor");
     const gerenteUserIds = new Set((gerenteRoles || []).map(r => r.user_id));
 
     // Get all checkpoints in range (admin sees all)
