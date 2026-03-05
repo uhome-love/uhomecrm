@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useCorretorDailyStats, useCorretorDailyGoals, useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
@@ -18,6 +20,7 @@ import { toast } from "sonner";
 
 export default function CorretorDashboard() {
   const { stats } = useCorretorDailyStats();
+  const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const { goals, saveGoals } = useCorretorDailyGoals();
   const motivation = useDailyMotivation();
   const { user } = useAuth();
@@ -43,6 +46,11 @@ export default function CorretorDashboard() {
     setMetaVisitas(goals?.meta_visitas_marcadas?.toString() || "3");
     setEditing(!goals);
   }, [goals]);
+
+  // Gestores/Admins devem usar o Centro de Comando, não a Central do Corretor
+  if (!roleLoading && (isGestor || isAdmin)) {
+    return <Navigate to="/" replace />;
+  }
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
