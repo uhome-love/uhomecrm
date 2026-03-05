@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -485,12 +485,12 @@ export default function HomeDashboard() {
 
 /* ==================== Sub-components ==================== */
 
-function SectionHeader({ icon: Icon, title, action, iconColor }: {
+const SectionHeader = forwardRef<HTMLDivElement, {
   icon: any; title: string; iconColor?: string;
   action?: { label: string; onClick: () => void };
-}) {
+}>(({ icon: Icon, title, action, iconColor }, ref) => {
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+    <div ref={ref} className="flex items-center justify-between px-4 py-3 border-b border-border">
       <div className="flex items-center gap-2">
         <Icon className={`h-4 w-4 ${iconColor || "text-primary"}`} />
         <h3 className="font-display font-semibold text-sm">{title}</h3>
@@ -502,7 +502,8 @@ function SectionHeader({ icon: Icon, title, action, iconColor }: {
       )}
     </div>
   );
-}
+});
+SectionHeader.displayName = "SectionHeader";
 
 function MetricCard({ label, value, meta, highlight }: {
   label: string; value: string | number; meta?: number; highlight?: boolean;
