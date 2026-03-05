@@ -180,11 +180,12 @@ export default function Auth() {
             className="relative mb-5"
           >
             {/* Glow behind logo */}
-            <div className="absolute inset-0 -m-8 rounded-full bg-[hsl(229,100%,64%/0.12)] blur-[40px]" />
+            <div className="absolute inset-0 -m-4 rounded-full bg-[hsl(229,100%,64%/0.12)] blur-[40px]" />
             <img
               src={uhomeSalesLogo}
               alt="UhomeSales"
-              className="relative h-36 w-auto drop-shadow-[0_0_50px_hsl(229,100%,64%,0.3)]"
+              className="relative h-28 w-auto object-contain drop-shadow-[0_0_50px_hsl(229,100%,64%,0.3)]"
+              style={{ clipPath: "inset(15% 0 12% 0)", marginTop: "-10px", marginBottom: "-10px" }}
             />
           </motion.div>
 
