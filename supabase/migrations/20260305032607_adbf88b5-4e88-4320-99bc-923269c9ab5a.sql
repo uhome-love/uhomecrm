@@ -1,0 +1,1 @@
+DELETE FROM public.oferta_ativa_tentativas;
