@@ -43,11 +43,21 @@ ARGUMENTOS DE VENDA: Primeiro condomínio-parque da região, morar perto de tudo
 ESTRATÉGIA DE CONVERSÃO: 1) Entender perfil do cliente. 2) Explicar conceito de condomínio-parque. 3) Mostrar diferenciais de lazer e localização. 4) Convidar para conhecer o decorado. Pergunta final: "Faz sentido você conhecer o projeto pessoalmente? Prefere durante a semana ou no fim de semana?"
 OBJETIVO: Converter leads em visitas ao stand ou decorado. A visita aumenta muito a conversão porque o cliente visualiza o conceito e a estrutura de lazer.`,
 
-  "Melnick Day": `EMPREENDIMENTO: Melnick Day
-CONSTRUTORA: Melnick (uma das maiores construtoras do RS, referência em qualidade)
-Conceito moderno com praticidade e infraestrutura completa. Produto Melnick garante padrão de qualidade reconhecido no mercado.
-DIFERENCIAIS: Marca Melnick (confiança e valorização), acabamento de alto padrão, infraestrutura completa.
-ESTRATÉGIA: Usar força da marca Melnick como argumento de segurança no investimento. Convidar para conhecer o padrão de acabamento pessoalmente.`,
+  "Melnick Day": `TIPO: EVENTO DE VENDAS (não é um empreendimento, é o maior evento de vendas do mercado imobiliário do Sul do Brasil)
+EMPRESA: Melnick
+DATA: 21 de março de 2026 (evento de UM DIA)
+CONCEITO: Maior evento de vendas do mercado imobiliário do Sul do Brasil, realizado anualmente pela Melnick. Condições comerciais EXCLUSIVAS para aquisição de imóveis em diversos empreendimentos. Oportunidade ÚNICA no ano. Reúne oportunidades para moradia e investimento. Imóveis prontos, em obras e lançamentos.
+CONDIÇÕES ESPECIAIS: Descontos de até ~30% em unidades selecionadas, negociação direta com a incorporadora, parcelamento da entrada, financiamento facilitado, possibilidade de usar FGTS, possibilidade de aceitar imóvel ou veículo no negócio. Condições VÁLIDAS APENAS durante o evento.
+URGÊNCIA: Acontece em data específica, condições NÃO se repetem após o evento. Melhores unidades são as primeiras a serem vendidas. Imóveis de médio, alto e altíssimo padrão em diferentes regiões de POA.
+PERFIL DE CLIENTE IDEAL: Comprar imóvel com desconto, condições especiais, investir em Melnick, antecipar oportunidades. Investidores, clientes que já procuravam imóvel, quem aguarda boas oportunidades.
+DIFERENCIAIS: Descontos exclusivos, condições especiais de pagamento, negociação direta com construtora, oportunidades normalmente indisponíveis, grande variedade de empreendimentos.
+OBJEÇÕES E RESPOSTAS:
+- "Vou pensar" → Condições válidas APENAS durante o evento, melhores unidades esgotam primeiro.
+- "Quero ver depois" → Após o evento valores e condições retornam ao padrão normal de mercado.
+- "Não sei qual empreendimento escolher" → Oferecer ajuda para entender perfil e apresentar melhores oportunidades.
+ARGUMENTOS DE VENDA: Oportunidade única no ano, descontos que não se repetem, condições especiais direto com construtora, diversos empreendimentos, comprar antes que melhores unidades acabem.
+ESTRATÉGIA DE CONVERSÃO: 1) Entender perfil. 2) Explicar que evento tem oportunidades únicas. 3) Mostrar empreendimentos participantes. 4) Convidar para conhecer opções ANTES do evento. Pergunta final: "Faz sentido eu te mostrar quais empreendimentos estão com as melhores condições no Melnick Day?"
+OBJETIVO: Gerar visita ou reunião para apresentar oportunidades do evento. Criar URGÊNCIA real (evento é um dia só).`,
 
   "Alto Lindóia": `EMPREENDIMENTO: Alto Lindóia Resort
 INCORPORADORA: Florença Incorporadora
