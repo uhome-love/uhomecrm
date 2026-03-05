@@ -14,7 +14,7 @@ export default function CeoDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center gap-3">
         <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain" />
         <div>

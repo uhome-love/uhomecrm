@@ -9,7 +9,7 @@ export default function OfertaAtiva() {
   const [activeTab, setActiveTab] = useState("campanhas");
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
           <Phone className="h-6 w-6 text-primary" />

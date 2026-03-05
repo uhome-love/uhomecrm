@@ -267,7 +267,7 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="p-6 space-y-8 max-w-3xl mx-auto">
+    <div className="space-y-8 max-w-3xl mx-auto">
       {/* 360dialog Integration */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 shadow-card space-y-4">
         <div className="flex items-center gap-3">

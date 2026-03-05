@@ -263,7 +263,7 @@ export default function GestorDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {step === "upload" && (
         <div className="max-w-2xl mx-auto space-y-6">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
