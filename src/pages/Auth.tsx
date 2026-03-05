@@ -172,7 +172,7 @@ export default function Auth() {
         className="relative z-10 w-full max-w-[420px] px-5"
       >
         {/* ─── LOGO ─── */}
-        <div className="flex flex-col items-center mb-5">
+        <div className="flex flex-col items-center mb-2">
           <motion.div
             initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
