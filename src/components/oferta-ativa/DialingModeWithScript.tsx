@@ -346,6 +346,17 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   };
 
+  // Auto-redirect when leads run out
+  const hasRedirectedRef = useRef(false);
+  useEffect(() => {
+    if (!lead && !isLoading && fila.length === 0 && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      toast.info("📋 Leads desta lista acabaram! Escolha outra lista para continuar.", { duration: 5000 });
+      const timer = setTimeout(() => onBack(), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [lead, isLoading, fila.length, onBack]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
@@ -361,7 +372,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             <p>📊 Sessão: <strong className="text-foreground">{formatSessionTime(sessionSeconds)}</strong></p>
             <p>📞 Tentativas: <strong className="text-foreground">{stats.tentativas}</strong> · Aproveitados: <strong className="text-emerald-600">{stats.aproveitados}</strong></p>
           </div>
-          <Button className="mt-4" onClick={onBack}>Voltar às listas</Button>
+          <p className="text-xs text-muted-foreground mt-3 animate-pulse">Redirecionando para as listas em instantes...</p>
+          <Button className="mt-4" onClick={onBack}>Voltar às listas agora</Button>
         </CardContent>
       </Card>
     );
