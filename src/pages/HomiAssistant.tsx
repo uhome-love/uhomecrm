@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { MessageSquare, PhoneCall, RefreshCw, ShieldQuestion, MapPin, Sparkles, Copy, Loader2, ArrowLeft } from "lucide-react";
+import { MessageSquare, PhoneCall, RefreshCw, ShieldQuestion, MapPin, Sparkles, Copy, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
+import HomiChat from "@/components/homi/HomiChat";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,7 +45,7 @@ const OBJETIVOS = [
 ];
 
 export default function HomiAssistant() {
-  const [step, setStep] = useState<"home" | "form" | "result">("home");
+  const [step, setStep] = useState<"home" | "form" | "result" | "chat">("home");
   const [acao, setAcao] = useState<Acao | null>(null);
   const [empreendimento, setEmpreendimento] = useState("");
   const [situacao, setSituacao] = useState("");
@@ -116,7 +117,7 @@ export default function HomiAssistant() {
   const acaoInfo = ACOES.find(a => a.id === acao);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className={`max-w-2xl mx-auto ${step === "chat" ? "" : "px-4 py-6"}`}>
       <AnimatePresence mode="wait">
         {/* HOME */}
         {step === "home" && (
@@ -167,6 +168,41 @@ export default function HomiAssistant() {
                 </motion.div>
               ))}
             </div>
+
+            {/* Chat Livre */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: ACOES.length * 0.07, duration: 0.3 }}
+              className="mt-4"
+            >
+              <button
+                onClick={() => setStep("chat")}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 hover:border-primary/60 hover:shadow-md hover:bg-primary/10 transition-all duration-200 group text-left"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200">
+                  <MessageCircle className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-foreground">Chat Livre</p>
+                  <p className="text-xs text-muted-foreground">Converse diretamente com o HOMI</p>
+                </div>
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* CHAT */}
+        {step === "chat" && (
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            transition={{ duration: 0.3 }}
+            className="h-full"
+          >
+            <HomiChat onBack={reset} />
           </motion.div>
         )}
 
