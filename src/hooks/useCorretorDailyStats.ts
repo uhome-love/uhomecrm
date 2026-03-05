@@ -22,8 +22,10 @@ export function useCorretorDailyStats() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["corretor-daily-stats", user?.id],
     queryFn: async () => {
+      // Use Brazil timezone (UTC-3) for "today" boundary
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setHours(3, 0, 0, 0); // UTC midnight = 03:00 UTC (BRT = UTC-3)
+      if (new Date() < today) today.setDate(today.getDate() - 1); // If before 3am UTC, use yesterday's boundary
 
       const { data, error } = await supabase
         .from("oferta_ativa_tentativas")
@@ -94,6 +96,7 @@ export function useCorretorDailyStats() {
     enabled: !!user,
     staleTime: 15_000,
     refetchInterval: 30_000,
+    refetchOnWindowFocus: false, // Prevent tab-switch refetch causing UI jumps
   });
 
   return {
@@ -136,6 +139,7 @@ export function useCorretorDailyGoals() {
     enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const saveGoals = async (metaLigacoes: number, metaAproveitados: number, metaVisitasMarcadas: number, observacao?: string) => {

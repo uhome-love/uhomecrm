@@ -119,7 +119,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
             <DialogTitle className="text-base">Resultado da tentativa</DialogTitle>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">

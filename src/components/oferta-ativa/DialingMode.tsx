@@ -28,17 +28,24 @@ export default function DialingMode({ lista, onBack }: Props) {
 
   const lead = fila[currentIndex];
 
-  // Timer
+  // TIMESTAMP-BASED Timer (fixes accelerated counting)
+  const [callStartTimestamp, setCallStartTimestamp] = useState<number | null>(null);
   const startTimer = useCallback(() => {
+    const now = Date.now();
+    setCallStartTimestamp(now);
     setCallTimer(0);
     setCallActive(true);
-    timerRef.current = setInterval(() => setCallTimer(p => p + 1), 1000);
+    timerRef.current = setInterval(() => setCallTimer(Math.floor((Date.now() - now) / 1000)), 250);
   }, []);
 
   const stopTimer = useCallback(() => {
     setCallActive(false);
+    if (callStartTimestamp) {
+      setCallTimer(Math.floor((Date.now() - callStartTimestamp) / 1000));
+    }
+    setCallStartTimestamp(null);
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-  }, []);
+  }, [callStartTimestamp]);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 

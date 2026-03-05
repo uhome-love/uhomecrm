@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useOAFila, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,7 +65,20 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const { goals, saveGoals } = useCorretorDailyGoals();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // === SESSION-LEVEL BLACKLIST: leads already worked this session ===
+  const [workedLeadIds] = useState(() => new Set<string>());
+  
+  // === PERSIST INDEX across tab switches via sessionStorage ===
+  const storageKey = `oa-dialing-${lista.id}`;
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const saved = sessionStorage.getItem(storageKey);
+    return saved ? parseInt(saved, 10) || 0 : 0;
+  });
+  // Persist index changes
+  useEffect(() => {
+    sessionStorage.setItem(storageKey, String(currentIndex));
+  }, [currentIndex, storageKey]);
+
   const [actionTaken, setActionTaken] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [lockStatus, setLockStatus] = useState<"idle" | "locking" | "locked" | "failed">("idle");
@@ -75,33 +88,42 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [metaAprov, setMetaAprov] = useState("");
   const [metaVis, setMetaVis] = useState("");
   const [finalizando, setFinalizando] = useState(false);
+  
+  // === TIMESTAMP-BASED TIMER (fixes accelerated/decelerated counting) ===
+  const [callStartTimestamp, setCallStartTimestamp] = useState<number | null>(null);
   const [callTimer, setCallTimer] = useState(0);
   const [callActive, setCallActive] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
   const [streak, setStreak] = useState(0);
   const [sessionStart] = useState(() => Date.now());
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [showMilestone, setShowMilestone] = useState<string | null>(null);
   const currentLeadIdRef = useRef<string | null>(null);
+  
+  // === FILTER OUT already-worked leads from fila ===
+  const activeFila = useMemo(() => {
+    return fila.filter(l => !workedLeadIds.has(l.id));
+  }, [fila, workedLeadIds]);
 
-  // Clamp currentIndex when fila changes — but NEVER during active call or modal
+  // Clamp currentIndex when activeFila changes — but NEVER during active call or modal
   useEffect(() => {
     // If call is active or modal is open, don't touch the index
     if (callActive || showModal || actionTaken) return;
     
-    if (fila.length > 0 && currentIndex >= fila.length) {
+    if (activeFila.length > 0 && currentIndex >= activeFila.length) {
       // Try to find the lead we were working on by ID
       if (currentLeadIdRef.current) {
-        const idx = fila.findIndex(l => l.id === currentLeadIdRef.current);
+        const idx = activeFila.findIndex(l => l.id === currentLeadIdRef.current);
         if (idx >= 0) {
           setCurrentIndex(idx);
           return;
         }
       }
       // Fallback: clamp to last valid index
-      setCurrentIndex(fila.length - 1);
+      setCurrentIndex(activeFila.length - 1);
     }
-  }, [fila, currentIndex, callActive, showModal, actionTaken]);
+  }, [activeFila, currentIndex, callActive, showModal, actionTaken]);
 
   // Session timer
   useEffect(() => {
@@ -118,17 +140,25 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     return `${m}min`;
   };
 
-  // Call timer logic
+  // TIMESTAMP-BASED call timer — immune to JS event loop delays
   const startTimer = useCallback(() => {
+    const now = Date.now();
+    setCallStartTimestamp(now);
     setCallTimer(0);
     setCallActive(true);
-    timerRef.current = setInterval(() => setCallTimer(prev => prev + 1), 1000);
+    timerRef.current = setInterval(() => {
+      setCallTimer(Math.floor((Date.now() - now) / 1000));
+    }, 250); // Update 4x/sec for smooth display, but value is always real elapsed time
   }, []);
 
   const stopTimer = useCallback(() => {
     setCallActive(false);
+    if (callStartTimestamp) {
+      setCallTimer(Math.floor((Date.now() - callStartTimestamp) / 1000));
+    }
+    setCallStartTimestamp(null);
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-  }, []);
+  }, [callStartTimestamp]);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -167,8 +197,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
   const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitas) * 100));
 
-  const lead = fila[currentIndex] ?? null;
-  const nextLead = fila[currentIndex + 1] ?? null;
+  const lead = activeFila[currentIndex] ?? null;
+  const nextLead = activeFila[currentIndex + 1] ?? null;
 
   // Track current lead ID for index recovery after refetch
   useEffect(() => {
@@ -191,8 +221,10 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           setLockStatus("failed");
           if (result.reason === "locked_by_another") {
             toast.error("Lead em atendimento por outro corretor. Avançando...");
+            // Add to blacklist so it won't appear again this session
+            workedLeadIds.add(lead.id);
             setTimeout(() => {
-              if (currentIndex < fila.length - 1) setCurrentIndex(prev => prev + 1);
+              if (currentIndex < activeFila.length - 1) setCurrentIndex(prev => prev + 1);
             }, 1000);
           }
         }
@@ -260,8 +292,16 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     if (!lead || !actionTaken || submitting) return;
     setSubmitting(true);
     try {
+      // === OPTIMISTIC: Add to blacklist IMMEDIATELY so lead can never reappear ===
+      workedLeadIds.add(lead.id);
+      
       const result = await registrar(lead, actionTaken, resultado, feedback, lista);
-      if (!result?.success) { setSubmitting(false); return; }
+      if (!result?.success) { 
+        // Rollback blacklist on failure
+        workedLeadIds.delete(lead.id);
+        setSubmitting(false); 
+        return; 
+      }
 
       // Update streak
       if (resultado === "com_interesse") {
@@ -339,12 +379,19 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       queryClient.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
       queryClient.invalidateQueries({ queryKey: ["checkpoint"] });
 
-      if (currentIndex < fila.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-      } else {
+      // === INDEX MANAGEMENT: activeFila will auto-shrink due to blacklist ===
+      // The current lead was blacklisted, so activeFila will recalculate.
+      // Keep currentIndex the same — the next lead will slide into this position.
+      // Only reset if we're past the end.
+      const remainingAfterRemoval = activeFila.length - 1; // -1 because we just blacklisted one
+      if (currentIndex >= remainingAfterRemoval && remainingAfterRemoval > 0) {
+        setCurrentIndex(0);
+        refetch(); // Fetch fresh leads from server
+      } else if (remainingAfterRemoval <= 0) {
         refetch();
         setCurrentIndex(0);
       }
+      // Otherwise keep same index — next lead slides in
     } catch (err: any) {
       console.error("Erro ao registrar tentativa:", err);
       toast.error("Erro ao registrar tentativa. Tente novamente.");
@@ -356,13 +403,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   // Auto-redirect when leads run out
   const hasRedirectedRef = useRef(false);
   useEffect(() => {
-    if (!lead && !isLoading && fila.length === 0 && !hasRedirectedRef.current) {
+    if (!lead && !isLoading && activeFila.length === 0 && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
       toast.info("📋 Leads desta lista acabaram! Escolha outra lista para continuar.", { duration: 5000 });
       const timer = setTimeout(() => onBack(), 3000);
       return () => clearTimeout(timer);
     }
-  }, [lead, isLoading, fila.length, onBack]);
+  }, [lead, isLoading, activeFila.length, onBack]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -507,18 +554,18 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           <span className="text-[10px] text-primary font-semibold">{lista.empreendimento}</span>
         </div>
         <div className="flex items-center gap-2">
-          {fila.length > 1 && (
+          {activeFila.length > 1 && (
             <Button
               size="sm"
               variant="ghost"
               className="h-7 text-xs gap-1"
               onClick={() => {
-                if (currentIndex < fila.length - 1) {
+                if (currentIndex < activeFila.length - 1) {
                   setCurrentIndex(prev => prev + 1);
                   toast("Lead pulado — avançando para o próximo", { duration: 1500 });
                 }
               }}
-              disabled={currentIndex >= fila.length - 1 || callActive}
+              disabled={currentIndex >= activeFila.length - 1 || callActive}
             >
               <SkipForward className="h-3.5 w-3.5" /> Pular
             </Button>
@@ -555,7 +602,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
       {/* Progress bar */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Lead <strong className="text-foreground">{currentIndex + 1}</strong> de {fila.length}</span>
+        <span>Lead <strong className="text-foreground">{currentIndex + 1}</strong> de {activeFila.length}</span>
         <div className="flex items-center gap-2">
           {lockStatus === "locked" && (
             <Badge variant="outline" className="gap-1 text-[10px] border-emerald-500/30 text-emerald-600">
@@ -575,7 +622,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         </div>
       </div>
       <div className="w-full bg-muted rounded-full h-2">
-        <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${((currentIndex + 1) / fila.length) * 100}%` }} />
+        <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${((currentIndex + 1) / Math.max(activeFila.length, 1)) * 100}%` }} />
       </div>
 
       {/* 2-column layout */}

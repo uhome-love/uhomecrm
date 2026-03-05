@@ -150,7 +150,7 @@ export function useOALeads(listaId?: string) {
   return { leads, isLoading };
 }
 
-// ─── Hook: Fila do corretor (with concurrency lock) ───
+// ─── Hook: Fila do corretor (with concurrency lock + anti-repeat) ───
 export function useOAFila(listaId: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -161,6 +161,18 @@ export function useOAFila(listaId: string) {
       // First clean up expired locks server-side
       await supabase.rpc("cleanup_expired_locks");
 
+      // Get IDs of leads this corretor already attempted today (anti-repetition)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { data: todayAttempts } = await supabase
+        .from("oferta_ativa_tentativas")
+        .select("lead_id")
+        .eq("corretor_id", user!.id)
+        .eq("lista_id", listaId)
+        .gte("created_at", todayStart.toISOString());
+      
+      const attemptedLeadIds = new Set((todayAttempts || []).map(t => t.lead_id));
+
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("oferta_ativa_leads")
@@ -169,13 +181,20 @@ export function useOAFila(listaId: string) {
         .in("status", ["na_fila", "em_cooldown"])
         .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`)
         .or(`em_atendimento_por.is.null,em_atendimento_por.eq.${user!.id},em_atendimento_ate.lt.${now}`)
-        .order("data_lead", { ascending: false })
+        .order("tentativas_count", { ascending: true }) // Least attempted first (fair distribution)
+        .order("data_lead", { ascending: false }) // Then newest leads first
         .limit(100);
       if (error) throw error;
-      return data as OALead[];
+      
+      // Client-side filter: remove leads already attempted today by this corretor
+      const filtered = (data as OALead[]).filter(l => !attemptedLeadIds.has(l.id));
+      
+      // If all filtered out, return unfiltered (allow re-work if no new leads)
+      return filtered.length > 0 ? filtered : (data as OALead[]);
     },
     enabled: !!listaId && !!user,
-    refetchOnWindowFocus: false, // Prevent refetch when switching apps during calls
+    refetchOnWindowFocus: false, // CRITICAL: Prevent refetch when switching tabs
+    staleTime: 60_000, // Keep data fresh for 1 minute to avoid unnecessary refetches
   });
 
   // Atomic lock via DB function — prevents race conditions
