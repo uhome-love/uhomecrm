@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, Lock, CalendarCheck, Zap, ChevronDown } from "lucide-react";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, Lock, CalendarCheck, Zap, ChevronDown, Pencil, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useCorretorDailyStats, useCorretorDailyGoals } from "@/hooks/useCorretorDailyStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,7 +27,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const { registrar } = useOARegistrarTentativa();
   const { templates } = useOATemplates(lista.empreendimento);
   const { stats } = useCorretorDailyStats();
-  const { goals } = useCorretorDailyGoals();
+  const { goals, saveGoals } = useCorretorDailyGoals();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -34,6 +35,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [lockStatus, setLockStatus] = useState<"idle" | "locking" | "locked" | "failed">("idle");
   const [submitting, setSubmitting] = useState(false);
+  const [editingMetas, setEditingMetas] = useState(false);
+  const [metaLig, setMetaLig] = useState("");
+  const [metaAprov, setMetaAprov] = useState("");
+  const [metaVis, setMetaVis] = useState("");
+  const [finalizando, setFinalizando] = useState(false);
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
@@ -208,36 +214,106 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     <div className="space-y-3">
       {/* Daily Progress Mini-Summary with Goals */}
       <div className="p-3 rounded-xl border border-border bg-card shadow-card space-y-2">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 text-sm">
-            <Flame className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-foreground">{stats.tentativas}</span>
-            <span className="text-muted-foreground text-xs">/ {metaLigacoes} ligações</span>
+        {editingMetas ? (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-foreground">Editar Metas</p>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-[10px] text-muted-foreground">Ligações</label>
+                <Input type="number" value={metaLig} onChange={e => setMetaLig(e.target.value)} className="h-8 mt-0.5" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground">Aproveitados</label>
+                <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-8 mt-0.5" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground">Visitas</label>
+                <Input type="number" value={metaVis} onChange={e => setMetaVis(e.target.value)} className="h-8 mt-0.5" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" className="flex-1 h-7 text-xs" onClick={async () => {
+                await saveGoals(parseInt(metaLig) || 30, parseInt(metaAprov) || 5, parseInt(metaVis) || 3);
+                setEditingMetas(false);
+                toast.success("Metas atualizadas!");
+                queryClient.invalidateQueries({ queryKey: ["corretor-daily-goals"] });
+              }}>Salvar</Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingMetas(false)}>Cancelar</Button>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 text-sm">
-            <Target className="h-4 w-4 text-success" />
-            <span className="font-semibold text-foreground">{stats.aproveitados}</span>
-            <span className="text-muted-foreground text-xs">/ {metaAproveitados} aproveitados</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm">
-            <CalendarCheck className="h-4 w-4 text-amber-500" />
-            <span className="font-semibold text-foreground">{stats.visitas_marcadas}</span>
-            <span className="text-muted-foreground text-xs">/ {metaVisitas} visitas</span>
-          </div>
-          {stats.tentativas >= metaLigacoes && (
-            <Badge variant="secondary" className="text-[10px] gap-1">🔥 Missão cumprida!</Badge>
-          )}
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <Progress value={progLig} className="h-1.5" />
-          <Progress value={progAprov} className="h-1.5" />
-          <Progress value={progVisitas} className="h-1.5" />
-        </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-1.5 text-sm">
+                <Flame className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-foreground">{stats.tentativas}</span>
+                <span className="text-muted-foreground text-xs">/ {metaLigacoes} ligações</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-sm">
+                <Target className="h-4 w-4 text-success" />
+                <span className="font-semibold text-foreground">{stats.aproveitados}</span>
+                <span className="text-muted-foreground text-xs">/ {metaAproveitados} aproveitados</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-sm">
+                <CalendarCheck className="h-4 w-4 text-amber-500" />
+                <span className="font-semibold text-foreground">{stats.visitas_marcadas}</span>
+                <span className="text-muted-foreground text-xs">/ {metaVisitas} visitas</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => {
+                  setMetaLig((goals?.meta_ligacoes || 30).toString());
+                  setMetaAprov((goals?.meta_aproveitados || 5).toString());
+                  setMetaVis((goals?.meta_visitas_marcadas || 3).toString());
+                  setEditingMetas(true);
+                }}>
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </div>
+              {stats.tentativas >= metaLigacoes && (
+                <Badge variant="secondary" className="text-[10px] gap-1">🔥 Missão cumprida!</Badge>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <Progress value={progLig} className="h-1.5" />
+              <Progress value={progAprov} className="h-1.5" />
+              <Progress value={progVisitas} className="h-1.5" />
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Scoring Legend + Progress */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      {/* Finalizar Trabalho */}
+      <div className="flex items-center justify-between gap-2">
         <ScoringLegend />
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+          onClick={async () => {
+            if (!user) return;
+            setFinalizando(true);
+            try {
+              const { data, error } = await supabase.rpc("finalizar_trabalho_corretor", { p_user_id: user.id });
+              if (error) throw error;
+              const result = data as any;
+              if (result?.success) {
+                toast.success(`Trabalho finalizado! ${result.tentativas} tentativas e ${result.aproveitados} aproveitados enviados ao gerente.`);
+                onBack();
+              } else {
+                toast.error(result?.message || "Erro ao finalizar trabalho.");
+              }
+            } catch (err: any) {
+              toast.error("Erro ao finalizar: " + err.message);
+            } finally {
+              setFinalizando(false);
+            }
+          }}
+          disabled={finalizando || stats.tentativas === 0}
+        >
+          <LogOut className="h-3.5 w-3.5" /> {finalizando ? "Enviando..." : "Finalizar Trabalho"}
+        </Button>
+      </div>
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="font-semibold text-primary">{lista.empreendimento} · Modo Missão</span>
       </div>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
