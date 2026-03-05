@@ -11,6 +11,13 @@ import homiMascot from "@/assets/homi-mascot.png";
 type Message = { role: "user" | "assistant"; content: string };
 
 const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
+  corretor: [
+    { label: "📞 Script de ligação", prompt: "Gere um script de ligação para um lead que pediu informações sobre um empreendimento e parou de responder há 7 dias." },
+    { label: "💬 Quebrar objeção", prompt: "Me ajude a quebrar a objeção 'está caro' de um lead interessado em apartamento na planta em Porto Alegre." },
+    { label: "✉️ Follow-up WhatsApp", prompt: "Gere uma mensagem curta de follow-up para WhatsApp para um lead que visitou o empreendimento mas não deu retorno." },
+    { label: "🎯 Dicas de fechamento", prompt: "Quais são as melhores técnicas para fechar uma venda de imóvel na planta? Me dê dicas práticas." },
+    { label: "📋 Como marcar visita", prompt: "Me ensine a melhor abordagem para marcar uma visita com um lead que demonstrou interesse inicial." },
+  ],
   gestor: [
     { label: "📋 Checklist do dia", prompt: "Gere meu checklist de tarefas para hoje como gerente Uhome. Considere rotinas de cobrança, acompanhamento e foco em visitas." },
     { label: "🎯 Plano de ação", prompt: "Gere um plano de ação para esta semana focado em destravar gargalos de conversão e aumentar visitas." },
@@ -29,7 +36,7 @@ const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
 
 export default function UhomeIaAssistant() {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isCorretor } = useUserRole();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -37,7 +44,7 @@ export default function UhomeIaAssistant() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const userRole = isAdmin ? "ceo" : "gestor";
+  const userRole = isAdmin ? "ceo" : isCorretor ? "corretor" : "gestor";
   const actions = QUICK_ACTIONS[userRole] || QUICK_ACTIONS.gestor;
 
   useEffect(() => {
@@ -175,7 +182,7 @@ export default function UhomeIaAssistant() {
                 </div>
                 <div>
                   <p className="text-sm font-bold tracking-tight">Homi</p>
-                  <p className="text-[10px] opacity-80">Assistente IA da UHome • {userRole === "ceo" ? "Modo CEO" : "Modo Gerente"}</p>
+                  <p className="text-[10px] opacity-80">Assistente IA da UHome • {userRole === "ceo" ? "Modo CEO" : userRole === "corretor" ? "Modo Corretor" : "Modo Gerente"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">

@@ -394,6 +394,26 @@ export default function CorretorDashboard() {
                       {(streak || 0) >= 1 && <span className="text-orange-500 font-semibold">🔥 {streak}d</span>}
                     </div>
                   </div>
+
+                  {/* Level Legend */}
+                  <div className="w-full mt-3 pt-3 border-t border-border space-y-1.5">
+                    <p className="text-[10px] font-semibold text-muted-foreground text-center uppercase tracking-wider">Níveis</p>
+                    {[
+                      { emoji: "🌱", label: "Iniciante", range: "0–4 pts", color: "text-emerald-500" },
+                      { emoji: "💪", label: "Ativo", range: "5–14 pts", color: "text-blue-500" },
+                      { emoji: "🔥", label: "Veterano", range: "15–29 pts", color: "text-orange-500" },
+                      { emoji: "⭐", label: "Mestre", range: "30–49 pts", color: "text-purple-500" },
+                      { emoji: "👑", label: "Lenda", range: "50+ pts", color: "text-amber-400" },
+                    ].map((lv) => (
+                      <div key={lv.label} className={`flex items-center justify-between text-[10px] ${lv.label === level.label ? "font-bold" : "opacity-60"}`}>
+                        <span className={lv.color}>{lv.emoji} {lv.label}</span>
+                        <span className="text-muted-foreground">{lv.range}</span>
+                      </div>
+                    ))}
+                    <p className="text-[9px] text-muted-foreground text-center mt-1.5 leading-tight">
+                      +3 pts por aproveitado · +1 pt por tentativa
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
