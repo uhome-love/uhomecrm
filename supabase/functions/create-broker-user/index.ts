@@ -154,6 +154,47 @@ serve(async (req) => {
       });
     }
 
+    if (action === "update_user") {
+      if (!target_user_id) throw new Error("ID do usuário não informado");
+
+      const updates: Record<string, any> = {};
+
+      // Update profile fields
+      const profileUpdates: Record<string, any> = {};
+      if (nome !== undefined) profileUpdates.nome = nome;
+      if (jetimob_user_id !== undefined) profileUpdates.jetimob_user_id = jetimob_user_id || null;
+      if (email !== undefined) profileUpdates.email = email;
+
+      if (Object.keys(profileUpdates).length > 0) {
+        const { error: profileErr } = await supabase
+          .from("profiles")
+          .update(profileUpdates)
+          .eq("user_id", target_user_id);
+        if (profileErr) console.error("Profile update error:", profileErr);
+      }
+
+      // Update auth email if changed
+      if (email) {
+        const { error: emailErr } = await supabase.auth.admin.updateUserById(target_user_id, { email });
+        if (emailErr) console.error("Email update error:", emailErr);
+      }
+
+      // Reset password if provided
+      if (senha) {
+        const { error: passErr } = await supabase.auth.admin.updateUserById(target_user_id, { password: senha });
+        if (passErr) throw new Error(`Erro ao redefinir senha: ${passErr.message}`);
+      }
+
+      // Update team_member name if changed
+      if (nome) {
+        await supabase.from("team_members").update({ nome }).eq("user_id", target_user_id);
+      }
+
+      return new Response(JSON.stringify({ success: true, message: "Usuário atualizado com sucesso!" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "delete_user") {
       if (!target_user_id) throw new Error("ID do usuário não informado");
       if (target_user_id === caller.id) throw new Error("Você não pode excluir a si mesmo");
