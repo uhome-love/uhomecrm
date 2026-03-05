@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useOAServerQueue, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
+import { useOAPendingQueue } from "@/hooks/useOAPendingQueue";
+import { useOASessionGuard } from "@/hooks/useOASessionGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, CalendarCheck, Zap, ChevronDown, Pencil, LogOut, SkipForward, Clock, ChevronRight } from "lucide-react";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, CalendarCheck, Zap, ChevronDown, Pencil, LogOut, SkipForward, Clock, ChevronRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useCorretorDailyStats, useCorretorDailyGoals } from "@/hooks/useCorretorDailyStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +19,7 @@ import ScriptPanel from "./ScriptPanel";
 import AttemptHistory from "./AttemptHistory";
 import ScoringLegend from "./ScoringLegend";
 import RecentCallsHistory from "./RecentCallsHistory";
+import PendingAttemptsBar from "./PendingAttemptsBar";
 import { motion, AnimatePresence } from "framer-motion";
 
 /** Format Brazilian phone */
@@ -65,6 +68,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const { goals, saveGoals } = useCorretorDailyGoals();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { addPending } = useOAPendingQueue();
+  const { sessionId, blocked, otherSessionActive, claimSession } = useOASessionGuard();
+  const [skipCount, setSkipCount] = useState(0);
 
   const [sessionLeadsServed, setSessionLeadsServed] = useState(0);
   const [currentIdempotencyKey, setCurrentIdempotencyKey] = useState<string | null>(null);
@@ -312,7 +318,31 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       await fetchNext();
     } catch (err: any) {
       console.error("Erro ao registrar tentativa:", err);
-      toast.error("Erro ao registrar tentativa. Tente novamente.");
+      // Offline retry: save to pending queue
+      if (lead && actionTaken && currentIdempotencyKey && user) {
+        addPending({
+          leadId: lead.id,
+          corretorId: user.id,
+          canal: actionTaken,
+          resultado,
+          feedback,
+          listaId: lead.lista_id,
+          empreendimento: lead.empreendimento,
+          idempotencyKey: currentIdempotencyKey,
+          visitaMarcada: visitaMarcada || false,
+        });
+        toast.error("Sem conexão — resultado salvo localmente. Será reenviado automaticamente.");
+        // Still advance to next lead
+        stopTimer();
+        stopHeartbeat();
+        setShowModal(false);
+        setActionTaken(null);
+        setCurrentIdempotencyKey(null);
+        setSessionLeadsServed(prev => prev + 1);
+        await fetchNext();
+      } else {
+        toast.error("Erro ao registrar tentativa. Tente novamente.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -328,6 +358,23 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       return () => clearTimeout(timer);
     }
   }, [lead, isLoading, queueEmpty, onBack]);
+
+  // Session guard: block if another tab is active
+  if (blocked) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-3" />
+          <p className="font-bold text-lg text-foreground">Sessão ativa em outra aba</p>
+          <p className="text-sm text-muted-foreground mt-1">Você já tem o discador aberto em outra aba do navegador.</p>
+          <div className="flex gap-2 justify-center mt-4">
+            <Button onClick={claimSession}>Assumir esta aba</Button>
+            <Button variant="outline" onClick={onBack}>Voltar</Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -356,6 +403,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   return (
     <div className="space-y-3">
+      {/* Pending attempts bar */}
+      <PendingAttemptsBar />
+
       {/* Milestone Animation */}
       <AnimatePresence>
         {showMilestone && (
@@ -477,7 +527,21 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             variant="ghost"
             className="h-7 text-xs gap-1"
             onClick={async () => {
-              if (lead) await unlockLead(lead.id);
+              if (lead && user) {
+                // Log skip event
+                setSkipCount(prev => prev + 1);
+                try {
+                  await supabase.from("oa_events" as any).insert({
+                    event_type: "lead_skipped",
+                    user_id: user.id,
+                    lead_id: lead.id,
+                    lista_id: lista.id,
+                    session_id: sessionId,
+                    metadata: { skip_number: skipCount + 1 },
+                  });
+                } catch {}
+                await unlockLead(lead.id);
+              }
               await fetchNext();
               toast("Lead pulado — próximo da fila", { duration: 1500 });
             }}

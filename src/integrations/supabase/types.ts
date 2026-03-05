@@ -799,6 +799,64 @@ export type Database = {
         }
         Relationships: []
       }
+      oa_events: {
+        Row: {
+          attempt_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          lead_id: string | null
+          lista_id: string | null
+          metadata: Json | null
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          attempt_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          lead_id?: string | null
+          lista_id?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          attempt_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          lead_id?: string | null
+          lista_id?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oa_events_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_tentativas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oa_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oa_events_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_listas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oferta_ativa_leads: {
         Row: {
           cadastrado_jetimob: boolean

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, Upload, Settings, FileText, Activity, Trophy } from "lucide-react";
+import { Phone, Upload, Settings, FileText, Activity, Trophy, BarChart3 } from "lucide-react";
 import ImportListPanel from "@/components/oferta-ativa/ImportListPanel";
 import CampaignManager from "@/components/oferta-ativa/CampaignManager";
 import TemplateManager from "@/components/oferta-ativa/TemplateManager";
 import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel";
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
+import OAObservabilityPanel from "@/components/oferta-ativa/OAObservabilityPanel";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export default function OfertaAtiva() {
@@ -58,12 +59,15 @@ export default function OfertaAtiva() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-6 h-auto">
           <TabsTrigger value="performance" className="gap-1.5 text-xs">
             <Activity className="h-3.5 w-3.5" /> Live
           </TabsTrigger>
           <TabsTrigger value="ranking" className="gap-1.5 text-xs">
             <Trophy className="h-3.5 w-3.5" /> Ranking
+          </TabsTrigger>
+          <TabsTrigger value="observability" className="gap-1.5 text-xs">
+            <BarChart3 className="h-3.5 w-3.5" /> Radar
           </TabsTrigger>
           <TabsTrigger value="importar" className="gap-1.5 text-xs">
             <Upload className="h-3.5 w-3.5" /> Importar
@@ -81,6 +85,9 @@ export default function OfertaAtiva() {
         </TabsContent>
         <TabsContent value="ranking">
           <RankingOfertaAtiva />
+        </TabsContent>
+        <TabsContent value="observability">
+          <OAObservabilityPanel />
         </TabsContent>
         <TabsContent value="importar">
           <ImportListPanel />

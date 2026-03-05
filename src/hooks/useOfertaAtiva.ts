@@ -185,24 +185,35 @@ export function useOAServerQueue(listaId: string) {
     }
   }, [user, listaId]);
 
-  // Heartbeat: renew lock every 2 minutes while lead is active
+  // Heartbeat: renew lock every 60s (TTL/3 for 5min lock) + renew on focus
+  const renewLock = useCallback(async (leadId: string) => {
+    if (!user) return;
+    const { data, error } = await supabase.rpc("renew_lead_lock", {
+      p_lead_id: leadId,
+      p_corretor_id: user.id,
+      p_lock_minutes: 5,
+    });
+    if (error || !(data as any)?.renewed) {
+      console.warn("Lock renewal failed for lead", leadId);
+    }
+  }, [user]);
+
   const startHeartbeat = useCallback((leadId: string) => {
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-    heartbeatRef.current = setInterval(async () => {
-      if (!user) return;
-      const { data, error } = await supabase.rpc("renew_lead_lock", {
-        p_lead_id: leadId,
-        p_corretor_id: user.id,
-        p_lock_minutes: 5,
-      });
-      if (error || !(data as any)?.renewed) {
-        console.warn("Lock renewal failed for lead", leadId);
-      }
-    }, 2 * 60 * 1000); // every 2 minutes
-  }, [user]);
+    // Renew immediately, then every 60s
+    renewLock(leadId);
+    heartbeatRef.current = setInterval(() => renewLock(leadId), 60 * 1000);
+
+    // Renew on window focus (tab switch back)
+    const onFocus = () => renewLock(leadId);
+    window.addEventListener("focus", onFocus);
+    // Store cleanup ref
+    (heartbeatRef as any)._focusCleanup = () => window.removeEventListener("focus", onFocus);
+  }, [renewLock]);
 
   const stopHeartbeat = useCallback(() => {
     if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
+    if ((heartbeatRef as any)._focusCleanup) { (heartbeatRef as any)._focusCleanup(); (heartbeatRef as any)._focusCleanup = null; }
   }, []);
 
   // Release lock
