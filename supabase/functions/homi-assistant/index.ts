@@ -49,11 +49,23 @@ Conceito moderno com praticidade e infraestrutura completa. Produto Melnick gara
 DIFERENCIAIS: Marca Melnick (confiança e valorização), acabamento de alto padrão, infraestrutura completa.
 ESTRATÉGIA: Usar força da marca Melnick como argumento de segurança no investimento. Convidar para conhecer o padrão de acabamento pessoalmente.`,
 
-  "Alto Lindóia": `EMPREENDIMENTO: Alto Lindóia
-LOCALIZAÇÃO: Bairro Lindóia, Porto Alegre/RS
-Localização estratégica com fácil acesso e valorização constante. Bairro consolidado com toda infraestrutura de serviços.
-DIFERENCIAIS: Localização privilegiada, valorização do bairro, acesso facilitado a vias principais.
-ESTRATÉGIA: Destacar praticidade da localização e potencial de valorização. Convidar para conhecer a região e o empreendimento.`,
+  "Alto Lindóia": `EMPREENDIMENTO: Alto Lindóia Resort
+INCORPORADORA: Florença Incorporadora
+LOCALIZAÇÃO: Rua Monsenhor Antônio Guilherme Grings, 100 – Bairro Sarandi – Porto Alegre/RS
+CONCEITO: Condomínio residencial com conceito de resort urbano. Lazer, conforto e qualidade de vida dentro do condomínio. Experiência de viver com infraestrutura completa como se estivesse em férias todos os dias. Voltado para famílias e compradores que buscam custo-benefício com estrutura completa.
+TIPOLOGIAS: Apartamentos de 1, 2 e 3 dormitórios. Metragens: 36m² a 78m². Todas com sacada, churrasqueira e vaga de garagem.
+CARACTERÍSTICAS: Plantas modernas e funcionais, sacada com churrasqueira, boa iluminação natural, vaga de garagem, layout prático.
+LAZER DO CONDOMÍNIO: ~7.298m² de área de lazer com +25 espaços: piscina adulto e infantil, academia, salão de festas, espaço gourmet, playground, quadra esportiva, beach tennis, sala de jogos, coworking, pet place, pet care, brinquedoteca, bicicletário, horta, quiosques com churrasqueira, espaços de convivência.
+LOCALIZAÇÃO DETALHADA: Zona Norte de POA, bairro Sarandi. Fácil acesso a Av. Assis Brasil, centros comerciais, supermercados, escolas, serviços. Região em desenvolvimento e valorização imobiliária.
+PERFIL DE CLIENTE IDEAL: Sair do aluguel, primeiro imóvel, condomínio com lazer completo, bom custo-benefício, financiamento facilitado. Famílias jovens, casais com filhos, investidores de médio padrão.
+DIFERENCIAIS PRINCIPAIS: Conceito de condomínio resort, +25 itens de lazer, plantas funcionais, sacada com churrasqueira, vaga de garagem, excelente custo-benefício, localização estratégica Zona Norte.
+OBJEÇÕES E RESPOSTAS:
+- "Apartamento pequeno" → Condomínio possui grande área de lazer que amplia o espaço de convivência.
+- "Prefiro algo mais central" → Região com boa mobilidade e valores mais acessíveis que regiões centrais.
+- "Dúvida sobre valorização" → Zona Norte em crescimento com grande procura por imóveis com infraestrutura completa.
+ARGUMENTOS DE VENDA: Morar em condomínio com estrutura de resort, lazer completo para toda a família, ótimo custo-benefício, oportunidade para sair do aluguel, infraestrutura completa.
+ESTRATÉGIA DE CONVERSÃO: 1) Entender perfil. 2) Apresentar conceito de condomínio resort. 3) Destacar estrutura de lazer. 4) Convidar para conhecer. Pergunta final: "Faz sentido você conhecer o projeto pessoalmente? Prefere durante a semana ou no fim de semana?"
+OBJETIVO: Converter leads em visitas. A visita aumenta significativamente a conversão porque o cliente visualiza a infraestrutura completa.`,
 
   "Orygem": `EMPREENDIMENTO: Orygem
 Conceito inovador de moradia com design contemporâneo e diferenciais exclusivos. Projeto com identidade própria e proposta diferenciada no mercado.
