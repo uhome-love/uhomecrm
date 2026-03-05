@@ -68,7 +68,7 @@ export default function HomiGreeting() {
 
     // Check if already greeted today
     const last = localStorage.getItem(STORAGE_KEY);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString("sv-SE"); // yyyy-MM-dd local
     if (last === today) return;
 
     // Fetch name

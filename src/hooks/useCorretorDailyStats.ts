@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { format } from "date-fns";
 
 export interface CorretorDailyStats {
   ligacoes: number;
@@ -80,7 +81,7 @@ export interface CorretorGoals {
 
 export function useCorretorDailyGoals() {
   const { user } = useAuth();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = format(new Date(), "yyyy-MM-dd");
 
   const { data: goals, isLoading, refetch } = useQuery({
     queryKey: ["corretor-daily-goals", user?.id, today],
@@ -127,7 +128,7 @@ export function useCorretorDailyGoals() {
 }
 
 export function useDailyMotivation() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = format(new Date(), "yyyy-MM-dd");
 
   const MOTIVATIONS = [
     "Cada ligação é uma chance de mudar a vida de alguém. Faça valer.",
