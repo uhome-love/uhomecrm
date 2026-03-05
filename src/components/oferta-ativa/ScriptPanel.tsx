@@ -3,8 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, FileText, MessageCircle, Mail, Pencil, Check } from "lucide-react";
+import { Copy, FileText, MessageCircle, Mail, Pencil, Check, Users } from "lucide-react";
 import { useOATemplates, type OALead } from "@/hooks/useOfertaAtiva";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface Props {
@@ -13,14 +16,34 @@ interface Props {
   compact?: boolean;
 }
 
-
 function buildDefaultScript(leadName: string, emp: string) {
   return `Olá, ${leadName}! Aqui é da Uhome, tudo bem?\n\nVi que você se interessou pelo ${emp}. Tenho informações atualizadas sobre valores e condições especiais.\n\nPosso te contar em 2 minutos?`;
 }
 
+function applyVars(text: string, leadName: string, emp: string) {
+  return text.replace(/\{nome\}/g, leadName).replace(/\{empreendimento\}/g, emp);
+}
+
 export default function ScriptPanel({ empreendimento, lead, compact }: Props) {
   const { templates } = useOATemplates(empreendimento);
+  const { user } = useAuth();
   const [editingScript, setEditingScript] = useState<"ligacao" | "whatsapp" | "email" | null>(null);
+
+  // Fetch team scripts assigned by manager
+  const { data: teamScript } = useQuery({
+    queryKey: ["team-script-for-dialing", empreendimento, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("team_scripts")
+        .select("*")
+        .eq("empreendimento", empreendimento)
+        .eq("ativo", true)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return (data && data.length > 0) ? data[0] : null;
+    },
+    enabled: !!user && !!empreendimento,
+  });
 
   const leadName = lead?.nome || "{nome}";
   const emp = lead?.empreendimento || empreendimento;
@@ -28,33 +51,48 @@ export default function ScriptPanel({ empreendimento, lead, compact }: Props) {
   const scriptTemplate = templates.find(t => t.canal === "whatsapp" && t.tipo === "primeiro_contato");
   const emailTemplate = templates.find(t => t.canal === "email" && t.tipo === "primeiro_contato");
 
-  const defaultLigacao = buildDefaultScript(leadName, emp);
-  const defaultWhatsApp = scriptTemplate
-    ? scriptTemplate.conteudo.replace("{nome}", leadName).replace("{empreendimento}", emp)
-    : `Olá ${leadName}! 😊\n\nVi que você se interessou pelo *${emp}*. Tenho novidades sobre condições exclusivas!\n\nPodemos conversar rapidinho?`;
-  const defaultEmail = emailTemplate
-    ? emailTemplate.conteudo.replace("{nome}", leadName).replace("{empreendimento}", emp)
-    : `Olá ${leadName},\n\nGostaria de apresentar mais detalhes sobre o ${emp}.\n\nTemos condições especiais que podem te interessar. Podemos agendar uma conversa?\n\nAbraços,\nEquipe Uhome`;
+  // Priority: team script > template > default
+  const defaultLigacao = teamScript?.script_ligacao
+    ? applyVars(teamScript.script_ligacao, leadName, emp)
+    : buildDefaultScript(leadName, emp);
+  const defaultWhatsApp = teamScript?.script_whatsapp
+    ? applyVars(teamScript.script_whatsapp, leadName, emp)
+    : scriptTemplate
+      ? scriptTemplate.conteudo.replace("{nome}", leadName).replace("{empreendimento}", emp)
+      : `Olá ${leadName}! 😊\n\nVi que você se interessou pelo *${emp}*. Tenho novidades sobre condições exclusivas!\n\nPodemos conversar rapidinho?`;
+  const defaultEmail = teamScript?.script_email
+    ? applyVars(teamScript.script_email, leadName, emp)
+    : emailTemplate
+      ? emailTemplate.conteudo.replace("{nome}", leadName).replace("{empreendimento}", emp)
+      : `Olá ${leadName},\n\nGostaria de apresentar mais detalhes sobre o ${emp}.\n\nTemos condições especiais. Podemos agendar uma conversa?\n\nAbraços,\nEquipe Uhome`;
 
   const [scriptLigacao, setScriptLigacao] = useState(defaultLigacao);
   const [scriptWhatsApp, setScriptWhatsApp] = useState(defaultWhatsApp);
   const [scriptEmail, setScriptEmail] = useState(defaultEmail);
 
-  // Update scripts when lead changes
+  // Update scripts when lead or team script changes
   useEffect(() => {
-    setScriptLigacao(buildDefaultScript(leadName, emp));
+    const ln = lead?.nome || "{nome}";
+    const e = lead?.empreendimento || empreendimento;
+
+    setScriptLigacao(teamScript?.script_ligacao
+      ? applyVars(teamScript.script_ligacao, ln, e)
+      : buildDefaultScript(ln, e));
+
     const wt = templates.find(t => t.canal === "whatsapp" && t.tipo === "primeiro_contato");
-    setScriptWhatsApp(wt
-      ? wt.conteudo.replace("{nome}", leadName).replace("{empreendimento}", emp)
-      : `Olá ${leadName}! 😊\n\nVi que você se interessou pelo *${emp}*. Tenho novidades sobre condições exclusivas!\n\nPodemos conversar rapidinho?`
-    );
+    setScriptWhatsApp(teamScript?.script_whatsapp
+      ? applyVars(teamScript.script_whatsapp, ln, e)
+      : wt ? wt.conteudo.replace("{nome}", ln).replace("{empreendimento}", e)
+        : `Olá ${ln}! 😊\n\nVi que você se interessou pelo *${e}*. Tenho novidades sobre condições exclusivas!\n\nPodemos conversar rapidinho?`);
+
     const et = templates.find(t => t.canal === "email" && t.tipo === "primeiro_contato");
-    setScriptEmail(et
-      ? et.conteudo.replace("{nome}", leadName).replace("{empreendimento}", emp)
-      : `Olá ${leadName},\n\nGostaria de apresentar mais detalhes sobre o ${emp}.\n\nTemos condições especiais. Podemos agendar uma conversa?\n\nAbraços,\nEquipe Uhome`
-    );
+    setScriptEmail(teamScript?.script_email
+      ? applyVars(teamScript.script_email, ln, e)
+      : et ? et.conteudo.replace("{nome}", ln).replace("{empreendimento}", e)
+        : `Olá ${ln},\n\nGostaria de apresentar mais detalhes sobre o ${e}.\n\nTemos condições especiais. Podemos agendar uma conversa?\n\nAbraços,\nEquipe Uhome`);
+
     setEditingScript(null);
-  }, [lead?.id, leadName, emp, templates]);
+  }, [lead?.id, leadName, emp, templates, teamScript]);
 
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -69,6 +107,13 @@ export default function ScriptPanel({ empreendimento, lead, compact }: Props) {
 
   return (
     <div className="space-y-3 h-full overflow-y-auto">
+      {teamScript && (
+        <div className="flex items-center gap-1.5 px-1">
+          <Badge variant="secondary" className="text-[10px] gap-1">
+            <Users className="h-3 w-3" /> Script do gerente: {teamScript.titulo}
+          </Badge>
+        </div>
+      )}
       {scripts.map((s) => (
         <Card key={s.key} className={s.borderColor}>
           <CardContent className="p-3 space-y-2">

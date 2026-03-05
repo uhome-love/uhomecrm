@@ -78,7 +78,7 @@ const App = () => (
             <Route path="/pdn" element={<ProtectedPage roles={["gestor", "admin"]}><PdnDashboard /></ProtectedPage>} />
             <Route path="/central-dados" element={<ProtectedPage roles={["gestor", "admin"]}><CentralDados /></ProtectedPage>} />
             <Route path="/scripts" element={<ProtectedPage roles={["gestor", "admin"]}><ScriptsGenerator /></ProtectedPage>} />
-            <Route path="/gestao" element={<ProtectedPage roles={["gestor", "admin"]}><GestorDashboard /></ProtectedPage>} />
+            <Route path="/gestao" element={<ProtectedPage roles={["admin"]}><GestorDashboard /></ProtectedPage>} />
             <Route path="/relatorios" element={<ProtectedPage roles={["gestor", "admin"]}><RelatorioCorretor /></ProtectedPage>} />
             <Route path="/ranking" element={<ProtectedPage roles={["gestor", "admin"]}><RankingComercial /></ProtectedPage>} />
             <Route path="/meu-time" element={<ProtectedPage roles={["gestor", "admin"]}><MeuTime /></ProtectedPage>} />

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, MessageSquare, BookOpen } from "lucide-react";
+import { Phone, MessageSquare, BookOpen, Users } from "lucide-react";
 import ScriptLigacao from "@/components/scripts/ScriptLigacao";
 import ScriptFollowUp from "@/components/scripts/ScriptFollowUp";
 import ScriptLibrary from "@/components/scripts/ScriptLibrary";
+import TeamScriptAssignment from "@/components/scripts/TeamScriptAssignment";
 
 export default function ScriptsGenerator() {
   const [activeTab, setActiveTab] = useState("ligacao");
@@ -20,12 +21,15 @@ export default function ScriptsGenerator() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
+        <TabsList className="grid w-full grid-cols-4 h-auto">
           <TabsTrigger value="ligacao" className="gap-1.5 text-xs py-2">
             <Phone className="h-3.5 w-3.5" /> Script de Ligação
           </TabsTrigger>
           <TabsTrigger value="followup" className="gap-1.5 text-xs py-2">
             <MessageSquare className="h-3.5 w-3.5" /> Follow Up
+          </TabsTrigger>
+          <TabsTrigger value="time" className="gap-1.5 text-xs py-2">
+            <Users className="h-3.5 w-3.5" /> Scripts do Time
           </TabsTrigger>
           <TabsTrigger value="biblioteca" className="gap-1.5 text-xs py-2">
             <BookOpen className="h-3.5 w-3.5" /> Biblioteca
@@ -34,6 +38,7 @@ export default function ScriptsGenerator() {
 
         <TabsContent value="ligacao" className="mt-4"><ScriptLigacao /></TabsContent>
         <TabsContent value="followup" className="mt-4"><ScriptFollowUp /></TabsContent>
+        <TabsContent value="time" className="mt-4"><TeamScriptAssignment /></TabsContent>
         <TabsContent value="biblioteca" className="mt-4"><ScriptLibrary /></TabsContent>
       </Tabs>
     </div>

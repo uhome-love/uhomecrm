@@ -1170,6 +1170,48 @@ export type Database = {
         }
         Relationships: []
       }
+      team_scripts: {
+        Row: {
+          ativo: boolean
+          campanha: string | null
+          created_at: string
+          empreendimento: string
+          gerente_id: string
+          id: string
+          script_email: string | null
+          script_ligacao: string | null
+          script_whatsapp: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          campanha?: string | null
+          created_at?: string
+          empreendimento: string
+          gerente_id: string
+          id?: string
+          script_email?: string | null
+          script_ligacao?: string | null
+          script_whatsapp?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          campanha?: string | null
+          created_at?: string
+          empreendimento?: string
+          gerente_id?: string
+          id?: string
+          script_email?: string | null
+          script_ligacao?: string | null
+          script_whatsapp?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

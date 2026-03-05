@@ -93,7 +93,7 @@ export function AppSidebar() {
         { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
         { title: "Central de Dados", url: "/central-dados", icon: BarChart3 },
         { title: "Scripts & Follow Ups", url: "/scripts", icon: FileEdit },
-        { title: "Recuperação de Leads", url: "/gestao", icon: LayoutDashboard },
+        
         { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
         { title: "Ranking Comercial", url: "/ranking", icon: Trophy },
       ]
@@ -103,6 +103,7 @@ export function AppSidebar() {
     ? [
         { title: "Dashboard CEO", url: "/ceo", icon: Crown },
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
+        { title: "Recuperação de Leads", url: "/gestao", icon: LayoutDashboard },
         { title: "Inteligência Marketing", url: "/marketing", icon: BarChart3 },
         { title: "Auditoria & Saúde", url: "/auditoria", icon: Shield },
       ]
