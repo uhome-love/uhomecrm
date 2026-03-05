@@ -313,6 +313,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       setSessionLeadsServed(prev => prev + 1);
       queryClient.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
       queryClient.invalidateQueries({ queryKey: ["checkpoint"] });
+      queryClient.invalidateQueries({ queryKey: ["oa-ranking"] });
+      queryClient.invalidateQueries({ queryKey: ["oa-performance-live"] });
 
       // Fetch next lead from server (atomic, server-side selection)
       await fetchNext();

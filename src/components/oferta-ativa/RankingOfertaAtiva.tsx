@@ -41,7 +41,7 @@ interface CorretorOARank {
 
 export default function RankingOfertaAtiva() {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isGestor } = useUserRole();
   const [period, setPeriod] = useState<PeriodOption>("semana");
 
   const periodStart = useMemo(() => {
@@ -52,8 +52,26 @@ export default function RankingOfertaAtiva() {
     return startOfMonth(now).toISOString();
   }, [period]);
 
+  // For gestores: fetch team member user_ids to filter
+  const { data: teamUserIds } = useQuery({
+    queryKey: ["oa-ranking-team-ids", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", user!.id)
+        .eq("status", "ativo");
+      return (data || []).map(t => t.user_id).filter(Boolean) as string[];
+    },
+    enabled: !!user && isGestor && !isAdmin,
+    staleTime: 60000,
+  });
+
+  const shouldFilterByTeam = isGestor && !isAdmin;
+  const teamFilter = shouldFilterByTeam ? teamUserIds : null;
+
   const { data: ranking = [], isLoading } = useQuery({
-    queryKey: ["oa-ranking", period, periodStart],
+    queryKey: ["oa-ranking", period, periodStart, teamFilter?.join(",") ?? "all"],
     queryFn: async () => {
       let query = supabase
         .from("oferta_ativa_tentativas")
@@ -61,6 +79,11 @@ export default function RankingOfertaAtiva() {
 
       if (periodStart) {
         query = query.gte("created_at", periodStart);
+      }
+
+      // Filter by team if gestor (not admin)
+      if (teamFilter && teamFilter.length > 0) {
+        query = query.in("corretor_id", teamFilter);
       }
 
       const { data: tentativas, error } = await query;
@@ -107,7 +130,7 @@ export default function RankingOfertaAtiva() {
       result.sort((a, b) => b.pontos - a.pontos || b.aproveitados - a.aproveitados);
       return result;
     },
-    enabled: !!user,
+    enabled: !!user && (!shouldFilterByTeam || (teamFilter != null && teamFilter.length > 0)),
     staleTime: 30000,
   });
 
@@ -136,9 +159,14 @@ export default function RankingOfertaAtiva() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-warning" />
-          <h2 className="font-display font-bold text-lg text-foreground">Ranking Oferta Ativa</h2>
+      <div>
+          <div className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-warning" />
+            <h2 className="font-display font-bold text-lg text-foreground">Ranking Oferta Ativa</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isAdmin ? "Visão completa da empresa" : "Ranking da sua equipe"}
+          </p>
         </div>
         <Select value={period} onValueChange={(v) => setPeriod(v as PeriodOption)}>
           <SelectTrigger className="w-44">
