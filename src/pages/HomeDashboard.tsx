@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -6,6 +6,7 @@ import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
 import { useMarketing, getCanalLabel } from "@/hooks/useMarketing";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
   TrendingUp, Users, Trophy, Target, BarChart3, AlertTriangle,
@@ -35,7 +36,7 @@ export default function HomeDashboard() {
   }, [isAdmin, isGestor, navigate]);
 
   const filterGerenteId = isAdmin ? undefined : user?.id;
-  const { gerentes, companyTotals, allCorretores, loading } = useCeoData(period as CeoPeriod, undefined, undefined, filterGerenteId);
+  const { gerentes, companyTotals, allCorretores, loading, reload } = useCeoData(period as CeoPeriod, undefined, undefined, filterGerenteId);
   const { channelStats, totals: mktTotals } = useMarketing();
   const { alerts: smartAlerts } = useSmartAlerts();
 
@@ -52,23 +53,50 @@ export default function HomeDashboard() {
   }, [user]);
 
   // Fetch PDN summary
-  useEffect(() => {
+  const fetchPdn = useCallback(async () => {
     if (!user) return;
-    const fetchPdn = async () => {
-      let q = supabase.from("pdn_entries").select("situacao, docs_status, data_visita");
-      if (!isAdmin) q = q.eq("gerente_id", user.id);
-      const { data } = await q;
-      if (!data) return;
-      const now = new Date();
-      const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
-      setPdnHot({
-        propostas: data.filter(d => d.situacao === "gerado").length,
-        docs: data.filter(d => d.docs_status === "pendente" || d.docs_status === "em_analise").length,
-        visitaRecente: data.filter(d => d.data_visita && new Date(d.data_visita) >= fiveDaysAgo).length,
-      });
-    };
-    fetchPdn();
+    const mesAtual = format(new Date(), "yyyy-MM");
+    let q = supabase.from("pdn_entries").select("situacao, docs_status, data_visita, temperatura").eq("mes", mesAtual);
+    if (!isAdmin) q = q.eq("gerente_id", user.id);
+    const { data } = await q;
+    if (!data) return;
+    const now = new Date();
+    const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+    const visitas = data.filter(d => d.situacao === "visita");
+    setPdnHot({
+      propostas: data.filter(d => d.situacao === "gerado").length,
+      docs: visitas.filter(d => d.docs_status === "sem_docs" || d.docs_status === "em_andamento").length,
+      visitaRecente: data.filter(d => d.data_visita && new Date(d.data_visita) >= fiveDaysAgo).length,
+    });
   }, [user, isAdmin]);
+
+  useEffect(() => { fetchPdn(); }, [fetchPdn]);
+
+  // Realtime: auto-refresh on PDN or checkpoint changes
+  useEffect(() => {
+    const pdnChannel = supabase
+      .channel("home-pdn-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pdn_entries" }, () => {
+        fetchPdn();
+        reload();
+      })
+      .subscribe();
+
+    const cpChannel = supabase
+      .channel("home-checkpoint-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoint_lines" }, () => {
+        reload();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoints" }, () => {
+        reload();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(pdnChannel);
+      supabase.removeChannel(cpChannel);
+    };
+  }, [fetchPdn, reload]);
 
   // Fetch lead recovery
   useEffect(() => {

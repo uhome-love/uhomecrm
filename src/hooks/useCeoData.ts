@@ -87,24 +87,39 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     let cpQuery = supabase.from("checkpoints").select("id, data, gerente_id").gte("data", dateRange.start).lte("data", dateRange.end);
     if (filterGerenteId) cpQuery = cpQuery.eq("gerente_id", filterGerenteId);
     const { data: cps } = await cpQuery;
-    if (!cps || cps.length === 0) { setGerentes([]); setLoading(false); return; }
 
-    const cpIds = cps.map(c => c.id);
-    const cpMap = new Map(cps.map(c => [c.id, c]));
+    const cpIds = (cps || []).map(c => c.id);
+    const gerenteIdsFromCps = [...new Set((cps || []).map(c => c.gerente_id))];
+    
+    // Even with no checkpoints, still load PDN data
+    // Get gerente IDs from either checkpoints or the filter
+    let gerenteIds: string[] = gerenteIdsFromCps;
+    if (gerenteIds.length === 0 && filterGerenteId) {
+      gerenteIds = [filterGerenteId];
+    } else if (gerenteIds.length === 0) {
+      // Get all gestores
+      const gestorIds = Array.from(gerenteUserIds);
+      gerenteIds = gestorIds;
+    }
+    
+    if (gerenteIds.length === 0) { setGerentes([]); setLoading(false); return; }
+    const cpMap = new Map((cps || []).map(c => [c.id, c]));
 
     // Get all lines (without VGV - VGV comes from PDN)
-    const { data: lines } = await supabase.from("checkpoint_lines").select("*").in("checkpoint_id", cpIds);
+    const { data: lines } = cpIds.length > 0
+      ? await supabase.from("checkpoint_lines").select("*").in("checkpoint_id", cpIds)
+      : { data: [] };
 
     // Get all team members for relevant gerentes
-    const gerenteIds = [...new Set(cps.map(c => c.gerente_id))];
-    const { data: allTeam } = await supabase.from("team_members").select("id, nome, gerente_id").in("gerente_id", gerenteIds);
+    const gerenteIdsAll = [...new Set([...gerenteIds])];
+    const { data: allTeam } = await supabase.from("team_members").select("id, nome, gerente_id").in("gerente_id", gerenteIdsAll);
 
     const profileMap = new Map((profiles || []).map(p => [p.user_id, p.nome]));
     const teamMap = new Map((allTeam || []).map(t => [t.id, t]));
 
     // Aggregate per corretor per gerente
     const gerenteMap = new Map<string, GerenteAgg>();
-    for (const gId of gerenteIds) {
+    for (const gId of gerenteIdsAll) {
       gerenteMap.set(gId, {
         gerente_id: gId,
         gerente_nome: profileMap.get(gId) || "Gerente",
@@ -164,11 +179,11 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     }
 
     // Get CEO metas for VGV meta values
-    const { data: ceoMetas } = await supabase.from("ceo_metas_mensais").select("gerente_id, meta_vgv_assinado").eq("mes", mesKey).in("gerente_id", gerenteIds);
+    const { data: ceoMetas } = await supabase.from("ceo_metas_mensais").select("gerente_id, meta_vgv_assinado").eq("mes", mesKey).in("gerente_id", gerenteIdsAll);
     const metaVgvMap = new Map((ceoMetas || []).map((m: any) => [m.gerente_id, Number(m.meta_vgv_assinado || 0)]));
 
     // Set VGV totals on gerente level from PDN
-    for (const gId of gerenteIds) {
+    for (const gId of gerenteIdsAll) {
       const vgv = vgvByGerente.get(gId) || { gerado: 0, assinado: 0 };
       const g = gerenteMap.get(gId);
       if (g) {
