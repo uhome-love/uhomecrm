@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useOAFila, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useOAServerQueue, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, Lock, CalendarCheck, Zap, ChevronDown, Pencil, LogOut, Timer, SkipForward, Clock, Thermometer, ChevronRight } from "lucide-react";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, CalendarCheck, Zap, ChevronDown, Pencil, LogOut, SkipForward, Clock, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useCorretorDailyStats, useCorretorDailyGoals } from "@/hooks/useCorretorDailyStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,30 +58,19 @@ interface Props {
 }
 
 export default function DialingModeWithScript({ lista, onBack }: Props) {
-  const { fila, isLoading, lockLead, unlockLead, refetch } = useOAFila(lista.id);
+  const { currentLead: lead, isLoading, queueEmpty, fetchNext, startHeartbeat, stopHeartbeat, unlockLead } = useOAServerQueue(lista.id);
   const { registrar } = useOARegistrarTentativa();
   const { templates } = useOATemplates(lista.empreendimento);
   const { stats } = useCorretorDailyStats();
   const { goals, saveGoals } = useCorretorDailyGoals();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  // === SESSION-LEVEL BLACKLIST: leads already worked this session ===
-  const [workedLeadIds] = useState(() => new Set<string>());
-  
-  // === PERSIST INDEX across tab switches via sessionStorage ===
-  const storageKey = `oa-dialing-${lista.id}`;
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    const saved = sessionStorage.getItem(storageKey);
-    return saved ? parseInt(saved, 10) || 0 : 0;
-  });
-  // Persist index changes
-  useEffect(() => {
-    sessionStorage.setItem(storageKey, String(currentIndex));
-  }, [currentIndex, storageKey]);
+
+  const [sessionLeadsServed, setSessionLeadsServed] = useState(0);
+  const [currentIdempotencyKey, setCurrentIdempotencyKey] = useState<string | null>(null);
 
   const [actionTaken, setActionTaken] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [lockStatus, setLockStatus] = useState<"idle" | "locking" | "locked" | "failed">("idle");
   const [submitting, setSubmitting] = useState(false);
   const [editingMetas, setEditingMetas] = useState(false);
   const [metaLig, setMetaLig] = useState("");
@@ -89,7 +78,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [metaVis, setMetaVis] = useState("");
   const [finalizando, setFinalizando] = useState(false);
   
-  // === TIMESTAMP-BASED TIMER (fixes accelerated/decelerated counting) ===
+  // === TIMESTAMP-BASED TIMER ===
   const [callStartTimestamp, setCallStartTimestamp] = useState<number | null>(null);
   const [callTimer, setCallTimer] = useState(0);
   const [callActive, setCallActive] = useState(false);
@@ -99,31 +88,15 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [sessionStart] = useState(() => Date.now());
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [showMilestone, setShowMilestone] = useState<string | null>(null);
-  const currentLeadIdRef = useRef<string | null>(null);
   
-  // === FILTER OUT already-worked leads from fila ===
-  const activeFila = useMemo(() => {
-    return fila.filter(l => !workedLeadIds.has(l.id));
-  }, [fila, workedLeadIds]);
-
-  // Clamp currentIndex when activeFila changes — but NEVER during active call or modal
+  // === FETCH FIRST LEAD on mount ===
+  const hasFetchedRef = useRef(false);
   useEffect(() => {
-    // If call is active or modal is open, don't touch the index
-    if (callActive || showModal || actionTaken) return;
-    
-    if (activeFila.length > 0 && currentIndex >= activeFila.length) {
-      // Try to find the lead we were working on by ID
-      if (currentLeadIdRef.current) {
-        const idx = activeFila.findIndex(l => l.id === currentLeadIdRef.current);
-        if (idx >= 0) {
-          setCurrentIndex(idx);
-          return;
-        }
-      }
-      // Fallback: clamp to last valid index
-      setCurrentIndex(activeFila.length - 1);
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchNext();
     }
-  }, [activeFila, currentIndex, callActive, showModal, actionTaken]);
+  }, [fetchNext]);
 
   // Session timer
   useEffect(() => {
@@ -140,7 +113,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     return `${m}min`;
   };
 
-  // TIMESTAMP-BASED call timer — immune to JS event loop delays
+  // TIMESTAMP-BASED call timer
   const startTimer = useCallback(() => {
     const now = Date.now();
     setCallStartTimestamp(now);
@@ -148,7 +121,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     setCallActive(true);
     timerRef.current = setInterval(() => {
       setCallTimer(Math.floor((Date.now() - now) / 1000));
-    }, 250); // Update 4x/sec for smooth display, but value is always real elapsed time
+    }, 250);
   }, []);
 
   const stopTimer = useCallback(() => {
@@ -187,7 +160,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   }, []);
 
-  // Mini-break suggestion
   const shouldSuggestBreak = stats.tentativas > 0 && stats.tentativas % 15 === 0;
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
@@ -197,43 +169,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
   const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitas) * 100));
 
-  const lead = activeFila[currentIndex] ?? null;
-  const nextLead = activeFila[currentIndex + 1] ?? null;
-
-  // Track current lead ID for index recovery after refetch
+  // Start heartbeat when lead is locked
   useEffect(() => {
-    if (lead) currentLeadIdRef.current = lead.id;
-  }, [lead?.id]);
-
-  // Lock lead when active
-  const prevLeadIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    // Don't re-lock or advance during active call/modal
-    if (callActive || showModal) return;
-    
-    if (lead && lead.id !== prevLeadIdRef.current) {
-      prevLeadIdRef.current = lead.id;
-      setLockStatus("locking");
-      lockLead(lead.id).then(result => {
-        if (result.locked) {
-          setLockStatus("locked");
-        } else {
-          setLockStatus("failed");
-          if (result.reason === "locked_by_another") {
-            toast.error("Lead em atendimento por outro corretor. Avançando...");
-            // Add to blacklist so it won't appear again this session
-            workedLeadIds.add(lead.id);
-            setTimeout(() => {
-              if (currentIndex < activeFila.length - 1) setCurrentIndex(prev => prev + 1);
-            }, 1000);
-          }
-        }
-      });
-    }
-    return () => {
-      if (prevLeadIdRef.current && !callActive && !showModal) unlockLead(prevLeadIdRef.current);
-    };
-  }, [lead?.id, lockLead, unlockLead, callActive, showModal]);
+    if (lead) startHeartbeat(lead.id);
+    return () => stopHeartbeat();
+  }, [lead?.id, startHeartbeat, stopHeartbeat]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -242,16 +182,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   const handleAction = (canal: string) => {
     if (!lead) return;
-
     if (canal === "ligacao") {
-      // 2-step flow: just start the timer, NO modal
       setActionTaken("ligacao");
       startTimer();
+      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
       return;
     }
-
-    // For WhatsApp / Email: open external app then show modal
     setActionTaken(canal);
+    setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
 
     if (canal === "whatsapp" && lead.telefone) {
       const phone = lead.telefone.replace(/\D/g, "");
@@ -266,17 +204,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       const body = `Olá ${lead.nome},\n\nGostaria de apresentar mais detalhes sobre o ${lead.empreendimento || "empreendimento"}.\n\nPodemos agendar uma conversa?`;
       window.open(`mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, "_blank");
     }
-
     setTimeout(() => setShowModal(true), 500);
   };
 
-  /** Called when user clicks "Finalizar Ligação" */
   const handleFinalizarLigacao = () => {
     stopTimer();
     setShowModal(true);
   };
 
-  /** WhatsApp during active call — open without ending call */
   const handleWhatsAppDuringCall = () => {
     if (!lead?.telefone) return;
     const phone = lead.telefone.replace(/\D/g, "");
@@ -292,34 +227,25 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     if (!lead || !actionTaken || submitting) return;
     setSubmitting(true);
     try {
-      // === OPTIMISTIC: Add to blacklist IMMEDIATELY so lead can never reappear ===
-      workedLeadIds.add(lead.id);
-      
-      const result = await registrar(lead, actionTaken, resultado, feedback, lista);
-      if (!result?.success) { 
-        // Rollback blacklist on failure
-        workedLeadIds.delete(lead.id);
-        setSubmitting(false); 
-        return; 
+      const result = await registrar(lead, actionTaken, resultado, feedback, lista, currentIdempotencyKey || undefined);
+      if (!result?.success) { setSubmitting(false); return; }
+
+      if (!result.idempotent) {
+        if (resultado === "com_interesse") {
+          setStreak(prev => prev + 1);
+          toast.success("🎉 APROVEITADO! +3 pontos! Mandou bem!", { duration: 4000 });
+        } else if (resultado === "nao_atendeu") {
+          setStreak(0);
+          toast("📞 Não atendeu — lead volta à fila com cooldown progressivo", { duration: 2000 });
+        } else if (resultado === "sem_interesse") {
+          setStreak(0);
+          toast("👋 Sem interesse — lead removido da fila", { duration: 2000 });
+        } else if (resultado === "numero_errado") {
+          toast("❌ Número errado — removido", { duration: 2000 });
+        }
+        checkMilestone(stats.tentativas + 1);
       }
 
-      // Update streak
-      if (resultado === "com_interesse") {
-        setStreak(prev => prev + 1);
-        toast.success("🎉 APROVEITADO! +3 pontos! Mandou bem!", { duration: 4000 });
-      } else if (resultado === "nao_atendeu") {
-        setStreak(0);
-        toast("📞 Não atendeu — lead volta à fila com cooldown", { duration: 2000 });
-      } else if (resultado === "sem_interesse") {
-        setStreak(0);
-        toast("👋 Sem interesse — lead removido da fila", { duration: 2000 });
-      } else if (resultado === "numero_errado") {
-        toast("❌ Número errado — removido", { duration: 2000 });
-      }
-
-      checkMilestone(stats.tentativas + 1);
-
-      // Se marcou visita, incrementar no checkpoint
       if (visitaMarcada && user) {
         try {
           const today = new Date().toISOString().split("T")[0];
@@ -374,24 +300,16 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       }
 
       stopTimer();
+      stopHeartbeat();
       setShowModal(false);
       setActionTaken(null);
+      setCurrentIdempotencyKey(null);
+      setSessionLeadsServed(prev => prev + 1);
       queryClient.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
       queryClient.invalidateQueries({ queryKey: ["checkpoint"] });
 
-      // === INDEX MANAGEMENT: activeFila will auto-shrink due to blacklist ===
-      // The current lead was blacklisted, so activeFila will recalculate.
-      // Keep currentIndex the same — the next lead will slide into this position.
-      // Only reset if we're past the end.
-      const remainingAfterRemoval = activeFila.length - 1; // -1 because we just blacklisted one
-      if (currentIndex >= remainingAfterRemoval && remainingAfterRemoval > 0) {
-        setCurrentIndex(0);
-        refetch(); // Fetch fresh leads from server
-      } else if (remainingAfterRemoval <= 0) {
-        refetch();
-        setCurrentIndex(0);
-      }
-      // Otherwise keep same index — next lead slides in
+      // Fetch next lead from server (atomic, server-side selection)
+      await fetchNext();
     } catch (err: any) {
       console.error("Erro ao registrar tentativa:", err);
       toast.error("Erro ao registrar tentativa. Tente novamente.");
@@ -400,16 +318,16 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   };
 
-  // Auto-redirect when leads run out
+  // Auto-redirect when queue is empty
   const hasRedirectedRef = useRef(false);
   useEffect(() => {
-    if (!lead && !isLoading && activeFila.length === 0 && !hasRedirectedRef.current) {
+    if (!lead && !isLoading && queueEmpty && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
       toast.info("📋 Leads desta lista acabaram! Escolha outra lista para continuar.", { duration: 5000 });
       const timer = setTimeout(() => onBack(), 3000);
       return () => clearTimeout(timer);
     }
-  }, [lead, isLoading, activeFila.length, onBack]);
+  }, [lead, isLoading, queueEmpty, onBack]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -423,7 +341,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           <p className="font-bold text-lg text-foreground">Fila concluída! 🎉</p>
           <p className="text-sm text-muted-foreground mt-1">Todos os leads de <strong>{lista.empreendimento}</strong> foram trabalhados.</p>
           <div className="mt-4 p-3 rounded-xl bg-muted/50 border border-border text-sm text-muted-foreground">
-            <p>📊 Sessão: <strong className="text-foreground">{formatSessionTime(sessionSeconds)}</strong></p>
+            <p>📊 Sessão: <strong className="text-foreground">{formatSessionTime(sessionSeconds)}</strong> · Leads: <strong className="text-foreground">{sessionLeadsServed}</strong></p>
             <p>📞 Tentativas: <strong className="text-foreground">{stats.tentativas}</strong> · Aproveitados: <strong className="text-emerald-600">{stats.aproveitados}</strong></p>
           </div>
           <p className="text-xs text-muted-foreground mt-3 animate-pulse">Redirecionando para as listas em instantes...</p>
@@ -554,22 +472,19 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           <span className="text-[10px] text-primary font-semibold">{lista.empreendimento}</span>
         </div>
         <div className="flex items-center gap-2">
-          {activeFila.length > 1 && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs gap-1"
-              onClick={() => {
-                if (currentIndex < activeFila.length - 1) {
-                  setCurrentIndex(prev => prev + 1);
-                  toast("Lead pulado — avançando para o próximo", { duration: 1500 });
-                }
-              }}
-              disabled={currentIndex >= activeFila.length - 1 || callActive}
-            >
-              <SkipForward className="h-3.5 w-3.5" /> Pular
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs gap-1"
+            onClick={async () => {
+              if (lead) await unlockLead(lead.id);
+              await fetchNext();
+              toast("Lead pulado — próximo da fila", { duration: 1500 });
+            }}
+            disabled={callActive}
+          >
+            <SkipForward className="h-3.5 w-3.5" /> Pular
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -602,27 +517,10 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
       {/* Progress bar */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Lead <strong className="text-foreground">{currentIndex + 1}</strong> de {activeFila.length}</span>
-        <div className="flex items-center gap-2">
-          {lockStatus === "locked" && (
-            <Badge variant="outline" className="gap-1 text-[10px] border-emerald-500/30 text-emerald-600">
-              <Lock className="h-3 w-3" /> Reservado
-            </Badge>
-          )}
-          {lockStatus === "locking" && (
-            <Badge variant="outline" className="gap-1 text-[10px]">
-              <Loader2 className="h-3 w-3 animate-spin" /> Reservando...
-            </Badge>
-          )}
-          {lockStatus === "failed" && (
-            <Badge variant="outline" className="gap-1 text-[10px] border-destructive/30 text-destructive">
-              <Lock className="h-3 w-3" /> Bloqueado
-            </Badge>
-          )}
-        </div>
-      </div>
-      <div className="w-full bg-muted rounded-full h-2">
-        <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${((currentIndex + 1) / Math.max(activeFila.length, 1)) * 100}%` }} />
+        <span>Lead <strong className="text-foreground">#{sessionLeadsServed + 1}</strong> desta sessão</span>
+        <Badge variant="outline" className="gap-1 text-[10px] border-emerald-500/30 text-emerald-600">
+          🔒 Reservado p/ você
+        </Badge>
       </div>
 
       {/* 2-column layout */}
@@ -644,7 +542,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Lead Freshness Badge */}
                   <Badge variant="outline" className={`text-[10px] gap-1 ${freshness.color}`} title={freshness.tip}>
                     {freshness.emoji} {freshness.label}
                   </Badge>
@@ -656,7 +553,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 </div>
               </div>
 
-              {/* Call Timer — prominent during active call */}
+              {/* Call Timer */}
               {callActive && (
                 <div className="flex items-center justify-between p-3 rounded-xl bg-red-500/10 border-2 border-red-500/30">
                   <div className="flex items-center gap-3">
@@ -689,7 +586,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 </div>
               )}
 
-              {/* Contact info — tap phone to copy */}
+              {/* Contact info */}
               <div className="grid gap-2">
                 {lead.telefone && (
                   <div
@@ -740,14 +637,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               {/* Attempt History */}
               {lead.tentativas_count > 0 && <AttemptHistory leadId={lead.id} />}
 
-              {/* Action Buttons — 2-step flow for calls */}
+              {/* Action Buttons */}
               {!callActive ? (
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   <Button
                     size="lg"
                     className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-12 text-sm"
                     onClick={() => handleAction("ligacao")}
-                    disabled={lockStatus !== "locked" || showModal}
+                    disabled={showModal}
                   >
                     <Phone className="h-4 w-4" /> Iniciar Ligação
                   </Button>
@@ -755,7 +652,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                     size="lg"
                     className="gap-1.5 bg-green-600 hover:bg-green-700 h-12 text-sm"
                     onClick={() => handleAction("whatsapp")}
-                    disabled={lockStatus !== "locked" || showModal}
+                    disabled={showModal}
                   >
                     <MessageCircle className="h-4 w-4" /> WhatsApp
                   </Button>
@@ -764,7 +661,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                     variant="outline"
                     className="gap-1.5 h-12 text-sm"
                     onClick={() => handleAction("email")}
-                    disabled={lockStatus !== "locked" || !lead.email || showModal}
+                    disabled={!lead.email || showModal}
                   >
                     <Mail className="h-4 w-4" /> E-mail
                   </Button>
@@ -784,20 +681,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               {actionTaken && !showModal && !callActive && (
                 <div className="text-center text-xs text-muted-foreground animate-pulse">
                   Registre o resultado para continuar...
-                </div>
-              )}
-
-              {/* Next Lead Preview */}
-              {nextLead && !callActive && (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50 text-[10px] text-muted-foreground">
-                  <ChevronRight className="h-3 w-3" />
-                  <span>Próximo: <strong className="text-foreground">{nextLead.nome}</strong></span>
-                  {nextLead.tentativas_count > 0 && <span>({nextLead.tentativas_count}x tent.)</span>}
-                  {nextLead.data_lead && (
-                    <span className={getLeadFreshness(nextLead.data_lead).color}>
-                      {getLeadFreshness(nextLead.data_lead).emoji}
-                    </span>
-                  )}
                 </div>
               )}
 

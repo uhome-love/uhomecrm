@@ -977,6 +977,7 @@ export type Database = {
           empreendimento: string | null
           feedback: string
           id: string
+          idempotency_key: string | null
           lead_id: string
           lista_id: string | null
           pontos: number
@@ -989,6 +990,7 @@ export type Database = {
           empreendimento?: string | null
           feedback: string
           id?: string
+          idempotency_key?: string | null
           lead_id: string
           lista_id?: string | null
           pontos?: number
@@ -1001,6 +1003,7 @@ export type Database = {
           empreendimento?: string | null
           feedback?: string
           id?: string
+          idempotency_key?: string | null
           lead_id?: string
           lista_id?: string | null
           pontos?: number
@@ -1305,6 +1308,28 @@ export type Database = {
         Returns: number
       }
       cleanup_expired_locks: { Args: never; Returns: number }
+      fetch_next_lead: {
+        Args: {
+          p_corretor_id: string
+          p_lista_id: string
+          p_lock_minutes?: number
+        }
+        Returns: Json
+      }
+      finalizar_tentativa_v2: {
+        Args: {
+          p_canal: string
+          p_corretor_id: string
+          p_empreendimento?: string
+          p_feedback: string
+          p_idempotency_key?: string
+          p_lead_id: string
+          p_lista_id?: string
+          p_resultado: string
+          p_visita_marcada?: boolean
+        }
+        Returns: Json
+      }
       finalizar_trabalho_corretor: {
         Args: { p_user_id: string }
         Returns: Json
@@ -1335,6 +1360,14 @@ export type Database = {
         Returns: Json
       }
       recalculate_all_scores: { Args: never; Returns: undefined }
+      renew_lead_lock: {
+        Args: {
+          p_corretor_id: string
+          p_lead_id: string
+          p_lock_minutes?: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "gestor" | "corretor"

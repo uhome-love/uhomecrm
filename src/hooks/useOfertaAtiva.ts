@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -150,7 +150,88 @@ export function useOALeads(listaId?: string) {
   return { leads, isLoading };
 }
 
-// ─── Hook: Fila do corretor (with concurrency lock + anti-repeat) ───
+// ─── Hook: Server-side lead fetching (atomic lock + anti-repeat + scoring) ───
+export function useOAServerQueue(listaId: string) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [currentLead, setCurrentLead] = useState<OALead | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [queueEmpty, setQueueEmpty] = useState(false);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Fetch next lead from server (atomic: select + lock in one call)
+  const fetchNext = useCallback(async (): Promise<OALead | null> => {
+    if (!user) return null;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("fetch_next_lead", {
+        p_corretor_id: user.id,
+        p_lista_id: listaId,
+        p_lock_minutes: 5,
+      });
+      if (error) { console.error("fetch_next_lead error:", error); return null; }
+      const result = data as any;
+      if (!result?.found) {
+        setQueueEmpty(true);
+        setCurrentLead(null);
+        return null;
+      }
+      setQueueEmpty(false);
+      const lead = result.lead as OALead;
+      setCurrentLead(lead);
+      return lead;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, listaId]);
+
+  // Heartbeat: renew lock every 2 minutes while lead is active
+  const startHeartbeat = useCallback((leadId: string) => {
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    heartbeatRef.current = setInterval(async () => {
+      if (!user) return;
+      const { data, error } = await supabase.rpc("renew_lead_lock", {
+        p_lead_id: leadId,
+        p_corretor_id: user.id,
+        p_lock_minutes: 5,
+      });
+      if (error || !(data as any)?.renewed) {
+        console.warn("Lock renewal failed for lead", leadId);
+      }
+    }, 2 * 60 * 1000); // every 2 minutes
+  }, [user]);
+
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
+  }, []);
+
+  // Release lock
+  const unlockLead = useCallback(async (leadId: string) => {
+    stopHeartbeat();
+    await supabase.from("oferta_ativa_leads").update({
+      em_atendimento_por: null,
+      em_atendimento_ate: null,
+    } as any).eq("id", leadId);
+  }, [stopHeartbeat]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { stopHeartbeat(); };
+  }, [stopHeartbeat]);
+
+  return {
+    currentLead,
+    setCurrentLead,
+    isLoading,
+    queueEmpty,
+    fetchNext,
+    startHeartbeat,
+    stopHeartbeat,
+    unlockLead,
+  };
+}
+
+// Keep legacy useOAFila for backward compat (PerformanceLivePanel etc.)
 export function useOAFila(listaId: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -158,21 +239,7 @@ export function useOAFila(listaId: string) {
   const { data: fila = [], isLoading } = useQuery({
     queryKey: ["oa-fila", listaId],
     queryFn: async () => {
-      // First clean up expired locks server-side
       await supabase.rpc("cleanup_expired_locks");
-
-      // Get IDs of leads this corretor already attempted today (anti-repetition)
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const { data: todayAttempts } = await supabase
-        .from("oferta_ativa_tentativas")
-        .select("lead_id")
-        .eq("corretor_id", user!.id)
-        .eq("lista_id", listaId)
-        .gte("created_at", todayStart.toISOString());
-      
-      const attemptedLeadIds = new Set((todayAttempts || []).map(t => t.lead_id));
-
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("oferta_ativa_leads")
@@ -180,56 +247,38 @@ export function useOAFila(listaId: string) {
         .eq("lista_id", listaId)
         .in("status", ["na_fila", "em_cooldown"])
         .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`)
-        .or(`em_atendimento_por.is.null,em_atendimento_por.eq.${user!.id},em_atendimento_ate.lt.${now}`)
-        .order("tentativas_count", { ascending: true }) // Least attempted first (fair distribution)
-        .order("data_lead", { ascending: false }) // Then newest leads first
+        .order("tentativas_count", { ascending: true })
         .limit(100);
       if (error) throw error;
-      
-      // Client-side filter: remove leads already attempted today by this corretor
-      const filtered = (data as OALead[]).filter(l => !attemptedLeadIds.has(l.id));
-      
-      // If all filtered out, return unfiltered (allow re-work if no new leads)
-      return filtered.length > 0 ? filtered : (data as OALead[]);
+      return data as OALead[];
     },
     enabled: !!listaId && !!user,
-    refetchOnWindowFocus: false, // CRITICAL: Prevent refetch when switching tabs
-    staleTime: 60_000, // Keep data fresh for 1 minute to avoid unnecessary refetches
+    refetchOnWindowFocus: false,
+    staleTime: 60_000,
   });
 
-  // Atomic lock via DB function — prevents race conditions
   const lockLead = useCallback(async (leadId: string): Promise<{ locked: boolean; reason?: string }> => {
     if (!user) return { locked: false, reason: "no_user" };
     const { data, error } = await supabase.rpc("lock_lead_atomic", {
-      p_lead_id: leadId,
-      p_corretor_id: user.id,
-      p_lock_minutes: 5,
+      p_lead_id: leadId, p_corretor_id: user.id, p_lock_minutes: 5,
     });
-    if (error) {
-      console.error("Lock error:", error);
-      return { locked: false, reason: "error" };
-    }
+    if (error) return { locked: false, reason: "error" };
     return data as { locked: boolean; reason?: string };
   }, [user]);
 
-  // Release lock
   const unlockLead = useCallback(async (leadId: string) => {
     await supabase.from("oferta_ativa_leads").update({
-      em_atendimento_por: null,
-      em_atendimento_ate: null,
+      em_atendimento_por: null, em_atendimento_ate: null,
     } as any).eq("id", leadId);
   }, []);
 
   return {
-    fila,
-    isLoading,
-    lockLead,
-    unlockLead,
+    fila, isLoading, lockLead, unlockLead,
     refetch: () => queryClient.invalidateQueries({ queryKey: ["oa-fila", listaId] }),
   };
 }
 
-// ─── Hook: Registrar tentativa ───
+// ─── Hook: Registrar tentativa (v2 with idempotency + server-side logic) ───
 export function useOARegistrarTentativa() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -239,107 +288,62 @@ export function useOARegistrarTentativa() {
     canal: string,
     resultado: string,
     feedback: string,
-    lista?: OALista
-  ): Promise<{ success: boolean; reason?: string }> => {
+    lista?: OALista,
+    idempotencyKey?: string
+  ): Promise<{ success: boolean; reason?: string; idempotent?: boolean }> => {
     if (!user) return { success: false, reason: "no_user" };
 
-    // For "com_interesse" use the exclusive approval DB function
-    if (resultado === "com_interesse") {
-      const { data, error } = await supabase.rpc("aprovar_lead_exclusivo", {
-        p_lead_id: lead.id,
-        p_corretor_id: user.id,
-        p_feedback: feedback,
-        p_canal: canal,
-        p_lista_id: lead.lista_id,
-        p_empreendimento: lead.empreendimento,
-      });
+    // Generate idempotency key if not provided
+    const idemKey = idempotencyKey || `${user.id}_${lead.id}_${Date.now()}`;
 
-      if (error) {
-        console.error("Approval error:", error);
-        toast.error("Erro ao aprovar lead");
-        return { success: false, reason: "error" };
-      }
+    const { data, error } = await supabase.rpc("finalizar_tentativa_v2", {
+      p_lead_id: lead.id,
+      p_corretor_id: user.id,
+      p_canal: canal,
+      p_resultado: resultado,
+      p_feedback: feedback,
+      p_lista_id: lead.lista_id,
+      p_empreendimento: lead.empreendimento,
+      p_idempotency_key: idemKey,
+      p_visita_marcada: resultado === "com_interesse",
+    });
 
-      const result = data as { success: boolean; reason?: string };
-      if (!result.success) {
-        if (result.reason === "already_approved") {
-          toast.error("Este lead já foi aproveitado por outro corretor!");
-        } else if (result.reason === "phone_already_approved") {
-          toast.error("Um lead com este telefone já foi aproveitado!");
-        } else {
-          toast.error("Lead indisponível para aprovação");
-        }
-        return result;
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["oa-fila"] });
-      queryClient.invalidateQueries({ queryKey: ["oa-leads"] });
-      queryClient.invalidateQueries({ queryKey: ["oa-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["oa-ranking"] });
-      queryClient.invalidateQueries({ queryKey: ["oa-aproveitados"] });
-      toast.success("🎉 Lead aproveitado com exclusividade!");
-      return { success: true };
-    }
-
-    // For other results, use the normal flow
-    let pontos = 1;
-    if (resultado === "numero_errado") pontos = 0;
-    if (resultado === "nao_atendeu") pontos = 1;
-
-    // Insert attempt
-    const { error: errTent } = await supabase.from("oferta_ativa_tentativas").insert({
-      lead_id: lead.id,
-      corretor_id: user.id,
-      lista_id: lead.lista_id,
-      empreendimento: lead.empreendimento,
-      canal,
-      resultado,
-      feedback,
-      pontos,
-    } as any);
-
-    if (errTent) {
+    if (error) {
+      console.error("finalizar_tentativa_v2 error:", error);
       toast.error("Erro ao registrar tentativa");
-      console.error(errTent);
-      return { success: false, reason: "insert_error" };
+      return { success: false, reason: "error" };
     }
 
-    // Update lead based on result
-    const updates: Record<string, any> = {
-      tentativas_count: lead.tentativas_count + 1,
-      ultima_tentativa: new Date().toISOString(),
-      em_atendimento_por: null,
-      em_atendimento_ate: null,
-    };
-
-    if (resultado === "numero_errado") {
-      updates.status = "descartado";
-      updates.motivo_descarte = "numero_errado";
-    } else if (resultado === "sem_interesse") {
-      updates.status = "descartado";
-      updates.motivo_descarte = "sem_interesse";
-    } else if (resultado === "nao_atendeu") {
-      const maxTentativas = lista?.max_tentativas || 3;
-      if (lead.tentativas_count + 1 >= maxTentativas) {
-        updates.status = "descartado";
-        updates.motivo_descarte = "max_tentativas";
+    const result = data as any;
+    if (!result?.success) {
+      if (result?.reason === "already_approved") {
+        toast.error("Este lead já foi aproveitado por outro corretor!");
+      } else if (result?.reason === "phone_already_approved") {
+        toast.error("Um lead com este telefone já foi aproveitado!");
       } else {
-        const cooldownDias = lista?.cooldown_dias || 7;
-        const cooldownDate = new Date();
-        cooldownDate.setDate(cooldownDate.getDate() + cooldownDias);
-        updates.proxima_tentativa_apos = cooldownDate.toISOString();
-        updates.status = "em_cooldown";
+        toast.error("Lead indisponível");
       }
+      return result;
     }
 
-    const { error: errLead } = await supabase.from("oferta_ativa_leads").update(updates).eq("id", lead.id);
-    if (errLead) console.error(errLead);
+    // If idempotent (duplicate request), just return success without toasts
+    if (result.idempotent) {
+      return { success: true, idempotent: true };
+    }
 
+    // Invalidate all relevant queries
     queryClient.invalidateQueries({ queryKey: ["oa-fila"] });
     queryClient.invalidateQueries({ queryKey: ["oa-leads"] });
     queryClient.invalidateQueries({ queryKey: ["oa-stats"] });
     queryClient.invalidateQueries({ queryKey: ["oa-ranking"] });
-    toast.success("Tentativa registrada");
+    queryClient.invalidateQueries({ queryKey: ["oa-aproveitados"] });
+
+    if (resultado === "com_interesse") {
+      toast.success("🎉 Lead aproveitado com exclusividade!");
+    } else {
+      toast.success("Tentativa registrada");
+    }
+
     return { success: true };
   }, [user, queryClient]);
 
