@@ -39,8 +39,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
-import logoSymbol from "@/assets/logo-uhome-symbol.png";
-import logoHorizontal from "@/assets/logo-uhome-horizontal.png";
+import homiMascot from "@/assets/homi-mascot.png";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -119,7 +118,7 @@ export function AppSidebar() {
 
   const renderGroup = (label: string, items: typeof homeItems, index: number) => (
     <SidebarGroup key={label} className="animate-fade-in" style={{ animationDelay: `${index * 80}ms` }}>
-      <SidebarGroupLabel className="text-sidebar-foreground/35 uppercase text-[10px] tracking-[0.15em] font-bold mb-1.5 px-3">
+      <SidebarGroupLabel className="text-sidebar-foreground/30 uppercase text-[10px] tracking-[0.15em] font-bold mb-1 px-3">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -133,7 +132,7 @@ export function AppSidebar() {
                     to={item.url}
                     end
                     className="group/nav hover:bg-sidebar-accent/70 transition-all duration-200 rounded-lg relative py-2.5 px-3"
-                    activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary shadow-[inset_0_0_20px_hsl(231_100%_65%/0.05)]"
+                    activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary shadow-[inset_0_0_20px_hsl(229_100%_64%/0.06)]"
                   >
                     <item.icon className="mr-2.5 h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
                     {!collapsed && (
@@ -164,17 +163,22 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="scrollbar-thin">
-        {/* Logo Section */}
+        {/* Logo Section — UhomeSales branding */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border/50">
           {collapsed ? (
-            <div className="flex h-12 w-12 items-center justify-center shrink-0">
-              <img src={logoSymbol} alt="UHome" className="h-12 w-auto transition-transform duration-300 hover:scale-105" />
+            <div className="flex h-10 w-10 items-center justify-center shrink-0">
+              <img src={homiMascot} alt="Homi" className="h-9 w-9 object-contain transition-transform duration-300 hover:scale-110" />
             </div>
           ) : (
-            <div className="flex items-center gap-2.5 animate-slide-in-left">
-              <img src={logoHorizontal} alt="UHome" className="h-14 w-auto" />
+            <div className="flex items-center gap-3 animate-slide-in-left">
+              <img src={homiMascot} alt="Homi AI" className="h-10 w-10 object-contain shrink-0" />
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-sidebar-primary tracking-[0.12em] uppercase">Gestão & IA</span>
+                <span className="text-[15px] font-display font-extrabold text-sidebar-foreground tracking-tight leading-tight">
+                  Uhome<span className="text-sidebar-primary">Sales</span>
+                </span>
+                <span className="text-[9px] font-medium text-sidebar-foreground/40 tracking-wider">
+                  Powered by Homi AI
+                </span>
               </div>
             </div>
           )}

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import homiMascot from "@/assets/homi-mascot.png";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -34,15 +35,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-50 px-4">
+          <header className="h-14 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur-lg sticky top-0 z-50 px-4">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
+              {/* Header brand marker */}
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+                <img src={homiMascot} alt="Homi" className="h-5 w-5 object-contain opacity-60" />
+                <span className="font-display font-bold text-foreground/70">Uhome<span className="text-primary">Sales</span></span>
+              </div>
             </div>
 
             {/* Right side — user menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2.5 h-9 px-3 hover:bg-muted/50">
+                <Button variant="ghost" className="flex items-center gap-2.5 h-9 px-3 hover:bg-muted/50 rounded-xl">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
                     <User className="h-3.5 w-3.5 text-primary" />
                   </div>

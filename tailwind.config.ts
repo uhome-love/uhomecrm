@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "Plus Jakarta Sans", "sans-serif"],
-        display: ["Plus Jakarta Sans", "Inter", "sans-serif"],
+        sans: ["Inter", "Montserrat", "sans-serif"],
+        display: ["Montserrat", "Inter", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Bot } from "lucide-react";
 import homiMascot from "@/assets/homi-mascot.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -66,12 +66,10 @@ export default function HomiGreeting() {
   useEffect(() => {
     if (!user) return;
 
-    // Check if already greeted today
     const last = localStorage.getItem(STORAGE_KEY);
-    const today = new Date().toLocaleDateString("sv-SE"); // yyyy-MM-dd local
+    const today = new Date().toLocaleDateString("sv-SE");
     if (last === today) return;
 
-    // Fetch name
     supabase
       .from("profiles")
       .select("nome")
@@ -88,13 +86,10 @@ export default function HomiGreeting() {
         setTip(pickRandom(roleTips[role]));
 
         localStorage.setItem(STORAGE_KEY, today);
-
-        // Delay appearance slightly for smoother UX
         setTimeout(() => setShow(true), 800);
       });
   }, [user, isAdmin, isGestor]);
 
-  // Auto-dismiss after 8 seconds
   useEffect(() => {
     if (!show) return;
     const timer = setTimeout(() => setShow(false), 8000);
@@ -111,8 +106,7 @@ export default function HomiGreeting() {
           transition={{ type: "spring", stiffness: 260, damping: 20 }}
           className="fixed bottom-24 right-6 z-[60] max-w-xs"
         >
-          <div className="relative rounded-2xl border border-primary/20 bg-card shadow-elevated p-4 pr-9">
-            {/* Close */}
+          <div className="relative rounded-2xl border border-primary/15 bg-card shadow-elevated p-4 pr-9">
             <button
               onClick={() => setShow(false)}
               className="absolute top-2 right-2 h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground"
@@ -121,29 +115,20 @@ export default function HomiGreeting() {
             </button>
 
             <div className="flex gap-3 items-start">
-              {/* Homi waving */}
               <motion.div
-                animate={{
-                  rotate: [0, 14, -8, 14, -4, 10, 0],
-                }}
-                transition={{
-                  duration: 1.5,
-                  ease: "easeInOut",
-                  repeat: 1,
-                  repeatDelay: 1,
-                }}
+                animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
+                transition={{ duration: 1.5, ease: "easeInOut", repeat: 1, repeatDelay: 1 }}
                 className="shrink-0 origin-bottom-right"
               >
-                <div className="h-14 w-14 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center overflow-hidden">
-                  <img
-                    src={homiMascot}
-                    alt="Homi"
-                    className="h-12 w-12 object-contain"
-                  />
+                <div className="h-14 w-14 rounded-2xl bg-accent border-2 border-primary/20 flex items-center justify-center overflow-hidden">
+                  <img src={homiMascot} alt="Homi" className="h-12 w-12 object-contain" />
                 </div>
               </motion.div>
 
               <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-1 mb-1">
+                  <Bot className="h-3 w-3" /> Homi AI
+                </p>
                 <p className="text-sm font-semibold text-foreground leading-snug">
                   {greeting}
                 </p>
@@ -151,8 +136,7 @@ export default function HomiGreeting() {
               </div>
             </div>
 
-            {/* Speech bubble pointer */}
-            <div className="absolute -bottom-2 right-10 w-4 h-4 bg-card border-b border-r border-primary/20 rotate-45" />
+            <div className="absolute -bottom-2 right-10 w-4 h-4 bg-card border-b border-r border-primary/15 rotate-45" />
           </div>
         </motion.div>
       )}

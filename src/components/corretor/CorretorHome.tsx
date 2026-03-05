@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, MessageCircle, Mail, Target, Trophy, CheckCircle, History, Flame, ArrowRight, Zap } from "lucide-react";
+import { Phone, MessageCircle, Mail, Target, Trophy, CheckCircle, History, Flame, ArrowRight, Zap, Bot } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCorretorDailyStats, useCorretorDailyGoals, useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import homiMascot from "@/assets/homi-mascot.png";
 
 export default function CorretorHome() {
   const { stats } = useCorretorDailyStats();
@@ -34,25 +35,34 @@ export default function CorretorHome() {
     toast.success("Meta do dia salva!");
   };
 
+  // Gamification level
+  const totalPontos = stats.pontos;
+  const level = totalPontos >= 50 ? "Top Closer" : totalPontos >= 30 ? "Elite" : totalPontos >= 15 ? "Pro" : "Iniciante";
+  const levelColor = totalPontos >= 50 ? "text-amber-500" : totalPontos >= 30 ? "text-primary" : totalPontos >= 15 ? "text-emerald-500" : "text-muted-foreground";
+  const nextLevel = totalPontos >= 50 ? 50 : totalPontos >= 30 ? 50 : totalPontos >= 15 ? 30 : 15;
+  const levelProgress = Math.min(100, Math.round((totalPontos / nextLevel) * 100));
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
+        <h1 className="font-display text-2xl font-extrabold text-foreground flex items-center gap-2">
           <Zap className="h-6 w-6 text-primary" /> Central do Corretor
         </h1>
         <p className="text-sm text-muted-foreground">Foco, meta e execução. Seu dia começa aqui.</p>
       </div>
 
-      {/* Motivation Card */}
+      {/* Homi Motivation Card */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
+        <Card className="border-primary/15 bg-accent/50 overflow-hidden">
           <CardContent className="p-4 flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 shrink-0 mt-0.5">
-              <Flame className="h-5 w-5 text-primary" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shrink-0 overflow-hidden">
+              <img src={homiMascot} alt="Homi" className="h-9 w-9 object-contain" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-primary uppercase tracking-wider">🔥 Motivação do Dia</p>
+              <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                <Bot className="h-3.5 w-3.5" /> Homi diz
+              </p>
               <p className="text-sm font-medium text-foreground mt-1 italic">"{motivation}"</p>
               <p className="text-[10px] text-muted-foreground mt-1">Meta, ritmo e execução.</p>
             </div>
@@ -60,8 +70,19 @@ export default function CorretorHome() {
         </Card>
       </motion.div>
 
-      {/* Daily Goals */}
+      {/* Main CTA — Iniciar Call */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <Button
+          size="lg"
+          className="w-full h-16 gap-3 text-lg font-bold rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_4px_20px_hsl(152_60%_42%/0.3)] hover:shadow-[0_6px_28px_hsl(152_60%_42%/0.4)] transition-all duration-300 hover:-translate-y-0.5"
+          onClick={() => navigate("/oferta-ativa")}
+        >
+          <Phone className="h-6 w-6" /> Iniciar Call
+        </Button>
+      </motion.div>
+
+      {/* Daily Goals */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <Card>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -76,18 +97,18 @@ export default function CorretorHome() {
             {editing ? (
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] text-muted-foreground uppercase">Meta Ligações</label>
-                  <Input type="number" value={metaLig} onChange={e => setMetaLig(e.target.value)} className="h-9 mt-1" />
+                  <label className="text-[10px] text-muted-foreground uppercase font-medium">Meta Ligações</label>
+                  <Input type="number" value={metaLig} onChange={e => setMetaLig(e.target.value)} className="h-9 mt-1 rounded-lg" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground uppercase">Meta Aproveitados</label>
-                  <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-9 mt-1" />
+                  <label className="text-[10px] text-muted-foreground uppercase font-medium">Meta Aproveitados</label>
+                  <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-9 mt-1 rounded-lg" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground uppercase">Meta Visitas a Marcar</label>
-                  <Input type="number" value={metaVisitas} onChange={e => setMetaVisitas(e.target.value)} className="h-9 mt-1" />
+                  <label className="text-[10px] text-muted-foreground uppercase font-medium">Meta Visitas</label>
+                  <Input type="number" value={metaVisitas} onChange={e => setMetaVisitas(e.target.value)} className="h-9 mt-1 rounded-lg" />
                 </div>
-                <Button size="sm" className="col-span-3" onClick={handleSaveGoals}>Salvar Meta do Dia</Button>
+                <Button size="sm" className="col-span-3 rounded-lg" onClick={handleSaveGoals}>Salvar Meta do Dia</Button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -118,23 +139,23 @@ export default function CorretorHome() {
         </Card>
       </motion.div>
 
-      {/* Auto-progress Stats */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+      {/* Performance Cards */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "Ligações", value: stats.ligacoes, icon: Phone, color: "text-emerald-600" },
-            { label: "WhatsApps", value: stats.whatsapps, icon: MessageCircle, color: "text-green-600" },
-            { label: "E-mails", value: stats.emails, icon: Mail, color: "text-blue-500" },
-            { label: "Taxa Aprov.", value: `${stats.taxa_aproveitamento}%`, icon: CheckCircle, color: "text-primary" },
-          ].map((item, i) => (
-            <Card key={item.label}>
+            { label: "Ligações", value: stats.ligacoes, icon: Phone, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+            { label: "WhatsApps", value: stats.whatsapps, icon: MessageCircle, color: "text-green-500", bg: "bg-green-500/10" },
+            { label: "E-mails", value: stats.emails, icon: Mail, color: "text-primary", bg: "bg-primary/10" },
+            { label: "Taxa Aprov.", value: `${stats.taxa_aproveitamento}%`, icon: CheckCircle, color: "text-primary", bg: "bg-primary/10" },
+          ].map((item) => (
+            <Card key={item.label} className="border-border/60">
               <CardContent className="p-3 flex items-center gap-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0`}>
-                  <item.icon className={`h-4 w-4 ${item.color}`} />
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bg} shrink-0`}>
+                  <item.icon className={`h-5 w-5 ${item.color}`} />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-foreground leading-none">{item.value}</p>
-                  <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                  <p className="text-xl font-display font-extrabold text-foreground leading-none">{item.value}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">{item.label}</p>
                 </div>
               </CardContent>
             </Card>
@@ -142,59 +163,55 @@ export default function CorretorHome() {
         </div>
       </motion.div>
 
-      {/* Points */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-        <Card className="border-primary/10">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <Trophy className="h-5 w-5 text-primary" />
+      {/* Gamification — Points & Level */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <Card className="border-primary/10 overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <Trophy className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-display font-extrabold text-foreground">{stats.pontos} pts</p>
+                  <p className="text-[10px] text-muted-foreground">Pontuação de hoje</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{stats.pontos} pts</p>
-                <p className="text-[10px] text-muted-foreground">Pontuação de hoje</p>
+              <div className="text-right">
+                <Badge variant="outline" className={`gap-1 text-xs font-bold ${levelColor}`}>
+                  {level}
+                </Badge>
+                <p className="text-[9px] text-muted-foreground mt-0.5">{totalPontos}/{nextLevel} pts</p>
               </div>
             </div>
-            <Badge variant="outline" className="gap-1 text-xs">
-              {stats.aproveitados} aproveitados · {stats.tentativas} tentativas
-            </Badge>
+            <Progress value={levelProgress} className="h-1.5" />
           </CardContent>
         </Card>
       </motion.div>
 
       {/* Quick Access */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <div className="grid grid-cols-2 gap-3">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+        <div className="grid grid-cols-3 gap-3">
           <Button
-            size="lg"
-            className="h-14 gap-2 text-base bg-emerald-600 hover:bg-emerald-700"
-            onClick={() => navigate("/oferta-ativa")}
-          >
-            <Phone className="h-5 w-5" /> Entrar em Oferta Ativa
-          </Button>
-          <Button
-            size="lg"
             variant="outline"
-            className="h-14 gap-2 text-base"
+            className="h-12 gap-2 text-sm rounded-xl"
             onClick={() => navigate("/oferta-ativa?tab=aproveitados")}
           >
-            <CheckCircle className="h-5 w-5" /> Meus Aproveitados
+            <CheckCircle className="h-4 w-4" /> Aproveitados
           </Button>
           <Button
-            size="lg"
             variant="outline"
-            className="h-14 gap-2 text-base"
+            className="h-12 gap-2 text-sm rounded-xl"
             onClick={() => navigate("/oferta-ativa?tab=ranking")}
           >
-            <Trophy className="h-5 w-5" /> Meu Ranking
+            <Trophy className="h-4 w-4" /> Ranking
           </Button>
           <Button
-            size="lg"
             variant="outline"
-            className="h-14 gap-2 text-base"
-            onClick={() => navigate("/oferta-ativa?tab=ranking")}
+            className="h-12 gap-2 text-sm rounded-xl"
+            onClick={() => navigate("/homi")}
           >
-            <History className="h-5 w-5" /> Meu Histórico
+            <Bot className="h-4 w-4" /> Homi AI
           </Button>
         </div>
       </motion.div>
