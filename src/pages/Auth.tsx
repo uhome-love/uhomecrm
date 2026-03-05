@@ -183,6 +183,9 @@ export default function Auth() {
             <img
               src={uhomeSalesLogo}
               alt="UhomeSales"
+              width={300}
+              height={200}
+              fetchPriority="high"
               className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.4)]"
               style={{ height: "200px", clipPath: "inset(10% 0 8% 0)", margin: "-22px 0" }}
             />
@@ -354,7 +357,7 @@ export default function Auth() {
             className="relative"
           >
             <div className="absolute inset-0 -m-1 rounded-full bg-[hsl(229,100%,64%/0.15)] blur-md" />
-            <img src={homiMascot} alt="Homi" className="relative h-8 w-8 object-contain" />
+            <img src={homiMascot} alt="Homi" width={32} height={32} className="relative h-8 w-8 object-contain" />
           </motion.div>
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3 w-3 text-[hsl(229,100%,64%/0.5)]" />
