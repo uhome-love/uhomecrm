@@ -86,9 +86,22 @@ ESTRATÉGIA DE CONVERSÃO: 1) Entender perfil. 2) Explicar conceito de condomín
 OBJETIVO: Converter leads em visitas. A visita é essencial para entender o conceito e visualizar o espaço das casas.`,
 
   "Casa Bastian": `EMPREENDIMENTO: Casa Bastian
-Residencial de alto padrão com acabamentos diferenciados e projeto arquitetônico único. Produto premium para clientes exigentes.
-DIFERENCIAIS: Alto padrão, acabamentos premium, arquitetura única, exclusividade.
-ESTRATÉGIA: Posicionar como produto exclusivo. Convidar para visita personalizada para apreciar os detalhes.`,
+INCORPORADORA: ABF Developments
+LOCALIZAÇÃO: Av. Praia de Belas / Av. Bastian – Bairro Menino Deus – Porto Alegre/RS
+CONCEITO: Empreendimento contemporâneo de lofts e apartamentos compactos no Menino Deus, um dos bairros mais tradicionais e valorizados de POA. Combina arquitetura moderna com preservação histórica do entorno, incorporando construções antigas ao projeto. Proposta urbana diferenciada. Unidades compactas, funcionais, altamente procuradas para moradia e investimento.
+TIPOLOGIAS: Lofts compactos: 14-30m². Lofts com office: 33-36m². Apartamentos 1 dormitório: 29-36m². Plantas otimizadas para praticidade urbana.
+CARACTERÍSTICAS: Plantas compactas e inteligentes, design moderno, ambientes integrados, ideais para moradia individual ou investimento, alta liquidez para locação.
+LAZER DO CONDOMÍNIO: Coworking, áreas de convivência, lounge, espaços compartilhados, áreas para trabalho remoto. Proposta integra moradia, trabalho e vida urbana.
+LOCALIZAÇÃO DETALHADA: Menino Deus, um dos bairros mais completos de POA. Próximo do Shopping Praia de Belas, Orla do Guaíba, região central, hospitais, comércio, polos jurídicos e empresariais. Alta demanda de locação e grande procura por compactos.
+PERFIL DE CLIENTE IDEAL: Imóveis compactos em região central, praticidade, mobilidade urbana, trabalham na região central. Investidores imobiliários, estudantes, jovens profissionais, executivos.
+DIFERENCIAIS PRINCIPAIS: Localização central estratégica (Menino Deus), arquitetura moderna, preservação histórica integrada ao projeto, alta demanda para locação, produto ideal para investimento.
+OBJEÇÕES E RESPOSTAS:
+- "Apartamento muito pequeno" → Conceito de moradia urbana compacta, ideal para praticidade ou investimento com alta liquidez.
+- "Prefiro algo maior" → Existem opções maiores: lofts com office e aptos de 1 dormitório.
+- "É mais para investimento?" → Atende tanto investidores quanto moradores que valorizam mobilidade e praticidade.
+ARGUMENTOS DE VENDA: Localização central em bairro tradicional, alta demanda de locação, excelente para investimento, arquitetura moderna, conceito urbano contemporâneo.
+ESTRATÉGIA DE CONVERSÃO: 1) Entender se busca moradia ou investimento. 2) Destacar localização e liquidez. 3) Explicar conceito de studio moderno. 4) Convidar para visita. Pergunta final: "Faz sentido você conhecer o projeto pessoalmente? Prefere durante a semana ou no fim de semana?"
+OBJETIVO: Converter leads em visitas. A visita ajuda a entender o conceito de moradia urbana compacta e o potencial de valorização.`,
 
   "Shift": `EMPREENDIMENTO: Shift
 INCORPORADORA: Vanguard (Grupo Plaenge)
