@@ -90,8 +90,11 @@ export default function CheckpointDaily() {
     if (linkedMembers.length === 0) return {};
 
     const userIds = linkedMembers.map(m => m.user_id!);
-    const dayStart = `${targetDate}T00:00:00.000Z`;
-    const dayEnd = `${targetDate}T23:59:59.999Z`;
+    // Use local timezone: create Date objects from the target date in local time
+    const localStart = new Date(`${targetDate}T00:00:00`);
+    const localEnd = new Date(`${targetDate}T23:59:59.999`);
+    const dayStart = localStart.toISOString();
+    const dayEnd = localEnd.toISOString();
 
     const { data: tentativas } = await supabase
       .from("oferta_ativa_tentativas")
