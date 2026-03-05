@@ -116,12 +116,38 @@ export default function HomeDashboard() {
       presentes = (lines || []).filter(l => l.real_presenca === "sim" || l.real_presenca === "presente").length;
     }
 
-    // OA tentativas do dia (fonte em tempo real de ligações)
-    const { data: oaTentativas } = await supabase
+    // OA tentativas do dia — filter by team for gestor
+    let oaQuery = supabase
       .from("oferta_ativa_tentativas")
-      .select("resultado")
+      .select("resultado, corretor_id")
       .gte("created_at", startOfToday.toISOString())
       .lte("created_at", endOfToday.toISOString());
+
+    // If gestor (not admin), restrict to team members only
+    if (!isAdmin) {
+      const { data: teamMembers } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", user.id)
+        .eq("status", "ativo");
+      const teamUserIds = (teamMembers || []).map(t => t.user_id).filter(Boolean) as string[];
+      if (teamUserIds.length > 0) {
+        oaQuery = oaQuery.in("corretor_id", teamUserIds);
+      } else {
+        // No team members — zero out OA stats
+        setCpStats({
+          total_checkpoints: cps?.length || 0,
+          total_corretores: total,
+          presentes,
+          ausentes: total - presentes,
+          oa_ligacoes: 0,
+          oa_aproveitados: 0,
+        });
+        return;
+      }
+    }
+
+    const { data: oaTentativas } = await oaQuery;
 
     const oa_ligacoes = (oaTentativas || []).length;
     const oa_aproveitados = (oaTentativas || []).filter(t => t.resultado === "com_interesse").length;

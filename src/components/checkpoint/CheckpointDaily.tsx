@@ -278,6 +278,12 @@ export default function CheckpointDaily() {
   useEffect(() => { loadCheckpoint(); loadCorretorGoals(); }, [loadCheckpoint, loadCorretorGoals]);
 
   // Realtime: auto-sync when new OA attempts OR checkpoint_lines changes
+  // NOTE: We use refs for lines/checkpointId to avoid re-subscribing the channel on every state change
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  const checkpointIdRef = useRef(checkpointId);
+  checkpointIdRef.current = checkpointId;
+
   useEffect(() => {
     if (!user) return;
 
@@ -315,8 +321,6 @@ export default function CheckpointDaily() {
         async (payload) => {
           const corretorId = (payload.new as any)?.corretor_id;
           if (!corretorId) return;
-          const hasLinkedMember = lines.some(l => l.has_oa_data || l.corretor_id);
-          if (!hasLinkedMember) return;
           await refreshFromOA(corretorId);
         }
       )
@@ -324,9 +328,8 @@ export default function CheckpointDaily() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'checkpoint_lines' },
         async (payload) => {
-          // When a checkpoint_line is updated (e.g. visita_marcada), reload that line
           const updatedLine = payload.new as any;
-          if (!updatedLine?.checkpoint_id || updatedLine.checkpoint_id !== checkpointId) return;
+          if (!updatedLine?.checkpoint_id || updatedLine.checkpoint_id !== checkpointIdRef.current) return;
 
           setLines(prev => prev.map(line => {
             if (line.id !== updatedLine.id) return line;
@@ -340,7 +343,6 @@ export default function CheckpointDaily() {
             };
             updated.status_dia = calcStatusDia(updated);
 
-            // Highlight
             setRealtimeHighlight(line.corretor_id);
             setTimeout(() => setRealtimeHighlight(null), 3000);
 
@@ -353,7 +355,7 @@ export default function CheckpointDaily() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, date, lines, fetchOAStats, checkpointId]);
+  }, [user, date, fetchOAStats]);
 
   const updateLine = (idx: number, field: keyof CheckpointLine, value: any) => {
     setLines((prev) => {
