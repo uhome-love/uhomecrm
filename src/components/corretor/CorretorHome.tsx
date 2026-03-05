@@ -56,8 +56,8 @@ export default function CorretorHome() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="border-primary/15 bg-accent/50 overflow-hidden">
           <CardContent className="p-4 flex items-start gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shrink-0 overflow-hidden">
-              <img src={homiMascot} alt="Homi" className="h-9 w-9 object-contain" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shrink-0 overflow-hidden">
+              <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain" />
             </div>
             <div>
               <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">

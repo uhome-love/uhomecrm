@@ -152,8 +152,8 @@ export default function UhomeIaAssistant() {
           >
             {/* Glow ring */}
             <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-30" style={{ animationDuration: "3s" }} />
-            <div className="relative h-16 w-16 rounded-full bg-card border-2 border-primary/30 shadow-elevated hover:shadow-glow transition-all duration-300 flex items-center justify-center overflow-hidden hover:scale-110">
-              <img src={homiMascot} alt="Homi" className="h-14 w-14 object-contain" />
+            <div className="relative h-18 w-18 rounded-full bg-card border-2 border-primary/30 shadow-elevated hover:shadow-glow transition-all duration-300 flex items-center justify-center overflow-hidden hover:scale-110" style={{ height: "4.5rem", width: "4.5rem" }}>
+              <img src={homiMascot} alt="Homi" className="h-16 w-16 object-contain" />
             </div>
             {/* Tooltip */}
             <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
@@ -177,12 +177,12 @@ export default function UhomeIaAssistant() {
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 gradient-brand text-primary-foreground">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-primary-foreground/20 border border-primary-foreground/30 flex items-center justify-center overflow-hidden shrink-0">
-                  <img src={homiMascot} alt="Homi" className="h-8 w-8 object-contain" />
+                <div className="h-10 w-10 rounded-full bg-primary-foreground/20 border border-primary-foreground/30 flex items-center justify-center overflow-hidden shrink-0">
+                  <img src={homiMascot} alt="Homi" className="h-9 w-9 object-contain" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold tracking-tight">Homi</p>
-                  <p className="text-[10px] opacity-80">Assistente IA da UHome • {userRole === "ceo" ? "Modo CEO" : userRole === "corretor" ? "Modo Corretor" : "Modo Gerente"}</p>
+                  <p className="text-sm font-bold tracking-tight">Homi AI</p>
+                  <p className="text-[10px] opacity-80">Assistente UhomeSales • {userRole === "ceo" ? "Modo CEO" : userRole === "corretor" ? "Modo Corretor" : "Modo Gerente"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">

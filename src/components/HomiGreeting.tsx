@@ -120,8 +120,8 @@ export default function HomiGreeting() {
                 transition={{ duration: 1.5, ease: "easeInOut", repeat: 1, repeatDelay: 1 }}
                 className="shrink-0 origin-bottom-right"
               >
-                <div className="h-14 w-14 rounded-2xl bg-accent border-2 border-primary/20 flex items-center justify-center overflow-hidden">
-                  <img src={homiMascot} alt="Homi" className="h-12 w-12 object-contain" />
+                <div className="h-16 w-16 rounded-2xl bg-accent border-2 border-primary/20 flex items-center justify-center overflow-hidden">
+                  <img src={homiMascot} alt="Homi" className="h-14 w-14 object-contain" />
                 </div>
               </motion.div>
 
