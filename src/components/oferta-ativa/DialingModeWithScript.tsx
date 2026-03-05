@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, Lock, CalendarCheck, Zap, ChevronDown, Pencil, LogOut, Timer, SkipForward } from "lucide-react";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, Lock, CalendarCheck, Zap, ChevronDown, Pencil, LogOut, Timer, SkipForward, Clock, Thermometer, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useCorretorDailyStats, useCorretorDailyGoals } from "@/hooks/useCorretorDailyStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,19 +16,39 @@ import AttemptModal from "./AttemptModal";
 import ScriptPanel from "./ScriptPanel";
 import AttemptHistory from "./AttemptHistory";
 import ScoringLegend from "./ScoringLegend";
+import { motion, AnimatePresence } from "framer-motion";
 
-/** Format Brazilian phone: +5551999924554 → (51) 99992-4554 */
+/** Format Brazilian phone */
 function formatPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
-  // Remove country code 55
   const local = digits.startsWith("55") && digits.length > 11 ? digits.slice(2) : digits;
-  if (local.length === 11) {
-    return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
-  }
-  if (local.length === 10) {
-    return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
-  }
-  return phone; // fallback
+  if (local.length === 11) return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
+  if (local.length === 10) return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+  return phone;
+}
+
+/** Lead freshness based on data_lead age */
+function getLeadFreshness(dataLead: string | null): { label: string; emoji: string; color: string; tip: string } {
+  if (!dataLead) return { label: "Sem data", emoji: "❓", color: "text-muted-foreground", tip: "Data de entrada não informada" };
+  const days = Math.floor((Date.now() - new Date(dataLead).getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 3) return { label: "Quente", emoji: "🔥", color: "text-red-500", tip: `Lead de ${days === 0 ? "hoje" : `${days} dia(s)`} — alta chance de atendimento!` };
+  if (days <= 14) return { label: "Morno", emoji: "☀️", color: "text-amber-500", tip: `Lead de ${days} dias — ainda é boa hora` };
+  if (days <= 30) return { label: "Esfriando", emoji: "🌤️", color: "text-blue-400", tip: `Lead de ${days} dias — ser rápido e direto` };
+  return { label: "Frio", emoji: "❄️", color: "text-blue-600", tip: `Lead de ${days} dias — abordagem diferenciada` };
+}
+
+/** Motivational messages based on progress */
+function getMotivationalMessage(tentativas: number, aproveitados: number, streak: number, metaLig: number): string {
+  if (streak >= 5) return "🔥 PEGOU FOGO! Sequência incrível!";
+  if (streak >= 3) return "💪 Tá voando! Mantém o ritmo!";
+  if (aproveitados > 0 && tentativas < 5) return "🎯 Já aproveitou lead! Bora continuar!";
+  if (tentativas === 0) return "☕ Bora começar! O primeiro é o mais difícil.";
+  if (tentativas <= 3) return "🚀 Aquecendo... as melhores ligações vêm agora!";
+  if (tentativas <= 10) return "👊 Tá no ritmo! Segue firme!";
+  if (tentativas >= metaLig) return "🏆 META BATIDA! Cada ligação agora é bônus!";
+  if (tentativas >= metaLig * 0.8) return "⚡ Quase lá! Faltam poucas pra meta!";
+  if (tentativas >= metaLig * 0.5) return "🎯 Metade da meta! Bora fechar!";
+  return "📞 Cada ligação te aproxima do resultado!";
 }
 
 interface Props {
@@ -57,29 +77,40 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [callTimer, setCallTimer] = useState(0);
   const [callActive, setCallActive] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [sessionStart] = useState(() => Date.now());
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [showMilestone, setShowMilestone] = useState<string | null>(null);
 
-  // Timer logic
+  // Session timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSessionSeconds(Math.floor((Date.now() - sessionStart) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionStart]);
+
+  const formatSessionTime = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    if (h > 0) return `${h}h${m.toString().padStart(2, "0")}min`;
+    return `${m}min`;
+  };
+
+  // Call timer logic
   const startTimer = useCallback(() => {
     setCallTimer(0);
     setCallActive(true);
-    timerRef.current = setInterval(() => {
-      setCallTimer(prev => prev + 1);
-    }, 1000);
+    timerRef.current = setInterval(() => setCallTimer(prev => prev + 1), 1000);
   }, []);
 
   const stopTimer = useCallback(() => {
     setCallActive(false);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   }, []);
 
-  // Cleanup timer on unmount
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
   const formatTimer = (seconds: number) => {
@@ -87,6 +118,26 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     const s = (seconds % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
+
+  // Milestone check
+  const checkMilestone = useCallback((totalAttempts: number) => {
+    const milestones: Record<number, string> = {
+      5: "🎯 5 ligações! Aqueceu!",
+      10: "🔟 10 ligações! Tá on fire!",
+      15: "💪 15! Você é uma máquina!",
+      20: "🏆 20 ligações! Poucos chegam aqui!",
+      25: "⭐ 25! Desempenho de elite!",
+      30: "👑 30! Você é LENDA!",
+      50: "🚀 50 LIGAÇÕES! HISTÓRICO!",
+    };
+    if (milestones[totalAttempts]) {
+      setShowMilestone(milestones[totalAttempts]);
+      setTimeout(() => setShowMilestone(null), 3000);
+    }
+  }, []);
+
+  // Mini-break suggestion
+  const shouldSuggestBreak = stats.tentativas > 0 && stats.tentativas % 15 === 0;
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
@@ -96,8 +147,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitas) * 100));
 
   const lead = fila[currentIndex];
+  const nextLead = fila[currentIndex + 1];
 
-  // Lock lead when it becomes active — atomic lock
+  // Lock lead when active
   const prevLeadIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (lead && lead.id !== prevLeadIdRef.current) {
@@ -110,20 +162,15 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           setLockStatus("failed");
           if (result.reason === "locked_by_another") {
             toast.error("Lead em atendimento por outro corretor. Avançando...");
-            // Skip to next lead
             setTimeout(() => {
-              if (currentIndex < fila.length - 1) {
-                setCurrentIndex(prev => prev + 1);
-              }
+              if (currentIndex < fila.length - 1) setCurrentIndex(prev => prev + 1);
             }, 1000);
           }
         }
       });
     }
     return () => {
-      if (prevLeadIdRef.current) {
-        unlockLead(prevLeadIdRef.current);
-      }
+      if (prevLeadIdRef.current) unlockLead(prevLeadIdRef.current);
     };
   }, [lead?.id, lockLead, unlockLead]);
 
@@ -162,21 +209,26 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     setSubmitting(true);
     try {
       const result = await registrar(lead, actionTaken, resultado, feedback, lista);
-      if (!result.success) {
-        setSubmitting(false);
-        return;
-      }
+      if (!result.success) { setSubmitting(false); return; }
 
-      // Celebration for aproveitado
+      // Update streak
       if (resultado === "com_interesse") {
+        setStreak(prev => prev + 1);
         toast.success("🎉 APROVEITADO! +3 pontos! Mandou bem!", { duration: 4000 });
       } else if (resultado === "nao_atendeu") {
+        setStreak(0);
         toast("📞 Não atendeu — lead volta à fila com cooldown", { duration: 2000 });
       } else if (resultado === "sem_interesse") {
+        setStreak(0);
         toast("👋 Sem interesse — lead removido da fila", { duration: 2000 });
+      } else if (resultado === "numero_errado") {
+        // Don't break streak for wrong numbers
+        toast("❌ Número errado — removido", { duration: 2000 });
       }
 
-      // Se marcou visita, incrementar real_visitas_marcadas no checkpoint
+      checkMilestone(stats.tentativas + 1);
+
+      // Se marcou visita, incrementar no checkpoint
       if (visitaMarcada && user) {
         try {
           const today = new Date().toISOString().split("T")[0];
@@ -258,15 +310,57 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
           <p className="font-bold text-lg text-foreground">Fila concluída! 🎉</p>
           <p className="text-sm text-muted-foreground mt-1">Todos os leads de <strong>{lista.empreendimento}</strong> foram trabalhados.</p>
+          <div className="mt-4 p-3 rounded-xl bg-muted/50 border border-border text-sm text-muted-foreground">
+            <p>📊 Sessão: <strong className="text-foreground">{formatSessionTime(sessionSeconds)}</strong></p>
+            <p>📞 Tentativas: <strong className="text-foreground">{stats.tentativas}</strong> · Aproveitados: <strong className="text-emerald-600">{stats.aproveitados}</strong></p>
+          </div>
           <Button className="mt-4" onClick={onBack}>Voltar às listas</Button>
         </CardContent>
       </Card>
     );
   }
 
+  const freshness = getLeadFreshness(lead.data_lead);
+  const motivationalMsg = getMotivationalMessage(stats.tentativas, stats.aproveitados, streak, metaLigacoes);
+
   return (
     <div className="space-y-3">
-      {/* Daily Progress Mini-Summary with Goals */}
+      {/* Milestone Animation */}
+      <AnimatePresence>
+        {showMilestone && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+            className="text-center p-4 rounded-2xl bg-gradient-to-r from-primary/20 to-amber-500/20 border-2 border-primary/30"
+          >
+            <p className="text-lg font-bold text-foreground">{showMilestone}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mini-break suggestion */}
+      {shouldSuggestBreak && (
+        <div className="text-center p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700">
+          ☕ <strong>{stats.tentativas} ligações!</strong> Que tal uma pausa rápida de 2 min? Voltar descansado rende mais.
+        </div>
+      )}
+
+      {/* Motivational bar + session info */}
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs font-medium text-muted-foreground">{motivationalMsg}</p>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>{formatSessionTime(sessionSeconds)}</span>
+          {streak >= 2 && (
+            <Badge variant="secondary" className="text-[10px] gap-0.5 px-1.5 py-0">
+              🔥 {streak}x
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Daily Progress Mini-Summary */}
       <div className="p-3 rounded-xl border border-border bg-card shadow-card space-y-2">
         {editingMetas ? (
           <div className="space-y-2">
@@ -396,21 +490,23 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       {/* Progress bar */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Lead <strong className="text-foreground">{currentIndex + 1}</strong> de {fila.length}</span>
-        {lockStatus === "locked" && (
-          <Badge variant="outline" className="gap-1 text-[10px] border-emerald-500/30 text-emerald-600">
-            <Lock className="h-3 w-3" /> Reservado
-          </Badge>
-        )}
-        {lockStatus === "locking" && (
-          <Badge variant="outline" className="gap-1 text-[10px]">
-            <Loader2 className="h-3 w-3 animate-spin" /> Reservando...
-          </Badge>
-        )}
-        {lockStatus === "failed" && (
-          <Badge variant="outline" className="gap-1 text-[10px] border-destructive/30 text-destructive">
-            <Lock className="h-3 w-3" /> Bloqueado
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {lockStatus === "locked" && (
+            <Badge variant="outline" className="gap-1 text-[10px] border-emerald-500/30 text-emerald-600">
+              <Lock className="h-3 w-3" /> Reservado
+            </Badge>
+          )}
+          {lockStatus === "locking" && (
+            <Badge variant="outline" className="gap-1 text-[10px]">
+              <Loader2 className="h-3 w-3 animate-spin" /> Reservando...
+            </Badge>
+          )}
+          {lockStatus === "failed" && (
+            <Badge variant="outline" className="gap-1 text-[10px] border-destructive/30 text-destructive">
+              <Lock className="h-3 w-3" /> Bloqueado
+            </Badge>
+          )}
+        </div>
       </div>
       <div className="w-full bg-muted rounded-full h-2">
         <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${((currentIndex + 1) / fila.length) * 100}%` }} />
@@ -435,9 +531,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Lead Freshness Badge */}
+                  <Badge variant="outline" className={`text-[10px] gap-1 ${freshness.color}`} title={freshness.tip}>
+                    {freshness.emoji} {freshness.label}
+                  </Badge>
                   {lead.tentativas_count > 0 && (
                     <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700">
-                      <History className="h-3 w-3" /> {lead.tentativas_count} tent. anterior{lead.tentativas_count > 1 ? "es" : ""}
+                      <History className="h-3 w-3" /> {lead.tentativas_count}x
                     </Badge>
                   )}
                 </div>
@@ -452,39 +552,42 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 </div>
               )}
 
-              {/* Contact info */}
+              {/* Contact info — tap phone to copy */}
               <div className="grid gap-2">
                 {lead.telefone && (
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 border border-border">
+                  <div
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 border border-border cursor-pointer hover:bg-muted/80 transition-colors active:scale-[0.98]"
+                    onClick={() => copyToClipboard(lead.telefone!, "Telefone")}
+                  >
                     <div>
-                      <p className="text-[10px] text-muted-foreground">Telefone principal</p>
+                      <p className="text-[10px] text-muted-foreground">Telefone principal · toque para copiar</p>
                       <p className="text-base font-mono font-bold text-foreground">{formatPhone(lead.telefone)}</p>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={() => copyToClipboard(lead.telefone!, "Telefone")}>
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                 )}
                 {lead.telefone2 && (
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border">
+                  <div
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]"
+                    onClick={() => copyToClipboard(lead.telefone2!, "Telefone 2")}
+                  >
                     <div>
-                      <p className="text-[10px] text-muted-foreground">Telefone secundário</p>
+                      <p className="text-[10px] text-muted-foreground">Telefone secundário · toque para copiar</p>
                       <p className="text-sm font-mono text-foreground">{formatPhone(lead.telefone2)}</p>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={() => copyToClipboard(lead.telefone2!, "Telefone 2")}>
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                 )}
                 {lead.email && (
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border">
+                  <div
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]"
+                    onClick={() => copyToClipboard(lead.email!, "E-mail")}
+                  >
                     <div>
-                      <p className="text-[10px] text-muted-foreground">E-mail</p>
+                      <p className="text-[10px] text-muted-foreground">E-mail · toque para copiar</p>
                       <p className="text-xs text-foreground">{lead.email}</p>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={() => copyToClipboard(lead.email!, "E-mail")}>
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                 )}
               </div>
@@ -535,13 +638,27 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 </div>
               )}
 
+              {/* Next Lead Preview */}
+              {nextLead && (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50 text-[10px] text-muted-foreground">
+                  <ChevronRight className="h-3 w-3" />
+                  <span>Próximo: <strong className="text-foreground">{nextLead.nome}</strong></span>
+                  {nextLead.tentativas_count > 0 && <span>({nextLead.tentativas_count}x tent.)</span>}
+                  {nextLead.data_lead && (
+                    <span className={getLeadFreshness(nextLead.data_lead).color}>
+                      {getLeadFreshness(nextLead.data_lead).emoji}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Objeções Rápidas */}
               <Collapsible>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
                   <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <Zap className="h-4 w-4 text-amber-500" /> OBJEÇÕES RÁPIDAS
                   </span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-2 space-y-2">
                   {[

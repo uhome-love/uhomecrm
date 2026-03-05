@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,10 +15,10 @@ interface Props {
 }
 
 const RESULTS = [
-  { key: "nao_atendeu", label: "Não atendeu", icon: PhoneMissed, color: "border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600" },
-  { key: "numero_errado", label: "Número errado", icon: PhoneOff, color: "border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-600" },
-  { key: "sem_interesse", label: "Sem interesse", icon: ThumbsDown, color: "border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600" },
-  { key: "com_interesse", label: "Com interesse", icon: ThumbsUp, color: "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600" },
+  { key: "nao_atendeu", label: "Não atendeu", icon: PhoneMissed, color: "border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600", shortcut: "1" },
+  { key: "numero_errado", label: "Número errado", icon: PhoneOff, color: "border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-600", shortcut: "2" },
+  { key: "sem_interesse", label: "Sem interesse", icon: ThumbsDown, color: "border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600", shortcut: "3" },
+  { key: "com_interesse", label: "Com interesse", icon: ThumbsUp, color: "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600", shortcut: "4" },
 ];
 
 const QUICK_FEEDBACKS: Record<string, string[]> = {
@@ -55,6 +55,32 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
   const [visitaMarcada, setVisitaMarcada] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Keyboard shortcuts: 1-4 for results, Enter to submit
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Don't capture when typing in textarea
+    if (e.target instanceof HTMLTextAreaElement) {
+      if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        document.getElementById("attempt-submit-btn")?.click();
+      }
+      return;
+    }
+
+    const resultMap: Record<string, string> = { "1": "nao_atendeu", "2": "numero_errado", "3": "sem_interesse", "4": "com_interesse" };
+    if (resultMap[e.key]) {
+      e.preventDefault();
+      setResultado(resultMap[e.key]);
+      setFeedback("");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [open, handleKeyDown]);
+
   const handleSubmit = async () => {
     if (!resultado || submitting) return;
     if (feedback.trim().length < 10) { toast.error("Feedback mínimo de 10 caracteres"); return; }
@@ -76,11 +102,14 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-lg">Resultado da tentativa</DialogTitle>
-          <p className="text-sm text-muted-foreground">Lead: <strong>{leadName}</strong></p>
+          <p className="text-sm text-muted-foreground">
+            Lead: <strong>{leadName}</strong>
+            <span className="ml-2 text-[10px] text-muted-foreground/70">(atalhos: 1-4 para resultado · Ctrl+Enter para enviar)</span>
+          </p>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Result options */}
+          {/* Result options with keyboard shortcuts */}
           <div className="grid grid-cols-2 gap-2">
             {RESULTS.map(r => {
               const Icon = r.icon;
@@ -89,21 +118,28 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
                 <button
                   key={r.key}
                   onClick={() => { setResultado(r.key); setFeedback(""); }}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all relative ${
                     selected ? `${r.color} ring-2 ring-offset-2 ring-current` : "border-border hover:border-muted-foreground/30"
                   }`}
                 >
+                  <span className="absolute top-1.5 left-2 text-[9px] font-mono text-muted-foreground/50 bg-muted rounded px-1">{r.shortcut}</span>
                   <Icon className="h-6 w-6" />
                   <span className="text-xs font-medium text-center">{r.label}</span>
                   {r.key === "com_interesse" && (
                     <Badge className="text-[9px] bg-emerald-600 h-4">+3 pts</Badge>
+                  )}
+                  {r.key === "nao_atendeu" && (
+                    <Badge variant="outline" className="text-[9px] h-4">+1 pt</Badge>
+                  )}
+                  {r.key === "sem_interesse" && (
+                    <Badge variant="outline" className="text-[9px] h-4">+1 pt</Badge>
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* Marquei Visita — só aparece quando resultado é com_interesse */}
+          {/* Marquei Visita */}
           {resultado === "com_interesse" && (
             <div
               className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
@@ -161,7 +197,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
               rows={2}
             />
             <div className="flex items-center justify-between mt-1">
-              <p className="text-[10px] text-muted-foreground">Mínimo 10 caracteres</p>
+              <p className="text-[10px] text-muted-foreground">Mínimo 10 caracteres · Ctrl+Enter para enviar</p>
               <p className={`text-[10px] ${feedback.trim().length >= 10 ? "text-emerald-500" : "text-muted-foreground"}`}>
                 {feedback.trim().length}/10
               </p>
@@ -198,6 +234,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
           )}
 
           <Button
+            id="attempt-submit-btn"
             className="w-full gap-2 h-11"
             disabled={!resultado || feedback.trim().length < 10 || submitting}
             onClick={handleSubmit}
