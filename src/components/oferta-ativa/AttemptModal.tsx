@@ -31,7 +31,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
     if (feedback.trim().length < 10) { toast.error("Feedback mínimo de 10 caracteres"); return; }
     setSubmitting(true);
     try {
-      await onSubmit(resultado, feedback.trim(), visitaMarcada);
+      await onSubmit(resultado, feedback.trim(), resultado === "com_interesse" ? visitaMarcada : false);
       setResultado("");
       setFeedback("");
       setVisitaMarcada(false);
@@ -69,8 +69,8 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName }: Prop
             })}
           </div>
 
-          {/* Marquei Visita — aparece sempre que um resultado é selecionado */}
-          {resultado !== "" && (
+          {/* Marquei Visita — só aparece quando resultado é com_interesse */}
+          {resultado === "com_interesse" && (
             <div
               className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                 visitaMarcada
