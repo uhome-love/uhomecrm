@@ -149,9 +149,20 @@ ESTRATÉGIA DE CONVERSÃO: 1) Entender perfil e faixa de investimento. 2) Aprese
 OBJETIVO: Converter leads em visitas. A visita é essencial para entender o conceito do Golden Lake e visualizar a exclusividade.`,
 
   "Las Casas": `EMPREENDIMENTO: Las Casas
-Casas em condomínio fechado com segurança, privacidade e qualidade de vida. Conceito similar a Casa Tua: liberdade de casa + segurança de condomínio.
-DIFERENCIAIS: Condomínio fechado, casas com privacidade, segurança, qualidade de vida.
-ESTRATÉGIA: Destacar benefícios de morar em casa dentro de condomínio seguro. Convidar para visita.`,
+TIPO: Bairro planejado – Lotes em condomínio fechado
+LOCALIZAÇÃO: Porto Alegre – RS
+CONCEITO: Condomínio residencial de lotes para construção de casas, combinando privacidade, espaço e qualidade de vida com infraestrutura de lazer completa e segurança. Projeto para quem busca morar em casa dentro de condomínio planejado, com áreas verdes, lazer e tranquilidade. Alternativa para quem quer sair de apartamento e viver com mais espaço, conforto e contato com natureza.
+TIPO DE PRODUTO: Lotes em condomínio fechado projetados para conforto, privacidade, segurança, espaço interno maior e convivência familiar.
+DIFERENCIAIS: Condomínio fechado, casas modernas, arquitetura contemporânea, segurança, infraestrutura de lazer, qualidade de vida, contato com natureza. Produto voltado para famílias que desejam mais espaço e tranquilidade.
+PERFIL DE CLIENTE IDEAL: Querem sair de apartamento, morar em casa com segurança, valorizam espaço e qualidade de vida, possuem família, desejam condomínio com lazer, procuram algo mais exclusivo. Também atrai quem mora em apartamentos grandes, casas de rua ou condomínios horizontais.
+ARGUMENTOS DE VENDA: Morar em casa dentro de condomínio, mais espaço para família, privacidade, segurança, valorização imobiliária, qualidade de vida. Comparação: "É como ter a liberdade de uma casa com a segurança de um condomínio."
+OBJEÇÕES E RESPOSTAS:
+- "Prefiro apartamento" → Condomínio oferece segurança e infraestrutura semelhante a prédio, mas com espaço e liberdade de casa.
+- "Não conheço esse tipo de produto" → Modelo de condomínio horizontal cada vez mais procurado por famílias que querem qualidade de vida.
+- "Quero algo mais central" → Condomínios de lotes ficam em regiões mais tranquilas justamente para oferecer mais espaço, silêncio e natureza.
+SCRIPT CURTO: "Esse projeto é um condomínio de lotes, pensado para quem quer sair de apartamento e ter mais espaço e qualidade de vida, mas sem abrir mão de segurança e infraestrutura."
+ESTRATÉGIA DE CONVERSÃO: 1) Entender se cliente busca casa ou apartamento. 2) Identificar se quer mais espaço. 3) Apresentar conceito do condomínio. 4) Convidar para conhecer. Perguntas de conversão: "Você já pensou em construir sua casa dentro de condomínio?" ou "Faz sentido conhecer um condomínio de lotes que está sendo lançado?"
+OBJETIVO: Gerar visita ao empreendimento. A visita ajuda o cliente a visualizar o conceito e entender o potencial do produto.`,
 };
 
 serve(async (req) => {
