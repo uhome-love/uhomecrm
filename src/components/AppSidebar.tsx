@@ -134,14 +134,14 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         {/* Logo Section */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-3 px-4 py-6 border-b border-sidebar-border">
           {collapsed ? (
-            <div className="flex h-10 w-10 items-center justify-center shrink-0">
-              <img src={logoSymbol} alt="UHome" className="h-10 w-auto" />
+            <div className="flex h-12 w-12 items-center justify-center shrink-0">
+              <img src={logoSymbol} alt="UHome" className="h-12 w-auto" />
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <img src={logoHorizontal} alt="UHome" className="h-10 w-auto" />
+            <div className="flex items-center gap-2.5">
+              <img src={logoHorizontal} alt="UHome" className="h-14 w-auto" />
               <div className="flex flex-col">
                 <span className="text-[10px] font-semibold text-sidebar-primary tracking-wider uppercase">Gestão & IA</span>
               </div>
