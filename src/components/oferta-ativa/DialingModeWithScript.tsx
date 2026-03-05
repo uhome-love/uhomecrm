@@ -83,8 +83,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [showMilestone, setShowMilestone] = useState<string | null>(null);
   const currentLeadIdRef = useRef<string | null>(null);
 
-  // Clamp currentIndex when fila changes (e.g., after refetch removes processed leads)
+  // Clamp currentIndex when fila changes — but NEVER during active call or modal
   useEffect(() => {
+    // If call is active or modal is open, don't touch the index
+    if (callActive || showModal || actionTaken) return;
+    
     if (fila.length > 0 && currentIndex >= fila.length) {
       // Try to find the lead we were working on by ID
       if (currentLeadIdRef.current) {
@@ -97,7 +100,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       // Fallback: clamp to last valid index
       setCurrentIndex(fila.length - 1);
     }
-  }, [fila, currentIndex]);
+  }, [fila, currentIndex, callActive, showModal, actionTaken]);
 
   // Session timer
   useEffect(() => {
@@ -174,6 +177,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   // Lock lead when active
   const prevLeadIdRef = useRef<string | null>(null);
   useEffect(() => {
+    // Don't re-lock or advance during active call/modal
+    if (callActive || showModal) return;
+    
     if (lead && lead.id !== prevLeadIdRef.current) {
       prevLeadIdRef.current = lead.id;
       setLockStatus("locking");
@@ -192,9 +198,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       });
     }
     return () => {
-      if (prevLeadIdRef.current) unlockLead(prevLeadIdRef.current);
+      if (prevLeadIdRef.current && !callActive && !showModal) unlockLead(prevLeadIdRef.current);
     };
-  }, [lead?.id, lockLead, unlockLead]);
+  }, [lead?.id, lockLead, unlockLead, callActive, showModal]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
