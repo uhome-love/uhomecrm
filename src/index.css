@@ -62,12 +62,15 @@
     --priority-low: 160 60% 42%;
 
     /* Custom effects */
-    --gradient-brand: linear-gradient(135deg, hsl(231 100% 65%), hsl(231 100% 55%));
+    --gradient-brand: linear-gradient(135deg, hsl(231 100% 65%), hsl(260 80% 60%));
     --gradient-hero: linear-gradient(135deg, hsl(222 38% 19%), hsl(231 100% 45%));
-    --gradient-glow: linear-gradient(135deg, hsl(231 100% 65%), hsl(260 80% 60%));
+    --gradient-glow: linear-gradient(135deg, hsl(231 100% 65%), hsl(280 70% 55%));
+    --gradient-success: linear-gradient(135deg, hsl(160 60% 42%), hsl(170 70% 48%));
+    --gradient-warning: linear-gradient(135deg, hsl(40 96% 50%), hsl(30 96% 55%));
     --shadow-card: 0 1px 3px hsl(222 38% 19% / 0.04), 0 4px 16px hsl(222 38% 19% / 0.03);
     --shadow-elevated: 0 4px 24px hsl(222 38% 19% / 0.08), 0 12px 48px hsl(222 38% 19% / 0.05);
     --shadow-glow: 0 0 20px hsl(231 100% 65% / 0.15);
+    --shadow-card-hover: 0 4px 20px hsl(222 38% 19% / 0.08), 0 8px 32px hsl(222 38% 19% / 0.06);
   }
 
   .dark {
@@ -98,6 +101,7 @@
     --sidebar-accent-foreground: 228 30% 92%;
     --sidebar-border: 222 25% 14%;
     --sidebar-ring: 231 100% 68%;
+    --shadow-card-hover: 0 4px 20px hsl(0 0% 0% / 0.3), 0 8px 32px hsl(0 0% 0% / 0.2);
   }
 }
 
@@ -108,6 +112,14 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Better heading hierarchy */
+  h1 {
+    @apply font-display tracking-tight;
+  }
+  h2, h3 {
+    @apply font-display tracking-tight;
   }
 }
 
@@ -121,6 +133,12 @@
   .gradient-glow {
     background: var(--gradient-glow);
   }
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+  .gradient-warning {
+    background: var(--gradient-warning);
+  }
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
@@ -129,5 +147,22 @@
   }
   .shadow-glow {
     box-shadow: var(--shadow-glow);
+  }
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Glass morphism utility */
+  .glass {
+    @apply bg-card/80 backdrop-blur-md border border-border/50;
+  }
+
+  /* Enhanced card with hover */
+  .card-interactive {
+    @apply rounded-xl border border-border bg-card shadow-card transition-all duration-300 ease-out;
+  }
+  .card-interactive:hover {
+    box-shadow: var(--shadow-card-hover);
+    @apply border-primary/20 -translate-y-0.5;
   }
 }
