@@ -69,6 +69,7 @@ export default function CheckpointDaily() {
     corretor_nome: string;
     meta_ligacoes: number;
     meta_aproveitados: number;
+    meta_visitas_marcadas?: number;
   }
   const [corretorGoals, setCorretorGoals] = useState<Record<string, CorretorGoalInfo>>({});
 
@@ -132,6 +133,24 @@ export default function CheckpointDaily() {
     // Fetch OA stats for linked members
     const oaStats = await fetchOAStats(members, date);
 
+    // Fetch corretor daily goals for linked members
+    const linkedMembers = members.filter(m => m.user_id);
+    const userIds = linkedMembers.map(m => m.user_id!);
+    let goalsMap: Record<string, { meta_ligacoes: number; meta_aproveitados: number }> = {};
+    if (userIds.length > 0) {
+      const { data: goals } = await supabase
+        .from("corretor_daily_goals")
+        .select("corretor_id, meta_ligacoes, meta_aproveitados")
+        .in("corretor_id", userIds)
+        .eq("data", date);
+      for (const g of (goals || []) as any[]) {
+        const member = linkedMembers.find(m => m.user_id === g.corretor_id);
+        if (member) {
+          goalsMap[member.id] = { meta_ligacoes: g.meta_ligacoes, meta_aproveitados: g.meta_aproveitados };
+        }
+      }
+    }
+
     // Get or create checkpoint
     let { data: cp } = await supabase.from("checkpoints").select("*").eq("gerente_id", user.id).eq("data", date).maybeSingle();
 
@@ -153,12 +172,16 @@ export default function CheckpointDaily() {
     for (const m of members) {
       const existing = linesMap.get(m.id);
       const oa = oaStats[m.id];
+      const cGoal = goalsMap[m.id];
       if (existing) {
+        // Auto-fill metas from corretor goals if checkpoint meta is still 0 and corretor set a goal
+        const autoLig = (existing.meta_ligacoes === 0 || existing.meta_ligacoes == null) && cGoal ? cGoal.meta_ligacoes : (existing.meta_ligacoes ?? 0);
+        const autoLeads = (existing.meta_leads === 0 || existing.meta_leads == null) && cGoal ? cGoal.meta_aproveitados : (existing.meta_leads ?? 0);
         allLines.push({
           id: existing.id, corretor_id: m.id, corretor_nome: m.nome,
-          meta_ligacoes: existing.meta_ligacoes ?? 0, meta_presenca: existing.meta_presenca ?? "sim",
+          meta_ligacoes: autoLig, meta_presenca: existing.meta_presenca ?? "sim",
           meta_visitas_marcadas: existing.meta_visitas_marcadas ?? 0, meta_visitas_realizadas: existing.meta_visitas_realizadas ?? 0,
-          meta_propostas: existing.meta_propostas ?? 0, meta_leads: existing.meta_leads ?? 0,
+          meta_propostas: existing.meta_propostas ?? 0, meta_leads: autoLeads,
           obs_gerente: existing.obs_gerente ?? "",
           real_ligacoes: oa ? oa.ligacoes : existing.real_ligacoes,
           real_presenca: existing.real_presenca,
@@ -169,15 +192,17 @@ export default function CheckpointDaily() {
           has_oa_data: !!oa,
         });
       } else {
-        // Insert new line
+        // Insert new line - auto-fill from corretor goals
         const { data: newLine } = await supabase.from("checkpoint_lines").insert({
           checkpoint_id: cp.id, corretor_id: m.id,
+          meta_ligacoes: cGoal?.meta_ligacoes ?? 0,
+          meta_leads: cGoal?.meta_aproveitados ?? 0,
         }).select().single();
         allLines.push({
           id: newLine?.id, corretor_id: m.id, corretor_nome: m.nome,
-          meta_ligacoes: 0, meta_presenca: "sim", meta_visitas_marcadas: 0,
+          meta_ligacoes: cGoal?.meta_ligacoes ?? 0, meta_presenca: "sim", meta_visitas_marcadas: 0,
           meta_visitas_realizadas: 0, meta_propostas: 0,
-          meta_leads: 0,
+          meta_leads: cGoal?.meta_aproveitados ?? 0,
           obs_gerente: "", 
           real_ligacoes: oa ? oa.ligacoes : null, 
           real_presenca: null,
@@ -507,7 +532,7 @@ export default function CheckpointDaily() {
           <thead>
             <tr className="border-b border-border bg-muted/40">
               <th className="text-left px-3 py-2 font-display font-semibold sticky left-0 bg-muted/40 z-10 min-w-[140px]">Corretor</th>
-              <th colSpan={4} className="text-center px-2 py-1 font-display font-semibold text-primary border-l border-border">METAS DO DIA</th>
+              <th colSpan={5} className="text-center px-2 py-1 font-display font-semibold text-primary border-l border-border">METAS DO DIA</th>
               <th colSpan={6} className="text-center px-2 py-1 font-display font-semibold text-success border-l border-border">RESULTADO DO DIA</th>
               <th className="text-center px-2 py-1 font-display font-semibold border-l border-border">ST</th>
             </tr>
@@ -515,6 +540,7 @@ export default function CheckpointDaily() {
               <th className="px-3 py-1.5 text-left sticky left-0 bg-muted/20 z-10"></th>
               {/* Meta cols */}
               <th className="px-2 py-1.5 text-center border-l border-border min-w-[60px]">Ligações</th>
+              <th className="px-2 py-1.5 text-center min-w-[60px]">Aproveit.</th>
               <th className="px-2 py-1.5 text-center min-w-[60px]">V.Marcar</th>
               <th className="px-2 py-1.5 text-center min-w-[70px]">Presença</th>
               <th className="px-2 py-1.5 text-center min-w-[100px]">Obs Gerente</th>
@@ -550,6 +576,7 @@ export default function CheckpointDaily() {
                   </td>
                   {/* Metas */}
                   <td className="px-1 py-1 border-l border-border"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_ligacoes} onChange={(e) => updateLine(idx, "meta_ligacoes", Number(e.target.value))} disabled={metasLocked} /></td>
+                  <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_leads} onChange={(e) => updateLine(idx, "meta_leads", Number(e.target.value))} disabled={metasLocked} /></td>
                   <td className="px-1 py-1"><Input type="number" className="h-7 text-xs text-center px-1" value={line.meta_visitas_marcadas} onChange={(e) => updateLine(idx, "meta_visitas_marcadas", Number(e.target.value))} disabled={metasLocked} /></td>
                   <td className="px-1 py-1 text-center">
                     <Button
