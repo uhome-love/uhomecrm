@@ -97,7 +97,7 @@ export default function Auth() {
             transition={{ delay: 0.2, duration: 0.4 }}
             className="mb-4"
           >
-            <img src={uhomeSalesLogo} alt="UhomeSales" className="h-20 w-auto drop-shadow-2xl" />
+            <img src={uhomeSalesLogo} alt="UhomeSales" className="h-24 w-auto drop-shadow-2xl" />
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}

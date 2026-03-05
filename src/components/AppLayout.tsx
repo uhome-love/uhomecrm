@@ -39,9 +39,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-3">
               <SidebarTrigger />
               {/* Header brand marker */}
-              <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-                <img src={homiMascot} alt="Homi" className="h-5 w-5 object-contain opacity-60" />
-                <span className="font-display font-bold text-foreground/70">Uhome<span className="text-primary">Sales</span></span>
+              <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+                <img src={homiMascot} alt="Homi" className="h-7 w-7 object-contain" />
+                <span className="font-display font-extrabold text-foreground/80 text-sm">Uhome<span className="text-primary">Sales</span></span>
               </div>
             </div>
 

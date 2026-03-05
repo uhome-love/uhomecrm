@@ -166,14 +166,14 @@ export function AppSidebar() {
         {/* Logo Section — UhomeSales branding */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border/50">
           {collapsed ? (
-            <div className="flex h-10 w-10 items-center justify-center shrink-0">
-              <img src={homiMascot} alt="Homi" className="h-9 w-9 object-contain transition-transform duration-300 hover:scale-110" />
+            <div className="flex h-11 w-11 items-center justify-center shrink-0">
+              <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain transition-transform duration-300 hover:scale-110" />
             </div>
           ) : (
             <div className="flex items-center gap-3 animate-slide-in-left">
-              <img src={homiMascot} alt="Homi AI" className="h-10 w-10 object-contain shrink-0" />
+              <img src={homiMascot} alt="Homi AI" className="h-12 w-12 object-contain shrink-0" />
               <div className="flex flex-col">
-                <span className="text-[15px] font-display font-extrabold text-sidebar-foreground tracking-tight leading-tight">
+                <span className="text-[16px] font-display font-extrabold text-sidebar-foreground tracking-tight leading-tight">
                   Uhome<span className="text-sidebar-primary">Sales</span>
                 </span>
                 <span className="text-[9px] font-medium text-sidebar-foreground/40 tracking-wider">
