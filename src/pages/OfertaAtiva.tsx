@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, Upload, Settings, FileText, Activity } from "lucide-react";
+import { Phone, Upload, Settings, FileText, Activity, Trophy } from "lucide-react";
 import ImportListPanel from "@/components/oferta-ativa/ImportListPanel";
 import CampaignManager from "@/components/oferta-ativa/CampaignManager";
 import TemplateManager from "@/components/oferta-ativa/TemplateManager";
 import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel";
+import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import { useUserRole } from "@/hooks/useUserRole";
 
 export default function OfertaAtiva() {
   const { isAdmin } = useUserRole();
   const [activeTab, setActiveTab] = useState("performance");
 
-  // Gestor only sees Live tab
+  // Gestor only sees Live + Ranking tabs
   if (!isAdmin) {
     return (
       <div className="space-y-4">
@@ -24,7 +25,22 @@ export default function OfertaAtiva() {
             Acompanhe a performance dos seus corretores em tempo real
           </p>
         </div>
-        <PerformanceLivePanel teamOnly />
+        <Tabs defaultValue="live">
+          <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsTrigger value="live" className="gap-1.5 text-xs">
+              <Activity className="h-3.5 w-3.5" /> Live
+            </TabsTrigger>
+            <TabsTrigger value="ranking" className="gap-1.5 text-xs">
+              <Trophy className="h-3.5 w-3.5" /> Ranking
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="live">
+            <PerformanceLivePanel teamOnly />
+          </TabsContent>
+          <TabsContent value="ranking">
+            <RankingOfertaAtiva />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
@@ -42,9 +58,12 @@ export default function OfertaAtiva() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-5 h-auto">
           <TabsTrigger value="performance" className="gap-1.5 text-xs">
             <Activity className="h-3.5 w-3.5" /> Live
+          </TabsTrigger>
+          <TabsTrigger value="ranking" className="gap-1.5 text-xs">
+            <Trophy className="h-3.5 w-3.5" /> Ranking
           </TabsTrigger>
           <TabsTrigger value="importar" className="gap-1.5 text-xs">
             <Upload className="h-3.5 w-3.5" /> Importar
@@ -59,6 +78,9 @@ export default function OfertaAtiva() {
 
         <TabsContent value="performance">
           <PerformanceLivePanel />
+        </TabsContent>
+        <TabsContent value="ranking">
+          <RankingOfertaAtiva />
         </TabsContent>
         <TabsContent value="importar">
           <ImportListPanel />
