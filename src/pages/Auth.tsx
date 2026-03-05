@@ -90,14 +90,14 @@ export default function Auth() {
         className="relative z-10 w-full max-w-md px-4"
       >
         {/* Logo & branding */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            className="mb-4"
+            className="mb-5 bg-white/15 backdrop-blur-md rounded-3xl p-6 border border-white/20 shadow-2xl"
           >
-            <img src={uhomeSalesLogo} alt="UhomeSales" className="h-24 w-auto drop-shadow-2xl" />
+            <img src={uhomeSalesLogo} alt="UhomeSales" className="h-36 w-auto drop-shadow-2xl" />
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -105,7 +105,7 @@ export default function Auth() {
             transition={{ delay: 0.35 }}
             className="text-center"
           >
-            <p className="text-sm text-white/50 font-medium tracking-wide">
+            <p className="text-base text-white/80 font-semibold tracking-wide drop-shadow-lg">
               Plataforma de vendas imobiliárias de alta performance
             </p>
           </motion.div>
