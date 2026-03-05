@@ -81,6 +81,23 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [sessionStart] = useState(() => Date.now());
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [showMilestone, setShowMilestone] = useState<string | null>(null);
+  const currentLeadIdRef = useRef<string | null>(null);
+
+  // Clamp currentIndex when fila changes (e.g., after refetch removes processed leads)
+  useEffect(() => {
+    if (fila.length > 0 && currentIndex >= fila.length) {
+      // Try to find the lead we were working on by ID
+      if (currentLeadIdRef.current) {
+        const idx = fila.findIndex(l => l.id === currentLeadIdRef.current);
+        if (idx >= 0) {
+          setCurrentIndex(idx);
+          return;
+        }
+      }
+      // Fallback: clamp to last valid index
+      setCurrentIndex(fila.length - 1);
+    }
+  }, [fila, currentIndex]);
 
   // Session timer
   useEffect(() => {
@@ -146,8 +163,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
   const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitas) * 100));
 
-  const lead = fila[currentIndex];
-  const nextLead = fila[currentIndex + 1];
+  const lead = fila[currentIndex] ?? null;
+  const nextLead = fila[currentIndex + 1] ?? null;
+
+  // Track current lead ID for index recovery after refetch
+  useEffect(() => {
+    if (lead) currentLeadIdRef.current = lead.id;
+  }, [lead?.id]);
 
   // Lock lead when active
   const prevLeadIdRef = useRef<string | null>(null);

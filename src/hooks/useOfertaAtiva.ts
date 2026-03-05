@@ -175,6 +175,7 @@ export function useOAFila(listaId: string) {
       return data as OALead[];
     },
     enabled: !!listaId && !!user,
+    refetchOnWindowFocus: false, // Prevent refetch when switching apps during calls
   });
 
   // Atomic lock via DB function — prevents race conditions
