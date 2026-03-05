@@ -17,6 +17,7 @@ import {
   Trophy,
   Phone,
   Users,
+  SearchCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
@@ -97,6 +98,7 @@ export function AppSidebar() {
         { title: "Central de Dados", url: "/central-dados", icon: BarChart3 },
         { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
         { title: "Meu Time", url: "/meu-time", icon: Users },
+        { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
       ]
     : [];
 
@@ -107,6 +109,7 @@ export function AppSidebar() {
         { title: "Recuperação de Leads", url: "/gestao", icon: LayoutDashboard },
         { title: "Inteligência Marketing", url: "/marketing", icon: BarChart3 },
         { title: "Auditoria & Saúde", url: "/auditoria", icon: Shield },
+        { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
       ]
     : [];
 

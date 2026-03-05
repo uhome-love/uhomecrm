@@ -1316,6 +1316,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      higienizar_lead: {
+        Args: {
+          p_acao: string
+          p_admin_id?: string
+          p_corretor_id?: string
+          p_lead_id: string
+          p_motivo?: string
+        }
+        Returns: Json
+      }
       lock_lead_atomic: {
         Args: {
           p_corretor_id: string
