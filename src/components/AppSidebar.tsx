@@ -88,14 +88,13 @@ export function AppSidebar() {
   const gestorItems = isGestor
     ? [
         { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
-        { title: "Meu Time", url: "/meu-time", icon: Users },
-        { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
         { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
-        { title: "Central de Dados", url: "/central-dados", icon: BarChart3 },
+        { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
         { title: "Scripts", url: "/scripts", icon: FileEdit },
-        
-        { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
         { title: "Ranking Comercial", url: "/ranking", icon: Trophy },
+        { title: "Central de Dados", url: "/central-dados", icon: BarChart3 },
+        { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+        { title: "Meu Time", url: "/meu-time", icon: Users },
       ]
     : [];
 
