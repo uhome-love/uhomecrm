@@ -196,7 +196,7 @@ export default function Auth() {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="text-[10px] text-white/25 font-medium tracking-[0.3em] uppercase text-center mb-6"
         >
-          Plataforma de vendas imobiliárias de alta performance
+          A plataforma de vendas da Uhome
         </motion.p>
 
         {/* ─── LOGIN CARD ─── */}
