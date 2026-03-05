@@ -421,6 +421,51 @@ export type Database = {
         }
         Relationships: []
       }
+      homi_conversations: {
+        Row: {
+          acao: string | null
+          created_at: string
+          empreendimento: string | null
+          id: string
+          mensagens: Json
+          objetivo: string | null
+          resultado: string | null
+          situacao: string | null
+          tipo: string
+          titulo: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acao?: string | null
+          created_at?: string
+          empreendimento?: string | null
+          id?: string
+          mensagens?: Json
+          objetivo?: string | null
+          resultado?: string | null
+          situacao?: string | null
+          tipo?: string
+          titulo?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acao?: string | null
+          created_at?: string
+          empreendimento?: string | null
+          id?: string
+          mensagens?: Json
+          objetivo?: string | null
+          resultado?: string | null
+          situacao?: string | null
+          tipo?: string
+          titulo?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       integration_settings: {
         Row: {
           id: string
