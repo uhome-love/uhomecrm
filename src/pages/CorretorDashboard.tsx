@@ -26,6 +26,7 @@ export default function CorretorDashboard() {
   const [nome, setNome] = useState("");
   const [metaLig, setMetaLig] = useState(goals?.meta_ligacoes?.toString() || "30");
   const [metaAprov, setMetaAprov] = useState(goals?.meta_aproveitados?.toString() || "5");
+  const [metaVisitas, setMetaVisitas] = useState(goals?.meta_visitas_marcadas?.toString() || "3");
   const [editing, setEditing] = useState(!goals);
   const [finalizando, setFinalizando] = useState(false);
 
@@ -39,17 +40,19 @@ export default function CorretorDashboard() {
   useEffect(() => {
     setMetaLig(goals?.meta_ligacoes?.toString() || "30");
     setMetaAprov(goals?.meta_aproveitados?.toString() || "5");
+    setMetaVisitas(goals?.meta_visitas_marcadas?.toString() || "3");
     setEditing(!goals);
   }, [goals]);
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
+  const metaVisitasM = goals?.meta_visitas_marcadas || 3;
   const progLig = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
   const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
   const metaSalva = !!goals;
 
   const handleSaveGoals = async () => {
-    await saveGoals(parseInt(metaLig) || 30, parseInt(metaAprov) || 5);
+    await saveGoals(parseInt(metaLig) || 30, parseInt(metaAprov) || 5, parseInt(metaVisitas) || 3);
     setEditing(false);
     toast.success("Meta do dia salva! Discagem liberada.");
   };
@@ -156,7 +159,7 @@ export default function CorretorDashboard() {
                           ⚠️ Defina sua meta do dia. A aba Discagem será liberada após salvar.
                         </p>
                       )}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-3 gap-3">
                         <div>
                           <label className="text-[10px] text-muted-foreground uppercase">Meta Ligações</label>
                           <Input type="number" value={metaLig} onChange={e => setMetaLig(e.target.value)} className="h-9 mt-1" />
@@ -165,7 +168,11 @@ export default function CorretorDashboard() {
                           <label className="text-[10px] text-muted-foreground uppercase">Meta Aproveitados</label>
                           <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-9 mt-1" />
                         </div>
-                        <Button size="sm" className="col-span-2" onClick={handleSaveGoals}>
+                        <div>
+                          <label className="text-[10px] text-muted-foreground uppercase">Meta Visitas a Marcar</label>
+                          <Input type="number" value={metaVisitas} onChange={e => setMetaVisitas(e.target.value)} className="h-9 mt-1" />
+                        </div>
+                        <Button size="sm" className="col-span-3" onClick={handleSaveGoals}>
                           {metaSalva ? "Atualizar Meta" : "Salvar Meta e Liberar Discagem"}
                         </Button>
                       </div>

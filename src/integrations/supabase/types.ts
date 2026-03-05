@@ -224,6 +224,7 @@ export type Database = {
           meta_aproveitados_aprovada: number | null
           meta_ligacoes: number
           meta_ligacoes_aprovada: number | null
+          meta_visitas_marcadas: number
           observacao: string | null
           status: string
           updated_at: string
@@ -239,6 +240,7 @@ export type Database = {
           meta_aproveitados_aprovada?: number | null
           meta_ligacoes?: number
           meta_ligacoes_aprovada?: number | null
+          meta_visitas_marcadas?: number
           observacao?: string | null
           status?: string
           updated_at?: string
@@ -254,6 +256,7 @@ export type Database = {
           meta_aproveitados_aprovada?: number | null
           meta_ligacoes?: number
           meta_ligacoes_aprovada?: number | null
+          meta_visitas_marcadas?: number
           observacao?: string | null
           status?: string
           updated_at?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.corretor_daily_goals ADD COLUMN IF NOT EXISTS meta_visitas_marcadas integer NOT NULL DEFAULT 0;

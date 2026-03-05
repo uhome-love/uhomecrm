@@ -76,6 +76,7 @@ export interface CorretorGoals {
   data: string;
   meta_ligacoes: number;
   meta_aproveitados: number;
+  meta_visitas_marcadas: number;
   observacao: string | null;
 }
 
@@ -100,13 +101,14 @@ export function useCorretorDailyGoals() {
     refetchInterval: 60_000,
   });
 
-  const saveGoals = async (metaLigacoes: number, metaAproveitados: number, observacao?: string) => {
+  const saveGoals = async (metaLigacoes: number, metaAproveitados: number, metaVisitasMarcadas: number, observacao?: string) => {
     if (!user) return;
     const payload = {
       corretor_id: user.id,
       data: today,
       meta_ligacoes: metaLigacoes,
       meta_aproveitados: metaAproveitados,
+      meta_visitas_marcadas: metaVisitasMarcadas,
       observacao: observacao || null,
       status: "ativo",
     };

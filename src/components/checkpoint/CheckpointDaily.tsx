@@ -136,17 +136,17 @@ export default function CheckpointDaily() {
     // Fetch corretor daily goals for linked members
     const linkedMembers = members.filter(m => m.user_id);
     const userIds = linkedMembers.map(m => m.user_id!);
-    let goalsMap: Record<string, { meta_ligacoes: number; meta_aproveitados: number }> = {};
+    let goalsMap: Record<string, { meta_ligacoes: number; meta_aproveitados: number; meta_visitas_marcadas: number }> = {};
     if (userIds.length > 0) {
       const { data: goals } = await supabase
         .from("corretor_daily_goals")
-        .select("corretor_id, meta_ligacoes, meta_aproveitados")
+        .select("corretor_id, meta_ligacoes, meta_aproveitados, meta_visitas_marcadas")
         .in("corretor_id", userIds)
         .eq("data", date);
       for (const g of (goals || []) as any[]) {
         const member = linkedMembers.find(m => m.user_id === g.corretor_id);
         if (member) {
-          goalsMap[member.id] = { meta_ligacoes: g.meta_ligacoes, meta_aproveitados: g.meta_aproveitados };
+          goalsMap[member.id] = { meta_ligacoes: g.meta_ligacoes, meta_aproveitados: g.meta_aproveitados, meta_visitas_marcadas: g.meta_visitas_marcadas ?? 0 };
         }
       }
     }
@@ -177,10 +177,11 @@ export default function CheckpointDaily() {
         // Auto-fill metas from corretor goals if checkpoint meta is still 0 and corretor set a goal
         const autoLig = (existing.meta_ligacoes === 0 || existing.meta_ligacoes == null) && cGoal ? cGoal.meta_ligacoes : (existing.meta_ligacoes ?? 0);
         const autoLeads = (existing.meta_leads === 0 || existing.meta_leads == null) && cGoal ? cGoal.meta_aproveitados : (existing.meta_leads ?? 0);
+        const autoVisitas = (existing.meta_visitas_marcadas === 0 || existing.meta_visitas_marcadas == null) && cGoal ? cGoal.meta_visitas_marcadas : (existing.meta_visitas_marcadas ?? 0);
         allLines.push({
           id: existing.id, corretor_id: m.id, corretor_nome: m.nome,
           meta_ligacoes: autoLig, meta_presenca: existing.meta_presenca ?? "sim",
-          meta_visitas_marcadas: existing.meta_visitas_marcadas ?? 0, meta_visitas_realizadas: existing.meta_visitas_realizadas ?? 0,
+          meta_visitas_marcadas: autoVisitas, meta_visitas_realizadas: existing.meta_visitas_realizadas ?? 0,
           meta_propostas: existing.meta_propostas ?? 0, meta_leads: autoLeads,
           obs_gerente: existing.obs_gerente ?? "",
           real_ligacoes: oa ? oa.ligacoes : existing.real_ligacoes,
@@ -197,10 +198,11 @@ export default function CheckpointDaily() {
           checkpoint_id: cp.id, corretor_id: m.id,
           meta_ligacoes: cGoal?.meta_ligacoes ?? 0,
           meta_leads: cGoal?.meta_aproveitados ?? 0,
+          meta_visitas_marcadas: cGoal?.meta_visitas_marcadas ?? 0,
         }).select().single();
         allLines.push({
           id: newLine?.id, corretor_id: m.id, corretor_nome: m.nome,
-          meta_ligacoes: cGoal?.meta_ligacoes ?? 0, meta_presenca: "sim", meta_visitas_marcadas: 0,
+          meta_ligacoes: cGoal?.meta_ligacoes ?? 0, meta_presenca: "sim", meta_visitas_marcadas: cGoal?.meta_visitas_marcadas ?? 0,
           meta_visitas_realizadas: 0, meta_propostas: 0,
           meta_leads: cGoal?.meta_aproveitados ?? 0,
           obs_gerente: "", 
