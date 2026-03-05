@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Loader2, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import uhomeSalesLogo from "@/assets/uhomesales-logo.png";
 import homiMascot from "@/assets/homi-mascot.png";
 
-/* ─── Static CSS particles (no JS animation overhead) ─── */
-const particleStyle = `
+/* ─── CSS-only animations (zero JS overhead) ─── */
+const animationStyles = `
 @keyframes float-up {
   0% { opacity: 0; transform: translateY(0); }
   30% { opacity: 0.5; }
@@ -23,29 +22,62 @@ const particleStyle = `
   background: hsl(229 100% 72%);
   animation: float-up var(--d) var(--delay) ease-in-out infinite;
 }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in-scale {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes gentle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes spin-loader {
+  to { transform: rotate(360deg); }
+}
+.anim-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+.anim-fade-in-up {
+  animation: fade-in-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-fade-in-scale {
+  animation: fade-in-scale 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-delay-1 { animation-delay: 0.1s; }
+.anim-delay-2 { animation-delay: 0.2s; }
+.anim-gentle-bounce {
+  animation: gentle-bounce 3s ease-in-out infinite;
+}
+.anim-spin {
+  animation: spin-loader 1s linear infinite;
+}
 `;
 
 function Particles() {
   return (
-    <>
-      <style>{particleStyle}</style>
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div
-            key={i}
-            className="particle"
-            style={{
-              width: (i % 3) + 1.5,
-              height: (i % 3) + 1.5,
-              left: `${(i * 8.3) % 100}%`,
-              top: `${(i * 13.7) % 100}%`,
-              "--d": `${5 + (i % 4) * 2}s`,
-              "--delay": `${(i * 0.7) % 5}s`,
-            } as React.CSSProperties}
-          />
-        ))}
-      </div>
-    </>
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div
+          key={i}
+          className="particle"
+          style={{
+            width: (i % 3) + 1.5,
+            height: (i % 3) + 1.5,
+            left: `${(i * 8.3) % 100}%`,
+            top: `${(i * 13.7) % 100}%`,
+            "--d": `${5 + (i % 4) * 2}s`,
+            "--delay": `${(i * 0.7) % 5}s`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -61,12 +93,7 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[hsl(224,44%,6%)]">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
-          <Loader2 className="h-8 w-8 text-[hsl(229,100%,64%)]" />
-        </motion.div>
+        <Loader2 className="h-8 w-8 text-[hsl(229,100%,64%)] anim-spin" />
       </div>
     );
   }
@@ -121,28 +148,21 @@ export default function Auth() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* ─── BACKGROUND LAYERS ─── */}
-      {/* Base dark */}
-      <div className="absolute inset-0 bg-[hsl(224,44%,5%)]" />
+      <style>{animationStyles}</style>
 
-      {/* Gradient mesh */}
+      {/* ─── BACKGROUND LAYERS ─── */}
+      <div className="absolute inset-0 bg-[hsl(224,44%,5%)]" />
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[hsl(229,80%,12%)] via-[hsl(224,44%,6%)] to-[hsl(224,44%,4%)]" />
       </div>
-
-      {/* Primary glow — centered behind logo */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-[hsl(229,100%,55%/0.10)] blur-[150px]" />
         <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[400px] h-[300px] rounded-full bg-[hsl(229,100%,64%/0.08)] blur-[80px]" />
       </div>
-
-      {/* Secondary accents */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute bottom-[-5%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[hsl(260,70%,50%/0.05)] blur-[120px]" />
         <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-[hsl(200,80%,50%/0.04)] blur-[100px]" />
       </div>
-
-      {/* Noise texture */}
       <div
         className="absolute inset-0 opacity-[0.025]"
         style={{
@@ -150,8 +170,6 @@ export default function Auth() {
             "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
-
-      {/* Grid lines */}
       <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
@@ -160,25 +178,13 @@ export default function Auth() {
           backgroundSize: "100px 100px",
         }}
       />
-
-      {/* Floating particles */}
       <Particles />
 
       {/* ─── CONTENT ─── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="relative z-10 w-full max-w-[420px] px-5"
-      >
+      <div className="relative z-10 w-full max-w-[420px] px-5 anim-fade-in">
         {/* ─── LOGO ─── */}
         <div className="flex flex-col items-center mb-0">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="relative"
-          >
+          <div className="relative anim-fade-in-scale">
             <div className="absolute inset-0 -m-8 rounded-full bg-[hsl(229,100%,64%/0.18)] blur-[60px]" />
             <img
               src={uhomeSalesLogo}
@@ -189,25 +195,16 @@ export default function Auth() {
               className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.4)]"
               style={{ height: "200px", clipPath: "inset(10% 0 8% 0)", margin: "-22px 0" }}
             />
-          </motion.div>
+          </div>
         </div>
 
         {/* ─── TAGLINE ─── */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
-          className="text-[10px] text-white/25 font-medium tracking-[0.3em] uppercase text-center mb-6"
-        >
+        <p className="text-[10px] text-white/25 font-medium tracking-[0.3em] uppercase text-center mb-6 anim-fade-in anim-delay-1">
           A plataforma de vendas da Uhome
-        </motion.p>
+        </p>
 
         {/* ─── LOGIN CARD ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        >
+        <div className="anim-fade-in-up anim-delay-1">
           <form onSubmit={handleSubmit}>
             <div
               className="relative rounded-2xl p-[1px] overflow-hidden"
@@ -219,18 +216,9 @@ export default function Auth() {
               <div className="rounded-2xl bg-[hsl(224,36%,8%/0.85)] backdrop-blur-2xl p-7 space-y-5">
                 {/* Card header */}
                 <div className="text-center mb-1">
-                  <AnimatePresence mode="wait">
-                    <motion.h2
-                      key={isLogin ? "login" : "signup"}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.25 }}
-                      className="font-display font-bold text-xl text-white"
-                    >
-                      {isLogin ? "Acesse sua conta" : "Crie sua conta"}
-                    </motion.h2>
-                  </AnimatePresence>
+                  <h2 className="font-display font-bold text-xl text-white">
+                    {isLogin ? "Acesse sua conta" : "Crie sua conta"}
+                  </h2>
                   <p className="text-xs text-white/35 mt-1.5">
                     {isLogin
                       ? "Entre com suas credenciais"
@@ -239,34 +227,26 @@ export default function Auth() {
                 </div>
 
                 {/* Name field */}
-                <AnimatePresence>
-                  {!isLogin && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="space-y-1.5 overflow-hidden"
-                    >
-                      <Label htmlFor="nome" className="text-xs font-medium text-white/50">
-                        Nome
-                      </Label>
-                      <div className="relative">
-                        <User className={iconClasses("nome")} />
-                        <Input
-                          id="nome"
-                          placeholder="Seu nome completo"
-                          value={nome}
-                          onChange={(e) => setNome(e.target.value)}
-                          onFocus={() => setFocusedField("nome")}
-                          onBlur={() => setFocusedField(null)}
-                          className={inputClasses}
-                          required={!isLogin}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {!isLogin && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="nome" className="text-xs font-medium text-white/50">
+                      Nome
+                    </Label>
+                    <div className="relative">
+                      <User className={iconClasses("nome")} />
+                      <Input
+                        id="nome"
+                        placeholder="Seu nome completo"
+                        value={nome}
+                        onChange={(e) => setNome(e.target.value)}
+                        onFocus={() => setFocusedField("nome")}
+                        onBlur={() => setFocusedField(null)}
+                        className={inputClasses}
+                        required={!isLogin}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Email */}
                 <div className="space-y-1.5">
@@ -312,14 +292,14 @@ export default function Auth() {
                 </div>
 
                 {/* Submit button */}
-                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+                <div className="transition-transform active:scale-[0.98] hover:scale-[1.01]">
                   <Button
                     type="submit"
                     className="w-full h-12 gap-2 text-sm font-bold rounded-xl border-0 transition-all duration-300 bg-gradient-to-r from-[hsl(229,100%,64%)] to-[hsl(229,78%,54%)] hover:from-[hsl(229,100%,68%)] hover:to-[hsl(229,78%,58%)] shadow-[0_4px_24px_hsl(229,100%,64%/0.3)] hover:shadow-[0_8px_32px_hsl(229,100%,64%/0.4)]"
                     disabled={submitting}
                   >
                     {submitting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 anim-spin" />
                     ) : (
                       <>
                         {isLogin ? "Entrar" : "Criar conta"}
@@ -327,7 +307,7 @@ export default function Auth() {
                       </>
                     )}
                   </Button>
-                </motion.div>
+                </div>
               </div>
             </div>
           </form>
@@ -342,36 +322,34 @@ export default function Auth() {
               {isLogin ? "Criar conta" : "Entrar"}
             </button>
           </p>
-        </motion.div>
+        </div>
 
         {/* ─── HOMI PRESENCE ─── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-          className="flex items-center justify-center gap-2.5 mt-10"
-        >
-          <motion.div
-            animate={{ y: [0, -3, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="relative"
-          >
+        <div className="flex items-center justify-center gap-2.5 mt-10 anim-fade-in anim-delay-2">
+          <div className="relative anim-gentle-bounce">
             <div className="absolute inset-0 -m-1 rounded-full bg-[hsl(229,100%,64%/0.15)] blur-md" />
-            <img src={homiMascot} alt="Homi" width={32} height={32} className="relative h-8 w-8 object-contain" />
-          </motion.div>
+            <img
+              src={homiMascot}
+              alt="Homi"
+              width={32}
+              height={32}
+              loading="lazy"
+              className="relative h-8 w-8 object-contain"
+            />
+          </div>
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3 w-3 text-[hsl(229,100%,64%/0.5)]" />
             <span className="text-[11px] text-white/30 font-medium">
               Homi AI vai ajudar você a vender mais hoje
             </span>
           </div>
-        </motion.div>
+        </div>
 
         {/* Footer */}
         <p className="text-center text-[10px] text-white/15 mt-6 tracking-wider">
           © {new Date().getFullYear()} UhomeSales · Powered by Homi AI
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
