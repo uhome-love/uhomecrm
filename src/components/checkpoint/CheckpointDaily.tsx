@@ -277,53 +277,75 @@ export default function CheckpointDaily() {
 
   useEffect(() => { loadCheckpoint(); loadCorretorGoals(); }, [loadCheckpoint, loadCorretorGoals]);
 
-  // Realtime: auto-sync when new OA attempts are inserted
+  // Realtime: auto-sync when new OA attempts OR checkpoint_lines changes
   useEffect(() => {
     if (!user) return;
+
+    const refreshFromOA = async (corretorId: string) => {
+      const { data: team } = await supabase
+        .from("team_members")
+        .select("*")
+        .eq("gerente_id", user.id)
+        .eq("status", "ativo");
+      const members = (team || []) as TeamMember[];
+      const linkedMember = members.find(m => m.user_id === corretorId);
+      if (!linkedMember) return;
+
+      const oaStats = await fetchOAStats(members, date);
+      if (Object.keys(oaStats).length === 0) return;
+
+      setRealtimeHighlight(linkedMember.id);
+      setTimeout(() => setRealtimeHighlight(null), 3000);
+
+      setLines(prev => prev.map(line => {
+        const oa = oaStats[line.corretor_id];
+        if (!oa) return line;
+        const updated = { ...line, real_ligacoes: oa.ligacoes, real_leads: oa.leads, has_oa_data: true };
+        updated.status_dia = calcStatusDia(updated);
+        return updated;
+      }));
+      toast.info("📡 Dados da OA atualizados em tempo real!");
+    };
 
     const channel = supabase
       .channel('checkpoint-oa-sync')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'oferta_ativa_tentativas',
-        },
+        { event: 'INSERT', schema: 'public', table: 'oferta_ativa_tentativas' },
         async (payload) => {
-          // Check if this attempt belongs to any linked team member
           const corretorId = (payload.new as any)?.corretor_id;
           if (!corretorId) return;
-
-          // Only sync if we have a line for this corretor
           const hasLinkedMember = lines.some(l => l.has_oa_data || l.corretor_id);
           if (!hasLinkedMember) return;
-
-          // Fetch fresh OA stats and update lines
-          const { data: team } = await supabase
-            .from("team_members")
-            .select("*")
-            .eq("gerente_id", user.id)
-            .eq("status", "ativo");
-          const members = (team || []) as TeamMember[];
-          const linkedMember = members.find(m => m.user_id === corretorId);
-          if (!linkedMember) return;
-
-          const oaStats = await fetchOAStats(members, date);
-          if (Object.keys(oaStats).length === 0) return;
-
-          // Highlight the updated corretor row
-          setRealtimeHighlight(linkedMember.id);
-          setTimeout(() => setRealtimeHighlight(null), 3000);
+          await refreshFromOA(corretorId);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'checkpoint_lines' },
+        async (payload) => {
+          // When a checkpoint_line is updated (e.g. visita_marcada), reload that line
+          const updatedLine = payload.new as any;
+          if (!updatedLine?.checkpoint_id || updatedLine.checkpoint_id !== checkpointId) return;
 
           setLines(prev => prev.map(line => {
-            const oa = oaStats[line.corretor_id];
-            if (!oa) return line;
-            const updated = { ...line, real_ligacoes: oa.ligacoes, real_leads: oa.leads, has_oa_data: true };
+            if (line.id !== updatedLine.id) return line;
+            const updated = {
+              ...line,
+              real_visitas_marcadas: updatedLine.real_visitas_marcadas ?? line.real_visitas_marcadas,
+              real_visitas_realizadas: updatedLine.real_visitas_realizadas ?? line.real_visitas_realizadas,
+              real_ligacoes: updatedLine.real_ligacoes ?? line.real_ligacoes,
+              real_leads: updatedLine.real_leads ?? line.real_leads,
+              real_propostas: updatedLine.real_propostas ?? line.real_propostas,
+            };
             updated.status_dia = calcStatusDia(updated);
+
+            // Highlight
+            setRealtimeHighlight(line.corretor_id);
+            setTimeout(() => setRealtimeHighlight(null), 3000);
+
             return updated;
           }));
-          toast.info("📡 Dados da OA atualizados em tempo real!");
         }
       )
       .subscribe();
@@ -331,7 +353,7 @@ export default function CheckpointDaily() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, date, lines, fetchOAStats]);
+  }, [user, date, lines, fetchOAStats, checkpointId]);
 
   const updateLine = (idx: number, field: keyof CheckpointLine, value: any) => {
     setLines((prev) => {
