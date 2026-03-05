@@ -251,17 +251,17 @@ export default function HomeDashboard() {
         <div className="text-center py-16 text-muted-foreground">Carregando dados...</div>
       ) : (
         <div className="space-y-6">
-          {/* 1. Funil Comercial */}
+          {/* 1. Funil Comercial (Checkpoint + OA + PDN) */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={card}>
-            <SectionHeader icon={TrendingUp} title="Funil Comercial" />
+            <SectionHeader icon={TrendingUp} title="Funil Comercial" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 p-4">
-              <MetricCard label="Ligações" value={companyTotals.real_ligacoes} meta={companyTotals.meta_ligacoes} />
+              <MetricCard label="Ligações" value={Math.max(companyTotals.real_ligacoes, cpStats.oa_ligacoes)} meta={companyTotals.meta_ligacoes} />
               <MetricCard label="Vis. Marcadas" value={companyTotals.real_visitas_marcadas} meta={companyTotals.meta_visitas_marcadas} />
               <MetricCard label="Vis. Realizadas" value={companyTotals.real_visitas_realizadas} meta={companyTotals.meta_visitas_realizadas} />
-              <MetricCard label="Propostas" value={companyTotals.real_propostas} meta={companyTotals.meta_propostas} />
-              <MetricCard label="VGV Gerado" value={`R$ ${(companyTotals.real_vgv_gerado / 1000).toFixed(0)}k`} />
-              <MetricCard label="VGV Assinado" value={`R$ ${(companyTotals.real_vgv_assinado / 1000).toFixed(0)}k`} highlight />
-              <MetricCard label="Atingimento" value={`${pct(companyTotals.real_vgv_assinado, companyTotals.meta_vgv_assinado)}%`} highlight />
+              <MetricCard label="Propostas" value={companyTotals.real_propostas + pdnStats.total_gerados} />
+              <MetricCard label="VGV Gerado" value={`R$ ${(pdnStats.vgv_gerado / 1000).toFixed(0)}k`} />
+              <MetricCard label="VGV Assinado" value={`R$ ${(pdnStats.vgv_assinado / 1000).toFixed(0)}k`} highlight />
+              <MetricCard label="Atingimento" value={`${pct(pdnStats.vgv_assinado, companyTotals.meta_vgv_assinado)}%`} highlight />
             </div>
           </motion.div>
 
