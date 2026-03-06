@@ -191,7 +191,7 @@ export default function Auth() {
               alt="UhomeSales"
               width={525}
               height={350}
-              fetchPriority="high"
+              loading="lazy"
               decoding="async"
               className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.4)]"
               style={{ height: "200px", clipPath: "inset(10% 0 8% 0)", margin: "-22px 0" }}
