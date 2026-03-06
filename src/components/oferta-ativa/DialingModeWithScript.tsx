@@ -30,14 +30,14 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-/** Lead freshness based on data_lead age */
+/** Lead freshness — always positive framing to motivate the broker */
 function getLeadFreshness(dataLead: string | null): { label: string; emoji: string; color: string; tip: string } {
-  if (!dataLead) return { label: "Sem data", emoji: "❓", color: "text-muted-foreground", tip: "Data de entrada não informada" };
+  if (!dataLead) return { label: "Lead novo", emoji: "✨", color: "text-primary", tip: "Sem data de entrada — trate como oportunidade!" };
   const days = Math.floor((Date.now() - new Date(dataLead).getTime()) / (1000 * 60 * 60 * 24));
-  if (days <= 3) return { label: "Quente", emoji: "🔥", color: "text-red-500", tip: `Lead de ${days === 0 ? "hoje" : `${days} dia(s)`} — alta chance de atendimento!` };
-  if (days <= 14) return { label: "Morno", emoji: "☀️", color: "text-amber-500", tip: `Lead de ${days} dias — ainda é boa hora` };
-  if (days <= 30) return { label: "Esfriando", emoji: "🌤️", color: "text-blue-400", tip: `Lead de ${days} dias — ser rápido e direto` };
-  return { label: "Frio", emoji: "❄️", color: "text-blue-600", tip: `Lead de ${days} dias — abordagem diferenciada` };
+  if (days <= 3) return { label: "Fresquíssimo", emoji: "🔥", color: "text-red-500", tip: `Lead de ${days === 0 ? "hoje" : `${days} dia(s)`} — alta chance de atendimento!` };
+  if (days <= 14) return { label: "Boa janela", emoji: "☀️", color: "text-amber-500", tip: `Lead de ${days} dias — ainda é boa hora!` };
+  if (days <= 30) return { label: "Oportunidade", emoji: "💎", color: "text-primary", tip: `Lead de ${days} dias — poucos corretores ligam, você sai na frente!` };
+  return { label: "Diferencial", emoji: "🎯", color: "text-emerald-600", tip: `Lead de ${days} dias — abordagem diferenciada te destaca!` };
 }
 
 /** Motivational messages based on progress */
