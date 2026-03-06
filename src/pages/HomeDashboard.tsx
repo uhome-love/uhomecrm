@@ -10,7 +10,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-f
 import { motion } from "framer-motion";
 import {
   TrendingUp, Users, Trophy, Target, BarChart3, AlertTriangle,
-  CalendarDays, RotateCcw, ArrowRight, Building2, FileText, Eye, DollarSign,
+  CalendarDays, ArrowRight, Building2, FileText, Eye, DollarSign,
   Megaphone, Flame, ArrowUpRight, Bell, AlertCircle, Info, ClipboardCheck,
 } from "lucide-react";
 const homiMascot = "/images/homi-mascot-opt.png";
