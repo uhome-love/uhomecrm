@@ -365,7 +365,7 @@ export default function HomeDashboard() {
   }, [channelStats, mktTotals, gerentes, recovery]);
 
   const iaContext = useMemo(() => {
-    const funil = `Funil: Ligações OA ${oaPeriodStats.ligacoes}, Visitas Marcadas OA ${oaPeriodStats.visitas_marcadas}, Visitas Realizadas PDN ${pdnStats.total_gerados + pdnStats.total_assinados}, Propostas PDN ${pdnStats.total_gerados + pdnStats.total_assinados}, VGV Assinado R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}`;
+    const funil = `Funil: Ligações OA ${oaPeriodStats.ligacoes}, Visitas Marcadas OA ${oaPeriodStats.visitas_marcadas}, Visitas Realizadas PDN ${pdnStats.total_visitas + pdnStats.total_gerados + pdnStats.total_assinados}, Propostas PDN ${pdnStats.total_gerados + pdnStats.total_assinados}, VGV Assinado R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}`;
     const mkt = channelStats.map(c => `${getCanalLabel(c.canal)}: Inv R$ ${c.investimento.toLocaleString("pt-BR")}, Leads ${c.leads}, CPL R$ ${c.cpl?.toFixed(0) || "-"}`).join("; ");
     const teams = sortedTimes.map((t, i) => `${i + 1}. Equipe ${t.gerente_nome}: VGV R$ ${t.totals.real_vgv_assinado.toLocaleString("pt-BR")}, Propostas ${t.totals.real_propostas}`).join("; ");
     const pdnCtx = `PDN: ${pdnStats.total_visitas} negócios, ${pdnStats.quente} quentes, ${pdnStats.total_gerados} gerados (R$ ${pdnStats.vgv_gerado.toLocaleString("pt-BR")}), ${pdnStats.total_assinados} assinados (R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}), ${pdnStats.total_caidos} caídos (R$ ${pdnStats.vgv_caido.toLocaleString("pt-BR")})`;
