@@ -38,7 +38,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
-import uhomeLogo from "@/assets/uhomesales-logo-app.png";
+
+const uhomeLogo = "/images/uhomesales-logo.png";
 
 export function AppSidebar() {
   const { state } = useSidebar();

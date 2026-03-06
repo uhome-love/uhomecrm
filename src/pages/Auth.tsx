@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import uhomeSalesLogo from "@/assets/uhomesales-logo-app.png";
 
+const uhomeSalesLogo = "/images/uhomesales-logo.png";
 const homiHero = "/images/homi-hero.png";
 
 /* ─── CSS-only animations ─── */
