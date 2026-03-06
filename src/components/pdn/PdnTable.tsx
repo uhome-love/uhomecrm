@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, ArrowRightLeft } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Props {
   entries: PdnEntry[];
@@ -116,6 +117,33 @@ function CurrencyCell({ value, field, id, onUpdate }: {
   );
 }
 
+const SITUACAO_OPTIONS: { key: PdnSituacao; label: string; emoji: string }[] = [
+  { key: "visita", label: "Negócios", emoji: "📋" },
+  { key: "gerado", label: "Gerado", emoji: "📄" },
+  { key: "assinado", label: "Assinado", emoji: "✅" },
+  { key: "caiu", label: "Caiu", emoji: "❌" },
+];
+
+function MoverPara({ currentSituacao, id, onUpdate }: { currentSituacao: PdnSituacao; id: string; onUpdate: (id: string, u: Record<string, any>) => void }) {
+  const options = SITUACAO_OPTIONS.filter(o => o.key !== currentSituacao);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-primary" title="Mover para...">
+          <ArrowRightLeft className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[140px]">
+        {options.map(o => (
+          <DropdownMenuItem key={o.key} onClick={() => onUpdate(id, { situacao: o.key })} className="text-xs gap-2">
+            {o.emoji} {o.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 const thClass = "px-2 py-1.5 text-left font-semibold border-r border-border text-xs";
 const tdClass = "px-1 py-0.5 border-r border-border";
 
@@ -202,7 +230,10 @@ function VisitaSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
               <td className={tdClass}>{readOnly ? <span className="whitespace-pre-wrap px-1">{e.ultimo_contato}</span> : <TextCell value={e.ultimo_contato || ""} field="ultimo_contato" id={e.id} onUpdate={onUpdate} placeholder="Status, objeções, próximos passos..." />}</td>
               {!readOnly && (
                 <td className="px-1 py-0.5">
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive opacity-0 group-hover:opacity-100" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                    <MoverPara currentSituacao="visita" id={e.id} onUpdate={onUpdate} />
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
                 </td>
               )}
             </tr>
@@ -290,7 +321,10 @@ function GeradoSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
               <td className={tdClass}>{readOnly ? <span className="whitespace-pre-wrap px-1">{e.quando_assina}</span> : <TextCell value={e.quando_assina || ""} field="quando_assina" id={e.id} onUpdate={onUpdate} placeholder="Previsão de assinatura..." />}</td>
               {!readOnly && (
                 <td className="px-1 py-0.5">
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive opacity-0 group-hover:opacity-100" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                    <MoverPara currentSituacao="gerado" id={e.id} onUpdate={onUpdate} />
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
                 </td>
               )}
             </tr>
@@ -381,7 +415,10 @@ function AssinadoSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate
               <td className={tdClass}>{readOnly ? <span className="whitespace-pre-wrap px-1">{e.ultimo_contato}</span> : <TextCell value={e.ultimo_contato || ""} field="ultimo_contato" id={e.id} onUpdate={onUpdate} placeholder="Situação do contrato..." />}</td>
               {!readOnly && (
                 <td className="px-1 py-0.5">
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive opacity-0 group-hover:opacity-100" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                    <MoverPara currentSituacao="assinado" id={e.id} onUpdate={onUpdate} />
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
                 </td>
               )}
             </tr>
@@ -450,7 +487,10 @@ function CaiuSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, on
               <td className={tdClass}>{readOnly ? <span className="whitespace-pre-wrap px-1">{e.motivo_queda}</span> : <TextCell value={(e as any).motivo_queda || ""} field="motivo_queda" id={e.id} onUpdate={onUpdate} placeholder="Motivo da queda..." />}</td>
               {!readOnly && (
                 <td className="px-1 py-0.5">
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive opacity-0 group-hover:opacity-100" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                    <MoverPara currentSituacao="caiu" id={e.id} onUpdate={onUpdate} />
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => onDelete(e.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
                 </td>
               )}
             </tr>
