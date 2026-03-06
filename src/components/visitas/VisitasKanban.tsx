@@ -72,7 +72,7 @@ export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Pro
         return (
           <div
             key={col}
-            className="space-y-2"
+            className="space-y-2 w-[260px] shrink-0"
             onDragOver={(e) => handleDragOver(e, col)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col)}
