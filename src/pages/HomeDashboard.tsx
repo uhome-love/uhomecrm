@@ -158,10 +158,10 @@ export default function HomeDashboard() {
       }
     }
 
-    // Ligações OA: count from oferta_ativa_tentativas
+    // Ligações OA: count from oferta_ativa_tentativas (use head+count to avoid 1000-row limit)
     let tentativasQuery = supabase
       .from("oferta_ativa_tentativas")
-      .select("id")
+      .select("id", { count: "exact", head: true })
       .gte("created_at", startTs)
       .lte("created_at", endTs);
 
@@ -172,23 +172,21 @@ export default function HomeDashboard() {
     // Visitas Marcadas: pull from visitas table (source of truth)
     let visitasQuery = supabase
       .from("visitas")
-      .select("id")
+      .select("id", { count: "exact", head: true })
       .in("status", ["marcada", "confirmada", "realizada", "reagendada"])
       .gte("data_visita", startDate)
       .lte("data_visita", endDate);
 
     if (!isAdmin) visitasQuery = visitasQuery.eq("gerente_id", user.id);
 
-    const [{ data: tentativas }, { data: visitasData }] = await Promise.all([
+    const [tentativasRes, visitasRes] = await Promise.all([
       tentativasQuery,
       visitasQuery,
     ]);
 
-    const visitasMarcadasTotal = (visitasData || []).length;
-
     setOaPeriodStats({
-      ligacoes: (tentativas || []).length,
-      visitas_marcadas: visitasMarcadasTotal,
+      ligacoes: tentativasRes.count ?? 0,
+      visitas_marcadas: visitasRes.count ?? 0,
     });
   }, [user, isAdmin, period]);
 
