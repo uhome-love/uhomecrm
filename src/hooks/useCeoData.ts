@@ -170,10 +170,16 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
 
       // Also try to assign VGV to corretor by name match
       if (p.corretor) {
+        const pdnName = (p.corretor as string).toLowerCase().trim();
         for (const [, agg] of corretorAggMap) {
-          if (agg.corretor_nome === p.corretor && agg.gerente_id === p.gerente_id) {
+          if (agg.gerente_id !== p.gerente_id) continue;
+          const tmName = agg.corretor_nome.toLowerCase().trim();
+          const firstName = tmName.split(" ")[0];
+          // Flexible match: exact, first-name, or partial contains
+          if (tmName === pdnName || firstName === pdnName || tmName.includes(pdnName) || pdnName.includes(firstName)) {
             if (p.situacao === "gerado") agg.real_vgv_gerado += Number(p.vgv || 0);
             if (p.situacao === "assinado") agg.real_vgv_assinado += Number(p.vgv || 0);
+            break; // avoid double-counting
           }
         }
       }
