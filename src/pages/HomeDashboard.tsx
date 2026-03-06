@@ -364,14 +364,23 @@ export default function HomeDashboard() {
             {isAdmin ? "Visão consolidada da empresa" : "Visão da sua equipe"} • {periodLabels[period]}
           </p>
         </motion.div>
-        <Select value={period} onValueChange={v => setPeriod(v as Period)}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(periodLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { reload(); fetchPdn(); fetchCheckpoint(); fetchOaPeriodStats(); fetchOATopCorretores(); }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title="Atualizar dados"
+          >
+            <RefreshCw className="h-4 w-4" /> 🔄
+          </button>
+          <Select value={period} onValueChange={v => setPeriod(v as Period)}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(periodLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {loading ? (
