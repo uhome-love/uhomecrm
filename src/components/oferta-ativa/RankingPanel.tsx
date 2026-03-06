@@ -134,15 +134,6 @@ export default function RankingPanel() {
                 </div>
               </div>
             </div>
-            <div className="mt-3">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Meta: 30 tentativas</span>
-                <span className="font-semibold">{Math.min(100, Math.round((myStats.tentativas / 30) * 100))}%</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2.5">
-                <div className="bg-primary rounded-full h-2.5 transition-all" style={{ width: `${Math.min(100, (myStats.tentativas / 30) * 100)}%` }} />
-              </div>
-            </div>
           </CardContent>
         </Card>
       )}

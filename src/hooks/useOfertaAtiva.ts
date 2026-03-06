@@ -405,20 +405,25 @@ export function useOARanking(period: "hoje" | "semana" | "mes" = "hoje") {
   const { data, isLoading } = useQuery({
     queryKey: ["oa-ranking", period],
     queryFn: async () => {
-      let dateFilter = new Date();
+      // Use BRT (America/Sao_Paulo) for consistent day boundaries
+      const nowUtc = new Date();
+      const brtDateStr = nowUtc.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      let dateFilter: string;
       if (period === "hoje") {
-        dateFilter.setHours(0, 0, 0, 0);
+        dateFilter = new Date(`${brtDateStr}T00:00:00-03:00`).toISOString();
       } else if (period === "semana") {
-        dateFilter.setDate(dateFilter.getDate() - 7);
+        const d = new Date(`${brtDateStr}T00:00:00-03:00`);
+        d.setDate(d.getDate() - 7);
+        dateFilter = d.toISOString();
       } else {
-        dateFilter.setDate(1);
-        dateFilter.setHours(0, 0, 0, 0);
+        const d = new Date(`${brtDateStr.slice(0, 8)}01T00:00:00-03:00`);
+        dateFilter = d.toISOString();
       }
 
       const { data: tentativas, error } = await supabase
         .from("oferta_ativa_tentativas")
         .select("*")
-        .gte("created_at", dateFilter.toISOString())
+        .gte("created_at", dateFilter)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

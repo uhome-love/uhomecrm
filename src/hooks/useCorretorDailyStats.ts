@@ -24,16 +24,17 @@ export function useCorretorDailyStats() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["corretor-daily-stats", user?.id],
     queryFn: async () => {
-      // Use Brazil timezone (UTC-3) for "today" boundary
-      const today = new Date();
-      today.setHours(3, 0, 0, 0); // UTC midnight = 03:00 UTC (BRT = UTC-3)
-      if (new Date() < today) today.setDate(today.getDate() - 1); // If before 3am UTC, use yesterday's boundary
+      // Compute today's BRT boundaries reliably (America/Sao_Paulo = UTC-3)
+      // Using Intl to get the actual date in BRT, avoiding DST issues
+      const nowUtc = new Date();
+      const brtDateStr = nowUtc.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); // "YYYY-MM-DD"
+      const dayStartUtc = new Date(`${brtDateStr}T00:00:00-03:00`).toISOString();
 
       const { data, error } = await supabase
         .from("oferta_ativa_tentativas")
         .select("canal, resultado, pontos")
         .eq("corretor_id", user!.id)
-        .gte("created_at", today.toISOString());
+        .gte("created_at", dayStartUtc);
 
       if (error) throw error;
 
