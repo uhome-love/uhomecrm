@@ -515,17 +515,29 @@ export async function importLeadsToLista(
     let parsedDate: string | null = null;
     if (row.data_lead) {
       const raw = row.data_lead.trim();
-      // Try ISO format, BR format (dd/mm/yyyy), or other common formats
-      const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-      const brMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      const usMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-      if (isoMatch) {
-        parsedDate = `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
-      } else if (brMatch) {
-        parsedDate = `${brMatch[3]}-${brMatch[2].padStart(2, '0')}-${brMatch[1].padStart(2, '0')}`;
-      } else if (usMatch) {
-        const yr = usMatch[3].length === 2 ? `20${usMatch[3]}` : usMatch[3];
-        parsedDate = `${yr}-${usMatch[1].padStart(2, '0')}-${usMatch[2].padStart(2, '0')}`;
+      // Excel serial number detection (e.g. 45367.495833)
+      const excelSerial = parseFloat(raw);
+      if (!isNaN(excelSerial) && excelSerial > 25000 && excelSerial < 60000 && /^\d+(\.\d+)?$/.test(raw)) {
+        // Convert Excel serial to JS Date: Excel epoch is 1899-12-30
+        const excelEpoch = new Date(1899, 11, 30);
+        const msPerDay = 86400000;
+        const jsDate = new Date(excelEpoch.getTime() + excelSerial * msPerDay);
+        if (!isNaN(jsDate.getTime())) {
+          parsedDate = jsDate.toISOString().split("T")[0];
+        }
+      } else {
+        // Try ISO format, BR format (dd/mm/yyyy), or other common formats
+        const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+        const brMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        const usMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+        if (isoMatch) {
+          parsedDate = `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+        } else if (brMatch) {
+          parsedDate = `${brMatch[3]}-${brMatch[2].padStart(2, '0')}-${brMatch[1].padStart(2, '0')}`;
+        } else if (usMatch) {
+          const yr = usMatch[3].length === 2 ? `20${usMatch[3]}` : usMatch[3];
+          parsedDate = `${yr}-${usMatch[1].padStart(2, '0')}-${usMatch[2].padStart(2, '0')}`;
+        }
       }
       // If still invalid or NaN date, discard
       if (parsedDate && isNaN(new Date(parsedDate).getTime())) {

@@ -1,0 +1,1 @@
+DELETE FROM public.oferta_ativa_listas WHERE total_leads = 0 AND created_at > '2026-03-06T21:00:00Z' AND NOT EXISTS (SELECT 1 FROM public.oferta_ativa_leads WHERE lista_id = oferta_ativa_listas.id);
