@@ -170,10 +170,10 @@ export default function CeoVendasAssinadas() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <AlertCircle className="h-4 w-4 text-warning" />
-                  <span className="text-xs font-medium">Falta Pagar</span>
+                  <span className="text-xs font-medium">Falta Assinar</span>
                 </div>
                 <p className="text-2xl font-display font-bold text-warning">{fmtCurrency(totalFaltaPagar)}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">{filtered.filter(v => v.status_pagamento === "falta_pagar").length} vendas pendentes</p>
+                <p className="text-[10px] text-muted-foreground mt-1">{filtered.filter(v => v.status_pagamento === "falta_pagar").length} contratos pendentes</p>
               </CardContent>
             </Card>
             <Card>
@@ -239,7 +239,7 @@ export default function CeoVendasAssinadas() {
                             {v.status_pagamento === "pago" ? (
                               <Badge variant="secondary" className="bg-success/10 text-success border-success/30 text-[10px]">PAGO</Badge>
                             ) : v.status_pagamento === "falta_pagar" ? (
-                              <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/30 text-[10px]">FALTA PAGAR</Badge>
+                              <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/30 text-[10px]">FALTA ASSINAR</Badge>
                             ) : (
                               <span className="text-[10px] text-muted-foreground">—</span>
                             )}
