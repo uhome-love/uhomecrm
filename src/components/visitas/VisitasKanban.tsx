@@ -1,3 +1,4 @@
+import { useState, useRef, type DragEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,13 +26,56 @@ interface Props {
 
 export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Props) {
   const { convertToPdn } = useVisitaToPdn();
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<VisitaStatus | null>(null);
+
+  const handleDragStart = (e: DragEvent, id: string) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+    setDraggingId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    setDragOverCol(null);
+  };
+
+  const handleDragOver = (e: DragEvent, col: VisitaStatus) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverCol(col);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverCol(null);
+  };
+
+  const handleDrop = (e: DragEvent, targetCol: VisitaStatus) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain");
+    if (id) {
+      const visita = visitas.find(v => v.id === id);
+      if (visita && visita.status !== targetCol) {
+        onUpdateStatus(id, targetCol);
+      }
+    }
+    setDraggingId(null);
+    setDragOverCol(null);
+  };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
       {KANBAN_COLUMNS.map(col => {
         const items = visitas.filter(v => v.status === col);
+        const isOver = dragOverCol === col;
         return (
-          <div key={col} className="space-y-2">
+          <div
+            key={col}
+            className="space-y-2"
+            onDragOver={(e) => handleDragOver(e, col)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, col)}
+          >
             <div className="flex items-center gap-2 px-2">
               <span className="text-sm">{COLUMN_ICONS[col]}</span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -40,11 +84,22 @@ export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Pro
               <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{items.length}</Badge>
             </div>
 
-            <div className="space-y-2 min-h-[100px]">
+            <div className={`space-y-2 min-h-[100px] rounded-lg transition-colors duration-150 p-1 ${
+              isOver ? "bg-primary/10 ring-2 ring-primary/30 ring-inset" : ""
+            }`}>
               {items.map(v => {
                 const hasPdn = !!(v as any).linked_pdn_id;
+                const isDragging = draggingId === v.id;
                 return (
-                  <Card key={v.id} className="p-3 space-y-2 hover:shadow-md transition-shadow">
+                  <Card
+                    key={v.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, v.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`p-3 space-y-2 transition-all cursor-grab active:cursor-grabbing ${
+                      isDragging ? "opacity-40 scale-95" : "hover:shadow-md"
+                    }`}
+                  >
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold truncate flex-1">{v.nome_cliente}</p>
                       {hasPdn && <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0 ml-1" />}
