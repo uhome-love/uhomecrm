@@ -38,6 +38,7 @@ const BuscaLeads = lazy(() => import("./pages/BuscaLeads"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const AgendaVisitas = lazy(() => import("./pages/AgendaVisitas"));
 const MeusNegocios = lazy(() => import("./pages/MeusNegocios"));
+const Welcome = lazy(() => import("./pages/Welcome"));
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
+            <Route path="/welcome" element={<Suspense fallback={<PageLoader />}><Welcome /></Suspense>} />
             {/* Acessível a todos os autenticados */}
             <Route path="/" element={<ProtectedPage><HomeDashboard /></ProtectedPage>} />
 
