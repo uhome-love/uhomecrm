@@ -6,7 +6,7 @@ import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
 import { useMarketing, getCanalLabel } from "@/hooks/useMarketing";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { motion } from "framer-motion";
 import {
   TrendingUp, Users, Trophy, Target, BarChart3, AlertTriangle,
@@ -20,6 +20,40 @@ import IaCoreAction from "@/components/IaCoreAction";
 type Period = "dia" | "semana" | "mes";
 const periodLabels: Record<Period, string> = { dia: "Hoje", semana: "Esta Semana", mes: "Este Mês" };
 const medals = ["🥇", "🥈", "🥉"];
+
+const getSaoPauloDate = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+const getPeriodRange = (period: Period) => {
+  const todaySP = getSaoPauloDate();
+  const base = new Date(`${todaySP}T12:00:00-03:00`);
+
+  let start = base;
+  let end = base;
+
+  if (period === "semana") {
+    start = startOfWeek(base, { weekStartsOn: 1 });
+    end = endOfWeek(base, { weekStartsOn: 1 });
+  } else if (period === "mes") {
+    start = startOfMonth(base);
+    end = endOfMonth(base);
+  }
+
+  const startDate = format(start, "yyyy-MM-dd");
+  const endDate = format(end, "yyyy-MM-dd");
+
+  return {
+    startDate,
+    endDate,
+    startTs: `${startDate}T00:00:00-03:00`,
+    endTs: `${endDate}T23:59:59.999-03:00`,
+  };
+};
 
 export default function HomeDashboard() {
   const { user } = useAuth();
@@ -52,6 +86,7 @@ export default function HomeDashboard() {
   const [recovery, setRecovery] = useState({ reativados: 0, respondidos: 0, visitas: 0 });
   // Checkpoint daily stats + OA realtime
   const [cpStats, setCpStats] = useState({ total_checkpoints: 0, total_corretores: 0, presentes: 0, ausentes: 0, oa_ligacoes: 0, oa_aproveitados: 0, oa_visitas_marcadas: 0 });
+  const [oaPeriodStats, setOaPeriodStats] = useState({ ligacoes: 0, visitas_marcadas: 0 });
 
   useEffect(() => {
     if (!user) return;
@@ -60,22 +95,32 @@ export default function HomeDashboard() {
     });
   }, [user]);
 
-  // Fetch PDN summary
+  // Fetch PDN summary (strictly scoped by selected period)
   const fetchPdn = useCallback(async () => {
     if (!user) return;
-    const mesAtual = format(new Date(), "yyyy-MM");
-    let q = supabase.from("pdn_entries").select("situacao, docs_status, data_visita, temperatura, vgv, motivo_queda").eq("mes", mesAtual);
+
+    const { startDate, endDate } = getPeriodRange(period);
+
+    let q = supabase
+      .from("pdn_entries")
+      .select("situacao, docs_status, data_visita, temperatura, vgv, motivo_queda")
+      .gte("data_visita", startDate)
+      .lte("data_visita", endDate);
+
     if (!isAdmin) q = q.eq("gerente_id", user.id);
+
     const { data } = await q;
     if (!data) return;
+
     const now = new Date();
     const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
     const visitas = data.filter(d => d.situacao === "visita");
     const gerados = data.filter(d => d.situacao === "gerado");
     const assinados = data.filter(d => d.situacao === "assinado");
     const caidos = data.filter(d => d.situacao === "caiu");
+
     setPdnStats({
-      propostas: gerados.length,
+      propostas: gerados.length + assinados.length,
       docs: visitas.filter(d => d.docs_status === "sem_docs" || d.docs_status === "em_andamento").length,
       visitaRecente: data.filter(d => d.data_visita && new Date(d.data_visita) >= fiveDaysAgo).length,
       total_visitas: visitas.length,
@@ -89,9 +134,64 @@ export default function HomeDashboard() {
       vgv_assinado: assinados.reduce((s, e) => s + Number(e.vgv || 0), 0),
       vgv_caido: caidos.reduce((s, e) => s + Number(e.vgv || 0), 0),
     });
-  }, [user, isAdmin]);
+  }, [user, isAdmin, period]);
 
   useEffect(() => { fetchPdn(); }, [fetchPdn]);
+
+  const fetchOaPeriodStats = useCallback(async () => {
+    if (!user) return;
+
+    const { startTs, endTs } = getPeriodRange(period);
+
+    let teamUserIds: string[] | undefined;
+    if (!isAdmin) {
+      const { data: teamMembers } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", user.id)
+        .eq("status", "ativo");
+
+      teamUserIds = (teamMembers || []).map(t => t.user_id).filter(Boolean) as string[];
+      if (teamUserIds.length === 0) {
+        setOaPeriodStats({ ligacoes: 0, visitas_marcadas: 0 });
+        return;
+      }
+    }
+
+    let tentativasQuery = supabase
+      .from("oferta_ativa_tentativas")
+      .select("id")
+      .gte("created_at", startTs)
+      .lte("created_at", endTs);
+
+    if (!isAdmin && teamUserIds) {
+      tentativasQuery = tentativasQuery.in("corretor_id", teamUserIds);
+    }
+
+    let visitasMarcadasQuery = supabase
+      .from("oa_events")
+      .select("id")
+      .eq("event_type", "call_finished")
+      .gte("created_at", startTs)
+      .lte("created_at", endTs)
+      .contains("metadata", { visita_marcada: true });
+
+    if (!isAdmin && teamUserIds) {
+      visitasMarcadasQuery = visitasMarcadasQuery.in("user_id", teamUserIds);
+    }
+
+    const [{ data: tentativas }, { data: visitasMarcadas }] = await Promise.all([
+      tentativasQuery,
+      visitasMarcadasQuery,
+    ]);
+
+    setOaPeriodStats({
+      ligacoes: (tentativas || []).length,
+      visitas_marcadas: (visitasMarcadas || []).length,
+    });
+  }, [user, isAdmin, period]);
+
+  useEffect(() => { fetchOaPeriodStats(); }, [fetchOaPeriodStats]);
 
   // Fetch checkpoint daily summary
   const fetchCheckpoint = useCallback(async () => {
