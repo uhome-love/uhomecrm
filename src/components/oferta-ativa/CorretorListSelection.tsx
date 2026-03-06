@@ -1,72 +1,79 @@
 import { useState, useMemo } from "react";
-import { useOAListas, useOAFila, type OALista } from "@/hooks/useOfertaAtiva";
+import { useOAListas, type OALista } from "@/hooks/useOfertaAtiva";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Phone, ArrowLeft, Loader2, Users, Search, Zap, Clock } from "lucide-react";
+import { Phone, ArrowLeft, Loader2, Users, Search, Zap } from "lucide-react";
 import DialingModeWithScript from "./DialingModeWithScript";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-function ListaCard({ lista, onSelect }: { lista: OALista; onSelect: () => void }) {
+interface ListaStats {
+  naFila: number;
+  aproveitados: number;
+  total: number;
+  pct: number;
+  meusTentativas: number;
+}
+
+function useBatchListaStats(listaIds: string[]) {
   const { user } = useAuth();
 
-  const { data: stats } = useQuery({
-    queryKey: ["oa-lista-stats-enhanced", lista.id, user?.id],
+  return useQuery({
+    queryKey: ["oa-listas-batch-stats", listaIds.join(","), user?.id],
     queryFn: async () => {
-      const now = new Date().toISOString();
-      const { count: naFila } = await supabase
-        .from("oferta_ativa_leads")
-        .select("id", { count: "exact", head: true })
-        .eq("lista_id", lista.id)
-        .eq("status", "na_fila")
-        .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`);
+      if (!listaIds.length || !user) return {} as Record<string, ListaStats>;
 
-      const { count: aproveitados } = await supabase
+      // 1) All leads for these listas in one query
+      const { data: leads } = await supabase
         .from("oferta_ativa_leads")
-        .select("id", { count: "exact", head: true })
-        .eq("lista_id", lista.id)
-        .eq("status", "aproveitado");
+        .select("id, lista_id, status, proxima_tentativa_apos")
+        .in("lista_id", listaIds);
 
-      const { count: total } = await supabase
-        .from("oferta_ativa_leads")
-        .select("id", { count: "exact", head: true })
-        .eq("lista_id", lista.id);
-
-      // My attempts today
+      // 2) My attempts today in one query
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { count: meusTentativas } = await supabase
+      const { data: attempts } = await supabase
         .from("oferta_ativa_tentativas")
-        .select("id", { count: "exact", head: true })
-        .eq("lista_id", lista.id)
-        .eq("corretor_id", user!.id)
+        .select("id, lista_id")
+        .eq("corretor_id", user.id)
+        .in("lista_id", listaIds)
         .gte("created_at", today.toISOString());
 
-      const worked = (total || 0) - (naFila || 0);
-      const pct = (total || 0) > 0 ? Math.round((worked / (total || 1)) * 100) : 0;
+      const now = new Date().toISOString();
+      const statsMap: Record<string, ListaStats> = {};
 
-      return {
-        naFila: naFila || 0,
-        aproveitados: aproveitados || 0,
-        total: total || 0,
-        pct,
-        meusTentativas: meusTentativas || 0,
-      };
+      for (const lid of listaIds) {
+        const listaLeads = (leads || []).filter(l => l.lista_id === lid);
+        const total = listaLeads.length;
+        const naFila = listaLeads.filter(l =>
+          l.status === "na_fila" &&
+          (l.proxima_tentativa_apos == null || l.proxima_tentativa_apos < now)
+        ).length;
+        const aproveitados = listaLeads.filter(l => l.status === "aproveitado").length;
+        const worked = total - naFila;
+        const pct = total > 0 ? Math.round((worked / total) * 100) : 0;
+        const meusTentativas = (attempts || []).filter(a => a.lista_id === lid).length;
+
+        statsMap[lid] = { naFila, aproveitados, total, pct, meusTentativas };
+      }
+
+      return statsMap;
     },
     staleTime: 15000,
-    enabled: !!user,
+    enabled: listaIds.length > 0 && !!user,
   });
+}
 
+function ListaCard({ lista, stats }: { lista: OALista; stats?: ListaStats }) {
   const hasLeads = (stats?.naFila ?? 0) > 0;
 
   return (
     <Card
       className={`cursor-pointer transition-all group ${hasLeads ? "hover:border-primary/40 hover:shadow-md" : "opacity-60"}`}
-      onClick={hasLeads ? onSelect : undefined}
     >
       <CardContent className="p-5 space-y-3">
         <div className="flex items-start justify-between">
@@ -133,6 +140,9 @@ export default function CorretorListSelection() {
   const [search, setSearch] = useState("");
 
   const liberadas = listas.filter(l => l.status === "liberada");
+  const listaIds = useMemo(() => liberadas.map(l => l.id), [liberadas]);
+
+  const { data: statsMap, isLoading: statsLoading } = useBatchListaStats(listaIds);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return liberadas;
@@ -193,9 +203,15 @@ export default function CorretorListSelection() {
         <p className="text-sm text-muted-foreground text-center py-4">Nenhuma lista encontrada para "{search}"</p>
       )}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map(lista => (
-          <ListaCard key={lista.id} lista={lista} onSelect={() => setSelectedLista(lista)} />
-        ))}
+        {filtered.map(lista => {
+          const stats = statsMap?.[lista.id];
+          const hasLeads = (stats?.naFila ?? 0) > 0;
+          return (
+            <div key={lista.id} onClick={hasLeads ? () => setSelectedLista(lista) : undefined}>
+              <ListaCard lista={lista} stats={stats} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
