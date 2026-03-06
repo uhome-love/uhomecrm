@@ -96,15 +96,33 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
       const todayStart = todayStartRef.current;
       const currentNow = new Date();
 
-      // 1. Fetch all today's tentativas in one query
-      let tentativasQuery = supabase
-        .from("oferta_ativa_tentativas")
-        .select("corretor_id, canal, resultado, created_at")
-        .gte("created_at", todayStart)
-        .order("created_at", { ascending: false });
+      // Helper to fetch ALL rows with pagination (bypasses 1000-row limit)
+      async function fetchAllTentativas() {
+        const PAGE_SIZE = 1000;
+        let allRows: Array<{ corretor_id: string; canal: string; resultado: string; created_at: string }> = [];
+        let from = 0;
+        let hasMore = true;
 
-      if (teamFilter && teamFilter.length > 0) {
-        tentativasQuery = tentativasQuery.in("corretor_id", teamFilter);
+        while (hasMore) {
+          let q = supabase
+            .from("oferta_ativa_tentativas")
+            .select("corretor_id, canal, resultado, created_at")
+            .gte("created_at", todayStart)
+            .order("created_at", { ascending: false })
+            .range(from, from + PAGE_SIZE - 1);
+
+          if (teamFilter && teamFilter.length > 0) {
+            q = q.in("corretor_id", teamFilter);
+          }
+
+          const { data } = await q;
+          const rows = data || [];
+          allRows = allRows.concat(rows);
+          hasMore = rows.length === PAGE_SIZE;
+          from += PAGE_SIZE;
+        }
+
+        return allRows;
       }
 
       // 2. Fetch active locks
@@ -120,14 +138,13 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
         .select("id, nome, empreendimento, total_leads, status")
         .eq("status", "liberada");
 
-      // Run all 3 in parallel
-      const [tentativasRes, locksRes, listasRes] = await Promise.all([
-        tentativasQuery,
+      // Run all in parallel
+      const [tentativas, locksRes, listasRes] = await Promise.all([
+        fetchAllTentativas(),
         locksQuery,
         listasQuery,
       ]);
 
-      const tentativas = tentativasRes.data || [];
       let activeLocks = locksRes.data || [];
       const listas = listasRes.data || [];
 
