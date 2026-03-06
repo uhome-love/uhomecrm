@@ -41,6 +41,7 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
               <TableHead className="text-xs">Data</TableHead>
               <TableHead className="text-xs">Hora</TableHead>
               <TableHead className="text-xs">Cliente</TableHead>
+              {showCorretor && <TableHead className="text-xs">Corretor</TableHead>}
               <TableHead className="text-xs">Empreendimento</TableHead>
               <TableHead className="text-xs">Origem</TableHead>
               <TableHead className="text-xs">Status</TableHead>
@@ -60,7 +61,11 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
                     {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
                   </TableCell>
                   <TableCell className="text-xs font-medium">{v.nome_cliente}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{v.empreendimento || "—"}</TableCell>
+                  {showCorretor && (
+                    <TableCell className="text-xs text-muted-foreground">
+                      {v.corretor_nome || "—"}
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Badge variant="outline" className="text-[10px]">
                       {ORIGEM_LABELS[v.origem] || v.origem}
