@@ -141,7 +141,7 @@ export default function HomeDashboard() {
   const fetchOaPeriodStats = useCallback(async () => {
     if (!user) return;
 
-    const { startTs, endTs } = getPeriodRange(period);
+    const { startTs, endTs, startDate, endDate } = getPeriodRange(period);
 
     let teamUserIds: string[] | undefined;
     if (!isAdmin) {
@@ -158,6 +158,7 @@ export default function HomeDashboard() {
       }
     }
 
+    // Ligações OA: count from oferta_ativa_tentativas
     let tentativasQuery = supabase
       .from("oferta_ativa_tentativas")
       .select("id")
@@ -168,26 +169,35 @@ export default function HomeDashboard() {
       tentativasQuery = tentativasQuery.in("corretor_id", teamUserIds);
     }
 
-    let visitasMarcadasQuery = supabase
-      .from("oa_events")
+    // Visitas Marcadas: pull from checkpoint_lines (source of truth — filled by gerente)
+    let cpQuery = supabase
+      .from("checkpoints")
       .select("id")
-      .eq("event_type", "call_finished")
-      .gte("created_at", startTs)
-      .lte("created_at", endTs)
-      .contains("metadata", { visita_marcada: true });
+      .gte("data", startDate)
+      .lte("data", endDate);
 
-    if (!isAdmin && teamUserIds) {
-      visitasMarcadasQuery = visitasMarcadasQuery.in("user_id", teamUserIds);
-    }
+    if (!isAdmin) cpQuery = cpQuery.eq("gerente_id", user.id);
 
-    const [{ data: tentativas }, { data: visitasMarcadas }] = await Promise.all([
+    const [{ data: tentativas }, { data: checkpoints }] = await Promise.all([
       tentativasQuery,
-      visitasMarcadasQuery,
+      cpQuery,
     ]);
+
+    let visitasMarcadasTotal = 0;
+    const cpIds = (checkpoints || []).map(c => c.id);
+    if (cpIds.length > 0) {
+      const { data: lines } = await supabase
+        .from("checkpoint_lines")
+        .select("real_visitas_marcadas")
+        .in("checkpoint_id", cpIds);
+      visitasMarcadasTotal = (lines || []).reduce(
+        (sum, l) => sum + (l.real_visitas_marcadas || 0), 0
+      );
+    }
 
     setOaPeriodStats({
       ligacoes: (tentativas || []).length,
-      visitas_marcadas: (visitasMarcadas || []).length,
+      visitas_marcadas: visitasMarcadasTotal,
     });
   }, [user, isAdmin, period]);
 
@@ -252,27 +262,17 @@ export default function HomeDashboard() {
     const oa_ligacoes = (oaTentativas || []).length;
     const oa_aproveitados = (oaTentativas || []).filter(t => t.resultado === "com_interesse").length;
 
-    // Count visitas marcadas from OA events (source of truth)
-    let oaEventsQuery = supabase
-      .from("oa_events")
-      .select("id")
-      .eq("event_type", "call_finished")
-      .gte("created_at", startOfToday)
-      .lte("created_at", endOfToday)
-      .contains("metadata", { visita_marcada: true });
-
-    if (!isAdmin) {
-      const teamUserIds = (await supabase
-        .from("team_members")
-        .select("user_id")
-        .eq("gerente_id", user.id)
-        .eq("status", "ativo")).data?.map(t => t.user_id).filter(Boolean) as string[] || [];
-      if (teamUserIds.length > 0) {
-        oaEventsQuery = oaEventsQuery.in("user_id", teamUserIds);
-      }
+    // Visitas marcadas from checkpoint_lines (already fetched above)
+    let oa_visitas_marcadas = 0;
+    if (cpIds.length > 0) {
+      const { data: vmLines } = await supabase
+        .from("checkpoint_lines")
+        .select("real_visitas_marcadas")
+        .in("checkpoint_id", cpIds);
+      oa_visitas_marcadas = (vmLines || []).reduce(
+        (sum, l) => sum + (l.real_visitas_marcadas || 0), 0
+      );
     }
-    const { data: visitaEvents } = await oaEventsQuery;
-    const oa_visitas_marcadas = (visitaEvents || []).length;
 
     setCpStats({
       total_checkpoints: cps?.length || 0,
