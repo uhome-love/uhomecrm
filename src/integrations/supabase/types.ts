@@ -1088,6 +1088,7 @@ export type Database = {
         Row: {
           corretor: string | null
           created_at: string
+          created_from_visit: boolean
           data_proxima_acao: string | null
           data_visita: string | null
           docs_status: string
@@ -1095,6 +1096,7 @@ export type Database = {
           equipe: string | null
           gerente_id: string
           id: string
+          linked_visit_id: string | null
           mes: string
           motivo_queda: string | null
           nome: string
@@ -1114,6 +1116,7 @@ export type Database = {
         Insert: {
           corretor?: string | null
           created_at?: string
+          created_from_visit?: boolean
           data_proxima_acao?: string | null
           data_visita?: string | null
           docs_status?: string
@@ -1121,6 +1124,7 @@ export type Database = {
           equipe?: string | null
           gerente_id: string
           id?: string
+          linked_visit_id?: string | null
           mes: string
           motivo_queda?: string | null
           nome: string
@@ -1140,6 +1144,7 @@ export type Database = {
         Update: {
           corretor?: string | null
           created_at?: string
+          created_from_visit?: boolean
           data_proxima_acao?: string | null
           data_visita?: string | null
           docs_status?: string
@@ -1147,6 +1152,7 @@ export type Database = {
           equipe?: string | null
           gerente_id?: string
           id?: string
+          linked_visit_id?: string | null
           mes?: string
           motivo_queda?: string | null
           nome?: string
@@ -1163,7 +1169,15 @@ export type Database = {
           valor_potencial?: number | null
           vgv?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pdn_entries_linked_visit_id_fkey"
+            columns: ["linked_visit_id"]
+            isOneToOne: false
+            referencedRelation: "visitas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1341,6 +1355,8 @@ export type Database = {
       }
       visitas: {
         Row: {
+          converted_to_pdn_at: string | null
+          converted_to_pdn_by: string | null
           corretor_id: string
           created_at: string
           created_by: string
@@ -1351,6 +1367,7 @@ export type Database = {
           id: string
           lead_id: string | null
           linked_attempt_id: string | null
+          linked_pdn_id: string | null
           local_visita: string | null
           nome_cliente: string
           observacoes: string | null
@@ -1361,6 +1378,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          converted_to_pdn_at?: string | null
+          converted_to_pdn_by?: string | null
           corretor_id: string
           created_at?: string
           created_by: string
@@ -1371,6 +1390,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           linked_attempt_id?: string | null
+          linked_pdn_id?: string | null
           local_visita?: string | null
           nome_cliente: string
           observacoes?: string | null
@@ -1381,6 +1401,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          converted_to_pdn_at?: string | null
+          converted_to_pdn_by?: string | null
           corretor_id?: string
           created_at?: string
           created_by?: string
@@ -1391,6 +1413,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           linked_attempt_id?: string | null
+          linked_pdn_id?: string | null
           local_visita?: string | null
           nome_cliente?: string
           observacoes?: string | null
@@ -1413,6 +1436,13 @@ export type Database = {
             columns: ["linked_attempt_id"]
             isOneToOne: false
             referencedRelation: "oferta_ativa_tentativas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_linked_pdn_id_fkey"
+            columns: ["linked_pdn_id"]
+            isOneToOne: false
+            referencedRelation: "pdn_entries"
             referencedColumns: ["id"]
           },
         ]

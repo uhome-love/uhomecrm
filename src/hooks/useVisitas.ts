@@ -24,6 +24,9 @@ export interface Visita {
   updated_at: string;
   created_by: string;
   linked_attempt_id: string | null;
+  linked_pdn_id: string | null;
+  converted_to_pdn_at: string | null;
+  converted_to_pdn_by: string | null;
 }
 
 export type VisitaStatus = "marcada" | "confirmada" | "realizada" | "reagendada" | "cancelada" | "no_show";

@@ -184,7 +184,11 @@ function VisitaSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
   return (
     <div className="rounded border border-border bg-card overflow-x-auto">
       <div className="flex items-center justify-between bg-primary/10 border-b border-border px-3 py-2">
-        <h3 className="text-sm font-bold text-primary">📋 NEGÓCIOS</h3>
+        <h3 className="text-sm font-bold text-primary flex items-center gap-1.5">📋 NEGÓCIOS
+          {rows.some(r => (r as any).created_from_visit) && (
+            <span className="text-[10px] font-normal text-muted-foreground ml-1">({rows.filter(r => (r as any).created_from_visit).length} da Agenda)</span>
+          )}
+        </h3>
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
           <span>{rows.length} registros</span>
           {!readOnly && (
@@ -223,7 +227,10 @@ function VisitaSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
           {rows.map((e, i) => (
             <tr key={e.id} className={`border-b border-border hover:bg-muted/20 group align-top ${i % 2 ? "bg-muted/5" : ""}`}>
               {!readOnly && <td className="px-1 py-1 text-center border-r border-border"><Checkbox checked={selectedIds.has(e.id)} onCheckedChange={() => onToggleSelect(e.id)} /></td>}
-              <td className={tdClass}>{readOnly ? <span className="px-1">{e.nome}</span> : <Cell value={e.nome} field="nome" id={e.id} onUpdate={onUpdate} placeholder="Nome" />}</td>
+              <td className={tdClass}>
+                {(e as any).created_from_visit && <span title="Originado da Agenda de Visitas" className="text-[10px] mr-0.5">📅</span>}
+                {readOnly ? <span className="px-1">{e.nome}</span> : <Cell value={e.nome} field="nome" id={e.id} onUpdate={onUpdate} placeholder="Nome" />}
+              </td>
               <td className={`${tdClass} text-center`}>{readOnly ? e.und : <Cell value={e.und || ""} field="und" id={e.id} onUpdate={onUpdate} className="text-center" placeholder="—" />}</td>
               <td className={tdClass}>{readOnly ? <span className="px-1">{e.empreendimento}</span> : <Cell value={e.empreendimento || ""} field="empreendimento" id={e.id} onUpdate={onUpdate} placeholder="Empreend." />}</td>
               <td className={`${tdClass} text-center`}>
