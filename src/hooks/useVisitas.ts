@@ -58,6 +58,8 @@ export const ORIGEM_LABELS: Record<string, string> = {
   manual: "Manual",
   indicacao: "Indicação",
   reativacao: "Reativação",
+  lead: "Lead",
+  network: "Network",
   outro: "Outro",
 };
 
