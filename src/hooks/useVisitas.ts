@@ -27,6 +27,7 @@ export interface Visita {
   linked_pdn_id: string | null;
   converted_to_pdn_at: string | null;
   converted_to_pdn_by: string | null;
+  corretor_nome?: string;
 }
 
 export type VisitaStatus = "marcada" | "confirmada" | "realizada" | "reagendada" | "cancelada" | "no_show";
@@ -91,7 +92,23 @@ export function useVisitas(filters?: {
 
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as Visita[];
+      const rows = (data || []) as Visita[];
+
+      // Fetch corretor names for all unique corretor_ids
+      const corretorIds = [...new Set(rows.map(r => r.corretor_id).filter(Boolean))];
+      if (corretorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", corretorIds);
+        
+        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.nome]));
+        rows.forEach(r => {
+          r.corretor_nome = nameMap.get(r.corretor_id) || undefined;
+        });
+      }
+
+      return rows;
     },
     enabled: !!user,
   });

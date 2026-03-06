@@ -1,8 +1,8 @@
-import { useState, useRef, type DragEvent } from "react";
+import { useState, type DragEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Building2, CheckCircle2, FileSpreadsheet, Trash2 } from "lucide-react";
+import { Calendar, Clock, Building2, CheckCircle2, FileSpreadsheet, Trash2, User } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { STATUS_LABELS, STATUS_COLORS, ORIGEM_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
@@ -100,10 +100,17 @@ export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Pro
                       isDragging ? "opacity-40 scale-95" : "hover:shadow-md"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold truncate flex-1">{v.nome_cliente}</p>
                       {hasPdn && <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0 ml-1" />}
                     </div>
+
+                    {v.corretor_nome && (
+                      <div className="flex items-center gap-1 text-[10px] text-primary font-medium">
+                        <User className="h-3 w-3" />
+                        <span className="truncate">{v.corretor_nome}</span>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                       <Calendar className="h-3 w-3" />
