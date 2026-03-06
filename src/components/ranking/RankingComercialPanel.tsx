@@ -186,18 +186,20 @@ export default function RankingComercialPanel() {
             <RankingCorretoresView corretores={sortedCorretores} getValue={getCorretorValue} metric={metric} getScoreColor={getScoreColor} showEquipe={false} highlightUserId={user?.id} />
           )}
 
-          {/* IA Analysis */}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <h3 className="font-display font-semibold text-sm">Análise da IA</h3>
+          {/* IA Analysis - only for gestor/admin */}
+          {(isAdmin || isGestor) && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h3 className="font-display font-semibold text-sm">Análise da IA</h3>
+              </div>
+              <IaCoreAction
+                label="Gerar Diagnóstico de Performance"
+                module="ranking_comercial"
+                prompt={`Analise o ranking comercial e gere um diagnóstico completo:\n\n${iaContext}\n\nInclua: corretores em destaque, corretores que precisam melhorar, sugestões de ação para os gerentes.`}
+              />
             </div>
-            <IaCoreAction
-              label="Gerar Diagnóstico de Performance"
-              module="ranking_comercial"
-              prompt={`Analise o ranking comercial e gere um diagnóstico completo:\n\n${iaContext}\n\nInclua: corretores em destaque, corretores que precisam melhorar, sugestões de ação para os gerentes.`}
-            />
-          </div>
+          )}
         </>
       )}
     </div>
