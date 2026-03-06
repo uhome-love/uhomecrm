@@ -185,7 +185,7 @@ export function AppSidebar() {
               <img
                 src={uhomeLogo}
                 alt="UhomeSales"
-                className="h-[48px] w-auto object-contain drop-shadow-[0_0_20px_hsl(229,100%,64%,0.2)]"
+                className="w-full max-h-[200px] object-contain drop-shadow-[0_0_20px_hsl(229,100%,64%,0.2)]"
               />
             </div>
           )}
