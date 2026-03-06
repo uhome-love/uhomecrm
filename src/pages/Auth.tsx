@@ -115,6 +115,13 @@ export default function Auth() {
           } else {
             toast.error(error.message || "Erro ao entrar.");
           }
+        } else {
+          // Save or clear remembered email
+          if (rememberMe) {
+            localStorage.setItem("uhome_remember_email", email);
+          } else {
+            localStorage.removeItem("uhome_remember_email");
+          }
         }
       } else {
         if (!nome.trim()) {
