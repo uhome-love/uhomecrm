@@ -256,6 +256,21 @@ export default function Auth() {
                   />
                 </div>
 
+                {/* Remember me */}
+                {isLogin && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remember"
+                      checked={rememberMe}
+                      onCheckedChange={(v) => setRememberMe(!!v)}
+                      className="border-white/20 data-[state=checked]:bg-[hsl(229,100%,64%)] data-[state=checked]:border-[hsl(229,100%,64%)]"
+                    />
+                    <label htmlFor="remember" className="text-xs text-white/40 cursor-pointer select-none">
+                      Lembrar meu e-mail
+                    </label>
+                  </div>
+                )}
+
                 {/* Submit + Forgot */}
                 <div className="flex items-center gap-3">
                   <Button
