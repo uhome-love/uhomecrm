@@ -313,20 +313,23 @@ export default function HomeDashboard() {
     };
   }, [fetchPdn, fetchCheckpoint, fetchOaPeriodStats, reload]);
 
-  // Fetch lead recovery
-  useEffect(() => {
+  // Fetch OA Top Corretores
+  const fetchOATopCorretores = useCallback(async () => {
     if (!user) return;
-    const fetchRecovery = async () => {
-      const { data } = await supabase.from("leads").select("status_recuperacao, status").eq("user_id", user.id);
-      if (!data) return;
-      setRecovery({
-        reativados: data.filter(d => d.status_recuperacao === "contatado" || d.status_recuperacao === "reativado").length,
-        respondidos: data.filter(d => d.status === "respondido" || d.status === "reativado").length,
-        visitas: data.filter(d => d.status === "visita_agendada").length,
-      });
-    };
-    fetchRecovery();
-  }, [user]);
+    const oaPeriodMap: Record<Period, string> = { dia: "hoje", semana: "semana", mes: "mes" };
+    const { data, error } = await supabase.rpc("get_individual_oa_ranking", { p_period: oaPeriodMap[period] });
+    if (error || !data) return;
+    const parsed = data as any;
+    const ranking = (parsed?.ranking || []).slice(0, 5).map((r: any) => ({
+      nome: r.nome,
+      pontos: r.pontos,
+      tentativas: r.tentativas,
+      aproveitados: r.aproveitados,
+    }));
+    setTopCorretoresOA(ranking);
+  }, [user, period]);
+
+  useEffect(() => { fetchOATopCorretores(); }, [fetchOATopCorretores]);
 
   const sortedTimes = useMemo(() =>
     [...gerentes].sort((a, b) => b.totals.real_vgv_assinado - a.totals.real_vgv_assinado),
@@ -350,17 +353,17 @@ export default function HomeDashboard() {
         a.push(`Equipe ${g.gerente_nome}: muitas visitas (${g.totals.real_visitas_realizadas}) e poucas propostas (${g.totals.real_propostas})`);
       }
     });
-    if (recovery.reativados > 0 && recovery.respondidos === 0) a.push("Leads reativados sem resposta — revisar abordagem");
     return a.slice(0, 5);
-  }, [channelStats, mktTotals, gerentes, recovery]);
+  }, [channelStats, mktTotals, gerentes]);
 
   const iaContext = useMemo(() => {
     const funil = `Funil: Ligações OA ${oaPeriodStats.ligacoes}, Visitas Marcadas OA ${oaPeriodStats.visitas_marcadas}, Visitas Realizadas PDN ${pdnStats.total_visitas + pdnStats.total_gerados + pdnStats.total_assinados}, Propostas PDN ${pdnStats.total_gerados + pdnStats.total_assinados}, VGV Assinado R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}`;
     const mkt = channelStats.map(c => `${getCanalLabel(c.canal)}: Inv R$ ${c.investimento.toLocaleString("pt-BR")}, Leads ${c.leads}, CPL R$ ${c.cpl?.toFixed(0) || "-"}`).join("; ");
     const teams = sortedTimes.map((t, i) => `${i + 1}. Equipe ${t.gerente_nome}: VGV R$ ${t.totals.real_vgv_assinado.toLocaleString("pt-BR")}, Propostas ${t.totals.real_propostas}`).join("; ");
     const pdnCtx = `PDN: ${pdnStats.total_visitas} negócios, ${pdnStats.quente} quentes, ${pdnStats.total_gerados} gerados (R$ ${pdnStats.vgv_gerado.toLocaleString("pt-BR")}), ${pdnStats.total_assinados} assinados (R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}), ${pdnStats.total_caidos} caídos (R$ ${pdnStats.vgv_caido.toLocaleString("pt-BR")})`;
-    return `Período: ${periodLabels[period]}\n${funil}\n${pdnCtx}\nMarketing: ${mkt}\nTimes: ${teams}\nRecuperação: ${recovery.reativados} reativados, ${recovery.respondidos} respostas`;
-  }, [oaPeriodStats, channelStats, sortedTimes, period, pdnStats, recovery]);
+    const oaTop = topCorretoresOA.map((c, i) => `${i+1}. ${c.nome}: ${c.pontos}pts, ${c.tentativas} tent., ${c.aproveitados} aprov.`).join("; ");
+    return `Período: ${periodLabels[period]}\n${funil}\n${pdnCtx}\nMarketing: ${mkt}\nTimes: ${teams}\nTop OA: ${oaTop}`;
+  }, [oaPeriodStats, channelStats, sortedTimes, period, pdnStats, topCorretoresOA]);
 
   const card = "rounded-xl border border-border bg-card shadow-card";
 
