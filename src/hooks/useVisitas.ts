@@ -97,12 +97,26 @@ export function useVisitas(filters?: {
       // Fetch corretor names for all unique corretor_ids
       const corretorIds = [...new Set(rows.map(r => r.corretor_id).filter(Boolean))];
       if (corretorIds.length > 0) {
+        // Try profiles first
         const { data: profiles } = await supabase
           .from("profiles")
           .select("user_id, nome")
           .in("user_id", corretorIds);
         
         const nameMap = new Map((profiles || []).map(p => [p.user_id, p.nome]));
+
+        // Fallback to team_members for any missing names
+        const missingIds = corretorIds.filter(id => !nameMap.get(id));
+        if (missingIds.length > 0) {
+          const { data: members } = await supabase
+            .from("team_members")
+            .select("user_id, nome")
+            .in("user_id", missingIds);
+          (members || []).forEach(m => {
+            if (m.user_id) nameMap.set(m.user_id, m.nome);
+          });
+        }
+
         rows.forEach(r => {
           r.corretor_nome = nameMap.get(r.corretor_id) || undefined;
         });
