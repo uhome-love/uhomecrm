@@ -23,7 +23,7 @@ interface Props {
   onDelete?: (id: string) => void;
 }
 
-export default function VisitasKanban({ visitas, onUpdateStatus }: Props) {
+export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Props) {
   const { convertToPdn } = useVisitaToPdn();
 
   return (
