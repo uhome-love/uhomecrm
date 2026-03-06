@@ -59,19 +59,15 @@ export function useCorretorDailyStats() {
         ? Math.round((s.aproveitados / s.tentativas) * 100)
         : 0;
 
-      // Count visitas_marcadas from oa_events (corretor CAN read own events via RLS)
-      // checkpoint_lines is NOT readable by corretores (RLS requires gerente_id = auth.uid())
+      // Count visitas_marcadas through a secure backend function (single source = checkpoint sync)
       try {
-        const { data: events } = await supabase
-          .from("oa_events")
-          .select("id")
-          .eq("user_id", user!.id)
-          .eq("event_type", "call_finished")
-          .gte("created_at", today.toISOString())
-          .filter("metadata->>visita_marcada", "eq", "true");
+        const { data: visitasCount, error: visitasError } = await supabase
+          .rpc("get_corretor_daily_visitas", { p_user_id: user!.id });
 
-        if (events) {
-          s.visitas_marcadas = events.length;
+        if (visitasError) {
+          console.error("Erro ao buscar visitas marcadas:", visitasError);
+        } else {
+          s.visitas_marcadas = Number(visitasCount || 0);
         }
       } catch (err) {
         console.error("Erro ao buscar visitas marcadas:", err);

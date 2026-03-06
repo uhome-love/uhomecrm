@@ -1,7 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useOAFila, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +15,6 @@ interface Props {
 export default function DialingMode({ lista, onBack }: Props) {
   const { fila, isLoading, refetch } = useOAFila(lista.id);
   const { registrar } = useOARegistrarTentativa();
-  const { user } = useAuth();
   const { templates } = useOATemplates(lista.empreendimento);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [actionTaken, setActionTaken] = useState<string | null>(null);
@@ -93,59 +90,10 @@ export default function DialingMode({ lista, onBack }: Props) {
 
   const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean) => {
     if (!lead || !actionTaken) return;
-    await registrar(lead, actionTaken, resultado, feedback, lista);
+    await registrar(lead, actionTaken, resultado, feedback, lista, undefined, visitaMarcada);
 
-    if (visitaMarcada && user) {
-      try {
-        const today = new Date().toISOString().split("T")[0];
-        const { data: tm } = await supabase
-          .from("team_members")
-          .select("id, gerente_id")
-          .eq("user_id", user.id)
-          .eq("status", "ativo")
-          .maybeSingle();
-
-        if (tm) {
-          let { data: cp } = await supabase
-            .from("checkpoints")
-            .select("id")
-            .eq("gerente_id", tm.gerente_id)
-            .eq("data", today)
-            .maybeSingle();
-
-          if (!cp) {
-            const { data: newCp } = await supabase
-              .from("checkpoints")
-              .insert({ gerente_id: tm.gerente_id, data: today })
-              .select("id")
-              .single();
-            cp = newCp;
-          }
-
-          if (cp) {
-            const { data: line } = await supabase
-              .from("checkpoint_lines")
-              .select("id, real_visitas_marcadas")
-              .eq("checkpoint_id", cp.id)
-              .eq("corretor_id", tm.id)
-              .maybeSingle();
-
-            if (line) {
-              await supabase
-                .from("checkpoint_lines")
-                .update({ real_visitas_marcadas: (line.real_visitas_marcadas || 0) + 1 })
-                .eq("id", line.id);
-            } else {
-              await supabase
-                .from("checkpoint_lines")
-                .insert({ checkpoint_id: cp.id, corretor_id: tm.id, real_visitas_marcadas: 1 } as any);
-            }
-          }
-        }
-        toast.success("📅 Visita marcada contabilizada no checkpoint!");
-      } catch (err) {
-        console.error("Erro ao atualizar visita no checkpoint:", err);
-      }
+    if (visitaMarcada) {
+      toast.success("📅 Visita marcada contabilizada!");
     }
 
     stopTimer();
