@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -18,6 +19,7 @@ export interface CorretorDailyStats {
 
 export function useCorretorDailyStats() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["corretor-daily-stats", user?.id],
@@ -96,17 +98,46 @@ export function useCorretorDailyStats() {
     enabled: !!user,
     staleTime: 15_000,
     refetchInterval: 30_000,
-    refetchOnWindowFocus: false, // Prevent tab-switch refetch causing UI jumps
+    refetchOnWindowFocus: false,
   });
 
+  /**
+   * Optimistic update: immediately patch stats cache after a call result.
+   * This ensures the UI updates instantly without waiting for refetch.
+   */
+  const applyOptimisticUpdate = useCallback((resultado: string, canal: string, pontos: number, visitaMarcada: boolean) => {
+    queryClient.setQueryData<CorretorDailyStats>(["corretor-daily-stats", user?.id], (old) => {
+      if (!old) return old;
+      const updated = { ...old };
+      updated.tentativas += 1;
+      updated.pontos += pontos;
+      if (canal === "ligacao") updated.ligacoes += 1;
+      if (canal === "whatsapp") updated.whatsapps += 1;
+      if (canal === "email") updated.emails += 1;
+      if (resultado === "com_interesse") updated.aproveitados += 1;
+      if (resultado === "sem_interesse") updated.sem_interesse += 1;
+      if (resultado === "numero_errado") updated.numero_errado += 1;
+      if (visitaMarcada) updated.visitas_marcadas += 1;
+      updated.taxa_aproveitamento = updated.tentativas > 0
+        ? Math.round((updated.aproveitados / updated.tentativas) * 100)
+        : 0;
+      return updated;
+    });
+    // Also schedule a background refetch to sync with server
+    queryClient.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
+  }, [queryClient, user?.id]);
+
+  const defaultStats: CorretorDailyStats = {
+    ligacoes: 0, whatsapps: 0, emails: 0,
+    aproveitados: 0, sem_interesse: 0, numero_errado: 0,
+    tentativas: 0, pontos: 0, taxa_aproveitamento: 0,
+    visitas_marcadas: 0,
+  };
+
   return {
-    stats: stats || {
-      ligacoes: 0, whatsapps: 0, emails: 0,
-      aproveitados: 0, sem_interesse: 0, numero_errado: 0,
-      tentativas: 0, pontos: 0, taxa_aproveitamento: 0,
-      visitas_marcadas: 0,
-    },
+    stats: stats || defaultStats,
     isLoading,
+    applyOptimisticUpdate,
   };
 }
 

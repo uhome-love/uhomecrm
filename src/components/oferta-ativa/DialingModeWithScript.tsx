@@ -64,7 +64,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const { currentLead: lead, isLoading, queueEmpty, fetchNext, startHeartbeat, stopHeartbeat, unlockLead } = useOAServerQueue(lista.id);
   const { registrar } = useOARegistrarTentativa();
   const { templates } = useOATemplates(lista.empreendimento);
-  const { stats } = useCorretorDailyStats();
+  const { stats, applyOptimisticUpdate } = useCorretorDailyStats();
   const { goals, saveGoals } = useCorretorDailyGoals();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -246,6 +246,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       if (!result?.success) { setSubmitting(false); return; }
 
       if (!result.idempotent) {
+        // Determine points for optimistic update
+        const pontos = resultado === "com_interesse" ? 3 : resultado === "numero_errado" ? 0 : 1;
+        // Apply optimistic update IMMEDIATELY so card updates without waiting for refetch
+        applyOptimisticUpdate(resultado, actionTaken, pontos, visitaMarcada ?? false);
+
         if (resultado === "com_interesse") {
           setStreak(prev => prev + 1);
           toast.success("🎉 APROVEITADO! +3 pontos! Mandou bem!", { duration: 4000 });
@@ -270,7 +275,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       setActionTaken(null);
       setCurrentIdempotencyKey(null);
       setSessionLeadsServed(prev => prev + 1);
-      queryClient.invalidateQueries({ queryKey: ["corretor-daily-stats"] });
       queryClient.invalidateQueries({ queryKey: ["checkpoint"] });
       queryClient.invalidateQueries({ queryKey: ["oa-ranking"] });
       queryClient.invalidateQueries({ queryKey: ["oa-performance-live"] });

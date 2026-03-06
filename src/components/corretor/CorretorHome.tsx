@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Phone, MessageCircle, Mail, Target, Trophy, CheckCircle, History, Flame, ArrowRight, Zap, Bot } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,10 +17,23 @@ export default function CorretorHome() {
   const motivation = useDailyMotivation();
   const navigate = useNavigate();
 
-  const [metaLig, setMetaLig] = useState(goals?.meta_ligacoes?.toString() || "30");
-  const [metaAprov, setMetaAprov] = useState(goals?.meta_aproveitados?.toString() || "5");
-  const [metaVisitas, setMetaVisitas] = useState(goals?.meta_visitas_marcadas?.toString() || "3");
-  const [editing, setEditing] = useState(!goals);
+  const [metaLig, setMetaLig] = useState("30");
+  const [metaAprov, setMetaAprov] = useState("5");
+  const [metaVisitas, setMetaVisitas] = useState("3");
+  const [editing, setEditing] = useState(false);
+
+  // Sync local state when goals load from DB
+  useEffect(() => {
+    if (goals) {
+      setMetaLig(goals.meta_ligacoes.toString());
+      setMetaAprov(goals.meta_aproveitados.toString());
+      setMetaVisitas(goals.meta_visitas_marcadas.toString());
+      setEditing(false);
+    } else if (goals === null) {
+      // No goals saved yet for today, show editor
+      setEditing(true);
+    }
+  }, [goals?.id, goals?.meta_ligacoes, goals?.meta_aproveitados, goals?.meta_visitas_marcadas]);
 
   const metaLigacoes = goals?.meta_ligacoes || 30;
   const metaAproveitados = goals?.meta_aproveitados || 5;
