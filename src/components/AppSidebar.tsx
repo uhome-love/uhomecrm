@@ -83,6 +83,7 @@ export function AppSidebar() {
     ? [
         { title: "Início", url: "/", icon: Home },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
+        { title: "HOMI Gerencial", url: "/homi-gerente", icon: Bot },
       ]
     : [
         { title: "Central do Corretor", url: "/corretor", icon: Phone },
