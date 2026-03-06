@@ -16,6 +16,7 @@ const COLUMN_ICONS: Record<string, string> = {
   realizada: "🏠",
   reagendada: "🔄",
   cancelada: "❌",
+  no_show: "👻",
 };
 
 interface Props {
@@ -64,9 +65,17 @@ export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Pro
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto">
       {KANBAN_COLUMNS.map(col => {
-        const items = visitas.filter(v => v.status === col);
+        const items = visitas
+          .filter(v => v.status === col)
+          .sort((a, b) => {
+            const dateComp = b.data_visita.localeCompare(a.data_visita);
+            if (dateComp !== 0) return dateComp;
+            const timeA = a.hora_visita || "99:99";
+            const timeB = b.hora_visita || "99:99";
+            return timeA.localeCompare(timeB);
+          });
         const isOver = dragOverCol === col;
         return (
           <div
