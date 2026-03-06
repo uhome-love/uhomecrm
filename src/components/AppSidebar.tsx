@@ -40,7 +40,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 
 export function AppSidebar() {
   const { state } = useSidebar();

@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Users, Sparkles } from "lucide-react";
 import ScriptLibrary from "@/components/scripts/ScriptLibrary";
 import TeamScriptAssignment from "@/components/scripts/TeamScriptAssignment";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 
 export default function ScriptsGenerator() {
   const [activeTab, setActiveTab] = useState("time");

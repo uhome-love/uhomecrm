@@ -31,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 
 // Confetti burst component
 function ConfettiBurst({ show }: { show: boolean }) {

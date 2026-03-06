@@ -13,7 +13,7 @@ import {
   CalendarDays, RotateCcw, ArrowRight, Building2, FileText, Eye, DollarSign,
   Megaphone, Flame, ArrowUpRight, Bell, AlertCircle, Info, ClipboardCheck,
 } from "lucide-react";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import IaCoreAction from "@/components/IaCoreAction";
 

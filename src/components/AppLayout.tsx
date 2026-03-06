@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 
 const UhomeIaAssistant = lazy(() => import("@/components/UhomeIaAssistant"));
 const HomiGreeting = lazy(() => import("@/components/HomiGreeting"));

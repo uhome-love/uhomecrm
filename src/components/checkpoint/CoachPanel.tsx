@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 
 export default function CoachPanel() {
   const { user } = useAuth();
