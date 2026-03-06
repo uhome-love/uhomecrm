@@ -29,13 +29,13 @@ export default function CheckpointGerente() {
   const [nome, setNome] = useState("");
   const [reminder, setReminder] = useState<CheckpointReminder | null>(null);
 
-  // Admin-only (not gestor) should see CEO checkpoint view instead
+  // Admin (CEO) should always see the consolidated CEO checkpoint view
   useEffect(() => {
     if (roleLoading) return;
-    if (isAdmin && !isGestor) {
+    if (isAdmin) {
       navigate("/ceo?tab=checkpoints", { replace: true });
     }
-  }, [isAdmin, isGestor, roleLoading, navigate]);
+  }, [isAdmin, roleLoading, navigate]);
 
   useEffect(() => {
     if (!user) return;
