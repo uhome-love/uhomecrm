@@ -71,7 +71,7 @@ export default function CorretorHome() {
             { label: "Ligações", value: progress.ligacoes, icon: Phone, color: "text-emerald-500", bg: "bg-emerald-500/10" },
             { label: "WhatsApps", value: progress.whatsapps, icon: MessageCircle, color: "text-green-500", bg: "bg-green-500/10" },
             { label: "E-mails", value: progress.emails, icon: Mail, color: "text-primary", bg: "bg-primary/10" },
-            { label: "Visitas Marcadas", value: `${progress.visitasMarcadas}/${progress.metaVisitas}`, icon: CalendarCheck, color: "text-amber-500", bg: "bg-amber-500/10" },
+            { label: "Visitas Marcadas", value: progress.visitasMarcadas, icon: CalendarCheck, color: "text-amber-500", bg: "bg-amber-500/10" },
             { label: "Taxa Aprov.", value: `${progress.taxaAproveitamento}%`, icon: CheckCircle, color: "text-primary", bg: "bg-primary/10" },
           ].map((item) => (
             <Card key={item.label} className="border-border/60">
