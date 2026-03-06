@@ -301,7 +301,8 @@ function RankingCorretoresView({ corretores, getValue, metric, getScoreColor, sh
                 </p>
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </AnimatePresence>
       </div>
     </div>
