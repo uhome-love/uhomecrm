@@ -163,7 +163,7 @@ export default function RankingComercialPanel() {
         <div className="text-center py-16 text-muted-foreground">Carregando rankings...</div>
       ) : (
         <>
-          {isAdmin ? (
+           {isAdmin ? (
             <Tabs defaultValue="times" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="times" className="gap-1.5">
@@ -179,11 +179,11 @@ export default function RankingComercialPanel() {
               </TabsContent>
 
               <TabsContent value="corretores">
-                <RankingCorretoresView corretores={sortedCorretores} getValue={getCorretorValue} metric={metric} getScoreColor={getScoreColor} showEquipe />
+                <RankingCorretoresView corretores={sortedCorretores} getValue={getCorretorValue} metric={metric} getScoreColor={getScoreColor} showEquipe highlightUserId={user?.id} />
               </TabsContent>
             </Tabs>
           ) : (
-            <RankingCorretoresView corretores={sortedCorretores} getValue={getCorretorValue} metric={metric} getScoreColor={getScoreColor} showEquipe={false} />
+            <RankingCorretoresView corretores={sortedCorretores} getValue={getCorretorValue} metric={metric} getScoreColor={getScoreColor} showEquipe={false} highlightUserId={user?.id} />
           )}
 
           {/* IA Analysis */}
