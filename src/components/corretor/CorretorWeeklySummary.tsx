@@ -33,31 +33,34 @@ function useWeeklyData(weekStart: Date) {
   return useQuery({
     queryKey: ["corretor-weekly-summary", user?.id, weekStart.toISOString()],
     queryFn: async () => {
-      const monday = new Date(weekStart);
-      monday.setHours(0, 0, 0, 0);
+      // Use BRT boundaries for consistency with daily stats
+      const mondayBrt = format(weekStart, "yyyy-MM-dd");
+      const dayStartUtc = new Date(`${mondayBrt}T00:00:00-03:00`).toISOString();
 
-      const endOfWeekDate = new Date(monday);
-      endOfWeekDate.setDate(monday.getDate() + 7);
+      const endOfWeekDate = new Date(weekStart);
+      endOfWeekDate.setDate(weekStart.getDate() + 7);
+      const endBrt = format(endOfWeekDate, "yyyy-MM-dd");
+      const dayEndUtc = new Date(`${endBrt}T00:00:00-03:00`).toISOString();
 
       const { data, error } = await supabase
         .from("oferta_ativa_tentativas")
         .select("canal, resultado, pontos, created_at")
         .eq("corretor_id", user!.id)
-        .gte("created_at", monday.toISOString())
-        .lt("created_at", endOfWeekDate.toISOString());
+        .gte("created_at", dayStartUtc)
+        .lt("created_at", dayEndUtc);
 
       if (error) throw error;
 
       const days: DayData[] = [];
       for (let i = 0; i < 7; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
         const dateStr = d.toISOString().split("T")[0];
         const dayLabel = WEEKDAYS[d.getDay()];
         const dayNum = d.getDate().toString().padStart(2, "0") + "/" + (d.getMonth() + 1).toString().padStart(2, "0");
 
         const dayItems = (data || []).filter(
-          (t) => new Date(t.created_at).toISOString().split("T")[0] === dateStr
+          (t) => new Date(t.created_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }) === dateStr
         );
 
         const tentativas = dayItems.length;
@@ -72,15 +75,15 @@ function useWeeklyData(weekStart: Date) {
       }
 
       // Previous week for comparison
-      const prevMonday = new Date(monday);
-      prevMonday.setDate(monday.getDate() - 7);
+      const prevMondayBrt = format(subWeeks(weekStart, 1), "yyyy-MM-dd");
+      const prevStartUtc = new Date(`${prevMondayBrt}T00:00:00-03:00`).toISOString();
 
       const { data: prevData } = await supabase
         .from("oferta_ativa_tentativas")
         .select("resultado, pontos")
         .eq("corretor_id", user!.id)
-        .gte("created_at", prevMonday.toISOString())
-        .lt("created_at", monday.toISOString());
+        .gte("created_at", prevStartUtc)
+        .lt("created_at", dayStartUtc);
 
       const prevTentativas = prevData?.length || 0;
       const prevAproveitados = prevData?.filter((t) => t.resultado === "com_interesse").length || 0;

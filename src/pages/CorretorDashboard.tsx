@@ -95,13 +95,21 @@ export default function CorretorDashboard() {
         .gte("created_at", thirtyDaysAgo.toISOString());
 
       if (!data || data.length === 0) return 0;
-      const dates = new Set(data.map(d => new Date(d.created_at).toISOString().split("T")[0]));
+      // Use BRT dates to calculate streak correctly
+      const dates = new Set(data.map(d => {
+        const dt = new Date(d.created_at);
+        return dt.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      }));
       let count = 0;
-      const check = new Date();
+      const now = new Date();
+      const todayBrt = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      // Start from today
+      let checkDate = new Date(todayBrt + "T12:00:00-03:00");
       for (let i = 0; i < 30; i++) {
-        if (dates.has(check.toISOString().split("T")[0])) {
+        const dateStr = checkDate.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        if (dates.has(dateStr)) {
           count++;
-          check.setDate(check.getDate() - 1);
+          checkDate.setDate(checkDate.getDate() - 1);
         } else break;
       }
       return count;

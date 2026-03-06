@@ -42,17 +42,18 @@ export default function RankingPanel() {
       const byCorretor: Record<string, Set<string>> = {};
       for (const d of data) {
         if (!byCorretor[d.corretor_id]) byCorretor[d.corretor_id] = new Set();
-        byCorretor[d.corretor_id].add(new Date(d.created_at).toISOString().split("T")[0]);
+        // Use BRT dates for streak calculation
+        const brtDate = new Date(d.created_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        byCorretor[d.corretor_id].add(brtDate);
       }
 
       for (const [cid, dates] of Object.entries(byCorretor)) {
-        const sorted = [...dates].sort().reverse();
         let streak = 0;
-        const today = new Date().toISOString().split("T")[0];
-        let checkDate = new Date(today);
+        const todayBrt = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        let checkDate = new Date(todayBrt + "T12:00:00-03:00");
         for (let i = 0; i < 30; i++) {
-          const dateStr = checkDate.toISOString().split("T")[0];
-          if (sorted.includes(dateStr)) {
+          const dateStr = checkDate.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+          if (dates.has(dateStr)) {
             streak++;
             checkDate.setDate(checkDate.getDate() - 1);
           } else break;
