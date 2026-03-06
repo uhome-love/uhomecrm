@@ -211,9 +211,9 @@ export default function HomeDashboard() {
 
     let total = 0, presentes = 0;
     if (cpIds.length > 0) {
-      const { data: lines } = await supabase.from("checkpoint_lines").select("real_presenca").in("checkpoint_id", cpIds);
+      const { data: lines } = await supabase.from("checkpoint_lines").select("meta_presenca").in("checkpoint_id", cpIds);
       total = (lines || []).length;
-      presentes = (lines || []).filter(l => l.real_presenca === "sim" || l.real_presenca === "presente").length;
+      presentes = (lines || []).filter(l => l.meta_presenca !== "falta").length;
     }
 
     // OA tentativas do dia — filter by team for gestor
