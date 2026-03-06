@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, ChevronRight, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { createVisitaFromOA } from "@/hooks/useVisitas";
 import AttemptModal from "./AttemptModal";
 
 interface Props {
@@ -13,6 +15,7 @@ interface Props {
 }
 
 export default function DialingMode({ lista, onBack }: Props) {
+  const { user } = useAuth();
   const { fila, isLoading, refetch } = useOAFila(lista.id);
   const { registrar } = useOARegistrarTentativa();
   const { templates } = useOATemplates(lista.empreendimento);
@@ -92,8 +95,16 @@ export default function DialingMode({ lista, onBack }: Props) {
     if (!lead || !actionTaken) return;
     await registrar(lead, actionTaken, resultado, feedback, lista, undefined, visitaMarcada);
 
-    if (visitaMarcada) {
-      toast.success("📅 Visita marcada contabilizada!");
+    if (visitaMarcada && user) {
+      createVisitaFromOA({
+        corretorId: user.id,
+        leadId: lead.id,
+        nomeCliente: lead.nome,
+        telefone: lead.telefone || undefined,
+        empreendimento: lead.empreendimento || undefined,
+        observacoes: feedback,
+      });
+      toast.success("📅 Visita registrada na Agenda de Visitas!");
     }
 
     stopTimer();
