@@ -20,6 +20,7 @@ const COLUMN_ICONS: Record<string, string> = {
 interface Props {
   visitas: Visita[];
   onUpdateStatus: (id: string, status: VisitaStatus) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function VisitasKanban({ visitas, onUpdateStatus }: Props) {
