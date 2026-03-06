@@ -377,7 +377,7 @@ export default function HomeDashboard() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 2. Performance de Equipe */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className={card}>
               <SectionHeader icon={Users} title="Performance de Equipe" action={{ label: "Ver ranking", onClick: () => navigate("/ranking") }} />
@@ -419,9 +419,8 @@ export default function HomeDashboard() {
                 {topCorretores.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">Sem dados</p>}
               </div>
             </motion.div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
             {/* 4. Top Corretores Oferta Ativa */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className={card}>
               <SectionHeader icon={Flame} title="Top Corretores — Oferta Ativa" action={{ label: "Ver ranking OA", onClick: () => navigate("/ranking") }} />
