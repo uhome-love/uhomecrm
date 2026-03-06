@@ -250,12 +250,13 @@ function RankingTimesView({ times, getValue, metric }: {
   );
 }
 
-function RankingCorretoresView({ corretores, getValue, metric, getScoreColor, showEquipe }: {
+function RankingCorretoresView({ corretores, getValue, metric, getScoreColor, showEquipe, highlightUserId }: {
   corretores: ReturnType<typeof useCeoData>["allCorretores"];
   getValue: (c: any) => string;
   metric: RankMetric;
   getScoreColor: (score: number) => string;
   showEquipe: boolean;
+  highlightUserId?: string;
 }) {
   if (corretores.length === 0) return <EmptyState label="Sem dados de corretores para o período" />;
 
