@@ -66,7 +66,7 @@ export function useForecast(): ForecastData {
       gerenteIds = [user.id];
     }
 
-    // Get checkpoints this month
+    // Get checkpoints this month for visitas_realizadas
     let cpQuery = supabase.from("checkpoints").select("id, gerente_id").gte("data", mesStart).lte("data", mesEnd);
     if (!isAdmin) cpQuery = cpQuery.eq("gerente_id", user.id);
     const { data: cps } = await cpQuery;
@@ -79,17 +79,17 @@ export function useForecast(): ForecastData {
       cpGerenteMap.set(cp.gerente_id, arr);
     }
 
-    // Get checkpoint lines
+    // Get checkpoint lines (source for visitas)
     let lines: any[] = [];
     if (cpIds.length > 0) {
       const { data } = await supabase.from("checkpoint_lines").select("*").in("checkpoint_id", cpIds);
       lines = data || [];
     }
 
-    // Get funnel entries this month for historical conversion rates
-    let funnelQuery = supabase.from("funnel_entries").select("*").gte("periodo_inicio", mesStart).lte("periodo_fim", mesEnd);
-    if (!isAdmin) funnelQuery = funnelQuery.eq("gerente_id", user.id);
-    const { data: funnelData } = await funnelQuery;
+    // Get PDN entries this month (single source of truth for proposals, sales, VGV)
+    let pdnQuery = supabase.from("pdn_entries").select("*").eq("mes", mesKey);
+    if (!isAdmin) pdnQuery = pdnQuery.eq("gerente_id", user.id);
+    const { data: pdnData } = await pdnQuery;
 
     // Get ceo_metas_mensais
     let metasQuery = supabase.from("ceo_metas_mensais").select("*").eq("mes", mesKey);
@@ -102,47 +102,45 @@ export function useForecast(): ForecastData {
     for (const gId of gerenteIds) {
       const gCpIds = cpGerenteMap.get(gId) || [];
       const gLines = lines.filter(l => gCpIds.includes(l.checkpoint_id));
-      const gFunnel = (funnelData || []).filter(f => f.gerente_id === gId);
+      const gPdn = (pdnData || []).filter(p => p.gerente_id === gId);
 
-      // Aggregate checkpoint data
+      // Aggregate checkpoint data (visitas)
       let visitas_realizadas = 0;
-      let propostas_reais = 0;
-
       for (const l of gLines) {
         visitas_realizadas += l.real_visitas_realizadas ?? 0;
-        propostas_reais += l.real_propostas ?? 0;
       }
 
-      // Aggregate funnel data
+      // PDN: propostas = gerado + assinado, vendas = assinado, VGV from assinado
+      let propostas_reais = 0;
       let vendas_reais = 0;
       let vgv_real = 0;
-      for (const f of gFunnel) {
-        vendas_reais += f.vendas_fechadas ?? 0;
-        vgv_real += Number(f.vgv_vendido ?? 0);
+      let vgv_gerado = 0;
+
+      for (const p of gPdn) {
+        if (p.situacao === 'gerado' || p.situacao === 'assinado') {
+          propostas_reais += 1;
+        }
+        if (p.situacao === 'assinado') {
+          vendas_reais += 1;
+          vgv_real += Number(p.vgv ?? 0);
+        }
+        if (p.situacao === 'gerado') {
+          vgv_gerado += Number(p.vgv ?? 0);
+        }
       }
 
-      // Calculate historical conversion rates from funnel
-      let totalFunnelPropostas = 0;
-      let totalFunnelVendas = 0;
-      let totalFunnelVgv = 0;
-      for (const f of gFunnel) {
-        totalFunnelPropostas += f.propostas_geradas ?? 0;
-        totalFunnelVendas += f.vendas_fechadas ?? 0;
-        totalFunnelVgv += Number(f.vgv_vendido ?? 0);
-      }
-
-      // Conversion rates (use funnel history or defaults)
+      // Conversion rates from real data or defaults
       const conv_visita_proposta = visitas_realizadas > 0 && propostas_reais > 0
         ? propostas_reais / visitas_realizadas
         : DEFAULT_CONV_VP;
 
-      const conv_proposta_venda = totalFunnelPropostas > 0 && totalFunnelVendas > 0
-        ? totalFunnelVendas / totalFunnelPropostas
+      const conv_proposta_venda = propostas_reais > 0 && vendas_reais > 0
+        ? vendas_reais / propostas_reais
         : DEFAULT_CONV_PV;
 
-      const ticket_medio = totalFunnelVendas > 0
-        ? totalFunnelVgv / totalFunnelVendas
-        : 700000; // default R$ 700k
+      const ticket_medio = vendas_reais > 0
+        ? vgv_real / vendas_reais
+        : (propostas_reais > 0 ? (vgv_real + vgv_gerado) / propostas_reais : 700000);
 
       // Predictions
       const propostas_estimadas = Math.round(visitas_realizadas * conv_visita_proposta);
