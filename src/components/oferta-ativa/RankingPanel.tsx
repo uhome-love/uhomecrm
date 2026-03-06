@@ -3,6 +3,7 @@ import { useOARanking } from "@/hooks/useOfertaAtiva";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Trophy, Medal, Star, Flame, Loader2, Phone, ThumbsUp, Percent } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,20 +21,8 @@ export default function RankingPanel() {
   const { ranking, totalTentativas, isLoading } = useOARanking(period);
   const { user } = useAuth();
 
-  const corretorIds = ranking.map(r => r.corretor_id);
-  const { data: profiles } = useQuery({
-    queryKey: ["oa-ranking-profiles", corretorIds.join(",")],
-    queryFn: async () => {
-      if (corretorIds.length === 0) return {};
-      const { data } = await supabase.from("profiles").select("user_id, nome").in("user_id", corretorIds);
-      const map: Record<string, string> = {};
-      for (const p of data || []) map[p.user_id] = p.nome;
-      return map;
-    },
-    enabled: corretorIds.length > 0,
-  });
-
   // Streak calculation
+  const corretorIds = ranking.map(r => r.corretor_id);
   const { data: streaks } = useQuery({
     queryKey: ["oa-streaks", corretorIds.join(",")],
     queryFn: async () => {
@@ -88,6 +77,10 @@ export default function RankingPanel() {
     if (pos === 1) return <Medal className="h-5 w-5 text-slate-400" />;
     if (pos === 2) return <Medal className="h-5 w-5 text-amber-700" />;
     return <span className="text-sm font-bold text-muted-foreground w-5 text-center">{pos + 1}</span>;
+  };
+
+  const getInitials = (nome: string) => {
+    return nome.split(" ").map(n => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
   };
 
   const myStats = ranking.find(r => r.corretor_id === user?.id);
@@ -180,9 +173,15 @@ export default function RankingPanel() {
                     return (
                       <tr key={r.corretor_id} className={`border-b border-border ${isMe ? "bg-primary/5" : i % 2 ? "bg-muted/5" : ""}`}>
                         <td className="py-2.5 px-3">{getMedalIcon(i)}</td>
-                        <td className="py-2.5 px-3 font-medium">
-                          {profiles?.[r.corretor_id] || "Corretor"}
-                          {isMe && <Badge className="ml-2 text-[9px] h-4">Você</Badge>}
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7">
+                              {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.nome} />}
+                              <AvatarFallback className="text-[10px]">{getInitials(r.nome)}</AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{r.nome}</span>
+                            {isMe && <Badge className="text-[9px] h-4">Você</Badge>}
+                          </div>
                         </td>
                         <td className="py-2.5 px-3 text-center font-bold text-primary">{r.pontos}</td>
                         <td className="py-2.5 px-3 text-center">{r.tentativas}</td>
@@ -218,7 +217,7 @@ export default function RankingPanel() {
                     <div key={badge.key} className="text-center p-3 rounded-lg border border-border bg-muted/30">
                       <Icon className={`h-6 w-6 mx-auto mb-1 ${badge.color}`} />
                       <p className="text-xs font-semibold">{badge.label}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{profiles?.[winner.corretor_id] || "Corretor"}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{winner.nome || "Corretor"}</p>
                     </div>
                   );
                 })}
@@ -227,7 +226,7 @@ export default function RankingPanel() {
                     <Flame className="h-6 w-6 mx-auto mb-1 text-orange-500" />
                     <p className="text-xs font-semibold">Consistência</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {profiles?.[streakWinner.corretor_id] || "Corretor"} ({streakWinner.streak}d)
+                      {ranking.find(r => r.corretor_id === streakWinner.corretor_id)?.nome || "Corretor"} ({streakWinner.streak}d)
                     </p>
                   </div>
                 )}
@@ -237,7 +236,6 @@ export default function RankingPanel() {
         </>
       )}
 
-      {/* Scoring Legend */}
       <div className="mt-4">
         <ScoringLegend />
       </div>

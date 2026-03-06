@@ -405,63 +405,25 @@ export function useOARanking(period: "hoje" | "semana" | "mes" = "hoje") {
   const { data, isLoading } = useQuery({
     queryKey: ["oa-ranking", period],
     queryFn: async () => {
-      // Use BRT (America/Sao_Paulo) for consistent day boundaries
-      const nowUtc = new Date();
-      const brtDateStr = nowUtc.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-      let dateFilter: string;
-      if (period === "hoje") {
-        dateFilter = new Date(`${brtDateStr}T00:00:00-03:00`).toISOString();
-      } else if (period === "semana") {
-        const d = new Date(`${brtDateStr}T00:00:00-03:00`);
-        d.setDate(d.getDate() - 7);
-        dateFilter = d.toISOString();
-      } else {
-        const d = new Date(`${brtDateStr.slice(0, 8)}01T00:00:00-03:00`);
-        dateFilter = d.toISOString();
-      }
-
-      const { data: tentativas, error } = await supabase
-        .from("oferta_ativa_tentativas")
-        .select("*")
-        .gte("created_at", dateFilter)
-        .order("created_at", { ascending: false });
-
+      const { data: result, error } = await supabase.rpc("get_individual_oa_ranking", {
+        p_period: period,
+      });
       if (error) throw error;
-
-      // Group by corretor
-      const byCorretor: Record<string, {
-        corretor_id: string;
-        tentativas: number;
-        aproveitados: number;
-        sem_interesse: number;
-        numero_errado: number;
-        pontos: number;
-        ligacoes: number;
-        whatsapps: number;
-        emails: number;
-      }> = {};
-
-      for (const t of (tentativas || []) as OATentativa[]) {
-        if (!byCorretor[t.corretor_id]) {
-          byCorretor[t.corretor_id] = {
-            corretor_id: t.corretor_id,
-            tentativas: 0, aproveitados: 0, sem_interesse: 0,
-            numero_errado: 0, pontos: 0, ligacoes: 0, whatsapps: 0, emails: 0,
-          };
-        }
-        const c = byCorretor[t.corretor_id];
-        c.tentativas++;
-        c.pontos += t.pontos;
-        if (t.resultado === "com_interesse") c.aproveitados++;
-        if (t.resultado === "sem_interesse") c.sem_interesse++;
-        if (t.resultado === "numero_errado") c.numero_errado++;
-        if (t.canal === "ligacao") c.ligacoes++;
-        if (t.canal === "whatsapp") c.whatsapps++;
-        if (t.canal === "email") c.emails++;
-      }
-
-      const ranking = Object.values(byCorretor).sort((a, b) => b.pontos - a.pontos);
-      return { ranking, totalTentativas: tentativas?.length || 0 };
+      const parsed = result as any;
+      return {
+        ranking: (parsed?.ranking || []) as Array<{
+          corretor_id: string;
+          nome: string;
+          avatar_url: string | null;
+          tentativas: number;
+          aproveitados: number;
+          pontos: number;
+          ligacoes: number;
+          whatsapps: number;
+          emails: number;
+        }>,
+        totalTentativas: parsed?.total_tentativas || 0,
+      };
     },
     enabled: !!user,
     staleTime: 30 * 1000,

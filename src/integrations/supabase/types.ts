@@ -1396,6 +1396,7 @@ export type Database = {
         Args: { p_user_id?: string }
         Returns: number
       }
+      get_individual_oa_ranking: { Args: { p_period?: string }; Returns: Json }
       get_team_oa_ranking: { Args: { p_period?: string }; Returns: Json }
       has_role: {
         Args: {
