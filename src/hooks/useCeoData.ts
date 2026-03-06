@@ -160,13 +160,13 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     if (filterGerenteId) pdnQuery = pdnQuery.eq("gerente_id", filterGerenteId);
     const { data: pdns } = await pdnQuery;
 
-    // Build VGV per gerente from PDN
-    const vgvByGerente = new Map<string, { gerado: number; assinado: number }>();
+    // Build VGV + Propostas per gerente from PDN (single source of truth)
+    const pdnByGerente = new Map<string, { gerado: number; assinado: number; propostas_count: number }>();
     for (const p of (pdns || [])) {
-      const curr = vgvByGerente.get(p.gerente_id) || { gerado: 0, assinado: 0 };
-      if (p.situacao === "gerado") curr.gerado += Number(p.vgv || 0);
+      const curr = pdnByGerente.get(p.gerente_id) || { gerado: 0, assinado: 0, propostas_count: 0 };
+      if (p.situacao === "gerado") { curr.gerado += Number(p.vgv || 0); curr.propostas_count++; }
       if (p.situacao === "assinado") curr.assinado += Number(p.vgv || 0);
-      vgvByGerente.set(p.gerente_id, curr);
+      pdnByGerente.set(p.gerente_id, curr);
 
       // Also try to assign VGV to corretor by name match
       if (p.corretor) {
@@ -183,14 +183,16 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     const { data: ceoMetas } = await supabase.from("ceo_metas_mensais").select("gerente_id, meta_vgv_assinado").eq("mes", mesKey).in("gerente_id", gerenteIdsAll);
     const metaVgvMap = new Map((ceoMetas || []).map((m: any) => [m.gerente_id, Number(m.meta_vgv_assinado || 0)]));
 
-    // Set VGV totals on gerente level from PDN
+    // Set VGV + Propostas totals on gerente level from PDN
     for (const gId of gerenteIdsAll) {
-      const vgv = vgvByGerente.get(gId) || { gerado: 0, assinado: 0 };
+      const pdn = pdnByGerente.get(gId) || { gerado: 0, assinado: 0, propostas_count: 0 };
       const g = gerenteMap.get(gId);
       if (g) {
-        g.totals.real_vgv_gerado = vgv.gerado;
-        g.totals.real_vgv_assinado = vgv.assinado;
+        g.totals.real_vgv_gerado = pdn.gerado;
+        g.totals.real_vgv_assinado = pdn.assinado;
         g.totals.meta_vgv_assinado = metaVgvMap.get(gId) || 0;
+        // Override checkpoint propostas with PDN count (single source of truth)
+        g.totals.real_propostas = pdn.propostas_count;
       }
     }
 
@@ -203,7 +205,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
         g.totals.meta_ligacoes += agg.meta_ligacoes; g.totals.real_ligacoes += agg.real_ligacoes;
         g.totals.meta_visitas_marcadas += agg.meta_visitas_marcadas; g.totals.real_visitas_marcadas += agg.real_visitas_marcadas;
         g.totals.meta_visitas_realizadas += agg.meta_visitas_realizadas; g.totals.real_visitas_realizadas += agg.real_visitas_realizadas;
-        g.totals.meta_propostas += agg.meta_propostas; g.totals.real_propostas += agg.real_propostas;
+        // Propostas already set from PDN at gerente level — don't accumulate from checkpoint_lines
         // VGV already set from PDN at gerente level — don't accumulate from corretores
       }
     }

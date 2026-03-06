@@ -11,11 +11,9 @@ export default function CeoOverview() {
   const [customEnd, setCustomEnd] = useState("");
   const { gerentes, companyTotals: t, loading, dateRange } = useCeoData(period, customStart, customEnd);
 
-  const overallPct = (() => {
-    const totalMeta = t.meta_ligacoes + t.meta_visitas_marcadas + t.meta_visitas_realizadas + t.meta_propostas;
-    const totalReal = t.real_ligacoes + t.real_visitas_marcadas + t.real_visitas_realizadas + t.real_propostas;
-    return totalMeta > 0 ? Math.round((totalReal / totalMeta) * 100) : 0;
-  })();
+  const overallPct = t.meta_vgv_assinado > 0
+    ? Math.round((t.real_vgv_assinado / t.meta_vgv_assinado) * 100)
+    : 0;
 
   const cards = [
     { label: "Ligações", icon: Phone, meta: t.meta_ligacoes, real: t.real_ligacoes },
@@ -107,10 +105,7 @@ export default function CeoOverview() {
               </thead>
               <tbody>
                 {gerentes.map(g => {
-                  const gPct = pct(
-                    g.totals.real_ligacoes + g.totals.real_visitas_realizadas + g.totals.real_propostas,
-                    g.totals.meta_ligacoes + g.totals.meta_visitas_realizadas + g.totals.meta_propostas
-                  );
+                  const gPct = pct(g.totals.real_vgv_assinado, g.totals.meta_vgv_assinado);
                   return (
                     <tr key={g.gerente_id} className="border-b border-border hover:bg-muted/10">
                       <td className="px-3 py-2 font-medium">{g.gerente_nome}</td>
