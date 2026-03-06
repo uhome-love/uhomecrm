@@ -3,6 +3,7 @@ import { useOAServerQueue, useOARegistrarTentativa, useOATemplates, type OALista
 import { useOAPendingQueue } from "@/hooks/useOAPendingQueue";
 import { useOASessionGuard } from "@/hooks/useOASessionGuard";
 import { supabase } from "@/integrations/supabase/client";
+import { createVisitaFromOA } from "@/hooks/useVisitas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -232,8 +233,18 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         if (resultado === "com_interesse") {
           setStreak(prev => prev + 1);
           toast.success("🎉 APROVEITADO! +3 pontos! Mandou bem!", { duration: 4000 });
-          if (visitaMarcada) {
-            toast.success("📅 Visita marcada contabilizada no checkpoint!");
+          if (visitaMarcada && lead) {
+            // Auto-create visita in Agenda de Visitas
+            createVisitaFromOA({
+              corretorId: user!.id,
+              leadId: lead.id,
+              nomeCliente: lead.nome,
+              telefone: lead.telefone || undefined,
+              empreendimento: lead.empreendimento || undefined,
+              attemptId: (result as any).attempt_id || undefined,
+              observacoes: feedback,
+            });
+            toast.success("📅 Visita registrada na Agenda de Visitas!");
           }
         } else if (resultado === "nao_atendeu") {
           setStreak(0);

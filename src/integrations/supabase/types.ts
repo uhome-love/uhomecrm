@@ -1339,6 +1339,84 @@ export type Database = {
         }
         Relationships: []
       }
+      visitas: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          created_by: string
+          data_visita: string
+          empreendimento: string | null
+          gerente_id: string
+          hora_visita: string | null
+          id: string
+          lead_id: string | null
+          linked_attempt_id: string | null
+          local_visita: string | null
+          nome_cliente: string
+          observacoes: string | null
+          origem: string
+          origem_detalhe: string | null
+          status: string
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          created_by: string
+          data_visita: string
+          empreendimento?: string | null
+          gerente_id: string
+          hora_visita?: string | null
+          id?: string
+          lead_id?: string | null
+          linked_attempt_id?: string | null
+          local_visita?: string | null
+          nome_cliente: string
+          observacoes?: string | null
+          origem?: string
+          origem_detalhe?: string | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          created_by?: string
+          data_visita?: string
+          empreendimento?: string | null
+          gerente_id?: string
+          hora_visita?: string | null
+          id?: string
+          lead_id?: string | null
+          linked_attempt_id?: string | null
+          local_visita?: string | null
+          nome_cliente?: string
+          observacoes?: string | null
+          origem?: string
+          origem_detalhe?: string | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_linked_attempt_id_fkey"
+            columns: ["linked_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_tentativas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

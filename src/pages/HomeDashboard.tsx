@@ -169,31 +169,22 @@ export default function HomeDashboard() {
       tentativasQuery = tentativasQuery.in("corretor_id", teamUserIds);
     }
 
-    // Visitas Marcadas: pull from checkpoint_lines (source of truth — filled by gerente)
-    let cpQuery = supabase
-      .from("checkpoints")
+    // Visitas Marcadas: pull from visitas table (source of truth)
+    let visitasQuery = supabase
+      .from("visitas")
       .select("id")
-      .gte("data", startDate)
-      .lte("data", endDate);
+      .in("status", ["marcada", "confirmada", "realizada", "reagendada"])
+      .gte("data_visita", startDate)
+      .lte("data_visita", endDate);
 
-    if (!isAdmin) cpQuery = cpQuery.eq("gerente_id", user.id);
+    if (!isAdmin) visitasQuery = visitasQuery.eq("gerente_id", user.id);
 
-    const [{ data: tentativas }, { data: checkpoints }] = await Promise.all([
+    const [{ data: tentativas }, { data: visitasData }] = await Promise.all([
       tentativasQuery,
-      cpQuery,
+      visitasQuery,
     ]);
 
-    let visitasMarcadasTotal = 0;
-    const cpIds = (checkpoints || []).map(c => c.id);
-    if (cpIds.length > 0) {
-      const { data: lines } = await supabase
-        .from("checkpoint_lines")
-        .select("real_visitas_marcadas")
-        .in("checkpoint_id", cpIds);
-      visitasMarcadasTotal = (lines || []).reduce(
-        (sum, l) => sum + (l.real_visitas_marcadas || 0), 0
-      );
-    }
+    const visitasMarcadasTotal = (visitasData || []).length;
 
     setOaPeriodStats({
       ligacoes: (tentativas || []).length,
@@ -262,17 +253,16 @@ export default function HomeDashboard() {
     const oa_ligacoes = (oaTentativas || []).length;
     const oa_aproveitados = (oaTentativas || []).filter(t => t.resultado === "com_interesse").length;
 
-    // Visitas marcadas from checkpoint_lines (already fetched above)
-    let oa_visitas_marcadas = 0;
-    if (cpIds.length > 0) {
-      const { data: vmLines } = await supabase
-        .from("checkpoint_lines")
-        .select("real_visitas_marcadas")
-        .in("checkpoint_id", cpIds);
-      oa_visitas_marcadas = (vmLines || []).reduce(
-        (sum, l) => sum + (l.real_visitas_marcadas || 0), 0
-      );
-    }
+    // Visitas marcadas from visitas table
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    let vmQuery = supabase
+      .from("visitas")
+      .select("id")
+      .in("status", ["marcada", "confirmada", "realizada", "reagendada"])
+      .eq("data_visita", todayStr);
+    if (!isAdmin) vmQuery = vmQuery.eq("gerente_id", user.id);
+    const { data: vmData } = await vmQuery;
+    const oa_visitas_marcadas = (vmData || []).length;
 
     setCpStats({
       total_checkpoints: cps?.length || 0,
