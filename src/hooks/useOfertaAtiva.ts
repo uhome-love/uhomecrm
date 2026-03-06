@@ -511,6 +511,28 @@ export async function importLeadsToLista(
     // Validate phone length (BR mobile)
     const isValidPhone = normPhone.length >= 10 && normPhone.length <= 11;
 
+    // Validate data_lead: must be a valid date or null
+    let parsedDate: string | null = null;
+    if (row.data_lead) {
+      const raw = row.data_lead.trim();
+      // Try ISO format, BR format (dd/mm/yyyy), or other common formats
+      const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      const brMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      const usMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if (isoMatch) {
+        parsedDate = `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+      } else if (brMatch) {
+        parsedDate = `${brMatch[3]}-${brMatch[2].padStart(2, '0')}-${brMatch[1].padStart(2, '0')}`;
+      } else if (usMatch) {
+        const yr = usMatch[3].length === 2 ? `20${usMatch[3]}` : usMatch[3];
+        parsedDate = `${yr}-${usMatch[1].padStart(2, '0')}-${usMatch[2].padStart(2, '0')}`;
+      }
+      // If still invalid or NaN date, discard
+      if (parsedDate && isNaN(new Date(parsedDate).getTime())) {
+        parsedDate = null;
+      }
+    }
+
     toInsert.push({
       lista_id: listaId,
       nome: row.nome?.trim() || "Sem nome",
@@ -521,7 +543,7 @@ export async function importLeadsToLista(
       empreendimento,
       campanha: row.campanha || campanha,
       origem: row.origem || origem,
-      data_lead: row.data_lead || null,
+      data_lead: parsedDate,
       observacoes: row.observacoes || null,
       status: isValidPhone ? "na_fila" : "descartado",
       motivo_descarte: isValidPhone ? null : "telefone_invalido",
@@ -533,7 +555,7 @@ export async function importLeadsToLista(
   for (let i = 0; i < toInsert.length; i += 500) {
     const batch = toInsert.slice(i, i + 500);
     const { error } = await supabase.from("oferta_ativa_leads").insert(batch);
-    if (error) { console.error(error); toast.error("Erro ao importar batch"); }
+    if (error) { console.error("Batch insert error:", error.message, error.details, error.hint); toast.error(`Erro ao importar batch ${Math.floor(i/500)+1}: ${error.message}`); }
     else inserted += batch.length;
   }
 
