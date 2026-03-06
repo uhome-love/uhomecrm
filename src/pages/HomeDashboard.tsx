@@ -214,12 +214,29 @@ export default function HomeDashboard() {
       presentes = (lines || []).filter(l => l.meta_presenca !== "falta").length;
     }
 
-    // OA tentativas do dia — filter by team for gestor
-    let oaQuery = supabase
-      .from("oferta_ativa_tentativas")
-      .select("resultado, corretor_id")
-      .gte("created_at", startOfToday)
-      .lte("created_at", endOfToday);
+    // OA tentativas do dia — use pagination to avoid 1000-row limit
+    const fetchAllOaTentativas = async (teamUserIds?: string[]) => {
+      const PAGE_SIZE = 1000;
+      let allRows: Array<{ resultado: string; corretor_id: string }> = [];
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        let q = supabase
+          .from("oferta_ativa_tentativas")
+          .select("resultado, corretor_id")
+          .gte("created_at", startOfToday)
+          .lte("created_at", endOfToday)
+          .range(from, from + PAGE_SIZE - 1);
+        if (!isAdmin && teamUserIds && teamUserIds.length > 0) {
+          q = q.in("corretor_id", teamUserIds);
+        }
+        const { data } = await q;
+        allRows = allRows.concat(data || []);
+        hasMore = (data?.length || 0) === PAGE_SIZE;
+        from += PAGE_SIZE;
+      }
+      return allRows;
+    };
 
     // If gestor (not admin), restrict to team members only
     if (!isAdmin) {
