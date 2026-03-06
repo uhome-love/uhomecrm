@@ -108,14 +108,14 @@ export default function HomiHistory({ onBack }: Props) {
         </div>
 
         {/* Acao result */}
-        {selected.tipo === "acao" && selected.resultado && (
+        {selected.resultado && (
           <div className="rounded-xl border border-border bg-card p-4 prose prose-sm max-w-none text-foreground prose-p:my-1.5 prose-strong:text-foreground prose-headings:font-display leading-relaxed">
             <ReactMarkdown>{selected.resultado}</ReactMarkdown>
           </div>
         )}
 
         {/* Chat messages */}
-        {selected.tipo === "chat" && selected.mensagens && (
+        {selected.mensagens && Array.isArray(selected.mensagens) && selected.mensagens.length > 0 && (
           <div className="space-y-3">
             {(selected.mensagens as { role: string; content: string }[]).map((msg, i) => (
               <div key={i} className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
