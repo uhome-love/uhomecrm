@@ -4,13 +4,11 @@ import {
   ClipboardCheck,
   Shield,
   LogOut,
-  User,
   Crown,
   Home,
   FileEdit,
   Bot,
   FileBarChart,
-  TrendingUp,
   FileSpreadsheet,
   BarChart3,
   CalendarDays,
@@ -23,7 +21,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -41,7 +38,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
-const homiMascot = "/images/homi-mascot-opt.png";
+
+const uhomeLogo = "/images/uhomesales-logo.png";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -52,7 +50,6 @@ export function AppSidebar() {
   const toastShown = useRef(false);
   const [profile, setProfile] = useState<{ nome: string; avatar_url: string | null }>({ nome: "", avatar_url: null });
 
-  // Fetch profile for avatar
   useEffect(() => {
     if (!user) return;
     supabase
@@ -65,7 +62,6 @@ export function AppSidebar() {
       });
   }, [user]);
 
-  // Show toast for critical alerts on first load
   useEffect(() => {
     if (toastShown.current || alerts.length === 0) return;
     toastShown.current = true;
@@ -121,14 +117,24 @@ export function AppSidebar() {
     : [];
 
   const adminItems = isAdmin
-    ? [
-        { title: "Administração", url: "/admin", icon: Shield },
-      ]
+    ? [{ title: "Administração", url: "/admin", icon: Shield }]
     : [];
+
+  const configItems = [
+    { title: "Configurações", url: "/configuracoes", icon: Settings },
+  ];
+
+  const groups = [
+    { label: "Principal", items: homeItems },
+    ...(gestorItems.length > 0 ? [{ label: "Gestão Comercial", items: gestorItems }] : []),
+    ...(ceoItems.length > 0 ? [{ label: "Inteligência CEO", items: ceoItems }] : []),
+    ...(adminItems.length > 0 ? [{ label: "Sistema", items: adminItems }] : []),
+    { label: "Conta", items: configItems },
+  ];
 
   const renderGroup = (label: string, items: typeof homeItems, index: number) => (
     <SidebarGroup key={label} className="animate-fade-in" style={{ animationDelay: `${index * 80}ms` }}>
-      <SidebarGroupLabel className="text-sidebar-foreground/30 uppercase text-[10px] tracking-[0.15em] font-bold mb-1 px-3">
+      <SidebarGroupLabel className="text-sidebar-foreground/25 uppercase text-[10px] tracking-[0.15em] font-bold mb-1 px-3">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -141,10 +147,10 @@ export function AppSidebar() {
                   <NavLink
                     to={item.url}
                     end
-                    className="group/nav hover:bg-sidebar-accent/70 transition-all duration-200 rounded-lg relative py-2.5 px-3"
-                    activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary shadow-[inset_0_0_20px_hsl(229_100%_64%/0.06)]"
+                    className="group/nav hover:bg-sidebar-accent/60 transition-all duration-200 rounded-lg relative py-2.5 px-3"
+                    activeClassName="bg-gradient-to-r from-sidebar-primary/15 to-sidebar-primary/5 text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary shadow-[inset_0_0_24px_hsl(229_100%_64%/0.08),_0_0_12px_hsl(229_100%_64%/0.05)]"
                   >
-                    <item.icon className="mr-2.5 h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
+                    <item.icon className="mr-2.5 h-4 w-4 shrink-0 transition-all duration-200 group-hover/nav:scale-110 group-hover/nav:text-sidebar-primary" />
                     {!collapsed && (
                       <span className="text-[13px] transition-colors duration-200">{item.title}</span>
                     )}
@@ -163,38 +169,25 @@ export function AppSidebar() {
     </SidebarGroup>
   );
 
-  const configItems = [
-    { title: "Configurações", url: "/configuracoes", icon: Settings },
-  ];
-
-  const groups = [
-    { label: "Principal", items: homeItems },
-    ...(gestorItems.length > 0 ? [{ label: "Gestão Comercial", items: gestorItems }] : []),
-    ...(ceoItems.length > 0 ? [{ label: "Inteligência CEO", items: ceoItems }] : []),
-    ...(adminItems.length > 0 ? [{ label: "Sistema", items: adminItems }] : []),
-    { label: "Conta", items: configItems },
-  ];
-
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="scrollbar-thin">
-        {/* Logo Section — UhomeSales branding */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border/50">
+        {/* Logo Section */}
+        <div className="flex items-center gap-3 px-3 py-4 border-b border-sidebar-border/40">
           {collapsed ? (
-            <div className="flex h-11 w-11 items-center justify-center shrink-0">
-              <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain transition-transform duration-300 hover:scale-110" />
+            <div className="flex h-10 w-10 items-center justify-center shrink-0 mx-auto">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/5 flex items-center justify-center border border-sidebar-primary/20">
+                <span className="text-sidebar-primary font-display font-extrabold text-sm">U</span>
+              </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3 animate-slide-in-left">
-              <img src={homiMascot} alt="Homi AI" className="h-12 w-12 object-contain shrink-0" />
-              <div className="flex flex-col">
-                <span className="text-[16px] font-display font-extrabold text-sidebar-foreground tracking-tight leading-tight">
-                  Uhome<span className="text-sidebar-primary">Sales</span>
-                </span>
-                <span className="text-[9px] font-medium text-sidebar-foreground/40 tracking-wider">
-                  Powered by Homi AI
-                </span>
-              </div>
+            <div className="flex items-center gap-3 animate-slide-in-left w-full">
+              <img
+                src={uhomeLogo}
+                alt="UhomeSales"
+                className="h-10 w-auto object-contain"
+                style={{ clipPath: "inset(12% 0 10% 0)", margin: "-4px 0" }}
+              />
             </div>
           )}
         </div>
@@ -203,19 +196,23 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center gap-2.5 p-3 border-t border-sidebar-border/50 bg-sidebar-accent/20">
-          <AvatarUpload
-            avatarUrl={profile.avatar_url}
-            nome={profile.nome || user?.email || ""}
-            size="sm"
-            onUploaded={(url) => setProfile(p => ({ ...p, avatar_url: url }))}
-          />
+        <div className="flex items-center gap-2.5 p-3 border-t border-sidebar-border/40 bg-gradient-to-r from-sidebar-accent/30 to-transparent">
+          <div className="relative">
+            <AvatarUpload
+              avatarUrl={profile.avatar_url}
+              nome={profile.nome || user?.email || ""}
+              size="sm"
+              onUploaded={(url) => setProfile(p => ({ ...p, avatar_url: url }))}
+            />
+            {/* Online indicator */}
+            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-sidebar-background" />
+          </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-semibold text-sidebar-foreground truncate">
                 {profile.nome || user?.email}
               </p>
-              <p className="text-[9px] text-sidebar-foreground/40 font-medium uppercase tracking-wider">
+              <p className="text-[9px] text-sidebar-primary/60 font-bold uppercase tracking-wider">
                 {isAdmin ? "Admin" : isGestor ? "Gestor" : "Corretor"}
               </p>
             </div>
@@ -224,7 +221,7 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             onClick={signOut}
-            className="h-7 w-7 p-0 shrink-0 text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all duration-200 rounded-lg"
+            className="h-7 w-7 p-0 shrink-0 text-sidebar-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-all duration-200 rounded-lg"
           >
             <LogOut className="h-3.5 w-3.5" />
           </Button>

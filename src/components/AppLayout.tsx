@@ -16,7 +16,6 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-const homiMascot = "/images/homi-mascot-opt.png";
 
 const UhomeIaAssistant = lazy(() => import("@/components/UhomeIaAssistant"));
 const HomiGreeting = lazy(() => import("@/components/HomiGreeting"));
@@ -40,21 +39,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur-lg sticky top-0 z-50 px-4">
+          <header className="h-14 flex items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-xl sticky top-0 z-50 px-4">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
-              {/* Header brand marker */}
-              <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-                <img src={homiMascot} alt="Homi" className="h-7 w-7 object-contain" />
-                <span className="font-display font-extrabold text-foreground/80 text-sm">Uhome<span className="text-primary">Sales</span></span>
-              </div>
             </div>
 
             {/* Right side — user menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2.5 h-9 px-3 hover:bg-muted/50 rounded-xl">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
+                <Button variant="ghost" className="flex items-center gap-2.5 h-9 px-3 hover:bg-accent/50 rounded-xl">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20">
                     <User className="h-3.5 w-3.5 text-primary" />
                   </div>
                   <div className="text-left hidden sm:block">
@@ -66,17 +60,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 rounded-xl border-border/60 shadow-elevated">
                 <div className="px-3 py-2">
-                  <p className="text-sm font-semibold">{nome || "Usuário"}</p>
+                  <p className="text-sm font-bold">{nome || "Usuário"}</p>
                   <p className="text-xs text-muted-foreground">{cargo}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer rounded-lg">
                   <Settings className="h-3.5 w-3.5" /> Configurações
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-xs gap-2 text-destructive cursor-pointer">
+                <DropdownMenuItem onClick={signOut} className="text-xs gap-2 text-destructive cursor-pointer rounded-lg">
                   <LogOut className="h-3.5 w-3.5" /> Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
