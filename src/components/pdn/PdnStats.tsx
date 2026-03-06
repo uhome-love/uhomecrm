@@ -22,14 +22,15 @@ function formatBRL(v: number) {
 
 export default function PdnStats({ total_visitas, total_gerados, total_assinados, quente, morno, frio, vgv_gerado, vgv_assinado }: Props) {
   return (
-    <div className="grid grid-cols-3 lg:grid-cols-7 gap-2">
+    <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
       <StatCard label="Negócios" value={total_visitas} icon="📋" />
       <StatCard label="Quente" value={quente} className="text-red-500" icon={<Flame className="h-3.5 w-3.5 text-red-500" />} />
       <StatCard label="Morno" value={morno} className="text-yellow-500" icon={<Thermometer className="h-3.5 w-3.5 text-yellow-500" />} />
       <StatCard label="Frio" value={frio} className="text-blue-500" icon={<Snowflake className="h-3.5 w-3.5 text-blue-500" />} />
       <StatCard label="Gerados" value={total_gerados} className="text-warning" icon={<FileText className="h-3.5 w-3.5 text-warning" />} subtitle={formatBRL(vgv_gerado)} />
       <StatCard label="Assinados" value={total_assinados} className="text-success" icon={<CheckCircle className="h-3.5 w-3.5 text-success" />} subtitle={formatBRL(vgv_assinado)} />
-      <StatCard label="VGV Total" value={0} className="text-primary" icon="💰" subtitle={formatBRL(vgv_gerado + vgv_assinado)} hideValue />
+      <StatCard label="VGV Total" value={0} className="text-primary" icon="💰" subtitle={formatBRL(vgv_assinado)} hideValue />
+      <StatCard label="VGV Projetado" value={0} className="text-accent-foreground" icon="📊" subtitle={formatBRL(vgv_gerado + vgv_assinado)} hideValue />
     </div>
   );
 }
