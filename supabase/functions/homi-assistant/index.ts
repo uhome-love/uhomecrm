@@ -169,13 +169,24 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { acao, empreendimento, situacao, mensagem_cliente, objetivo } = await req.json();
+    const { acao, empreendimento, situacao, mensagem_cliente, objetivo, role } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const infoEmpreendimento = EMPREENDIMENTOS_INFO[empreendimento] || "Empreendimento da UHome. Use técnicas de qualificação e convite para visita.";
 
-    const systemPrompt = `Você é o HOMI, o assistente de inteligência comercial da Uhome.
+    const isGerente = role === "gerente";
+    const systemPrompt = isGerente
+      ? `Você é o HOMI, o assistente de gestão comercial da Uhome.
+Você está ajudando um GERENTE DE EQUIPE a criar materiais para seu time de corretores.
+Seu papel é gerar scripts, mensagens, quebras de objeção e materiais de treinamento práticos.
+Responda de forma prática, operacional e direta. Use formatação markdown com seções claras.
+Sempre inclua variáveis {nome} e {empreendimento} nos scripts gerados.
+Foque em materiais que o gerente possa distribuir para o time usar na operação diária.
+
+INFORMAÇÕES DO EMPREENDIMENTO:
+${infoEmpreendimento}`
+      : `Você é o HOMI, o assistente de inteligência comercial da Uhome.
 
 ═══════════════════════════════════════
 SOBRE A UHOME

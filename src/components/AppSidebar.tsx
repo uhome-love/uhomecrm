@@ -83,11 +83,13 @@ export function AppSidebar() {
     ? [
         { title: "Início", url: "/", icon: Home },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
+        { title: "HOMI Gerencial", url: "/homi-gerente", icon: Bot },
       ]
     : [
         { title: "Central do Corretor", url: "/corretor", icon: Phone },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
         { title: "Meus Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
+        { title: "Scripts do Time", url: "/scripts", icon: FileEdit },
         { title: "HOMI Assistente", url: "/homi", icon: Bot },
         { title: "Resumo Semanal", url: "/corretor/resumo", icon: BarChart3 },
         { title: "Ranking OA", url: "/corretor/ranking-equipes", icon: Trophy },
