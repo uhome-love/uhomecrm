@@ -435,9 +435,9 @@ export default function HomeDashboard() {
               </div>
             </motion.div>
 
-            {/* 3. Ranking Corretores */}
+            {/* 3. Top Corretores VGV */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={card}>
-              <SectionHeader icon={Trophy} title="Top Corretores" action={{ label: "Ver ranking", onClick: () => navigate("/ranking") }} />
+              <SectionHeader icon={Trophy} title="Top Corretores — VGV" action={{ label: "Ver ranking", onClick: () => navigate("/ranking") }} />
               <div className="divide-y divide-border">
                 {topCorretores.map((c, i) => (
                   <div key={c.corretor_id} className="flex items-center gap-3 px-4 py-2.5">
@@ -456,6 +456,27 @@ export default function HomeDashboard() {
               </div>
             </motion.div>
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 4. Top Corretores Oferta Ativa */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className={card}>
+              <SectionHeader icon={Flame} title="Top Corretores — Oferta Ativa" action={{ label: "Ver ranking OA", onClick: () => navigate("/ranking") }} />
+              <div className="divide-y divide-border">
+                {topCorretoresOA.map((c, i) => (
+                  <div key={`oa-${i}`} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="w-6 text-center text-sm">{i < 3 ? medals[i] : `${i + 1}º`}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{c.nome}</p>
+                      <p className="text-[10px] text-muted-foreground">{c.tentativas} tentativas · {c.aproveitados} aproveitados</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-display font-bold">{c.pontos} pts</p>
+                    </div>
+                  </div>
+                ))}
+                {topCorretoresOA.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">Sem dados</p>}
+              </div>
+            </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
             {/* 4. Marketing */}
