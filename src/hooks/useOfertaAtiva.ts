@@ -521,8 +521,8 @@ export async function importLeadsToLista(
       continue;
     }
 
-    if (normPhone) seenPhones.add(normPhone);
-    if (normEmail) seenEmails.add(normEmail);
+    if (normPhone) { seenPhones.add(normPhone); existingPhones.add(normPhone); }
+    if (normEmail) { seenEmails.add(normEmail); existingEmails.add(normEmail); }
 
     // Validate phone length (BR mobile)
     const isValidPhone = normPhone.length >= 10 && normPhone.length <= 11;
