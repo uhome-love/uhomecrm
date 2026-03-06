@@ -86,7 +86,7 @@ export function AppSidebar() {
         { title: "Central do Corretor", url: "/corretor", icon: Phone },
         { title: "HOMI Assistente", url: "/homi", icon: Bot },
         { title: "Resumo Semanal", url: "/corretor/resumo", icon: BarChart3 },
-        { title: "Ranking Equipes", url: "/corretor/ranking-equipes", icon: Trophy },
+        { title: "Ranking OA", url: "/corretor/ranking-equipes", icon: Trophy },
       ];
 
   const gestorItems = isGestor
