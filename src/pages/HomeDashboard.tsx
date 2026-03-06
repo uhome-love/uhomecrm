@@ -277,41 +277,7 @@ export default function HomeDashboard() {
 
   useEffect(() => { fetchCheckpoint(); }, [fetchCheckpoint]);
 
-  // Realtime: auto-refresh with debounce to prevent event storms
-  useEffect(() => {
-    let pdnTimer: ReturnType<typeof setTimeout> | null = null;
-    let cpTimer: ReturnType<typeof setTimeout> | null = null;
-    const DEBOUNCE_PDN_MS = 1500;
-    const DEBOUNCE_CP_MS = 500; // Faster for checkpoint — gestor expects near-instant feedback
-
-    const debouncedPdn = () => {
-      if (pdnTimer) clearTimeout(pdnTimer);
-      pdnTimer = setTimeout(() => { fetchPdn(); reload(); }, DEBOUNCE_PDN_MS);
-    };
-    const debouncedCp = () => {
-      if (cpTimer) clearTimeout(cpTimer);
-      cpTimer = setTimeout(() => { reload(); fetchCheckpoint(); fetchOaPeriodStats(); }, DEBOUNCE_CP_MS);
-    };
-
-    const pdnChannel = supabase
-      .channel("home-pdn-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "pdn_entries" }, debouncedPdn)
-      .subscribe();
-
-    const cpChannel = supabase
-      .channel("home-checkpoint-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoint_lines" }, debouncedCp)
-      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoints" }, debouncedCp)
-      .on("postgres_changes", { event: "*", schema: "public", table: "oferta_ativa_tentativas" }, debouncedCp)
-      .subscribe();
-
-    return () => {
-      if (pdnTimer) clearTimeout(pdnTimer);
-      if (cpTimer) clearTimeout(cpTimer);
-      supabase.removeChannel(pdnChannel);
-      supabase.removeChannel(cpChannel);
-    };
-  }, [fetchPdn, fetchCheckpoint, fetchOaPeriodStats, reload]);
+   // Auto-refresh removido — usar botão manual de atualização (🔄)
 
   // Fetch OA Top Corretores
   const fetchOATopCorretores = useCallback(async () => {
