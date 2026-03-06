@@ -66,6 +66,7 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
                       {v.corretor_nome || "—"}
                     </TableCell>
                   )}
+                  <TableCell className="text-xs text-muted-foreground">{v.empreendimento || "—"}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px]">
                       {ORIGEM_LABELS[v.origem] || v.origem}
