@@ -241,7 +241,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               nomeCliente: lead.nome,
               telefone: lead.telefone || undefined,
               empreendimento: lead.empreendimento || undefined,
-              attemptId: result.attempt_id || undefined,
+              attemptId: (result as any).attempt_id || undefined,
               observacoes: feedback,
             });
             toast.success("📅 Visita registrada na Agenda de Visitas!");
