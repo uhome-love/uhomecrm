@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Building2, CheckCircle2, FileSpreadsheet } from "lucide-react";
+import { Calendar, Clock, Building2, CheckCircle2, FileSpreadsheet, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { STATUS_LABELS, STATUS_COLORS, ORIGEM_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
@@ -20,9 +20,10 @@ const COLUMN_ICONS: Record<string, string> = {
 interface Props {
   visitas: Visita[];
   onUpdateStatus: (id: string, status: VisitaStatus) => void;
+  onDelete?: (id: string) => void;
 }
 
-export default function VisitasKanban({ visitas, onUpdateStatus }: Props) {
+export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Props) {
   const { convertToPdn } = useVisitaToPdn();
 
   return (
@@ -111,6 +112,20 @@ export default function VisitasKanban({ visitas, onUpdateStatus }: Props) {
                       {col === "cancelada" && (
                         <Button size="sm" variant="outline" className="h-5 text-[9px] px-1.5" onClick={() => onUpdateStatus(v.id, "reagendada")}>
                           Reagendar
+                        </Button>
+                      )}
+                      {onDelete && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-5 text-[9px] px-1.5 text-destructive border-destructive/30"
+                          onClick={() => {
+                            if (window.confirm("Tem certeza que deseja excluir esta visita?")) {
+                              onDelete(v.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
                     </div>

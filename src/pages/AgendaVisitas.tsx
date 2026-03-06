@@ -125,7 +125,7 @@ export default function AgendaVisitas() {
         </TabsContent>
 
         <TabsContent value="kanban">
-          <VisitasKanban visitas={filtered} onUpdateStatus={updateStatus} />
+          <VisitasKanban visitas={filtered} onUpdateStatus={updateStatus} onDelete={deleteVisita} />
         </TabsContent>
       </Tabs>
 
