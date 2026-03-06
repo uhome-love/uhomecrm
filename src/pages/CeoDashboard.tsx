@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Trophy, FileText, AlertTriangle, TrendingUp, CheckCircle, Phone } from "lucide-react";
+import { BarChart3, Trophy, FileText, AlertTriangle, TrendingUp, CheckCircle, Phone, ClipboardCheck } from "lucide-react";
 const homiMascot = "/images/homi-mascot-opt.png";
 import CeoOverview from "@/components/ceo/CeoOverview";
 import CeoRankings from "@/components/ceo/CeoRankings";
@@ -10,9 +11,17 @@ import CeoAlerts from "@/components/ceo/CeoAlerts";
 import CeoForecastPanel from "@/components/forecast/CeoForecastPanel";
 import CeoVendasAssinadas from "@/components/ceo/CeoVendasAssinadas";
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
+import CeoCheckpointViewer from "@/components/ceo/CeoCheckpointViewer";
 
 export default function CeoDashboard() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) setActiveTab(tab);
+  }, [searchParams]);
 
   return (
     <div className="space-y-4">
@@ -29,9 +38,12 @@ export default function CeoDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-8 h-auto">
+        <TabsList className="grid w-full grid-cols-9 h-auto">
           <TabsTrigger value="overview" className="gap-1.5 text-xs py-2">
             <BarChart3 className="h-3.5 w-3.5" /> Visão Geral
+          </TabsTrigger>
+          <TabsTrigger value="checkpoints" className="gap-1.5 text-xs py-2">
+            <ClipboardCheck className="h-3.5 w-3.5" /> Checkpoints
           </TabsTrigger>
           <TabsTrigger value="vendas" className="gap-1.5 text-xs py-2">
             <CheckCircle className="h-3.5 w-3.5" /> Vendas
@@ -57,6 +69,7 @@ export default function CeoDashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4"><CeoOverview /></TabsContent>
+        <TabsContent value="checkpoints" className="mt-4"><CeoCheckpointViewer /></TabsContent>
         <TabsContent value="vendas" className="mt-4"><CeoVendasAssinadas /></TabsContent>
         <TabsContent value="forecast" className="mt-4"><CeoForecastPanel /></TabsContent>
         <TabsContent value="rankings" className="mt-4"><CeoRankings /></TabsContent>

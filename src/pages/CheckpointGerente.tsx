@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardCheck, BarChart3, CheckSquare, Bell, AlertTriangle, CheckCircle } from "lucide-react";
 const homiMascot = "/images/homi-mascot-opt.png";
@@ -9,6 +10,7 @@ import ManagerChecklist from "@/components/checkpoint/ManagerChecklist";
 import MetasMensaisProgress from "@/components/checkpoint/MetasMensaisProgress";
 import CheckpointAproveitados from "@/components/checkpoint/CheckpointAproveitados";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -22,8 +24,18 @@ interface CheckpointReminder {
 export default function CheckpointGerente() {
   const [activeTab, setActiveTab] = useState("checkpoint");
   const { user } = useAuth();
+  const { isAdmin, isGestor, loading: roleLoading } = useUserRole();
+  const navigate = useNavigate();
   const [nome, setNome] = useState("");
   const [reminder, setReminder] = useState<CheckpointReminder | null>(null);
+
+  // Admin-only (not gestor) should see CEO checkpoint view instead
+  useEffect(() => {
+    if (roleLoading) return;
+    if (isAdmin && !isGestor) {
+      navigate("/ceo?tab=checkpoints", { replace: true });
+    }
+  }, [isAdmin, isGestor, roleLoading, navigate]);
 
   useEffect(() => {
     if (!user) return;
