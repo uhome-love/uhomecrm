@@ -176,13 +176,13 @@ export default function Auth() {
               loading="eager"
               decoding="async"
               className="relative w-auto object-contain drop-shadow-[0_0_60px_hsl(229,100%,64%,0.4)]"
-              style={{ height: "220px", clipPath: "inset(10% 0 8% 0)", margin: "-20px 0" }}
+              style={{ height: "220px", clipPath: "inset(10% 0 8% 0)", margin: "-20px 0 -30px 0" }}
             />
           </div>
         </div>
 
         {/* HEADLINE */}
-        <h2 className="text-center text-white/60 text-base font-medium -mt-1 mb-5 anim-fade-in-up anim-delay-1">
+        <h2 className="text-center text-white/60 text-base font-medium -mt-4 mb-5 anim-fade-in-up anim-delay-1">
           Plataforma da Uhome de<br />performance e vendas
         </h2>
 
