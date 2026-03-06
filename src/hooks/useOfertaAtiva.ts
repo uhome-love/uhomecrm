@@ -555,7 +555,7 @@ export async function importLeadsToLista(
   for (let i = 0; i < toInsert.length; i += 500) {
     const batch = toInsert.slice(i, i + 500);
     const { error } = await supabase.from("oferta_ativa_leads").insert(batch);
-    if (error) { console.error(error); toast.error("Erro ao importar batch"); }
+    if (error) { console.error("Batch insert error:", error.message, error.details, error.hint); toast.error(`Erro ao importar batch ${Math.floor(i/500)+1}: ${error.message}`); }
     else inserted += batch.length;
   }
 
