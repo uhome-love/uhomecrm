@@ -51,7 +51,7 @@ export default function HomeDashboard() {
   // Lead recovery
   const [recovery, setRecovery] = useState({ reativados: 0, respondidos: 0, visitas: 0 });
   // Checkpoint daily stats + OA realtime
-  const [cpStats, setCpStats] = useState({ total_checkpoints: 0, total_corretores: 0, presentes: 0, ausentes: 0, oa_ligacoes: 0, oa_aproveitados: 0 });
+  const [cpStats, setCpStats] = useState({ total_checkpoints: 0, total_corretores: 0, presentes: 0, ausentes: 0, oa_ligacoes: 0, oa_aproveitados: 0, oa_visitas_marcadas: 0 });
 
   useEffect(() => {
     if (!user) return;
@@ -151,6 +151,28 @@ export default function HomeDashboard() {
     const oa_ligacoes = (oaTentativas || []).length;
     const oa_aproveitados = (oaTentativas || []).filter(t => t.resultado === "com_interesse").length;
 
+    // Count visitas marcadas from OA events (source of truth)
+    let oaEventsQuery = supabase
+      .from("oa_events")
+      .select("id")
+      .eq("event_type", "call_finished")
+      .gte("created_at", startOfToday)
+      .lte("created_at", endOfToday)
+      .contains("metadata", { visita_marcada: true });
+
+    if (!isAdmin) {
+      const teamUserIds = (await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", user.id)
+        .eq("status", "ativo")).data?.map(t => t.user_id).filter(Boolean) as string[] || [];
+      if (teamUserIds.length > 0) {
+        oaEventsQuery = oaEventsQuery.in("user_id", teamUserIds);
+      }
+    }
+    const { data: visitaEvents } = await oaEventsQuery;
+    const oa_visitas_marcadas = (visitaEvents || []).length;
+
     setCpStats({
       total_checkpoints: cps?.length || 0,
       total_corretores: total,
@@ -158,6 +180,7 @@ export default function HomeDashboard() {
       ausentes: total - presentes,
       oa_ligacoes,
       oa_aproveitados,
+      oa_visitas_marcadas,
     });
   }, [user, isAdmin]);
 
