@@ -1504,6 +1504,43 @@ export type Database = {
         Args: { p_user_id?: string }
         Returns: number
       }
+      get_corretor_pdn: {
+        Args: { p_mes?: string }
+        Returns: {
+          corretor: string | null
+          created_at: string
+          created_from_visit: boolean
+          data_proxima_acao: string | null
+          data_visita: string | null
+          docs_status: string
+          empreendimento: string | null
+          equipe: string | null
+          gerente_id: string
+          id: string
+          linked_visit_id: string | null
+          mes: string
+          motivo_queda: string | null
+          nome: string
+          observacoes: string | null
+          proxima_acao: string | null
+          quando_assina: string | null
+          situacao: string
+          status_pagamento: string | null
+          temperatura: string
+          tipo_visita: string | null
+          ultimo_contato: string | null
+          und: string | null
+          updated_at: string
+          valor_potencial: number | null
+          vgv: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "pdn_entries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_individual_oa_ranking: { Args: { p_period?: string }; Returns: Json }
       get_team_oa_ranking: { Args: { p_period?: string }; Returns: Json }
       has_role: {
