@@ -10,6 +10,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import DailyProgressCard from "@/components/corretor/DailyProgressCard";
+import QuickLinksGrid from "@/components/corretor/QuickLinksGrid";
+import AchievementsBadges from "@/components/corretor/AchievementsBadges";
+import YesterdayComparison from "@/components/corretor/YesterdayComparison";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
@@ -222,18 +225,18 @@ export default function CorretorDashboard() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-4 h-auto">
-          <TabsTrigger value="central" className="gap-1.5 text-xs py-2">
-            <Target className="h-3.5 w-3.5" /> Central
+        <TabsList className="grid w-full grid-cols-4 h-auto sticky top-0 z-10">
+          <TabsTrigger value="central" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs py-2">
+            <Target className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Central</span><span className="xs:hidden">Home</span>
           </TabsTrigger>
-          <TabsTrigger value="discagem" className="gap-1.5 text-xs py-2" disabled={!metaSalva}>
+          <TabsTrigger value="discagem" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs py-2" disabled={!metaSalva}>
             {!metaSalva && <Lock className="h-3 w-3" />}
-            <Phone className="h-3.5 w-3.5" /> Discagem
+            <Phone className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Discagem</span><span className="sm:hidden">Call</span>
           </TabsTrigger>
-          <TabsTrigger value="aproveitados" className="gap-1.5 text-xs py-2">
-            <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
+          <TabsTrigger value="aproveitados" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs py-2">
+            <CheckCircle className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Aproveitados</span><span className="sm:hidden">Aprov.</span>
           </TabsTrigger>
-          <TabsTrigger value="ranking" className="gap-1.5 text-xs py-2">
+          <TabsTrigger value="ranking" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs py-2">
             <Trophy className="h-3.5 w-3.5" /> Ranking
           </TabsTrigger>
         </TabsList>
@@ -272,6 +275,11 @@ export default function CorretorDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </motion.div>
+
+          {/* Quick Links */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
+            <QuickLinksGrid />
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -335,6 +343,11 @@ export default function CorretorDashboard() {
                        </p>
                      </CollapsibleContent>
                    </Collapsible>
+
+                   {/* Achievements */}
+                   <div className="w-full mt-3 pt-3 border-t border-border">
+                     <AchievementsBadges progress={progress} streak={streak || 0} />
+                   </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -370,6 +383,11 @@ export default function CorretorDashboard() {
                 </Card>
               ))}
             </div>
+          </motion.div>
+
+          {/* Yesterday Comparison */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
+            <YesterdayComparison progress={progress} />
           </motion.div>
 
           {/* Scoring Legend */}
