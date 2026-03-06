@@ -1392,6 +1392,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      get_corretor_daily_visitas: {
+        Args: { p_user_id?: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
