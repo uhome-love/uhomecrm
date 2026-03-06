@@ -1,9 +1,13 @@
 import { useState, useMemo } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { CalendarDays, List, Columns3, Plus, Filter } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarDays, List, Columns3, Plus, CalendarIcon, X, ArrowUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useVisitas, STATUS_LABELS, type VisitaStatus } from "@/hooks/useVisitas";
 import { useUserRole } from "@/hooks/useUserRole";
 import VisitasList from "@/components/visitas/VisitasList";
@@ -16,24 +20,49 @@ export default function AgendaVisitas() {
   const [showForm, setShowForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const { visitas, isLoading, createVisita, updateStatus, deleteVisita } = useVisitas();
 
   const filtered = useMemo(() => {
-    let list = visitas;
+    let list = [...visitas];
+
     if (statusFilter !== "all") list = list.filter(v => v.status === statusFilter);
+
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       list = list.filter(v =>
         v.nome_cliente.toLowerCase().includes(term) ||
         v.empreendimento?.toLowerCase().includes(term) ||
-        v.telefone?.includes(term)
+        v.telefone?.includes(term) ||
+        v.corretor_nome?.toLowerCase().includes(term)
       );
     }
-    return list;
-  }, [visitas, statusFilter, searchTerm]);
 
-  // Summary counts
+    if (dateFrom) {
+      const fromStr = format(dateFrom, "yyyy-MM-dd");
+      list = list.filter(v => v.data_visita >= fromStr);
+    }
+    if (dateTo) {
+      const toStr = format(dateTo, "yyyy-MM-dd");
+      list = list.filter(v => v.data_visita <= toStr);
+    }
+
+    // Sort by date + time
+    list.sort((a, b) => {
+      const dateComp = a.data_visita.localeCompare(b.data_visita);
+      if (dateComp !== 0) return sortOrder === "asc" ? dateComp : -dateComp;
+      const timeA = a.hora_visita || "99:99";
+      const timeB = b.hora_visita || "99:99";
+      const timeComp = timeA.localeCompare(timeB);
+      return sortOrder === "asc" ? timeComp : -timeComp;
+    });
+
+    return list;
+  }, [visitas, statusFilter, searchTerm, dateFrom, dateTo, sortOrder]);
+
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const v of visitas) {
@@ -41,6 +70,13 @@ export default function AgendaVisitas() {
     }
     return c;
   }, [visitas]);
+
+  const hasDateFilter = !!dateFrom || !!dateTo;
+
+  const clearDateFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
 
   return (
     <div className="space-y-4">
@@ -77,18 +113,83 @@ export default function AgendaVisitas() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Input
-            placeholder="Buscar cliente, empreendimento..."
+            placeholder="Buscar cliente, corretor..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="text-sm h-9"
           />
         </div>
-        {statusFilter !== "all" && (
-          <Button variant="ghost" size="sm" onClick={() => setStatusFilter("all")} className="text-xs">
-            Limpar filtro
+
+        {/* Date From */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn("h-9 text-xs gap-1.5", dateFrom ? "border-primary text-primary" : "text-muted-foreground")}
+            >
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {dateFrom ? format(dateFrom, "dd/MM/yy") : "De"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateFrom}
+              onSelect={setDateFrom}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Date To */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn("h-9 text-xs gap-1.5", dateTo ? "border-primary text-primary" : "text-muted-foreground")}
+            >
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {dateTo ? format(dateTo, "dd/MM/yy") : "Até"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateTo}
+              onSelect={setDateTo}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Sort toggle */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 text-xs gap-1.5"
+          onClick={() => setSortOrder(s => s === "asc" ? "desc" : "asc")}
+          title={sortOrder === "asc" ? "Mais antigas primeiro" : "Mais recentes primeiro"}
+        >
+          <ArrowUpDown className="h-3.5 w-3.5" />
+          {sortOrder === "asc" ? "↑ Antiga" : "↓ Recente"}
+        </Button>
+
+        {/* Clear filters */}
+        {(hasDateFilter || statusFilter !== "all") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { clearDateFilters(); setStatusFilter("all"); }}
+            className="h-9 text-xs gap-1"
+          >
+            <X className="h-3.5 w-3.5" /> Limpar
           </Button>
         )}
       </div>
