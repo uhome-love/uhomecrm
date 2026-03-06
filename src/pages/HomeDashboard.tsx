@@ -82,11 +82,11 @@ export default function HomeDashboard() {
     total_gerados: 0, total_assinados: 0, total_caidos: 0,
     vgv_gerado: 0, vgv_assinado: 0, vgv_caido: 0,
   });
-  // Lead recovery
-  const [recovery, setRecovery] = useState({ reativados: 0, respondidos: 0, visitas: 0 });
   // Checkpoint daily stats + OA realtime
   const [cpStats, setCpStats] = useState({ total_checkpoints: 0, total_corretores: 0, presentes: 0, ausentes: 0, oa_ligacoes: 0, oa_aproveitados: 0, oa_visitas_marcadas: 0 });
   const [oaPeriodStats, setOaPeriodStats] = useState({ ligacoes: 0, visitas_marcadas: 0 });
+  // OA Top Corretores
+  const [topCorretoresOA, setTopCorretoresOA] = useState<Array<{ nome: string; pontos: number; tentativas: number; aproveitados: number }>>([]);
 
   useEffect(() => {
     if (!user) return;
