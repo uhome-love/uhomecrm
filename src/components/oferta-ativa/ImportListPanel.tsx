@@ -9,7 +9,7 @@ import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, Loader2, ArrowRigh
 import { toast } from "sonner";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import { useOAListas, importLeadsToLista, normalizeTelefone } from "@/hooks/useOfertaAtiva";
+import { useOAListas, importLeadsToLista, normalizeTelefone, fetchLeadImportIndexes } from "@/hooks/useOfertaAtiva";
 
 const FIELD_MAP: Record<string, string[]> = {
   nome: ["nome", "name", "fn", "first_name", "cliente", "full_name"],
@@ -187,6 +187,10 @@ export default function ImportListPanel() {
       const segmentsToImport = Object.fromEntries(
         Object.entries(finalSegments).filter(([emp]) => selectedEmps.has(emp))
       );
+
+      // Preload dedup indexes only once (prevents repeated full-table scans per list)
+      const leadIndexes = await fetchLeadImportIndexes();
+
       for (const [emp, subs] of Object.entries(segmentsToImport)) {
         // Get rows for this empreendimento using normalized matching
         const empCol = mapping.empreendimento ? headers.indexOf(mapping.empreendimento) : -1;
@@ -235,7 +239,7 @@ export default function ImportListPanel() {
         }).filter(r => r.nome);
 
         const res = await importLeadsToLista(
-          lista.id, empName, campName, mainOrig, rows
+          lista.id, empName, campName, mainOrig, rows, leadIndexes
         );
         results.push({ emp: empName, ...res });
       }
