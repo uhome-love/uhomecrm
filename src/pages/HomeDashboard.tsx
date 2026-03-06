@@ -6,7 +6,7 @@ import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
 import { useMarketing, getCanalLabel } from "@/hooks/useMarketing";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { motion } from "framer-motion";
 import {
   TrendingUp, Users, Trophy, Target, BarChart3, AlertTriangle,
@@ -20,6 +20,40 @@ import IaCoreAction from "@/components/IaCoreAction";
 type Period = "dia" | "semana" | "mes";
 const periodLabels: Record<Period, string> = { dia: "Hoje", semana: "Esta Semana", mes: "Este Mês" };
 const medals = ["🥇", "🥈", "🥉"];
+
+const getSaoPauloDate = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+const getPeriodRange = (period: Period) => {
+  const todaySP = getSaoPauloDate();
+  const base = new Date(`${todaySP}T12:00:00-03:00`);
+
+  let start = base;
+  let end = base;
+
+  if (period === "semana") {
+    start = startOfWeek(base, { weekStartsOn: 1 });
+    end = endOfWeek(base, { weekStartsOn: 1 });
+  } else if (period === "mes") {
+    start = startOfMonth(base);
+    end = endOfMonth(base);
+  }
+
+  const startDate = format(start, "yyyy-MM-dd");
+  const endDate = format(end, "yyyy-MM-dd");
+
+  return {
+    startDate,
+    endDate,
+    startTs: `${startDate}T00:00:00-03:00`,
+    endTs: `${endDate}T23:59:59.999-03:00`,
+  };
+};
 
 export default function HomeDashboard() {
   const { user } = useAuth();
@@ -52,6 +86,7 @@ export default function HomeDashboard() {
   const [recovery, setRecovery] = useState({ reativados: 0, respondidos: 0, visitas: 0 });
   // Checkpoint daily stats + OA realtime
   const [cpStats, setCpStats] = useState({ total_checkpoints: 0, total_corretores: 0, presentes: 0, ausentes: 0, oa_ligacoes: 0, oa_aproveitados: 0, oa_visitas_marcadas: 0 });
+  const [oaPeriodStats, setOaPeriodStats] = useState({ ligacoes: 0, visitas_marcadas: 0 });
 
   useEffect(() => {
     if (!user) return;
@@ -60,22 +95,32 @@ export default function HomeDashboard() {
     });
   }, [user]);
 
-  // Fetch PDN summary
+  // Fetch PDN summary (strictly scoped by selected period)
   const fetchPdn = useCallback(async () => {
     if (!user) return;
-    const mesAtual = format(new Date(), "yyyy-MM");
-    let q = supabase.from("pdn_entries").select("situacao, docs_status, data_visita, temperatura, vgv, motivo_queda").eq("mes", mesAtual);
+
+    const { startDate, endDate } = getPeriodRange(period);
+
+    let q = supabase
+      .from("pdn_entries")
+      .select("situacao, docs_status, data_visita, temperatura, vgv, motivo_queda")
+      .gte("data_visita", startDate)
+      .lte("data_visita", endDate);
+
     if (!isAdmin) q = q.eq("gerente_id", user.id);
+
     const { data } = await q;
     if (!data) return;
+
     const now = new Date();
     const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
     const visitas = data.filter(d => d.situacao === "visita");
     const gerados = data.filter(d => d.situacao === "gerado");
     const assinados = data.filter(d => d.situacao === "assinado");
     const caidos = data.filter(d => d.situacao === "caiu");
+
     setPdnStats({
-      propostas: gerados.length,
+      propostas: gerados.length + assinados.length,
       docs: visitas.filter(d => d.docs_status === "sem_docs" || d.docs_status === "em_andamento").length,
       visitaRecente: data.filter(d => d.data_visita && new Date(d.data_visita) >= fiveDaysAgo).length,
       total_visitas: visitas.length,
@@ -89,9 +134,64 @@ export default function HomeDashboard() {
       vgv_assinado: assinados.reduce((s, e) => s + Number(e.vgv || 0), 0),
       vgv_caido: caidos.reduce((s, e) => s + Number(e.vgv || 0), 0),
     });
-  }, [user, isAdmin]);
+  }, [user, isAdmin, period]);
 
   useEffect(() => { fetchPdn(); }, [fetchPdn]);
+
+  const fetchOaPeriodStats = useCallback(async () => {
+    if (!user) return;
+
+    const { startTs, endTs } = getPeriodRange(period);
+
+    let teamUserIds: string[] | undefined;
+    if (!isAdmin) {
+      const { data: teamMembers } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", user.id)
+        .eq("status", "ativo");
+
+      teamUserIds = (teamMembers || []).map(t => t.user_id).filter(Boolean) as string[];
+      if (teamUserIds.length === 0) {
+        setOaPeriodStats({ ligacoes: 0, visitas_marcadas: 0 });
+        return;
+      }
+    }
+
+    let tentativasQuery = supabase
+      .from("oferta_ativa_tentativas")
+      .select("id")
+      .gte("created_at", startTs)
+      .lte("created_at", endTs);
+
+    if (!isAdmin && teamUserIds) {
+      tentativasQuery = tentativasQuery.in("corretor_id", teamUserIds);
+    }
+
+    let visitasMarcadasQuery = supabase
+      .from("oa_events")
+      .select("id")
+      .eq("event_type", "call_finished")
+      .gte("created_at", startTs)
+      .lte("created_at", endTs)
+      .contains("metadata", { visita_marcada: true });
+
+    if (!isAdmin && teamUserIds) {
+      visitasMarcadasQuery = visitasMarcadasQuery.in("user_id", teamUserIds);
+    }
+
+    const [{ data: tentativas }, { data: visitasMarcadas }] = await Promise.all([
+      tentativasQuery,
+      visitasMarcadasQuery,
+    ]);
+
+    setOaPeriodStats({
+      ligacoes: (tentativas || []).length,
+      visitas_marcadas: (visitasMarcadas || []).length,
+    });
+  }, [user, isAdmin, period]);
+
+  useEffect(() => { fetchOaPeriodStats(); }, [fetchOaPeriodStats]);
 
   // Fetch checkpoint daily summary
   const fetchCheckpoint = useCallback(async () => {
@@ -200,7 +300,7 @@ export default function HomeDashboard() {
     };
     const debouncedCp = () => {
       if (cpTimer) clearTimeout(cpTimer);
-      cpTimer = setTimeout(() => { reload(); fetchCheckpoint(); }, DEBOUNCE_CP_MS);
+      cpTimer = setTimeout(() => { reload(); fetchCheckpoint(); fetchOaPeriodStats(); }, DEBOUNCE_CP_MS);
     };
 
     const pdnChannel = supabase
@@ -221,7 +321,7 @@ export default function HomeDashboard() {
       supabase.removeChannel(pdnChannel);
       supabase.removeChannel(cpChannel);
     };
-  }, [fetchPdn, fetchCheckpoint, reload]);
+  }, [fetchPdn, fetchCheckpoint, fetchOaPeriodStats, reload]);
 
   // Fetch lead recovery
   useEffect(() => {
@@ -265,12 +365,12 @@ export default function HomeDashboard() {
   }, [channelStats, mktTotals, gerentes, recovery]);
 
   const iaContext = useMemo(() => {
-    const funnel = `Funil: Ligações OA Hoje ${cpStats.oa_ligacoes}, Ligações Checkpoint ${companyTotals.real_ligacoes}/${companyTotals.meta_ligacoes}, Visitas Marcadas ${companyTotals.real_visitas_marcadas}/${companyTotals.meta_visitas_marcadas}, Visitas Realizadas ${companyTotals.real_visitas_realizadas}/${companyTotals.meta_visitas_realizadas}, Propostas PDN ${pdnStats.total_gerados}, VGV Gerado R$ ${pdnStats.vgv_gerado.toLocaleString("pt-BR")}, VGV Assinado R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}`;
+    const funil = `Funil: Ligações OA ${oaPeriodStats.ligacoes}, Visitas Marcadas OA ${oaPeriodStats.visitas_marcadas}, Visitas Realizadas PDN ${pdnStats.total_gerados + pdnStats.total_assinados}, Propostas PDN ${pdnStats.total_gerados + pdnStats.total_assinados}, VGV Assinado R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}`;
     const mkt = channelStats.map(c => `${getCanalLabel(c.canal)}: Inv R$ ${c.investimento.toLocaleString("pt-BR")}, Leads ${c.leads}, CPL R$ ${c.cpl?.toFixed(0) || "-"}`).join("; ");
     const teams = sortedTimes.map((t, i) => `${i + 1}. Equipe ${t.gerente_nome}: VGV R$ ${t.totals.real_vgv_assinado.toLocaleString("pt-BR")}, Propostas ${t.totals.real_propostas}`).join("; ");
     const pdnCtx = `PDN: ${pdnStats.total_visitas} negócios, ${pdnStats.quente} quentes, ${pdnStats.total_gerados} gerados (R$ ${pdnStats.vgv_gerado.toLocaleString("pt-BR")}), ${pdnStats.total_assinados} assinados (R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}), ${pdnStats.total_caidos} caídos (R$ ${pdnStats.vgv_caido.toLocaleString("pt-BR")})`;
-    return `Período: ${periodLabels[period]}\n${funnel}\n${pdnCtx}\nMarketing: ${mkt}\nTimes: ${teams}\nRecuperação: ${recovery.reativados} reativados, ${recovery.respondidos} respostas`;
-  }, [companyTotals, channelStats, sortedTimes, period, pdnStats, recovery]);
+    return `Período: ${periodLabels[period]}\n${funil}\n${pdnCtx}\nMarketing: ${mkt}\nTimes: ${teams}\nRecuperação: ${recovery.reativados} reativados, ${recovery.respondidos} respostas`;
+  }, [oaPeriodStats, channelStats, sortedTimes, period, pdnStats, recovery]);
 
   const card = "rounded-xl border border-border bg-card shadow-card";
 
@@ -306,14 +406,14 @@ export default function HomeDashboard() {
         <div className="text-center py-16 text-muted-foreground">Carregando dados...</div>
       ) : (
         <div className="space-y-6">
-          {/* 1. Funil Comercial (Checkpoint + OA + PDN) */}
+          {/* 1. Funil Comercial */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={card}>
             <SectionHeader icon={TrendingUp} title="Funil Comercial" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 p-4">
-              <MetricCard label="Ligações OA" value={cpStats.oa_ligacoes} sub={period !== "dia" ? `Checkpoint: ${companyTotals.real_ligacoes}` : undefined} />
-              <MetricCard label="Vis. Marcadas" value={cpStats.oa_visitas_marcadas} />
-              <MetricCard label="Vis. Realizadas" value={pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: gerado + assinado" />
-              <MetricCard label="Propostas (PDN)" value={pdnStats.total_gerados + pdnStats.total_assinados} />
+              <MetricCard label="Ligações OA" value={oaPeriodStats.ligacoes} />
+              <MetricCard label="Visitas Marcadas" value={oaPeriodStats.visitas_marcadas} />
+              <MetricCard label="Visitas Realizadas" value={pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: gerado + assinado" />
+              <MetricCard label="Propostas (PDN)" value={pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: gerado + assinado" />
               <MetricCard label="VGV Gerado" value={`R$ ${(pdnStats.vgv_gerado / 1000).toFixed(0)}k`} />
               <MetricCard label="VGV Assinado" value={`R$ ${(pdnStats.vgv_assinado / 1000).toFixed(0)}k`} highlight />
               <MetricCard label="Atingimento" value={`${pct(pdnStats.vgv_assinado, companyTotals.meta_vgv_assinado)}%`} highlight />
