@@ -173,7 +173,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent className="scrollbar-thin">
         {/* Logo Section */}
-        <div className="flex items-center justify-center px-3 py-2 border-b border-sidebar-border/40">
+        <div className="flex items-center justify-center px-3 py-0 border-b border-sidebar-border/40">
           {collapsed ? (
             <div className="flex h-10 w-10 items-center justify-center shrink-0">
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sidebar-primary/20 to-sidebar-primary/5 flex items-center justify-center border border-sidebar-primary/20">
@@ -185,7 +185,7 @@ export function AppSidebar() {
               <img
                 src={uhomeLogo}
                 alt="UhomeSales"
-                className="w-full max-h-[200px] object-contain drop-shadow-[0_0_20px_hsl(229,100%,64%,0.2)]"
+                className="w-full max-h-[200px] object-contain drop-shadow-[0_0_20px_hsl(229,100%,64%,0.2)] -my-4"
               />
             </div>
           )}
