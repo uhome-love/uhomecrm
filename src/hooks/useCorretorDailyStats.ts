@@ -60,15 +60,25 @@ export function useCorretorDailyStats() {
         ? Math.round((s.aproveitados / s.tentativas) * 100)
         : 0;
 
-      // Count visitas_marcadas through a secure backend function (single source = checkpoint sync)
+      // Count visitas_marcadas from BOTH sources:
+      // 1) Agenda de Visitas (visitas table) — includes manual + OA-created
+      // 2) This is the TRUE source of truth for "visitas marcadas"
       try {
-        const { data: visitasCount, error: visitasError } = await supabase
-          .rpc("get_corretor_daily_visitas", { p_user_id: user!.id });
+        const { data: visitasData, error: visitasError } = await supabase
+          .from("visitas")
+          .select("id")
+          .eq("corretor_id", user!.id)
+          .gte("created_at", dayStartUtc)
+          .in("status", ["marcada", "confirmada", "realizada", "reagendada"]);
 
         if (visitasError) {
           console.error("Erro ao buscar visitas marcadas:", visitasError);
-        } else {
+          // Fallback to checkpoint RPC
+          const { data: visitasCount } = await supabase
+            .rpc("get_corretor_daily_visitas", { p_user_id: user!.id });
           s.visitas_marcadas = Number(visitasCount || 0);
+        } else {
+          s.visitas_marcadas = visitasData?.length || 0;
         }
       } catch (err) {
         console.error("Erro ao buscar visitas marcadas:", err);
@@ -134,7 +144,8 @@ export interface CorretorGoals {
 
 export function useCorretorDailyGoals() {
   const { user } = useAuth();
-  const today = format(new Date(), "yyyy-MM-dd");
+  // Use BRT date consistently with daily stats
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   const { data: goals, isLoading, refetch } = useQuery({
     queryKey: ["corretor-daily-goals", user?.id, today],
