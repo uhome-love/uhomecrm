@@ -59,35 +59,19 @@ export function useCorretorDailyStats() {
         ? Math.round((s.aproveitados / s.tentativas) * 100)
         : 0;
 
-      // Count visitas_marcadas from checkpoint_lines
+      // Count visitas_marcadas from oa_events (corretor CAN read own events via RLS)
+      // checkpoint_lines is NOT readable by corretores (RLS requires gerente_id = auth.uid())
       try {
-        const { data: tm } = await supabase
-          .from("team_members")
-          .select("id, gerente_id")
+        const { data: events } = await supabase
+          .from("oa_events")
+          .select("id")
           .eq("user_id", user!.id)
-          .eq("status", "ativo")
-          .maybeSingle();
+          .eq("event_type", "call_finished")
+          .gte("created_at", today.toISOString())
+          .filter("metadata->>visita_marcada", "eq", "true");
 
-        if (tm) {
-          const { data: cp } = await supabase
-            .from("checkpoints")
-            .select("id")
-            .eq("gerente_id", tm.gerente_id)
-            .eq("data", today.toISOString().split("T")[0])
-            .maybeSingle();
-
-          if (cp) {
-            const { data: line } = await supabase
-              .from("checkpoint_lines")
-              .select("real_visitas_marcadas")
-              .eq("checkpoint_id", cp.id)
-              .eq("corretor_id", tm.id)
-              .maybeSingle();
-
-            if (line?.real_visitas_marcadas) {
-              s.visitas_marcadas = line.real_visitas_marcadas;
-            }
-          }
+        if (events) {
+          s.visitas_marcadas = events.length;
         }
       } catch (err) {
         console.error("Erro ao buscar visitas marcadas:", err);
