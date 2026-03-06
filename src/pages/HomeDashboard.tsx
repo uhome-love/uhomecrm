@@ -253,17 +253,16 @@ export default function HomeDashboard() {
     const oa_ligacoes = (oaTentativas || []).length;
     const oa_aproveitados = (oaTentativas || []).filter(t => t.resultado === "com_interesse").length;
 
-    // Visitas marcadas from checkpoint_lines (already fetched above)
-    let oa_visitas_marcadas = 0;
-    if (cpIds.length > 0) {
-      const { data: vmLines } = await supabase
-        .from("checkpoint_lines")
-        .select("real_visitas_marcadas")
-        .in("checkpoint_id", cpIds);
-      oa_visitas_marcadas = (vmLines || []).reduce(
-        (sum, l) => sum + (l.real_visitas_marcadas || 0), 0
-      );
-    }
+    // Visitas marcadas from visitas table
+    const today = format(new Date(), "yyyy-MM-dd");
+    let vmQuery = supabase
+      .from("visitas")
+      .select("id")
+      .in("status", ["marcada", "confirmada", "realizada", "reagendada"])
+      .eq("data_visita", today);
+    if (!isAdmin) vmQuery = vmQuery.eq("gerente_id", user.id);
+    const { data: vmData } = await vmQuery;
+    const oa_visitas_marcadas = (vmData || []).length;
 
     setCpStats({
       total_checkpoints: cps?.length || 0,
