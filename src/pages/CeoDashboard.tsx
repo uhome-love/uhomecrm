@@ -12,6 +12,7 @@ import CeoForecastPanel from "@/components/forecast/CeoForecastPanel";
 import CeoVendasAssinadas from "@/components/ceo/CeoVendasAssinadas";
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import CeoCheckpointViewer from "@/components/ceo/CeoCheckpointViewer";
+import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel";
 
 export default function CeoDashboard() {
   const [searchParams] = useSearchParams();
@@ -73,7 +74,10 @@ export default function CeoDashboard() {
         <TabsContent value="vendas" className="mt-4"><CeoVendasAssinadas /></TabsContent>
         <TabsContent value="forecast" className="mt-4"><CeoForecastPanel /></TabsContent>
         <TabsContent value="rankings" className="mt-4"><CeoRankings /></TabsContent>
-        <TabsContent value="oferta-ativa" className="mt-4"><RankingOfertaAtiva /></TabsContent>
+        <TabsContent value="oferta-ativa" className="mt-4 space-y-6">
+          <PerformanceLivePanel />
+          <RankingOfertaAtiva />
+        </TabsContent>
         <TabsContent value="reports" className="mt-4"><CeoReports /></TabsContent>
         <TabsContent value="advisor" className="mt-4"><CeoAdvisor /></TabsContent>
         <TabsContent value="alerts" className="mt-4"><CeoAlerts /></TabsContent>
