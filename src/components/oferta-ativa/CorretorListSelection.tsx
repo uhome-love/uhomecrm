@@ -27,11 +27,21 @@ function useBatchListaStats(listaIds: string[]) {
     queryFn: async () => {
       if (!listaIds.length || !user) return {} as Record<string, ListaStats>;
 
-      // 1) All leads for these listas in one query
-      const { data: leads } = await supabase
-        .from("oferta_ativa_leads")
-        .select("id, lista_id, status, proxima_tentativa_apos")
-        .in("lista_id", listaIds);
+      // 1) All leads for these listas — paginated to bypass 1000-row limit
+      const allLeads: Array<{ id: string; lista_id: string; status: string; proxima_tentativa_apos: string | null }> = [];
+      const PAGE_SIZE = 1000;
+      let page = 0;
+      while (true) {
+        const { data: batch } = await supabase
+          .from("oferta_ativa_leads")
+          .select("id, lista_id, status, proxima_tentativa_apos")
+          .in("lista_id", listaIds)
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        if (!batch || batch.length === 0) break;
+        allLeads.push(...batch);
+        if (batch.length < PAGE_SIZE) break;
+        page++;
+      }
 
       // 2) My attempts today in one query
       const today = new Date();
@@ -47,10 +57,11 @@ function useBatchListaStats(listaIds: string[]) {
       const statsMap: Record<string, ListaStats> = {};
 
       for (const lid of listaIds) {
-        const listaLeads = (leads || []).filter(l => l.lista_id === lid);
+        const listaLeads = allLeads.filter(l => l.lista_id === lid);
         const total = listaLeads.length;
+        // Include both na_fila AND em_cooldown (eligible leads the server will serve)
         const naFila = listaLeads.filter(l =>
-          l.status === "na_fila" &&
+          (l.status === "na_fila" || l.status === "em_cooldown") &&
           (l.proxima_tentativa_apos == null || l.proxima_tentativa_apos < now)
         ).length;
         const aproveitados = listaLeads.filter(l => l.status === "aproveitado").length;
