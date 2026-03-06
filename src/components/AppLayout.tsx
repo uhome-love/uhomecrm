@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { lazy, Suspense } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { User, Settings, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -84,10 +85,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-      <Suspense fallback={null}>
-        <UhomeIaAssistant />
-        <HomiGreeting />
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={null}>
+          <UhomeIaAssistant />
+          <HomiGreeting />
+        </Suspense>
+      </ErrorBoundary>
     </SidebarProvider>
   );
 }
