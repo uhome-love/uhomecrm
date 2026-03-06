@@ -300,7 +300,7 @@ export default function HomeDashboard() {
     };
     const debouncedCp = () => {
       if (cpTimer) clearTimeout(cpTimer);
-      cpTimer = setTimeout(() => { reload(); fetchCheckpoint(); }, DEBOUNCE_CP_MS);
+      cpTimer = setTimeout(() => { reload(); fetchCheckpoint(); fetchOaPeriodStats(); }, DEBOUNCE_CP_MS);
     };
 
     const pdnChannel = supabase
@@ -321,7 +321,7 @@ export default function HomeDashboard() {
       supabase.removeChannel(pdnChannel);
       supabase.removeChannel(cpChannel);
     };
-  }, [fetchPdn, fetchCheckpoint, reload]);
+  }, [fetchPdn, fetchCheckpoint, fetchOaPeriodStats, reload]);
 
   // Fetch lead recovery
   useEffect(() => {
@@ -365,12 +365,12 @@ export default function HomeDashboard() {
   }, [channelStats, mktTotals, gerentes, recovery]);
 
   const iaContext = useMemo(() => {
-    const funnel = `Funil: Ligações OA Hoje ${cpStats.oa_ligacoes}, Ligações Checkpoint ${companyTotals.real_ligacoes}/${companyTotals.meta_ligacoes}, Visitas Marcadas ${companyTotals.real_visitas_marcadas}/${companyTotals.meta_visitas_marcadas}, Visitas Realizadas ${companyTotals.real_visitas_realizadas}/${companyTotals.meta_visitas_realizadas}, Propostas PDN ${pdnStats.total_gerados}, VGV Gerado R$ ${pdnStats.vgv_gerado.toLocaleString("pt-BR")}, VGV Assinado R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}`;
+    const funil = `Funil: Ligações OA ${oaPeriodStats.ligacoes}, Visitas Marcadas OA ${oaPeriodStats.visitas_marcadas}, Visitas Realizadas PDN ${pdnStats.total_gerados + pdnStats.total_assinados}, Propostas PDN ${pdnStats.total_gerados + pdnStats.total_assinados}, VGV Assinado R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}`;
     const mkt = channelStats.map(c => `${getCanalLabel(c.canal)}: Inv R$ ${c.investimento.toLocaleString("pt-BR")}, Leads ${c.leads}, CPL R$ ${c.cpl?.toFixed(0) || "-"}`).join("; ");
     const teams = sortedTimes.map((t, i) => `${i + 1}. Equipe ${t.gerente_nome}: VGV R$ ${t.totals.real_vgv_assinado.toLocaleString("pt-BR")}, Propostas ${t.totals.real_propostas}`).join("; ");
     const pdnCtx = `PDN: ${pdnStats.total_visitas} negócios, ${pdnStats.quente} quentes, ${pdnStats.total_gerados} gerados (R$ ${pdnStats.vgv_gerado.toLocaleString("pt-BR")}), ${pdnStats.total_assinados} assinados (R$ ${pdnStats.vgv_assinado.toLocaleString("pt-BR")}), ${pdnStats.total_caidos} caídos (R$ ${pdnStats.vgv_caido.toLocaleString("pt-BR")})`;
-    return `Período: ${periodLabels[period]}\n${funnel}\n${pdnCtx}\nMarketing: ${mkt}\nTimes: ${teams}\nRecuperação: ${recovery.reativados} reativados, ${recovery.respondidos} respostas`;
-  }, [companyTotals, channelStats, sortedTimes, period, pdnStats, recovery]);
+    return `Período: ${periodLabels[period]}\n${funil}\n${pdnCtx}\nMarketing: ${mkt}\nTimes: ${teams}\nRecuperação: ${recovery.reativados} reativados, ${recovery.respondidos} respostas`;
+  }, [oaPeriodStats, channelStats, sortedTimes, period, pdnStats, recovery]);
 
   const card = "rounded-xl border border-border bg-card shadow-card";
 
@@ -406,14 +406,14 @@ export default function HomeDashboard() {
         <div className="text-center py-16 text-muted-foreground">Carregando dados...</div>
       ) : (
         <div className="space-y-6">
-          {/* 1. Funil Comercial (Checkpoint + OA + PDN) */}
+          {/* 1. Funil Comercial */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={card}>
             <SectionHeader icon={TrendingUp} title="Funil Comercial" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 p-4">
-              <MetricCard label="Ligações OA" value={cpStats.oa_ligacoes} sub={period !== "dia" ? `Checkpoint: ${companyTotals.real_ligacoes}` : undefined} />
-              <MetricCard label="Vis. Marcadas" value={cpStats.oa_visitas_marcadas} />
-              <MetricCard label="Vis. Realizadas" value={pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: gerado + assinado" />
-              <MetricCard label="Propostas (PDN)" value={pdnStats.total_gerados + pdnStats.total_assinados} />
+              <MetricCard label="Ligações OA" value={oaPeriodStats.ligacoes} />
+              <MetricCard label="Visitas Marcadas" value={oaPeriodStats.visitas_marcadas} />
+              <MetricCard label="Visitas Realizadas" value={pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: gerado + assinado" />
+              <MetricCard label="Propostas (PDN)" value={pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: gerado + assinado" />
               <MetricCard label="VGV Gerado" value={`R$ ${(pdnStats.vgv_gerado / 1000).toFixed(0)}k`} />
               <MetricCard label="VGV Assinado" value={`R$ ${(pdnStats.vgv_assinado / 1000).toFixed(0)}k`} highlight />
               <MetricCard label="Atingimento" value={`${pct(pdnStats.vgv_assinado, companyTotals.meta_vgv_assinado)}%`} highlight />
