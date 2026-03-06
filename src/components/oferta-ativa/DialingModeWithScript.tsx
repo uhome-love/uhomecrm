@@ -6,12 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Flame, Target, CalendarCheck, Zap, ChevronDown, Pencil, LogOut, SkipForward, Clock, ChevronRight, AlertTriangle } from "lucide-react";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Zap, ChevronDown, LogOut, SkipForward, Clock, ChevronRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useCorretorDailyStats, useCorretorDailyGoals } from "@/hooks/useCorretorDailyStats";
+import { useCorretorProgress } from "@/hooks/useCorretorProgress";
+import DailyProgressCard from "@/components/corretor/DailyProgressCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import AttemptModal from "./AttemptModal";
@@ -64,8 +63,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const { currentLead: lead, isLoading, queueEmpty, fetchNext, startHeartbeat, stopHeartbeat, unlockLead } = useOAServerQueue(lista.id);
   const { registrar } = useOARegistrarTentativa();
   const { templates } = useOATemplates(lista.empreendimento);
-  const { stats, applyOptimisticUpdate } = useCorretorDailyStats();
-  const { goals, saveGoals } = useCorretorDailyGoals();
+  const { progress, goals, saveGoals, applyOptimisticUpdate } = useCorretorProgress();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { addPending } = useOAPendingQueue();
@@ -78,10 +76,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [actionTaken, setActionTaken] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [editingMetas, setEditingMetas] = useState(false);
-  const [metaLig, setMetaLig] = useState(() => (goals?.meta_ligacoes || 30).toString());
-  const [metaAprov, setMetaAprov] = useState(() => (goals?.meta_aproveitados || 5).toString());
-  const [metaVis, setMetaVis] = useState(() => (goals?.meta_visitas_marcadas || 3).toString());
   const [finalizando, setFinalizando] = useState(false);
   
   // === TIMESTAMP-BASED TIMER ===
@@ -103,15 +97,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       fetchNext();
     }
   }, [fetchNext]);
-
-  // Sync metas when goals load asynchronously
-  useEffect(() => {
-    if (goals && !editingMetas) {
-      setMetaLig(goals.meta_ligacoes.toString());
-      setMetaAprov(goals.meta_aproveitados.toString());
-      setMetaVis(goals.meta_visitas_marcadas.toString());
-    }
-  }, [goals?.meta_ligacoes, goals?.meta_aproveitados, goals?.meta_visitas_marcadas]);
 
   // Session timer
   useEffect(() => {
@@ -175,14 +160,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   }, []);
 
-  const shouldSuggestBreak = stats.tentativas > 0 && stats.tentativas % 15 === 0;
-
-  const metaLigacoes = goals?.meta_ligacoes || 30;
-  const metaAproveitados = goals?.meta_aproveitados || 5;
-  const metaVisitas = goals?.meta_visitas_marcadas || 3;
-  const progLig = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
-  const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
-  const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitas) * 100));
+  const shouldSuggestBreak = progress.tentativas > 0 && progress.tentativas % 15 === 0;
 
   // Start heartbeat when lead is locked
   useEffect(() => {
@@ -266,7 +244,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         } else if (resultado === "numero_errado") {
           toast("❌ Número errado — removido", { duration: 2000 });
         }
-        checkMilestone(stats.tentativas + 1);
+        checkMilestone(progress.tentativas + 1);
       }
 
       stopTimer();
@@ -354,7 +332,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           <p className="text-sm text-muted-foreground mt-1">Todos os leads de <strong>{lista.empreendimento}</strong> foram trabalhados.</p>
           <div className="mt-4 p-3 rounded-xl bg-muted/50 border border-border text-sm text-muted-foreground">
             <p>📊 Sessão: <strong className="text-foreground">{formatSessionTime(sessionSeconds)}</strong> · Leads: <strong className="text-foreground">{sessionLeadsServed}</strong></p>
-            <p>📞 Tentativas: <strong className="text-foreground">{stats.tentativas}</strong> · Aproveitados: <strong className="text-emerald-600">{stats.aproveitados}</strong></p>
+            <p>📞 Tentativas: <strong className="text-foreground">{progress.tentativas}</strong> · Aproveitados: <strong className="text-emerald-600">{progress.aproveitados}</strong></p>
           </div>
           <p className="text-xs text-muted-foreground mt-3 animate-pulse">Redirecionando para as listas em instantes...</p>
           <Button className="mt-4" onClick={onBack}>Voltar às listas agora</Button>
@@ -364,7 +342,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   }
 
   const freshness = getLeadFreshness(lead.data_lead);
-  const motivationalMsg = getMotivationalMessage(stats.tentativas, stats.aproveitados, streak, metaLigacoes);
+  const motivationalMsg = getMotivationalMessage(progress.tentativas, progress.aproveitados, streak, progress.metaLigacoes);
 
   return (
     <div className="space-y-3">
@@ -388,7 +366,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       {/* Mini-break suggestion */}
       {shouldSuggestBreak && (
         <div className="text-center p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700">
-          ☕ <strong>{stats.tentativas} ligações!</strong> Que tal uma pausa rápida de 2 min? Voltar descansado rende mais.
+          ☕ <strong>{progress.tentativas} ligações!</strong> Que tal uma pausa rápida de 2 min? Voltar descansado rende mais.
         </div>
       )}
 
@@ -406,78 +384,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         </div>
       </div>
 
-      {/* Daily Progress Mini-Summary */}
-      <div className="p-3 rounded-xl border border-border bg-card shadow-card space-y-2">
-        {editingMetas ? (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-foreground">Editar Metas</p>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-[10px] text-muted-foreground">Ligações</label>
-                <Input type="number" value={metaLig} onChange={e => setMetaLig(e.target.value)} className="h-8 mt-0.5" />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground">Aproveitados</label>
-                <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-8 mt-0.5" />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground">Visitas</label>
-                <Input type="number" value={metaVis} onChange={e => setMetaVis(e.target.value)} className="h-8 mt-0.5" />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" className="flex-1 h-7 text-xs" onClick={async () => {
-                await saveGoals(parseInt(metaLig) || 30, parseInt(metaAprov) || 5, parseInt(metaVis) || 3);
-                setEditingMetas(false);
-                toast.success("Metas atualizadas!");
-                queryClient.invalidateQueries({ queryKey: ["corretor-daily-goals"] });
-              }}>Salvar</Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingMetas(false)}>Cancelar</Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Flame className="h-4 w-4 text-primary" />
-                  <span className="font-bold text-foreground">{stats.tentativas}</span>
-                  <span className="text-muted-foreground text-[10px]">/ {metaLigacoes}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Target className="h-4 w-4 text-emerald-500" />
-                  <span className="font-bold text-foreground">{stats.aproveitados}</span>
-                  <span className="text-muted-foreground text-[10px]">/ {metaAproveitados}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <CalendarCheck className="h-4 w-4 text-amber-500" />
-                  <span className="font-bold text-foreground">{stats.visitas_marcadas}</span>
-                  <span className="text-muted-foreground text-[10px]">/ {metaVisitas}</span>
-                </div>
-                <span className="text-xs font-bold text-primary">{stats.pontos} pts</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => {
-                  setMetaLig((goals?.meta_ligacoes || 30).toString());
-                  setMetaAprov((goals?.meta_aproveitados || 5).toString());
-                  setMetaVis((goals?.meta_visitas_marcadas || 3).toString());
-                  setEditingMetas(true);
-                }}>
-                  <Pencil className="h-3 w-3 text-muted-foreground" />
-                </Button>
-                {stats.tentativas >= metaLigacoes && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">🔥 Missão cumprida!</Badge>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Progress value={progLig} className="h-1.5" />
-              <Progress value={progAprov} className="h-1.5" />
-              <Progress value={progVisitas} className="h-1.5" />
-            </div>
-          </>
-        )}
-      </div>
+      {/* Daily Progress Mini-Summary — SHARED COMPONENT */}
+      <DailyProgressCard
+        progress={progress}
+        goals={goals}
+        saveGoals={saveGoals}
+        variant="compact"
+      />
 
       {/* Controls Row */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -537,7 +450,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 setFinalizando(false);
               }
             }}
-            disabled={finalizando || stats.tentativas === 0}
+            disabled={finalizando || progress.tentativas === 0}
           >
             <LogOut className="h-3.5 w-3.5" /> {finalizando ? "Enviando..." : "Finalizar"}
           </Button>

@@ -4,11 +4,12 @@ import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRi
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCorretorDailyStats, useCorretorDailyGoals, useDailyMotivation } from "@/hooks/useCorretorDailyStats";
+import { useCorretorProgress } from "@/hooks/useCorretorProgress";
+import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
+import DailyProgressCard from "@/components/corretor/DailyProgressCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
@@ -61,15 +62,6 @@ function ConfettiBurst({ show }: { show: boolean }) {
   );
 }
 
-// Level badge based on points
-function getLevelInfo(pontos: number) {
-  if (pontos >= 50) return { label: "Lenda", emoji: "👑", color: "text-amber-400" };
-  if (pontos >= 30) return { label: "Mestre", emoji: "⭐", color: "text-purple-500" };
-  if (pontos >= 15) return { label: "Veterano", emoji: "🔥", color: "text-orange-500" };
-  if (pontos >= 5) return { label: "Ativo", emoji: "💪", color: "text-blue-500" };
-  return { label: "Iniciante", emoji: "🌱", color: "text-emerald-500" };
-}
-
 function getProgressColor(pct: number) {
   if (pct >= 100) return "bg-emerald-500";
   if (pct >= 70) return "bg-primary";
@@ -78,18 +70,14 @@ function getProgressColor(pct: number) {
 }
 
 export default function CorretorDashboard() {
-  const { stats } = useCorretorDailyStats();
+  // === SINGLE SOURCE OF TRUTH ===
+  const { progress, goals, saveGoals } = useCorretorProgress();
   const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
-  const { goals, saveGoals } = useCorretorDailyGoals();
   const motivation = useDailyMotivation();
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState("central");
   const [nome, setNome] = useState("");
-  const [metaLig, setMetaLig] = useState(goals?.meta_ligacoes?.toString() || "30");
-  const [metaAprov, setMetaAprov] = useState(goals?.meta_aproveitados?.toString() || "5");
-  const [metaVisitas, setMetaVisitas] = useState(goals?.meta_visitas_marcadas?.toString() || "3");
-  const [editing, setEditing] = useState(!goals);
   const [finalizando, setFinalizando] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [prevAproveitados, setPrevAproveitados] = useState(0);
@@ -129,41 +117,20 @@ export default function CorretorDashboard() {
     });
   }, [user]);
 
-  useEffect(() => {
-    setMetaLig(goals?.meta_ligacoes?.toString() || "30");
-    setMetaAprov(goals?.meta_aproveitados?.toString() || "5");
-    setMetaVisitas(goals?.meta_visitas_marcadas?.toString() || "3");
-    setEditing(!goals);
-  }, [goals]);
-
   // Celebration on new aproveitado
   useEffect(() => {
-    if (stats.aproveitados > prevAproveitados && prevAproveitados > 0) {
+    if (progress.aproveitados > prevAproveitados && prevAproveitados > 0) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2000);
     }
-    setPrevAproveitados(stats.aproveitados);
-  }, [stats.aproveitados]);
+    setPrevAproveitados(progress.aproveitados);
+  }, [progress.aproveitados]);
 
   if (!roleLoading && (isGestor || isAdmin)) {
     return <Navigate to="/" replace />;
   }
 
-  const metaLigacoes = goals?.meta_ligacoes || 30;
-  const metaAproveitados = goals?.meta_aproveitados || 5;
-  const metaVisitasM = goals?.meta_visitas_marcadas || 3;
-  const progLig = Math.min(100, Math.round((stats.tentativas / metaLigacoes) * 100));
-  const progAprov = Math.min(100, Math.round((stats.aproveitados / metaAproveitados) * 100));
-  const progVisitas = Math.min(100, Math.round((stats.visitas_marcadas / metaVisitasM) * 100));
   const metaSalva = !!goals;
-  const level = getLevelInfo(stats.pontos);
-  const allGoalsMet = progLig >= 100 && progAprov >= 100;
-
-  const handleSaveGoals = async () => {
-    await saveGoals(parseInt(metaLig) || 30, parseInt(metaAprov) || 5, parseInt(metaVisitas) || 3);
-    setEditing(false);
-    toast.success("Meta do dia salva! Discagem liberada. 🚀");
-  };
 
   const handleTabChange = (tab: string) => {
     if (tab === "discagem" && !metaSalva) {
@@ -191,6 +158,10 @@ export default function CorretorDashboard() {
       setFinalizando(false);
     }
   };
+
+  // Derived from unified progress
+  const levelEmoji = progress.level.split(" ")[0];
+  const levelLabel = progress.level.split(" ").slice(1).join(" ");
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
@@ -236,8 +207,8 @@ export default function CorretorDashboard() {
           animate={{ opacity: 1, x: 0 }}
           className="text-center"
         >
-          <div className="text-2xl">{level.emoji}</div>
-          <p className={`text-[10px] font-bold ${level.color}`}>{level.label}</p>
+          <div className="text-2xl">{levelEmoji}</div>
+          <p className={`text-[10px] font-bold ${progress.levelColor}`}>{levelLabel}</p>
         </motion.div>
       </div>
 
@@ -263,7 +234,7 @@ export default function CorretorDashboard() {
         <TabsContent value="central" className="space-y-4 mt-4">
           {/* Celebration Banner */}
           <AnimatePresence>
-            {allGoalsMet && (
+            {progress.todasMissoesCumpridas && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -296,102 +267,38 @@ export default function CorretorDashboard() {
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Daily Goals */}
+            {/* Daily Goals — SHARED COMPONENT (same as in Discagem) */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="lg:col-span-2">
-              <Card className={`h-full ${!metaSalva ? "ring-2 ring-primary/40 border-primary/30" : ""}`}>
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" /> Meta do Dia
-                      {!metaSalva && (
-                        <Badge variant="destructive" className="text-[10px] h-5 animate-pulse">
-                          Obrigatória
-                        </Badge>
-                      )}
-                    </h3>
-                    {metaSalva && !editing && (
-                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(true)}>Editar</Button>
-                    )}
-                  </div>
-
-                  {editing ? (
-                    <div className="space-y-3">
-                      {!metaSalva && (
-                        <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
-                          ⚠️ Defina sua meta do dia. A aba Discagem será liberada após salvar.
-                        </p>
-                      )}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <label className="text-[10px] text-muted-foreground uppercase">Tentativas</label>
-                          <Input type="number" value={metaLig} onChange={e => setMetaLig(e.target.value)} className="h-9 mt-1" />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground uppercase">Aproveitados</label>
-                          <Input type="number" value={metaAprov} onChange={e => setMetaAprov(e.target.value)} className="h-9 mt-1" />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground uppercase">Visitas</label>
-                          <Input type="number" value={metaVisitas} onChange={e => setMetaVisitas(e.target.value)} className="h-9 mt-1" />
-                        </div>
-                        <Button size="sm" className="col-span-3 gap-1.5" onClick={handleSaveGoals}>
-                          <Zap className="h-4 w-4" /> {metaSalva ? "Atualizar Meta" : "Salvar e Liberar Discagem 🚀"}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {[
-                        { label: "Tentativas", current: stats.tentativas, meta: metaLigacoes, prog: progLig },
-                        { label: "Aproveitados", current: stats.aproveitados, meta: metaAproveitados, prog: progAprov },
-                        { label: "Visitas a Marcar", current: stats.visitas_marcadas, meta: metaVisitasM, prog: progVisitas },
-                      ].map((item) => (
-                        <div key={item.label}>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-muted-foreground">{item.label}</span>
-                            <span className="font-bold text-foreground flex items-center gap-1">
-                              {item.current} / {item.meta}
-                              {item.prog >= 100 && <span className="text-emerald-500">✓</span>}
-                            </span>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-                            <motion.div
-                              className={`h-2.5 rounded-full transition-colors ${getProgressColor(item.prog)}`}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min(100, item.prog)}%` }}
-                              transition={{ duration: 0.8, ease: "easeOut" }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <DailyProgressCard
+                progress={progress}
+                goals={goals}
+                saveGoals={saveGoals}
+                variant="full"
+              />
             </motion.div>
 
             {/* Points & Level */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <Card className="border-primary/10 h-full">
                 <CardContent className="p-4 flex flex-col items-center justify-center h-full gap-2">
-                  <div className="text-3xl">{level.emoji}</div>
-                  <p className={`text-xs font-bold ${level.color} uppercase tracking-wider`}>{level.label}</p>
+                  <div className="text-3xl">{levelEmoji}</div>
+                  <p className={`text-xs font-bold ${progress.levelColor} uppercase tracking-wider`}>{levelLabel}</p>
                   <motion.p
-                    key={stats.pontos}
+                    key={progress.pontos}
                     initial={{ scale: 1.3 }}
                     animate={{ scale: 1 }}
                     className="text-4xl font-bold text-foreground"
                   >
-                    {stats.pontos}
+                    {progress.pontos}
                   </motion.p>
                   <p className="text-[10px] text-muted-foreground">pontos hoje</p>
                   <div className="w-full mt-2 space-y-1">
                     <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>{stats.aproveitados} aprov.</span>
-                      <span>{stats.tentativas} tent.</span>
+                      <span>{progress.aproveitados} aprov.</span>
+                      <span>{progress.tentativas} tent.</span>
                     </div>
                     <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>{stats.taxa_aproveitamento}% taxa</span>
+                      <span>{progress.taxaAproveitamento}% taxa</span>
                       {(streak || 0) >= 1 && <span className="text-orange-500 font-semibold">🔥 {streak}d</span>}
                     </div>
                   </div>
@@ -410,7 +317,7 @@ export default function CorretorDashboard() {
                          { emoji: "⭐", label: "Mestre", range: "30–49 pts", color: "text-purple-500" },
                          { emoji: "👑", label: "Lenda", range: "50+ pts", color: "text-amber-400" },
                        ].map((lv) => (
-                         <div key={lv.label} className={`flex items-center justify-between text-[10px] ${lv.label === level.label ? "font-bold" : "opacity-60"}`}>
+                         <div key={lv.label} className={`flex items-center justify-between text-[10px] ${lv.label === levelLabel ? "font-bold" : "opacity-60"}`}>
                            <span className={lv.color}>{lv.emoji} {lv.label}</span>
                            <span className="text-muted-foreground">{lv.range}</span>
                          </div>
@@ -429,10 +336,10 @@ export default function CorretorDashboard() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: "Ligações", value: stats.ligacoes, icon: Phone, color: "text-emerald-600", bgColor: "bg-emerald-500/10" },
-                { label: "WhatsApps", value: stats.whatsapps, icon: MessageCircle, color: "text-green-600", bgColor: "bg-green-500/10" },
-                { label: "E-mails", value: stats.emails, icon: Mail, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-                { label: "Taxa Aprov.", value: `${stats.taxa_aproveitamento}%`, icon: TrendingUp, color: "text-primary", bgColor: "bg-primary/10" },
+                { label: "Ligações", value: progress.ligacoes, icon: Phone, color: "text-emerald-600", bgColor: "bg-emerald-500/10" },
+                { label: "WhatsApps", value: progress.whatsapps, icon: MessageCircle, color: "text-green-600", bgColor: "bg-green-500/10" },
+                { label: "E-mails", value: progress.emails, icon: Mail, color: "text-blue-500", bgColor: "bg-blue-500/10" },
+                { label: "Taxa Aprov.", value: `${progress.taxaAproveitamento}%`, icon: TrendingUp, color: "text-primary", bgColor: "bg-primary/10" },
               ].map((item) => (
                 <Card key={item.label} className="overflow-hidden">
                   <CardContent className="p-3 flex items-center gap-3">
@@ -478,7 +385,7 @@ export default function CorretorDashboard() {
                       size="lg"
                       variant="outline"
                       className="h-14 gap-2 text-base border-destructive/30 text-destructive hover:bg-destructive/10"
-                      disabled={finalizando || stats.tentativas === 0}
+                      disabled={finalizando || progress.tentativas === 0}
                     >
                       <LogOut className="h-5 w-5" /> Finalizar Trabalho
                     </Button>
@@ -490,19 +397,19 @@ export default function CorretorDashboard() {
                         <p>Suas estatísticas serão enviadas ao gerente:</p>
                         <div className="grid grid-cols-3 gap-2 mt-2">
                           <div className="text-center p-2 rounded-lg bg-muted">
-                            <p className="text-lg font-bold text-foreground">{stats.tentativas}</p>
+                            <p className="text-lg font-bold text-foreground">{progress.tentativas}</p>
                             <p className="text-[10px] text-muted-foreground">tentativas</p>
                           </div>
                           <div className="text-center p-2 rounded-lg bg-muted">
-                            <p className="text-lg font-bold text-emerald-600">{stats.aproveitados}</p>
+                            <p className="text-lg font-bold text-emerald-600">{progress.aproveitados}</p>
                             <p className="text-[10px] text-muted-foreground">aproveitados</p>
                           </div>
                           <div className="text-center p-2 rounded-lg bg-muted">
-                            <p className="text-lg font-bold text-primary">{stats.pontos}</p>
+                            <p className="text-lg font-bold text-primary">{progress.pontos}</p>
                             <p className="text-[10px] text-muted-foreground">pontos</p>
                           </div>
                         </div>
-                        {!allGoalsMet && (
+                        {!progress.todasMissoesCumpridas && (
                           <p className="text-xs text-amber-600 mt-2">⚠️ Você ainda não bateu todas as metas. Tem certeza?</p>
                         )}
                       </AlertDialogDescription>
