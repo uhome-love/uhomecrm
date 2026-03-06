@@ -80,7 +80,7 @@ export function useVisitas(filters?: {
     queryFn: async () => {
       let q = supabase
         .from("visitas")
-        .select("*, profiles!visitas_corretor_id_profiles(nome)")
+        .select("*")
         .order("data_visita", { ascending: false })
         .order("hora_visita", { ascending: true });
 
@@ -91,22 +91,24 @@ export function useVisitas(filters?: {
       if (filters?.endDate) q = q.lte("data_visita", filters.endDate);
 
       const { data, error } = await q;
-      if (error) {
-        // Fallback without join if foreign key not set up
-        const { data: fallback, error: err2 } = await supabase
-          .from("visitas")
-          .select("*")
-          .order("data_visita", { ascending: false })
-          .order("hora_visita", { ascending: true });
-        if (err2) throw err2;
-        return (fallback || []) as Visita[];
+      if (error) throw error;
+      const rows = (data || []) as Visita[];
+
+      // Fetch corretor names for all unique corretor_ids
+      const corretorIds = [...new Set(rows.map(r => r.corretor_id).filter(Boolean))];
+      if (corretorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", corretorIds);
+        
+        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.nome]));
+        rows.forEach(r => {
+          r.corretor_nome = nameMap.get(r.corretor_id) || undefined;
+        });
       }
-      // Map profile name into flat field
-      return (data || []).map((row: any) => ({
-        ...row,
-        corretor_nome: row.profiles?.nome || null,
-        profiles: undefined,
-      })) as Visita[];
+
+      return rows;
     },
     enabled: !!user,
   });
