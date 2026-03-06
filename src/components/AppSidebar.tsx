@@ -105,7 +105,6 @@ export function AppSidebar() {
   const ceoItems = isAdmin
     ? [
         { title: "Dashboard CEO", url: "/ceo", icon: Crown },
-        { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
         { title: "Recuperação de Leads", url: "/gestao", icon: LayoutDashboard },
         { title: "Inteligência Marketing", url: "/marketing", icon: BarChart3 },
         { title: "Auditoria & Saúde", url: "/auditoria", icon: Shield },
