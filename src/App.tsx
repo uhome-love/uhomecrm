@@ -36,6 +36,7 @@ const HomiAssistant = lazy(() => import("./pages/HomiAssistant"));
 const BuscaLeads = lazy(() => import("./pages/BuscaLeads"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const AgendaVisitas = lazy(() => import("./pages/AgendaVisitas"));
+const MeusNegocios = lazy(() => import("./pages/MeusNegocios"));
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => (
             <Route path="/corretor/resumo" element={<ProtectedPage><CorretorResumo /></ProtectedPage>} />
             <Route path="/corretor/ranking-equipes" element={<ProtectedPage><RankingEquipe /></ProtectedPage>} />
             <Route path="/homi" element={<ProtectedPage><HomiAssistant /></ProtectedPage>} />
+            <Route path="/meus-negocios" element={<ProtectedPage><MeusNegocios /></ProtectedPage>} />
 
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><BuscaLeads /></ProtectedPage>} />

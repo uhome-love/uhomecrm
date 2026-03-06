@@ -87,6 +87,7 @@ export function AppSidebar() {
     : [
         { title: "Central do Corretor", url: "/corretor", icon: Phone },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
+        { title: "Meus Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
         { title: "HOMI Assistente", url: "/homi", icon: Bot },
         { title: "Resumo Semanal", url: "/corretor/resumo", icon: BarChart3 },
         { title: "Ranking OA", url: "/corretor/ranking-equipes", icon: Trophy },
