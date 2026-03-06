@@ -289,12 +289,54 @@ export default function CeoCheckpointViewer() {
           {/* Drilldown per gerente */}
           <Tabs value={activeGerente} onValueChange={setActiveGerente} className="w-full">
             <TabsList className="flex flex-wrap h-auto gap-1">
+              <TabsTrigger value="consolidado" className="gap-1.5 text-xs py-2">
+                <TrendingUp className="h-3.5 w-3.5" /> Visão Consolidada
+              </TabsTrigger>
               {gerentesData.map(g => (
                 <TabsTrigger key={g.gerente_id} value={g.gerente_id} className="gap-1.5 text-xs py-2">
                   <Users className="h-3.5 w-3.5" /> {g.gerente_nome}
                 </TabsTrigger>
               ))}
             </TabsList>
+
+            {/* Consolidated tab — all teams summary */}
+            <TabsContent value="consolidado" className="mt-4">
+              <div className="space-y-4">
+                {gerentesData.map(g => {
+                  const st = cpStatusLabel(g.checkpoint_status);
+                  return (
+                    <div key={g.gerente_id} className="rounded-xl border border-border bg-card shadow-card p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Users className="h-4 w-4 text-primary" />
+                          <h4 className="font-display font-semibold text-sm">{g.gerente_nome}</h4>
+                          <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${st.cls}`}>{st.label}</span>
+                        </div>
+                        <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => setActiveGerente(g.gerente_id)}>
+                          <Eye className="h-3 w-3" /> Ver equipe
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {[
+                          { label: "Corretores", value: `${g.totals.presentes}/${g.totals.total}` },
+                          { label: "Ligações", value: `${g.totals.real_ligacoes}/${g.totals.meta_ligacoes}`, pct: pctVal(g.totals.real_ligacoes, g.totals.meta_ligacoes) },
+                          { label: "Aproveit.", value: `${g.totals.real_leads}/${g.totals.meta_leads}`, pct: pctVal(g.totals.real_leads, g.totals.meta_leads) },
+                          { label: "V. Marcadas", value: `${g.totals.real_visitas_marcadas}/${g.totals.meta_visitas_marcadas}`, pct: pctVal(g.totals.real_visitas_marcadas, g.totals.meta_visitas_marcadas) },
+                          { label: "V. Realizadas", value: String(g.totals.real_visitas_realizadas) },
+                          { label: "Propostas", value: String(g.totals.real_propostas) },
+                        ].map(c => (
+                          <div key={c.label} className="text-center">
+                            <p className="text-[10px] text-muted-foreground uppercase">{c.label}</p>
+                            <p className="text-sm font-bold text-foreground">{c.value}</p>
+                            {c.pct != null && <p className={`text-[10px] font-semibold ${pctColor(c.pct)}`}>{c.pct}%</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
 
             {gerentesData.map(g => (
               <TabsContent key={g.gerente_id} value={g.gerente_id} className="mt-4">
