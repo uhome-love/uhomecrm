@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 const homiMascot = "/images/homi-mascot-opt.png";
 
@@ -23,6 +24,7 @@ const HomiGreeting = lazy(() => import("@/components/HomiGreeting"));
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const { isAdmin, isGestor } = useUserRole();
+  const navigate = useNavigate();
   const [nome, setNome] = useState("");
   const cargo = isAdmin ? "CEO" : isGestor ? "Gerente" : "Corretor";
 
@@ -70,7 +72,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <p className="text-xs text-muted-foreground">{cargo}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-xs gap-2 cursor-pointer">
+                <DropdownMenuItem onClick={() => navigate("/configuracoes")} className="text-xs gap-2 cursor-pointer">
                   <Settings className="h-3.5 w-3.5" /> Configurações
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
