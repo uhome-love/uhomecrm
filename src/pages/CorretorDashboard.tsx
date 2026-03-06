@@ -338,6 +338,11 @@ export default function CorretorDashboard() {
                        </p>
                      </CollapsibleContent>
                    </Collapsible>
+
+                   {/* Achievements */}
+                   <div className="w-full mt-3 pt-3 border-t border-border">
+                     <AchievementsBadges progress={progress} streak={streak || 0} />
+                   </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -373,6 +378,11 @@ export default function CorretorDashboard() {
                 </Card>
               ))}
             </div>
+          </motion.div>
+
+          {/* Yesterday Comparison */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
+            <YesterdayComparison progress={progress} />
           </motion.div>
 
           {/* Scoring Legend */}
