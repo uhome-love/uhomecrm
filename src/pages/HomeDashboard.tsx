@@ -254,12 +254,12 @@ export default function HomeDashboard() {
     const oa_aproveitados = (oaTentativas || []).filter(t => t.resultado === "com_interesse").length;
 
     // Visitas marcadas from visitas table
-    const today = format(new Date(), "yyyy-MM-dd");
+    const todayStr = format(new Date(), "yyyy-MM-dd");
     let vmQuery = supabase
       .from("visitas")
       .select("id")
       .in("status", ["marcada", "confirmada", "realizada", "reagendada"])
-      .eq("data_visita", today);
+      .eq("data_visita", todayStr);
     if (!isAdmin) vmQuery = vmQuery.eq("gerente_id", user.id);
     const { data: vmData } = await vmQuery;
     const oa_visitas_marcadas = (vmData || []).length;
