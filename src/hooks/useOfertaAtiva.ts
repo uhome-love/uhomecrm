@@ -451,6 +451,37 @@ export function useOATemplates(empreendimento?: string) {
 }
 
 // ─── Import helper ───
+export interface LeadImportIndexes {
+  existingPhones: Set<string>;
+  existingEmails: Set<string>;
+}
+
+export async function fetchLeadImportIndexes(): Promise<LeadImportIndexes> {
+  const existingPhones = new Set<string>();
+  const existingEmails = new Set<string>();
+
+  let page = 0;
+  const PAGE_SIZE = 1000;
+  while (true) {
+    const { data: batch } = await supabase
+      .from("oferta_ativa_leads")
+      .select("telefone_normalizado, email")
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+    if (!batch || batch.length === 0) break;
+
+    for (const e of batch) {
+      if (e.telefone_normalizado) existingPhones.add(e.telefone_normalizado);
+      if (e.email) existingEmails.add(e.email.toLowerCase());
+    }
+
+    if (batch.length < PAGE_SIZE) break;
+    page++;
+  }
+
+  return { existingPhones, existingEmails };
+}
+
 export async function importLeadsToLista(
   listaId: string,
   empreendimento: string,
@@ -465,26 +496,11 @@ export async function importLeadsToLista(
     observacoes?: string;
     campanha?: string;
     origem?: string;
-  }>
+  }>,
+  indexes?: LeadImportIndexes
 ) {
-  // Fetch ALL existing normalized phones + emails for dedup (paginated to bypass 1000-row limit)
-  const existingPhones = new Set<string>();
-  const existingEmails = new Set<string>();
-  let page = 0;
-  const PAGE_SIZE = 1000;
-  while (true) {
-    const { data: batch } = await supabase
-      .from("oferta_ativa_leads")
-      .select("telefone_normalizado, email")
-      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-    if (!batch || batch.length === 0) break;
-    for (const e of batch) {
-      if (e.telefone_normalizado) existingPhones.add(e.telefone_normalizado);
-      if (e.email) existingEmails.add(e.email.toLowerCase());
-    }
-    if (batch.length < PAGE_SIZE) break;
-    page++;
-  }
+  // Reuse preloaded indexes when importing multiple lists in sequence
+  const { existingPhones, existingEmails } = indexes ?? await fetchLeadImportIndexes();
 
   const seenPhones = new Set<string>();
   const seenEmails = new Set<string>();
@@ -505,8 +521,8 @@ export async function importLeadsToLista(
       continue;
     }
 
-    if (normPhone) seenPhones.add(normPhone);
-    if (normEmail) seenEmails.add(normEmail);
+    if (normPhone) { seenPhones.add(normPhone); existingPhones.add(normPhone); }
+    if (normEmail) { seenEmails.add(normEmail); existingEmails.add(normEmail); }
 
     // Validate phone length (BR mobile)
     const isValidPhone = normPhone.length >= 10 && normPhone.length <= 11;
