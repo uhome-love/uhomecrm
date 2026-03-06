@@ -2,9 +2,9 @@ import { useState } from "react";
 import {
   MessageSquare, PhoneCall, RefreshCw, ShieldQuestion, Megaphone,
   Sparkles, Copy, ArrowLeft, MessageCircle, Clock, Users, FileEdit,
-  Send, Zap, CalendarDays, Target,
+  Send, Zap, CalendarDays, Target, BarChart3,
 } from "lucide-react";
-import HomiChat from "@/components/homi/HomiChat";
+import HomiGerencialChat from "@/components/homi/HomiGerencialChat";
 import HomiHistory from "@/components/homi/HomiHistory";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -102,101 +102,15 @@ ${contexto ? `Contexto adicional: ${contexto}` : ""}`;
 
     switch (acao) {
       case "gerar_script_time":
-        return `${base}
-Tipo de script: ${tipoScript}
-Objetivo: ${objetivo}
-
-Gere um script profissional para o time de corretores. Inclua:
-## 📞 Script Completo
-O script com abertura, desenvolvimento e fechamento.
-Use {nome} e {empreendimento} como variáveis.
-
-## 💬 Versão WhatsApp
-Versão curta para WhatsApp (max 4 linhas, natural, terminando com pergunta).
-
-## 🎯 Dica para o Gerente
-Uma orientação sobre como treinar o time a usar esse script.`;
-
+        return `${base}\nTipo de script: ${tipoScript}\nObjetivo: ${objetivo}\n\nGere um script profissional para o time de corretores. Inclua:\n## 📞 Script Completo\nO script com abertura, desenvolvimento e fechamento.\nUse {nome} e {empreendimento} como variáveis.\n\n## 💬 Versão WhatsApp\nVersão curta para WhatsApp (max 4 linhas, natural, terminando com pergunta).\n\n## 🎯 Dica para o Gerente\nUma orientação sobre como treinar o time a usar esse script.`;
       case "gerar_whatsapp":
-        return `${base}
-Tipo de mensagem: ${tipoWhatsapp}
-Objetivo: ${objetivo}
-
-Gere mensagens de WhatsApp para o time usar. Inclua:
-## 💬 Mensagem Principal
-Versão natural, max 3-4 linhas, terminando com pergunta estratégica.
-
-## 🔄 Variação 1
-Outra versão com abordagem diferente.
-
-## 🔄 Variação 2
-Terceira versão mais direta.
-
-## 📋 Orientação para o Time
-Como e quando usar cada versão.`;
-
+        return `${base}\nTipo de mensagem: ${tipoWhatsapp}\nObjetivo: ${objetivo}\n\nGere mensagens de WhatsApp para o time usar. Inclua:\n## 💬 Mensagem Principal\nVersão natural, max 3-4 linhas, terminando com pergunta estratégica.\n\n## 🔄 Variação 1\nOutra versão com abordagem diferente.\n\n## 🔄 Variação 2\nTerceira versão mais direta.\n\n## 📋 Orientação para o Time\nComo e quando usar cada versão.`;
       case "quebrar_objecao":
-        return `${base}
-Objeção: ${tipoObjecao}
-
-Gere material de quebra de objeção para o time. Inclua:
-## 🧠 Análise da Objeção
-Por que o cliente diz isso e o que significa.
-
-## ✅ Resposta Principal
-A melhor forma de contornar.
-
-## 💬 Versão WhatsApp
-Resposta natural para WhatsApp.
-
-## 📞 Versão Ligação
-Roteiro para usar na ligação.
-
-## 🔄 Respostas Alternativas
-2-3 variações de resposta.
-
-## 🎯 Dica para o Gerente
-Como treinar o time nessa objeção.`;
-
+        return `${base}\nObjeção: ${tipoObjecao}\n\nGere material de quebra de objeção para o time. Inclua:\n## 🧠 Análise da Objeção\nPor que o cliente diz isso e o que significa.\n\n## ✅ Resposta Principal\nA melhor forma de contornar.\n\n## 💬 Versão WhatsApp\nResposta natural para WhatsApp.\n\n## 📞 Versão Ligação\nRoteiro para usar na ligação.\n\n## 🔄 Respostas Alternativas\n2-3 variações de resposta.\n\n## 🎯 Dica para o Gerente\nComo treinar o time nessa objeção.`;
       case "comunicacao_time":
-        return `${base}
-Objetivo: ${objetivo}
-${tipoScript ? `Tipo: ${tipoScript}` : ""}
-
-Gere uma comunicação para o gerente enviar ao time. Inclua:
-## 📢 Mensagem para o Time
-Texto motivacional e operacional.
-
-## 📋 Script do Dia
-O roteiro de abordagem principal.
-
-## 🎯 Foco do Dia
-O que priorizar nas ligações/contatos.
-
-## 💡 Dica Rápida
-Uma técnica ou insight para melhorar conversão.`;
-
+        return `${base}\nObjetivo: ${objetivo}\n${tipoScript ? `Tipo: ${tipoScript}` : ""}\n\nGere uma comunicação para o gerente enviar ao time. Inclua:\n## 📢 Mensagem para o Time\nTexto motivacional e operacional.\n\n## 📋 Script do Dia\nO roteiro de abordagem principal.\n\n## 🎯 Foco do Dia\nO que priorizar nas ligações/contatos.\n\n## 💡 Dica Rápida\nUma técnica ou insight para melhorar conversão.`;
       case "preparar_campanha":
-        return `${base}
-Campanha: ${campanha || "Campanha geral"}
-Objetivo: ${objetivo}
-
-Prepare material completo de campanha. Inclua:
-## 📋 Script de Ligação
-Roteiro completo para campanha.
-
-## 💬 Sequência de WhatsApp
-3 mensagens em sequência (dia 1, dia 3, dia 7).
-
-## 🎯 Argumentos-Chave
-Top 5 argumentos de venda para essa campanha.
-
-## ⚡ Gatilhos de Urgência
-Frases e técnicas de urgência.
-
-## 📊 Dica de Gestão
-Como o gerente deve orientar o time.`;
-
+        return `${base}\nCampanha: ${campanha || "Campanha geral"}\nObjetivo: ${objetivo}\n\nPrepare material completo de campanha. Inclua:\n## 📋 Script de Ligação\nRoteiro completo para campanha.\n\n## 💬 Sequência de WhatsApp\n3 mensagens em sequência (dia 1, dia 3, dia 7).\n\n## 🎯 Argumentos-Chave\nTop 5 argumentos de venda para essa campanha.\n\n## ⚡ Gatilhos de Urgência\nFrases e técnicas de urgência.\n\n## 📊 Dica de Gestão\nComo o gerente deve orientar o time.`;
       default:
         return base;
     }
@@ -211,35 +125,25 @@ Como o gerente deve orientar o time.`;
 
     const { data, error } = await supabase.functions.invoke("homi-assistant", {
       body: {
-        acao: acao,
-        empreendimento: empreendimento || "Geral",
+        acao, empreendimento: empreendimento || "Geral",
         situacao: tipoScript || tipoObjecao || tipoWhatsapp || "Gestão",
-        mensagem_cliente: contexto,
-        objetivo: objetivo || "Apoiar o time",
+        mensagem_cliente: contexto, objetivo: objetivo || "Apoiar o time",
         role: "gerente",
       },
     });
 
     if (error) {
       toast.error("Erro ao gerar resposta");
-      console.error(error);
       setStep("form");
     } else {
       const content = data?.content || "Sem resposta.";
       setResultado(content);
-
       if (user) {
         const titulo = `[Gerente] ${ACOES.find(a => a.id === acao)?.label} · ${empreendimento || "Geral"}`;
         supabase.from("homi_conversations").insert({
-          user_id: user.id,
-          tipo: "acao",
-          acao: acao,
-          empreendimento: empreendimento || null,
-          situacao: tipoScript || tipoObjecao || tipoWhatsapp || null,
-          objetivo,
-          titulo,
-          resultado: content,
-        } as any).then(({ error: e }) => { if (e) console.error(e); });
+          user_id: user.id, tipo: "acao", acao, empreendimento: empreendimento || null,
+          situacao: tipoScript || tipoObjecao || tipoWhatsapp || null, objetivo, titulo, resultado: content,
+        } as any);
       }
     }
     setGenerating(false);
@@ -247,27 +151,13 @@ Como o gerente deve orientar o time.`;
 
   const saveAsTeamScript = async () => {
     if (!user || !resultado) return;
-    // Extract main script text from the result
-    const scriptText = resultado;
     const titulo = `${ACOES.find(a => a.id === acao)?.label} - ${empreendimento || "Geral"}`;
-
     const { error } = await supabase.from("team_scripts").insert({
-      gerente_id: user.id,
-      titulo,
-      empreendimento: empreendimento || "Geral",
-      campanha: campanha || null,
-      script_ligacao: scriptText,
-      script_whatsapp: null,
-      script_email: null,
-      ativo: true,
+      gerente_id: user.id, titulo, empreendimento: empreendimento || "Geral",
+      campanha: campanha || null, script_ligacao: resultado, ativo: true,
     } as any);
-
-    if (error) {
-      toast.error("Erro ao salvar: " + error.message);
-    } else {
-      toast.success("✅ Script publicado para o time!");
-      queryClient.invalidateQueries({ queryKey: ["team-scripts"] });
-    }
+    if (error) toast.error("Erro ao salvar: " + error.message);
+    else { toast.success("✅ Script publicado para o time!"); queryClient.invalidateQueries({ queryKey: ["team-scripts"] }); }
   };
 
   const copyAll = () => { navigator.clipboard.writeText(resultado); toast.success("Tudo copiado!"); };
@@ -291,100 +181,54 @@ Como o gerente deve orientar o time.`;
       case "gerar_script_time":
         return (
           <>
-            <FormField label="Empreendimento *">
-              <SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Tipo de script *">
-              <SelectField value={tipoScript} onChange={setTipoScript} items={TIPO_SCRIPT} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Objetivo *">
-              <SelectField value={objetivo} onChange={setObjetivo} items={OBJETIVOS_GERENTE} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Campanha (opcional)">
-              <Input value={campanha} onChange={e => setCampanha(e.target.value)} placeholder="Ex: Melnick Day, Meta Ads Março" className="text-sm" />
-            </FormField>
-            <FormField label="Contexto adicional (opcional)">
-              <Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder="Detalhes extras..." className="text-sm" />
-            </FormField>
+            <FormField label="Empreendimento *"><SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Selecione..." /></FormField>
+            <FormField label="Tipo de script *"><SelectField value={tipoScript} onChange={setTipoScript} items={TIPO_SCRIPT} placeholder="Selecione..." /></FormField>
+            <FormField label="Objetivo *"><SelectField value={objetivo} onChange={setObjetivo} items={OBJETIVOS_GERENTE} placeholder="Selecione..." /></FormField>
+            <FormField label="Campanha (opcional)"><Input value={campanha} onChange={e => setCampanha(e.target.value)} placeholder="Ex: Melnick Day, Meta Ads Março" className="text-sm" /></FormField>
+            <FormField label="Contexto adicional (opcional)"><Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder="Detalhes extras..." className="text-sm" /></FormField>
           </>
         );
-
       case "gerar_whatsapp":
         return (
           <>
-            <FormField label="Empreendimento *">
-              <SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Tipo de mensagem *">
-              <SelectField value={tipoWhatsapp} onChange={setTipoWhatsapp} items={TIPOS_WHATSAPP} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Objetivo *">
-              <SelectField value={objetivo} onChange={setObjetivo} items={OBJETIVOS_GERENTE} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Contexto (opcional)">
-              <Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder="Detalhes extras..." className="text-sm" />
-            </FormField>
+            <FormField label="Empreendimento *"><SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Selecione..." /></FormField>
+            <FormField label="Tipo de mensagem *"><SelectField value={tipoWhatsapp} onChange={setTipoWhatsapp} items={TIPOS_WHATSAPP} placeholder="Selecione..." /></FormField>
+            <FormField label="Objetivo *"><SelectField value={objetivo} onChange={setObjetivo} items={OBJETIVOS_GERENTE} placeholder="Selecione..." /></FormField>
+            <FormField label="Contexto (opcional)"><Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder="Detalhes extras..." className="text-sm" /></FormField>
           </>
         );
-
       case "quebrar_objecao":
         return (
           <>
-            <FormField label="Empreendimento *">
-              <SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Tipo de objeção *">
-              <SelectField value={tipoObjecao} onChange={setTipoObjecao} items={TIPOS_OBJECAO} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Contexto (opcional)">
-              <Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder='Ex: "Cliente comparou com o empreendimento X"' className="text-sm" />
-            </FormField>
+            <FormField label="Empreendimento *"><SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Selecione..." /></FormField>
+            <FormField label="Tipo de objeção *"><SelectField value={tipoObjecao} onChange={setTipoObjecao} items={TIPOS_OBJECAO} placeholder="Selecione..." /></FormField>
+            <FormField label="Contexto (opcional)"><Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder='Ex: "Cliente comparou com o empreendimento X"' className="text-sm" /></FormField>
           </>
         );
-
       case "comunicacao_time":
         return (
           <>
-            <FormField label="Empreendimento (opcional)">
-              <SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Geral" />
-            </FormField>
-            <FormField label="Tipo">
-              <SelectField value={tipoScript} onChange={setTipoScript} items={["Script do dia", "Texto de evento", "Abordagem de campanha", "Motivacional"]} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Objetivo *">
-              <SelectField value={objetivo} onChange={setObjetivo} items={OBJETIVOS_GERENTE} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Contexto (opcional)">
-              <Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder="Detalhes..." className="text-sm" />
-            </FormField>
+            <FormField label="Empreendimento (opcional)"><SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Geral" /></FormField>
+            <FormField label="Tipo"><SelectField value={tipoScript} onChange={setTipoScript} items={["Script do dia", "Texto de evento", "Abordagem de campanha", "Motivacional"]} placeholder="Selecione..." /></FormField>
+            <FormField label="Objetivo *"><SelectField value={objetivo} onChange={setObjetivo} items={OBJETIVOS_GERENTE} placeholder="Selecione..." /></FormField>
+            <FormField label="Contexto (opcional)"><Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder="Detalhes..." className="text-sm" /></FormField>
           </>
         );
-
       case "preparar_campanha":
         return (
           <>
-            <FormField label="Empreendimento *">
-              <SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Nome da campanha *">
-              <Input value={campanha} onChange={e => setCampanha(e.target.value)} placeholder="Ex: Melnick Day 2026" className="text-sm" />
-            </FormField>
-            <FormField label="Objetivo *">
-              <SelectField value={objetivo} onChange={setObjetivo} items={OBJETIVOS_GERENTE} placeholder="Selecione..." />
-            </FormField>
-            <FormField label="Contexto (opcional)">
-              <Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder="Detalhes da campanha..." className="text-sm" />
-            </FormField>
+            <FormField label="Empreendimento *"><SelectField value={empreendimento} onChange={setEmpreendimento} items={EMPREENDIMENTOS} placeholder="Selecione..." /></FormField>
+            <FormField label="Nome da campanha *"><Input value={campanha} onChange={e => setCampanha(e.target.value)} placeholder="Ex: Melnick Day 2026" className="text-sm" /></FormField>
+            <FormField label="Objetivo *"><SelectField value={objetivo} onChange={setObjetivo} items={OBJETIVOS_GERENTE} placeholder="Selecione..." /></FormField>
+            <FormField label="Contexto (opcional)"><Textarea value={contexto} onChange={e => setContexto(e.target.value)} rows={2} placeholder="Detalhes da campanha..." className="text-sm" /></FormField>
           </>
         );
-
-      default:
-        return null;
+      default: return null;
     }
   };
 
   return (
-    <div className={`max-w-2xl mx-auto ${step === "chat" ? "" : "px-4 py-6"}`}>
+    <div className={`max-w-3xl mx-auto ${step === "chat" ? "" : "px-4 py-6"}`}>
       <AnimatePresence mode="wait">
         {step === "home" && (
           <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
@@ -393,15 +237,32 @@ Como o gerente deve orientar o time.`;
                 <img src={homiMascot} alt="HOMI" className="h-20 w-20 mx-auto rounded-2xl shadow-lg" />
               </motion.div>
               <h1 className="font-display text-2xl font-bold text-foreground mb-1">HOMI Gerencial</h1>
-              <p className="text-sm text-muted-foreground">Crie materiais e scripts para apoiar seu time</p>
+              <p className="text-sm text-muted-foreground">Assistente de gestão com dados reais do seu time</p>
               <Badge variant="secondary" className="mt-2 gap-1 text-xs">
                 <Users className="h-3 w-3" /> Visão do Gerente
               </Badge>
             </div>
 
+            {/* Chat com Dados Reais - Main CTA */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6">
+              <button onClick={() => setStep("chat")}
+                className="w-full flex items-center gap-4 p-5 rounded-xl border-2 border-primary/30 bg-primary/5 hover:border-primary/60 hover:bg-primary/10 hover:shadow-lg transition-all duration-200 group text-left">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
+                  <BarChart3 className="h-6 w-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-base text-foreground">Chat Inteligente</p>
+                  <p className="text-xs text-muted-foreground">Analise PDN, checkpoint, visitas, oferta ativa — com dados reais do sistema</p>
+                </div>
+                <Badge className="shrink-0 bg-primary/20 text-primary border-0 text-[10px]">NOVO</Badge>
+              </button>
+            </motion.div>
+
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Criar Materiais</p>
+
             <div className="grid grid-cols-1 gap-3">
               {ACOES.map((a, i) => (
-                <motion.div key={a.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07, duration: 0.3 }}>
+                <motion.div key={a.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.07, duration: 0.3 }}>
                   <button onClick={() => selectAcao(a.id)}
                     className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-md hover:bg-primary/5 transition-all duration-200 group text-left">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200">
@@ -416,20 +277,8 @@ Como o gerente deve orientar o time.`;
               ))}
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: ACOES.length * 0.07, duration: 0.3 }}>
-                <button onClick={() => setStep("chat")}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 hover:border-primary/60 hover:shadow-md hover:bg-primary/10 transition-all duration-200 group text-left">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                    <MessageCircle className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-foreground">Chat Livre</p>
-                    <p className="text-[11px] text-muted-foreground">Converse com o HOMI</p>
-                  </div>
-                </button>
-              </motion.div>
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: ACOES.length * 0.07 + 0.05, duration: 0.3 }}>
+            <div className="mt-4">
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5, duration: 0.3 }}>
                 <button onClick={() => setStep("history")}
                   className="w-full flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-md hover:bg-primary/5 transition-all duration-200 group text-left">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary">
@@ -447,7 +296,7 @@ Como o gerente deve orientar o time.`;
 
         {step === "chat" && (
           <motion.div key="chat" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.3 }} className="h-full">
-            <HomiChat onBack={reset} />
+            <HomiGerencialChat />
           </motion.div>
         )}
 

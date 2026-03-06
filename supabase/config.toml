@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.homi-chat]
 verify_jwt = false
+
+[functions.homi-gerencial]
+verify_jwt = false
