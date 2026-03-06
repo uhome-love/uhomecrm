@@ -339,7 +339,7 @@ export default function CorretorDashboard() {
                 { label: "Ligações", value: progress.ligacoes, icon: Phone, color: "text-emerald-600", bgColor: "bg-emerald-500/10" },
                 { label: "WhatsApps", value: progress.whatsapps, icon: MessageCircle, color: "text-green-600", bgColor: "bg-green-500/10" },
                 { label: "E-mails", value: progress.emails, icon: Mail, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-                { label: "Visitas Marcadas", value: `${progress.visitasMarcadas}/${progress.metaVisitas}`, icon: CalendarCheck, color: "text-amber-600", bgColor: "bg-amber-500/10" },
+                { label: "Visitas Marcadas", value: progress.visitasMarcadas, icon: CalendarCheck, color: "text-amber-600", bgColor: "bg-amber-500/10" },
                 { label: "Taxa Aprov.", value: `${progress.taxaAproveitamento}%`, icon: TrendingUp, color: "text-primary", bgColor: "bg-primary/10" },
               ].map((item) => (
                 <Card key={item.label} className="overflow-hidden">
