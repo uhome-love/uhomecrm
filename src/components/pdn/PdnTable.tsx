@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { type PdnEntry, type PdnSituacao } from "@/hooks/usePdn";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, ArrowRightLeft } from "lucide-react";
+import { Trash2, Plus, ArrowRightLeft, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface Props {
   entries: PdnEntry[];
@@ -39,14 +40,24 @@ function Cell({ value, field, id, onUpdate, className, placeholder }: {
   className?: string; placeholder?: string;
 }) {
   const [local, setLocal] = useState(value);
+  const isDirty = local !== value;
   useEffect(() => { setLocal(value); }, [value]);
+  const save = () => { if (isDirty) { onUpdate(id, { [field]: local }); toast.success("Salvo!"); } };
   return (
-    <Input
-      className={`h-7 text-xs border-0 bg-transparent px-1 focus-visible:ring-1 focus-visible:bg-background ${className || ""}`}
-      value={local} placeholder={placeholder}
-      onChange={e => setLocal(e.target.value)}
-      onBlur={() => { if (local !== value) onUpdate(id, { [field]: local }); }}
-    />
+    <div className="relative flex items-center gap-0.5">
+      <Input
+        className={`h-7 text-xs border-0 bg-transparent px-1 focus-visible:ring-1 focus-visible:bg-background ${isDirty ? "ring-1 ring-primary/50 bg-primary/5" : ""} ${className || ""}`}
+        value={local} placeholder={placeholder}
+        onChange={e => setLocal(e.target.value)}
+        onBlur={save}
+        onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
+      />
+      {isDirty && (
+        <button type="button" onMouseDown={e => e.preventDefault()} onClick={save} className="shrink-0 h-5 w-5 flex items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/80" title="Salvar">
+          <Check className="h-3 w-3" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -56,14 +67,23 @@ function TextCell({ value, field, id, onUpdate, placeholder }: {
   placeholder?: string;
 }) {
   const [local, setLocal] = useState(value);
+  const isDirty = local !== value;
   useEffect(() => { setLocal(value); }, [value]);
+  const save = () => { if (isDirty) { onUpdate(id, { [field]: local }); toast.success("Salvo!"); } };
   return (
-    <Textarea
-      className="min-h-[32px] h-8 text-xs border-0 bg-transparent px-1 py-1 resize-none focus-visible:ring-1 focus-visible:bg-background focus-visible:min-h-[80px] transition-all"
-      value={local} placeholder={placeholder}
-      onChange={e => setLocal(e.target.value)}
-      onBlur={() => { if (local !== value) onUpdate(id, { [field]: local }); }}
-    />
+    <div className="relative">
+      <Textarea
+        className={`min-h-[32px] h-8 text-xs border-0 bg-transparent px-1 py-1 resize-none focus-visible:ring-1 focus-visible:bg-background focus-visible:min-h-[80px] transition-all ${isDirty ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}
+        value={local} placeholder={placeholder}
+        onChange={e => setLocal(e.target.value)}
+        onBlur={save}
+      />
+      {isDirty && (
+        <button type="button" onMouseDown={e => e.preventDefault()} onClick={save} className="absolute top-0.5 right-0.5 h-5 w-5 flex items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/80 z-10" title="Salvar">
+          <Check className="h-3 w-3" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -79,7 +99,6 @@ function formatNumber(v: number | null) {
 
 function parseFormattedNumber(s: string): number | null {
   if (!s.trim()) return null;
-  // Remove dots (thousand sep) and replace comma with dot (decimal sep)
   const cleaned = s.replace(/\./g, "").replace(",", ".");
   const n = Number(cleaned);
   return isNaN(n) ? null : n;
@@ -90,30 +109,39 @@ function CurrencyCell({ value, field, id, onUpdate }: {
   onUpdate: (id: string, u: Record<string, any>) => void;
 }) {
   const [local, setLocal] = useState(formatNumber(value));
+  const isDirty = parseFormattedNumber(local) !== value;
   useEffect(() => { setLocal(formatNumber(value)); }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow only digits, dots and commas
     const raw = e.target.value.replace(/[^\d.,]/g, "");
     setLocal(raw);
   };
 
-  const handleBlur = () => {
+  const save = () => {
     const parsed = parseFormattedNumber(local);
     if (parsed !== value) {
       onUpdate(id, { [field]: parsed });
+      toast.success("Salvo!");
     }
     setLocal(formatNumber(parsed));
   };
 
   return (
-    <Input
-      className="h-7 text-xs border-0 bg-transparent px-1 text-right focus-visible:ring-1 focus-visible:bg-background"
-      value={local}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      placeholder="0"
-    />
+    <div className="relative flex items-center gap-0.5">
+      <Input
+        className={`h-7 text-xs border-0 bg-transparent px-1 text-right focus-visible:ring-1 focus-visible:bg-background ${isDirty ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}
+        value={local}
+        onChange={handleChange}
+        onBlur={save}
+        onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
+        placeholder="0"
+      />
+      {isDirty && (
+        <button type="button" onMouseDown={e => e.preventDefault()} onClick={save} className="shrink-0 h-5 w-5 flex items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/80" title="Salvar">
+          <Check className="h-3 w-3" />
+        </button>
+      )}
+    </div>
   );
 }
 
