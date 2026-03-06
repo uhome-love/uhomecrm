@@ -9,7 +9,7 @@ import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 
 const ACAO_ICONS: Record<string, typeof MessageSquare> = {
   responder_whatsapp: MessageSquare,

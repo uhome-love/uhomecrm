@@ -1,7 +1,7 @@
 import { useState, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Bot } from "lucide-react";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";

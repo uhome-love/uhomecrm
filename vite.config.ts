@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -30,6 +31,20 @@ export default defineConfig(({ mode }) => ({
           'vendor-charts': ['recharts'],
           'vendor-date': ['date-fns'],
           'vendor-spreadsheet': ['papaparse', 'xlsx'],
+          'vendor-radix': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-select',
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-collapsible',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slot',
+          ],
+          'vendor-markdown': ['react-markdown'],
         },
       },
     },

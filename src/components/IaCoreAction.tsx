@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUhomeIa } from "@/hooks/useUhomeIa";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 
 interface IaCoreActionProps {
   module: string;

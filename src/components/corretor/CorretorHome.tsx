@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCorretorDailyStats, useCorretorDailyGoals, useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 
 export default function CorretorHome() {
   const { stats } = useCorretorDailyStats();

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardCheck, BarChart3, CheckSquare, Bell, AlertTriangle, CheckCircle } from "lucide-react";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 import CheckpointDaily from "@/components/checkpoint/CheckpointDaily";
 import CheckpointReports from "@/components/checkpoint/CheckpointReports";
 import CoachPanel from "@/components/checkpoint/CoachPanel";

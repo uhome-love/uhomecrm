@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, Trophy, FileText, AlertTriangle, TrendingUp, CheckCircle, Phone } from "lucide-react";
-import homiMascot from "@/assets/homi-mascot.png";
+const homiMascot = "/images/homi-mascot-opt.png";
 import CeoOverview from "@/components/ceo/CeoOverview";
 import CeoRankings from "@/components/ceo/CeoRankings";
 import CeoReports from "@/components/ceo/CeoReports";
