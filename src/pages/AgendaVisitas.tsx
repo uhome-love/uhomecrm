@@ -17,7 +17,7 @@ export default function AgendaVisitas() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { visitas, isLoading, createVisita, updateStatus } = useVisitas();
+  const { visitas, isLoading, createVisita, updateStatus, deleteVisita } = useVisitas();
 
   const filtered = useMemo(() => {
     let list = visitas;
@@ -114,6 +114,7 @@ export default function AgendaVisitas() {
             <VisitasList
               visitas={filtered}
               onUpdateStatus={updateStatus}
+              onDelete={deleteVisita}
               showCorretor={isAdmin || isGestor}
             />
           )}
