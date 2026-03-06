@@ -311,9 +311,9 @@ export default function HomeDashboard() {
             <SectionHeader icon={TrendingUp} title="Funil Comercial" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 p-4">
               <MetricCard label="Ligações OA" value={cpStats.oa_ligacoes} sub={period !== "dia" ? `Checkpoint: ${companyTotals.real_ligacoes}` : undefined} />
-              <MetricCard label="Vis. Marcadas" value={companyTotals.real_visitas_marcadas} meta={companyTotals.meta_visitas_marcadas} />
-              <MetricCard label="Vis. Realizadas" value={companyTotals.real_visitas_realizadas} meta={companyTotals.meta_visitas_realizadas} />
-              <MetricCard label="Propostas (PDN)" value={pdnStats.total_gerados} />
+              <MetricCard label="Vis. Marcadas" value={cpStats.oa_visitas_marcadas} />
+              <MetricCard label="Vis. Realizadas" value={pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: gerado + assinado" />
+              <MetricCard label="Propostas (PDN)" value={pdnStats.total_gerados + pdnStats.total_assinados} />
               <MetricCard label="VGV Gerado" value={`R$ ${(pdnStats.vgv_gerado / 1000).toFixed(0)}k`} />
               <MetricCard label="VGV Assinado" value={`R$ ${(pdnStats.vgv_assinado / 1000).toFixed(0)}k`} highlight />
               <MetricCard label="Atingimento" value={`${pct(pdnStats.vgv_assinado, companyTotals.meta_vgv_assinado)}%`} highlight />
