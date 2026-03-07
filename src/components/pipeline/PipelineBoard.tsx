@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import PipelineCard from "./PipelineCard";
+import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlertTriangle, Clock, TrendingUp } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
@@ -261,18 +262,19 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     </div>
                   )}
                   {stageLeads.map((lead) => (
-                    <PipelineCard
-                      key={lead.id}
-                      lead={lead}
-                      stage={stage}
-                      segmentos={segmentos}
-                      corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
-                      gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
-                      parceiroNome={parcerias[lead.id]}
-                      onDragStart={() => handleDragStart(lead.id)}
-                      onClick={() => onSelectLead(lead)}
-                      onTransferred={onTransferred}
-                    />
+                    <PipelineCardHover key={lead.id} lead={lead} onOpenLead={() => onSelectLead(lead)}>
+                      <PipelineCard
+                        lead={lead}
+                        stage={stage}
+                        segmentos={segmentos}
+                        corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                        gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
+                        parceiroNome={parcerias[lead.id]}
+                        onDragStart={() => handleDragStart(lead.id)}
+                        onClick={() => onSelectLead(lead)}
+                        onTransferred={onTransferred}
+                      />
+                    </PipelineCardHover>
                   ))}
                 </div>
               </div>
