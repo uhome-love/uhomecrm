@@ -8,11 +8,12 @@ import ForecastPonderadoPanel from "@/components/pipeline/ForecastPonderadoPanel
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal, Briefcase } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal, Briefcase, AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { differenceInDays } from "date-fns";
 
 export default function MeusNegocios() {
   const pipeline = usePipeline("negocios");
@@ -22,6 +23,7 @@ export default function MeusNegocios() {
   const [filterCorretor, setFilterCorretor] = useState<string>("all");
   const [filterCampanha, setFilterCampanha] = useState<string>("all");
   const [filterTemperatura, setFilterTemperatura] = useState<string>("all");
+  const [filterParados7d, setFilterParados7d] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [parcerias, setParcerias] = useState<Record<string, string>>({});
   const [refreshing, setRefreshing] = useState(false);
@@ -102,6 +104,10 @@ export default function MeusNegocios() {
     if (filterCorretor !== "all") result = result.filter(l => l.corretor_id === filterCorretor);
     if (filterCampanha !== "all") result = result.filter(l => l.empreendimento === filterCampanha);
     if (filterTemperatura !== "all") result = result.filter(l => (l.temperatura || "morno") === filterTemperatura);
+    if (filterParados7d) {
+      result = result.filter(l => differenceInDays(new Date(), new Date(l.stage_changed_at)) >= 7);
+      result.sort((a, b) => new Date(a.stage_changed_at).getTime() - new Date(b.stage_changed_at).getTime());
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(l =>
@@ -112,14 +118,19 @@ export default function MeusNegocios() {
       );
     }
     return result;
-  }, [pipeline.leads, filterCorretor, filterCampanha, filterTemperatura, searchQuery]);
+  }, [pipeline.leads, filterCorretor, filterCampanha, filterTemperatura, filterParados7d, searchQuery]);
 
   const totalVGV = useMemo(() =>
     filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
     [filteredLeads]
   );
 
-  const activeFiltersCount = (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (filterTemperatura !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
+  const activeFiltersCount = (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (filterTemperatura !== "all" ? 1 : 0) + (searchQuery ? 1 : 0) + (filterParados7d ? 1 : 0);
+
+  const stalledCount7d = useMemo(() =>
+    pipeline.leads.filter(l => differenceInDays(new Date(), new Date(l.stage_changed_at)) >= 7).length,
+    [pipeline.leads]
+  );
 
   const formatVGV = (value: number) => {
     if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
@@ -137,6 +148,7 @@ export default function MeusNegocios() {
     setFilterCorretor("all");
     setFilterCampanha("all");
     setFilterTemperatura("all");
+    setFilterParados7d(false);
     setSearchQuery("");
   };
 
