@@ -59,3 +59,9 @@ verify_jwt = false
 
 [functions.jetimob-sync]
 verify_jwt = false
+
+[functions.generate-vapid]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
