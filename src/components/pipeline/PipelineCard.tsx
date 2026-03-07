@@ -4,6 +4,7 @@ import { Phone, Mail, Clock, MapPin, MessageCircle, Eye, Hourglass, Calendar } f
 import { differenceInHours, differenceInDays, differenceInMinutes } from "date-fns";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import PipelineQuickTransfer from "./PipelineQuickTransfer";
 
 interface PipelineCardProps {
   lead: PipelineLead;
@@ -11,6 +12,7 @@ interface PipelineCardProps {
   corretorNome?: string;
   onDragStart: () => void;
   onClick: () => void;
+  onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
 }
 
 function getActivityInfo(stageChangedAt: string) {
@@ -64,7 +66,7 @@ const activityStyles = {
   danger: { dot: "bg-destructive", bg: "bg-destructive/10", text: "text-destructive", border: "border-destructive/30" },
 };
 
-const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome, onDragStart, onClick }: PipelineCardProps) {
+const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome, onDragStart, onClick, onTransferred }: PipelineCardProps) {
   const [hovered, setHovered] = useState(false);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
   const activity = getActivityInfo(lead.stage_changed_at);
