@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import DailyProgressCard from "@/components/corretor/DailyProgressCard";
-import AcoesAgora from "@/components/corretor/AcoesAgora";
+
 import AchievementsBadges from "@/components/corretor/AchievementsBadges";
 import FollowUpsDoDia from "@/components/corretor/FollowUpsDoDia";
 import VisitasHojeCard from "@/components/corretor/VisitasHojeCard";
