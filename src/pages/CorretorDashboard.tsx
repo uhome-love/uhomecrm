@@ -87,6 +87,9 @@ export default function CorretorDashboard() {
   const motivation = useDailyMotivation();
   const { user } = useAuth();
 
+  const { missoes, missaoGeral, radarLeads, radarLoading, ranking, rankingLoading, userId } = useMissoesLeads();
+  const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading } = useCorretorHomeData();
+
   const [activeTab, setActiveTab] = useState("central");
   const [nome, setNome] = useState("");
   const [finalizando, setFinalizando] = useState(false);
