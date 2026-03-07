@@ -107,7 +107,6 @@ export function AppSidebar() {
     : isGestor
     ? [
         { title: "Pipeline", url: "/pipeline", icon: Kanban },
-        { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
         { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
         { title: "Escala Diária", url: "/escala-diaria", icon: CalendarDays },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
