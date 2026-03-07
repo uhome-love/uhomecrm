@@ -58,6 +58,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    // If no corretor available, notify all gestores
+    if (data && !data.success && data.reason === "no_corretor_available") {
+      const { data: gestores } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["gestor", "admin"]);
+      
+      if (gestores) {
+        for (const g of gestores) {
+          await supabase.rpc("criar_notificacao", {
+            p_user_id: g.user_id,
+            p_tipo: "alertas",
+            p_categoria: "lead_sem_atendimento",
+            p_titulo: "⚠️ Lead sem corretor disponível",
+            p_mensagem: `Nenhum corretor disponível para o segmento. Lead aguardando distribuição.`,
+            p_dados: { pipeline_lead_id, segmento_id: data.segmento_id },
+            p_agrupamento_key: "lead_sem_atendimento",
+          });
+        }
+      }
+    }
+
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
