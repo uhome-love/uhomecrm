@@ -54,8 +54,9 @@ export default function SaudeOperacao() {
     // 4. Negócios parados no PDN (>10 dias sem atualização, exceto assinado/caiu)
     const { data: pdnAtivos } = await supabase
       .from("pdn_entries")
-      .select("updated_at")
-      .not("situacao", "in", '("assinado","caiu")');
+      .select("updated_at, situacao")
+      .neq("situacao", "assinado")
+      .neq("situacao", "caiu");
     const now = new Date();
     const parados = (pdnAtivos || []).filter(p => differenceInDays(now, new Date(p.updated_at)) > 10).length;
     const paradosNivel: Nivel = parados === 0 ? "bom" : parados <= 3 ? "atencao" : "critico";
@@ -67,7 +68,7 @@ export default function SaudeOperacao() {
     const presNivel: Nivel = pctPresenca > 90 ? "bom" : pctPresenca >= 70 ? "atencao" : "critico";
 
     // 6. Leads na fila (sem corretor)
-    const { count: naFila } = await supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).is("corretor_id", null).not("etapa", "in", '("perdido","venda")');
+    const { count: naFila } = await supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).is("corretor_id", null).neq("etapa", "perdido").neq("etapa", "venda");
     const filaNivel: Nivel = (naFila || 0) === 0 ? "bom" : (naFila || 0) <= 5 ? "atencao" : "critico";
 
     setIndicadores([
