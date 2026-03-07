@@ -222,6 +222,30 @@ export default function PipelineKanban() {
               </SelectContent>
             </Select>
 
+            <Select value={filterCorretor} onValueChange={setFilterCorretor}>
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Corretor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos corretores</SelectItem>
+                {corretorList.map(([id, nome]) => (
+                  <SelectItem key={id} value={id}>{nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterCampanha} onValueChange={setFilterCampanha}>
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Campanha" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas campanhas</SelectItem>
+                {campanhas.map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-8 text-primary">
                 Limpar filtros
