@@ -11,14 +11,19 @@ import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
 import PipelinePrioridades from "@/components/pipeline/PipelinePrioridades";
 import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashboard";
 import ForecastPonderadoPanel from "@/components/pipeline/ForecastPonderadoPanel";
+import PipelineAdvancedFilters, {
+  EMPTY_FILTERS,
+  applyFilters,
+  countActiveFilters,
+  type PipelineFilters,
+} from "@/components/pipeline/PipelineAdvancedFilters";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -29,15 +34,11 @@ export default function PipelineKanban() {
   const { user: authUser } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
-  const [filterSegmento, setFilterSegmento] = useState<string>("all");
-  const [filterOrigem, setFilterOrigem] = useState<string>("all");
-  const [filterCorretor, setFilterCorretor] = useState<string>("all");
-  const [filterCampanha, setFilterCampanha] = useState<string>("all");
-  const [filterGerente, setFilterGerente] = useState<string>("all");
-  const [filterEtapa, setFilterEtapa] = useState<string>("all");
-  const [filterTemperatura, setFilterTemperatura] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
   const [parcerias, setParcerias] = useState<Record<string, string>>({});
+  const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [activeTab, setActiveTab] = useState("kanban");
 
   // Load partnerships
   useEffect(() => {
@@ -59,60 +60,20 @@ export default function PipelineKanban() {
       setParcerias(result);
     })();
   }, [pipeline.leads]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState("kanban");
-  // user already destructured above as authUser
 
   const canAdd = isGestor || isAdmin;
 
-  const origens = useMemo(() => {
-    const set = new Set<string>();
-    pipeline.leads.forEach(l => { if (l.origem) set.add(l.origem); });
-    return Array.from(set).sort();
-  }, [pipeline.leads]);
-
-  const campanhas = useMemo(() => {
-    const set = new Set<string>();
-    pipeline.leads.forEach(l => { if (l.empreendimento) set.add(l.empreendimento); });
-    return Array.from(set).sort();
-  }, [pipeline.leads]);
-
-  const corretorList = useMemo(() => {
-    const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
-    return entries;
-  }, [pipeline.corretorNomes]);
-
-  const filteredLeads = useMemo(() => {
-    let result = pipeline.leads;
-    if (filterSegmento !== "all") result = result.filter(l => l.segmento_id === filterSegmento);
-    if (filterOrigem !== "all") result = result.filter(l => l.origem === filterOrigem);
-    if (filterCorretor !== "all") result = result.filter(l => l.corretor_id === filterCorretor);
-    if (filterCampanha !== "all") result = result.filter(l => l.empreendimento === filterCampanha);
-    if (filterEtapa !== "all") result = result.filter(l => l.stage_id === filterEtapa);
-    if (filterTemperatura !== "all") result = result.filter(l => (l.temperatura || "morno") === filterTemperatura);
-    if (filterGerente === "sem_gerente") result = result.filter(l => !l.gerente_id);
-    else if (filterGerente === "com_gerente") result = result.filter(l => !!l.gerente_id);
-    else if (filterGerente === "criticos") result = result.filter(l => l.complexidade_score >= 40 && !l.gerente_id);
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(l =>
-        l.nome.toLowerCase().includes(q) ||
-        l.telefone?.toLowerCase().includes(q) ||
-        l.email?.toLowerCase().includes(q) ||
-        l.empreendimento?.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [pipeline.leads, filterSegmento, filterOrigem, filterCorretor, filterCampanha, filterEtapa, filterTemperatura, filterGerente, searchQuery]);
+  const filteredLeads = useMemo(() =>
+    applyFilters(pipeline.leads, filters, pipeline.stages),
+    [pipeline.leads, filters, pipeline.stages]
+  );
 
   const totalVGV = useMemo(() =>
     filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
     [filteredLeads]
   );
 
-  const activeFiltersCount = (filterSegmento !== "all" ? 1 : 0) + (filterOrigem !== "all" ? 1 : 0) + (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (filterEtapa !== "all" ? 1 : 0) + (filterTemperatura !== "all" ? 1 : 0) + (filterGerente !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
+  const activeFiltersCount = countActiveFilters(filters);
 
   const formatVGV = (value: number) => {
     if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
@@ -154,16 +115,7 @@ export default function PipelineKanban() {
     }
   }, [authUser, pipeline]);
 
-  const clearFilters = () => {
-    setFilterSegmento("all");
-    setFilterOrigem("all");
-    setFilterCorretor("all");
-    setFilterCampanha("all");
-    setFilterEtapa("all");
-    setFilterTemperatura("all");
-    setFilterGerente("all");
-    setSearchQuery("");
-  };
+  const clearFilters = () => setFilters({ ...EMPTY_FILTERS });
 
   if (pipeline.loading) {
     return (
@@ -173,6 +125,8 @@ export default function PipelineKanban() {
       </div>
     );
   }
+
+  const isKanbanOrFlow = activeTab === "kanban" || activeTab === "flow";
 
   return (
     <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
@@ -214,37 +168,32 @@ export default function PipelineKanban() {
             </TabsList>
           </Tabs>
 
-          {(activeTab === "kanban") && (
+          {isKanbanOrFlow && (
             <>
               <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar lead..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar nome, telefone, email..."
+                  value={filters.search}
+                  onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
                   className="pl-9 h-9 bg-card"
                 />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
+                {filters.search && (
+                  <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
                     <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                   </button>
                 )}
               </div>
 
-              <Button
-                variant={showFilters ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="gap-1.5 h-9"
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Filtros</span>
-                {activeFiltersCount > 0 && (
-                  <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </Button>
+              <PipelineAdvancedFilters
+                filters={filters}
+                onChange={setFilters}
+                stages={pipeline.stages}
+                segmentos={pipeline.segmentos}
+                leads={pipeline.leads}
+                corretorNomes={pipeline.corretorNomes}
+                isManager={isGestor || isAdmin}
+              />
             </>
           )}
 
@@ -264,13 +213,7 @@ export default function PipelineKanban() {
                 {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
                 {syncing ? "Sincronizando..." : "Sync Jetimob"}
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleJetimobSync}
-                disabled={syncing}
-                className="h-9 w-9 sm:hidden shrink-0"
-              >
+              <Button variant="outline" size="icon" onClick={handleJetimobSync} disabled={syncing} className="h-9 w-9 sm:hidden shrink-0">
                 {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
               </Button>
               <Button onClick={() => setAddOpen(true)} size="icon" className="h-9 w-9 sm:hidden shrink-0">
@@ -284,123 +227,15 @@ export default function PipelineKanban() {
           )}
         </div>
 
-        {/* Expandable filters */}
-        {showFilters && activeTab === "kanban" && (
-          <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border bg-card animate-fade-in">
-            <Select value={filterSegmento} onValueChange={setFilterSegmento}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Segmento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos segmentos</SelectItem>
-                {pipeline.segmentos.map(s => (
-                  <SelectItem key={s.id} value={s.id}>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.cor }} />
-                      {s.nome}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Origem" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas origens</SelectItem>
-                {origens.map(o => (
-                  <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterCorretor} onValueChange={setFilterCorretor}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Corretor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos corretores</SelectItem>
-                {corretorList.map(([id, nome]) => (
-                  <SelectItem key={id} value={id}>{nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterCampanha} onValueChange={setFilterCampanha}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Campanha" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas campanhas</SelectItem>
-                {campanhas.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Etapa filter */}
-            <Select value={filterEtapa} onValueChange={setFilterEtapa}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Etapa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas etapas</SelectItem>
-                {pipeline.stages.map(s => (
-                  <SelectItem key={s.id} value={s.id}>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.cor }} />
-                      {s.nome}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Temperatura filter */}
-            <Select value={filterTemperatura} onValueChange={setFilterTemperatura}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Temperatura" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas temperaturas</SelectItem>
-                <SelectItem value="quente">🔥 Quente</SelectItem>
-                <SelectItem value="morno">🌡️ Morno</SelectItem>
-                <SelectItem value="frio">❄️ Frio</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Gerente filter */}
-            {(isGestor || isAdmin) && (
-              <Select value={filterGerente} onValueChange={setFilterGerente}>
-                <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                  <SelectValue placeholder="Gerente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="sem_gerente">Sem gerente</SelectItem>
-                  <SelectItem value="com_gerente">Com gerente</SelectItem>
-                  <SelectItem value="criticos">⚠️ Críticos (sem gerente)</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-
-            {activeFiltersCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-8 text-primary">
-                Limpar filtros
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Summary */}
-        {activeTab === "kanban" && (
+        {/* Active filter chips + summary */}
+        {isKanbanOrFlow && (
           <div className="flex items-center gap-2 flex-wrap px-1">
             <div className="flex items-center gap-1.5">
               <LayoutGrid className="h-3.5 w-3.5 text-primary" />
               <span className="text-xs sm:text-sm font-bold text-foreground">
-                {filteredLeads.length} oportunidades
+                {activeFiltersCount > 0
+                  ? `${filteredLeads.length} de ${pipeline.leads.length} leads`
+                  : `${filteredLeads.length} oportunidades`}
               </span>
             </div>
             {totalVGV > 0 && (
@@ -410,36 +245,54 @@ export default function PipelineKanban() {
             )}
             {activeFiltersCount > 0 && (
               <div className="flex items-center gap-1.5 ml-auto flex-wrap">
-                {filterSegmento !== "all" && (
-                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterSegmento("all")}>
-                    {pipeline.segmentos.find(s => s.id === filterSegmento)?.nome} ×
+                {filters.temperaturas.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
+                    Temp: {filters.temperaturas.join(", ")} ×
                   </Badge>
                 )}
-                {filterOrigem !== "all" && (
-                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterOrigem("all")}>
-                    {filterOrigem.replace(/_/g, " ")} ×
+                {filters.scoreMin > 0 && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, scoreMin: 0 }))}>
+                    Score ≥{filters.scoreMin} ×
                   </Badge>
                 )}
-                {filterCorretor !== "all" && (
-                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterCorretor("all")}>
-                    {pipeline.corretorNomes[filterCorretor] || "Corretor"} ×
+                {filters.stages.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, stages: [] }))}>
+                    {filters.stages.length} etapas ×
                   </Badge>
                 )}
-                {filterCampanha !== "all" && (
-                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterCampanha("all")}>
-                    {filterCampanha} ×
+                {filters.origens.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, origens: [] }))}>
+                    {filters.origens.length} origens ×
                   </Badge>
                 )}
-                {filterEtapa !== "all" && (
-                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterEtapa("all")}>
-                    {pipeline.stages.find(s => s.id === filterEtapa)?.nome || "Etapa"} ×
+                {filters.segmentos.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, segmentos: [] }))}>
+                    {filters.segmentos.length} segmentos ×
                   </Badge>
                 )}
-                {filterTemperatura !== "all" && (
-                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterTemperatura("all")}>
-                    {filterTemperatura === "quente" ? "🔥 Quente" : filterTemperatura === "morno" ? "🌡️ Morno" : "❄️ Frio"} ×
+                {filters.diasSemAcao && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, diasSemAcao: "" }))}>
+                    &gt;{filters.diasSemAcao}d parado ×
                   </Badge>
                 )}
+                {filters.periodoEntrada && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, periodoEntrada: "" }))}>
+                    Período ×
+                  </Badge>
+                )}
+                {filters.slaStatus && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, slaStatus: "" }))}>
+                    SLA: {filters.slaStatus} ×
+                  </Badge>
+                )}
+                {filters.comVisita && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilters(f => ({ ...f, comVisita: "" }))}>
+                    Visita: {filters.comVisita} ×
+                  </Badge>
+                )}
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-6 text-destructive gap-1">
+                  <X className="h-3 w-3" /> Limpar
+                </Button>
               </div>
             )}
           </div>
@@ -470,16 +323,14 @@ export default function PipelineKanban() {
                 parcerias={parcerias}
                 onMoveLead={pipeline.moveLead}
                 onSelectLead={setSelectedLead}
-                onTransferred={(_leadId, corretorId, _corretorNome) => {
-                  pipeline.reload();
-                }}
+                onTransferred={() => pipeline.reload()}
               />
             </div>
           </>
         ) : activeTab === "flow" ? (
           <PipelineFlowDashboard
             stages={pipeline.stages}
-            leads={pipeline.leads}
+            leads={filteredLeads}
             corretorNomes={pipeline.corretorNomes}
           />
         ) : activeTab === "materiais" ? (
