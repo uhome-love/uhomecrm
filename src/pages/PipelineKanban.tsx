@@ -459,6 +459,7 @@ export default function PipelineKanban() {
           lead={selectedLead}
           stages={pipeline.stages}
           segmentos={pipeline.segmentos}
+          corretorNomes={pipeline.corretorNomes}
           open={!!selectedLead}
           onOpenChange={(open) => !open && setSelectedLead(null)}
           onUpdate={pipeline.updateLead}

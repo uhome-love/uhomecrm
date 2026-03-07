@@ -28,6 +28,8 @@ import PartnershipDialog from "./PartnershipDialog";
 import GerenteManagementSection from "./GerenteManagementSection";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
 import HomiLeadAssistant from "./HomiLeadAssistant";
+import OpportunityVisitasTab from "./OpportunityVisitasTab";
+import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import { format, formatDistanceToNow, differenceInHours, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -35,6 +37,7 @@ interface Props {
   lead: PipelineLead;
   stages: PipelineStage[];
   segmentos: PipelineSegmento[];
+  corretorNomes?: Record<string, string>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: (leadId: string, updates: Partial<PipelineLead>) => Promise<void>;
@@ -65,7 +68,7 @@ const PRIORIDADE_MAP: Record<string, { label: string; color: string }> = {
   baixa: { label: "Baixa", color: "bg-green-500/10 text-green-600 border-green-200" },
 };
 
-export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
+export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
@@ -254,7 +257,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOp
 
         {/* ========== TABS ========== */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="shrink-0 mx-5 mt-3 bg-muted/50 h-8">
+          <TabsList className="shrink-0 mx-5 mt-3 bg-muted/50 h-8 flex-wrap">
             <TabsTrigger value="resumo" className="text-[11px] h-6 data-[state=active]:shadow-sm">Resumo</TabsTrigger>
             <TabsTrigger value="atividades" className="text-[11px] h-6 data-[state=active]:shadow-sm">
               Atividades
@@ -265,6 +268,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOp
               {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="notas" className="text-[11px] h-6 data-[state=active]:shadow-sm">Notas</TabsTrigger>
+            <TabsTrigger value="visitas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+              <MapPin className="h-3 w-3 mr-1" />Visitas
+            </TabsTrigger>
+            <TabsTrigger value="propostas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+              <DollarSign className="h-3 w-3 mr-1" />Proposta
+            </TabsTrigger>
             <TabsTrigger value="historico" className="text-[11px] h-6 data-[state=active]:shadow-sm">Timeline</TabsTrigger>
           </TabsList>
 
@@ -789,6 +798,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOp
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* ===== TAB: VISITAS ===== */}
+            <TabsContent value="visitas" className="px-5 pb-6 mt-0">
+              <OpportunityVisitasTab pipelineLeadId={lead.id} />
+            </TabsContent>
+
+            {/* ===== TAB: PROPOSTAS ===== */}
+            <TabsContent value="propostas" className="px-5 pb-6 mt-0">
+              <OpportunityPropostasTab
+                pipelineLeadId={lead.id}
+                valorEstimado={lead.valor_estimado}
+                corretorNomes={corretorNomes}
+              />
             </TabsContent>
 
             {/* ===== TAB: TIMELINE ===== */}
