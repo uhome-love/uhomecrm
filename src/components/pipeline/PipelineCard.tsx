@@ -1,15 +1,23 @@
 import { memo, useState } from "react";
-import type { PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
-import { Phone, Mail, Clock, MapPin, MessageCircle, Eye, Hourglass, Calendar, Flame, Thermometer, Snowflake, Zap, Shield, Users, Handshake } from "lucide-react";
+import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
+import { Phone, Mail, Clock, MapPin, MessageCircle, Eye, Hourglass, Calendar, Flame, Thermometer, Snowflake, Zap, Shield, Users, Handshake, AlertCircle, Timer } from "lucide-react";
 import { differenceInHours, differenceInDays, differenceInMinutes } from "date-fns";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PipelineQuickTransfer from "./PipelineQuickTransfer";
-import { calculateLeadScore } from "@/lib/leadScoring";
+import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
+
+function formatSlaTime(mins: number): string {
+  const abs = Math.abs(mins);
+  if (abs < 60) return `${abs}m`;
+  if (abs < 1440) return `${Math.floor(abs / 60)}h`;
+  return `${Math.floor(abs / 1440)}d`;
+}
 
 interface PipelineCardProps {
   lead: PipelineLead;
+  stage?: PipelineStage;
   segmentos: PipelineSegmento[];
   corretorNome?: string;
   gerenteNome?: string;
@@ -83,7 +91,7 @@ const MODO_LABELS: Record<string, { label: string; color: string }> = {
   gerente_conduz: { label: "Gerente", color: "text-amber-600 bg-amber-500/10" },
 };
 
-const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome, gerenteNome, parceiroNome, onDragStart, onClick, onTransferred }: PipelineCardProps) {
+const PipelineCard = memo(function PipelineCard({ lead, stage, segmentos, corretorNome, gerenteNome, parceiroNome, onDragStart, onClick, onTransferred }: PipelineCardProps) {
   const [hovered, setHovered] = useState(false);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
   const activity = getActivityInfo(lead.stage_changed_at);
@@ -92,6 +100,9 @@ const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome,
   const temp = TEMP_CONFIG[(lead as any).temperatura || "morno"];
   const showAlert = activity.variant === "warning" || activity.variant === "danger";
   const leadScore = calculateLeadScore(lead as any);
+  
+  // SLA status
+  const sla = stage ? getSlaStatus(stage.tipo, lead.stage_changed_at) : null;
 
   const handleWhatsApp = (e: React.MouseEvent, phone: string) => {
     e.stopPropagation();
@@ -207,6 +218,28 @@ const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome,
           ) : (
             <div className="text-[11px] text-muted-foreground/50 italic">Valor não informado</div>
           )}
+
+          {/* SLA Badge */}
+          {sla && sla.status !== "ok" && (
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold ${
+              sla.status === "breach" 
+                ? "bg-red-500/15 text-red-600 border border-red-300/50" 
+                : "bg-amber-500/15 text-amber-600 border border-amber-300/50"
+            }`}>
+              {sla.status === "breach" ? (
+                <AlertCircle className="h-3 w-3" />
+              ) : (
+                <Timer className="h-3 w-3" />
+              )}
+              {sla.status === "breach" ? "🚨 SLA estourado" : `⏱ SLA: ${formatSlaTime(sla.minutesRemaining)}`}
+            </div>
+          )}
+
+          {/* Score badge */}
+          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${leadScore.bgColor} ${leadScore.color}`}>
+            <Zap className="h-2.5 w-2.5" />
+            Score {leadScore.score}
+          </div>
 
           {/* Time indicators */}
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground/70">
