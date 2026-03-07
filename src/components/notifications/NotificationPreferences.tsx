@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNotificationPreferences } from "@/hooks/useNotifications";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, Save, Loader2 } from "lucide-react";
+import { Bell, Save, Loader2, Smartphone, Send } from "lucide-react";
 
 const CATEGORIES = [
   { key: "novo_lead", label: "Novo lead recebido" },
@@ -27,6 +28,15 @@ const CATEGORIES = [
 
 export default function NotificationPreferences() {
   const { preferences, isLoading, updatePreferences } = useNotificationPreferences();
+  const { 
+    isSupported: pushSupported, 
+    isSubscribed: pushSubscribed, 
+    isLoading: pushLoading, 
+    permission: pushPermission,
+    subscribe: subscribePush, 
+    unsubscribe: unsubscribePush,
+    sendTestPush 
+  } = usePushSubscription();
   const [saving, setSaving] = useState(false);
 
   const [popup, setPopup] = useState(true);
@@ -52,6 +62,18 @@ export default function NotificationPreferences() {
       setSilenciadas(preferences.categorias_silenciadas || []);
     }
   }, [preferences]);
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (enabled && !pushSubscribed) {
+      const success = await subscribePush();
+      if (success) setPush(true);
+    } else if (!enabled && pushSubscribed) {
+      await unsubscribePush();
+      setPush(false);
+    } else {
+      setPush(enabled);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -95,9 +117,54 @@ export default function NotificationPreferences() {
               <Label htmlFor="popup" className="text-sm">Pop-up no sistema</Label>
               <Switch id="popup" checked={popup} onCheckedChange={setPopup} />
             </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="push" className="text-sm">Push notification</Label>
-              <Switch id="push" checked={push} onCheckedChange={setPush} />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="push" className="text-sm">Push notification</Label>
+                  {pushSubscribed && (
+                    <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full font-medium">
+                      Ativo
+                    </span>
+                  )}
+                  {!pushSupported && (
+                    <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                      Não suportado
+                    </span>
+                  )}
+                  {pushPermission === "denied" && (
+                    <span className="text-[10px] bg-destructive/20 text-destructive px-1.5 py-0.5 rounded-full">
+                      Bloqueado
+                    </span>
+                  )}
+                </div>
+                <Switch
+                  id="push"
+                  checked={push}
+                  onCheckedChange={handlePushToggle}
+                  disabled={!pushSupported || pushLoading || pushPermission === "denied"}
+                />
+              </div>
+              {pushSubscribed && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={sendTestPush}
+                  className="gap-2 text-xs"
+                >
+                  <Send className="h-3 w-3" />
+                  Enviar teste push
+                </Button>
+              )}
+              {pushPermission === "denied" && (
+                <p className="text-xs text-destructive">
+                  Permissão bloqueada. Ative nas configurações do navegador (Configurações → Notificações).
+                </p>
+              )}
+              {!pushSupported && (
+                <p className="text-xs text-muted-foreground">
+                  Instale o app (PWA) para receber push notifications no celular.
+                </p>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="whatsapp" className="text-sm">WhatsApp</Label>
