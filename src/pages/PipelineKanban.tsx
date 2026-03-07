@@ -32,6 +32,8 @@ export default function PipelineKanban() {
   const [filterCorretor, setFilterCorretor] = useState<string>("all");
   const [filterCampanha, setFilterCampanha] = useState<string>("all");
   const [filterGerente, setFilterGerente] = useState<string>("all");
+  const [filterEtapa, setFilterEtapa] = useState<string>("all");
+  const [filterTemperatura, setFilterTemperatura] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [parcerias, setParcerias] = useState<Record<string, string>>({});
 
@@ -86,6 +88,8 @@ export default function PipelineKanban() {
     if (filterOrigem !== "all") result = result.filter(l => l.origem === filterOrigem);
     if (filterCorretor !== "all") result = result.filter(l => l.corretor_id === filterCorretor);
     if (filterCampanha !== "all") result = result.filter(l => l.empreendimento === filterCampanha);
+    if (filterEtapa !== "all") result = result.filter(l => l.stage_id === filterEtapa);
+    if (filterTemperatura !== "all") result = result.filter(l => (l.temperatura || "morno") === filterTemperatura);
     if (filterGerente === "sem_gerente") result = result.filter(l => !l.gerente_id);
     else if (filterGerente === "com_gerente") result = result.filter(l => !!l.gerente_id);
     else if (filterGerente === "criticos") result = result.filter(l => l.complexidade_score >= 40 && !l.gerente_id);
@@ -99,14 +103,14 @@ export default function PipelineKanban() {
       );
     }
     return result;
-  }, [pipeline.leads, filterSegmento, filterOrigem, filterCorretor, filterCampanha, filterGerente, searchQuery]);
+  }, [pipeline.leads, filterSegmento, filterOrigem, filterCorretor, filterCampanha, filterEtapa, filterTemperatura, filterGerente, searchQuery]);
 
   const totalVGV = useMemo(() =>
     filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
     [filteredLeads]
   );
 
-  const activeFiltersCount = (filterSegmento !== "all" ? 1 : 0) + (filterOrigem !== "all" ? 1 : 0) + (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (filterGerente !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
+  const activeFiltersCount = (filterSegmento !== "all" ? 1 : 0) + (filterOrigem !== "all" ? 1 : 0) + (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (filterEtapa !== "all" ? 1 : 0) + (filterTemperatura !== "all" ? 1 : 0) + (filterGerente !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
 
   const formatVGV = (value: number) => {
     if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
@@ -153,6 +157,8 @@ export default function PipelineKanban() {
     setFilterOrigem("all");
     setFilterCorretor("all");
     setFilterCampanha("all");
+    setFilterEtapa("all");
+    setFilterTemperatura("all");
     setFilterGerente("all");
     setSearchQuery("");
   };
@@ -332,6 +338,37 @@ export default function PipelineKanban() {
               </SelectContent>
             </Select>
 
+            {/* Etapa filter */}
+            <Select value={filterEtapa} onValueChange={setFilterEtapa}>
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Etapa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas etapas</SelectItem>
+                {pipeline.stages.map(s => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.cor }} />
+                      {s.nome}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Temperatura filter */}
+            <Select value={filterTemperatura} onValueChange={setFilterTemperatura}>
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Temperatura" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas temperaturas</SelectItem>
+                <SelectItem value="quente">🔥 Quente</SelectItem>
+                <SelectItem value="morno">🌡️ Morno</SelectItem>
+                <SelectItem value="frio">❄️ Frio</SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Gerente filter */}
             {(isGestor || isAdmin) && (
               <Select value={filterGerente} onValueChange={setFilterGerente}>
@@ -389,6 +426,16 @@ export default function PipelineKanban() {
                 {filterCampanha !== "all" && (
                   <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterCampanha("all")}>
                     {filterCampanha} ×
+                  </Badge>
+                )}
+                {filterEtapa !== "all" && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterEtapa("all")}>
+                    {pipeline.stages.find(s => s.id === filterEtapa)?.nome || "Etapa"} ×
+                  </Badge>
+                )}
+                {filterTemperatura !== "all" && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterTemperatura("all")}>
+                    {filterTemperatura === "quente" ? "🔥 Quente" : filterTemperatura === "morno" ? "🌡️ Morno" : "❄️ Frio"} ×
                   </Badge>
                 )}
               </div>
