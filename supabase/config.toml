@@ -65,3 +65,9 @@ verify_jwt = false
 
 [functions.send-push]
 verify_jwt = false
+
+[functions.lead-escalation]
+verify_jwt = false
+
+[functions.execute-sequences]
+verify_jwt = false
