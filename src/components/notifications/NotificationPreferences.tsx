@@ -202,14 +202,14 @@ export default function NotificationPreferences() {
         {/* Horário de silêncio */}
         <div className="space-y-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de silêncio</p>
-          <div className="flex items-center gap-3">
-            <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="space-y-1 flex-1 min-w-[120px]">
               <Label className="text-xs">Início</Label>
-              <Input type="time" value={silencioInicio} onChange={(e) => setSilencioInicio(e.target.value)} className="w-32" />
+              <Input type="time" value={silencioInicio} onChange={(e) => setSilencioInicio(e.target.value)} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1 min-w-[120px]">
               <Label className="text-xs">Fim</Label>
-              <Input type="time" value={silencioFim} onChange={(e) => setSilencioFim(e.target.value)} className="w-32" />
+              <Input type="time" value={silencioFim} onChange={(e) => setSilencioFim(e.target.value)} />
             </div>
           </div>
         </div>
@@ -219,7 +219,7 @@ export default function NotificationPreferences() {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Categorias silenciadas
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {CATEGORIES.map((cat) => (
               <label key={cat.key} className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox
