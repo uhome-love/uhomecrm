@@ -179,16 +179,15 @@ const PipelineCard = memo(function PipelineCard({ lead, stage, segmentos, corret
                   <p className="text-muted-foreground">{leadScore.factors.join(" · ")}</p>
                 </TooltipContent>
               </Tooltip>
-              {temp && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className={`p-0.5 rounded ${temp.bg}`}>
-                      <temp.icon className={`h-3 w-3 ${temp.color}`} />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">{temp.label}</TooltipContent>
-                </Tooltip>
-              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md border ${calcTemp.bg} ${calcTemp.border} ${calcTemp.text}`}>
+                    <span>{calcTemp.emoji}</span>
+                    {calcTemp.label}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">{calcTemp.tooltip}</TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
