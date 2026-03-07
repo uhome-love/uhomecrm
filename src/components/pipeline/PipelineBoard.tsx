@@ -54,6 +54,10 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       const arr = map.get(lead.stage_id);
       if (arr) arr.push(lead);
     }
+    // Sort each stage: most recently updated first
+    for (const [, arr] of map) {
+      arr.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    }
     return map;
   }, [stages, leads]);
 
