@@ -7,9 +7,9 @@ import { toast } from "sonner";
 export type DisponibilidadeStatus = "offline" | "na_empresa" | "em_pausa" | "em_visita";
 
 export const SEGMENTOS_OFICIAIS = [
-  "Minha Casa Minha Vida e até 500k",
-  "Médio e alto padrão",
-  "Alto padrão",
+  "MCMV",
+  "Médio-Alto Padrão",
+  "Alto Padrão",
   "Investimento",
 ] as const;
 

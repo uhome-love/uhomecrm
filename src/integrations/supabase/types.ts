@@ -390,6 +390,9 @@ export type Database = {
       }
       distribuicao_escala: {
         Row: {
+          aprovacao_status: string
+          aprovado_em: string | null
+          aprovado_por: string | null
           ativo: boolean
           corretor_id: string
           created_at: string
@@ -399,6 +402,9 @@ export type Database = {
           segmento_id: string
         }
         Insert: {
+          aprovacao_status?: string
+          aprovado_em?: string | null
+          aprovado_por?: string | null
           ativo?: boolean
           corretor_id: string
           created_at?: string
@@ -408,6 +414,9 @@ export type Database = {
           segmento_id: string
         }
         Update: {
+          aprovacao_status?: string
+          aprovado_em?: string | null
+          aprovado_por?: string | null
           ativo?: boolean
           corretor_id?: string
           created_at?: string
@@ -1803,6 +1812,35 @@ export type Database = {
         }
         Relationships: []
       }
+      segmento_campanhas: {
+        Row: {
+          campanha_nome: string
+          created_at: string
+          id: string
+          segmento_id: string
+        }
+        Insert: {
+          campanha_nome: string
+          created_at?: string
+          id?: string
+          segmento_id: string
+        }
+        Update: {
+          campanha_nome?: string
+          created_at?: string
+          id?: string
+          segmento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "segmento_campanhas_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           created_at: string
@@ -2020,6 +2058,10 @@ export type Database = {
         Returns: number
       }
       cleanup_expired_locks: { Args: never; Returns: number }
+      distribuir_lead_roleta: {
+        Args: { p_pipeline_lead_id: string; p_segmento_id?: string }
+        Returns: Json
+      }
       fetch_next_lead: {
         Args: {
           p_corretor_id: string
@@ -2115,6 +2157,7 @@ export type Database = {
         Returns: Json
       }
       recalculate_all_scores: { Args: never; Returns: undefined }
+      reciclar_leads_expirados: { Args: never; Returns: number }
       renew_lead_lock: {
         Args: {
           p_corretor_id: string
