@@ -89,10 +89,10 @@ export default function CeoReports() {
             <Input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-36" />
           </>
         )}
-        <Select value={filterGerente} onValueChange={setFilterGerente}>
+        <Select value={filterGerente || "__all__"} onValueChange={v => setFilterGerente(v === "__all__" ? "" : v)}>
           <SelectTrigger className="w-44"><SelectValue placeholder="Todos gerentes" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos gerentes</SelectItem>
+            <SelectItem value="__all__">Todos gerentes</SelectItem>
             {gerentes.map(g => <SelectItem key={g.gerente_id} value={g.gerente_id}>{g.gerente_nome}</SelectItem>)}
           </SelectContent>
         </Select>
