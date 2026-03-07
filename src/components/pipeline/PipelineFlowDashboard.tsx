@@ -218,7 +218,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
           <CardContent className="pt-4 pb-3 px-4">
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle className="h-4 w-4 text-red-600" />
-              <span className="text-xs text-muted-foreground">SLA Estourados</span>
+              <span className="text-xs text-muted-foreground">Prazos Estourados</span>
             </div>
             <p className="text-2xl font-bold text-red-600">
               {stageMetrics.reduce((s, m) => s + m.slaBreaches, 0)}
@@ -283,7 +283,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                         {metric.slaBreaches > 0 && (
                           <span className="text-[10px] text-red-600 font-semibold flex items-center gap-0.5">
                             <AlertTriangle className="h-2.5 w-2.5" />
-                            {metric.slaBreaches} SLA
+                            {metric.slaBreaches} atrasados
                           </span>
                         )}
                         {metric.slaWarnings > 0 && (
@@ -373,7 +373,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                   <div className="flex items-center gap-2 shrink-0">
                     {c.slaBreaches > 0 && (
                       <Badge className="bg-red-500/15 text-red-600 text-[9px]">
-                        {c.slaBreaches} SLA
+                        {c.slaBreaches} atrasados
                       </Badge>
                     )}
                     <Badge

@@ -8,14 +8,14 @@ export interface LeadScoreResult {
   factors: string[];
 }
 
-// SLA config per stage type (in minutes)
+// Prazo de Ação por etapa (em minutos)
 export const STAGE_SLA: Record<string, { warning: number; danger: number; label: string }> = {
-  novo_lead: { warning: 15, danger: 30, label: "Novo lead deve ser contatado em até 15min" },
-  sem_contato: { warning: 60, danger: 120, label: "Sem contato: retornar em até 1h" },
-  atendimento: { warning: 240, danger: 480, label: "Atendimento: follow-up em até 4h" },
-  qualificacao: { warning: 1440, danger: 2880, label: "Qualificação: avançar em até 24h" },
-  visita: { warning: 2880, danger: 4320, label: "Visita: agendar/confirmar em até 48h" },
-  proposta: { warning: 1440, danger: 4320, label: "Proposta: fechar em até 24h" },
+  novo_lead: { warning: 15, danger: 30, label: "Prazo de ação: contatar em até 15min" },
+  sem_contato: { warning: 60, danger: 120, label: "Prazo de ação: retornar em até 1h" },
+  atendimento: { warning: 240, danger: 480, label: "Prazo de ação: follow-up em até 4h" },
+  qualificacao: { warning: 1440, danger: 2880, label: "Prazo de ação: avançar em até 24h" },
+  visita: { warning: 2880, danger: 4320, label: "Prazo de ação: agendar/confirmar em até 48h" },
+  proposta: { warning: 1440, danger: 4320, label: "Prazo de ação: fechar em até 24h" },
   venda: { warning: 99999, danger: 99999, label: "" },
   descarte: { warning: 99999, danger: 99999, label: "" },
 };
