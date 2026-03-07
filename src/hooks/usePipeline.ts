@@ -28,6 +28,9 @@ export interface PipelineLead {
   gerente_id: string | null;
   modo_conducao: string;
   complexidade_score: number;
+  oportunidade_score: number;
+  escalation_level: number;
+  last_escalation_at: string | null;
   distribuido_em: string | null;
   aceito_em: string | null;
   aceite_expira_em: string | null;

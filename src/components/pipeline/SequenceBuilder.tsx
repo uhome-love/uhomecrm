@@ -41,11 +41,14 @@ interface Passo {
 
 const STAGE_GATILHOS = [
   { value: "novo_lead", label: "Novo Lead" },
+  { value: "sem_contato", label: "Sem Contato" },
   { value: "contato_inicial", label: "Contato Inicial" },
   { value: "atendimento", label: "Atendimento" },
+  { value: "qualificacao", label: "Qualificação" },
   { value: "possibilidade_visita", label: "Possibilidade de Visita" },
   { value: "visita_marcada", label: "Visita Marcada" },
   { value: "visita_realizada", label: "Visita Realizada" },
+  { value: "negociacao", label: "Negociação" },
   { value: "proposta", label: "Proposta" },
 ];
 
