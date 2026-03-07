@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 export default function PosVendas() {
   const pipeline = usePipeline("pos_vendas");
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -30,6 +31,11 @@ export default function PosVendas() {
     setRefreshing(true);
     await pipeline.reload();
     setRefreshing(false);
+  };
+
+  const handleSelectLead = (lead: PipelineLead) => {
+    setSelectedLead(lead);
+    setDetailOpen(true);
   };
 
   if (pipeline.loading) {
@@ -82,11 +88,11 @@ export default function PosVendas() {
         <PipelineBoard
           stages={pipeline.stages}
           leads={filteredLeads}
+          segmentos={pipeline.segmentos}
           corretorNomes={pipeline.corretorNomes}
           parcerias={{}}
           onMoveLead={pipeline.moveLead}
-          onSelectLead={setSelectedLead}
-          getLeadsByStage={pipeline.getLeadsByStage}
+          onSelectLead={handleSelectLead}
         />
       </div>
 
@@ -96,7 +102,8 @@ export default function PosVendas() {
           stages={pipeline.stages}
           segmentos={pipeline.segmentos}
           corretorNomes={pipeline.corretorNomes}
-          onClose={() => setSelectedLead(null)}
+          open={detailOpen}
+          onOpenChange={(open) => { setDetailOpen(open); if (!open) setSelectedLead(null); }}
           onUpdate={pipeline.updateLead}
           onMove={pipeline.moveLead}
           onDelete={pipeline.deleteLead}
@@ -106,8 +113,9 @@ export default function PosVendas() {
       <PipelineAddLeadDialog
         open={addOpen}
         onOpenChange={setAddOpen}
-        onAdd={pipeline.addLead}
+        stages={pipeline.stages}
         segmentos={pipeline.segmentos}
+        onAdd={pipeline.addLead}
       />
     </div>
   );
