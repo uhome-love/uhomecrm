@@ -167,7 +167,7 @@ export default function PipelineKanban() {
             </TabsList>
           </Tabs>
 
-          {activeTab === "kanban" && (
+          {(activeTab === "kanban") && (
             <>
               <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
