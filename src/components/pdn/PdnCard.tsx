@@ -5,11 +5,13 @@ import { differenceInDays } from "date-fns";
 import {
   Flame, Thermometer, Snowflake, Building2, User, AlertTriangle,
   Calendar, Target, FileText, Clock, CheckCircle, Edit3, GripVertical,
+  Phone, MessageCircle, ArrowRightLeft,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface PdnCardProps {
   entry: PdnEntry;
@@ -54,7 +56,6 @@ function formatBRL(v: number | null) {
   return `R$ ${v.toLocaleString("pt-BR")}`;
 }
 
-// Stable reference for "now" within a render cycle (refreshes every 60s max)
 let cachedNow = new Date();
 let cachedNowTs = Date.now();
 function getNow() {
@@ -68,7 +69,6 @@ function getNow() {
 const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, onDragEnd, isDragged }: PdnCardProps) {
   const [editingMotivo, setEditingMotivo] = useState(false);
 
-  // Memoize all derived computations
   const computed = useMemo(() => {
     const now = getNow();
     const prob = calcProbabilidade(entry);
@@ -93,10 +93,6 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
   const docs = DOCS_STYLES[entry.docs_status] || DOCS_STYLES.sem_docs;
   const DocsIcon = docs.icon;
   const vgvFormatted = useMemo(() => formatBRL(entry.vgv), [entry.vgv]);
-  const objecaoLabel = useMemo(
-    () => OBJECAO_OPTIONS.find(o => o.value === entry.objecao_cliente)?.label,
-    [entry.objecao_cliente]
-  );
 
   const handleDragStartEvent = useCallback((e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = "move";
@@ -119,6 +115,13 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
       setEditingMotivo(false);
     }
   }, [entry.id, onUpdate]);
+
+  const handleWhatsApp = useCallback(() => {
+    if (!entry.corretor) return;
+    // Open WhatsApp-style action - for now toast
+    const phone = ""; // would need phone from data
+    window.open(`https://wa.me/?text=Olá, sobre o cliente ${entry.nome} - ${entry.empreendimento || ""}`, "_blank");
+  }, [entry.nome, entry.empreendimento, entry.corretor]);
 
   return (
     <div
@@ -185,12 +188,10 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
           </div>
         )}
 
-        {/* Row 3: VGV */}
-        {vgvFormatted ? (
+        {/* Row 3: VGV — only show if present */}
+        {vgvFormatted && (
           <p className="text-[12px] font-bold text-foreground">{vgvFormatted}</p>
-        ) : isActive ? (
-          <p className="text-[11px] text-muted-foreground/50 italic">VGV não informado</p>
-        ) : null}
+        )}
 
         {/* Row 4: Probability bar (active only) */}
         {isActive && (
@@ -208,13 +209,20 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
           </div>
         )}
 
-        {/* Row 5: Docs status */}
-        <div className="flex items-center gap-1.5 text-[10px]">
-          <DocsIcon className={`h-3 w-3 shrink-0 ${docs.color}`} />
-          <span className={`${docs.color} font-medium`}>{docs.label}</span>
-        </div>
+        {/* Row 5: Docs status — only if not doc_completa to reduce noise */}
+        {entry.docs_status !== "doc_completa" ? (
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <DocsIcon className={`h-3 w-3 shrink-0 ${docs.color}`} />
+            <span className={`${docs.color} font-medium`}>{docs.label}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <CheckCircle className="h-3 w-3 shrink-0 text-emerald-600" />
+            <span className="text-emerald-600 font-medium">Docs OK</span>
+          </div>
+        )}
 
-        {/* Row 6: Próxima Ação */}
+        {/* Row 6: Próxima Ação — simplified */}
         {isActive && (
           <>
             {entry.proxima_acao && entry.proxima_acao.trim() ? (
@@ -227,9 +235,9 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
               </div>
             ) : !readOnly ? (
               <Select value="" onValueChange={handleProximaAcao}>
-                <SelectTrigger className="h-7 text-[10px] border-dashed border-amber-500/30 bg-amber-500/5 text-amber-600 px-2 w-full gap-1">
-                  <AlertTriangle className="h-3 w-3 shrink-0" />
-                  <SelectValue placeholder="Definir próxima ação..." />
+                <SelectTrigger className="h-6 text-[10px] border-dashed border-muted-foreground/20 bg-muted/30 text-muted-foreground px-2 w-full gap-1">
+                  <Calendar className="h-3 w-3 shrink-0" />
+                  <SelectValue placeholder="Próxima ação..." />
                 </SelectTrigger>
                 <SelectContent>
                   {PROXIMA_ACAO_OPTIONS.map(opt => (
@@ -237,35 +245,21 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
                   ))}
                 </SelectContent>
               </Select>
-            ) : (
-              <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-500/10 rounded px-1.5 py-0.5">
-                <AlertTriangle className="h-3 w-3 shrink-0" />
-                <span>Sem próxima ação</span>
-              </div>
-            )}
+            ) : null}
           </>
         )}
 
-        {/* Row 7: Objeção */}
-        {objecaoLabel && (
-          <Badge variant="outline" className="text-[9px] h-4 gap-0.5 border-muted-foreground/20">
-            💬 {objecaoLabel}
-          </Badge>
-        )}
-
-        {/* Row 8: Parado alert */}
-        {isActive && diasParado >= 3 && (
+        {/* Row 7: Parado alert — only ≥5 days to reduce noise */}
+        {isActive && diasParado >= 5 && (
           <div className={`flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 ${
-            diasParado >= 7 ? "text-red-700 bg-red-500/15 font-semibold" :
-            diasParado >= 5 ? "text-red-600 bg-red-500/10" :
-            "text-amber-600 bg-amber-500/10"
+            diasParado >= 7 ? "text-red-700 bg-red-500/15 font-semibold" : "text-red-600 bg-red-500/10"
           }`}>
             <Clock className="h-3 w-3 shrink-0" />
-            <span>{diasParado >= 5 ? "Parado" : "Sem atualização"} há {diasParado} dias</span>
+            <span>Parado há {diasParado} dias</span>
           </div>
         )}
 
-        {/* Row 9: Quando assina (gerado) */}
+        {/* Quando assina (gerado) */}
         {entry.situacao === "gerado" && entry.quando_assina && (
           <div className="flex items-center gap-1 text-[10px] text-foreground">
             <Edit3 className="h-3 w-3 shrink-0 text-muted-foreground/60" />
@@ -296,12 +290,12 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
           </div>
         )}
 
-        {/* Footer: Corretor + último contato */}
-        <div className="flex items-center justify-between pt-1.5 border-t border-border/30 gap-2">
+        {/* Footer: Corretor + Quick Actions */}
+        <div className="flex items-center justify-between pt-1.5 border-t border-border/30 gap-1">
           {entry.corretor ? (
             <div className="flex items-center gap-1.5 min-w-0">
               <User className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-              <span className="text-[10px] text-muted-foreground truncate max-w-[100px] font-medium">
+              <span className="text-[10px] text-muted-foreground truncate max-w-[80px] font-medium">
                 {entry.corretor}
               </span>
             </div>
@@ -309,18 +303,40 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
             <span className="text-[10px] text-muted-foreground/40 italic">Sem corretor</span>
           )}
 
-          {entry.ultimo_contato && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-[9px] text-muted-foreground/60 truncate max-w-[100px]">
-                  {entry.ultimo_contato.length > 20 ? entry.ultimo_contato.substring(0, 20) + "…" : entry.ultimo_contato}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="text-xs max-w-[250px]">
-                <p className="font-semibold mb-0.5">Último contato</p>
-                <p>{entry.ultimo_contato}</p>
-              </TooltipContent>
-            </Tooltip>
+          {/* Quick action buttons — visible on hover */}
+          {!readOnly && (
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10"
+                    onClick={handleWhatsApp}
+                  >
+                    <MessageCircle className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">WhatsApp</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                    onClick={() => {
+                      if (entry.corretor) {
+                        window.open(`tel:`, "_self");
+                      }
+                    }}
+                  >
+                    <Phone className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">Ligar</TooltipContent>
+              </Tooltip>
+            </div>
           )}
         </div>
       </div>

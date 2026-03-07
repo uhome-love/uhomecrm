@@ -3,8 +3,9 @@ import { type PdnEntry, type PdnSituacao } from "@/hooks/usePdn";
 import PdnCard from "./PdnCard";
 import { Badge } from "@/components/ui/badge";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ChevronLeft, ChevronRight, TrendingUp, AlertTriangle } from "lucide-react";
+import { TrendingUp, AlertTriangle } from "lucide-react";
 import { differenceInDays } from "date-fns";
+import { calcProbabilidade, calcRisco } from "@/lib/pdnScoring";
 
 interface Props {
   entries: PdnEntry[];
@@ -21,18 +22,28 @@ const COLUMNS: { key: PdnSituacao; label: string; emoji: string; color: string; 
   { key: "caiu", label: "Caiu", emoji: "❌", color: "#ef4444", headerBg: "bg-red-500/5", dotColor: "bg-red-500" },
 ];
 
-const COLUMN_WIDTH_DESKTOP = 320;
-const COLUMN_WIDTH_MOBILE = 290;
-const COLUMN_GAP = 12;
-
-function getColumnWidth() {
-  return typeof window !== "undefined" && window.innerWidth < 640 ? COLUMN_WIDTH_MOBILE : COLUMN_WIDTH_DESKTOP;
-}
-
 function formatVGV(value: number) {
   if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1).replace(".", ",")}M`;
   if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}mil`;
   return `R$ ${value.toLocaleString("pt-BR")}`;
+}
+
+// Sort entries: risco > probabilidade (desc) > VGV (desc)
+function sortEntries(items: PdnEntry[]): PdnEntry[] {
+  const now = new Date();
+  return [...items].sort((a, b) => {
+    const riscoA = calcRisco(a).nivel;
+    const riscoB = calcRisco(b).nivel;
+    const riscoOrder = { risco: 0, atencao: 1, seguro: 2 };
+    const riskDiff = (riscoOrder[riscoA] ?? 2) - (riscoOrder[riscoB] ?? 2);
+    if (riskDiff !== 0) return riskDiff;
+
+    const probA = calcProbabilidade(a);
+    const probB = calcProbabilidade(b);
+    if (probA !== probB) return probB - probA;
+
+    return (b.vgv || 0) - (a.vgv || 0);
+  });
 }
 
 export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, filterCorretor }: Props) {
@@ -41,8 +52,6 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
   const dragRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
 
   // Filter once
   const filtered = useMemo(() => {
@@ -54,7 +63,7 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
     });
   }, [entries, searchTerm, filterCorretor]);
 
-  // Group + compute stats in one pass
+  // Group + compute stats + sort in one pass
   const grouped = useMemo(() => {
     const now = new Date();
     const buckets: Record<PdnSituacao, PdnEntry[]> = { visita: [], gerado: [], assinado: [], caiu: [] };
@@ -62,7 +71,8 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
       buckets[e.situacao]?.push(e);
     }
     return COLUMNS.map(col => {
-      const items = buckets[col.key] || [];
+      const rawItems = buckets[col.key] || [];
+      const items = col.key === "caiu" || col.key === "assinado" ? rawItems : sortEntries(rawItems);
       let totalVgv = 0;
       let alertCount = 0;
       let hasParados = false;
@@ -81,11 +91,11 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 10);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
-    const colW = getColumnWidth();
-    const idx = Math.round(el.scrollLeft / (colW + COLUMN_GAP));
-    setActiveIndex(Math.min(idx, COLUMNS.length - 1));
+    // Detect active column on mobile scroll
+    const colCount = COLUMNS.length;
+    const colW = el.scrollWidth / colCount;
+    const idx = Math.round(el.scrollLeft / colW);
+    setActiveIndex(Math.min(idx, colCount - 1));
   }, []);
 
   useEffect(() => {
@@ -101,17 +111,11 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
     };
   }, [updateScrollState]);
 
-  const scrollTo = useCallback((direction: "left" | "right") => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const colW = getColumnWidth();
-    el.scrollBy({ left: direction === "left" ? -(colW + COLUMN_GAP) : (colW + COLUMN_GAP), behavior: "smooth" });
-  }, []);
-
   const scrollToIndex = useCallback((idx: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ left: idx * (getColumnWidth() + COLUMN_GAP), behavior: "smooth" });
+    const colW = el.scrollWidth / COLUMNS.length;
+    el.scrollTo({ left: idx * colW, behavior: "smooth" });
   }, []);
 
   // Stable DnD handlers
@@ -148,8 +152,8 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
   return (
     <TooltipProvider delayDuration={200}>
       <div className="relative flex flex-col h-full w-full max-w-full min-w-0 overflow-hidden">
-        {/* Nav pills */}
-        <div className="shrink-0 flex items-center gap-1 mb-2 px-1 overflow-x-auto scrollbar-none">
+        {/* Nav pills — mobile only */}
+        <div className="shrink-0 flex items-center gap-1 mb-2 px-1 overflow-x-auto scrollbar-none sm:hidden">
           {grouped.map((col, idx) => (
             <button
               key={col.key}
@@ -169,102 +173,84 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
           ))}
         </div>
 
-        {/* Kanban board */}
-        <div className="relative flex-1 min-h-0">
-          {canScrollLeft && (
-            <button
-              onClick={() => scrollTo("left")}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-          )}
-          {canScrollRight && (
-            <button
-              onClick={() => scrollTo("right")}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          )}
-
-          <div
-            ref={scrollRef}
-            className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-none"
-            style={{ scrollSnapType: "x proximity", minHeight: "500px" }}
-          >
-            {grouped.map((col) => {
-              const isDragOver = dragOverCol === col.key;
-              return (
-                <div
-                  key={col.key}
-                  className={`flex flex-col shrink-0 h-full rounded-xl transition-all duration-200 ${
-                    isDragOver
-                      ? "ring-2 ring-primary/50 bg-primary/5 shadow-xl shadow-primary/10 scale-[1.01]"
-                      : "bg-muted/20"
+        {/* Kanban board — flex columns on desktop, snap scroll on mobile */}
+        <div
+          ref={scrollRef}
+          className="flex gap-3 flex-1 min-h-0 overflow-x-auto sm:overflow-x-hidden overflow-y-hidden scroll-smooth scrollbar-none"
+          style={{ scrollSnapType: "x mandatory", minHeight: "500px" }}
+        >
+          {grouped.map((col) => {
+            const isDragOver = dragOverCol === col.key;
+            return (
+              <div
+                key={col.key}
+                className={`flex flex-col h-full rounded-xl transition-all duration-200
+                  shrink-0 w-[85vw] sm:shrink sm:w-0 sm:flex-1 sm:min-w-[220px]
+                  ${isDragOver
+                    ? "ring-2 ring-primary/50 bg-primary/5 shadow-xl shadow-primary/10 scale-[1.01]"
+                    : "bg-muted/20"
                   }`}
-                  style={{ width: `${getColumnWidth()}px`, scrollSnapAlign: "start" }}
-                  onDragOver={(e) => handleDragOver(e, col.key)}
-                  onDragLeave={() => setDragOverCol(null)}
-                  onDrop={(e) => handleDrop(e, col.key)}
-                >
-                  {/* Column header */}
-                  <div className={`shrink-0 px-3.5 py-3 bg-card border border-border/40 rounded-t-xl ${col.headerBg}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-3 w-1 rounded-full" style={{ backgroundColor: col.color }} />
-                      <span className="text-xs font-bold text-foreground tracking-tight">
-                        {col.emoji} {col.label}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-bold gap-1">
-                        {col.items.length} <span className="font-normal text-muted-foreground">negócios</span>
-                      </Badge>
-                      {col.totalVgv > 0 && (
-                        <span className="text-[10px] font-semibold text-foreground flex items-center gap-0.5">
-                          <TrendingUp className="h-2.5 w-2.5 text-primary" />
-                          {formatVGV(col.totalVgv)}
-                        </span>
-                      )}
-                      {col.alertCount > 0 && (
-                        <span className={`text-[10px] font-semibold flex items-center gap-0.5 ${
-                          col.hasParados ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
-                        }`}>
-                          <AlertTriangle className="h-2.5 w-2.5" />
-                          {col.alertCount}
-                        </span>
-                      )}
-                    </div>
+                style={{ scrollSnapAlign: "start" }}
+                onDragOver={(e) => handleDragOver(e, col.key)}
+                onDragLeave={() => setDragOverCol(null)}
+                onDrop={(e) => handleDrop(e, col.key)}
+              >
+                {/* Column header */}
+                <div className={`shrink-0 px-3.5 py-3 bg-card border border-border/40 rounded-t-xl ${col.headerBg}`}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="h-3 w-1 rounded-full" style={{ backgroundColor: col.color }} />
+                    <span className="text-xs font-bold text-foreground tracking-tight">
+                      {col.emoji} {col.label}
+                    </span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-bold ml-auto">
+                      {col.items.length}
+                    </Badge>
                   </div>
-
-                  {/* Cards */}
-                  <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2 scrollbar-thin">
-                    {col.items.length === 0 && (
-                      <div className="flex flex-col items-center justify-center py-10 text-center">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
-                          <span className="text-muted-foreground/40 text-sm">+</span>
-                        </div>
-                        <span className="text-[11px] text-muted-foreground/50">
-                          {readOnly ? "Nenhum registro" : "Arraste cards aqui"}
-                        </span>
-                      </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {col.totalVgv > 0 && (
+                      <span className="text-[10px] font-semibold text-foreground flex items-center gap-0.5">
+                        <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                        {formatVGV(col.totalVgv)}
+                      </span>
                     )}
-                    {col.items.map((entry) => (
-                      <PdnCard
-                        key={entry.id}
-                        entry={entry}
-                        readOnly={readOnly}
-                        onUpdate={onUpdate}
-                        onDragStart={() => handleDragStart(entry.id)}
-                        onDragEnd={handleDragEnd}
-                        isDragged={draggedId === entry.id}
-                      />
-                    ))}
+                    {col.alertCount > 0 && (
+                      <span className={`text-[10px] font-semibold flex items-center gap-0.5 ${
+                        col.hasParados ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
+                      }`}>
+                        <AlertTriangle className="h-2.5 w-2.5" />
+                        {col.alertCount} alerta{col.alertCount > 1 ? "s" : ""}
+                      </span>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Cards */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2 scrollbar-thin">
+                  {col.items.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <span className="text-muted-foreground/40 text-sm">+</span>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground/50">
+                        {readOnly ? "Nenhum registro" : "Arraste cards aqui"}
+                      </span>
+                    </div>
+                  )}
+                  {col.items.map((entry) => (
+                    <PdnCard
+                      key={entry.id}
+                      entry={entry}
+                      readOnly={readOnly}
+                      onUpdate={onUpdate}
+                      onDragStart={() => handleDragStart(entry.id)}
+                      onDragEnd={handleDragEnd}
+                      isDragged={draggedId === entry.id}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </TooltipProvider>
