@@ -84,6 +84,7 @@ export function AppSidebar() {
   const principalItems = isAdmin
     ? [
         { title: "Início", url: "/ceo", icon: Home },
+        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
       ]
     : isGestor
     ? [
