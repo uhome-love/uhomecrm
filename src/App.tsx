@@ -42,6 +42,7 @@ const MeusNegocios = lazy(() => import("./pages/MeusNegocios"));
 const PipelineKanban = lazy(() => import("./pages/PipelineKanban"));
 const EscalaDiaria = lazy(() => import("./pages/EscalaDiaria"));
 const Welcome = lazy(() => import("./pages/Welcome"));
+const DisponibilidadePage = lazy(() => import("./pages/DisponibilidadePage"));
 
 const queryClient = new QueryClient();
 
@@ -98,6 +99,7 @@ const App = () => (
             <Route path="/oferta-ativa" element={<ProtectedPage><OfertaAtiva /></ProtectedPage>} />
             <Route path="/pipeline" element={<ProtectedPage roles={["admin"]}><PipelineKanban /></ProtectedPage>} />
             <Route path="/escala-diaria" element={<ProtectedPage><EscalaDiaria /></ProtectedPage>} />
+            <Route path="/disponibilidade" element={<ProtectedPage roles={["gestor", "admin"]}><DisponibilidadePage /></ProtectedPage>} />
 
             {/* Corretor — todos autenticados */}
             <Route path="/corretor" element={<ProtectedPage><CorretorDashboard /></ProtectedPage>} />
