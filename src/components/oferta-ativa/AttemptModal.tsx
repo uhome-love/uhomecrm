@@ -99,12 +99,15 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const handleSubmit = async () => {
     if (!resultado || submitting) return;
     if (feedback.trim().length < 10) { toast.error("Feedback mínimo de 10 caracteres"); return; }
+    if (resultado === "com_interesse" && !interesseTipo) { toast.error("Selecione o tipo de interesse"); return; }
     setSubmitting(true);
     try {
-      await onSubmit(resultado, feedback.trim(), resultado === "com_interesse" ? visitaMarcada : false);
+      const isVisita = interesseTipo === "visita_marcada" || visitaMarcada;
+      await onSubmit(resultado, feedback.trim(), isVisita, resultado === "com_interesse" ? interesseTipo : undefined);
       setResultado("");
       setFeedback("");
       setVisitaMarcada(false);
+      setInteresseTipo("");
     } catch (err: any) {
       console.error("Erro no submit do modal:", err);
       toast.error("Erro ao registrar. Tente novamente.");
