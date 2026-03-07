@@ -1318,6 +1318,7 @@ export type Database = {
           mes: string
           motivo_queda: string | null
           nome: string
+          objecao_cliente: string | null
           observacoes: string | null
           proxima_acao: string | null
           quando_assina: string | null
@@ -1346,6 +1347,7 @@ export type Database = {
           mes: string
           motivo_queda?: string | null
           nome: string
+          objecao_cliente?: string | null
           observacoes?: string | null
           proxima_acao?: string | null
           quando_assina?: string | null
@@ -1374,6 +1376,7 @@ export type Database = {
           mes?: string
           motivo_queda?: string | null
           nome?: string
+          objecao_cliente?: string | null
           observacoes?: string | null
           proxima_acao?: string | null
           quando_assina?: string | null
@@ -2244,6 +2247,7 @@ export type Database = {
           mes: string
           motivo_queda: string | null
           nome: string
+          objecao_cliente: string | null
           observacoes: string | null
           proxima_acao: string | null
           quando_assina: string | null
