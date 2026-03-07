@@ -922,6 +922,7 @@ function buildTimeline(
 ): TimelineItem[] {
   const items: TimelineItem[] = [];
 
+  // Stage changes
   for (const h of historico) {
     const from = stages.find(s => s.id === h.stage_anterior_id);
     const to = stages.find(s => s.id === h.stage_novo_id);
@@ -934,26 +935,58 @@ function buildTimeline(
     });
   }
 
+  // Activities (calls, whatsapp, visits, etc.)
   for (const a of atividades) {
     const tipoInfo = ATIVIDADE_TIPOS.find(t => t.value === a.tipo);
+    const tipoLabels: Record<string, string> = {
+      ligacao: "📞 Ligação realizada",
+      whatsapp: "💬 WhatsApp enviado",
+      followup: "📨 Follow-up enviado",
+      reuniao: "🤝 Reunião realizada",
+      visita: "🏠 Visita agendada/realizada",
+      proposta: "📄 Proposta enviada",
+      retorno: "🔁 Retorno agendado",
+      pendencia_doc: "📋 Pendência documental",
+    };
     items.push({
-      title: a.titulo,
-      description: `${tipoInfo?.label || a.tipo} • ${a.status === "concluida" ? "Concluída" : "Pendente"}`,
+      title: tipoLabels[a.tipo] || a.titulo,
+      description: `${a.titulo} • ${a.status === "concluida" ? "✅ Concluída" : "⏳ Pendente"}`,
       date: a.created_at,
       icon: tipoInfo?.icon || PhoneCall,
       color: a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600",
     });
   }
 
+  // Completed tasks
   for (const t of tarefas) {
     if (t.status === "concluida" && t.concluida_em) {
       items.push({
-        title: `Tarefa concluída: ${t.titulo}`,
+        title: `✅ Tarefa concluída: ${t.titulo}`,
         date: t.concluida_em,
         icon: CheckCircle2,
         color: "bg-green-100 text-green-600",
       });
     }
+  }
+
+  // Lead acceptance
+  if (lead.aceito_em) {
+    items.push({
+      title: "✅ Lead aceito pelo corretor",
+      date: lead.aceito_em,
+      icon: CheckCircle2,
+      color: "bg-emerald-100 text-emerald-600",
+    });
+  }
+
+  // Distribution
+  if (lead.distribuido_em) {
+    items.push({
+      title: "🔄 Lead distribuído para corretor",
+      date: lead.distribuido_em,
+      icon: ArrowRight,
+      color: "bg-blue-100 text-blue-600",
+    });
   }
 
   items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
