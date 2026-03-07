@@ -257,7 +257,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
         {/* ========== TABS ========== */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="shrink-0 mx-5 mt-3 bg-muted/50 h-8">
+          <TabsList className="shrink-0 mx-5 mt-3 bg-muted/50 h-8 flex-wrap">
             <TabsTrigger value="resumo" className="text-[11px] h-6 data-[state=active]:shadow-sm">Resumo</TabsTrigger>
             <TabsTrigger value="atividades" className="text-[11px] h-6 data-[state=active]:shadow-sm">
               Atividades
@@ -268,6 +268,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="notas" className="text-[11px] h-6 data-[state=active]:shadow-sm">Notas</TabsTrigger>
+            <TabsTrigger value="visitas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+              <MapPin className="h-3 w-3 mr-1" />Visitas
+            </TabsTrigger>
+            <TabsTrigger value="propostas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+              <DollarSign className="h-3 w-3 mr-1" />Proposta
+            </TabsTrigger>
             <TabsTrigger value="historico" className="text-[11px] h-6 data-[state=active]:shadow-sm">Timeline</TabsTrigger>
           </TabsList>
 
