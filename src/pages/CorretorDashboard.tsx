@@ -164,6 +164,16 @@ export default function CorretorDashboard() {
         </motion.div>
       </div>
 
+      {/* FRASE DO DIA — abaixo do header */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.02 }}>
+        <Card>
+          <CardContent className="p-3">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">💬 Frase do Dia</p>
+            <p className="text-xs text-foreground italic">"{motivation}"</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-4 h-auto">
@@ -189,12 +199,6 @@ export default function CorretorDashboard() {
             <CorretorDisponibilidadePanel />
           </motion.div>
 
-          {/* 3️⃣ MENSAGEM DO DIA */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.02 }}>
-            <div className="px-1">
-              <p className="text-xs text-muted-foreground italic">💬 "{motivation}"</p>
-            </div>
-          </motion.div>
 
           {/* 4️⃣ ATALHOS RÁPIDOS */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
