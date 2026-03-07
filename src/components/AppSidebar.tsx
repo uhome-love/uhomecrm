@@ -185,8 +185,10 @@ export function AppSidebar() {
   ];
 
   const groups = [
-    { label: "Principal", items: homeItems },
-    ...(gestorItems.length > 0 ? [{ label: "Gestão Comercial", items: gestorItems }] : []),
+    { label: "Principal", items: principalItems },
+    { label: "Gestão de Leads", items: gestaoLeadsItems },
+    { label: "Gestão Comercial", items: gestaoComercialItems },
+    { label: "Performance", items: rankingItems },
     ...(ceoItems.length > 0 ? [{ label: "Inteligência CEO", items: ceoItems }] : []),
     ...(adminItems.length > 0 ? [{ label: "Sistema", items: adminItems }] : []),
     { label: "Conta", items: configItems },
