@@ -321,6 +321,21 @@ export default function PipelineKanban() {
               </SelectContent>
             </Select>
 
+            {/* Gerente filter */}
+            {(isGestor || isAdmin) && (
+              <Select value={filterGerente} onValueChange={setFilterGerente}>
+                <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
+                  <SelectValue placeholder="Gerente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="sem_gerente">Sem gerente</SelectItem>
+                  <SelectItem value="com_gerente">Com gerente</SelectItem>
+                  <SelectItem value="criticos">⚠️ Críticos (sem gerente)</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-8 text-primary">
                 Limpar filtros
