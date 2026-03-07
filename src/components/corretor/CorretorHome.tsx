@@ -7,10 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import { useMissoesLeads } from "@/hooks/useMissoesLeads";
+import { useCorretorHomeData } from "@/hooks/useCorretorHomeData";
 import DailyProgressCard from "./DailyProgressCard";
 import MissoesDeHoje from "./MissoesDeHoje";
 import RadarLeadsPendentes from "./RadarLeadsPendentes";
 import RankingGestaoLeads from "./RankingGestaoLeads";
+import FollowUpsDoDia from "./FollowUpsDoDia";
+import VisitasHojeCard from "./VisitasHojeCard";
+import MiniFunilPessoal from "./MiniFunilPessoal";
+import EvolucaoSemanal from "./EvolucaoSemanal";
 import { useNavigate } from "react-router-dom";
 const homiMascot = "/images/homi-mascot-opt.png";
 
@@ -18,6 +23,7 @@ export default function CorretorHome() {
   const { progress, goals, saveGoals } = useCorretorProgress();
   const motivation = useDailyMotivation();
   const { missoes, missaoGeral, radarLeads, radarLoading, ranking, rankingLoading, userId } = useMissoesLeads();
+  const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading } = useCorretorHomeData();
   const navigate = useNavigate();
 
   return (
@@ -59,7 +65,19 @@ export default function CorretorHome() {
         </Button>
       </motion.div>
 
-      {/* 🎮 Missões de Hoje — NEW GAMIFICATION */}
+      {/* 📅 Visitas de Hoje — NEW */}
+      {visitasHoje.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
+          <VisitasHojeCard visitas={visitasHoje} loading={visitasLoading} />
+        </motion.div>
+      )}
+
+      {/* ⚡ Follow-ups Pendentes — NEW */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}>
+        <FollowUpsDoDia leads={followUps} loading={followUpsLoading} />
+      </motion.div>
+
+      {/* 🎮 Missões de Hoje */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
         <MissoesDeHoje
           missoes={missoes}
@@ -69,7 +87,15 @@ export default function CorretorHome() {
         />
       </motion.div>
 
-      {/* 📡 Radar de Leads Pendentes — NEW */}
+      {/* 📊 Mini Funil + Evolução — Side by Side */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <MiniFunilPessoal funil={funil} totalLeads={totalLeads} loading={funilLoading} />
+          <EvolucaoSemanal evolucao={evolucao} loading={evolucaoLoading} />
+        </div>
+      </motion.div>
+
+      {/* 📡 Radar de Leads Pendentes */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <RadarLeadsPendentes
           leads={radarLeads}
@@ -78,7 +104,7 @@ export default function CorretorHome() {
         />
       </motion.div>
 
-      {/* Daily Goals — SHARED COMPONENT */}
+      {/* Daily Goals */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
         <DailyProgressCard
           progress={progress}
@@ -113,7 +139,7 @@ export default function CorretorHome() {
         </div>
       </motion.div>
 
-      {/* 🏆 Ranking Gestão de Leads — NEW */}
+      {/* 🏆 Ranking Gestão de Leads */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
         <RankingGestaoLeads
           ranking={ranking}
