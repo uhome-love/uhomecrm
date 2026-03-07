@@ -332,23 +332,8 @@ export default function CorretorDashboard() {
             </div>
           </motion.div>
 
-          {/* 2️⃣ AÇÕES AGORA */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
-            <AcoesAgora
-              followUps={followUps}
-              visitasHoje={visitasHoje}
-              newLeadsCount={newLeadsCount}
-              onStartCall={() => {
-                if (!goals) {
-                  toast.warning("Defina sua meta do dia antes de iniciar a discagem!");
-                  return;
-                }
-                setActiveTab("discagem");
-              }}
-            />
-          </motion.div>
 
-          {/* 3️⃣ MISSÕES DO DIA */}
+          {/* 2️⃣ MISSÕES DO DIA (was 3) */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
             <MissoesDeHoje
               missoes={missoes}
