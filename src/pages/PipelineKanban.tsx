@@ -6,9 +6,10 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Filter, Loader2, Search, LayoutGrid } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Badge } from "@/components/ui/badge";
 
 export default function PipelineKanban() {
   const pipeline = usePipeline();
@@ -16,41 +17,45 @@ export default function PipelineKanban() {
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [filterSegmento, setFilterSegmento] = useState<string>("all");
+  const [filterOrigem, setFilterOrigem] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const canAdd = isGestor || isAdmin;
 
+  // Get unique origens
+  const origens = useMemo(() => {
+    const set = new Set<string>();
+    pipeline.leads.forEach(l => { if (l.origem) set.add(l.origem); });
+    return Array.from(set).sort();
+  }, [pipeline.leads]);
+
   const filteredLeads = useMemo(() => {
     let result = pipeline.leads;
-
-    // Filter by segment
-    if (filterSegmento !== "all") {
-      result = result.filter(l => l.segmento_id === filterSegmento);
-    }
-
-    // Filter by search query
+    if (filterSegmento !== "all") result = result.filter(l => l.segmento_id === filterSegmento);
+    if (filterOrigem !== "all") result = result.filter(l => l.origem === filterOrigem);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(l =>
         l.nome.toLowerCase().includes(q) ||
         l.telefone?.toLowerCase().includes(q) ||
         l.email?.toLowerCase().includes(q) ||
-        l.empreendimento?.toLowerCase().includes(q) ||
-        l.observacoes?.toLowerCase().includes(q)
+        l.empreendimento?.toLowerCase().includes(q)
       );
     }
-
     return result;
-  }, [pipeline.leads, filterSegmento, searchQuery]);
+  }, [pipeline.leads, filterSegmento, filterOrigem, searchQuery]);
 
   const totalVGV = useMemo(() =>
     filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
     [filteredLeads]
   );
 
+  const activeFiltersCount = (filterSegmento !== "all" ? 1 : 0) + (filterOrigem !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
+
   const formatVGV = (value: number) => {
-    if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(3).replace(".", ",")}`;
+    if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
     if (value >= 1_000) return `R$ ${value.toLocaleString("pt-BR")}`;
     return `R$ ${value}`;
   };
@@ -61,34 +66,74 @@ export default function PipelineKanban() {
     setRefreshing(false);
   };
 
+  const clearFilters = () => {
+    setFilterSegmento("all");
+    setFilterOrigem("all");
+    setSearchQuery("");
+  };
+
   if (pipeline.loading) {
     return (
-      <div className="flex items-center justify-center py-24">
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">Carregando pipeline...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Search + Filters Bar */}
-      <div className="flex flex-col lg:flex-row gap-3">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Busque por nome, telefone, email ou observações"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-10"
-            />
-          </div>
+    <div className="space-y-3">
+      {/* Top bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar lead..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-9 bg-card"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
+              <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Filter toggle */}
+        <Button
+          variant={showFilters ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+          className="gap-1.5 h-9"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filtros
+          {activeFiltersCount > 0 && (
+            <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
+              {activeFiltersCount}
+            </Badge>
+          )}
+        </Button>
+
+        <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+        </Button>
+
+        {canAdd && (
+          <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9">
+            <Plus className="h-4 w-4" />
+            Novo Lead
+          </Button>
+        )}
+      </div>
+
+      {/* Expandable filters */}
+      {showFilters && (
+        <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border bg-card animate-fade-in">
           <Select value={filterSegmento} onValueChange={setFilterSegmento}>
-            <SelectTrigger className="w-[180px] h-10">
-              <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+            <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder="Segmento" />
             </SelectTrigger>
             <SelectContent>
@@ -96,7 +141,7 @@ export default function PipelineKanban() {
               {pipeline.segmentos.map(s => (
                 <SelectItem key={s.id} value={s.id}>
                   <div className="flex items-center gap-2">
-                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.cor }} />
+                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.cor }} />
                     {s.nome}
                   </div>
                 </SelectItem>
@@ -104,60 +149,53 @@ export default function PipelineKanban() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" className="h-10 w-10" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          </Button>
+          <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue placeholder="Origem" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas origens</SelectItem>
+              {origens.map(o => (
+                <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          {canAdd && (
-            <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-10">
-              <Plus className="h-4 w-4" />
-              Novo Lead
+          {activeFiltersCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-8 text-primary">
+              Limpar filtros
             </Button>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Summary Bar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-border bg-card">
-        <LayoutGrid className="h-4 w-4 text-primary" />
-        <span className="text-sm font-bold text-foreground">
-          Oportunidades ({filteredLeads.length})
-        </span>
+      {/* Summary */}
+      <div className="flex items-center gap-3 px-1">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="h-4 w-4 text-primary" />
+          <span className="text-sm font-bold text-foreground">
+            {filteredLeads.length} oportunidades
+          </span>
+        </div>
         {totalVGV > 0 && (
-          <span className="text-sm text-muted-foreground">
-            {formatVGV(totalVGV)}
+          <span className="text-sm text-muted-foreground font-medium">
+            • {formatVGV(totalVGV)} em VGV
           </span>
         )}
-
-        {/* Active filter chips */}
-        <div className="flex items-center gap-2 ml-auto">
-          {filterSegmento !== "all" && (
-            <button
-              onClick={() => setFilterSegmento("all")}
-              className="flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded-md hover:bg-muted/80"
-            >
-              Segmento: {pipeline.segmentos.find(s => s.id === filterSegmento)?.nome}
-              <span className="text-muted-foreground ml-0.5">×</span>
-            </button>
-          )}
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded-md hover:bg-muted/80"
-            >
-              Busca: "{searchQuery}"
-              <span className="text-muted-foreground ml-0.5">×</span>
-            </button>
-          )}
-          {(filterSegmento !== "all" || searchQuery) && (
-            <button
-              onClick={() => { setFilterSegmento("all"); setSearchQuery(""); }}
-              className="text-xs text-primary hover:underline font-medium"
-            >
-              Limpar filtros
-            </button>
-          )}
-        </div>
+        {activeFiltersCount > 0 && (
+          <div className="flex items-center gap-1.5 ml-auto">
+            {filterSegmento !== "all" && (
+              <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterSegmento("all")}>
+                {pipeline.segmentos.find(s => s.id === filterSegmento)?.nome} ×
+              </Badge>
+            )}
+            {filterOrigem !== "all" && (
+              <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterOrigem("all")}>
+                {filterOrigem.replace(/_/g, " ")} ×
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Kanban Board */}

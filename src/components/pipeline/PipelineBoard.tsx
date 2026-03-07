@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import PipelineCard from "./PipelineCard";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight, AlertTriangle, Clock, TrendingUp } from "lucide-react";
+import { differenceInHours } from "date-fns";
 
 interface PipelineBoardProps {
   stages: PipelineStage[];
@@ -12,24 +13,112 @@ interface PipelineBoardProps {
   onSelectLead: (lead: PipelineLead) => void;
 }
 
+const COLUMN_WIDTH = 300;
+const COLUMN_GAP = 12;
+
+function getStageAlerts(leads: PipelineLead[]) {
+  let alerts = 0;
+  for (const l of leads) {
+    if (differenceInHours(new Date(), new Date(l.stage_changed_at)) >= 2) alerts++;
+  }
+  return alerts;
+}
+
+function getAvgTimeLabel(leads: PipelineLead[]) {
+  if (leads.length === 0) return null;
+  const totalHours = leads.reduce((sum, l) =>
+    sum + differenceInHours(new Date(), new Date(l.stage_changed_at)), 0
+  );
+  const avg = totalHours / leads.length;
+  if (avg < 1) return "<1h";
+  if (avg < 24) return `${Math.round(avg)}h`;
+  return `${Math.round(avg / 24)}d`;
+}
+
 export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, onSelectLead }: PipelineBoardProps) {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const dragLeadId = useRef<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDraggingScroll, setIsDraggingScroll] = useState(false);
+  const dragScrollStart = useRef({ x: 0, scrollLeft: 0 });
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const handleDragStart = (leadId: string) => {
-    dragLeadId.current = leadId;
+  // Memoize leads per stage
+  const leadsByStage = useMemo(() => {
+    const map = new Map<string, PipelineLead[]>();
+    for (const stage of stages) {
+      map.set(stage.id, []);
+    }
+    for (const lead of leads) {
+      const arr = map.get(lead.stage_id);
+      if (arr) arr.push(lead);
+    }
+    return map;
+  }, [stages, leads]);
+
+  // Scroll state tracking
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+    // Active column
+    const idx = Math.round(el.scrollLeft / (COLUMN_WIDTH + COLUMN_GAP));
+    setActiveIndex(Math.min(idx, stages.length - 1));
+  }, [stages.length]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      ro.disconnect();
+    };
+  }, [updateScrollState]);
+
+  const scrollTo = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = COLUMN_WIDTH + COLUMN_GAP;
+    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
   };
 
+  const scrollToIndex = (idx: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * (COLUMN_WIDTH + COLUMN_GAP), behavior: "smooth" });
+  };
+
+  // Drag to scroll
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("[draggable]")) return;
+    setIsDraggingScroll(true);
+    dragScrollStart.current = { x: e.clientX, scrollLeft: scrollRef.current?.scrollLeft || 0 };
+  };
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingScroll || !scrollRef.current) return;
+    e.preventDefault();
+    const dx = e.clientX - dragScrollStart.current.x;
+    scrollRef.current.scrollLeft = dragScrollStart.current.scrollLeft - dx;
+  }, [isDraggingScroll]);
+
+  const handleMouseUp = () => setIsDraggingScroll(false);
+
+  // DnD handlers
+  const handleDragStart = (leadId: string) => { dragLeadId.current = leadId; };
   const handleDragOver = (e: React.DragEvent, stageId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     setDragOverStage(stageId);
   };
-
-  const handleDragLeave = () => {
-    setDragOverStage(null);
-  };
-
+  const handleDragLeave = () => setDragOverStage(null);
   const handleDrop = (e: React.DragEvent, stageId: string) => {
     e.preventDefault();
     setDragOverStage(null);
@@ -39,9 +128,6 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
     }
   };
 
-  const getLeadsForStage = (stageId: string) =>
-    leads.filter(l => l.stage_id === stageId);
-
   const formatVGV = (value: number) => {
     if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1).replace(".", ",")}M`;
     if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}mil`;
@@ -49,55 +135,134 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
   };
 
   return (
-    <ScrollArea className="w-full">
-      <div className="flex gap-3 pb-4 min-w-max">
+    <div className="relative">
+      {/* Mini-map / Stage nav pills */}
+      <div className="flex items-center gap-1 mb-3 px-1 overflow-x-auto scrollbar-none">
+        {stages.map((stage, idx) => {
+          const stageLeads = leadsByStage.get(stage.id) || [];
+          const isActive = idx === activeIndex;
+          return (
+            <button
+              key={stage.id}
+              onClick={() => scrollToIndex(idx)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all duration-200 border ${
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                  : "bg-card text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground"
+              }`}
+            >
+              <span
+                className="h-2 w-2 rounded-full shrink-0"
+                style={{ backgroundColor: isActive ? "white" : stage.cor }}
+              />
+              <span className="hidden sm:inline">{stage.nome}</span>
+              <Badge
+                variant="secondary"
+                className={`text-[9px] px-1 py-0 h-3.5 font-bold ${isActive ? "bg-white/20 text-primary-foreground" : ""}`}
+              >
+                {stageLeads.length}
+              </Badge>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Navigation arrows */}
+      {canScrollLeft && (
+        <button
+          onClick={() => scrollTo("left")}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      )}
+      {canScrollRight && (
+        <button
+          onClick={() => scrollTo("right")}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      )}
+
+      {/* Kanban columns */}
+      <div
+        ref={scrollRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        className={`flex gap-3 pb-4 overflow-x-auto scroll-smooth scrollbar-none ${isDraggingScroll ? "cursor-grabbing select-none" : ""}`}
+        style={{ scrollSnapType: "x proximity" }}
+      >
         {stages.map((stage) => {
-          const stageLeads = getLeadsForStage(stage.id);
+          const stageLeads = leadsByStage.get(stage.id) || [];
           const isDragOver = dragOverStage === stage.id;
           const totalVGV = stageLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
+          const alerts = getStageAlerts(stageLeads);
+          const avgTime = getAvgTimeLabel(stageLeads);
 
           return (
             <div
               key={stage.id}
-              className={`flex flex-col w-[290px] shrink-0 rounded-xl border transition-all duration-200 overflow-hidden ${
+              className={`flex flex-col shrink-0 rounded-xl transition-all duration-200 overflow-hidden ${
                 isDragOver
-                  ? "border-primary/50 bg-primary/5 shadow-lg"
-                  : "border-border bg-muted/30"
+                  ? "ring-2 ring-primary/50 bg-primary/5 shadow-xl shadow-primary/10 scale-[1.01]"
+                  : "bg-muted/20"
               }`}
+              style={{
+                width: `${COLUMN_WIDTH}px`,
+                scrollSnapAlign: "start",
+              }}
               onDragOver={(e) => handleDragOver(e, stage.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, stage.id)}
             >
-              {/* Colored top border */}
-              <div className="h-1 w-full" style={{ backgroundColor: stage.cor }} />
-
-              {/* Column Header */}
-              <div className="px-3 py-2.5 border-b border-border/50">
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-xs font-bold text-foreground truncate">
+              {/* Column header */}
+              <div className="px-3.5 py-3 bg-card border border-border/40 rounded-t-xl">
+                {/* Color bar */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-3 w-1 rounded-full" style={{ backgroundColor: stage.cor }} />
+                  <span className="text-xs font-bold text-foreground tracking-tight">
                     {stage.nome}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-bold mr-1">
-                      {stageLeads.length}
-                    </Badge>
-                    Negociações
-                  </span>
+                {/* Stats row */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-bold gap-1">
+                    {stageLeads.length} <span className="font-normal text-muted-foreground">leads</span>
+                  </Badge>
                   {totalVGV > 0 && (
-                    <span className="font-semibold text-foreground">
+                    <span className="text-[10px] font-semibold text-foreground flex items-center gap-0.5">
+                      <TrendingUp className="h-2.5 w-2.5 text-primary" />
                       {formatVGV(totalVGV)}
+                    </span>
+                  )}
+                  {avgTime && (
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                      <Clock className="h-2.5 w-2.5" />
+                      {avgTime} média
+                    </span>
+                  )}
+                  {alerts > 0 && (
+                    <span className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-0.5">
+                      <AlertTriangle className="h-2.5 w-2.5" />
+                      {alerts}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Cards */}
-              <div className="flex flex-col gap-1.5 p-2 min-h-[120px] max-h-[calc(100vh-300px)] overflow-y-auto scrollbar-thin">
+              {/* Cards container */}
+              <div className="flex flex-col gap-2 p-2 min-h-[100px] max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-thin">
                 {stageLeads.length === 0 && (
-                  <div className="flex items-center justify-center py-8 text-xs text-muted-foreground/50">
-                    Arraste leads aqui
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
+                      <span className="text-muted-foreground/40 text-sm">+</span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground/50">
+                      Arraste leads aqui
+                    </span>
                   </div>
                 )}
                 {stageLeads.map((lead) => (
@@ -114,7 +279,6 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
           );
         })}
       </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    </div>
   );
 }
