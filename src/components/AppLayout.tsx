@@ -107,6 +107,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onClose={closeDialog}
         onResult={refreshPending}
       />
+      <NewLeadBanner />
     </SidebarProvider>
   );
 }
