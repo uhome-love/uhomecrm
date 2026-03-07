@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
@@ -6,10 +6,13 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal, CloudDownload } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function PipelineKanban() {
   const pipeline = usePipeline();
@@ -20,7 +23,9 @@ export default function PipelineKanban() {
   const [filterOrigem, setFilterOrigem] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const { user } = useAuth();
 
   const canAdd = isGestor || isAdmin;
 
@@ -64,6 +69,34 @@ export default function PipelineKanban() {
     await pipeline.reload();
     setRefreshing(false);
   };
+
+  const handleJetimobSync = useCallback(async () => {
+    if (!user) return;
+    setSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("jetimob-sync", {
+        body: {},
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (error) throw error;
+      if (data?.synced > 0) {
+        toast.success(`${data.synced} leads sincronizados do Jetimob para o Pipeline!`);
+        await pipeline.reload();
+      } else {
+        toast.info(`Nenhum lead novo. ${data?.skipped || 0} já existiam no Pipeline.`);
+      }
+    } catch (err) {
+      console.error("Jetimob sync error:", err);
+      toast.error("Erro ao sincronizar leads do Jetimob.");
+    } finally {
+      setSyncing(false);
+    }
+  }, [user, pipeline]);
 
   const clearFilters = () => {
     setFilterSegmento("all");
@@ -121,10 +154,22 @@ export default function PipelineKanban() {
           </Button>
 
           {canAdd && (
-            <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9">
-              <Plus className="h-4 w-4" />
-              Novo Lead
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleJetimobSync}
+                disabled={syncing}
+                className="gap-1.5 h-9"
+              >
+                {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
+                {syncing ? "Sincronizando..." : "Sync Jetimob"}
+              </Button>
+              <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9">
+                <Plus className="h-4 w-4" />
+                Novo Lead
+              </Button>
+            </>
           )}
         </div>
 

@@ -91,11 +91,21 @@ export function AppSidebar() {
         { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
       ]
     : [
-        { title: "Central do Corretor", url: "/corretor", icon: Phone },
+        { title: "Minha Rotina", url: "/corretor", icon: Phone },
       ];
 
   // === GESTÃO DE LEADS ===
-  const gestaoLeadsItems = isGestor || isAdmin
+  const gestaoLeadsItems = isAdmin
+    ? [
+        { title: "Pipeline", url: "/pipeline", icon: Kanban },
+        { title: "PDN - Gerentes", url: "/pdn", icon: FileSpreadsheet },
+        { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
+        { title: "Escala Diária", url: "/escala-diaria", icon: CalendarDays },
+        { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
+        { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
+        { title: "Scripts", url: "/scripts", icon: FileEdit },
+      ]
+    : isGestor
     ? [
         { title: "Pipeline", url: "/pipeline", icon: Kanban },
         { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
@@ -106,10 +116,12 @@ export function AppSidebar() {
         { title: "Scripts", url: "/scripts", icon: FileEdit },
       ]
     : [
-        { title: "Pipeline", url: "/pipeline", icon: Kanban },
+        { title: "Meu Pipeline", url: "/pipeline", icon: Kanban },
         { title: "Meus Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
-        { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
-        { title: "Scripts do Time", url: "/scripts", icon: FileEdit },
+        { title: "Minha Escala", url: "/escala-diaria", icon: CalendarDays },
+        { title: "Minha Agenda", url: "/agenda-visitas", icon: CalendarDays },
+        { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
+        { title: "Meus Scripts", url: "/scripts", icon: FileEdit },
       ];
 
   // === GESTÃO DAS EQUIPES ===
@@ -120,13 +132,18 @@ export function AppSidebar() {
     : [];
 
   // === PERFORMANCE ===
-  const performanceItems = isGestor || isAdmin
+  const performanceItems = isAdmin
+    ? [
+        { title: "Ranking Comercial", url: "/ranking", icon: Trophy },
+        { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+      ]
+    : isGestor
     ? [
         { title: "Ranking Comercial", url: "/ranking", icon: Trophy },
         { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
       ]
     : [
-        { title: "Resumo Semanal", url: "/corretor/resumo", icon: BarChart3 },
+        { title: "Meu Desempenho", url: "/corretor/resumo", icon: BarChart3 },
         { title: "Ranking OA", url: "/corretor/ranking-equipes", icon: Trophy },
         { title: "Ranking Comercial", url: "/ranking", icon: BarChart3 },
       ];
