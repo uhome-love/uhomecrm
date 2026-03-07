@@ -84,7 +84,6 @@ export function AppSidebar() {
   const principalItems = isAdmin
     ? [
         { title: "Início", url: "/ceo", icon: Home },
-        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
       ]
     : isGestor
     ? [
@@ -99,7 +98,6 @@ export function AppSidebar() {
   const gestaoLeadsItems = isAdmin
     ? [
         { title: "Pipeline", url: "/pipeline", icon: Kanban },
-        { title: "PDN - Gerentes", url: "/pdn", icon: FileSpreadsheet },
         { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
         { title: "Escala Diária", url: "/escala-diaria", icon: CalendarDays },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
@@ -109,7 +107,6 @@ export function AppSidebar() {
     : isGestor
     ? [
         { title: "Pipeline", url: "/pipeline", icon: Kanban },
-        { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
         { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
         { title: "Escala Diária", url: "/escala-diaria", icon: CalendarDays },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
@@ -126,8 +123,16 @@ export function AppSidebar() {
       ];
 
   // === GESTÃO DAS EQUIPES ===
-  const gestaoEquipesItems = isGestor || isAdmin
+  const gestaoEquipesItems = isAdmin
     ? [
+        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+        { title: "PDN - Gerentes", url: "/pdn", icon: FileSpreadsheet },
+        { title: "Meu Time", url: "/meu-time", icon: Users },
+      ]
+    : isGestor
+    ? [
+        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+        { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
         { title: "Meu Time", url: "/meu-time", icon: Users },
       ]
     : [];
