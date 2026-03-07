@@ -1,0 +1,155 @@
+import { useCallback, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+
+// This will be set after generating VAPID keys
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export function usePushSubscription() {
+  const { user } = useAuth();
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission>(
+    typeof Notification !== "undefined" ? Notification.permission : "default"
+  );
+
+  const isSupported = "serviceWorker" in navigator && "PushManager" in window && !!VAPID_PUBLIC_KEY;
+
+  const checkSubscription = useCallback(async () => {
+    if (!isSupported || !user) return false;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      const subscribed = !!subscription;
+      setIsSubscribed(subscribed);
+      return subscribed;
+    } catch {
+      return false;
+    }
+  }, [isSupported, user]);
+
+  const subscribe = useCallback(async () => {
+    if (!isSupported || !user) {
+      toast.error("Push notifications não são suportadas neste navegador");
+      return false;
+    }
+
+    setIsLoading(true);
+    try {
+      // Request permission
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
+
+      if (perm !== "granted") {
+        toast.error("Permissão de notificação negada. Ative nas configurações do navegador.");
+        setIsLoading(false);
+        return false;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+
+      // Subscribe to push
+      const subscription = await registration.pushManager.subscribe({
+        userVisuallyShown: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+
+      const subJson = subscription.toJSON();
+
+      // Save to database
+      const { error } = await supabase.from("push_subscriptions").upsert(
+        {
+          user_id: user.id,
+          endpoint: subJson.endpoint!,
+          p256dh: subJson.keys!.p256dh,
+          auth: subJson.keys!.auth,
+          user_agent: navigator.userAgent,
+          updated_at: new Date().toISOString(),
+        } as any,
+        { onConflict: "user_id,endpoint" }
+      );
+
+      if (error) throw error;
+
+      setIsSubscribed(true);
+      toast.success("Push notifications ativadas! 🔔");
+      return true;
+    } catch (err: any) {
+      console.error("Push subscription error:", err);
+      toast.error("Erro ao ativar push notifications");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isSupported, user]);
+
+  const unsubscribe = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await subscription.unsubscribe();
+        // Remove from database
+        await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("endpoint", subscription.endpoint);
+      }
+      setIsSubscribed(false);
+      toast.success("Push notifications desativadas");
+    } catch (err) {
+      console.error("Push unsubscribe error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  const sendTestPush = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("send-push", {
+        body: {
+          user_id: user.id,
+          title: "🏠 Teste UhomeSales",
+          body: "Se você recebeu isso, push notifications estão funcionando! 🎉",
+          url: "/notificacoes",
+        },
+      });
+      if (error) throw error;
+      if (data?.sent > 0) {
+        toast.success(`Push enviado para ${data.sent} dispositivo(s)!`);
+      } else {
+        toast.error("Nenhum dispositivo registrado. Ative as push notifications primeiro.");
+      }
+    } catch (err: any) {
+      console.error("Test push error:", err);
+      toast.error("Erro ao enviar teste: " + err.message);
+    }
+  }, [user]);
+
+  return {
+    isSupported,
+    isSubscribed,
+    isLoading,
+    permission,
+    subscribe,
+    unsubscribe,
+    checkSubscription,
+    sendTestPush,
+  };
+}
