@@ -21,6 +21,7 @@ import {
   Settings,
   Kanban,
   Bell,
+  Heart,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
@@ -98,24 +99,28 @@ export function AppSidebar() {
   // === GESTÃO DE LEADS ===
   const gestaoLeadsItems = isAdmin
     ? [
-        { title: "Pipeline", url: "/pipeline", icon: Kanban },
+        { title: "Pipeline Leads", url: "/pipeline", icon: Kanban },
         { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
         { title: "Escala Diária", url: "/escala-diaria", icon: CalendarDays },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
+        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
+        { title: "Pós-Vendas", url: "/pos-vendas", icon: Heart },
         { title: "Scripts", url: "/scripts", icon: FileEdit },
       ]
     : isGestor
     ? [
-        { title: "Pipeline", url: "/pipeline", icon: Kanban },
+        { title: "Pipeline Leads", url: "/pipeline", icon: Kanban },
         { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
+        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
+        { title: "Pós-Vendas", url: "/pos-vendas", icon: Heart },
         { title: "Scripts", url: "/scripts", icon: FileEdit },
       ]
     : [
-        { title: "Pipeline", url: "/pipeline", icon: Kanban },
-        { title: "Meus Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
+        { title: "Pipeline Leads", url: "/pipeline", icon: Kanban },
+        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
         { title: "Minha Agenda", url: "/agenda-visitas", icon: CalendarDays },
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
         { title: "Meus Scripts", url: "/scripts", icon: FileEdit },

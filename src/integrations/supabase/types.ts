@@ -2102,6 +2102,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          pipeline_tipo: string
           tipo: Database["public"]["Enums"]["pipeline_stage_type"]
         }
         Insert: {
@@ -2110,6 +2111,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          pipeline_tipo?: string
           tipo: Database["public"]["Enums"]["pipeline_stage_type"]
         }
         Update: {
@@ -2118,6 +2120,7 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          pipeline_tipo?: string
           tipo?: Database["public"]["Enums"]["pipeline_stage_type"]
         }
         Relationships: []
@@ -2740,6 +2743,12 @@ export type Database = {
         | "negociacao"
         | "assinatura"
         | "qualificacao"
+        | "contrato_gerado"
+        | "caiu"
+        | "boas_vindas"
+        | "envio_oportunidades"
+        | "atualizacao_bem_estar"
+        | "indicacoes"
       task_status: "pendente" | "em_andamento" | "concluida" | "cancelada"
     }
     CompositeTypes: {
@@ -2889,6 +2898,12 @@ export const Constants = {
         "negociacao",
         "assinatura",
         "qualificacao",
+        "contrato_gerado",
+        "caiu",
+        "boas_vindas",
+        "envio_oportunidades",
+        "atualizacao_bem_estar",
+        "indicacoes",
       ],
       task_status: ["pendente", "em_andamento", "concluida", "cancelada"],
     },

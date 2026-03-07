@@ -266,10 +266,10 @@ export default function MeusNegocios() {
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
-            Meus Negócios
+            Pipeline Negócios
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Gestão de oportunidades — visitas realizadas até venda
+            Gestão de oportunidades — proposta até assinatura
           </p>
         </div>
         <MonthSelector value={mes} onChange={setMes} />

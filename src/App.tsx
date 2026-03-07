@@ -42,6 +42,7 @@ const MeusNegocios = lazy(() => import("./pages/MeusNegocios"));
 const PipelineKanban = lazy(() => import("./pages/PipelineKanban"));
 const EscalaDiaria = lazy(() => import("./pages/EscalaDiaria"));
 const Welcome = lazy(() => import("./pages/Welcome"));
+const PosVendas = lazy(() => import("./pages/PosVendas"));
 const DisponibilidadePage = lazy(() => import("./pages/DisponibilidadePage"));
 const Notificacoes = lazy(() => import("./pages/Notificacoes"));
 
@@ -111,6 +112,7 @@ const App = () => (
             <Route path="/homi-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><HomiGerencial /></ProtectedPage>} />
             <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><HomiCeo /></ProtectedPage>} />
             <Route path="/meus-negocios" element={<ProtectedPage><MeusNegocios /></ProtectedPage>} />
+            <Route path="/pos-vendas" element={<ProtectedPage roles={["gestor", "admin"]}><PosVendas /></ProtectedPage>} />
 
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><BuscaLeads /></ProtectedPage>} />
