@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (resultado: string, feedback: string, visitaMarcada?: boolean) => Promise<void> | void;
+  onSubmit: (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => Promise<void> | void;
   leadName: string;
   callDuration?: number; // seconds
 }
@@ -21,6 +21,13 @@ const RESULTS = [
   { key: "numero_errado", label: "Número errado", icon: PhoneOff, color: "border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-600", shortcut: "2" },
   { key: "sem_interesse", label: "Sem interesse", icon: ThumbsDown, color: "border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600", shortcut: "3" },
   { key: "com_interesse", label: "Com interesse", icon: ThumbsUp, color: "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600", shortcut: "4" },
+];
+
+const INTERESSE_SUB_OPTIONS = [
+  { key: "pediu_informacoes", label: "Pediu informações", emoji: "📋", desc: "→ Pipeline: Contato Inicial" },
+  { key: "demonstrou_interesse", label: "Demonstrou interesse", emoji: "🔥", desc: "→ Pipeline: Atendimento" },
+  { key: "quer_visitar", label: "Quer visitar", emoji: "🏠", desc: "→ Pipeline: Possibilidade de Visita" },
+  { key: "visita_marcada", label: "Visita marcada", emoji: "📅", desc: "→ Pipeline: Visita Marcada" },
 ];
 
 const QUICK_FEEDBACKS: Record<string, string[]> = {
@@ -61,6 +68,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const [resultado, setResultado] = useState<string>("");
   const [feedback, setFeedback] = useState("");
   const [visitaMarcada, setVisitaMarcada] = useState(false);
+  const [interesseTipo, setInteresseTipo] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
