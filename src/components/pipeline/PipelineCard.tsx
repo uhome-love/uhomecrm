@@ -184,8 +184,8 @@ const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome,
             </span>
           </div>
 
-          {/* Origem / Campaign tag */}
-          {lead.origem && (
+          {/* Segmento tag + Origem (only if different from empreendimento) */}
+          {(segmento || (lead.origem && lead.origem !== lead.empreendimento)) && (
             <div className="flex items-center gap-1.5">
               {segmento && (
                 <span
@@ -195,9 +195,11 @@ const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome,
                   {segmento.nome.length > 10 ? segmento.nome.split(" ")[0] : segmento.nome}
                 </span>
               )}
-              <span className="text-[10px] text-muted-foreground/60 truncate">
-                {lead.origem.replace(/_/g, " ")}
-              </span>
+              {lead.origem && lead.origem !== lead.empreendimento && (
+                <span className="text-[10px] text-muted-foreground/60 truncate">
+                  {lead.origem.replace(/_/g, " ")}
+                </span>
+              )}
             </div>
           )}
 
