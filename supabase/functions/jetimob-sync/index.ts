@@ -213,6 +213,12 @@ serve(async (req) => {
         const msg = lead.message || "";
         const campanhaNome = extractCampanha(msg);
 
+        // Determine lead priority based on content
+        let prioridadeLead = "media";
+        if (msg && msg.length > 10) {
+          prioridadeLead = "alta"; // Lead sent a message → high priority
+        }
+
         const { error: insertError } = await adminClient
           .from("pipeline_leads")
           .insert({
@@ -228,6 +234,8 @@ serve(async (req) => {
             observacoes: msg || null,
             corretor_id: null,
             created_by: userId,
+            prioridade_lead: prioridadeLead,
+            aceite_status: "pendente_distribuicao",
           });
 
         if (insertError) {
