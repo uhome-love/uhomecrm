@@ -175,6 +175,30 @@ export function useVisitas(filters?: {
 
     queryClient.invalidateQueries({ queryKey: ["visitas"] });
     toast.success("📅 Visita registrada com sucesso!");
+
+    // Send WhatsApp confirmation (fire-and-forget)
+    if (data?.telefone) {
+      supabase.functions.invoke("visita-whatsapp-confirm", {
+        body: {
+          action: "confirm",
+          visita_data: {
+            nome_cliente: data.nome_cliente,
+            telefone: data.telefone,
+            empreendimento: data.empreendimento,
+            data_visita: data.data_visita,
+            hora_visita: data.hora_visita,
+            corretor_id: data.corretor_id,
+          },
+        },
+      }).then(({ error: whatsappError }) => {
+        if (whatsappError) {
+          console.warn("WhatsApp confirmation failed:", whatsappError);
+        } else {
+          toast.success("📱 Confirmação enviada por WhatsApp!", { duration: 3000 });
+        }
+      });
+    }
+
     return data;
   }, [user, queryClient]);
 
