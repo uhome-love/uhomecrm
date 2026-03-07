@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, MapPin, Target, FileText, DollarSign, TrendingUp, Percent, ArrowUpRight, ArrowDownRight, Minus, AlertTriangle, CheckCircle, Users, Zap, BarChart3 } from "lucide-react";
+import { Phone, MapPin, Target, FileText, DollarSign, TrendingUp, Percent, ArrowUpRight, ArrowDownRight, Minus, AlertTriangle, CheckCircle, Users, Zap, BarChart3, Activity } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import CeoMetasMensais from "./CeoMetasMensais";
 import SaudeOperacao from "./SaudeOperacao";
