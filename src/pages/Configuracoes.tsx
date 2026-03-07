@@ -10,9 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import AvatarUpload from "@/components/AvatarUpload";
 import { Loader2, Save, Lock, User, Mail, Phone } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
+import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function Configuracoes() {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -212,6 +215,9 @@ export default function Configuracoes() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Integrations - Admin only */}
+      {isAdmin && <MetaAdsSettings />}
 
       {/* Notification Preferences */}
       <NotificationPreferences />
