@@ -115,7 +115,7 @@ export default function PipelineKanban() {
   };
 
   const handleJetimobSync = useCallback(async () => {
-    if (!user) return;
+    if (!authUser) return;
     setSyncing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -140,7 +140,7 @@ export default function PipelineKanban() {
     } finally {
       setSyncing(false);
     }
-  }, [user, pipeline]);
+  }, [authUser, pipeline]);
 
   const clearFilters = () => {
     setFilterSegmento("all");
