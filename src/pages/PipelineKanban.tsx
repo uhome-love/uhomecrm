@@ -8,10 +8,11 @@ import MaterialsLibrary from "@/components/pipeline/MaterialsLibrary";
 import SequenceBuilder from "@/components/pipeline/SequenceBuilder";
 import SequenceLibrary from "@/components/pipeline/SequenceLibrary";
 import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
+import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashboard";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal, CloudDownload, BarChart3, FolderOpen, Zap, Radar } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
@@ -197,6 +198,10 @@ export default function PipelineKanban() {
               <TabsTrigger value="radar" className="text-xs gap-1.5 px-2 sm:px-3">
                 <Radar className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Radar</span>
+              </TabsTrigger>
+              <TabsTrigger value="relatorios" className="text-xs gap-1.5 px-2 sm:px-3">
+                <FileText className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Relatórios</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -428,6 +433,12 @@ export default function PipelineKanban() {
             stages={pipeline.stages}
             corretorNomes={pipeline.corretorNomes}
             onSelectLead={setSelectedLead}
+          />
+        ) : activeTab === "relatorios" ? (
+          <PipelineReportsDashboard
+            stages={pipeline.stages}
+            leads={pipeline.leads}
+            corretorNomes={pipeline.corretorNomes}
           />
         ) : null}
       </div>
