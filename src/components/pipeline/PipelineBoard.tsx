@@ -3,7 +3,7 @@ import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/useP
 import PipelineCard from "./PipelineCard";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlertTriangle, Clock, TrendingUp } from "lucide-react";
-import { differenceInHours } from "date-fns";
+import { differenceInHours, differenceInMinutes } from "date-fns";
 
 interface PipelineBoardProps {
   stages: PipelineStage[];
