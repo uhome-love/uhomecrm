@@ -800,6 +800,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               )}
             </TabsContent>
 
+            {/* ===== TAB: VISITAS ===== */}
+            <TabsContent value="visitas" className="px-5 pb-6 mt-0">
+              <OpportunityVisitasTab pipelineLeadId={lead.id} />
+            </TabsContent>
+
+            {/* ===== TAB: PROPOSTAS ===== */}
+            <TabsContent value="propostas" className="px-5 pb-6 mt-0">
+              <OpportunityPropostasTab
+                pipelineLeadId={lead.id}
+                valorEstimado={lead.valor_estimado}
+                corretorNomes={corretorNomes}
+              />
+            </TabsContent>
+
             {/* ===== TAB: TIMELINE ===== */}
             <TabsContent value="historico" className="px-5 pb-6 mt-0">
               <div className="relative">
