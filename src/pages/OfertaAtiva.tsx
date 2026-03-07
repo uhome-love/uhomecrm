@@ -8,10 +8,16 @@ import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import OAObservabilityPanel from "@/components/oferta-ativa/OAObservabilityPanel";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Navigate } from "react-router-dom";
 
 export default function OfertaAtiva() { // refresh
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isGestor, isCorretor } = useUserRole();
   const [activeTab, setActiveTab] = useState("performance");
+
+  // Corretores não acessam esta página — gamificação está na home do corretor
+  if (isCorretor && !isGestor && !isAdmin) {
+    return <Navigate to="/corretor" replace />;
+  }
 
   // Gestor only sees Live + Ranking tabs
   if (!isAdmin) {
