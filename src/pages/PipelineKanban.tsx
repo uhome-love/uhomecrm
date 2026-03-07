@@ -6,6 +6,7 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import PipelineFlowDashboard from "@/components/pipeline/PipelineFlowDashboard";
 import MaterialsLibrary from "@/components/pipeline/MaterialsLibrary";
 import SequenceBuilder from "@/components/pipeline/SequenceBuilder";
+import SequenceLibrary from "@/components/pipeline/SequenceLibrary";
 import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
@@ -417,7 +418,8 @@ export default function PipelineKanban() {
             <MaterialsLibrary />
           </div>
         ) : activeTab === "sequencias" ? (
-          <div className="h-full overflow-auto p-1">
+          <div className="h-full overflow-auto p-1 space-y-6">
+            <SequenceLibrary onSequenceCreated={() => pipeline.reload()} />
             <SequenceBuilder />
           </div>
         ) : activeTab === "radar" ? (
