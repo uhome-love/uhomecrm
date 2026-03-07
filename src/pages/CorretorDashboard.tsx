@@ -20,8 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
-import RankingGestaoLeads from "@/components/corretor/RankingGestaoLeads";
-import { useMissoesLeads } from "@/hooks/useMissoesLeads";
+import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import ScoringLegend from "@/components/oferta-ativa/ScoringLegend";
 import CorretorDisponibilidadePanel from "@/components/disponibilidade/CorretorDisponibilidadePanel";
 
@@ -80,7 +79,6 @@ export default function CorretorDashboard() {
   const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const motivation = useDailyMotivation();
   const { user } = useAuth();
-  const { ranking, rankingLoading, userId } = useMissoesLeads();
 
   const [activeTab, setActiveTab] = useState("central");
   const [nome, setNome] = useState("");
@@ -480,7 +478,7 @@ export default function CorretorDashboard() {
 
         {/* ── Tab: Ranking ── */}
         <TabsContent value="ranking" className="mt-4">
-          <RankingGestaoLeads ranking={ranking} loading={rankingLoading} userId={userId} />
+          <RankingPanel />
         </TabsContent>
       </Tabs>
     </div>
