@@ -79,7 +79,7 @@ export default function CorretorDashboard() {
   const { progress, goals, saveGoals } = useCorretorProgress();
   const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const motivation = useDailyMotivation();
-  const { user } = useAuth();
+  const { ranking, rankingLoading, userId } = useMissoesLeads();
 
   const [activeTab, setActiveTab] = useState("central");
   const [nome, setNome] = useState("");
@@ -479,7 +479,7 @@ export default function CorretorDashboard() {
 
         {/* ── Tab: Ranking ── */}
         <TabsContent value="ranking" className="mt-4">
-          <RankingPanel />
+          <RankingGestaoLeads ranking={ranking} loading={rankingLoading} userId={userId} />
         </TabsContent>
       </Tabs>
     </div>
