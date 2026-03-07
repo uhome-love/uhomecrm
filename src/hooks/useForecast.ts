@@ -142,10 +142,10 @@ export function useForecast(): ForecastData {
         ? vgv_real / vendas_reais
         : (propostas_reais > 0 ? (vgv_real + vgv_gerado) / propostas_reais : 700000);
 
-      // Predictions
-      const propostas_estimadas = Math.round(visitas_realizadas * conv_visita_proposta);
-      const vendas_previstas = Math.round(propostas_estimadas * conv_proposta_venda);
-      const vgv_previsto = vendas_previstas * ticket_medio;
+      // Predictions: use MAX of estimated vs real (real data is the floor)
+      const propostas_estimadas = Math.max(propostas_reais, Math.round(visitas_realizadas * conv_visita_proposta));
+      const vendas_previstas = Math.max(vendas_reais, Math.round(propostas_estimadas * conv_proposta_venda));
+      const vgv_previsto = Math.max(vgv_real, vendas_previstas * ticket_medio);
 
       // Metas
       const meta = metaMap.get(gId);
