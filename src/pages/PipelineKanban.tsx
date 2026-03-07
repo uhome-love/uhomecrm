@@ -138,24 +138,24 @@ export default function PipelineKanban() {
       {/* Controls — fixed top area */}
       <div className="shrink-0 space-y-3 pb-3">
         {/* Top bar */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0">
             <TabsList className="h-9">
-              <TabsTrigger value="kanban" className="text-xs gap-1.5 px-3">
+              <TabsTrigger value="kanban" className="text-xs gap-1.5 px-2 sm:px-3">
                 <LayoutGrid className="h-3.5 w-3.5" />
-                Kanban
+                <span className="hidden sm:inline">Kanban</span>
               </TabsTrigger>
-              <TabsTrigger value="flow" className="text-xs gap-1.5 px-3">
+              <TabsTrigger value="flow" className="text-xs gap-1.5 px-2 sm:px-3">
                 <BarChart3 className="h-3.5 w-3.5" />
-                Fluxo & Score
+                <span className="hidden sm:inline">Fluxo & Score</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
           {activeTab === "kanban" && (
             <>
-              <div className="relative flex-1 min-w-[200px] max-w-md">
+              <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar lead..."
@@ -177,7 +177,7 @@ export default function PipelineKanban() {
                 className="gap-1.5 h-9"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
-                Filtros
+                <span className="hidden sm:inline">Filtros</span>
                 {activeFiltersCount > 0 && (
                   <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
                     {activeFiltersCount}
@@ -187,7 +187,7 @@ export default function PipelineKanban() {
             </>
           )}
 
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleRefresh} disabled={refreshing}>
+          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
 
@@ -198,12 +198,24 @@ export default function PipelineKanban() {
                 size="sm"
                 onClick={handleJetimobSync}
                 disabled={syncing}
-                className="gap-1.5 h-9"
+                className="gap-1.5 h-9 hidden sm:flex"
               >
                 {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
                 {syncing ? "Sincronizando..." : "Sync Jetimob"}
               </Button>
-              <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleJetimobSync}
+                disabled={syncing}
+                className="h-9 w-9 sm:hidden shrink-0"
+              >
+                {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
+              </Button>
+              <Button onClick={() => setAddOpen(true)} size="icon" className="h-9 w-9 sm:hidden shrink-0">
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9 hidden sm:flex">
                 <Plus className="h-4 w-4" />
                 Novo Lead
               </Button>
@@ -215,7 +227,7 @@ export default function PipelineKanban() {
         {showFilters && activeTab === "kanban" && (
           <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border bg-card animate-fade-in">
             <Select value={filterSegmento} onValueChange={setFilterSegmento}>
-              <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
                 <SelectValue placeholder="Segmento" />
               </SelectTrigger>
               <SelectContent>
@@ -232,7 +244,7 @@ export default function PipelineKanban() {
             </Select>
 
             <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-              <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
                 <SelectValue placeholder="Origem" />
               </SelectTrigger>
               <SelectContent>
@@ -244,7 +256,7 @@ export default function PipelineKanban() {
             </Select>
 
             <Select value={filterCorretor} onValueChange={setFilterCorretor}>
-              <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
                 <SelectValue placeholder="Corretor" />
               </SelectTrigger>
               <SelectContent>
@@ -256,7 +268,7 @@ export default function PipelineKanban() {
             </Select>
 
             <Select value={filterCampanha} onValueChange={setFilterCampanha}>
-              <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
                 <SelectValue placeholder="Campanha" />
               </SelectTrigger>
               <SelectContent>
@@ -277,10 +289,10 @@ export default function PipelineKanban() {
 
         {/* Summary */}
         {activeTab === "kanban" && (
-          <div className="flex items-center gap-3 px-1">
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="h-4 w-4 text-primary" />
-              <span className="text-sm font-bold text-foreground">
+          <div className="flex items-center gap-2 flex-wrap px-1">
+            <div className="flex items-center gap-1.5">
+              <LayoutGrid className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs sm:text-sm font-bold text-foreground">
                 {filteredLeads.length} oportunidades
               </span>
             </div>

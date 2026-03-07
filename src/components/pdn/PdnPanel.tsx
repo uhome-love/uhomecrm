@@ -47,7 +47,8 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCorretor, setFilterCorretor] = useState("");
-  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  const [viewMode, setViewMode] = useState<"table" | "kanban">(isMobile ? "kanban" : "table");
 
   const uniqueCorretores = [...new Set(entries.map(e => e.corretor).filter(Boolean))];
 
@@ -184,13 +185,13 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
+        <div className="relative flex-1 min-w-[120px] sm:min-w-[180px] max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input className="pl-8 h-8 text-xs" placeholder="Buscar por nome..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <Input className="pl-8 h-8 text-xs" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         </div>
         {uniqueCorretores.length > 0 && (
           <Select value={filterCorretor} onValueChange={v => setFilterCorretor(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Corretor" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-28 sm:w-32 text-xs"><SelectValue placeholder="Corretor" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
               {uniqueCorretores.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -217,13 +218,15 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
             <LayoutGrid className="h-3.5 w-3.5" />
           </Button>
         </div>
-        <div className="flex-1" />
-        <Button size="sm" variant="outline" className="gap-1 text-xs h-8" onClick={handleExportCsv}>
-          <Download className="h-3.5 w-3.5" /> CSV
-        </Button>
-        <Button size="sm" variant="outline" className="gap-1 text-xs h-8" onClick={handleExportPdf}>
-          <FileDown className="h-3.5 w-3.5" /> PDF
-        </Button>
+        <div className="flex-1 hidden sm:block" />
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="outline" className="gap-1 text-xs h-8" onClick={handleExportCsv}>
+            <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">CSV</span>
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1 text-xs h-8" onClick={handleExportPdf}>
+            <FileDown className="h-3.5 w-3.5" /> <span className="hidden sm:inline">PDF</span>
+          </Button>
+        </div>
       </div>
 
       {loading ? (

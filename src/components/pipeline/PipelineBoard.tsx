@@ -15,8 +15,13 @@ interface PipelineBoardProps {
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
 }
 
-const COLUMN_WIDTH = 300;
+const COLUMN_WIDTH_DESKTOP = 300;
+const COLUMN_WIDTH_MOBILE = 280;
 const COLUMN_GAP = 12;
+
+function getColumnWidth() {
+  return typeof window !== "undefined" && window.innerWidth < 640 ? COLUMN_WIDTH_MOBILE : COLUMN_WIDTH_DESKTOP;
+}
 
 function getStageAlerts(leads: PipelineLead[]) {
   let warnings = 0;
@@ -69,7 +74,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     if (!el) return;
     setCanScrollLeft(el.scrollLeft > 10);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
-    const idx = Math.round(el.scrollLeft / (COLUMN_WIDTH + COLUMN_GAP));
+    const colW = getColumnWidth();
+    const idx = Math.round(el.scrollLeft / (colW + COLUMN_GAP));
     setActiveIndex(Math.min(idx, stages.length - 1));
   }, [stages.length]);
 
@@ -89,13 +95,14 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const scrollTo = (direction: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollBy({ left: direction === "left" ? -(COLUMN_WIDTH + COLUMN_GAP) : (COLUMN_WIDTH + COLUMN_GAP), behavior: "smooth" });
+    const colW = getColumnWidth();
+    el.scrollBy({ left: direction === "left" ? -(colW + COLUMN_GAP) : (colW + COLUMN_GAP), behavior: "smooth" });
   };
 
   const scrollToIndex = (idx: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ left: idx * (COLUMN_WIDTH + COLUMN_GAP), behavior: "smooth" });
+    el.scrollTo({ left: idx * (getColumnWidth() + COLUMN_GAP), behavior: "smooth" });
   };
 
   // Drag to scroll
@@ -206,7 +213,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     ? "ring-2 ring-primary/50 bg-primary/5 shadow-xl shadow-primary/10 scale-[1.01]"
                     : "bg-muted/20"
                 }`}
-                style={{ width: `${COLUMN_WIDTH}px`, scrollSnapAlign: "start" }}
+                style={{ width: `${getColumnWidth()}px`, scrollSnapAlign: "start" }}
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}

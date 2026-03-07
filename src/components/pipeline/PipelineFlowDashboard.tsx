@@ -247,7 +247,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-stretch gap-1 overflow-x-auto pb-2">
+          <div className="flex items-stretch gap-1 overflow-x-auto pb-2 snap-x snap-mandatory">
             {stageMetrics
               .filter(m => !["descarte"].includes(m.stage.tipo))
               .map((metric, i, arr) => {
@@ -258,7 +258,7 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                 return (
                   <div key={metric.stage.id} className="flex items-center gap-1">
                     <div
-                      className={`flex flex-col items-center p-3 rounded-lg border min-w-[120px] transition-all ${
+                      className={`flex flex-col items-center p-2 sm:p-3 rounded-lg border min-w-[100px] sm:min-w-[120px] snap-start transition-all ${
                         hasSlaIssue ? "border-red-500/40 bg-red-500/5" : "border-border/50 bg-card"
                       }`}
                     >
