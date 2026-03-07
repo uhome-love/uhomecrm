@@ -295,11 +295,19 @@ export default function MeusNegocios() {
           segmentos={pipeline.segmentos}
           corretorNomes={pipeline.corretorNomes}
           parcerias={parcerias}
-          onMoveLead={pipeline.moveLead}
+          onMoveLead={handleMoveLead}
           onSelectLead={setSelectedLead}
           onTransferred={() => { pipeline.reload(); }}
         />
       </div>
+
+      {/* Loss Reason Modal */}
+      <LossReasonModal
+        open={lossModalOpen}
+        leadNome={lossLeadNome}
+        onConfirm={handleLossConfirm}
+        onCancel={handleLossCancel}
+      />
 
       {/* Dialogs */}
       {canAdd && (
