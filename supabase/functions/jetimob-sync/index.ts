@@ -132,6 +132,13 @@ serve(async (req) => {
     const data = await apiResponse.json();
     let apiLeads = Array.isArray(data?.result) ? data.result : Array.isArray(data) ? data : [];
 
+    // CRITICAL: Only import leads created from 2026-03-07 onwards (today forward)
+    const SYNC_CUTOFF = "2026-03-07T00:00:00.000000Z";
+    apiLeads = apiLeads.filter((lead: any) => {
+      const createdAt = lead.created_at || "";
+      return createdAt >= SYNC_CUTOFF;
+    });
+
     if (broker_id) {
       apiLeads = apiLeads.filter((lead: any) => {
         const rid = lead.broker_id || lead.responsavel_id || lead.user_id;
