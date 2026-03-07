@@ -249,6 +249,7 @@ export default function PipelineKanban() {
           stages={pipeline.stages}
           leads={filteredLeads}
           segmentos={pipeline.segmentos}
+          corretorNomes={pipeline.corretorNomes}
           onMoveLead={pipeline.moveLead}
           onSelectLead={setSelectedLead}
         />

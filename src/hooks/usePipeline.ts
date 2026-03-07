@@ -54,6 +54,7 @@ export function usePipeline() {
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [leads, setLeads] = useState<PipelineLead[]>([]);
   const [segmentos, setSegmentos] = useState<PipelineSegmento[]>([]);
+  const [corretorNomes, setCorretorNomes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const loadStages = useCallback(async () => {
@@ -103,7 +104,22 @@ export function usePipeline() {
       console.error("Error loading pipeline leads:", error);
       return;
     }
-    setLeads((data || []) as PipelineLead[]);
+    const leadsData = (data || []) as PipelineLead[];
+    setLeads(leadsData);
+
+    // Load corretor names for leads that have corretor_id
+    const corretorIds = [...new Set(leadsData.map(l => l.corretor_id).filter(Boolean))] as string[];
+    if (corretorIds.length > 0) {
+      const { data: members } = await supabase
+        .from("team_members")
+        .select("user_id, nome")
+        .in("user_id", corretorIds);
+      if (members) {
+        const map: Record<string, string> = {};
+        members.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
+        setCorretorNomes(map);
+      }
+    }
   }, [user]);
 
   useEffect(() => {
@@ -250,6 +266,7 @@ export function usePipeline() {
     stages,
     leads,
     segmentos,
+    corretorNomes,
     loading,
     moveLead,
     addLead,

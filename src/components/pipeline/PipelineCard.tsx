@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface PipelineCardProps {
   lead: PipelineLead;
   segmentos: PipelineSegmento[];
+  corretorNome?: string;
   onDragStart: () => void;
   onClick: () => void;
 }
@@ -63,7 +64,7 @@ const activityStyles = {
   danger: { dot: "bg-destructive", bg: "bg-destructive/10", text: "text-destructive", border: "border-destructive/30" },
 };
 
-const PipelineCard = memo(function PipelineCard({ lead, segmentos, onDragStart, onClick }: PipelineCardProps) {
+const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome, onDragStart, onClick }: PipelineCardProps) {
   const [hovered, setHovered] = useState(false);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
   const activity = getActivityInfo(lead.stage_changed_at);
@@ -200,20 +201,18 @@ const PipelineCard = memo(function PipelineCard({ lead, segmentos, onDragStart, 
             </div>
           )}
 
-          {/* Footer: corretor avatar + inactivity alert */}
+          {/* Footer: corretor info + inactivity alert */}
           <div className="flex items-center justify-between pt-1.5 border-t border-border/30">
-            {/* Corretor placeholder */}
-            <div className="flex items-center gap-1.5">
-              <Avatar className="h-5 w-5 text-[8px] border border-border/40">
-                <AvatarFallback className="bg-muted text-muted-foreground text-[8px]">
-                  {initials.slice(0, 1)}
+            {/* Corretor info */}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Avatar className="h-5 w-5 text-[8px] border border-border/40 shrink-0">
+                <AvatarFallback className="bg-primary/10 text-primary text-[8px]">
+                  {corretorNome ? corretorNome.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase() : "?"}
                 </AvatarFallback>
               </Avatar>
-              {lead.origem_detalhe && (
-                <span className="text-[9px] text-muted-foreground/50 truncate max-w-[80px]">
-                  {lead.origem_detalhe}
-                </span>
-              )}
+              <span className="text-[10px] text-muted-foreground truncate max-w-[100px] font-medium">
+                {corretorNome || "Sem corretor"}
+              </span>
             </div>
 
             {/* Activity badge */}
