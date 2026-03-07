@@ -52,6 +52,8 @@ export default function PipelineKanban() {
     let result = pipeline.leads;
     if (filterSegmento !== "all") result = result.filter(l => l.segmento_id === filterSegmento);
     if (filterOrigem !== "all") result = result.filter(l => l.origem === filterOrigem);
+    if (filterCorretor !== "all") result = result.filter(l => l.corretor_id === filterCorretor);
+    if (filterCampanha !== "all") result = result.filter(l => l.empreendimento === filterCampanha);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(l =>
@@ -62,14 +64,14 @@ export default function PipelineKanban() {
       );
     }
     return result;
-  }, [pipeline.leads, filterSegmento, filterOrigem, searchQuery]);
+  }, [pipeline.leads, filterSegmento, filterOrigem, filterCorretor, filterCampanha, searchQuery]);
 
   const totalVGV = useMemo(() =>
     filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
     [filteredLeads]
   );
 
-  const activeFiltersCount = (filterSegmento !== "all" ? 1 : 0) + (filterOrigem !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
+  const activeFiltersCount = (filterSegmento !== "all" ? 1 : 0) + (filterOrigem !== "all" ? 1 : 0) + (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
 
   const formatVGV = (value: number) => {
     if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
