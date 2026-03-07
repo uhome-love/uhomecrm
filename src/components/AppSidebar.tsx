@@ -81,7 +81,13 @@ export function AppSidebar() {
   }, [alerts]);
 
   // === GESTOR / ADMIN nav ===
-  const principalItems = isGestor || isAdmin
+  const principalItems = isAdmin
+    ? [
+        { title: "Início", url: "/", icon: Home },
+        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+        { title: "HOMI CEO", url: "/homi-gerente", icon: Bot },
+      ]
+    : isGestor
     ? [
         { title: "Início", url: "/", icon: Home },
         { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
