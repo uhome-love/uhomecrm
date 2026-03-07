@@ -11,6 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import AutomationWizard from "@/components/automations/AutomationWizard";
 import AutomationLogsDialog from "@/components/automations/AutomationLogsDialog";
+import SequenceTemplates from "@/components/automations/SequenceTemplates";
 
 interface Automation {
   id: string;
