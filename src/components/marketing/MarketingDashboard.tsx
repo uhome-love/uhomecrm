@@ -206,28 +206,28 @@ export default function MarketingDashboard() {
         </Card>
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <Users className="h-4 w-4 mx-auto text-success mb-1" />
+            <Users className="h-4 w-4 mx-auto text-green-500 mb-1" />
             <p className="text-lg font-bold">{formatNum(totals.leads)}</p>
             <p className="text-[10px] text-muted-foreground">Leads Gerados</p>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <TrendingUp className="h-4 w-4 mx-auto text-warning mb-1" />
+            <TrendingUp className="h-4 w-4 mx-auto text-yellow-500 mb-1" />
             <p className="text-lg font-bold">{cplTotal > 0 ? formatBRL(cplTotal) : "—"}</p>
             <p className="text-[10px] text-muted-foreground">CPL Médio</p>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <MousePointerClick className="h-4 w-4 mx-auto text-info mb-1" />
+            <MousePointerClick className="h-4 w-4 mx-auto text-blue-500 mb-1" />
             <p className="text-lg font-bold">{formatNum(totals.cliques)}</p>
             <p className="text-[10px] text-muted-foreground">Cliques</p>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="p-3 text-center">
-            <Trophy className="h-4 w-4 mx-auto text-destructive mb-1" />
+            <Trophy className="h-4 w-4 mx-auto text-red-500 mb-1" />
             <p className="text-lg font-bold">{formatNum(totals.vendas)}</p>
             <p className="text-[10px] text-muted-foreground">Vendas</p>
           </CardContent>
