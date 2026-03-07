@@ -803,6 +803,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOp
           </ScrollArea>
         </Tabs>
       </SheetContent>
+
+      <PartnershipDialog
+        open={partnerOpen}
+        onOpenChange={setPartnerOpen}
+        leadId={lead.id}
+        leadNome={lead.nome}
+        corretorPrincipalId={lead.corretor_id}
+      />
     </Sheet>
   );
 }
