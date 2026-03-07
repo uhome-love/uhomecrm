@@ -214,7 +214,7 @@ export default function CorretorDashboard() {
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold text-foreground">⊙ Meta do Dia</p>
-                    <DailyProgressCard progress={progress} goals={goals} saveGoals={saveGoals} variant="edit-only" />
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px] text-primary" onClick={() => { /* toggle edit inline */ }}>Editar</Button>
                   </div>
                   {[
                     { label: "Tentativas", value: progress.tentativas, max: goals?.meta_ligacoes || 30, pct: ligPct },
