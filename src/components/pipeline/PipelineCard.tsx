@@ -259,6 +259,37 @@ const PipelineCard = memo(function PipelineCard({ lead, stage, segmentos, corret
             </div>
           )}
 
+          {/* Tempo parado — explícito */}
+          {(() => {
+            const days = differenceInDays(new Date(), new Date(lead.stage_changed_at));
+            const hours = differenceInHours(new Date(), new Date(lead.stage_changed_at));
+            if (days >= 3) {
+              return (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/15 border border-red-300/50 text-[10px] font-bold text-red-600 dark:text-red-400">
+                  <Hourglass className="h-3 w-3" />
+                  ⚠️ {days} dias sem contato
+                </div>
+              );
+            }
+            if (days >= 2) {
+              return (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/15 border border-amber-300/50 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                  <Hourglass className="h-3 w-3" />
+                  ⏱ 2 dias sem contato
+                </div>
+              );
+            }
+            if (hours >= 24) {
+              return (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-200/50 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                  <Clock className="h-3 w-3" />
+                  1 dia sem contato
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Time indicators */}
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground/70">
             <Tooltip>
