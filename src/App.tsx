@@ -46,6 +46,7 @@ const PosVendas = lazy(() => import("./pages/PosVendas"));
 const DisponibilidadePage = lazy(() => import("./pages/DisponibilidadePage"));
 const AutomacoesPage = lazy(() => import("./pages/AutomacoesPage"));
 const Notificacoes = lazy(() => import("./pages/Notificacoes"));
+const VisitaConfirmacao = lazy(() => import("./pages/VisitaConfirmacao"));
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
             <Route path="/welcome" element={<Suspense fallback={<PageLoader />}><Welcome /></Suspense>} />
+            <Route path="/visita/:token" element={<Suspense fallback={<PageLoader />}><VisitaConfirmacao /></Suspense>} />
             {/* Acessível a todos os autenticados */}
             <Route path="/" element={<ProtectedPage><HomeDashboard /></ProtectedPage>} />
 
