@@ -174,7 +174,16 @@ export default function MarketingDashboard() {
           </h2>
           <p className="text-xs text-muted-foreground mt-1">Análise de campanhas, portais e canais de marketing</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={async () => { await syncNow(); reload(); }}
+            disabled={syncing}
+            className="gap-2"
+          >
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {syncing ? "Sincronizando..." : "Sincronizar Meta Ads"}
+          </Button>
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
           <Button onClick={() => fileRef.current?.click()} disabled={importing} className="gap-2">
             {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
