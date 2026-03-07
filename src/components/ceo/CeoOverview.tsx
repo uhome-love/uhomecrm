@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
 import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, MapPin, Target, FileText, DollarSign, TrendingUp, Percent, ArrowUpRight, ArrowDownRight, Minus, AlertTriangle, CheckCircle, Users, Zap, BarChart3 } from "lucide-react";
+import { Phone, MapPin, Target, FileText, DollarSign, TrendingUp, Percent, ArrowUpRight, ArrowDownRight, Minus, AlertTriangle, CheckCircle, Users, Zap, BarChart3, Activity } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import CeoMetasMensais from "./CeoMetasMensais";
+import SaudeOperacao from "./SaudeOperacao";
 
 const fmtCurrency = (v: number) => {
   if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(2).replace(".", ",")}M`;
@@ -238,6 +239,15 @@ export default function CeoOverview() {
                 <span>Gargalo detectado em etapas com conversão abaixo de 20%</span>
               </div>
             )}
+          </div>
+
+          {/* ═══ SAÚDE DA OPERAÇÃO ═══ */}
+          <div className="rounded-xl border border-border bg-card shadow-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="h-4 w-4 text-primary" />
+              <h3 className="font-display font-semibold text-sm">Saúde da Operação</h3>
+            </div>
+            <SaudeOperacao />
           </div>
 
           {/* Metas Mensais CEO */}
