@@ -1259,6 +1259,100 @@ export type Database = {
           },
         ]
       }
+      pipeline_anotacoes: {
+        Row: {
+          autor_id: string
+          autor_nome: string | null
+          conteudo: string
+          created_at: string
+          fixada: boolean
+          id: string
+          pipeline_lead_id: string
+        }
+        Insert: {
+          autor_id: string
+          autor_nome?: string | null
+          conteudo: string
+          created_at?: string
+          fixada?: boolean
+          id?: string
+          pipeline_lead_id: string
+        }
+        Update: {
+          autor_id?: string
+          autor_nome?: string | null
+          conteudo?: string
+          created_at?: string
+          fixada?: boolean
+          id?: string
+          pipeline_lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_anotacoes_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pipeline_atividades: {
+        Row: {
+          created_at: string
+          created_by: string
+          data: string
+          descricao: string | null
+          hora: string | null
+          id: string
+          pipeline_lead_id: string
+          prioridade: string
+          responsavel_id: string | null
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          data?: string
+          descricao?: string | null
+          hora?: string | null
+          id?: string
+          pipeline_lead_id: string
+          prioridade?: string
+          responsavel_id?: string | null
+          status?: string
+          tipo?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          data?: string
+          descricao?: string | null
+          hora?: string | null
+          id?: string
+          pipeline_lead_id?: string
+          prioridade?: string
+          responsavel_id?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_atividades_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_historico: {
         Row: {
           created_at: string
@@ -1315,6 +1409,7 @@ export type Database = {
         Row: {
           aceite_expira_em: string | null
           aceito_em: string | null
+          bairro_regiao: string | null
           corretor_id: string | null
           created_at: string
           created_by: string | null
@@ -1322,14 +1417,20 @@ export type Database = {
           distribuido_em: string | null
           email: string | null
           empreendimento: string | null
+          forma_pagamento: string | null
+          hora_proxima_acao: string | null
           id: string
+          imovel_troca: boolean | null
           jetimob_lead_id: string | null
           motivo_descarte: string | null
+          nivel_interesse: string | null
           nome: string
+          objetivo_cliente: string | null
           observacoes: string | null
           ordem_no_stage: number
           origem: string | null
           origem_detalhe: string | null
+          prioridade_acao: string | null
           produto_id: string | null
           proxima_acao: string | null
           segmento_id: string | null
@@ -1337,12 +1438,14 @@ export type Database = {
           stage_id: string
           telefone: string | null
           telefone2: string | null
+          temperatura: string | null
           updated_at: string
           valor_estimado: number | null
         }
         Insert: {
           aceite_expira_em?: string | null
           aceito_em?: string | null
+          bairro_regiao?: string | null
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1350,14 +1453,20 @@ export type Database = {
           distribuido_em?: string | null
           email?: string | null
           empreendimento?: string | null
+          forma_pagamento?: string | null
+          hora_proxima_acao?: string | null
           id?: string
+          imovel_troca?: boolean | null
           jetimob_lead_id?: string | null
           motivo_descarte?: string | null
+          nivel_interesse?: string | null
           nome: string
+          objetivo_cliente?: string | null
           observacoes?: string | null
           ordem_no_stage?: number
           origem?: string | null
           origem_detalhe?: string | null
+          prioridade_acao?: string | null
           produto_id?: string | null
           proxima_acao?: string | null
           segmento_id?: string | null
@@ -1365,12 +1474,14 @@ export type Database = {
           stage_id: string
           telefone?: string | null
           telefone2?: string | null
+          temperatura?: string | null
           updated_at?: string
           valor_estimado?: number | null
         }
         Update: {
           aceite_expira_em?: string | null
           aceito_em?: string | null
+          bairro_regiao?: string | null
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1378,14 +1489,20 @@ export type Database = {
           distribuido_em?: string | null
           email?: string | null
           empreendimento?: string | null
+          forma_pagamento?: string | null
+          hora_proxima_acao?: string | null
           id?: string
+          imovel_troca?: boolean | null
           jetimob_lead_id?: string | null
           motivo_descarte?: string | null
+          nivel_interesse?: string | null
           nome?: string
+          objetivo_cliente?: string | null
           observacoes?: string | null
           ordem_no_stage?: number
           origem?: string | null
           origem_detalhe?: string | null
+          prioridade_acao?: string | null
           produto_id?: string | null
           proxima_acao?: string | null
           segmento_id?: string | null
@@ -1393,6 +1510,7 @@ export type Database = {
           stage_id?: string
           telefone?: string | null
           telefone2?: string | null
+          temperatura?: string | null
           updated_at?: string
           valor_estimado?: number | null
         }
@@ -1514,6 +1632,59 @@ export type Database = {
           tipo?: Database["public"]["Enums"]["pipeline_stage_type"]
         }
         Relationships: []
+      }
+      pipeline_tarefas: {
+        Row: {
+          concluida_em: string | null
+          created_at: string
+          created_by: string
+          descricao: string | null
+          id: string
+          pipeline_lead_id: string
+          prioridade: string
+          responsavel_id: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          vence_em: string | null
+        }
+        Insert: {
+          concluida_em?: string | null
+          created_at?: string
+          created_by: string
+          descricao?: string | null
+          id?: string
+          pipeline_lead_id: string
+          prioridade?: string
+          responsavel_id?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          vence_em?: string | null
+        }
+        Update: {
+          concluida_em?: string | null
+          created_at?: string
+          created_by?: string
+          descricao?: string | null
+          id?: string
+          pipeline_lead_id?: string
+          prioridade?: string
+          responsavel_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          vence_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_tarefas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
