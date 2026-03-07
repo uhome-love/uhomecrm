@@ -96,7 +96,7 @@ const App = () => (
             <Route path="/ranking" element={<ProtectedPage><RankingComercial /></ProtectedPage>} />
             <Route path="/meu-time" element={<ProtectedPage roles={["gestor", "admin"]}><MeuTime /></ProtectedPage>} />
             <Route path="/oferta-ativa" element={<ProtectedPage><OfertaAtiva /></ProtectedPage>} />
-            <Route path="/pipeline" element={<ProtectedPage><PipelineKanban /></ProtectedPage>} />
+            <Route path="/pipeline" element={<ProtectedPage roles={["admin"]}><PipelineKanban /></ProtectedPage>} />
             <Route path="/escala-diaria" element={<ProtectedPage><EscalaDiaria /></ProtectedPage>} />
 
             {/* Corretor — todos autenticados */}
