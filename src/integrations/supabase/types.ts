@@ -2102,6 +2102,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          pipeline_tipo: string
           tipo: Database["public"]["Enums"]["pipeline_stage_type"]
         }
         Insert: {
@@ -2110,6 +2111,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          pipeline_tipo?: string
           tipo: Database["public"]["Enums"]["pipeline_stage_type"]
         }
         Update: {
@@ -2118,6 +2120,7 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          pipeline_tipo?: string
           tipo?: Database["public"]["Enums"]["pipeline_stage_type"]
         }
         Relationships: []
