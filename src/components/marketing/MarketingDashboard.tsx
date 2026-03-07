@@ -1,13 +1,14 @@
 import { useState, useRef } from "react";
 import { useMarketing, getCanalLabel } from "@/hooks/useMarketing";
+import { useMetaAdsSync } from "@/hooks/useMetaAdsSync";
 import IaCoreAction from "@/components/IaCoreAction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, TrendingUp, DollarSign, Users, MousePointerClick, BarChart3, Trophy, Trash2, Plus, FileDown, Loader2 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Upload, TrendingUp, DollarSign, Users, MousePointerClick, BarChart3, Trophy, Trash2, Plus, FileDown, Loader2, RefreshCw, Target } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, FunnelChart, Funnel, LabelList } from "recharts";
 import { toast } from "sonner";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
@@ -35,6 +36,7 @@ export default function MarketingDashboard() {
     entries, reports, loading, importing, channelStats, totals,
     importReport, addManualEntry, updateEntry, deleteEntry, deleteReport, reload,
   } = useMarketing();
+  const { syncing, syncNow } = useMetaAdsSync();
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -67,6 +69,9 @@ export default function MarketingDashboard() {
 
   const cplTotal = totals.leads > 0 ? totals.investimento / totals.leads : 0;
   const cpcTotal = totals.cliques > 0 ? totals.investimento / totals.cliques : 0;
+  const vgvPerReal = totals.investimento > 0
+    ? channelStats.reduce((s, c) => s + (c.vendas || 0), 0) // placeholder — will be VGV when available
+    : 0;
 
   const chartData = channelStats.map(s => ({
     name: getCanalLabel(s.canal),
