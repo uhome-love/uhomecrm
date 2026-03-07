@@ -217,11 +217,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean) => {
+  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => {
     if (!lead || !actionTaken || submitting) return;
     setSubmitting(true);
     try {
-      const result = await registrar(lead, actionTaken, resultado, feedback, lista, currentIdempotencyKey || undefined, visitaMarcada);
+      const result = await registrar(lead, actionTaken, resultado, feedback, lista, currentIdempotencyKey || undefined, visitaMarcada, interesseTipo);
       if (!result?.success) { setSubmitting(false); return; }
 
       if (!result.idempotent) {
@@ -232,9 +232,12 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
         if (resultado === "com_interesse") {
           setStreak(prev => prev + 1);
-          toast.success("🎉 APROVEITADO! +3 pontos! Mandou bem!", { duration: 4000 });
-          if (visitaMarcada && lead) {
-            // Auto-create visita in Agenda de Visitas
+          const tipoLabel = interesseTipo === "visita_marcada" ? "Visita Marcada" 
+            : interesseTipo === "quer_visitar" ? "Possibilidade de Visita"
+            : interesseTipo === "demonstrou_interesse" ? "Atendimento"
+            : "Contato Inicial";
+          toast.success(`🎉 APROVEITADO → Pipeline: ${tipoLabel}! +3 pontos!`, { duration: 4000 });
+          if ((visitaMarcada || interesseTipo === "visita_marcada") && lead) {
             createVisitaFromOA({
               corretorId: user!.id,
               leadId: lead.id,

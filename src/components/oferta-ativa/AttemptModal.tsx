@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (resultado: string, feedback: string, visitaMarcada?: boolean) => Promise<void> | void;
+  onSubmit: (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => Promise<void> | void;
   leadName: string;
   callDuration?: number; // seconds
 }
@@ -21,6 +21,13 @@ const RESULTS = [
   { key: "numero_errado", label: "Número errado", icon: PhoneOff, color: "border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-600", shortcut: "2" },
   { key: "sem_interesse", label: "Sem interesse", icon: ThumbsDown, color: "border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600", shortcut: "3" },
   { key: "com_interesse", label: "Com interesse", icon: ThumbsUp, color: "border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600", shortcut: "4" },
+];
+
+const INTERESSE_SUB_OPTIONS = [
+  { key: "pediu_informacoes", label: "Pediu informações", emoji: "📋", desc: "→ Pipeline: Contato Inicial" },
+  { key: "demonstrou_interesse", label: "Demonstrou interesse", emoji: "🔥", desc: "→ Pipeline: Atendimento" },
+  { key: "quer_visitar", label: "Quer visitar", emoji: "🏠", desc: "→ Pipeline: Possibilidade de Visita" },
+  { key: "visita_marcada", label: "Visita marcada", emoji: "📅", desc: "→ Pipeline: Visita Marcada" },
 ];
 
 const QUICK_FEEDBACKS: Record<string, string[]> = {
@@ -61,6 +68,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const [resultado, setResultado] = useState<string>("");
   const [feedback, setFeedback] = useState("");
   const [visitaMarcada, setVisitaMarcada] = useState(false);
+  const [interesseTipo, setInteresseTipo] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
@@ -91,12 +99,15 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const handleSubmit = async () => {
     if (!resultado || submitting) return;
     if (feedback.trim().length < 10) { toast.error("Feedback mínimo de 10 caracteres"); return; }
+    if (resultado === "com_interesse" && !interesseTipo) { toast.error("Selecione o tipo de interesse"); return; }
     setSubmitting(true);
     try {
-      await onSubmit(resultado, feedback.trim(), resultado === "com_interesse" ? visitaMarcada : false);
+      const isVisita = interesseTipo === "visita_marcada" || visitaMarcada;
+      await onSubmit(resultado, feedback.trim(), isVisita, resultado === "com_interesse" ? interesseTipo : undefined);
       setResultado("");
       setFeedback("");
       setVisitaMarcada(false);
+      setInteresseTipo("");
     } catch (err: any) {
       console.error("Erro no submit do modal:", err);
       toast.error("Erro ao registrar. Tente novamente.");
@@ -156,17 +167,29 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
               })}
             </div>
 
-            {/* Marquei Visita */}
+            {/* Interest sub-type selection */}
             {resultado === "com_interesse" && (
-              <div
-                className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
-                  visitaMarcada ? "border-primary/40 bg-primary/5" : "border-border hover:border-primary/30"
-                }`}
-                onClick={() => setVisitaMarcada(!visitaMarcada)}
-              >
-                <Checkbox checked={visitaMarcada} onCheckedChange={(v) => setVisitaMarcada(!!v)} className="h-4 w-4" />
-                <CalendarCheck className={`h-3.5 w-3.5 ${visitaMarcada ? "text-primary" : "text-muted-foreground"}`} />
-                <span className="text-xs font-medium text-foreground">Marquei visita</span>
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tipo de interesse (obrigatório)</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {INTERESSE_SUB_OPTIONS.map(opt => (
+                    <button
+                      key={opt.key}
+                      onClick={() => {
+                        setInteresseTipo(opt.key);
+                        if (opt.key === "visita_marcada") setVisitaMarcada(true);
+                      }}
+                      className={`flex flex-col items-start gap-0.5 p-2 rounded-lg border-2 transition-all text-left ${
+                        interesseTipo === opt.key
+                          ? "border-emerald-500/50 bg-emerald-500/10 ring-1 ring-emerald-500/30"
+                          : "border-border hover:border-emerald-500/20"
+                      }`}
+                    >
+                      <span className="text-xs font-medium">{opt.emoji} {opt.label}</span>
+                      <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -213,8 +236,10 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
             {resultado === "nao_atendeu" && (
               <p className="text-[10px] text-blue-600 bg-blue-500/10 rounded px-2 py-1">Lead volta para a fila após cooldown. +1 pt.</p>
             )}
-            {resultado === "com_interesse" && (
-              <p className="text-[10px] text-emerald-600 bg-emerald-500/10 rounded px-2 py-1">Lead vai para "Aproveitados". +3 pts! 🎉</p>
+            {resultado === "com_interesse" && interesseTipo && (
+              <p className="text-[10px] text-emerald-600 bg-emerald-500/10 rounded px-2 py-1">
+                ✅ Lead vai direto para o Pipeline ({INTERESSE_SUB_OPTIONS.find(o => o.key === interesseTipo)?.desc}). +3 pts! 🎉
+              </p>
             )}
             {resultado === "numero_errado" && (
               <p className="text-[10px] text-red-600 bg-red-500/10 rounded px-2 py-1">Lead removido permanentemente. 0 pts.</p>

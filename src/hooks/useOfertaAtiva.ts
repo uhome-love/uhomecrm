@@ -301,11 +301,11 @@ export function useOARegistrarTentativa() {
     feedback: string,
     lista?: OALista,
     idempotencyKey?: string,
-    visitaMarcada?: boolean
+    visitaMarcada?: boolean,
+    interesseTipo?: string
   ): Promise<{ success: boolean; reason?: string; idempotent?: boolean }> => {
     if (!user) return { success: false, reason: "no_user" };
 
-    // Generate idempotency key if not provided
     const idemKey = idempotencyKey || `${user.id}_${lead.id}_${Date.now()}`;
 
     const { data, error } = await supabase.rpc("finalizar_tentativa_v2", {
@@ -318,6 +318,7 @@ export function useOARegistrarTentativa() {
       p_empreendimento: lead.empreendimento,
       p_idempotency_key: idemKey,
       p_visita_marcada: visitaMarcada ?? false,
+      p_interesse_tipo: interesseTipo ?? null,
     });
 
     if (error) {
