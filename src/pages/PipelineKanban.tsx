@@ -154,10 +154,22 @@ export default function PipelineKanban() {
           </Button>
 
           {canAdd && (
-            <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9">
-              <Plus className="h-4 w-4" />
-              Novo Lead
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleJetimobSync}
+                disabled={syncing}
+                className="gap-1.5 h-9"
+              >
+                {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
+                {syncing ? "Sincronizando..." : "Sync Jetimob"}
+              </Button>
+              <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9">
+                <Plus className="h-4 w-4" />
+                Novo Lead
+              </Button>
+            </>
           )}
         </div>
 
