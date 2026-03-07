@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type PdnEntry, type PdnSituacao } from "@/hooks/usePdn";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -200,12 +201,29 @@ function RiscoBadge({ entry }: { entry: PdnEntry }) {
   const risco = calcRisco(entry);
   const conf = RISCO_BADGE[risco.nivel];
   return (
-    <span
-      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${conf.class}`}
-      title={risco.motivos.join(", ") || "OK"}
-    >
-      {conf.emoji}
-    </span>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold border cursor-default ${conf.class}`}
+          >
+            {conf.emoji}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="text-xs max-w-[200px]">
+          <p className="font-semibold mb-0.5">
+            {risco.nivel === "seguro" ? "✅ Seguro" : risco.nivel === "atencao" ? "⚠️ Atenção" : "🚨 Risco"}
+          </p>
+          {risco.motivos.length > 0 ? (
+            <ul className="space-y-0.5">
+              {risco.motivos.map((m, i) => <li key={i}>• {m}</li>)}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground">Nenhum problema detectado</p>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -222,10 +240,19 @@ function ProximaAcaoAlert({ entry }: { entry: PdnEntry }) {
 function ParadoAlert({ entry }: { entry: PdnEntry }) {
   if (entry.situacao === "caiu" || entry.situacao === "assinado") return null;
   const dias = differenceInDays(new Date(), new Date(entry.updated_at));
-  if (dias < 5) return null;
+  if (dias < 3) return null;
+  const isCritical = dias >= 7;
+  const isWarning = dias >= 5;
   return (
-    <span className="inline-flex items-center gap-0.5 text-[9px] text-red-600 bg-red-500/10 rounded px-1 py-0.5 font-semibold">
-      PARADO {dias}d
+    <span
+      className={`inline-flex items-center gap-0.5 text-[9px] rounded px-1 py-0.5 font-semibold ${
+        isCritical ? "text-red-700 bg-red-500/20" :
+        isWarning ? "text-red-600 bg-red-500/10" :
+        "text-amber-600 bg-amber-500/10"
+      }`}
+      title={`Último update: ${dias} dias atrás`}
+    >
+      {isCritical ? "⛔" : isWarning ? "🔴" : "🟡"} {dias}d {isCritical ? "PARADO" : isWarning ? "PARADO" : "sem atualização"}
     </span>
   );
 }

@@ -4,6 +4,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import PdnStats from "./PdnStats";
 import PdnTable from "./PdnTable";
 import PdnKanban from "./PdnKanban";
+import PdnAlertsPanel from "./PdnAlertsPanel";
 import IaCoreAction from "@/components/IaCoreAction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCorretor, setFilterCorretor] = useState("");
+  const [alertFilter, setAlertFilter] = useState<string | null>(null);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const [viewMode, setViewMode] = useState<"table" | "kanban">(isMobile ? "kanban" : "table");
 
@@ -182,6 +184,9 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
       )}
 
       <PdnStats {...stats} entries={entries} />
+
+      {/* Alerts Panel */}
+      <PdnAlertsPanel entries={entries} onFilterChange={setAlertFilter} activeFilter={alertFilter} />
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">

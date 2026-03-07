@@ -223,10 +223,14 @@ export default function PdnKanban({ entries, readOnly, onUpdate, searchTerm, fil
                         )}
 
                         {/* Alert: negócio parado */}
-                        {!isCaiu && !isAssinado && diasParado >= 5 && (
-                          <div className="flex items-center gap-1 text-[10px] text-red-600 bg-red-500/10 rounded px-1.5 py-0.5">
+                        {!isCaiu && !isAssinado && diasParado >= 3 && (
+                          <div className={`flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 ${
+                            diasParado >= 7 ? "text-red-700 bg-red-500/20" :
+                            diasParado >= 5 ? "text-red-600 bg-red-500/10" :
+                            "text-amber-600 bg-amber-500/10"
+                          }`}>
                             <AlertTriangle className="h-3 w-3 shrink-0" />
-                            <span>Parado há {diasParado} dias</span>
+                            <span>{diasParado >= 5 ? "Parado" : "Sem atualização"} há {diasParado} dias</span>
                           </div>
                         )}
 

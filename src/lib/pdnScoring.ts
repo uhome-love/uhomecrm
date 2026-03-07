@@ -97,7 +97,7 @@ export function calcAlerts(entries: PdnEntry[]): PdnAlerts {
 
   return {
     semProximaAcao: ativos.filter(e => !e.proxima_acao || !e.proxima_acao.trim()).length,
-    negociosParados: ativos.filter(e => differenceInDays(new Date(), new Date(e.updated_at)) >= 5).length,
+    negociosParados: ativos.filter(e => differenceInDays(new Date(), new Date(e.updated_at)) >= 3).length,
     semDocs: ativos.filter(e => e.docs_status === "sem_docs").length,
     proximosDeFecahr: ativos.filter(e => calcProbabilidade(e) >= 70).length,
     emRisco: ativos.filter(e => calcRisco(e).nivel === "risco").length,
