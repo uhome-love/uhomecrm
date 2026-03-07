@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,13 +14,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 import { usePipelineLeadData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Phone, Mail, MessageSquare, Calendar, MapPin, ArrowRight, Loader2,
   Clock, User, Building2, Target, Thermometer, DollarSign,
   Plus, Pin, PinOff, CheckCircle2, Circle, AlertTriangle,
   FileText, Send, PhoneCall, Video, ChevronRight,
   Flame, Snowflake, Sun, Zap, ClipboardList, StickyNote,
-  History, Brain, TrendingUp, AlertCircle, Timer
+  History, Brain, TrendingUp, AlertCircle, Timer,
+  Trash2, Ban, PhoneOff
 } from "lucide-react";
 import { format, formatDistanceToNow, differenceInHours, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +35,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onUpdate: (leadId: string, updates: Partial<PipelineLead>) => Promise<void>;
   onMove: (leadId: string, newStageId: string, observacao?: string) => Promise<void>;
+  onDelete?: (leadId: string) => Promise<void>;
 }
 
 const ATIVIDADE_TIPOS = [
@@ -57,11 +61,13 @@ const PRIORIDADE_MAP: Record<string, { label: string; color: string }> = {
   baixa: { label: "Baixa", color: "bg-green-500/10 text-green-600 border-green-200" },
 };
 
-export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOpenChange, onUpdate, onMove }: Props) {
+export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
   const [activeTab, setActiveTab] = useState("resumo");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Edit states
   const [editingCommercial, setEditingCommercial] = useState(false);
