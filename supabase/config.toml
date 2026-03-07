@@ -75,5 +75,6 @@ verify_jwt = false
 [functions.generate-sequence]
 verify_jwt = false
 
-[functions.meta-ads-sync]
+[functions.visita-public]
+verify_jwt = false
 verify_jwt = false

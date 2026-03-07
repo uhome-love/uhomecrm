@@ -188,6 +188,7 @@ export function useVisitas(filters?: {
             data_visita: data.data_visita,
             hora_visita: data.hora_visita,
             corretor_id: data.corretor_id,
+            confirmation_token: (data as any).confirmation_token || null,
           },
         },
       }).then(({ error: whatsappError }) => {
