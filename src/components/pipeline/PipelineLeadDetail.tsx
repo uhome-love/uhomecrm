@@ -22,8 +22,9 @@ import {
   FileText, Send, PhoneCall, Video, ChevronRight,
   Flame, Snowflake, Sun, Zap, ClipboardList, StickyNote,
   History, Brain, TrendingUp, AlertCircle, Timer,
-  Trash2, Ban, PhoneOff
+  Trash2, Ban, PhoneOff, Handshake
 } from "lucide-react";
+import PartnershipDialog from "./PartnershipDialog";
 import { format, formatDistanceToNow, differenceInHours, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -99,6 +100,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOp
   // Move stage
   const [moveStageId, setMoveStageId] = useState("");
   const [moveObs, setMoveObs] = useState("");
+
+  // Partnership
+  const [partnerOpen, setPartnerOpen] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
@@ -238,6 +242,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOp
             </Button>
             <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 rounded-full" onClick={() => { setActiveTab("atividades"); setShowNewAtividade(true); }}>
               <Calendar className="h-3 w-3" /> Atividade
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 rounded-full border-purple-300 text-purple-600 hover:bg-purple-50" onClick={() => setPartnerOpen(true)}>
+              <Handshake className="h-3 w-3" /> Parceria
             </Button>
           </div>
         </div>
