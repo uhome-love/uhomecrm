@@ -99,7 +99,7 @@ export function usePipeline() {
     const { data, error } = await supabase
       .from("pipeline_leads")
       .select("*")
-      .order("ordem_no_stage", { ascending: true });
+      .order("updated_at", { ascending: false });
     if (error) {
       console.error("Error loading pipeline leads:", error);
       return;
