@@ -150,6 +150,7 @@ export default function PipelineKanban() {
     setFilterOrigem("all");
     setFilterCorretor("all");
     setFilterCampanha("all");
+    setFilterGerente("all");
     setSearchQuery("");
   };
 
