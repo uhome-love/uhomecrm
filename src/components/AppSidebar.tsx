@@ -82,7 +82,7 @@ export function AppSidebar() {
     }
   }, [alerts]);
 
-  // === PRINCIPAL ===
+  // === PRINCIPAL (Gestor) ===
   const principalItems = isAdmin
     ? [
         { title: "Início", url: "/ceo", icon: Home },
@@ -90,23 +90,21 @@ export function AppSidebar() {
     : isGestor
     ? [
         { title: "Início", url: "/", icon: Home },
-        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+        { title: "Checkpoint e Metas", url: "/checkpoint", icon: ClipboardCheck },
       ]
     : [
         { title: "Minha Rotina", url: "/corretor", icon: Phone },
       ];
 
-  // === GESTÃO DE LEADS ===
+  // === GESTÃO DE LEADS (Gestor) ===
   const gestaoLeadsItems = isAdmin
     ? [
         { title: "Pipeline Leads", url: "/pipeline", icon: Kanban },
         { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
-        { title: "Escala Diária", url: "/escala-diaria", icon: CalendarDays },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
-        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
-        { title: "Pós-Vendas", url: "/pos-vendas", icon: Heart },
         { title: "Scripts", url: "/scripts", icon: FileEdit },
+        { title: "Roleta de Leads", url: "/disponibilidade", icon: LayoutDashboard },
       ]
     : isGestor
     ? [
@@ -114,68 +112,73 @@ export function AppSidebar() {
         { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
         { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
-        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
-        { title: "Pós-Vendas", url: "/pos-vendas", icon: Heart },
         { title: "Scripts", url: "/scripts", icon: FileEdit },
+        { title: "Roleta de Leads", url: "/disponibilidade", icon: LayoutDashboard },
       ]
     : [
         { title: "Pipeline Leads", url: "/pipeline", icon: Kanban },
-        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
         { title: "Minha Agenda", url: "/agenda-visitas", icon: CalendarDays },
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
         { title: "Meus Scripts", url: "/scripts", icon: FileEdit },
       ];
 
-  // === GESTÃO DAS EQUIPES ===
-  const gestaoEquipesItems = isAdmin
+  // === GESTÃO DE NEGÓCIOS (Gestor) ===
+  const gestaoNegociosItems = isAdmin
     ? [
-        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
-        { title: "PDN - Gerentes", url: "/pdn", icon: FileSpreadsheet },
-        { title: "Meu Time", url: "/meu-time", icon: Users },
-        { title: "Roleta de Leads", url: "/disponibilidade", icon: LayoutDashboard },
+        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
+        { title: "Pós-Vendas", url: "/pos-vendas", icon: Heart },
       ]
     : isGestor
     ? [
-        { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
-        { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
-        { title: "Meu Time", url: "/meu-time", icon: Users },
-        { title: "Roleta de Leads", url: "/disponibilidade", icon: LayoutDashboard },
-      ]
-    : [];
-
-  // === PERFORMANCE ===
-  const performanceItems = isAdmin
-    ? [
-        { title: "Ranking Comercial", url: "/ranking", icon: Trophy },
-        { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
-      ]
-    : isGestor
-    ? [
-        { title: "Ranking Comercial", url: "/ranking", icon: Trophy },
-        { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
+        { title: "Pós-Vendas", url: "/pos-vendas", icon: Heart },
       ]
     : [
-        { title: "Meu Desempenho", url: "/corretor/resumo", icon: BarChart3 },
-        { title: "Ranking OA", url: "/corretor/ranking-equipes", icon: Trophy },
-        { title: "Ranking Comercial", url: "/ranking", icon: BarChart3 },
+        { title: "Pipeline Negócios", url: "/meus-negocios", icon: FileSpreadsheet },
       ];
+
+  // === GESTÃO DE EQUIPE (Gestor) ===
+  const gestaoEquipeItems = isAdmin
+    ? [
+        { title: "Meu Time", url: "/meu-time", icon: Users },
+        { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+        { title: "Rankings", url: "/ranking", icon: Trophy },
+      ]
+    : isGestor
+    ? [
+        { title: "Meu Time", url: "/meu-time", icon: Users },
+        { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+        { title: "Rankings", url: "/ranking", icon: Trophy },
+      ]
+    : [];
 
   // === INTELIGÊNCIA ===
   const inteligenciaItems = isAdmin
     ? [
-        { title: "Central de Dados", url: "/central-dados", icon: BarChart3 },
         { title: "HOMI CEO", url: "/homi-ceo", icon: Bot },
+        { title: "Notificações", url: "/notificacoes", icon: Bell },
+        { title: "Central de Dados", url: "/central-dados", icon: BarChart3 },
         { title: "Inteligência Marketing", url: "/marketing", icon: TrendingUp },
         { title: "Auditoria & Saúde", url: "/auditoria", icon: Shield },
       ]
     : isGestor
     ? [
-        { title: "Central de Dados", url: "/central-dados", icon: BarChart3 },
         { title: "HOMI Gerencial", url: "/homi-gerente", icon: Bot },
+        { title: "Notificações", url: "/notificacoes", icon: Bell },
       ]
     : [
         { title: "HOMI Assistente", url: "/homi", icon: Bot },
+        { title: "Notificações", url: "/notificacoes", icon: Bell },
       ];
+
+  // === CORRETOR PERFORMANCE (só corretor) ===
+  const corretorPerformanceItems = !isGestor && !isAdmin
+    ? [
+        { title: "Meu Desempenho", url: "/corretor/resumo", icon: BarChart3 },
+        { title: "Ranking OA", url: "/corretor/ranking-equipes", icon: Trophy },
+        { title: "Ranking Comercial", url: "/ranking", icon: BarChart3 },
+      ]
+    : [];
 
   // === SISTEMA (admin only) ===
   const adminItems = isAdmin
@@ -185,53 +188,16 @@ export function AppSidebar() {
       ]
     : [];
 
-  const renderGroup = (label: string, items: typeof principalItems, index: number) => (
-    <SidebarGroup key={label} className="animate-fade-in" style={{ animationDelay: `${index * 80}ms` }}>
-      <SidebarGroupLabel className="text-sidebar-foreground/30 uppercase text-[10px] tracking-[0.15em] font-bold mb-1 px-3">
-        {label}
-      </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu className="space-y-0.5">
-          {items.map((item) => {
-            const badgeCount = badges[item.url] || 0;
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to={item.url}
-                    end
-                    className="group/nav hover:bg-sidebar-accent/70 transition-all duration-200 rounded-lg relative py-2.5 px-3"
-                    activeClassName="bg-sidebar-primary/15 text-sidebar-primary font-semibold border-l-[3px] border-sidebar-primary shadow-[inset_0_0_20px_hsl(229_100%_64%/0.06)]"
-                  >
-                    <item.icon className="mr-2.5 h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
-                    {!collapsed && (
-                      <span className="text-[13px] transition-colors duration-200">{item.title}</span>
-                    )}
-                    {badgeCount > 0 && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 animate-pulse-soft">
-                        {badgeCount}
-                      </span>
-                    )}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  );
-
   const configItems = [
-    { title: "Notificações", url: "/notificacoes", icon: Bell },
     { title: "Configurações", url: "/configuracoes", icon: Settings },
   ];
 
   const groups = [
     { label: "⚙️ Principal", items: principalItems },
     { label: "🎯 Gestão de Leads", items: gestaoLeadsItems },
-    ...(gestaoEquipesItems.length > 0 ? [{ label: "👥 Gestão das Equipes", items: gestaoEquipesItems }] : []),
-    { label: "📈 Performance", items: performanceItems },
+    { label: "💼 Gestão de Negócios", items: gestaoNegociosItems },
+    ...(gestaoEquipeItems.length > 0 ? [{ label: "👥 Gestão de Equipe", items: gestaoEquipeItems }] : []),
+    ...(corretorPerformanceItems.length > 0 ? [{ label: "📈 Performance", items: corretorPerformanceItems }] : []),
     { label: "🧠 Inteligência", items: inteligenciaItems },
     ...(adminItems.length > 0 ? [{ label: "🔧 Sistema", items: adminItems }] : []),
     { label: "Conta", items: configItems },
