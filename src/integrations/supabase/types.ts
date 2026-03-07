@@ -2660,6 +2660,18 @@ export type Database = {
         Returns: Json
       }
       get_individual_oa_ranking: { Args: { p_period?: string }; Returns: Json }
+      get_ranking_gestao_leads: {
+        Args: { p_periodo?: string }
+        Returns: {
+          corretor_id: string
+          corretor_nome: string
+          leads_responderam: number
+          pontos_total: number
+          propostas: number
+          tentativas: number
+          visitas_marcadas: number
+        }[]
+      }
       get_team_oa_ranking: { Args: { p_period?: string }; Returns: Json }
       has_role: {
         Args: {

@@ -6,13 +6,18 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
+import { useMissoesLeads } from "@/hooks/useMissoesLeads";
 import DailyProgressCard from "./DailyProgressCard";
+import MissoesDeHoje from "./MissoesDeHoje";
+import RadarLeadsPendentes from "./RadarLeadsPendentes";
+import RankingGestaoLeads from "./RankingGestaoLeads";
 import { useNavigate } from "react-router-dom";
 const homiMascot = "/images/homi-mascot-opt.png";
 
 export default function CorretorHome() {
   const { progress, goals, saveGoals } = useCorretorProgress();
   const motivation = useDailyMotivation();
+  const { missoes, missaoGeral, radarLeads, radarLoading, ranking, rankingLoading, userId } = useMissoesLeads();
   const navigate = useNavigate();
 
   return (
@@ -54,8 +59,27 @@ export default function CorretorHome() {
         </Button>
       </motion.div>
 
-      {/* Daily Goals — SHARED COMPONENT */}
+      {/* 🎮 Missões de Hoje — NEW GAMIFICATION */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+        <MissoesDeHoje
+          missoes={missoes}
+          missaoGeral={missaoGeral}
+          pontos={progress.pontos}
+          todasCompletas={progress.todasMissoesCumpridas}
+        />
+      </motion.div>
+
+      {/* 📡 Radar de Leads Pendentes — NEW */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <RadarLeadsPendentes
+          leads={radarLeads}
+          loading={radarLoading}
+          onOpenPipeline={() => navigate("/pipeline")}
+        />
+      </motion.div>
+
+      {/* Daily Goals — SHARED COMPONENT */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
         <DailyProgressCard
           progress={progress}
           goals={goals}
@@ -87,6 +111,15 @@ export default function CorretorHome() {
             </Card>
           ))}
         </div>
+      </motion.div>
+
+      {/* 🏆 Ranking Gestão de Leads — NEW */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+        <RankingGestaoLeads
+          ranking={ranking}
+          loading={rankingLoading}
+          userId={userId}
+        />
       </motion.div>
 
       {/* Gamification — Points & Level */}
