@@ -264,6 +264,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     <PipelineCard
                       key={lead.id}
                       lead={lead}
+                      stage={stage}
                       segmentos={segmentos}
                       corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
                       gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
