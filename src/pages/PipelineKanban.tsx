@@ -338,6 +338,37 @@ export default function PipelineKanban() {
               </SelectContent>
             </Select>
 
+            {/* Etapa filter */}
+            <Select value={filterEtapa} onValueChange={setFilterEtapa}>
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Etapa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas etapas</SelectItem>
+                {pipeline.stages.map(s => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.cor }} />
+                      {s.nome}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Temperatura filter */}
+            <Select value={filterTemperatura} onValueChange={setFilterTemperatura}>
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Temperatura" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas temperaturas</SelectItem>
+                <SelectItem value="quente">🔥 Quente</SelectItem>
+                <SelectItem value="morno">🌡️ Morno</SelectItem>
+                <SelectItem value="frio">❄️ Frio</SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Gerente filter */}
             {(isGestor || isAdmin) && (
               <Select value={filterGerente} onValueChange={setFilterGerente}>
@@ -395,6 +426,16 @@ export default function PipelineKanban() {
                 {filterCampanha !== "all" && (
                   <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterCampanha("all")}>
                     {filterCampanha} ×
+                  </Badge>
+                )}
+                {filterEtapa !== "all" && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterEtapa("all")}>
+                    {pipeline.stages.find(s => s.id === filterEtapa)?.nome || "Etapa"} ×
+                  </Badge>
+                )}
+                {filterTemperatura !== "all" && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterTemperatura("all")}>
+                    {filterTemperatura === "quente" ? "🔥 Quente" : filterTemperatura === "morno" ? "🌡️ Morno" : "❄️ Frio"} ×
                   </Badge>
                 )}
               </div>
