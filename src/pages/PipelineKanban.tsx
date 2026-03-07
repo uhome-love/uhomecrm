@@ -274,6 +274,7 @@ export default function PipelineKanban() {
           onOpenChange={(open) => !open && setSelectedLead(null)}
           onUpdate={pipeline.updateLead}
           onMove={pipeline.moveLead}
+          onDelete={pipeline.deleteLead}
         />
       )}
     </div>

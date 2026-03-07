@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,13 +14,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 import { usePipelineLeadData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Phone, Mail, MessageSquare, Calendar, MapPin, ArrowRight, Loader2,
   Clock, User, Building2, Target, Thermometer, DollarSign,
   Plus, Pin, PinOff, CheckCircle2, Circle, AlertTriangle,
   FileText, Send, PhoneCall, Video, ChevronRight,
   Flame, Snowflake, Sun, Zap, ClipboardList, StickyNote,
-  History, Brain, TrendingUp, AlertCircle, Timer
+  History, Brain, TrendingUp, AlertCircle, Timer,
+  Trash2, Ban, PhoneOff
 } from "lucide-react";
 import { format, formatDistanceToNow, differenceInHours, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +35,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onUpdate: (leadId: string, updates: Partial<PipelineLead>) => Promise<void>;
   onMove: (leadId: string, newStageId: string, observacao?: string) => Promise<void>;
+  onDelete?: (leadId: string) => Promise<void>;
 }
 
 const ATIVIDADE_TIPOS = [
@@ -57,11 +61,13 @@ const PRIORIDADE_MAP: Record<string, { label: string; color: string }> = {
   baixa: { label: "Baixa", color: "bg-green-500/10 text-green-600 border-green-200" },
 };
 
-export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOpenChange, onUpdate, onMove }: Props) {
+export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
   const [activeTab, setActiveTab] = useState("resumo");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Edit states
   const [editingCommercial, setEditingCommercial] = useState(false);
@@ -456,6 +462,103 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOp
                         Mover para {stages.find(s => s.id === moveStageId)?.nome}
                       </Button>
                     </>
+                  )}
+                </div>
+              </Section>
+
+              {/* Ações do Lead */}
+              <Section title="Ações" icon={Ban}>
+                <div className="space-y-2">
+                  {/* Descartar → Oferta Ativa */}
+                  {(() => {
+                    const descarteStage = stages.find(s => s.tipo === "descarte");
+                    if (!descarteStage || lead.stage_id === descarteStage.id) return null;
+                    return (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5 border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20">
+                            <Ban className="h-3 w-3" /> Descartar (enviar para Oferta Ativa)
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-sm">Descartar lead?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-xs">
+                              O lead <strong>{lead.nome}</strong> será movido para Descarte e enviado automaticamente para a Oferta Ativa.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="text-xs h-8">Cancelar</AlertDialogCancel>
+                            <AlertDialogAction className="text-xs h-8 bg-amber-600 hover:bg-amber-700" onClick={() => {
+                              onMove(lead.id, descarteStage.id, "Descartado pelo usuário");
+                              onOpenChange(false);
+                            }}>
+                              Confirmar Descarte
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    );
+                  })()}
+
+                  {/* Contato Errado → Lixo */}
+                  {onDelete && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5">
+                          <PhoneOff className="h-3 w-3" /> Contato errado (remover)
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-sm">Remover lead por contato errado?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-xs">
+                            O lead <strong>{lead.nome}</strong> será removido permanentemente do pipeline. Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="text-xs h-8">Cancelar</AlertDialogCancel>
+                          <AlertDialogAction className="text-xs h-8 bg-destructive hover:bg-destructive/90" onClick={async () => {
+                            setDeleting(true);
+                            await onDelete(lead.id);
+                            setDeleting(false);
+                            onOpenChange(false);
+                          }}>
+                            Remover permanentemente
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  {/* CEO: Apagar oportunidade */}
+                  {isAdmin && onDelete && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="w-full h-8 text-xs gap-1.5">
+                          <Trash2 className="h-3 w-3" /> Apagar oportunidade (CEO)
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-sm">Apagar oportunidade?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-xs">
+                            O lead <strong>{lead.nome}</strong> será excluído permanentemente do pipeline, incluindo todo histórico, atividades, tarefas e anotações. <strong>Ação exclusiva do CEO.</strong>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="text-xs h-8">Cancelar</AlertDialogCancel>
+                          <AlertDialogAction className="text-xs h-8 bg-destructive hover:bg-destructive/90" onClick={async () => {
+                            setDeleting(true);
+                            await onDelete(lead.id);
+                            setDeleting(false);
+                            onOpenChange(false);
+                          }}>
+                            Apagar definitivamente
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
               </Section>

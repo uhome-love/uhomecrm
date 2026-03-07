@@ -227,6 +227,21 @@ export function usePipeline() {
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ...updates } : l));
   }, [user]);
 
+  const deleteLead = useCallback(async (leadId: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("pipeline_leads")
+      .delete()
+      .eq("id", leadId);
+    if (error) {
+      console.error("Error deleting lead:", error);
+      toast.error("Erro ao apagar lead");
+      return;
+    }
+    setLeads(prev => prev.filter(l => l.id !== leadId));
+    toast.success("Lead removido do pipeline");
+  }, [user]);
+
   const getLeadsByStage = useCallback((stageId: string) => {
     return leads.filter(l => l.stage_id === stageId);
   }, [leads]);
@@ -239,6 +254,7 @@ export function usePipeline() {
     moveLead,
     addLead,
     updateLead,
+    deleteLead,
     getLeadsByStage,
     reload: loadLeads,
   };
