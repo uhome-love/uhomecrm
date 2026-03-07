@@ -15,8 +15,13 @@ interface PipelineBoardProps {
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
 }
 
-const COLUMN_WIDTH = 300;
+const COLUMN_WIDTH_DESKTOP = 300;
+const COLUMN_WIDTH_MOBILE = 280;
 const COLUMN_GAP = 12;
+
+function getColumnWidth() {
+  return typeof window !== "undefined" && window.innerWidth < 640 ? COLUMN_WIDTH_MOBILE : COLUMN_WIDTH_DESKTOP;
+}
 
 function getStageAlerts(leads: PipelineLead[]) {
   let warnings = 0;
