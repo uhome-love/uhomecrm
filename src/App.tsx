@@ -43,6 +43,7 @@ const PipelineKanban = lazy(() => import("./pages/PipelineKanban"));
 const EscalaDiaria = lazy(() => import("./pages/EscalaDiaria"));
 const Welcome = lazy(() => import("./pages/Welcome"));
 const DisponibilidadePage = lazy(() => import("./pages/DisponibilidadePage"));
+const Notificacoes = lazy(() => import("./pages/Notificacoes"));
 
 const queryClient = new QueryClient();
 
@@ -114,6 +115,7 @@ const App = () => (
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><BuscaLeads /></ProtectedPage>} />
             <Route path="/configuracoes" element={<ProtectedPage><Configuracoes /></ProtectedPage>} />
+            <Route path="/notificacoes" element={<ProtectedPage><Notificacoes /></ProtectedPage>} />
 
             {/* CEO / Admin only */}
             <Route path="/ceo" element={<ProtectedPage roles={["admin"]}><CeoDashboard /></ProtectedPage>} />

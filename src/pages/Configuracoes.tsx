@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import AvatarUpload from "@/components/AvatarUpload";
 import { Loader2, Save, Lock, User, Mail, Phone } from "lucide-react";
+import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 
 export default function Configuracoes() {
   const { user } = useAuth();
@@ -211,6 +212,9 @@ export default function Configuracoes() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Notification Preferences */}
+      <NotificationPreferences />
 
       {/* Password Card */}
       <Card>
