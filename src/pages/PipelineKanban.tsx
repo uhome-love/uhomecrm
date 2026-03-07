@@ -10,6 +10,7 @@ import SequenceLibrary from "@/components/pipeline/SequenceLibrary";
 import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
 import PipelinePrioridades from "@/components/pipeline/PipelinePrioridades";
 import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashboard";
+import ForecastPonderadoPanel from "@/components/pipeline/ForecastPonderadoPanel";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -442,6 +443,11 @@ export default function PipelineKanban() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Forecast Ponderado */}
+        {activeTab === "kanban" && (
+          <ForecastPonderadoPanel leads={filteredLeads} stages={pipeline.stages} />
         )}
       </div>
 
