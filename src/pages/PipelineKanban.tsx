@@ -37,6 +37,17 @@ export default function PipelineKanban() {
     return Array.from(set).sort();
   }, [pipeline.leads]);
 
+  const campanhas = useMemo(() => {
+    const set = new Set<string>();
+    pipeline.leads.forEach(l => { if (l.empreendimento) set.add(l.empreendimento); });
+    return Array.from(set).sort();
+  }, [pipeline.leads]);
+
+  const corretorList = useMemo(() => {
+    const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
+    return entries;
+  }, [pipeline.corretorNomes]);
+
   const filteredLeads = useMemo(() => {
     let result = pipeline.leads;
     if (filterSegmento !== "all") result = result.filter(l => l.segmento_id === filterSegmento);
