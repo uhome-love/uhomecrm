@@ -1653,6 +1653,7 @@ export type Database = {
           aceite_status: string
           aceito_em: string | null
           bairro_regiao: string | null
+          complexidade_score: number
           corretor_id: string | null
           created_at: string
           created_by: string | null
@@ -1661,10 +1662,12 @@ export type Database = {
           email: string | null
           empreendimento: string | null
           forma_pagamento: string | null
+          gerente_id: string | null
           hora_proxima_acao: string | null
           id: string
           imovel_troca: boolean | null
           jetimob_lead_id: string | null
+          modo_conducao: string
           motivo_descarte: string | null
           motivo_rejeicao: string | null
           nivel_interesse: string | null
@@ -1693,6 +1696,7 @@ export type Database = {
           aceite_status?: string
           aceito_em?: string | null
           bairro_regiao?: string | null
+          complexidade_score?: number
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1701,10 +1705,12 @@ export type Database = {
           email?: string | null
           empreendimento?: string | null
           forma_pagamento?: string | null
+          gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
           imovel_troca?: boolean | null
           jetimob_lead_id?: string | null
+          modo_conducao?: string
           motivo_descarte?: string | null
           motivo_rejeicao?: string | null
           nivel_interesse?: string | null
@@ -1733,6 +1739,7 @@ export type Database = {
           aceite_status?: string
           aceito_em?: string | null
           bairro_regiao?: string | null
+          complexidade_score?: number
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1741,10 +1748,12 @@ export type Database = {
           email?: string | null
           empreendimento?: string | null
           forma_pagamento?: string | null
+          gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
           imovel_troca?: boolean | null
           jetimob_lead_id?: string | null
+          modo_conducao?: string
           motivo_descarte?: string | null
           motivo_rejeicao?: string | null
           nivel_interesse?: string | null
