@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,12 +8,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarDays, List, Columns3, Plus, CalendarIcon, X, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useVisitas, STATUS_LABELS, type VisitaStatus } from "@/hooks/useVisitas";
+import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import { useUserRole } from "@/hooks/useUserRole";
 import VisitasList from "@/components/visitas/VisitasList";
 import VisitasCalendar from "@/components/visitas/VisitasCalendar";
 import VisitasKanban from "@/components/visitas/VisitasKanban";
 import VisitaForm from "@/components/visitas/VisitaForm";
+import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
 
 export default function AgendaVisitas() {
   const { isAdmin, isGestor } = useUserRole();
@@ -24,7 +25,36 @@ export default function AgendaVisitas() {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const { visitas, isLoading, createVisita, updateStatus, deleteVisita } = useVisitas();
+  // Resultado dialog state
+  const [resultadoVisita, setResultadoVisita] = useState<Visita | null>(null);
+
+  const { visitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
+
+  // Intercept status change to "realizada" to show resultado dialog
+  const handleUpdateStatus = useCallback((id: string, newStatus: VisitaStatus) => {
+    if (newStatus === "realizada") {
+      const visita = visitas.find(v => v.id === id);
+      if (visita) {
+        setResultadoVisita(visita);
+        return;
+      }
+    }
+    updateStatus(id, newStatus);
+  }, [visitas, updateStatus]);
+
+  const handleResultadoSubmit = useCallback(async (resultado: ResultadoVisita, observacoes?: string) => {
+    if (!resultadoVisita) return;
+    // Update status to realizada + resultado_visita + observacoes in one call
+    const updates: any = {
+      status: "realizada",
+      resultado_visita: resultado,
+    };
+    if (observacoes) {
+      updates.observacoes = [resultadoVisita.observacoes, observacoes].filter(Boolean).join(" | ");
+    }
+    await updateVisita(resultadoVisita.id, updates);
+    setResultadoVisita(null);
+  }, [resultadoVisita, updateVisita]);
 
   const filtered = useMemo(() => {
     let list = [...visitas];
@@ -214,7 +244,7 @@ export default function AgendaVisitas() {
           ) : (
             <VisitasList
               visitas={filtered}
-              onUpdateStatus={updateStatus}
+              onUpdateStatus={handleUpdateStatus}
               onDelete={deleteVisita}
               showCorretor={isAdmin || isGestor}
             />
@@ -226,7 +256,7 @@ export default function AgendaVisitas() {
         </TabsContent>
 
         <TabsContent value="kanban">
-          <VisitasKanban visitas={filtered} onUpdateStatus={updateStatus} onDelete={deleteVisita} />
+          <VisitasKanban visitas={filtered} onUpdateStatus={handleUpdateStatus} onDelete={deleteVisita} />
         </TabsContent>
       </Tabs>
 
@@ -236,6 +266,16 @@ export default function AgendaVisitas() {
           open={showForm}
           onClose={() => setShowForm(false)}
           onSubmit={createVisita}
+        />
+      )}
+
+      {/* Resultado obrigatório dialog */}
+      {resultadoVisita && (
+        <VisitaResultadoDialog
+          open={!!resultadoVisita}
+          onClose={() => setResultadoVisita(null)}
+          onSubmit={handleResultadoSubmit}
+          nomeCliente={resultadoVisita.nome_cliente}
         />
       )}
     </div>
