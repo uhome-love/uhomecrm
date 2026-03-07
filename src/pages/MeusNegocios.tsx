@@ -26,6 +26,43 @@ export default function MeusNegocios() {
   const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Loss reason modal state
+  const [lossModalOpen, setLossModalOpen] = useState(false);
+  const pendingMove = useRef<{ leadId: string; stageId: string } | null>(null);
+
+  const lossLeadNome = useMemo(() => {
+    if (!pendingMove.current) return "";
+    return pipeline.leads.find(l => l.id === pendingMove.current!.leadId)?.nome || "";
+  }, [lossModalOpen, pipeline.leads]);
+
+  const handleMoveLead = useCallback((leadId: string, newStageId: string) => {
+    const targetStage = pipeline.stages.find(s => s.id === newStageId);
+    if (targetStage && (targetStage.tipo === "descarte" || targetStage.tipo === "caiu")) {
+      pendingMove.current = { leadId, stageId: newStageId };
+      setLossModalOpen(true);
+      return;
+    }
+    pipeline.moveLead(leadId, newStageId);
+  }, [pipeline]);
+
+  const handleLossConfirm = useCallback(async (motivo: string, obs: string) => {
+    if (!pendingMove.current) return;
+    const { leadId, stageId } = pendingMove.current;
+    // Save motivo_descarte with the move
+    await pipeline.moveLead(leadId, stageId, motivo);
+    // Also save obs in observacoes if provided
+    if (obs.trim()) {
+      await pipeline.updateLead(leadId, { observacoes: obs.trim() } as any);
+    }
+    pendingMove.current = null;
+    setLossModalOpen(false);
+  }, [pipeline]);
+
+  const handleLossCancel = useCallback(() => {
+    pendingMove.current = null;
+    setLossModalOpen(false);
+  }, []);
+
   const canAdd = isGestor || isAdmin;
 
   // Load partnerships
