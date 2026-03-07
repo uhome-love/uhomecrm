@@ -267,23 +267,10 @@ export default function CorretorDashboard() {
                 variant="outline"
                 disabled={syncingLeads}
                 className="flex-1 h-10 gap-2 text-xs font-bold rounded-xl border-primary/30 text-primary hover:bg-primary/10"
-                onClick={async () => {
-                  setSyncingLeads(true);
-                  try {
-                    const { data, error } = await supabase.functions.invoke("jetimob-sync");
-                    if (error) throw error;
-                    const count = data?.synced ?? data?.leads_synced ?? 0;
-                    toast.success(`🚀 ${count} novos leads adicionados!`);
-                    setTimeout(() => navigate("/pipeline"), 1500);
-                  } catch (err: any) {
-                    toast.error("Erro ao sincronizar: " + (err.message || "tente novamente"));
-                  } finally {
-                    setSyncingLeads(false);
-                  }
-                }}
+                onClick={() => navigate("/pipeline")}
               >
-                {syncingLeads ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                {syncingLeads ? "Atualizando..." : "Atualizar Leads"}
+                <RefreshCw className="h-3.5 w-3.5" />
+                Atualizar Pipeline
               </Button>
             </div>
             {!metaSalva && (
