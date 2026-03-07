@@ -1,12 +1,22 @@
 import { memo, useState } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, Mail, Clock, MapPin, MessageCircle, Eye, Hourglass, Calendar, Flame, Thermometer, Snowflake, Zap, Shield, Users, Handshake, AlertCircle, Timer } from "lucide-react";
-import { differenceInHours, differenceInDays, differenceInMinutes } from "date-fns";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Phone, Mail, Clock, MessageCircle, Calendar, Flame, Thermometer, Snowflake, Zap, AlertCircle, Timer, ChevronDown, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle } from "lucide-react";
+import { differenceInHours, differenceInMinutes } from "date-fns";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import PipelineQuickTransfer from "./PipelineQuickTransfer";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
+import PipelineQuickTransfer from "./PipelineQuickTransfer";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 function formatSlaTime(mins: number): string {
   const abs = Math.abs(mins);
@@ -15,50 +25,10 @@ function formatSlaTime(mins: number): string {
   return `${Math.floor(abs / 1440)}d`;
 }
 
-interface PipelineCardProps {
-  lead: PipelineLead;
-  stage?: PipelineStage;
-  segmentos: PipelineSegmento[];
-  corretorNome?: string;
-  gerenteNome?: string;
-  parceiroNome?: string;
-  onDragStart: () => void;
-  onClick: () => void;
-  onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
-}
-
-type ActivityVariant = "active" | "ok" | "warning" | "danger";
-
-function getActivityInfo(stageChangedAt: string): { label: string; variant: ActivityVariant; timeText: string } {
-  const now = new Date();
-  const changed = new Date(stageChangedAt);
-  const mins = differenceInMinutes(now, changed);
-  const hours = differenceInHours(now, changed);
-  const days = differenceInDays(now, changed);
-
-  if (mins < 30) return { label: mins < 5 ? "Agora" : `${mins}m`, variant: "active", timeText: mins < 5 ? "Agora" : `${mins}m` };
-  if (mins < 120) return { label: `${mins}m`, variant: "warning", timeText: `${mins}m` };
-  if (hours < 24) return { label: `${hours}h`, variant: "danger", timeText: `${hours}h` };
-  return { label: `${days}d`, variant: "danger", timeText: `${days}d` };
-}
-
-function getTimeSinceCreated(createdAt: string) {
-  const now = new Date();
-  const created = new Date(createdAt);
-  const mins = differenceInMinutes(now, created);
-  const hours = differenceInHours(now, created);
-  const days = differenceInDays(now, created);
-
-  if (mins < 60) return `${mins}m`;
-  if (hours < 24) return `${hours}h`;
-  return `${days}d`;
-}
-
 function formatPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
-  if (digits.length === 13 && digits.startsWith("55")) {
+  if (digits.length === 13 && digits.startsWith("55"))
     return `(${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9)}`;
-  }
   if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   return phone;
@@ -70,69 +40,158 @@ function getWhatsAppUrl(phone: string) {
   return `https://wa.me/${number}`;
 }
 
-// Card border + bar color based on activity
-const activityStyles: Record<ActivityVariant, { dot: string; border: string; bg: string; text: string }> = {
-  active: { dot: "bg-emerald-500", border: "border-emerald-500/40", bg: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400" },
-  ok: { dot: "bg-blue-400", border: "border-blue-400/40", bg: "bg-blue-400/10", text: "text-blue-600 dark:text-blue-400" },
-  warning: { dot: "bg-amber-500", border: "border-amber-500/50", bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400" },
-  danger: { dot: "bg-red-500", border: "border-red-500/50", bg: "bg-red-500/10", text: "text-red-600 dark:text-red-400" },
+// Temperature border colors
+const TEMP_BORDER: Record<string, string> = {
+  quente: "border-l-red-500",
+  morno: "border-l-amber-400",
+  frio: "border-l-blue-400",
 };
 
-// Temperature config (stored field)
-const TEMP_CONFIG: Record<string, { icon: React.ElementType; label: string; color: string; bg: string }> = {
-  quente: { icon: Flame, label: "Quente", color: "text-red-600", bg: "bg-red-500/10" },
-  morno: { icon: Thermometer, label: "Morno", color: "text-amber-600", bg: "bg-amber-500/10" },
-  frio: { icon: Snowflake, label: "Frio", color: "text-blue-500", bg: "bg-blue-500/10" },
-};
-
-// Calculated temperature based on time since last action
-interface CalcTemp { emoji: string; label: string; bg: string; border: string; text: string; tooltip: string }
-function getCalcTemperature(lead: PipelineLead): CalcTemp {
+function getCalcTempBorder(lead: PipelineLead): string {
   const refDate = lead.updated_at || lead.created_at;
   const hours = differenceInHours(new Date(), new Date(refDate));
-  const isIndicacao = (lead.origem || "").toLowerCase().includes("indicação") || (lead.origem || "").toLowerCase().includes("indicacao");
-
-  if (hours < 2 || isIndicacao) {
-    const tip = isIndicacao ? "Origem: indicação" : `Lead há ${hours < 1 ? "<1" : hours}h sem ação`;
-    return { emoji: "🔥", label: "Quente", bg: "bg-[#EF4444]/15", border: "border-[#EF4444]/30", text: "text-[#EF4444]", tooltip: tip };
-  }
-  if (hours < 24) {
-    return { emoji: "🟡", label: "Morno", bg: "bg-[#F59E0B]/15", border: "border-[#F59E0B]/30", text: "text-[#F59E0B]", tooltip: `Lead há ${hours}h sem ação` };
-  }
-  if (hours < 72) {
-    const days = Math.floor(hours / 24);
-    return { emoji: "🔵", label: "Frio", bg: "bg-[#3B82F6]/15", border: "border-[#3B82F6]/30", text: "text-[#3B82F6]", tooltip: `Lead há ${days}d ${hours % 24}h sem ação` };
-  }
-  const days = Math.floor(hours / 24);
-  return { emoji: "❄️", label: "Gelado", bg: "bg-[#6B7280]/15", border: "border-[#6B7280]/30", text: "text-[#6B7280]", tooltip: `Lead há ${days} dias sem ação` };
+  const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
+  if (hours < 2 || isIndicacao) return "border-l-red-500";
+  if (hours < 24) return "border-l-amber-400";
+  if (hours < 72) return "border-l-blue-400";
+  return "border-l-muted-foreground/30";
 }
 
-const MODO_LABELS: Record<string, { label: string; color: string }> = {
-  corretor_conduz: { label: "Corretor", color: "text-blue-600 bg-blue-500/10" },
-  corretor_gerente: { label: "Cor + Ger", color: "text-purple-600 bg-purple-500/10" },
-  gerente_conduz: { label: "Gerente", color: "text-amber-600 bg-amber-500/10" },
-};
+function getCalcTempEmoji(lead: PipelineLead): string {
+  const refDate = lead.updated_at || lead.created_at;
+  const hours = differenceInHours(new Date(), new Date(refDate));
+  const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
+  if (hours < 2 || isIndicacao) return "🔥";
+  if (hours < 24) return "🟡";
+  if (hours < 72) return "🔵";
+  return "❄️";
+}
 
-const PipelineCard = memo(function PipelineCard({ lead, stage, segmentos, corretorNome, gerenteNome, parceiroNome, onDragStart, onClick, onTransferred }: PipelineCardProps) {
-  const [hovered, setHovered] = useState(false);
-  const segmento = segmentos.find(s => s.id === lead.segmento_id);
-  const activity = getActivityInfo(lead.stage_changed_at);
-  const createdTime = getTimeSinceCreated(lead.created_at);
-  const style = activityStyles[activity.variant];
-  const temp = TEMP_CONFIG[lead.temperatura || "morno"];
-  const calcTemp = getCalcTemperature(lead);
-  const showAlert = activity.variant === "warning" || activity.variant === "danger";
+interface PipelineCardProps {
+  lead: PipelineLead;
+  stage?: PipelineStage;
+  stages: PipelineStage[];
+  segmentos: PipelineSegmento[];
+  corretorNome?: string;
+  gerenteNome?: string;
+  parceiroNome?: string;
+  onDragStart: () => void;
+  onClick: () => void;
+  onMoveLead?: (leadId: string, stageId: string) => void;
+  onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
+}
+
+const PipelineCard = memo(function PipelineCard({
+  lead, stage, stages, segmentos, corretorNome, gerenteNome, parceiroNome,
+  onDragStart, onClick, onMoveLead, onTransferred,
+}: PipelineCardProps) {
+  const { user } = useAuth();
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState<Date>();
+  const [scheduleTime, setScheduleTime] = useState("10:00");
+
+  const tempBorder = lead.temperatura ? TEMP_BORDER[lead.temperatura] || getCalcTempBorder(lead) : getCalcTempBorder(lead);
+  const tempEmoji = getCalcTempEmoji(lead);
   const leadScore = calculateLeadScore(lead as any);
   const sla = stage ? getSlaStatus(stage.tipo, lead.stage_changed_at) : null;
 
-  const handleWhatsApp = (e: React.MouseEvent, phone: string) => {
+  const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(getWhatsAppUrl(phone), "_blank");
+    if (!lead.telefone) return;
+    window.open(`tel:${lead.telefone}`, "_self");
+    // Register activity
+    if (user) {
+      supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: lead.id,
+        tipo: "ligacao",
+        titulo: "Ligação realizada",
+        created_by: user.id,
+      }).then(() => {});
+      // Move to "Contato Iniciado" if "Novo Lead"
+      if (stage?.tipo === "novo_lead" && onMoveLead) {
+        const contatoStage = stages.find(s => s.tipo === "atendimento" || s.nome.toLowerCase().includes("contato"));
+        if (contatoStage) onMoveLead(lead.id, contatoStage.id);
+      }
+    }
+    toast.success("📞 Ligação registrada");
   };
 
-  const handleCall = (e: React.MouseEvent, phone: string) => {
+  const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(`tel:${phone}`, "_self");
+    if (!lead.telefone) return;
+    window.open(getWhatsAppUrl(lead.telefone), "_blank");
+    if (user) {
+      supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: lead.id,
+        tipo: "whatsapp",
+        titulo: "WhatsApp enviado",
+        created_by: user.id,
+      }).then(() => {});
+    }
+    toast.success("💬 WhatsApp registrado");
+  };
+
+  const handleScheduleVisit = async () => {
+    if (!scheduleDate || !user) return;
+    const dateStr = format(scheduleDate, "yyyy-MM-dd");
+    // Create visita
+    await supabase.from("visitas").insert({
+      nome_cliente: lead.nome,
+      data_visita: dateStr,
+      hora_visita: scheduleTime,
+      empreendimento: lead.empreendimento || "",
+      corretor_id: lead.corretor_id || user.id,
+      corretor_nome: corretorNome || "",
+      origem: "pipeline",
+      status: "marcada",
+      gerente_id: user.id,
+      pipeline_lead_id: lead.id,
+    });
+    // Move lead to "Visita Marcada"
+    if (onMoveLead) {
+      const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita marcada") || s.tipo === "visita");
+      if (visitaStage) onMoveLead(lead.id, visitaStage.id);
+    }
+    setScheduleOpen(false);
+    setScheduleDate(undefined);
+    toast.success("📅 Visita agendada e lead movido");
+  };
+
+  const handleMoveStage = (e: React.MouseEvent, stageId: string) => {
+    e.stopPropagation();
+    if (!onMoveLead) return;
+    const targetStage = stages.find(s => s.id === stageId);
+    // If moving to visita stage, open schedule instead
+    if (targetStage?.nome.toLowerCase().includes("visita marcada")) {
+      setScheduleOpen(true);
+      return;
+    }
+    onMoveLead(lead.id, stageId);
+    toast.success(`Lead movido para ${targetStage?.nome}`);
+  };
+
+  const handleAddNote = async () => {
+    const note = prompt("Observação:");
+    if (!note || !user) return;
+    await supabase.from("pipeline_anotacoes").insert({
+      pipeline_lead_id: lead.id,
+      conteudo: note,
+      autor_id: user.id,
+      autor_nome: corretorNome || "Gerente",
+    });
+    toast.success("📝 Observação registrada");
+  };
+
+  const handleMarkLost = async () => {
+    if (!user || !onMoveLead) return;
+    const motivo = prompt("Motivo do descarte:");
+    if (!motivo) return;
+    const descarteStage = stages.find(s => s.tipo === "descarte");
+    if (descarteStage) {
+      await supabase.from("pipeline_leads").update({ motivo_descarte: motivo }).eq("id", lead.id);
+      onMoveLead(lead.id, descarteStage.id);
+      toast.info("Lead movido para Descarte");
+    }
   };
 
   return (
@@ -141,340 +200,168 @@ const PipelineCard = memo(function PipelineCard({ lead, stage, segmentos, corret
         draggable
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = "move";
-          const ghost = e.currentTarget.cloneNode(true) as HTMLElement;
-          ghost.style.width = `${e.currentTarget.offsetWidth}px`;
-          ghost.style.opacity = "0.85";
-          ghost.style.transform = "rotate(2deg)";
-          ghost.style.position = "absolute";
-          ghost.style.top = "-1000px";
-          document.body.appendChild(ghost);
-          e.dataTransfer.setDragImage(ghost, 20, 20);
-          setTimeout(() => document.body.removeChild(ghost), 0);
           onDragStart();
         }}
-        onClick={onClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className={`group relative rounded-xl border-l-[3px] border bg-card p-0 cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 select-none overflow-hidden ${style.border}`}
+        className={`group relative rounded-lg border-l-[3px] border bg-card cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150 select-none overflow-hidden ${tempBorder}`}
       >
-        {/* Activity indicator bar */}
-        <div className={`h-[2px] w-full ${style.dot}`} />
-
-        <div className="p-3 space-y-2">
-          {/* Name + Score + Temperature */}
-          <div className="flex items-start justify-between gap-1">
-            <h4 className="text-[13px] font-bold text-foreground leading-tight line-clamp-1 flex-1">
-              {lead.nome}
-            </h4>
-            <div className="flex items-center gap-1 shrink-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${leadScore.bgColor} ${leadScore.color}`}>
-                    <Zap className="h-2.5 w-2.5 inline mr-0.5" />
-                    {leadScore.label}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs max-w-[200px]">
-                  <p className="font-semibold mb-1">Score: {leadScore.score}/100</p>
-                  <p className="text-muted-foreground">{leadScore.factors.join(" · ")}</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md border ${calcTemp.bg} ${calcTemp.border} ${calcTemp.text}`}>
-                    <span>{calcTemp.emoji}</span>
-                    {calcTemp.label}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">{calcTemp.tooltip}</TooltipContent>
-              </Tooltip>
-            </div>
+        {/* Info section */}
+        <div className="px-3 pt-2.5 pb-2 space-y-1">
+          {/* Line 1: emoji + name + score */}
+          <div className="flex items-center justify-between gap-1">
+            <button onClick={onClick} className="flex items-center gap-1 min-w-0 hover:underline">
+              <span className="text-xs">{tempEmoji}</span>
+              <span className="text-[13px] font-bold text-foreground truncate">{lead.nome}</span>
+            </button>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${leadScore.bgColor} ${leadScore.color}`}>
+              {leadScore.score}
+            </span>
           </div>
 
-          {/* Phone + WhatsApp */}
-          {lead.telefone && (
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={(e) => handleCall(e, lead.telefone!)}
-                className="text-[12px] font-medium text-primary hover:underline"
-              >
-                {formatPhone(lead.telefone)}
-              </button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={(e) => handleWhatsApp(e, lead.telefone!)}
-                    className="p-0.5 rounded hover:bg-accent transition-colors"
-                  >
-                    <MessageCircle className="h-3.5 w-3.5 text-green-600" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs">WhatsApp</TooltipContent>
-              </Tooltip>
-            </div>
-          )}
-
-          {/* Email */}
-          {lead.email && (
-            <div className="flex items-center gap-1.5">
-              <Mail className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-              <span className="text-[11px] text-muted-foreground truncate">{lead.email}</span>
-            </div>
-          )}
-
-          {/* Empreendimento */}
-          {lead.empreendimento && (
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-              <span className="text-[11px] text-muted-foreground truncate font-medium">{lead.empreendimento}</span>
-            </div>
-          )}
-
-          {/* VGV */}
-          {lead.valor_estimado && lead.valor_estimado > 0 ? (
-            <div className="text-[11px] text-muted-foreground italic">
-              R$ {lead.valor_estimado.toLocaleString("pt-BR")}
-            </div>
-          ) : (
-            <div className="text-[11px] text-muted-foreground/50 italic">Valor não informado</div>
-          )}
-
-          {/* SLA Badge */}
-          {sla && sla.status !== "ok" && (
-            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold ${
-              sla.status === "breach" 
-                ? "bg-red-500/15 text-red-600 border border-red-300/50" 
-                : "bg-amber-500/15 text-amber-600 border border-amber-300/50"
-            }`}>
-              {sla.status === "breach" ? (
-                <AlertCircle className="h-3 w-3" />
-              ) : (
-                <Timer className="h-3 w-3" />
-              )}
-              {sla.status === "breach" ? "🚨 SLA estourado" : `⏱ SLA: ${formatSlaTime(sla.minutesRemaining)}`}
-            </div>
-          )}
-
-          {/* Score badge */}
-          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${leadScore.bgColor} ${leadScore.color}`}>
-            <Zap className="h-2.5 w-2.5" />
-            Score {leadScore.score}
+          {/* Line 2: empreendimento · origem */}
+          <div className="text-[11px] text-muted-foreground truncate">
+            {lead.empreendimento && <span className="font-medium">{lead.empreendimento}</span>}
+            {lead.empreendimento && lead.origem && " · "}
+            {lead.origem && <span>{lead.origem.replace(/_/g, " ")}</span>}
           </div>
 
-          {/* Motivo de perda tag */}
-          {lead.motivo_descarte && stage?.tipo === "descarte" && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/10 border border-destructive/20">
-              <AlertCircle className="h-3 w-3 text-destructive shrink-0" />
-              <span className="text-[10px] font-semibold text-destructive truncate">{lead.motivo_descarte}</span>
-            </div>
-          )}
-          {lead.proxima_acao ? (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 border border-primary/20">
-              <Calendar className="h-3 w-3 text-primary shrink-0" />
-              <span className="text-[10px] font-semibold text-primary truncate">{lead.proxima_acao}</span>
-              {lead.data_proxima_acao && (
-                <span className="text-[9px] text-muted-foreground shrink-0 ml-auto">
-                  {new Date(lead.data_proxima_acao + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/10 border border-destructive/20">
-              <AlertCircle className="h-3 w-3 text-destructive shrink-0" />
-              <span className="text-[10px] font-semibold text-destructive">Sem próxima ação</span>
-            </div>
-          )}
-
-          {/* Dias Parado — heat map badge */}
-          {(() => {
-            const days = differenceInDays(new Date(), new Date(lead.stage_changed_at));
-            const hours = differenceInHours(new Date(), new Date(lead.stage_changed_at));
-            if (days >= 15) {
-              return (
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold" style={{ backgroundColor: "#FEE2E2", color: "#DC2626" }}>
-                  <Hourglass className="h-3 w-3" />
-                  🚨 {days} dias
-                </div>
-              );
-            }
-            if (days >= 8) {
-              return (
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold" style={{ backgroundColor: "#FFEDD5", color: "#EA580C" }}>
-                  <Hourglass className="h-3 w-3" />
-                  {days} dias
-                </div>
-              );
-            }
-            if (days >= 3) {
-              return (
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold" style={{ backgroundColor: "#FEF9C3", color: "#CA8A04" }}>
-                  <Hourglass className="h-3 w-3" />
-                  {days} dias
-                </div>
-              );
-            }
-            if (days >= 0) {
-              const displayDays = days === 0 && hours < 24 ? 0 : days;
-              return (
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold" style={{ backgroundColor: "#DCFCE7", color: "#16A34A" }}>
-                  <Clock className="h-3 w-3" />
-                  {displayDays} dias
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          {/* Time indicators */}
-          <div className="flex items-center gap-3 text-[10px] text-muted-foreground/70">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-2.5 w-2.5" />
-                  {createdTime}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Tempo desde criação</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={`flex items-center gap-1 font-medium ${showAlert ? style.text : ""}`}>
-                  <Hourglass className="h-2.5 w-2.5" />
-                  {activity.timeText}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Tempo nesta etapa</TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Segmento tag + Origem */}
-          {(segmento || (lead.origem && lead.origem !== lead.empreendimento)) && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {segmento && (
-                <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-md text-white leading-none"
-                  style={{ backgroundColor: segmento.cor }}
-                >
-                  {segmento.nome.length > 10 ? segmento.nome.split(" ")[0] : segmento.nome}
-                </span>
-              )}
-              {lead.origem && lead.origem !== lead.empreendimento && (
-                <span className="text-[10px] text-muted-foreground/60 truncate">
-                  {lead.origem.replace(/_/g, " ")}
+          {/* Line 3: phone + email */}
+          {(lead.telefone || lead.email) && (
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              {lead.telefone && <span>{formatPhone(lead.telefone)}</span>}
+              {lead.email && (
+                <span className="truncate flex items-center gap-0.5">
+                  <Mail className="h-2.5 w-2.5" />
+                  {lead.email}
                 </span>
               )}
             </div>
           )}
 
-          {/* Footer: team info + alert */}
-          <div className="flex items-center justify-between pt-1.5 border-t border-border/30">
-            <div className="flex items-center gap-1 min-w-0 flex-wrap">
-              {/* Corretor */}
-              <div className="flex items-center gap-1 min-w-0">
-                <Avatar className="h-4 w-4 text-[7px] border border-border/40 shrink-0">
-                  <AvatarFallback className="bg-primary/10 text-primary text-[7px]">
-                    {corretorNome ? corretorNome.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase() : "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-[9px] text-muted-foreground truncate max-w-[60px] font-medium">
-                  {corretorNome || "Sem corretor"}
-                </span>
-              </div>
-              {/* Parceiro */}
-              {parceiroNome && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="text-[9px] text-purple-600 dark:text-purple-400 flex items-center gap-0.5">
-                      <Handshake className="h-2.5 w-2.5" />
-                      {parceiroNome.split(" ")[0]}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-xs">Parceiro: {parceiroNome}</TooltipContent>
-                </Tooltip>
-              )}
-              {/* Gerente */}
-              {gerenteNome && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="text-[9px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
-                      <Shield className="h-2.5 w-2.5" />
-                      {gerenteNome.split(" ")[0]}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-xs">Gerente: {gerenteNome}</TooltipContent>
-                </Tooltip>
-              )}
-              {/* Modo */}
-              {lead.modo_conducao && lead.modo_conducao !== "corretor_conduz" && (
-                <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${MODO_LABELS[lead.modo_conducao]?.color || ""}`}>
-                  {MODO_LABELS[lead.modo_conducao]?.label}
-                </span>
-              )}
-            </div>
-
-            {showAlert ? (
-              <span className={`inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text} border ${style.border} shrink-0`}>
-                <Calendar className="h-2.5 w-2.5" />
-                {activity.variant === "warning" ? "30m+" : "2h+"}
+          {/* Line 4: SLA + corretor */}
+          <div className="flex items-center justify-between gap-2">
+            {sla && sla.status !== "ok" ? (
+              <span className={`flex items-center gap-1 text-[10px] font-bold ${
+                sla.status === "breach" ? "text-red-600" : "text-amber-600"
+              }`}>
+                {sla.status === "breach" ? <AlertCircle className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
+                {sla.status === "breach" ? `🚨 SLA ${formatSlaTime(sla.minutesRemaining)}` : `⏱ ${formatSlaTime(sla.minutesRemaining)}`}
               </span>
             ) : (
-              <span className={`inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full ${style.bg} ${style.text} shrink-0`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-                {activity.label}
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Clock className="h-2.5 w-2.5" />
+                {(() => {
+                  const mins = differenceInMinutes(new Date(), new Date(lead.stage_changed_at));
+                  if (mins < 60) return `${mins}m nesta etapa`;
+                  const hrs = Math.floor(mins / 60);
+                  if (hrs < 24) return `${hrs}h nesta etapa`;
+                  return `${Math.floor(hrs / 24)}d nesta etapa`;
+                })()}
               </span>
             )}
+            <span className="text-[10px] text-muted-foreground truncate max-w-[90px]">
+              👤 {corretorNome || "Sem corretor"}
+            </span>
           </div>
         </div>
 
-        {/* Quick Actions overlay on hover */}
-        {hovered && (
-          <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-card border border-border rounded-lg shadow-lg p-0.5 z-10 animate-scale-in">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onClick(); }}
-                  className="p-1.5 rounded-md hover:bg-primary/10 transition-colors"
-                >
-                  <Eye className="h-3.5 w-3.5 text-primary" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">Abrir lead</TooltipContent>
-            </Tooltip>
-            {lead.telefone && (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => handleCall(e, lead.telefone!)}
-                      className="p-1.5 rounded-md hover:bg-muted transition-colors"
-                    >
-                      <Phone className="h-3.5 w-3.5 text-primary" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">Ligar</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => handleWhatsApp(e, lead.telefone!)}
-                      className="p-1.5 rounded-md hover:bg-accent transition-colors"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5 text-green-600" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">WhatsApp</TooltipContent>
-                </Tooltip>
-              </>
-            )}
-            <div className="w-px h-4 bg-border mx-0.5" />
-            <PipelineQuickTransfer
-              leadId={lead.id}
-              leadNome={lead.nome}
-              currentCorretorId={lead.corretor_id}
-              onTransferred={(corretorId, nome) => onTransferred?.(lead.id, corretorId, nome)}
-            />
-          </div>
-        )}
+        <Separator />
+
+        {/* Actions section */}
+        <div className="px-2 py-1.5 flex items-center gap-1 flex-wrap">
+          {/* Ligar */}
+          {lead.telefone && (
+            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1" onClick={handleCall}>
+              <Phone className="h-3 w-3" /> Ligar
+            </Button>
+          )}
+
+          {/* WhatsApp */}
+          {lead.telefone && (
+            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-green-600 hover:text-green-700" onClick={handleWhatsApp}>
+              <MessageCircle className="h-3 w-3" /> WhatsApp
+            </Button>
+          )}
+
+          {/* Agendar Visita */}
+          <Popover open={scheduleOpen} onOpenChange={setScheduleOpen}>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1" onClick={(e) => e.stopPropagation()}>
+                <Calendar className="h-3 w-3" /> Agendar
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3 space-y-2" align="start" onClick={(e) => e.stopPropagation()}>
+              <p className="text-xs font-semibold">Agendar visita</p>
+              <CalendarPicker
+                mode="single"
+                selected={scheduleDate}
+                onSelect={setScheduleDate}
+                className={cn("p-2 pointer-events-auto")}
+                locale={ptBR}
+              />
+              <Input
+                type="time"
+                value={scheduleTime}
+                onChange={(e) => setScheduleTime(e.target.value)}
+                className="h-8 text-xs"
+              />
+              <div className="text-[10px] text-muted-foreground">
+                {lead.empreendimento || "Sem empreendimento"}
+              </div>
+              <Button size="sm" className="w-full h-7 text-xs" disabled={!scheduleDate} onClick={handleScheduleVisit}>
+                Confirmar visita
+              </Button>
+            </PopoverContent>
+          </Popover>
+
+          {/* Mover etapa */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1 ml-auto" onClick={(e) => e.stopPropagation()}>
+                Mover <ChevronDown className="h-2.5 w-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[160px]" onClick={(e) => e.stopPropagation()}>
+              {stages.filter(s => s.id !== lead.stage_id).map(s => (
+                <DropdownMenuItem key={s.id} onClick={(e) => handleMoveStage(e as any, s.id)} className="text-xs gap-2">
+                  <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
+                  {s.nome}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Mais */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={onClick} className="text-xs gap-2">
+                <Eye className="h-3.5 w-3.5" /> Ver lead completo
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="text-xs gap-2 p-0">
+                <div className="w-full">
+                  <PipelineQuickTransfer
+                    leadId={lead.id}
+                    leadNome={lead.nome}
+                    currentCorretorId={lead.corretor_id}
+                    onTransferred={(corretorId, nome) => onTransferred?.(lead.id, corretorId, nome)}
+                  />
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAddNote(); }} className="text-xs gap-2">
+                <StickyNote className="h-3.5 w-3.5" /> Registrar observação
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkLost(); }} className="text-xs gap-2 text-destructive">
+                <XCircle className="h-3.5 w-3.5" /> Marcar sem interesse
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </TooltipProvider>
   );
