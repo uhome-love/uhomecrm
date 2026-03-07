@@ -261,7 +261,13 @@ const PipelineCard = memo(function PipelineCard({ lead, stage, segmentos, corret
             Score {leadScore.score}
           </div>
 
-          {/* Próxima Ação */}
+          {/* Motivo de perda tag */}
+          {lead.motivo_descarte && stage?.tipo === "descarte" && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/10 border border-destructive/20">
+              <AlertCircle className="h-3 w-3 text-destructive shrink-0" />
+              <span className="text-[10px] font-semibold text-destructive truncate">{lead.motivo_descarte}</span>
+            </div>
+          )}
           {lead.proxima_acao ? (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 border border-primary/20">
               <Calendar className="h-3 w-3 text-primary shrink-0" />
