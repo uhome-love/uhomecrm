@@ -83,6 +83,9 @@ export default function PipelineKanban() {
     if (filterOrigem !== "all") result = result.filter(l => l.origem === filterOrigem);
     if (filterCorretor !== "all") result = result.filter(l => l.corretor_id === filterCorretor);
     if (filterCampanha !== "all") result = result.filter(l => l.empreendimento === filterCampanha);
+    if (filterGerente === "sem_gerente") result = result.filter(l => !l.gerente_id);
+    else if (filterGerente === "com_gerente") result = result.filter(l => !!l.gerente_id);
+    else if (filterGerente === "criticos") result = result.filter(l => l.complexidade_score >= 40 && !l.gerente_id);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(l =>
@@ -93,14 +96,14 @@ export default function PipelineKanban() {
       );
     }
     return result;
-  }, [pipeline.leads, filterSegmento, filterOrigem, filterCorretor, filterCampanha, searchQuery]);
+  }, [pipeline.leads, filterSegmento, filterOrigem, filterCorretor, filterCampanha, filterGerente, searchQuery]);
 
   const totalVGV = useMemo(() =>
     filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
     [filteredLeads]
   );
 
-  const activeFiltersCount = (filterSegmento !== "all" ? 1 : 0) + (filterOrigem !== "all" ? 1 : 0) + (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
+  const activeFiltersCount = (filterSegmento !== "all" ? 1 : 0) + (filterOrigem !== "all" ? 1 : 0) + (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (filterGerente !== "all" ? 1 : 0) + (searchQuery ? 1 : 0);
 
   const formatVGV = (value: number) => {
     if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
