@@ -1661,12 +1661,14 @@ export type Database = {
           distribuido_em: string | null
           email: string | null
           empreendimento: string | null
+          escalation_level: number | null
           forma_pagamento: string | null
           gerente_id: string | null
           hora_proxima_acao: string | null
           id: string
           imovel_troca: boolean | null
           jetimob_lead_id: string | null
+          last_escalation_at: string | null
           modo_conducao: string
           motivo_descarte: string | null
           motivo_rejeicao: string | null
@@ -1674,6 +1676,7 @@ export type Database = {
           nome: string
           objetivo_cliente: string | null
           observacoes: string | null
+          oportunidade_score: number | null
           ordem_no_stage: number
           origem: string | null
           origem_detalhe: string | null
@@ -1704,12 +1707,14 @@ export type Database = {
           distribuido_em?: string | null
           email?: string | null
           empreendimento?: string | null
+          escalation_level?: number | null
           forma_pagamento?: string | null
           gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
           imovel_troca?: boolean | null
           jetimob_lead_id?: string | null
+          last_escalation_at?: string | null
           modo_conducao?: string
           motivo_descarte?: string | null
           motivo_rejeicao?: string | null
@@ -1717,6 +1722,7 @@ export type Database = {
           nome: string
           objetivo_cliente?: string | null
           observacoes?: string | null
+          oportunidade_score?: number | null
           ordem_no_stage?: number
           origem?: string | null
           origem_detalhe?: string | null
@@ -1747,12 +1753,14 @@ export type Database = {
           distribuido_em?: string | null
           email?: string | null
           empreendimento?: string | null
+          escalation_level?: number | null
           forma_pagamento?: string | null
           gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
           imovel_troca?: boolean | null
           jetimob_lead_id?: string | null
+          last_escalation_at?: string | null
           modo_conducao?: string
           motivo_descarte?: string | null
           motivo_rejeicao?: string | null
@@ -1760,6 +1768,7 @@ export type Database = {
           nome?: string
           objetivo_cliente?: string | null
           observacoes?: string | null
+          oportunidade_score?: number | null
           ordem_no_stage?: number
           origem?: string | null
           origem_detalhe?: string | null
@@ -2540,10 +2549,12 @@ export type Database = {
         }
         Returns: string
       }
+      detectar_leads_parados: { Args: never; Returns: number }
       distribuir_lead_roleta: {
         Args: { p_pipeline_lead_id: string; p_segmento_id?: string }
         Returns: Json
       }
+      escalonar_notificacoes_leads: { Args: never; Returns: number }
       fetch_next_lead: {
         Args: {
           p_corretor_id: string
