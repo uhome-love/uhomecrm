@@ -181,7 +181,7 @@ export default function PdnPanel({ filterGerenteId, readOnly }: PdnPanelProps) {
         </div>
       )}
 
-      <PdnStats {...stats} />
+      <PdnStats {...stats} entries={entries} />
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">

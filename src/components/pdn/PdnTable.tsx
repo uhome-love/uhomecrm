@@ -4,10 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, ArrowRightLeft, Check } from "lucide-react";
+import { Trash2, Plus, ArrowRightLeft, Check, AlertTriangle, Target } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { calcProbabilidade, calcRisco, OBJECAO_OPTIONS, PROXIMA_ACAO_OPTIONS, type RiscoNivel } from "@/lib/pdnScoring";
+import { differenceInDays } from "date-fns";
 
 interface Props {
   entries: PdnEntry[];
@@ -33,6 +36,12 @@ const DOCS_COLORS: Record<string, string> = {
 };
 const TEMP_LABELS: Record<string, string> = { quente: "QUENTE", morno: "MORNO", frio: "FRIO" };
 const DOCS_LABELS: Record<string, string> = { doc_completa: "COMPLETA", em_andamento: "ANDAMENTO", sem_docs: "SEM DOCS" };
+
+const RISCO_BADGE: Record<RiscoNivel, { emoji: string; class: string }> = {
+  seguro: { emoji: "🟢", class: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
+  atencao: { emoji: "🟡", class: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
+  risco: { emoji: "🔴", class: "bg-red-500/10 text-red-600 border-red-500/30" },
+};
 
 function Cell({ value, field, id, onUpdate, className, placeholder }: {
   value: string; field: string; id: string;
@@ -172,6 +181,55 @@ function MoverPara({ currentSituacao, id, onUpdate }: { currentSituacao: PdnSitu
   );
 }
 
+function ProbBar({ entry }: { entry: PdnEntry }) {
+  const prob = calcProbabilidade(entry);
+  return (
+    <div className="flex items-center gap-1" title={`Probabilidade: ${prob}%`}>
+      <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
+        <div
+          className={`h-full rounded-full ${prob >= 70 ? "bg-emerald-500" : prob >= 40 ? "bg-amber-500" : "bg-red-500"}`}
+          style={{ width: `${prob}%` }}
+        />
+      </div>
+      <span className="text-[10px] font-semibold text-muted-foreground w-7 text-right">{prob}%</span>
+    </div>
+  );
+}
+
+function RiscoBadge({ entry }: { entry: PdnEntry }) {
+  const risco = calcRisco(entry);
+  const conf = RISCO_BADGE[risco.nivel];
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${conf.class}`}
+      title={risco.motivos.join(", ") || "OK"}
+    >
+      {conf.emoji}
+    </span>
+  );
+}
+
+function ProximaAcaoAlert({ entry }: { entry: PdnEntry }) {
+  if (entry.situacao === "caiu" || entry.situacao === "assinado") return null;
+  if (entry.proxima_acao && entry.proxima_acao.trim()) return null;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-600 bg-amber-500/10 rounded px-1 py-0.5">
+      <AlertTriangle className="h-2.5 w-2.5" /> Sem ação
+    </span>
+  );
+}
+
+function ParadoAlert({ entry }: { entry: PdnEntry }) {
+  if (entry.situacao === "caiu" || entry.situacao === "assinado") return null;
+  const dias = differenceInDays(new Date(), new Date(entry.updated_at));
+  if (dias < 5) return null;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] text-red-600 bg-red-500/10 rounded px-1 py-0.5 font-semibold">
+      PARADO {dias}d
+    </span>
+  );
+}
+
 const thClass = "px-2 py-1.5 text-left font-semibold border-r border-border text-xs";
 const tdClass = "px-1 py-0.5 border-r border-border";
 
@@ -201,13 +259,17 @@ function VisitaSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
       <table className="w-full text-xs border-collapse" style={{ tableLayout: "fixed" }}>
         <colgroup>
           {!readOnly && <col style={{ width: 30 }} />}
-          <col style={{ width: "18%" }} />
-          <col style={{ width: 50 }} />
-          <col style={{ width: "14%" }} />
-          <col style={{ width: 95 }} />
-          <col style={{ width: 80 }} />
+          <col style={{ width: "15%" }} />
+          <col style={{ width: 45 }} />
           <col style={{ width: "12%" }} />
-          <col style={{ width: "30%" }} />
+          <col style={{ width: 85 }} />
+          <col style={{ width: 70 }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: 80 }} />
+          <col style={{ width: 55 }} />
+          <col style={{ width: 30 }} />
+          <col style={{ width: "15%" }} />
           {!readOnly && <col style={{ width: 36 }} />}
         </colgroup>
         <thead>
@@ -219,6 +281,10 @@ function VisitaSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
             <th className={`${thClass} text-center`}>Docs</th>
             <th className={`${thClass} text-center`}>Temp.</th>
             <th className={thClass}>Corretor</th>
+            <th className={thClass}>Próxima Ação</th>
+            <th className={thClass}>Objeção</th>
+            <th className={`${thClass} text-center`}>Prob.</th>
+            <th className={`${thClass} text-center`}>⚡</th>
             <th className={thClass}>Último Contato</th>
             {!readOnly && <th className="px-1 py-1.5" />}
           </tr>
@@ -228,8 +294,14 @@ function VisitaSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
             <tr key={e.id} className={`border-b border-border hover:bg-muted/20 group align-top ${i % 2 ? "bg-muted/5" : ""}`}>
               {!readOnly && <td className="px-1 py-1 text-center border-r border-border"><Checkbox checked={selectedIds.has(e.id)} onCheckedChange={() => onToggleSelect(e.id)} /></td>}
               <td className={tdClass}>
-                {(e as any).created_from_visit && <span title="Originado da Agenda de Visitas" className="text-[10px] mr-0.5">📅</span>}
-                {readOnly ? <span className="px-1">{e.nome}</span> : <Cell value={e.nome} field="nome" id={e.id} onUpdate={onUpdate} placeholder="Nome" />}
+                <div className="space-y-0.5">
+                  {(e as any).created_from_visit && <span title="Originado da Agenda de Visitas" className="text-[10px] mr-0.5">📅</span>}
+                  {readOnly ? <span className="px-1">{e.nome}</span> : <Cell value={e.nome} field="nome" id={e.id} onUpdate={onUpdate} placeholder="Nome" />}
+                  <div className="flex flex-wrap gap-0.5">
+                    <ProximaAcaoAlert entry={e} />
+                    <ParadoAlert entry={e} />
+                  </div>
+                </div>
               </td>
               <td className={`${tdClass} text-center`}>{readOnly ? e.und : <Cell value={e.und || ""} field="und" id={e.id} onUpdate={onUpdate} className="text-center" placeholder="—" />}</td>
               <td className={tdClass}>{readOnly ? <span className="px-1">{e.empreendimento}</span> : <Cell value={e.empreendimento || ""} field="empreendimento" id={e.id} onUpdate={onUpdate} placeholder="Empreend." />}</td>
@@ -262,7 +334,37 @@ function VisitaSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
                 )}
               </td>
               <td className={tdClass}>{readOnly ? <span className="px-1">{e.corretor}</span> : <Cell value={e.corretor || ""} field="corretor" id={e.id} onUpdate={onUpdate} placeholder="Corretor" />}</td>
-              <td className={tdClass}>{readOnly ? <span className="whitespace-pre-wrap px-1">{e.ultimo_contato}</span> : <TextCell value={e.ultimo_contato || ""} field="ultimo_contato" id={e.id} onUpdate={onUpdate} placeholder="Status, objeções, próximos passos..." />}</td>
+              <td className={tdClass}>
+                {readOnly ? (
+                  <span className="px-1 text-[10px]">{e.proxima_acao}</span>
+                ) : (
+                  <Select value={e.proxima_acao || ""} onValueChange={v => onUpdate(e.id, { proxima_acao: v })}>
+                    <SelectTrigger className="h-7 text-[10px] border-0 bg-transparent px-1 w-full"><SelectValue placeholder="Definir..." /></SelectTrigger>
+                    <SelectContent>
+                      {PROXIMA_ACAO_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </td>
+              <td className={tdClass}>
+                {readOnly ? (
+                  <span className="px-1 text-[10px]">{OBJECAO_OPTIONS.find(o => o.value === e.objecao_cliente)?.label || e.objecao_cliente || "—"}</span>
+                ) : (
+                  <Select value={e.objecao_cliente || ""} onValueChange={v => onUpdate(e.id, { objecao_cliente: v })}>
+                    <SelectTrigger className="h-7 text-[10px] border-0 bg-transparent px-1 w-full"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {OBJECAO_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </td>
+              <td className={`${tdClass} text-center`}><ProbBar entry={e} /></td>
+              <td className={`${tdClass} text-center`}><RiscoBadge entry={e} /></td>
+              <td className={tdClass}>{readOnly ? <span className="whitespace-pre-wrap px-1">{e.ultimo_contato}</span> : <TextCell value={e.ultimo_contato || ""} field="ultimo_contato" id={e.id} onUpdate={onUpdate} placeholder="Status..." />}</td>
               {!readOnly && (
                 <td className="px-1 py-0.5">
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
@@ -273,7 +375,7 @@ function VisitaSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
               )}
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={readOnly ? 7 : 9} className="text-center py-6 text-muted-foreground">Nenhum negócio registrado.</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={readOnly ? 11 : 13} className="text-center py-6 text-muted-foreground">Nenhum negócio registrado.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -304,13 +406,17 @@ function GeradoSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
       <table className="w-full text-xs border-collapse" style={{ tableLayout: "fixed" }}>
         <colgroup>
           {!readOnly && <col style={{ width: 30 }} />}
-          <col style={{ width: "20%" }} />
-          <col style={{ width: 55 }} />
           <col style={{ width: "16%" }} />
-          <col style={{ width: 110 }} />
-          <col style={{ width: 90 }} />
-          <col style={{ width: "12%" }} />
-          <col style={{ width: "25%" }} />
+          <col style={{ width: 45 }} />
+          <col style={{ width: "13%" }} />
+          <col style={{ width: 100 }} />
+          <col style={{ width: 80 }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: 80 }} />
+          <col style={{ width: 55 }} />
+          <col style={{ width: 30 }} />
+          <col style={{ width: "18%" }} />
           {!readOnly && <col style={{ width: 36 }} />}
         </colgroup>
         <thead>
@@ -322,6 +428,10 @@ function GeradoSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
             <th className={`${thClass} text-right`}>VGV (R$)</th>
             <th className={`${thClass} text-center`}>Situação</th>
             <th className={thClass}>Corretor</th>
+            <th className={thClass}>Próxima Ação</th>
+            <th className={thClass}>Objeção</th>
+            <th className={`${thClass} text-center`}>Prob.</th>
+            <th className={`${thClass} text-center`}>⚡</th>
             <th className={thClass}>Quando Assina</th>
             {!readOnly && <th className="px-1 py-1.5" />}
           </tr>
@@ -330,7 +440,15 @@ function GeradoSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
           {rows.map((e, i) => (
             <tr key={e.id} className={`border-b border-border hover:bg-muted/20 group align-top ${i % 2 ? "bg-muted/5" : ""}`}>
               {!readOnly && <td className="px-1 py-1 text-center border-r border-border"><Checkbox checked={selectedIds.has(e.id)} onCheckedChange={() => onToggleSelect(e.id)} /></td>}
-              <td className={tdClass}>{readOnly ? <span className="px-1">{e.nome}</span> : <Cell value={e.nome} field="nome" id={e.id} onUpdate={onUpdate} placeholder="Nome" />}</td>
+              <td className={tdClass}>
+                <div className="space-y-0.5">
+                  {readOnly ? <span className="px-1">{e.nome}</span> : <Cell value={e.nome} field="nome" id={e.id} onUpdate={onUpdate} placeholder="Nome" />}
+                  <div className="flex flex-wrap gap-0.5">
+                    <ProximaAcaoAlert entry={e} />
+                    <ParadoAlert entry={e} />
+                  </div>
+                </div>
+              </td>
               <td className={`${tdClass} text-center`}>{readOnly ? e.und : <Cell value={e.und || ""} field="und" id={e.id} onUpdate={onUpdate} className="text-center" placeholder="—" />}</td>
               <td className={tdClass}>{readOnly ? <span className="px-1">{e.empreendimento}</span> : <Cell value={e.empreendimento || ""} field="empreendimento" id={e.id} onUpdate={onUpdate} placeholder="Empreend." />}</td>
               <td className={`${tdClass} text-right`}>
@@ -353,6 +471,36 @@ function GeradoSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
                 )}
               </td>
               <td className={tdClass}>{readOnly ? <span className="px-1">{e.corretor}</span> : <Cell value={e.corretor || ""} field="corretor" id={e.id} onUpdate={onUpdate} placeholder="Corretor" />}</td>
+              <td className={tdClass}>
+                {readOnly ? (
+                  <span className="px-1 text-[10px]">{e.proxima_acao}</span>
+                ) : (
+                  <Select value={e.proxima_acao || ""} onValueChange={v => onUpdate(e.id, { proxima_acao: v })}>
+                    <SelectTrigger className="h-7 text-[10px] border-0 bg-transparent px-1 w-full"><SelectValue placeholder="Definir..." /></SelectTrigger>
+                    <SelectContent>
+                      {PROXIMA_ACAO_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </td>
+              <td className={tdClass}>
+                {readOnly ? (
+                  <span className="px-1 text-[10px]">{OBJECAO_OPTIONS.find(o => o.value === e.objecao_cliente)?.label || e.objecao_cliente || "—"}</span>
+                ) : (
+                  <Select value={e.objecao_cliente || ""} onValueChange={v => onUpdate(e.id, { objecao_cliente: v })}>
+                    <SelectTrigger className="h-7 text-[10px] border-0 bg-transparent px-1 w-full"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {OBJECAO_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </td>
+              <td className={`${tdClass} text-center`}><ProbBar entry={e} /></td>
+              <td className={`${tdClass} text-center`}><RiscoBadge entry={e} /></td>
               <td className={tdClass}>{readOnly ? <span className="whitespace-pre-wrap px-1">{e.quando_assina}</span> : <TextCell value={e.quando_assina || ""} field="quando_assina" id={e.id} onUpdate={onUpdate} placeholder="Previsão de assinatura..." />}</td>
               {!readOnly && (
                 <td className="px-1 py-0.5">
@@ -364,7 +512,7 @@ function GeradoSection({ rows, readOnly, selectedIds, onToggleSelect, onUpdate, 
               )}
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={readOnly ? 7 : 9} className="text-center py-6 text-muted-foreground">Nenhum negócio gerado.</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={readOnly ? 11 : 13} className="text-center py-6 text-muted-foreground">Nenhum negócio gerado.</td></tr>}
         </tbody>
       </table>
     </div>

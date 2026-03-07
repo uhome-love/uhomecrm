@@ -30,6 +30,7 @@ export interface PdnEntry {
   quando_assina: string | null;
   status_pagamento: string | null;
   motivo_queda: string | null;
+  objecao_cliente: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -86,6 +87,7 @@ export function usePdn(selectedMes?: string, filterGerenteId?: string) {
       vgv: null,
       quando_assina: null,
       status_pagamento: null,
+      objecao_cliente: null,
       ...partial,
     } as any);
     if (error) { toast.error("Erro ao adicionar linha"); console.error(error); }
@@ -130,6 +132,7 @@ export function usePdn(selectedMes?: string, filterGerenteId?: string) {
       vgv: e.vgv,
       quando_assina: e.quando_assina,
       status_pagamento: e.status_pagamento,
+      objecao_cliente: e.objecao_cliente,
     }));
     const { error } = await supabase.from("pdn_entries").insert(inserts as any);
     if (error) toast.error("Erro ao copiar linhas");
