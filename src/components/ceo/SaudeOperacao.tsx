@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Activity, Clock, TrendingUp, MapPin, Users, UserX, AlertTriangle } from "lucide-react";
-import { differenceInDays, differenceInMinutes } from "date-fns";
+import { differenceInDays } from "date-fns";
 
 type Nivel = "bom" | "atencao" | "critico";
 
