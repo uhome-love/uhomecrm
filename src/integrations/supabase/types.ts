@@ -1179,6 +1179,115 @@ export type Database = {
           },
         ]
       }
+      pipeline_leads: {
+        Row: {
+          aceite_expira_em: string | null
+          aceito_em: string | null
+          corretor_id: string | null
+          created_at: string
+          created_by: string | null
+          data_proxima_acao: string | null
+          distribuido_em: string | null
+          email: string | null
+          empreendimento: string | null
+          id: string
+          jetimob_lead_id: string | null
+          motivo_descarte: string | null
+          nome: string
+          observacoes: string | null
+          ordem_no_stage: number
+          origem: string | null
+          origem_detalhe: string | null
+          produto_id: string | null
+          proxima_acao: string | null
+          segmento_id: string | null
+          stage_changed_at: string
+          stage_id: string
+          telefone: string | null
+          telefone2: string | null
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          aceite_expira_em?: string | null
+          aceito_em?: string | null
+          corretor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_proxima_acao?: string | null
+          distribuido_em?: string | null
+          email?: string | null
+          empreendimento?: string | null
+          id?: string
+          jetimob_lead_id?: string | null
+          motivo_descarte?: string | null
+          nome: string
+          observacoes?: string | null
+          ordem_no_stage?: number
+          origem?: string | null
+          origem_detalhe?: string | null
+          produto_id?: string | null
+          proxima_acao?: string | null
+          segmento_id?: string | null
+          stage_changed_at?: string
+          stage_id: string
+          telefone?: string | null
+          telefone2?: string | null
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          aceite_expira_em?: string | null
+          aceito_em?: string | null
+          corretor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_proxima_acao?: string | null
+          distribuido_em?: string | null
+          email?: string | null
+          empreendimento?: string | null
+          id?: string
+          jetimob_lead_id?: string | null
+          motivo_descarte?: string | null
+          nome?: string
+          observacoes?: string | null
+          ordem_no_stage?: number
+          origem?: string | null
+          origem_detalhe?: string | null
+          produto_id?: string | null
+          proxima_acao?: string | null
+          segmento_id?: string | null
+          stage_changed_at?: string
+          stage_id?: string
+          telefone?: string | null
+          telefone2?: string | null
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_leads_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_leads_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_segmentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_leads_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_produtos: {
         Row: {
           ativo: boolean
