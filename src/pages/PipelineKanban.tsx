@@ -268,7 +268,7 @@ export default function PipelineKanban() {
             </span>
           )}
           {activeFiltersCount > 0 && (
-            <div className="flex items-center gap-1.5 ml-auto">
+            <div className="flex items-center gap-1.5 ml-auto flex-wrap">
               {filterSegmento !== "all" && (
                 <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterSegmento("all")}>
                   {pipeline.segmentos.find(s => s.id === filterSegmento)?.nome} ×
@@ -277,6 +277,16 @@ export default function PipelineKanban() {
               {filterOrigem !== "all" && (
                 <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterOrigem("all")}>
                   {filterOrigem.replace(/_/g, " ")} ×
+                </Badge>
+              )}
+              {filterCorretor !== "all" && (
+                <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterCorretor("all")}>
+                  {pipeline.corretorNomes[filterCorretor] || "Corretor"} ×
+                </Badge>
+              )}
+              {filterCampanha !== "all" && (
+                <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterCampanha("all")}>
+                  {filterCampanha} ×
                 </Badge>
               )}
             </div>
