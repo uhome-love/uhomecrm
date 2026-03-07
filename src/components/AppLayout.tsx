@@ -17,6 +17,8 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
+import LeadAcceptanceDialog from "@/components/pipeline/LeadAcceptanceDialog";
 const homiMascot = "/images/homi-mascot-opt.png";
 
 const UhomeIaAssistant = lazy(() => import("@/components/UhomeIaAssistant"));
@@ -27,6 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAdmin, isGestor } = useUserRole();
   const navigate = useNavigate();
   const [nome, setNome] = useState("");
+  const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const cargo = isAdmin ? "CEO" : isGestor ? "Gerente" : "Corretor";
 
   useEffect(() => {
@@ -97,6 +100,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <HomiGreeting />
         </Suspense>
       </ErrorBoundary>
+      <LeadAcceptanceDialog
+        lead={pendingLead}
+        open={showDialog}
+        onClose={closeDialog}
+        onResult={refreshPending}
+      />
     </SidebarProvider>
   );
 }
