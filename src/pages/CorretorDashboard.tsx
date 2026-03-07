@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, CheckCircle, Trophy, Target, Flame, Lock, LogOut } from "lucide-react";
+import { Phone, CheckCircle, Trophy, Target, Flame, Lock, LogOut, RefreshCw, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -53,6 +53,7 @@ export default function CorretorDashboard() {
   const [activeTab, setActiveTab] = useState("central");
   const [nome, setNome] = useState("");
   const [finalizando, setFinalizando] = useState(false);
+  const [syncingLeads, setSyncingLeads] = useState(false);
 
   // Streak calculation
   const { data: streak } = useQuery({
@@ -239,6 +240,53 @@ export default function CorretorDashboard() {
                 </CardContent>
               </Card>
             )}
+
+            {/* ACTION BUTTONS — below Meta do Dia */}
+            <div className="flex gap-3 mt-3">
+              <Button
+                size="sm"
+                disabled={!metaSalva}
+                className={`flex-1 h-10 gap-2 text-xs font-bold rounded-xl ${
+                  metaSalva
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                }`}
+                onClick={() => {
+                  if (metaSalva) setActiveTab("discagem");
+                }}
+              >
+                {!metaSalva ? <Lock className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />}
+                {metaSalva ? "Iniciar Call" : "🔒 Iniciar Call"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={syncingLeads}
+                className="flex-1 h-10 gap-2 text-xs font-bold rounded-xl border-primary/30 text-primary hover:bg-primary/10"
+                onClick={async () => {
+                  setSyncingLeads(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke("jetimob-sync");
+                    if (error) throw error;
+                    const count = data?.synced ?? data?.leads_synced ?? 0;
+                    toast.success(`🚀 ${count} novos leads adicionados!`);
+                    setTimeout(() => navigate("/pipeline"), 1500);
+                  } catch (err: any) {
+                    toast.error("Erro ao sincronizar: " + (err.message || "tente novamente"));
+                  } finally {
+                    setSyncingLeads(false);
+                  }
+                }}
+              >
+                {syncingLeads ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                {syncingLeads ? "Atualizando..." : "Atualizar Leads"}
+              </Button>
+            </div>
+            {!metaSalva && (
+              <p className="text-[10px] text-muted-foreground text-center mt-1">
+                Defina sua meta do dia para liberar a discagem.
+              </p>
+            )}
           </motion.div>
 
           {/* 6️⃣ RANKING / PONTUAÇÃO */}
@@ -365,28 +413,6 @@ export default function CorretorDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* 8️⃣ BOTÃO PRINCIPAL FIXO — INICIAR CALL */}
-      {activeTab === "central" && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-6 left-4 right-4 max-w-2xl mx-auto z-30"
-        >
-          <Button
-            size="lg"
-            className="w-full h-14 gap-2 text-base font-bold rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_4px_24px_hsl(152_60%_42%/0.35)]"
-            onClick={() => {
-              if (!metaSalva) {
-                toast.warning("Defina sua meta do dia antes de iniciar!");
-                return;
-              }
-              setActiveTab("discagem");
-            }}
-          >
-            <Phone className="h-5 w-5" /> INICIAR CALL
-          </Button>
-        </motion.div>
-      )}
     </div>
   );
 }
