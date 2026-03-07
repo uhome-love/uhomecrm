@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock, LogOut, Sparkles, Star, Zap, TrendingUp, ChevronDown, CalendarCheck } from "lucide-react";
+import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, ArrowRight, Lock, LogOut, TrendingUp, ChevronDown, CalendarCheck } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import DailyProgressCard from "@/components/corretor/DailyProgressCard";
-import QuickLinksGrid from "@/components/corretor/QuickLinksGrid";
+import AcoesAgora from "@/components/corretor/AcoesAgora";
 import AchievementsBadges from "@/components/corretor/AchievementsBadges";
-import YesterdayComparison from "@/components/corretor/YesterdayComparison";
 import FollowUpsDoDia from "@/components/corretor/FollowUpsDoDia";
 import VisitasHojeCard from "@/components/corretor/VisitasHojeCard";
 import MiniFunilPessoal from "@/components/corretor/MiniFunilPessoal";
@@ -22,13 +21,12 @@ import { useMissoesLeads } from "@/hooks/useMissoesLeads";
 import { useCorretorHomeData } from "@/hooks/useCorretorHomeData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
-import ScoringLegend from "@/components/oferta-ativa/ScoringLegend";
 import CorretorDisponibilidadePanel from "@/components/disponibilidade/CorretorDisponibilidadePanel";
 
 import {
@@ -87,14 +85,30 @@ export default function CorretorDashboard() {
   const motivation = useDailyMotivation();
   const { user } = useAuth();
 
-  const { missoes, missaoGeral, radarLeads, radarLoading, ranking, rankingLoading, userId } = useMissoesLeads();
+  const { missoes, missaoGeral } = useMissoesLeads();
   const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading } = useCorretorHomeData();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("central");
   const [nome, setNome] = useState("");
   const [finalizando, setFinalizando] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [prevAproveitados, setPrevAproveitados] = useState(0);
+
+  // Count new leads (no contact yet)
+  const { data: newLeadsCount = 0 } = useQuery({
+    queryKey: ["corretor-new-leads-count", user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("corretor_id", user!.id)
+        .in("stage_id", (await supabase.from("pipeline_stages").select("id").in("nome", ["Novo Lead", "Sem Contato"])).data?.map(s => s.id) || []);
+      return count || 0;
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
 
   // Streak calculation
   const { data: streak } = useQuery({
@@ -254,63 +268,50 @@ export default function CorretorDashboard() {
 
         {/* ── Tab: Central ── */}
         <TabsContent value="central" className="space-y-4 mt-4">
-          {/* Disponibilidade & Roleta */}
+          {/* 1️⃣ STATUS — Disponibilidade & Roleta */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <CorretorDisponibilidadePanel />
           </motion.div>
+
           {/* Celebration Banner */}
           <AnimatePresence>
             {progress.todasMissoesCumpridas && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
                 <Card className="border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-primary/10 to-amber-500/10">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl mb-1">🏆🎉🔥</p>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-lg mb-0.5">🏆🎉🔥</p>
                     <p className="text-sm font-bold text-foreground">MISSÃO DO DIA CUMPRIDA!</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Você é uma máquina! Continue assim para subir no ranking.</p>
                   </CardContent>
                 </Card>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Motivation */}
+          {/* Motivation — compact inline */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
-              <CardContent className="p-4 flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 shrink-0 mt-0.5">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-primary uppercase tracking-wider">💬 Mensagem do Dia</p>
-                  <p className="text-sm font-medium text-foreground mt-1 italic">"{motivation}"</p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex items-center gap-2 px-1">
+              <span className="text-xs text-muted-foreground italic">💬 "{motivation}"</span>
+            </div>
           </motion.div>
 
-          {/* Quick Links */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
-            <QuickLinksGrid />
+          {/* 2️⃣ AÇÕES AGORA */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
+            <AcoesAgora
+              followUps={followUps}
+              visitasHoje={visitasHoje}
+              newLeadsCount={newLeadsCount}
+              onStartCall={() => {
+                if (!goals) {
+                  toast.warning("Defina sua meta do dia antes de iniciar a discagem!");
+                  return;
+                }
+                setActiveTab("discagem");
+              }}
+            />
           </motion.div>
 
-          {/* 📅 Visitas de Hoje */}
-          {visitasHoje.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-              <VisitasHojeCard visitas={visitasHoje} loading={visitasLoading} />
-            </motion.div>
-          )}
-
-          {/* ⚡ Follow-ups Pendentes */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
-            <FollowUpsDoDia leads={followUps} loading={followUpsLoading} />
-          </motion.div>
-
-          {/* 🎮 Missões de Hoje */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}>
+          {/* 3️⃣ MISSÕES DO DIA */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
             <MissoesDeHoje
               missoes={missoes}
               missaoGeral={missaoGeral}
@@ -319,191 +320,135 @@ export default function CorretorDashboard() {
             />
           </motion.div>
 
-          {/* 📊 Mini Funil + Evolução */}
+          {/* 4️⃣ VISITAS DE HOJE */}
+          {visitasHoje.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
+              <VisitasHojeCard visitas={visitasHoje} loading={visitasLoading} />
+            </motion.div>
+          )}
+
+          {/* ⚡ Follow-ups expandido (para quem quer detalhe) */}
+          {followUps.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}>
+              <FollowUpsDoDia leads={followUps} loading={followUpsLoading} />
+            </motion.div>
+          )}
+
+          {/* 5️⃣ META DO DIA */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <MiniFunilPessoal funil={funil} totalLeads={totalLeads} loading={funilLoading} />
-              <EvolucaoSemanal evolucao={evolucao} loading={evolucaoLoading} />
-            </div>
+            <DailyProgressCard
+              progress={progress}
+              goals={goals}
+              saveGoals={saveGoals}
+              variant="full"
+            />
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Daily Goals — SHARED COMPONENT (same as in Discagem) */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="lg:col-span-2">
-              <DailyProgressCard
-                progress={progress}
-                goals={goals}
-                saveGoals={saveGoals}
-                variant="full"
-              />
-            </motion.div>
-
-            {/* Points & Level */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <Card className="border-primary/10 h-full">
-                <CardContent className="p-4 flex flex-col items-center justify-center h-full gap-2">
-                  <div className="text-3xl">{levelEmoji}</div>
-                  <p className={`text-xs font-bold ${progress.levelColor} uppercase tracking-wider`}>{levelLabel}</p>
-                  <motion.p
-                    key={progress.pontos}
-                    initial={{ scale: 1.3 }}
-                    animate={{ scale: 1 }}
-                    className="text-4xl font-bold text-foreground"
-                  >
-                    {progress.pontos}
-                  </motion.p>
-                  <p className="text-[10px] text-muted-foreground">pontos hoje</p>
-                  <div className="w-full mt-2 space-y-1">
-                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>{progress.aproveitados} aprov.</span>
-                      <span>{progress.tentativas} tent.</span>
-                    </div>
-                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>{progress.taxaAproveitamento}% taxa</span>
-                      {(streak || 0) >= 1 && <span className="text-orange-500 font-semibold">🔥 {streak}d</span>}
-                    </div>
-                  </div>
-
-                   {/* Level Legend - Collapsible */}
-                   <Collapsible>
-                     <CollapsibleTrigger className="w-full mt-3 pt-3 border-t border-border flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                       <span className="font-semibold uppercase tracking-wider">Ver níveis</span>
-                       <ChevronDown className="h-3 w-3" />
-                     </CollapsibleTrigger>
-                     <CollapsibleContent className="space-y-1.5 mt-2">
-                       {[
-                         { emoji: "🌱", label: "Iniciante", range: "0–4 pts", color: "text-emerald-500" },
-                         { emoji: "💪", label: "Ativo", range: "5–14 pts", color: "text-blue-500" },
-                         { emoji: "🔥", label: "Veterano", range: "15–29 pts", color: "text-orange-500" },
-                         { emoji: "⭐", label: "Mestre", range: "30–49 pts", color: "text-purple-500" },
-                         { emoji: "👑", label: "Lenda", range: "50+ pts", color: "text-amber-400" },
-                       ].map((lv) => (
-                         <div key={lv.label} className={`flex items-center justify-between text-[10px] ${lv.label === levelLabel ? "font-bold" : "opacity-60"}`}>
-                           <span className={lv.color}>{lv.emoji} {lv.label}</span>
-                           <span className="text-muted-foreground">{lv.range}</span>
-                         </div>
-                       ))}
-                       <p className="text-[9px] text-muted-foreground text-center mt-1.5 leading-tight">
-                         +3 pts por aproveitado · +1 pt por tentativa
-                       </p>
-                     </CollapsibleContent>
-                   </Collapsible>
-
-                   {/* Achievements */}
-                   <div className="w-full mt-3 pt-3 border-t border-border">
-                     <AchievementsBadges progress={progress} streak={streak || 0} />
-                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          {/* Stats Grid */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {[
-                { label: "Ligações", value: progress.ligacoes, icon: Phone, color: "text-emerald-600", bgColor: "bg-emerald-500/10" },
-                { label: "WhatsApps", value: progress.whatsapps, icon: MessageCircle, color: "text-green-600", bgColor: "bg-green-500/10" },
-                { label: "E-mails", value: progress.emails, icon: Mail, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-                { label: "Visitas Marcadas", value: progress.visitasMarcadas, icon: CalendarCheck, color: "text-amber-600", bgColor: "bg-amber-500/10" },
-                { label: "Taxa Aprov.", value: `${progress.taxaAproveitamento}%`, icon: TrendingUp, color: "text-primary", bgColor: "bg-primary/10" },
-              ].map((item) => (
-                <Card key={item.label} className="overflow-hidden">
-                  <CardContent className="p-3 flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bgColor} shrink-0`}>
-                      <item.icon className={`h-5 w-5 ${item.color}`} />
-                    </div>
-                    <div>
+          {/* 6️⃣ PERFORMANCE HOJE — simplificada */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">📊 Performance Hoje</p>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { label: "Tentativas", value: progress.tentativas, color: "text-primary" },
+                    { label: "Aproveitados", value: progress.aproveitados, color: "text-emerald-600" },
+                    { label: "Visitas", value: progress.visitasMarcadas, color: "text-amber-600" },
+                    { label: "Taxa", value: `${progress.taxaAproveitamento}%`, color: "text-primary" },
+                  ].map((item) => (
+                    <div key={item.label} className="text-center">
                       <motion.p
                         key={String(item.value)}
                         initial={{ scale: 1.2 }}
                         animate={{ scale: 1 }}
-                        className="text-xl font-bold text-foreground leading-none"
+                        className={`text-2xl font-bold ${item.color} leading-none`}
                       >
                         {item.value}
                       </motion.p>
-                      <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{item.label}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  ))}
+                </div>
+
+                {/* Points & Level inline */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{levelEmoji}</span>
+                    <div>
+                      <p className={`text-xs font-bold ${progress.levelColor}`}>{levelLabel}</p>
+                      <p className="text-[10px] text-muted-foreground">{progress.pontos}/{progress.nextLevelTarget} pts</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(streak || 0) >= 1 && (
+                      <Badge variant="secondary" className="text-[10px] bg-orange-500/10 text-orange-600 border-orange-500/20 gap-1">
+                        <Flame className="h-3 w-3" /> {streak}d
+                      </Badge>
+                    )}
+                    <Progress value={progress.levelProgress} className="w-20 h-1.5" />
+                  </div>
+                </div>
+
+                {/* Achievements inline */}
+                <div className="mt-3 pt-3 border-t border-border">
+                  <AchievementsBadges progress={progress} streak={streak || 0} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* 7️⃣ INSIGHT SEMANAL */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <EvolucaoSemanal evolucao={evolucao} loading={evolucaoLoading} />
+              <MiniFunilPessoal funil={funil} totalLeads={totalLeads} loading={funilLoading} />
             </div>
           </motion.div>
 
-          {/* Yesterday Comparison */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
-            <YesterdayComparison progress={progress} />
-          </motion.div>
-
-          {/* Scoring Legend */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
-            <ScoringLegend />
-          </motion.div>
-
-          {/* CTA */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            {metaSalva ? (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  size="lg"
-                  className="flex-1 h-14 gap-2 text-base bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:shadow-xl transition-all"
-                  onClick={() => setActiveTab("discagem")}
-                >
-                  <Phone className="h-5 w-5" /> Iniciar o Call <ArrowRight className="h-5 w-5" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="h-14 gap-2 text-base border-destructive/30 text-destructive hover:bg-destructive/10"
-                      disabled={finalizando || progress.tentativas === 0}
-                    >
-                      <LogOut className="h-5 w-5" /> Finalizar Trabalho
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Finalizar trabalho do dia?</AlertDialogTitle>
-                      <AlertDialogDescription className="space-y-2">
-                        <p>Suas estatísticas serão enviadas ao gerente:</p>
-                        <div className="grid grid-cols-3 gap-2 mt-2">
-                          <div className="text-center p-2 rounded-lg bg-muted">
-                            <p className="text-lg font-bold text-foreground">{progress.tentativas}</p>
-                            <p className="text-[10px] text-muted-foreground">tentativas</p>
-                          </div>
-                          <div className="text-center p-2 rounded-lg bg-muted">
-                            <p className="text-lg font-bold text-emerald-600">{progress.aproveitados}</p>
-                            <p className="text-[10px] text-muted-foreground">aproveitados</p>
-                          </div>
-                          <div className="text-center p-2 rounded-lg bg-muted">
-                            <p className="text-lg font-bold text-primary">{progress.pontos}</p>
-                            <p className="text-[10px] text-muted-foreground">pontos</p>
-                          </div>
+          {/* Finalizar Trabalho */}
+          {metaSalva && progress.tentativas > 0 && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 gap-2 text-sm border-destructive/30 text-destructive hover:bg-destructive/10"
+                    disabled={finalizando}
+                  >
+                    <LogOut className="h-4 w-4" /> Finalizar Trabalho do Dia
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Finalizar trabalho do dia?</AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <p>Suas estatísticas serão enviadas ao gerente:</p>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div className="text-center p-2 rounded-lg bg-muted">
+                          <p className="text-lg font-bold text-foreground">{progress.tentativas}</p>
+                          <p className="text-[10px] text-muted-foreground">tentativas</p>
                         </div>
-                        {!progress.todasMissoesCumpridas && (
-                          <p className="text-xs text-amber-600 mt-2">⚠️ Você ainda não bateu todas as metas. Tem certeza?</p>
-                        )}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Voltar e continuar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleFinalizarTrabalho} className="bg-destructive hover:bg-destructive/90">
-                        {finalizando ? "Enviando..." : "Confirmar e Finalizar"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            ) : (
-              <Card className="border-muted bg-muted/30">
-                <CardContent className="p-4 text-center">
-                  <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Salve sua meta do dia acima para liberar a discagem 🔓</p>
-                </CardContent>
-              </Card>
-            )}
-          </motion.div>
+                        <div className="text-center p-2 rounded-lg bg-muted">
+                          <p className="text-lg font-bold text-emerald-600">{progress.aproveitados}</p>
+                          <p className="text-[10px] text-muted-foreground">aproveitados</p>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-muted">
+                          <p className="text-lg font-bold text-primary">{progress.pontos}</p>
+                          <p className="text-[10px] text-muted-foreground">pontos</p>
+                        </div>
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Voltar e continuar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleFinalizarTrabalho} className="bg-destructive hover:bg-destructive/90">
+                      {finalizando ? "Enviando..." : "Confirmar e Finalizar"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </motion.div>
+          )}
         </TabsContent>
 
         {/* ── Tab: Discagem ── */}
