@@ -459,25 +459,65 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
               {/* Próxima Ação */}
               <Section title="Próxima Ação" icon={Zap}>
-                <div className="space-y-2">
-                  <Input className="h-8 text-xs" value={proximaAcao} onChange={e => setProximaAcao(e.target.value)} placeholder="Ex: Ligar para confirmar visita" />
-                  <div className="flex gap-2">
-                    <Input type="date" className="h-8 text-xs flex-1" value={dataProximaAcao} onChange={e => setDataProximaAcao(e.target.value)} />
-                    <Button size="sm" className="h-8 text-xs" onClick={handleSaveProximaAcao} disabled={saving}>
-                      Salvar
-                    </Button>
-                  </div>
-                  {lead.proxima_acao && lead.data_proxima_acao && (
-                    <div className="flex items-center gap-2 bg-accent/50 rounded-lg p-2">
+                <div className="space-y-3">
+                  {/* Current action display */}
+                  {lead.proxima_acao && (
+                    <div className="flex items-center gap-2 bg-primary/10 rounded-lg p-2.5 border border-primary/20">
                       <Zap className="h-4 w-4 text-primary shrink-0" />
-                      <div>
-                        <p className="text-xs font-semibold text-foreground">{lead.proxima_acao}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {format(new Date(lead.data_proxima_acao), "dd/MM/yyyy", { locale: ptBR })}
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-foreground">{lead.proxima_acao}</p>
+                        {lead.data_proxima_acao && (
+                          <p className="text-[10px] text-muted-foreground">
+                            {format(new Date(lead.data_proxima_acao + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
+                  {!lead.proxima_acao && (
+                    <div className="flex items-center gap-2 bg-destructive/10 rounded-lg p-2.5 border border-destructive/20">
+                      <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                      <p className="text-xs font-bold text-destructive">Sem próxima ação definida!</p>
+                    </div>
+                  )}
+
+                  {/* Quick action buttons */}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium mb-1.5">Ação rápida:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: "Ligar", icon: "📞" },
+                        { label: "Enviar material", icon: "📄" },
+                        { label: "Marcar visita", icon: "🏠" },
+                        { label: "Enviar proposta", icon: "💰" },
+                        { label: "Retornar cliente", icon: "🔄" },
+                        { label: "Enviar localização", icon: "📍" },
+                        { label: "Confirmar visita", icon: "✅" },
+                        { label: "Follow-up WhatsApp", icon: "💬" },
+                      ].map(action => (
+                        <button
+                          key={action.label}
+                          onClick={() => setProximaAcao(action.label)}
+                          className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${
+                            proximaAcao === action.label
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/50 text-foreground border-border hover:bg-accent"
+                          }`}
+                        >
+                          {action.icon} {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom input + date */}
+                  <Input className="h-8 text-xs" value={proximaAcao} onChange={e => setProximaAcao(e.target.value)} placeholder="Ou digite uma ação personalizada..." />
+                  <div className="flex gap-2">
+                    <Input type="date" className="h-8 text-xs flex-1" value={dataProximaAcao} onChange={e => setDataProximaAcao(e.target.value)} />
+                    <Button size="sm" className="h-8 text-xs gap-1" onClick={handleSaveProximaAcao} disabled={saving || !proximaAcao}>
+                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Zap className="h-3 w-3" /> Salvar</>}
+                    </Button>
+                  </div>
                 </div>
               </Section>
 
