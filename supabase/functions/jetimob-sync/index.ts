@@ -132,17 +132,18 @@ serve(async (req) => {
       const email = lead.emails?.[0] || lead.email || null;
       const observacoes = lead.message || lead.subject || null;
       
-      // Campaign: try name first, then ID
-      const campanha = lead.campaign_name || lead.campaign_title || lead.campaign?.name || null;
-      const campaignId = lead.campaign_id || lead.campaign?.id || null;
-      const origem = campanha
-        ? campanha
-        : campaignId
-        ? `Campanha ${campaignId}`
-        : "API Jetimob";
-
+      // Extract campaign name from message field
+      // Pattern: "Lead Gerado do Formulário de/do/da/dos <CAMPAIGN NAME>"
+      let campanhaNome: string | null = null;
+      const msg = lead.message || "";
+      const formularioMatch = msg.match(/[Ff]ormul[aá]rio\s+(?:de|do|da|dos|das)\s+(.+)/i);
+      if (formularioMatch?.[1]) {
+        campanhaNome = formularioMatch[1].trim();
+      }
+      
+      const origem = campanhaNome || msg || "API Jetimob";
       const origemDetalhe = lead.source || lead.origin || lead.utm_source || null;
-      const empreendimento = lead.property_name || lead.property?.name || lead.empreendimento || null;
+      const empreendimento = campanhaNome || lead.property_name || lead.property?.name || lead.empreendimento || null;
       const brokerName = lead.broker_name || lead.broker?.name || null;
 
       // Try to find corretor_id from broker_name in team_members
