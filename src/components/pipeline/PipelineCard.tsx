@@ -265,7 +265,7 @@ const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome,
                   <TooltipTrigger asChild>
                     <button
                       onClick={(e) => handleWhatsApp(e, lead.telefone!)}
-                      className="p-1.5 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                      className="p-1.5 rounded-md hover:bg-accent transition-colors"
                     >
                       <MessageCircle className="h-3.5 w-3.5 text-green-600" />
                     </button>
@@ -274,6 +274,13 @@ const PipelineCard = memo(function PipelineCard({ lead, segmentos, corretorNome,
                 </Tooltip>
               </>
             )}
+            <div className="w-px h-4 bg-border mx-0.5" />
+            <PipelineQuickTransfer
+              leadId={lead.id}
+              leadNome={lead.nome}
+              currentCorretorId={lead.corretor_id}
+              onTransferred={(corretorId, nome) => onTransferred?.(lead.id, corretorId, nome)}
+            />
           </div>
         )}
       </div>
