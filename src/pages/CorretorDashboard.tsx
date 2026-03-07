@@ -22,6 +22,7 @@ import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelecti
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import ScoringLegend from "@/components/oferta-ativa/ScoringLegend";
+import CorretorDisponibilidadePanel from "@/components/disponibilidade/CorretorDisponibilidadePanel";
 
 import {
   AlertDialog,
@@ -243,6 +244,10 @@ export default function CorretorDashboard() {
 
         {/* ── Tab: Central ── */}
         <TabsContent value="central" className="space-y-4 mt-4">
+          {/* Disponibilidade & Roleta */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <CorretorDisponibilidadePanel />
+          </motion.div>
           {/* Celebration Banner */}
           <AnimatePresence>
             {progress.todasMissoesCumpridas && (
