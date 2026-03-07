@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
@@ -21,7 +21,7 @@ import { toast } from "sonner";
 export default function PipelineKanban() {
   const pipeline = usePipeline();
   const { isGestor, isAdmin } = useUserRole();
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [filterSegmento, setFilterSegmento] = useState<string>("all");
@@ -56,7 +56,7 @@ export default function PipelineKanban() {
   const [syncing, setSyncing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
-  const { user } = useAuth();
+  // user already destructured above as authUser
 
   const canAdd = isGestor || isAdmin;
 
