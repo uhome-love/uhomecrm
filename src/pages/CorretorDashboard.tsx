@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, Mail, ArrowRight, Lock, LogOut, Sparkles, Star, Zap, TrendingUp, ChevronDown, CalendarCheck } from "lucide-react";
+import { Phone, CheckCircle, Trophy, Target, Flame, MessageCircle, ArrowRight, Lock, LogOut, TrendingUp, ChevronDown, CalendarCheck } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import DailyProgressCard from "@/components/corretor/DailyProgressCard";
-import QuickLinksGrid from "@/components/corretor/QuickLinksGrid";
+import AcoesAgora from "@/components/corretor/AcoesAgora";
 import AchievementsBadges from "@/components/corretor/AchievementsBadges";
-import YesterdayComparison from "@/components/corretor/YesterdayComparison";
 import FollowUpsDoDia from "@/components/corretor/FollowUpsDoDia";
 import VisitasHojeCard from "@/components/corretor/VisitasHojeCard";
 import MiniFunilPessoal from "@/components/corretor/MiniFunilPessoal";
@@ -22,13 +21,12 @@ import { useMissoesLeads } from "@/hooks/useMissoesLeads";
 import { useCorretorHomeData } from "@/hooks/useCorretorHomeData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
-import ScoringLegend from "@/components/oferta-ativa/ScoringLegend";
 import CorretorDisponibilidadePanel from "@/components/disponibilidade/CorretorDisponibilidadePanel";
 
 import {
