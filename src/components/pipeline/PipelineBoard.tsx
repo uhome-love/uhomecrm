@@ -19,11 +19,14 @@ const COLUMN_WIDTH = 300;
 const COLUMN_GAP = 12;
 
 function getStageAlerts(leads: PipelineLead[]) {
-  let alerts = 0;
+  let warnings = 0;
+  let dangers = 0;
   for (const l of leads) {
-    if (differenceInHours(new Date(), new Date(l.stage_changed_at)) >= 2) alerts++;
+    const mins = differenceInMinutes(new Date(), new Date(l.stage_changed_at));
+    if (mins >= 120) dangers++;
+    else if (mins >= 30) warnings++;
   }
-  return alerts;
+  return { warnings, dangers, total: warnings + dangers };
 }
 
 function getAvgTimeLabel(leads: PipelineLead[]) {
