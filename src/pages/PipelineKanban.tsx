@@ -24,7 +24,6 @@ export default function PipelineKanban() {
 
   const canAdd = isGestor || isAdmin;
 
-  // Get unique origens
   const origens = useMemo(() => {
     const set = new Set<string>();
     pipeline.leads.forEach(l => { if (l.origem) set.add(l.origem); });
@@ -82,130 +81,133 @@ export default function PipelineKanban() {
   }
 
   return (
-    <div className="space-y-3 w-full max-w-full min-w-0 overflow-hidden">
-      {/* Top bar */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar lead..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 bg-card"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
-              <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
-            </button>
-          )}
-        </div>
+    <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
+      {/* Controls — fixed top area */}
+      <div className="shrink-0 space-y-3 pb-3">
+        {/* Top bar */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar lead..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 bg-card"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+          </div>
 
-        {/* Filter toggle */}
-        <Button
-          variant={showFilters ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className="gap-1.5 h-9"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filtros
-          {activeFiltersCount > 0 && (
-            <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
-              {activeFiltersCount}
-            </Badge>
-          )}
-        </Button>
-
-        <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-        </Button>
-
-        {canAdd && (
-          <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9">
-            <Plus className="h-4 w-4" />
-            Novo Lead
+          <Button
+            variant={showFilters ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-1.5 h-9"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filtros
+            {activeFiltersCount > 0 && (
+              <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
+                {activeFiltersCount}
+              </Badge>
+            )}
           </Button>
-        )}
-      </div>
 
-      {/* Expandable filters */}
-      {showFilters && (
-        <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border bg-card animate-fade-in">
-          <Select value={filterSegmento} onValueChange={setFilterSegmento}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
-              <SelectValue placeholder="Segmento" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos segmentos</SelectItem>
-              {pipeline.segmentos.map(s => (
-                <SelectItem key={s.id} value={s.id}>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.cor }} />
-                    {s.nome}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
 
-          <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
-              <SelectValue placeholder="Origem" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas origens</SelectItem>
-              {origens.map(o => (
-                <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {activeFiltersCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-8 text-primary">
-              Limpar filtros
+          {canAdd && (
+            <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9">
+              <Plus className="h-4 w-4" />
+              Novo Lead
             </Button>
           )}
         </div>
-      )}
 
-      {/* Summary */}
-      <div className="flex items-center gap-3 px-1">
-        <div className="flex items-center gap-2">
-          <LayoutGrid className="h-4 w-4 text-primary" />
-          <span className="text-sm font-bold text-foreground">
-            {filteredLeads.length} oportunidades
-          </span>
-        </div>
-        {totalVGV > 0 && (
-          <span className="text-sm text-muted-foreground font-medium">
-            • {formatVGV(totalVGV)} em VGV
-          </span>
-        )}
-        {activeFiltersCount > 0 && (
-          <div className="flex items-center gap-1.5 ml-auto">
-            {filterSegmento !== "all" && (
-              <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterSegmento("all")}>
-                {pipeline.segmentos.find(s => s.id === filterSegmento)?.nome} ×
-              </Badge>
-            )}
-            {filterOrigem !== "all" && (
-              <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterOrigem("all")}>
-                {filterOrigem.replace(/_/g, " ")} ×
-              </Badge>
+        {/* Expandable filters */}
+        {showFilters && (
+          <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border bg-card animate-fade-in">
+            <Select value={filterSegmento} onValueChange={setFilterSegmento}>
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Segmento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos segmentos</SelectItem>
+                {pipeline.segmentos.map(s => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.cor }} />
+                      {s.nome}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+              <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectValue placeholder="Origem" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas origens</SelectItem>
+                {origens.map(o => (
+                  <SelectItem key={o} value={o}>{o.replace(/_/g, " ")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {activeFiltersCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-8 text-primary">
+                Limpar filtros
+              </Button>
             )}
           </div>
         )}
+
+        {/* Summary */}
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-foreground">
+              {filteredLeads.length} oportunidades
+            </span>
+          </div>
+          {totalVGV > 0 && (
+            <span className="text-sm text-muted-foreground font-medium">
+              • {formatVGV(totalVGV)} em VGV
+            </span>
+          )}
+          {activeFiltersCount > 0 && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              {filterSegmento !== "all" && (
+                <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterSegmento("all")}>
+                  {pipeline.segmentos.find(s => s.id === filterSegmento)?.nome} ×
+                </Badge>
+              )}
+              {filterOrigem !== "all" && (
+                <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterOrigem("all")}>
+                  {filterOrigem.replace(/_/g, " ")} ×
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Kanban Board */}
-      <PipelineBoard
-        stages={pipeline.stages}
-        leads={filteredLeads}
-        segmentos={pipeline.segmentos}
-        onMoveLead={pipeline.moveLead}
-        onSelectLead={setSelectedLead}
-      />
+      {/* Kanban Board — fills remaining height */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <PipelineBoard
+          stages={pipeline.stages}
+          leads={filteredLeads}
+          segmentos={pipeline.segmentos}
+          onMoveLead={pipeline.moveLead}
+          onSelectLead={setSelectedLead}
+        />
+      </div>
 
       {/* Dialogs */}
       {canAdd && (

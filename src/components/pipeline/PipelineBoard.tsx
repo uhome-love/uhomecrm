@@ -45,12 +45,9 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Memoize leads per stage
   const leadsByStage = useMemo(() => {
     const map = new Map<string, PipelineLead[]>();
-    for (const stage of stages) {
-      map.set(stage.id, []);
-    }
+    for (const stage of stages) map.set(stage.id, []);
     for (const lead of leads) {
       const arr = map.get(lead.stage_id);
       if (arr) arr.push(lead);
@@ -58,13 +55,11 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
     return map;
   }, [stages, leads]);
 
-  // Scroll state tracking
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     setCanScrollLeft(el.scrollLeft > 10);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
-    // Active column
     const idx = Math.round(el.scrollLeft / (COLUMN_WIDTH + COLUMN_GAP));
     setActiveIndex(Math.min(idx, stages.length - 1));
   }, [stages.length]);
@@ -85,8 +80,7 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
   const scrollTo = (direction: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
-    const amount = COLUMN_WIDTH + COLUMN_GAP;
-    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
+    el.scrollBy({ left: direction === "left" ? -(COLUMN_WIDTH + COLUMN_GAP) : (COLUMN_WIDTH + COLUMN_GAP), behavior: "smooth" });
   };
 
   const scrollToIndex = (idx: number) => {
@@ -101,14 +95,11 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
     setIsDraggingScroll(true);
     dragScrollStart.current = { x: e.clientX, scrollLeft: scrollRef.current?.scrollLeft || 0 };
   };
-
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDraggingScroll || !scrollRef.current) return;
     e.preventDefault();
-    const dx = e.clientX - dragScrollStart.current.x;
-    scrollRef.current.scrollLeft = dragScrollStart.current.scrollLeft - dx;
+    scrollRef.current.scrollLeft = dragScrollStart.current.scrollLeft - (e.clientX - dragScrollStart.current.x);
   }, [isDraggingScroll]);
-
   const handleMouseUp = () => setIsDraggingScroll(false);
 
   // DnD handlers
@@ -135,9 +126,9 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
   };
 
   return (
-    <div className="relative w-full max-w-full min-w-0 overflow-hidden">
-      {/* Mini-map / Stage nav pills */}
-      <div className="flex items-center gap-1 mb-3 px-1 overflow-x-auto scrollbar-none max-w-full">
+    <div className="relative flex flex-col h-full w-full max-w-full min-w-0 overflow-hidden">
+      {/* Mini-map nav pills — fixed top */}
+      <div className="shrink-0 flex items-center gap-1 mb-2 px-1 overflow-x-auto scrollbar-none">
         {stages.map((stage, idx) => {
           const stageLeads = leadsByStage.get(stage.id) || [];
           const isActive = idx === activeIndex;
@@ -151,15 +142,9 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
                   : "bg-card text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground"
               }`}
             >
-              <span
-                className="h-2 w-2 rounded-full shrink-0"
-                style={{ backgroundColor: isActive ? "white" : stage.cor }}
-              />
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: isActive ? "white" : stage.cor }} />
               <span className="hidden sm:inline">{stage.nome}</span>
-              <Badge
-                variant="secondary"
-                className={`text-[9px] px-1 py-0 h-3.5 font-bold ${isActive ? "bg-white/20 text-primary-foreground" : ""}`}
-              >
+              <Badge variant="secondary" className={`text-[9px] px-1 py-0 h-3.5 font-bold ${isActive ? "bg-white/20 text-primary-foreground" : ""}`}>
                 {stageLeads.length}
               </Badge>
             </button>
@@ -167,117 +152,111 @@ export default function PipelineBoard({ stages, leads, segmentos, onMoveLead, on
         })}
       </div>
 
-      {/* Navigation arrows */}
-      {canScrollLeft && (
-        <button
-          onClick={() => scrollTo("left")}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
+      {/* Kanban scroll area — fills remaining height */}
+      <div className="relative flex-1 min-h-0">
+        {/* Navigation arrows */}
+        {canScrollLeft && (
+          <button
+            onClick={() => scrollTo("left")}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
+        {canScrollRight && (
+          <button
+            onClick={() => scrollTo("right")}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        )}
+
+        {/* Scrollable container — full height, hidden scrollbar */}
+        <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className={`flex gap-3 h-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-none ${isDraggingScroll ? "cursor-grabbing select-none" : ""}`}
+          style={{ scrollSnapType: "x proximity" }}
         >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-      )}
-      {canScrollRight && (
-        <button
-          onClick={() => scrollTo("right")}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 backdrop-blur-sm"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      )}
+          {stages.map((stage) => {
+            const stageLeads = leadsByStage.get(stage.id) || [];
+            const isDragOver = dragOverStage === stage.id;
+            const totalVGV = stageLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
+            const alerts = getStageAlerts(stageLeads);
+            const avgTime = getAvgTimeLabel(stageLeads);
 
-      {/* Kanban columns */}
-      <div
-        ref={scrollRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        className={`flex gap-3 pb-4 overflow-x-auto scroll-smooth scrollbar-none ${isDraggingScroll ? "cursor-grabbing select-none" : ""}`}
-        style={{ scrollSnapType: "x proximity" }}
-      >
-        {stages.map((stage) => {
-          const stageLeads = leadsByStage.get(stage.id) || [];
-          const isDragOver = dragOverStage === stage.id;
-          const totalVGV = stageLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
-          const alerts = getStageAlerts(stageLeads);
-          const avgTime = getAvgTimeLabel(stageLeads);
-
-          return (
-            <div
-              key={stage.id}
-              className={`flex flex-col shrink-0 rounded-xl transition-all duration-200 overflow-hidden ${
-                isDragOver
-                  ? "ring-2 ring-primary/50 bg-primary/5 shadow-xl shadow-primary/10 scale-[1.01]"
-                  : "bg-muted/20"
-              }`}
-              style={{
-                width: `${COLUMN_WIDTH}px`,
-                scrollSnapAlign: "start",
-              }}
-              onDragOver={(e) => handleDragOver(e, stage.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, stage.id)}
-            >
-              {/* Column header */}
-              <div className="px-3.5 py-3 bg-card border border-border/40 rounded-t-xl">
-                {/* Color bar */}
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-3 w-1 rounded-full" style={{ backgroundColor: stage.cor }} />
-                  <span className="text-xs font-bold text-foreground tracking-tight">
-                    {stage.nome}
-                  </span>
-                </div>
-                {/* Stats row */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-bold gap-1">
-                    {stageLeads.length} <span className="font-normal text-muted-foreground">leads</span>
-                  </Badge>
-                  {totalVGV > 0 && (
-                    <span className="text-[10px] font-semibold text-foreground flex items-center gap-0.5">
-                      <TrendingUp className="h-2.5 w-2.5 text-primary" />
-                      {formatVGV(totalVGV)}
-                    </span>
-                  )}
-                  {avgTime && (
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                      <Clock className="h-2.5 w-2.5" />
-                      {avgTime} média
-                    </span>
-                  )}
-                  {alerts > 0 && (
-                    <span className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-0.5">
-                      <AlertTriangle className="h-2.5 w-2.5" />
-                      {alerts}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Cards container */}
-              <div className="flex flex-col gap-2 p-2 min-h-[100px] max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-thin">
-                {stageLeads.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
-                      <span className="text-muted-foreground/40 text-sm">+</span>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground/50">
-                      Arraste leads aqui
-                    </span>
+            return (
+              <div
+                key={stage.id}
+                className={`flex flex-col shrink-0 rounded-xl transition-all duration-200 ${
+                  isDragOver
+                    ? "ring-2 ring-primary/50 bg-primary/5 shadow-xl shadow-primary/10 scale-[1.01]"
+                    : "bg-muted/20"
+                }`}
+                style={{ width: `${COLUMN_WIDTH}px`, scrollSnapAlign: "start" }}
+                onDragOver={(e) => handleDragOver(e, stage.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, stage.id)}
+              >
+                {/* Column header */}
+                <div className="shrink-0 px-3.5 py-3 bg-card border border-border/40 rounded-t-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-3 w-1 rounded-full" style={{ backgroundColor: stage.cor }} />
+                    <span className="text-xs font-bold text-foreground tracking-tight">{stage.nome}</span>
                   </div>
-                )}
-                {stageLeads.map((lead) => (
-                  <PipelineCard
-                    key={lead.id}
-                    lead={lead}
-                    segmentos={segmentos}
-                    onDragStart={() => handleDragStart(lead.id)}
-                    onClick={() => onSelectLead(lead)}
-                  />
-                ))}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-bold gap-1">
+                      {stageLeads.length} <span className="font-normal text-muted-foreground">leads</span>
+                    </Badge>
+                    {totalVGV > 0 && (
+                      <span className="text-[10px] font-semibold text-foreground flex items-center gap-0.5">
+                        <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                        {formatVGV(totalVGV)}
+                      </span>
+                    )}
+                    {avgTime && (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <Clock className="h-2.5 w-2.5" />
+                        {avgTime} média
+                      </span>
+                    )}
+                    {alerts > 0 && (
+                      <span className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-0.5">
+                        <AlertTriangle className="h-2.5 w-2.5" />
+                        {alerts}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cards — scrollable vertically within column */}
+                <div className="flex-1 min-h-0 flex flex-col gap-2 p-2 overflow-y-auto scrollbar-thin">
+                  {stageLeads.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-10 text-center flex-1">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <span className="text-muted-foreground/40 text-sm">+</span>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground/50">Arraste leads aqui</span>
+                    </div>
+                  )}
+                  {stageLeads.map((lead) => (
+                    <PipelineCard
+                      key={lead.id}
+                      lead={lead}
+                      segmentos={segmentos}
+                      onDragStart={() => handleDragStart(lead.id)}
+                      onClick={() => onSelectLead(lead)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
