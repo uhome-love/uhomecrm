@@ -257,6 +257,21 @@ export default function MeusNegocios() {
               </SelectContent>
             </Select>
 
+            <Button
+              variant={filterParados7d ? "destructive" : "outline"}
+              size="sm"
+              onClick={() => setFilterParados7d(!filterParados7d)}
+              className="h-8 text-xs gap-1"
+            >
+              <AlertTriangle className="h-3 w-3" />
+              Parados 7d+
+              {stalledCount7d > 0 && !filterParados7d && (
+                <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full bg-destructive text-destructive-foreground">
+                  {stalledCount7d}
+                </Badge>
+              )}
+            </Button>
+
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-8 text-primary">
                 Limpar filtros
@@ -277,6 +292,14 @@ export default function MeusNegocios() {
             <span className="text-sm text-muted-foreground font-medium">
               • {formatVGV(totalVGV)} em VGV
             </span>
+          )}
+          {stalledCount7d > 0 && (
+            <button
+              onClick={() => setFilterParados7d(true)}
+              className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
+            >
+              ⚠️ {stalledCount7d} negócios parados há mais de 7 dias
+            </button>
           )}
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-1.5 ml-auto flex-wrap">
