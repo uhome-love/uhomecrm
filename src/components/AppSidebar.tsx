@@ -103,6 +103,7 @@ export function AppSidebar() {
     ? [
         { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
         { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
+        { title: "Escala Diária", url: "/escala-diaria", icon: CalendarDays },
         { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
         { title: "Scripts", url: "/scripts", icon: FileEdit },
         { title: "Ranking Comercial", url: "/ranking", icon: Trophy },
