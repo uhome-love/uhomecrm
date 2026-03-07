@@ -2431,6 +2431,7 @@ export type Database = {
           observacoes: string | null
           origem: string
           origem_detalhe: string | null
+          pipeline_lead_id: string | null
           status: string
           telefone: string | null
           updated_at: string
@@ -2454,6 +2455,7 @@ export type Database = {
           observacoes?: string | null
           origem?: string
           origem_detalhe?: string | null
+          pipeline_lead_id?: string | null
           status?: string
           telefone?: string | null
           updated_at?: string
@@ -2477,6 +2479,7 @@ export type Database = {
           observacoes?: string | null
           origem?: string
           origem_detalhe?: string | null
+          pipeline_lead_id?: string | null
           status?: string
           telefone?: string | null
           updated_at?: string
@@ -2501,6 +2504,13 @@ export type Database = {
             columns: ["linked_pdn_id"]
             isOneToOne: false
             referencedRelation: "pdn_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
         ]

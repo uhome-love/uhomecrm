@@ -2,7 +2,7 @@ import { useState, type DragEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Building2, CheckCircle2, FileSpreadsheet, Trash2, User } from "lucide-react";
+import { Calendar, Clock, Building2, CheckCircle2, FileSpreadsheet, Trash2, User, Link2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { STATUS_LABELS, STATUS_COLORS, ORIGEM_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
@@ -97,8 +97,9 @@ export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Pro
               isOver ? "bg-primary/10 ring-2 ring-primary/30 ring-inset" : ""
             }`}>
               {items.map(v => {
-                const hasPdn = !!(v as any).linked_pdn_id;
-                const isDragging = draggingId === v.id;
+                  const hasPdn = !!(v as any).linked_pdn_id;
+                  const hasPipeline = !!(v as any).pipeline_lead_id;
+                  const isDragging = draggingId === v.id;
                 return (
                   <Card
                     key={v.id}
@@ -111,7 +112,10 @@ export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Pro
                   >
                      <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold truncate flex-1">{v.nome_cliente}</p>
-                      {hasPdn && <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0 ml-1" />}
+                      <div className="flex items-center gap-1 shrink-0 ml-1">
+                        {hasPipeline && <Link2 className="h-3.5 w-3.5 text-primary" />}
+                        {hasPdn && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
+                      </div>
                     </div>
 
                     {v.corretor_nome && (
