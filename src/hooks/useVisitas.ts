@@ -150,6 +150,7 @@ export function useVisitas(filters?: {
         corretor_id: visita.corretor_id || user.id,
         gerente_id: gerenteId,
         lead_id: visita.lead_id || null,
+        pipeline_lead_id: visita.pipeline_lead_id || null,
         nome_cliente: visita.nome_cliente || "Sem nome",
         telefone: visita.telefone || null,
         empreendimento: visita.empreendimento || null,
