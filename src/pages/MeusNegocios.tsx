@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, FileSpreadsheet, TrendingUp, CheckCircle2, XCircle, Eye, Calendar } from "lucide-react";
-import { format, subMonths } from "date-fns";
+import { Loader2, FileSpreadsheet, TrendingUp, CheckCircle2, XCircle, Eye, Calendar, Zap, Clock, AlertCircle } from "lucide-react";
+import { format, subMonths, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCorretorPdn } from "@/hooks/useCorretorPdn";
 import type { PdnEntry, PdnSituacao } from "@/hooks/usePdn";
@@ -26,6 +26,29 @@ const TEMPERATURA_COLORS: Record<string, string> = {
 function formatCurrency(v: number | null) {
   if (!v) return "—";
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+}
+
+function getDiasParado(updatedAt: string) {
+  return differenceInDays(new Date(), new Date(updatedAt));
+}
+
+function getProbabilidade(entry: PdnEntry): { value: number; color: string } {
+  // Probabilidade baseada na situação e temperatura
+  let base = 10;
+  if (entry.situacao === "visita") base = 20;
+  if (entry.situacao === "gerado") base = 50;
+  if (entry.situacao === "assinado") base = 95;
+  if (entry.situacao === "caiu") base = 0;
+
+  // Ajuste por temperatura
+  if (entry.temperatura === "quente") base = Math.min(base + 20, 100);
+  if (entry.temperatura === "frio") base = Math.max(base - 15, 0);
+
+  // Ajuste por docs
+  if (entry.docs_status === "com_docs") base = Math.min(base + 10, 100);
+
+  const color = base >= 70 ? "text-emerald-600 dark:text-emerald-400" : base >= 40 ? "text-amber-600 dark:text-amber-400" : "text-red-500";
+  return { value: base, color };
 }
 
 function MonthSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -89,14 +112,18 @@ function ReadOnlyList({ entries }: { entries: PdnEntry[] }) {
             <TableHead className="text-xs">Empreendimento</TableHead>
             <TableHead className="text-xs">Status</TableHead>
             <TableHead className="text-xs">Temperatura</TableHead>
+            <TableHead className="text-xs">Prob.</TableHead>
+            <TableHead className="text-xs">Próxima Ação</TableHead>
             <TableHead className="text-xs">VGV</TableHead>
-            <TableHead className="text-xs">Data Visita</TableHead>
+            <TableHead className="text-xs">Dias Parado</TableHead>
             <TableHead className="text-xs">Atualizado</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {entries.map((e) => {
             const cfg = SITUACAO_CONFIG[e.situacao] || SITUACAO_CONFIG.visita;
+            const prob = getProbabilidade(e);
+            const diasParado = getDiasParado(e.updated_at);
             return (
               <TableRow key={e.id}>
                 <TableCell className="text-xs font-medium">{e.nome || "—"}</TableCell>
@@ -110,9 +137,39 @@ function ReadOnlyList({ entries }: { entries: PdnEntry[] }) {
                     <span className="text-xs capitalize">{e.temperatura}</span>
                   </div>
                 </TableCell>
+                <TableCell>
+                  <span className={`text-xs font-bold ${prob.color}`}>{prob.value}%</span>
+                </TableCell>
+                <TableCell>
+                  {e.proxima_acao ? (
+                    <div className="flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-primary shrink-0" />
+                      <span className="text-[11px] text-foreground truncate max-w-[120px]">{e.proxima_acao}</span>
+                      {e.data_proxima_acao && (
+                        <span className="text-[9px] text-muted-foreground shrink-0">
+                          {format(new Date(e.data_proxima_acao + "T12:00:00"), "dd/MM", { locale: ptBR })}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-destructive font-semibold flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> Sem ação
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="text-xs">{formatCurrency(e.vgv)}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {e.data_visita ? format(new Date(e.data_visita + "T12:00:00"), "dd/MM", { locale: ptBR }) : "—"}
+                <TableCell>
+                  {diasParado >= 3 ? (
+                    <span className="text-[10px] font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> {diasParado}d
+                    </span>
+                  ) : diasParado >= 1 ? (
+                    <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> {diasParado}d
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-emerald-600">Hoje</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {format(new Date(e.updated_at), "dd/MM HH:mm", { locale: ptBR })}
@@ -142,29 +199,52 @@ function ReadOnlyKanban({ entries }: { entries: PdnEntry[] }) {
               <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{items.length}</Badge>
             </div>
             <div className="space-y-2 min-h-[80px]">
-              {items.map((e) => (
-                <Card key={e.id} className="p-3 space-y-1.5">
-                  <p className="text-xs font-semibold truncate">{e.nome || "—"}</p>
-                  {e.empreendimento && (
-                    <p className="text-[10px] text-muted-foreground truncate">{e.empreendimento}</p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <span className={`h-2 w-2 rounded-full ${TEMPERATURA_COLORS[e.temperatura] || "bg-muted"}`} />
-                      <span className="text-[10px] capitalize text-muted-foreground">{e.temperatura}</span>
+              {items.map((e) => {
+                const prob = getProbabilidade(e);
+                const diasParado = getDiasParado(e.updated_at);
+                return (
+                  <Card key={e.id} className="p-3 space-y-1.5">
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="text-xs font-semibold truncate flex-1">{e.nome || "—"}</p>
+                      <span className={`text-[10px] font-bold ${prob.color} shrink-0`}>{prob.value}%</span>
                     </div>
-                    {e.vgv ? (
-                      <span className="text-[10px] font-medium">{formatCurrency(e.vgv)}</span>
-                    ) : null}
-                  </div>
-                  {e.observacoes && (
-                    <p className="text-[10px] text-muted-foreground/70 line-clamp-2">{e.observacoes}</p>
-                  )}
-                  <p className="text-[9px] text-muted-foreground/50">
-                    Atualizado {format(new Date(e.updated_at), "dd/MM HH:mm", { locale: ptBR })}
-                  </p>
-                </Card>
-              ))}
+                    {e.empreendimento && (
+                      <p className="text-[10px] text-muted-foreground truncate">{e.empreendimento}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <span className={`h-2 w-2 rounded-full ${TEMPERATURA_COLORS[e.temperatura] || "bg-muted"}`} />
+                        <span className="text-[10px] capitalize text-muted-foreground">{e.temperatura}</span>
+                      </div>
+                      {e.vgv ? (
+                        <span className="text-[10px] font-medium">{formatCurrency(e.vgv)}</span>
+                      ) : null}
+                    </div>
+                    {/* Próxima ação */}
+                    {e.proxima_acao ? (
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">
+                        <Zap className="h-2.5 w-2.5 text-primary shrink-0" />
+                        <span className="text-[9px] font-semibold text-primary truncate">{e.proxima_acao}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-destructive/10 border border-destructive/20">
+                        <AlertCircle className="h-2.5 w-2.5 text-destructive shrink-0" />
+                        <span className="text-[9px] font-semibold text-destructive">Sem ação definida</span>
+                      </div>
+                    )}
+                    {/* Dias parado */}
+                    {diasParado >= 2 && (
+                      <div className={`text-[9px] font-bold flex items-center gap-1 ${diasParado >= 3 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
+                        <Clock className="h-2.5 w-2.5" />
+                        {diasParado}d sem atualização
+                      </div>
+                    )}
+                    <p className="text-[9px] text-muted-foreground/50">
+                      Atualizado {format(new Date(e.updated_at), "dd/MM HH:mm", { locale: ptBR })}
+                    </p>
+                  </Card>
+                );
+              })}
               {items.length === 0 && (
                 <p className="text-[10px] text-muted-foreground/50 text-center py-6">Nenhum</p>
               )}
@@ -189,7 +269,7 @@ export default function MeusNegocios() {
             Meus Negócios
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Acompanhe a evolução dos seus negócios no PDN — somente leitura
+            Gestão de oportunidades — visitas realizadas até venda
           </p>
         </div>
         <MonthSelector value={mes} onChange={setMes} />

@@ -8,6 +8,7 @@ import MaterialsLibrary from "@/components/pipeline/MaterialsLibrary";
 import SequenceBuilder from "@/components/pipeline/SequenceBuilder";
 import SequenceLibrary from "@/components/pipeline/SequenceLibrary";
 import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
+import PipelinePrioridades from "@/components/pipeline/PipelinePrioridades";
 import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashboard";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
@@ -445,20 +446,30 @@ export default function PipelineKanban() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {activeTab === "kanban" ? (
-          <PipelineBoard
-            stages={pipeline.stages}
-            leads={filteredLeads}
-            segmentos={pipeline.segmentos}
-            corretorNomes={pipeline.corretorNomes}
-            parcerias={parcerias}
-            onMoveLead={pipeline.moveLead}
-            onSelectLead={setSelectedLead}
-            onTransferred={(_leadId, corretorId, _corretorNome) => {
-              pipeline.reload();
-            }}
-          />
+          <>
+            <PipelinePrioridades
+              leads={filteredLeads}
+              stages={pipeline.stages}
+              corretorNomes={pipeline.corretorNomes}
+              onSelectLead={setSelectedLead}
+            />
+            <div className="flex-1 min-h-0 mt-2">
+              <PipelineBoard
+                stages={pipeline.stages}
+                leads={filteredLeads}
+                segmentos={pipeline.segmentos}
+                corretorNomes={pipeline.corretorNomes}
+                parcerias={parcerias}
+                onMoveLead={pipeline.moveLead}
+                onSelectLead={setSelectedLead}
+                onTransferred={(_leadId, corretorId, _corretorNome) => {
+                  pipeline.reload();
+                }}
+              />
+            </div>
+          </>
         ) : activeTab === "flow" ? (
           <PipelineFlowDashboard
             stages={pipeline.stages}
