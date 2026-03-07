@@ -1311,6 +1311,60 @@ export type Database = {
           },
         ]
       }
+      one_on_one_reports: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          conteudo_relatorio: string | null
+          contexto_auto: string | null
+          corretor_id: string
+          corretor_nome: string
+          created_at: string
+          dados_semana: Json
+          gerente_id: string
+          id: string
+          periodo_fim: string
+          periodo_inicio: string
+          score_performance: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          conteudo_relatorio?: string | null
+          contexto_auto?: string | null
+          corretor_id: string
+          corretor_nome?: string
+          created_at?: string
+          dados_semana?: Json
+          gerente_id: string
+          id?: string
+          periodo_fim: string
+          periodo_inicio: string
+          score_performance?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          conteudo_relatorio?: string | null
+          contexto_auto?: string | null
+          corretor_id?: string
+          corretor_nome?: string
+          created_at?: string
+          dados_semana?: Json
+          gerente_id?: string
+          id?: string
+          periodo_fim?: string
+          periodo_inicio?: string
+          score_performance?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pdn_entries: {
         Row: {
           corretor: string | null
