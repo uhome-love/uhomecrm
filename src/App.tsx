@@ -34,6 +34,7 @@ const CorretorResumo = lazy(() => import("./pages/CorretorResumo"));
 const RankingEquipe = lazy(() => import("./pages/RankingEquipe"));
 const HomiAssistant = lazy(() => import("./pages/HomiAssistant"));
 const HomiGerencial = lazy(() => import("./pages/HomiGerencial"));
+const HomiCeo = lazy(() => import("./pages/HomiCeo"));
 const BuscaLeads = lazy(() => import("./pages/BuscaLeads"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const AgendaVisitas = lazy(() => import("./pages/AgendaVisitas"));
