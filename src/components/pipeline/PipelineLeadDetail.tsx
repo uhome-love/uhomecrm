@@ -37,6 +37,7 @@ interface Props {
   lead: PipelineLead;
   stages: PipelineStage[];
   segmentos: PipelineSegmento[];
+  corretorNomes?: Record<string, string>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: (leadId: string, updates: Partial<PipelineLead>) => Promise<void>;
@@ -67,7 +68,7 @@ const PRIORIDADE_MAP: Record<string, { label: string; color: string }> = {
   baixa: { label: "Baixa", color: "bg-green-500/10 text-green-600 border-green-200" },
 };
 
-export default function PipelineLeadDetail({ lead, stages, segmentos, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
+export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
