@@ -1,10 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-
-// This will be set after generating VAPID keys
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -17,18 +14,56 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
+// Cache the VAPID key in memory across hook instances
+let cachedVapidKey: string | null = null;
+let vapidFetchPromise: Promise<string | null> | null = null;
+
+async function fetchVapidPublicKey(): Promise<string | null> {
+  if (cachedVapidKey) return cachedVapidKey;
+  if (vapidFetchPromise) return vapidFetchPromise;
+
+  vapidFetchPromise = (async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("vapid-public-key");
+      if (error) throw error;
+      if (data?.publicKey) {
+        cachedVapidKey = data.publicKey;
+        return cachedVapidKey;
+      }
+      return null;
+    } catch (err) {
+      console.warn("Could not fetch VAPID public key:", err);
+      return null;
+    } finally {
+      vapidFetchPromise = null;
+    }
+  })();
+
+  return vapidFetchPromise;
+}
+
 export function usePushSubscription() {
   const { user } = useAuth();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [vapidKey, setVapidKey] = useState<string | null>(cachedVapidKey);
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
 
-  const isSupported = "serviceWorker" in navigator && "PushManager" in window && !!VAPID_PUBLIC_KEY;
+  const hasBrowserSupport = "serviceWorker" in navigator && "PushManager" in window;
+  const isSupported = hasBrowserSupport && !!vapidKey;
+
+  // Fetch VAPID key on mount
+  useEffect(() => {
+    if (!hasBrowserSupport) return;
+    fetchVapidPublicKey().then((key) => {
+      if (key) setVapidKey(key);
+    });
+  }, [hasBrowserSupport]);
 
   const checkSubscription = useCallback(async () => {
-    if (!isSupported || !user) return false;
+    if (!hasBrowserSupport || !vapidKey || !user) return false;
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
@@ -38,11 +73,23 @@ export function usePushSubscription() {
     } catch {
       return false;
     }
-  }, [isSupported, user]);
+  }, [hasBrowserSupport, vapidKey, user]);
 
   const subscribe = useCallback(async () => {
-    if (!isSupported || !user) {
+    if (!hasBrowserSupport) {
       toast.error("Push notifications não são suportadas neste navegador");
+      return false;
+    }
+
+    // Ensure we have the VAPID key
+    let key = vapidKey;
+    if (!key) {
+      key = await fetchVapidPublicKey();
+      if (key) setVapidKey(key);
+    }
+
+    if (!key || !user) {
+      toast.error("Configuração de push não disponível. Tente novamente em instantes.");
       return false;
     }
 
@@ -61,7 +108,7 @@ export function usePushSubscription() {
       const registration = await navigator.serviceWorker.ready;
 
       // Subscribe to push
-      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      const applicationServerKey = urlBase64ToUint8Array(key);
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
@@ -94,7 +141,7 @@ export function usePushSubscription() {
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported, user]);
+  }, [hasBrowserSupport, vapidKey, user]);
 
   const unsubscribe = useCallback(async () => {
     if (!user) return;
@@ -104,7 +151,6 @@ export function usePushSubscription() {
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
         await subscription.unsubscribe();
-        // Remove from database
         await supabase
           .from("push_subscriptions")
           .delete()
