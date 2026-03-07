@@ -128,12 +128,14 @@ export function AppSidebar() {
         { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
         { title: "PDN - Gerentes", url: "/pdn", icon: FileSpreadsheet },
         { title: "Meu Time", url: "/meu-time", icon: Users },
+        { title: "Roleta de Leads", url: "/disponibilidade", icon: LayoutDashboard },
       ]
     : isGestor
     ? [
         { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
         { title: "PDN", url: "/pdn", icon: FileSpreadsheet },
         { title: "Meu Time", url: "/meu-time", icon: Users },
+        { title: "Roleta de Leads", url: "/disponibilidade", icon: LayoutDashboard },
       ]
     : [];
 

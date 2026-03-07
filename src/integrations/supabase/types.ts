@@ -263,6 +263,45 @@ export type Database = {
         }
         Relationships: []
       }
+      corretor_disponibilidade: {
+        Row: {
+          created_at: string
+          entrada_em: string | null
+          id: string
+          leads_recebidos_turno: number
+          na_roleta: boolean
+          saida_em: string | null
+          segmentos: string[]
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entrada_em?: string | null
+          id?: string
+          leads_recebidos_turno?: number
+          na_roleta?: boolean
+          saida_em?: string | null
+          segmentos?: string[]
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entrada_em?: string | null
+          id?: string
+          leads_recebidos_turno?: number
+          na_roleta?: boolean
+          saida_em?: string | null
+          segmentos?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       corretor_motivations: {
         Row: {
           autor: string | null
