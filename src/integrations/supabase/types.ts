@@ -2553,6 +2553,9 @@ export type Database = {
       }
       visitas: {
         Row: {
+          cancel_reason: string | null
+          confirmation_token: string | null
+          confirmed_at: string | null
           converted_to_pdn_at: string | null
           converted_to_pdn_by: string | null
           corretor_id: string
@@ -2575,9 +2578,13 @@ export type Database = {
           resultado_visita: string | null
           status: string
           telefone: string | null
+          token_expires_at: string | null
           updated_at: string
         }
         Insert: {
+          cancel_reason?: string | null
+          confirmation_token?: string | null
+          confirmed_at?: string | null
           converted_to_pdn_at?: string | null
           converted_to_pdn_by?: string | null
           corretor_id: string
@@ -2600,9 +2607,13 @@ export type Database = {
           resultado_visita?: string | null
           status?: string
           telefone?: string | null
+          token_expires_at?: string | null
           updated_at?: string
         }
         Update: {
+          cancel_reason?: string | null
+          confirmation_token?: string | null
+          confirmed_at?: string | null
           converted_to_pdn_at?: string | null
           converted_to_pdn_by?: string | null
           corretor_id?: string
@@ -2625,6 +2636,7 @@ export type Database = {
           resultado_visita?: string | null
           status?: string
           telefone?: string | null
+          token_expires_at?: string | null
           updated_at?: string
         }
         Relationships: [
