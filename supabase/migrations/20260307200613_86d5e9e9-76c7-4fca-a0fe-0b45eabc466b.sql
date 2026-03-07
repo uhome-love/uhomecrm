@@ -1,0 +1,1 @@
+ALTER TABLE public.pipeline_leads ADD COLUMN IF NOT EXISTS temperatura text NOT NULL DEFAULT 'morno';

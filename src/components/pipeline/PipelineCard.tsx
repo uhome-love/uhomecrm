@@ -97,7 +97,7 @@ const PipelineCard = memo(function PipelineCard({ lead, stage, segmentos, corret
   const activity = getActivityInfo(lead.stage_changed_at);
   const createdTime = getTimeSinceCreated(lead.created_at);
   const style = activityStyles[activity.variant];
-  const temp = TEMP_CONFIG[(lead as any).temperatura || "morno"];
+  const temp = TEMP_CONFIG[lead.temperatura || "morno"];
   const showAlert = activity.variant === "warning" || activity.variant === "danger";
   const leadScore = calculateLeadScore(lead as any);
   
@@ -240,6 +240,24 @@ const PipelineCard = memo(function PipelineCard({ lead, stage, segmentos, corret
             <Zap className="h-2.5 w-2.5" />
             Score {leadScore.score}
           </div>
+
+          {/* Próxima Ação */}
+          {lead.proxima_acao ? (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 border border-primary/20">
+              <Calendar className="h-3 w-3 text-primary shrink-0" />
+              <span className="text-[10px] font-semibold text-primary truncate">{lead.proxima_acao}</span>
+              {lead.data_proxima_acao && (
+                <span className="text-[9px] text-muted-foreground shrink-0 ml-auto">
+                  {new Date(lead.data_proxima_acao + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/10 border border-destructive/20">
+              <AlertCircle className="h-3 w-3 text-destructive shrink-0" />
+              <span className="text-[10px] font-semibold text-destructive">Sem próxima ação</span>
+            </div>
+          )}
 
           {/* Time indicators */}
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground/70">

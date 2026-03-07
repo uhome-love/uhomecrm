@@ -26,6 +26,7 @@ export interface PipelineLead {
   ordem_no_stage: number;
   corretor_id: string | null;
   gerente_id: string | null;
+  temperatura: string;
   modo_conducao: string;
   complexidade_score: number;
   oportunidade_score: number;
