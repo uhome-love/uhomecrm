@@ -198,6 +198,16 @@ export function usePipeline() {
     const firstStage = stages.find(s => s.tipo === "novo_lead");
     if (!firstStage) { toast.error("Estágio inicial não configurado"); return null; }
 
+    // Auto-extract campaign from TikTok origem
+    let empreendimento = lead.empreendimento || null;
+    const origem = lead.origem || null;
+    if (!empreendimento && origem) {
+      const tikTokMatch = origem.match(/tik\s*tok(?:\s*ads)?\s*:\s*(.+)/i);
+      if (tikTokMatch) {
+        empreendimento = tikTokMatch[1].trim();
+      }
+    }
+
     const { data, error } = await supabase
       .from("pipeline_leads")
       .insert({
@@ -206,10 +216,10 @@ export function usePipeline() {
         email: lead.email || null,
         segmento_id: lead.segmento_id || null,
         produto_id: lead.produto_id || null,
-        empreendimento: lead.empreendimento || null,
+        empreendimento,
         stage_id: firstStage.id,
         corretor_id: lead.corretor_id || null,
-        origem: lead.origem || null,
+        origem: origem,
         origem_detalhe: lead.origem_detalhe || null,
         observacoes: lead.observacoes || null,
         valor_estimado: lead.valor_estimado || null,
