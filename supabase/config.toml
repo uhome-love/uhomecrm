@@ -47,3 +47,15 @@ verify_jwt = false
 
 [functions.homi-gerencial]
 verify_jwt = false
+
+[functions.notify]
+verify_jwt = false
+
+[functions.homi-ceo]
+verify_jwt = false
+
+[functions.distribute-lead]
+verify_jwt = false
+
+[functions.jetimob-sync]
+verify_jwt = false

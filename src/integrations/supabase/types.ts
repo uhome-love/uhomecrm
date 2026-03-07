@@ -927,6 +927,96 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          agrupar_similares: boolean
+          categorias_silenciadas: string[]
+          dashboard_alerts_enabled: boolean
+          horario_silencio_fim: string | null
+          horario_silencio_inicio: string | null
+          id: string
+          intervalo_minimo_minutos: number
+          popup_enabled: boolean
+          push_enabled: boolean
+          updated_at: string
+          user_id: string
+          whatsapp_enabled: boolean
+        }
+        Insert: {
+          agrupar_similares?: boolean
+          categorias_silenciadas?: string[]
+          dashboard_alerts_enabled?: boolean
+          horario_silencio_fim?: string | null
+          horario_silencio_inicio?: string | null
+          id?: string
+          intervalo_minimo_minutos?: number
+          popup_enabled?: boolean
+          push_enabled?: boolean
+          updated_at?: string
+          user_id: string
+          whatsapp_enabled?: boolean
+        }
+        Update: {
+          agrupar_similares?: boolean
+          categorias_silenciadas?: string[]
+          dashboard_alerts_enabled?: boolean
+          horario_silencio_fim?: string | null
+          horario_silencio_inicio?: string | null
+          id?: string
+          intervalo_minimo_minutos?: number
+          popup_enabled?: boolean
+          push_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+          whatsapp_enabled?: boolean
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          agrupamento_count: number
+          agrupamento_key: string | null
+          categoria: string
+          created_at: string
+          dados: Json | null
+          id: string
+          lida: boolean
+          lida_em: string | null
+          mensagem: string
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          agrupamento_count?: number
+          agrupamento_key?: string | null
+          categoria: string
+          created_at?: string
+          dados?: Json | null
+          id?: string
+          lida?: boolean
+          lida_em?: string | null
+          mensagem: string
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          agrupamento_count?: number
+          agrupamento_key?: string | null
+          categoria?: string
+          created_at?: string
+          dados?: Json | null
+          id?: string
+          lida?: boolean
+          lida_em?: string | null
+          mensagem?: string
+          tipo?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oa_events: {
         Row: {
           attempt_id: string | null
@@ -2058,6 +2148,18 @@ export type Database = {
         Returns: number
       }
       cleanup_expired_locks: { Args: never; Returns: number }
+      criar_notificacao: {
+        Args: {
+          p_agrupamento_key?: string
+          p_categoria: string
+          p_dados?: Json
+          p_mensagem: string
+          p_tipo: string
+          p_titulo: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       distribuir_lead_roleta: {
         Args: { p_pipeline_lead_id: string; p_segmento_id?: string }
         Returns: Json
@@ -2156,6 +2258,7 @@ export type Database = {
         }
         Returns: Json
       }
+      marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
       recalculate_all_scores: { Args: never; Returns: undefined }
       reciclar_leads_expirados: { Args: never; Returns: number }
       renew_lead_lock: {

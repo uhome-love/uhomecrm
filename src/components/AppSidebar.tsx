@@ -20,6 +20,7 @@ import {
   SearchCheck,
   Settings,
   Kanban,
+  Bell,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
@@ -219,6 +220,7 @@ export function AppSidebar() {
   );
 
   const configItems = [
+    { title: "Notificações", url: "/notificacoes", icon: Bell },
     { title: "Configurações", url: "/configuracoes", icon: Settings },
   ];
 

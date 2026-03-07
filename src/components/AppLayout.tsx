@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { User, Settings, LogOut, ChevronDown } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -50,7 +51,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Right side — user menu */}
+            {/* Right side — notifications + user menu */}
+            <div className="flex items-center gap-1">
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2.5 h-9 px-3 hover:bg-muted/50 rounded-xl">
@@ -81,6 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </header>
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 min-w-0">
             {children}
