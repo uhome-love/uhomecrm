@@ -199,6 +199,11 @@ export default function CorretorDashboard() {
   const levelEmoji = progress.level.split(" ")[0];
   const levelLabel = progress.level.split(" ").slice(1).join(" ");
 
+  // Progress percentages for sticky bar
+  const ligPct = goals ? Math.min(100, Math.round((progress.tentativas / (goals.meta_ligacoes || 30)) * 100)) : 0;
+  const visPct = goals ? Math.min(100, Math.round((progress.visitasMarcadas / (goals.meta_visitas_marcadas || 3)) * 100)) : 0;
+  const aprvPct = goals ? Math.min(100, Math.round((progress.aproveitados / (goals.meta_aproveitados || 5)) * 100)) : 0;
+
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
       <ConfettiBurst show={showConfetti} />
@@ -248,9 +253,42 @@ export default function CorretorDashboard() {
         </motion.div>
       </div>
 
+      {/* 🔥 STICKY DAILY PROGRESS BAR */}
+      {metaSalva && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="sticky top-0 z-20 -mx-4 px-4 py-2.5 bg-background/95 backdrop-blur-sm border-b border-border/50"
+        >
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Progresso do dia</p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Ligações", value: progress.tentativas, max: goals?.meta_ligacoes || 30, pct: ligPct },
+              { label: "Aproveit.", value: progress.aproveitados, max: goals?.meta_aproveitados || 5, pct: aprvPct },
+              { label: "Visitas", value: progress.visitasMarcadas, max: goals?.meta_visitas_marcadas || 3, pct: visPct },
+            ].map((item) => (
+              <div key={item.label}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground">{item.label}</span>
+                  <span className="text-[10px] font-bold text-foreground">{item.value}/{item.max}</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${item.pct}%` }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    className={`h-full rounded-full ${getProgressColor(item.pct)}`}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-4 h-auto sticky top-0 z-10">
+        <TabsList className="grid w-full grid-cols-4 h-auto sticky top-[72px] z-10">
           <TabsTrigger value="central" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs py-2">
             <Target className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Central</span><span className="xs:hidden">Home</span>
           </TabsTrigger>

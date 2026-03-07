@@ -1,4 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+// Live timer component
+function TempoDisponivel({ entradaEm }: { entradaEm: string | null | undefined }) {
+  const [elapsed, setElapsed] = useState("");
+
+  useEffect(() => {
+    if (!entradaEm) { setElapsed("—"); return; }
+    const update = () => {
+      const diff = Date.now() - new Date(entradaEm).getTime();
+      if (diff < 0) { setElapsed("agora"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setElapsed(h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}min`);
+    };
+    update();
+    const timer = setInterval(update, 30000);
+    return () => clearInterval(timer);
+  }, [entradaEm]);
+
+  return <>{elapsed}</>;
+}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,9 +139,6 @@ export default function CorretorDisponibilidadePanel() {
             <p className={`text-sm font-semibold ${config.color}`}>{config.label}</p>
             <p className="text-[10px] text-muted-foreground">
               {naRoleta ? "🟢 Na roleta" : "⚫ Fora da roleta"}
-              {disponibilidade?.leads_recebidos_turno
-                ? ` · ${disponibilidade.leads_recebidos_turno} leads recebidos`
-                : ""}
             </p>
           </div>
           {naRoleta && (
@@ -129,6 +147,30 @@ export default function CorretorDisponibilidadePanel() {
             </Badge>
           )}
         </div>
+
+        {/* Live stats: tempo disponível + leads recebidos */}
+        {currentStatus !== "offline" && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+              <span className="text-xs">⏱</span>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Disponível há</p>
+                <p className="text-xs font-semibold text-foreground">
+                  <TempoDisponivel entradaEm={disponibilidade?.entrada_em} />
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+              <span className="text-xs">📩</span>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Leads hoje</p>
+                <p className="text-xs font-semibold text-foreground">
+                  {disponibilidade?.leads_recebidos_turno || 0} recebidos
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Active Segments */}
         {currentSegmentos.length > 0 && !showSegmentos && (
