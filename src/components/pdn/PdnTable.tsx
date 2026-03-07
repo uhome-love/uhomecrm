@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type PdnEntry, type PdnSituacao } from "@/hooks/usePdn";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -200,12 +201,29 @@ function RiscoBadge({ entry }: { entry: PdnEntry }) {
   const risco = calcRisco(entry);
   const conf = RISCO_BADGE[risco.nivel];
   return (
-    <span
-      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${conf.class}`}
-      title={risco.motivos.join(", ") || "OK"}
-    >
-      {conf.emoji}
-    </span>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold border cursor-default ${conf.class}`}
+          >
+            {conf.emoji}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="text-xs max-w-[200px]">
+          <p className="font-semibold mb-0.5">
+            {risco.nivel === "seguro" ? "✅ Seguro" : risco.nivel === "atencao" ? "⚠️ Atenção" : "🚨 Risco"}
+          </p>
+          {risco.motivos.length > 0 ? (
+            <ul className="space-y-0.5">
+              {risco.motivos.map((m, i) => <li key={i}>• {m}</li>)}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground">Nenhum problema detectado</p>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
