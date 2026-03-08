@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Phone, CheckCircle, CalendarDays, Building2, Flame, AlertTriangle,
+  Phone, CheckCircle, CalendarDays, Building2, Flame,
   Trophy, ArrowRight, Clock, Loader2, Send,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -121,7 +121,7 @@ export default function GerenteDashboard() {
   const { data: kpis, isLoading: kpisLoading } = useQuery({
     queryKey: ["gerente-kpis", user?.id, period, teamUserIds.join(",")],
     queryFn: async () => {
-      if (teamUserIds.length === 0) return { ligacoes: 0, metaLigacoes: 150, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", dias: 0 }, leadsParados: 0 };
+      if (teamUserIds.length === 0) return { ligacoes: 0, metaLigacoes: 150, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", dias: 0 } };
 
       const { count: ligacoes } = await supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs);
       const { count: aproveitados } = await supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).eq("resultado", "com_interesse").gte("created_at", startTs).lte("created_at", endTs);
@@ -132,8 +132,6 @@ export default function GerenteDashboard() {
       const { data: negocios } = await supabase.from("negocios").select("fase, vgv_estimado").eq("gerente_id", user!.id).not("fase", "in", '("assinado","distrato","cancelado")');
       const negociosAtivos = negocios?.length || 0;
       const vgvTotal = (negocios || []).reduce((s, n) => s + Number(n.vgv_estimado || 0), 0);
-      const threshold = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-      const { count: leadsParados } = await supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).lt("updated_at", threshold);
 
       const lig = ligacoes || 0;
       const apr = aproveitados || 0;
@@ -149,7 +147,6 @@ export default function GerenteDashboard() {
         negociosAtivos,
         vgvTotal,
         melhorStreak: { nome: "-", dias: 0 },
-        leadsParados: leadsParados || 0,
       };
     },
     enabled: !!user && teamUserIds.length > 0,
@@ -242,7 +239,7 @@ export default function GerenteDashboard() {
     enabled: teamUserIds.length > 0,
   });
 
-  const k = kpis || { ligacoes: 0, metaLigacoes: 150, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", dias: 0 }, leadsParados: 0 };
+  const k = kpis || { ligacoes: 0, metaLigacoes: 150, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", dias: 0 } };
   const pipe = pipelineSummary || { fases: { proposta: { count: 0, vgv: 0 }, negociacao: { count: 0, vgv: 0 }, documentacao: { count: 0, vgv: 0 }, assinado: { count: 0, vgv: 0 } }, totalVgv: 0 };
 
   const statusIcons: Record<string, string> = {
@@ -300,7 +297,7 @@ export default function GerenteDashboard() {
 
       {/* ─── 2. KPI CARDS — 6 em linha ─── */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Ligações */}
           <div className="rounded-2xl p-4 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <div className="flex items-center gap-1.5 mb-2">
@@ -362,24 +359,6 @@ export default function GerenteDashboard() {
             )}
           </div>
 
-          {/* Leads Parados */}
-          <div className="rounded-2xl p-4 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-            <div className="flex items-center gap-1.5 mb-2">
-              <AlertTriangle className={`h-4 w-4 ${k.leadsParados > 0 ? "text-red-500" : "text-green-600"}`} />
-              <span className="text-xs font-medium text-gray-400">Leads Parados</span>
-            </div>
-            {k.leadsParados > 0 ? (
-              <>
-                <p className="text-4xl font-black text-red-500">{k.leadsParados}</p>
-                <p className="text-xs text-gray-400">sem ação &gt;3 dias</p>
-              </>
-            ) : (
-              <>
-                <p className="text-4xl font-black text-green-600">0</p>
-                <p className="text-sm text-green-600">✅ Tudo em dia!</p>
-              </>
-            )}
-          </div>
         </div>
       </motion.div>
 
