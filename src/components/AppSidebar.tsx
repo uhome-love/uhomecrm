@@ -57,12 +57,12 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
 }) {
   if (items.length === 0) return null;
   return (
-    <SidebarGroup key={label} className="animate-fade-in mt-4 first:mt-0" style={{ animationDelay: `${index * 60}ms` }}>
-      <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] font-medium tracking-wider uppercase px-3 mb-1">
+    <SidebarGroup key={label} className="animate-fade-in mt-4 first:mt-0 py-0" style={{ animationDelay: `${index * 60}ms` }}>
+      <SidebarGroupLabel className="text-neutral-500 text-[10px] font-medium tracking-widest uppercase px-3 mb-1">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
-        <SidebarMenu className="space-y-0.5">
+        <SidebarMenu className="gap-0.5">
           {items.map((item) => {
             const badgeCount = badges[item.url] || 0;
             return (
@@ -71,10 +71,10 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
                   <NavLink
                     to={item.url}
                     end
-                    className="group/nav text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5 transition-all duration-150 rounded-r-lg relative py-2 px-3"
-                    activeClassName="!text-sidebar-foreground font-medium !bg-sidebar-foreground/[0.08] border-l-2 !border-l-primary rounded-l-none"
+                    className="group/nav text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 px-3"
+                    activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg"
                   >
-                    <item.icon className="mr-2.5 h-4 w-4 shrink-0 transition-transform duration-150 group-hover/nav:translate-x-0.5" />
+                    <item.icon className="mr-2.5 h-4 w-4 shrink-0 text-neutral-400 group-[.active]/nav:text-blue-400 transition-colors duration-150" />
                     {!collapsed && (
                       <span className="text-sm">{item.title}</span>
                     )}
@@ -248,9 +248,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="scrollbar-thin">
+      <SidebarContent className="scrollbar-thin flex flex-col">
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 h-14 border-b border-sidebar-border/40 shrink-0">
+        <div className="flex items-center gap-3 px-4 h-14 border-b border-white/10 shrink-0">
           {collapsed ? (
             <div className="flex h-9 w-9 items-center justify-center shrink-0">
               <img src={homiMascot} alt="Homi" className="h-8 w-8 object-contain" />
@@ -259,10 +259,10 @@ export function AppSidebar() {
             <div className="flex items-center gap-2.5 animate-slide-in-left">
               <img src={homiMascot} alt="Homi AI" className="h-9 w-9 object-contain shrink-0" />
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-sidebar-accent-foreground tracking-tight leading-tight">
-                  Uhome<span className="text-sidebar-primary">Sales</span>
+                <span className="text-sm font-semibold text-white tracking-tight leading-tight">
+                  Uhome<span className="text-blue-400">Sales</span>
                 </span>
-                <span className="text-[9px] font-medium text-sidebar-foreground/40 tracking-wider">
+                <span className="text-[9px] font-medium text-neutral-500 tracking-wider">
                   Powered by Homi AI
                 </span>
               </div>
@@ -272,51 +272,55 @@ export function AppSidebar() {
 
         {/* Minha Rotina — special top item (corretor only) */}
         {topItem && (
-          <SidebarMenu className="px-1 pt-3 pb-0">
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <NavLink
-                  to={topItem.url}
-                  end
-                  className="group/nav text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-foreground/5 transition-all duration-150 rounded-r-lg relative py-2.5 px-3 font-medium"
-                  activeClassName="!text-sidebar-foreground font-semibold !bg-sidebar-foreground/[0.08] border-l-2 !border-l-primary rounded-l-none"
-                >
-                  <topItem.icon className="mr-2.5 h-4 w-4 shrink-0" />
-                  {!collapsed && <span className="text-sm">{topItem.title}</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+          <div className="border-b border-white/10 pb-3 mb-1">
+            <SidebarMenu className="px-1 pt-3">
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to={topItem.url}
+                    end
+                    className="group/nav text-white hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 px-3 font-medium"
+                    activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg"
+                  >
+                    <topItem.icon className="mr-2.5 h-4 w-4 shrink-0 text-white/70" />
+                    {!collapsed && <span className="text-sm">{topItem.title}</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </div>
         )}
 
-        {groups.map((g, i) => (
-          <SidebarNavGroup
-            key={g.label}
-            label={g.label}
-            items={g.items}
-            badges={badges}
-            collapsed={collapsed}
-            index={i}
-          />
-        ))}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          {groups.map((g, i) => (
+            <SidebarNavGroup
+              key={g.label}
+              label={g.label}
+              items={g.items}
+              badges={badges}
+              collapsed={collapsed}
+              index={i}
+            />
+          ))}
+        </div>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="!p-0">
         <div
-          className="flex items-center gap-2.5 p-3 border-t border-sidebar-border/40 group/footer"
+          className="flex items-center gap-2.5 py-3 px-3 border-t border-white/10 group/footer sticky bottom-0 bg-sidebar"
           onMouseEnter={() => setHoverFooter(true)}
           onMouseLeave={() => setHoverFooter(false)}
         >
           {/* Avatar with initials */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/80 text-primary-foreground text-xs font-bold shrink-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-700 text-white text-sm font-bold shrink-0">
             {initials}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-accent-foreground truncate">
+              <p className="text-sm font-medium text-white truncate">
                 {profile.nome || user?.email}
               </p>
-              <p className="text-[10px] text-sidebar-foreground/50 font-medium flex items-center gap-1">
+              <p className="text-xs text-neutral-400 font-medium flex items-center gap-1">
                 {roleLabel} · <span>{level.emoji} {level.label}</span>
               </p>
             </div>
@@ -325,7 +329,7 @@ export function AppSidebar() {
             variant="ghost"
             size="icon"
             onClick={signOut}
-            className={`h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-danger-500 hover:bg-danger-500/10 transition-all duration-150 rounded-lg ${
+            className={`h-7 w-7 shrink-0 text-neutral-400 hover:text-danger-500 hover:bg-danger-500/10 transition-all duration-150 rounded-lg ${
               hoverFooter ? "opacity-100" : "opacity-0"
             }`}
           >
