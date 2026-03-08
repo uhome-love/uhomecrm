@@ -8,6 +8,8 @@ import MaterialsLibrary from "@/components/pipeline/MaterialsLibrary";
 import SequenceBuilder from "@/components/pipeline/SequenceBuilder";
 import SequenceLibrary from "@/components/pipeline/SequenceLibrary";
 import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
+import PipelineCeoIntelligence from "@/components/pipeline/PipelineCeoIntelligence";
+import PipelineManagerActions from "@/components/pipeline/PipelineManagerActions";
 
 import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashboard";
 import type { PipelineStage } from "@/hooks/usePipeline";
@@ -414,6 +416,32 @@ export default function PipelineKanban() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Role-based action panels */}
+        {isKanbanOrIntel && activeTab === "kanban" && isAdmin && (
+          <PipelineCeoIntelligence
+            leads={pipeline.leads}
+            stages={pipeline.stages}
+            corretorNomes={pipeline.corretorNomes}
+            onFilterLeads={(filterFn, label) => {
+              // Apply a custom filter by setting stage filters or search
+              toast.info(`Filtro aplicado: ${label}`);
+              // Use the filter via the existing system
+              const matchingStageIds = pipeline.stages
+                .filter(s => pipeline.leads.some(l => filterFn(l) && l.stage_id === s.id))
+                .map(s => s.id);
+              setFilters(f => ({ ...f, stages: matchingStageIds }));
+            }}
+            onDispatch={() => setDispatchOpen(true)}
+            onReload={() => pipeline.reload()}
+          />
+        )}
+        {isKanbanOrIntel && activeTab === "kanban" && isGestor && !isAdmin && (
+          <PipelineManagerActions
+            leads={pipeline.leads}
+            corretorNomes={pipeline.corretorNomes}
+          />
         )}
       </div>
 

@@ -740,6 +740,36 @@ export type Database = {
           },
         ]
       }
+      cobrancas_enviadas: {
+        Row: {
+          created_at: string | null
+          destinatarios: Json | null
+          enviado_por: string
+          id: string
+          leads_afetados: Json | null
+          mensagem: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          destinatarios?: Json | null
+          enviado_por: string
+          id?: string
+          leads_afetados?: Json | null
+          mensagem?: string | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string | null
+          destinatarios?: Json | null
+          enviado_por?: string
+          id?: string
+          leads_afetados?: Json | null
+          mensagem?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       comissao_faixas: {
         Row: {
           created_at: string
