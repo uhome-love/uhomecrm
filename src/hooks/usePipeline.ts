@@ -113,8 +113,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     // Role-based visibility
     if (isAdmin) {
-      // CEO/Admin: sees ALL leads (all corretores + unassigned)
-      // No filter applied — fetch everything
+      // CEO/Admin: vê todos os leads válidos já atribuídos
+      // (evita exibir registros transitórios de webhook sem corretor)
+      query = query
+        .not("corretor_id", "is", null)
+        .neq("corretor_id", "");
     } else if (isGestor) {
       // Gerentes: leads do time + leads ainda sem corretor (fila não distribuída)
       const { data: teamMembers } = await supabase
