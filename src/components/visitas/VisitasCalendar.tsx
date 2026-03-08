@@ -2,9 +2,20 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, isSameMonth, isSameDay, isToday } from "date-fns";
+import { format, startOfWeek, endOfWeek, addDays, addWeeks, isSameDay, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { STATUS_COLORS, STATUS_LABELS, type Visita } from "@/hooks/useVisitas";
+import { STATUS_LABELS, type Visita } from "@/hooks/useVisitas";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+
+const STATUS_EVENT_COLORS: Record<string, string> = {
+  marcada: "bg-blue-500/15 border-blue-500/40 text-blue-700 dark:text-blue-300",
+  confirmada: "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  realizada: "bg-gray-400/15 border-gray-400/40 text-gray-600 dark:text-gray-400",
+  reagendada: "bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300",
+  cancelada: "bg-red-400/15 border-red-400/40 text-red-600 dark:text-red-400 line-through opacity-60",
+  no_show: "bg-red-700/15 border-red-700/40 text-red-700 dark:text-red-400 opacity-60",
+};
 
 interface Props {
   visitas: Visita[];
@@ -12,22 +23,17 @@ interface Props {
 }
 
 export default function VisitasCalendar({ visitas, onDayClick }: Props) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentWeekStart, setCurrentWeekStart] = useState(() =>
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
 
   const days = useMemo(() => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-    const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-
     const result: Date[] = [];
-    let d = calStart;
-    while (d <= calEnd) {
-      result.push(d);
-      d = addDays(d, 1);
+    for (let i = 0; i < 7; i++) {
+      result.push(addDays(currentWeekStart, i));
     }
     return result;
-  }, [currentMonth]);
+  }, [currentWeekStart]);
 
   const visitasByDate = useMemo(() => {
     const map: Record<string, Visita[]> = {};
@@ -36,63 +42,108 @@ export default function VisitasCalendar({ visitas, onDayClick }: Props) {
       if (!map[key]) map[key] = [];
       map[key].push(v);
     }
+    // Sort by time within each day
+    Object.values(map).forEach(arr =>
+      arr.sort((a, b) => (a.hora_visita || "99:99").localeCompare(b.hora_visita || "99:99"))
+    );
     return map;
   }, [visitas]);
 
-  const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+  const goToToday = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <h3 className="text-sm font-bold capitalize">
-          {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
-        </h3>
-        <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
-        {weekDays.map(wd => (
-          <div key={wd} className="bg-muted/50 py-1.5 text-center text-[10px] font-bold text-muted-foreground uppercase">
-            {wd}
+    <TooltipProvider>
+      <div className="space-y-3">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, -1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h3 className="text-sm font-bold">
+              {format(currentWeekStart, "dd MMM", { locale: ptBR })} — {format(addDays(currentWeekStart, 6), "dd MMM yyyy", { locale: ptBR })}
+            </h3>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, 1))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-        ))}
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={goToToday}>
+            Hoje
+          </Button>
+        </div>
 
-        {days.map(day => {
-          const dateKey = format(day, "yyyy-MM-dd");
-          const dayVisitas = visitasByDate[dateKey] || [];
-          const inMonth = isSameMonth(day, currentMonth);
-          const today = isToday(day);
+        {/* Week grid */}
+        <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+          {days.map(day => {
+            const dateKey = format(day, "yyyy-MM-dd");
+            const dayVisitas = visitasByDate[dateKey] || [];
+            const today = isToday(day);
+            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
 
-          return (
-            <div
-              key={dateKey}
-              className={`bg-card min-h-[70px] p-1 cursor-pointer hover:bg-muted/30 transition-colors ${
-                !inMonth ? "opacity-30" : ""
-              } ${today ? "ring-2 ring-primary/30 ring-inset" : ""}`}
-              onClick={() => onDayClick?.(day)}
-            >
-              <p className={`text-[10px] font-medium mb-0.5 ${today ? "text-primary font-bold" : "text-foreground"}`}>
-                {format(day, "d")}
-              </p>
-              <div className="space-y-0.5">
-                {dayVisitas.slice(0, 3).map(v => (
-                  <div key={v.id} className={`text-[8px] leading-tight px-1 py-0.5 rounded truncate border ${STATUS_COLORS[v.status]}`} title={v.corretor_nome ? `Corretor: ${v.corretor_nome}` : undefined}>
-                    {v.hora_visita ? v.hora_visita.slice(0, 5) + " " : ""}{v.corretor_nome ? `[${v.corretor_nome.split(" ")[0]}] ` : ""}{v.nome_cliente}
-                  </div>
-                ))}
-                {dayVisitas.length > 3 && (
-                  <p className="text-[8px] text-muted-foreground pl-1">+{dayVisitas.length - 3} mais</p>
+            return (
+              <div
+                key={dateKey}
+                className={cn(
+                  "bg-card min-h-[140px] p-1.5 cursor-pointer hover:bg-muted/30 transition-colors flex flex-col",
+                  today && "ring-2 ring-primary/30 ring-inset bg-primary/[0.02]",
+                  isWeekend && "bg-muted/20"
+                )}
+                onClick={() => onDayClick?.(day)}
+              >
+                {/* Day header */}
+                <div className="flex items-center justify-between mb-1">
+                  <span className={cn(
+                    "text-[11px] font-medium capitalize",
+                    today ? "text-primary font-bold" : "text-foreground"
+                  )}>
+                    {format(day, "EEE", { locale: ptBR })}
+                  </span>
+                  <span className={cn(
+                    "text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center",
+                    today ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  )}>
+                    {format(day, "d")}
+                  </span>
+                </div>
+
+                {/* Events */}
+                <div className="space-y-0.5 flex-1 overflow-auto">
+                  {dayVisitas.map(v => (
+                    <Tooltip key={v.id}>
+                      <TooltipTrigger asChild>
+                        <div className={cn(
+                          "text-[9px] leading-tight px-1.5 py-1 rounded border truncate cursor-default",
+                          STATUS_EVENT_COLORS[v.status]
+                        )}>
+                          <span className="font-semibold">
+                            {v.hora_visita ? v.hora_visita.slice(0, 5) + " " : ""}
+                          </span>
+                          {v.nome_cliente}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[200px]">
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold">{v.nome_cliente}</p>
+                          {v.corretor_nome && <p className="text-[10px] text-muted-foreground">Corretor: {v.corretor_nome}</p>}
+                          {v.empreendimento && <p className="text-[10px] text-muted-foreground">{v.empreendimento}</p>}
+                          {v.hora_visita && <p className="text-[10px]">🕐 {v.hora_visita.slice(0, 5)}</p>}
+                          <Badge className={cn("text-[9px]", STATUS_EVENT_COLORS[v.status])}>
+                            {STATUS_LABELS[v.status]}
+                          </Badge>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+
+                {dayVisitas.length === 0 && (
+                  <p className="text-[9px] text-muted-foreground/30 text-center mt-4">—</p>
                 )}
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
