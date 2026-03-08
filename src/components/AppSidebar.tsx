@@ -144,8 +144,7 @@ export function AppSidebar() {
     }
   }, [alerts]);
 
-  const level = getLevel(points);
-  const isCorretor = !isAdmin && !isGestor && !isBackoffice;
+
 
   // ── Build navigation groups by role ──
   function getGroupsByRole(): { topItem: NavItem | null; groups: { label: string; items: NavItem[] }[]; roleLabel: string } {
