@@ -3932,6 +3932,255 @@ export type Database = {
         }
         Relationships: []
       }
+      roleta_campanhas: {
+        Row: {
+          ativo: boolean | null
+          empreendimento: string
+          id: string
+          segmento_id: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          empreendimento: string
+          id?: string
+          segmento_id?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          empreendimento?: string
+          id?: string
+          segmento_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roleta_campanhas_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roleta_credenciamentos: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          corretor_id: string | null
+          created_at: string | null
+          data: string
+          id: string
+          janela: string
+          saiu_em: string | null
+          segmento_1_id: string | null
+          segmento_2_id: string | null
+          status: string | null
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          corretor_id?: string | null
+          created_at?: string | null
+          data?: string
+          id?: string
+          janela: string
+          saiu_em?: string | null
+          segmento_1_id?: string | null
+          segmento_2_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          corretor_id?: string | null
+          created_at?: string | null
+          data?: string
+          id?: string
+          janela?: string
+          saiu_em?: string | null
+          segmento_1_id?: string | null
+          segmento_2_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roleta_credenciamentos_aprovado_por_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_credenciamentos_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_credenciamentos_segmento_1_id_fkey"
+            columns: ["segmento_1_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_credenciamentos_segmento_2_id_fkey"
+            columns: ["segmento_2_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roleta_distribuicoes: {
+        Row: {
+          aceito_em: string | null
+          avisos_enviados: number | null
+          corretor_id: string | null
+          enviado_em: string | null
+          expira_em: string | null
+          id: string
+          janela: string
+          lead_id: string | null
+          primeira_interacao_em: string | null
+          segmento_id: string | null
+          status: string | null
+        }
+        Insert: {
+          aceito_em?: string | null
+          avisos_enviados?: number | null
+          corretor_id?: string | null
+          enviado_em?: string | null
+          expira_em?: string | null
+          id?: string
+          janela: string
+          lead_id?: string | null
+          primeira_interacao_em?: string | null
+          segmento_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          aceito_em?: string | null
+          avisos_enviados?: number | null
+          corretor_id?: string | null
+          enviado_em?: string | null
+          expira_em?: string | null
+          id?: string
+          janela?: string
+          lead_id?: string | null
+          primeira_interacao_em?: string | null
+          segmento_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roleta_distribuicoes_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_distribuicoes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_distribuicoes_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roleta_fila: {
+        Row: {
+          ativo: boolean | null
+          corretor_id: string | null
+          credenciamento_id: string | null
+          data: string
+          id: string
+          janela: string
+          leads_recebidos: number | null
+          posicao: number
+          segmento_id: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          corretor_id?: string | null
+          credenciamento_id?: string | null
+          data?: string
+          id?: string
+          janela: string
+          leads_recebidos?: number | null
+          posicao: number
+          segmento_id?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          corretor_id?: string | null
+          credenciamento_id?: string | null
+          data?: string
+          id?: string
+          janela?: string
+          leads_recebidos?: number | null
+          posicao?: number
+          segmento_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roleta_fila_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_fila_credenciamento_id_fkey"
+            columns: ["credenciamento_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_credenciamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roleta_fila_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "roleta_segmentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roleta_segmentos: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          faixa_preco: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          faixa_preco?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          faixa_preco?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       saved_scripts: {
         Row: {
           conteudo: string
