@@ -3340,6 +3340,10 @@ export type Database = {
         Args: { p_referral_id: string }
         Returns: undefined
       }
+      is_corretor_in_my_team: {
+        Args: { p_corretor_id: string }
+        Returns: boolean
+      }
       lock_lead_atomic: {
         Args: {
           p_corretor_id: string

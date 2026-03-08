@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { motion, AnimatePresence } from "framer-motion";
 
 const STATUS_ICON: Record<string, { icon: React.ElementType; color: string; label: string }> = {
   na_empresa: { icon: Building2, color: "text-emerald-600", label: "Na empresa" },
@@ -34,15 +33,15 @@ const STATUS_ICON: Record<string, { icon: React.ElementType; color: string; labe
 
 const APPROVAL_BADGE: Record<string, { label: string; className: string; icon: React.ElementType }> = {
   pendente: { label: "Pendente", className: "bg-amber-500/15 text-amber-600 border-amber-500/20", icon: Clock },
-  aprovado: { label: "Aprovado", className: "bg-emerald-500/15 text-emerald-600 border-emerald-500/20", icon: CheckCircle2 },
-  rejeitado: { label: "Rejeitado", className: "bg-destructive/15 text-destructive border-destructive/20", icon: XCircle },
+  aprovado: { label: "Validado", className: "bg-emerald-500/15 text-emerald-600 border-emerald-500/20", icon: CheckCircle2 },
+  rejeitado: { label: "Recusado", className: "bg-destructive/15 text-destructive border-destructive/20", icon: XCircle },
 };
 
 export default function EscalaDiariaPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const { isGestor, isAdmin } = useUserRole();
   const escala = useEscalaDiaria(selectedDate);
-  const isManager = isGestor || isAdmin;
+  const canValidate = escala.canValidate;
 
   if (escala.loading) {
     return (
@@ -66,14 +65,14 @@ export default function EscalaDiariaPage() {
           <p className="text-sm text-muted-foreground capitalize">{dateFormatted}</p>
         </div>
         <div className="flex items-center gap-2">
-          {escala.totalPendentes > 0 && isManager && (
+          {escala.totalPendentes > 0 && canValidate && (
             <Button
               size="sm"
               onClick={() => escala.aprovarTodos()}
               className="gap-1.5"
             >
               <CheckCircle2 className="h-4 w-4" />
-              Aprovar Todos ({escala.totalPendentes})
+              Validar Todos ({escala.totalPendentes})
             </Button>
           )}
           <Input
@@ -89,11 +88,11 @@ export default function EscalaDiariaPage() {
       </div>
 
       {/* Pending Approval Alert */}
-      {escala.totalPendentes > 0 && isManager && (
+      {escala.totalPendentes > 0 && canValidate && (
         <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
           <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            <strong>{escala.totalPendentes}</strong> corretor(es) aguardando aprovação para a escala de hoje.
+            <strong>{escala.totalPendentes}</strong> corretor(es) aguardando validação para a escala de hoje.
           </p>
         </div>
       )}
@@ -101,7 +100,6 @@ export default function EscalaDiariaPage() {
       {/* Segments Grid */}
       <div className="grid gap-5">
         {escala.segmentos.map(segmento => {
-          const campanhasDoSeg = escala.getCampanhasDoSegmento(segmento.id);
           const aprovados = escala.getCorretoresNoSegmento(segmento.id);
           const pendentes = escala.getPendentesNoSegmento(segmento.id);
           const hasNoAprovados = aprovados.length === 0;
@@ -162,12 +160,14 @@ export default function EscalaDiariaPage() {
                       .map(tm => {
                         const isEscalado = escala.isCorretorEscalado(segmento.id, tm.user_id!);
                         const entryStatus = escala.getEntryStatus(segmento.id, tm.user_id!);
+                        const approval = escala.getEntryApproval(segmento.id, tm.user_id!);
                         const disp = escala.getDisponibilidade(tm.user_id!);
                         const statusInfo = STATUS_ICON[disp?.status || "offline"] || STATUS_ICON.offline;
                         const StatusIcon = statusInfo.icon;
                         const approvalInfo = entryStatus ? APPROVAL_BADGE[entryStatus] : null;
                         const leadsHoje = disp?.leads_recebidos_turno || 0;
                         const profileName = escala.profiles[tm.user_id!] || tm.nome;
+                        const equipe = escala.getEquipe(tm.user_id!);
 
                         return (
                           <div
@@ -183,7 +183,7 @@ export default function EscalaDiariaPage() {
                             }`}
                           >
                             {/* Checkbox for managers to toggle */}
-                            {isManager && (
+                            {canValidate && (
                               <Checkbox
                                 checked={isEscalado}
                                 onCheckedChange={() => escala.toggleCorretor(segmento.id, tm.user_id!)}
@@ -210,12 +210,27 @@ export default function EscalaDiariaPage() {
                                 <span className={`text-[10px] font-medium ${statusInfo.color}`}>
                                   {statusInfo.label}
                                 </span>
+                                {/* Show equipe label for admin/CEO */}
+                                {escala.isAdmin && equipe && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    · Equipe {equipe}
+                                  </span>
+                                )}
                                 {leadsHoje > 0 && (
                                   <span className="text-[10px] text-muted-foreground">
                                     · {leadsHoje} leads hoje
                                   </span>
                                 )}
                               </div>
+                              {/* Validation log */}
+                              {approval && (
+                                <p className="text-[9px] text-muted-foreground mt-0.5">
+                                  Validado por {approval.aprovadoPor}
+                                  {approval.aprovadoEm && (
+                                    <> às {format(new Date(approval.aprovadoEm), "HH:mm")}</>
+                                  )}
+                                </p>
+                              )}
                             </div>
 
                             {/* Approval badge + actions */}
@@ -226,7 +241,7 @@ export default function EscalaDiariaPage() {
                                   {approvalInfo.label}
                                 </Badge>
                               )}
-                              {isManager && entryStatus === "pendente" && (
+                              {canValidate && entryStatus === "pendente" && (
                                 <div className="flex gap-1">
                                   <Button
                                     variant="ghost"

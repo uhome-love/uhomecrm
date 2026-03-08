@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 
 export interface EscalaEntry {
@@ -35,15 +36,17 @@ export interface TeamMember {
   user_id: string | null;
   nome: string;
   equipe: string | null;
+  gerente_id: string;
   status: string;
 }
 
 export function useEscalaDiaria(data: string) {
   const { user } = useAuth();
+  const { isAdmin, isGestor, isCorretor } = useUserRole();
   const qc = useQueryClient();
   const qKey = ["escala-diaria", data];
 
-  // Load escala entries for the date
+  // Load escala entries for the date (RLS will filter automatically)
   const { data: escala = [], isLoading: loadingEscala } = useQuery({
     queryKey: qKey,
     queryFn: async () => {
@@ -58,14 +61,21 @@ export function useEscalaDiaria(data: string) {
     staleTime: 10_000,
   });
 
-  // Load team members
+  // Load team members — gestor sees own team, admin sees all
   const { data: teamMembers = [], isLoading: loadingTeam } = useQuery({
-    queryKey: ["escala-team-members"],
+    queryKey: ["escala-team-members", user?.id, isAdmin],
     queryFn: async () => {
-      const { data: rows, error } = await supabase
+      let query = supabase
         .from("team_members")
-        .select("id, user_id, nome, equipe, status")
+        .select("id, user_id, nome, equipe, gerente_id, status")
         .eq("status", "ativo");
+
+      // Gestores (non-admin) only see their own team
+      if (!isAdmin && isGestor) {
+        query = query.eq("gerente_id", user!.id);
+      }
+
+      const { data: rows, error } = await query;
       if (error) throw error;
       return (rows || []) as TeamMember[];
     },
@@ -89,21 +99,7 @@ export function useEscalaDiaria(data: string) {
     staleTime: 5 * 60_000,
   });
 
-  // Load campaign mappings
-  const { data: campanhas = [] } = useQuery({
-    queryKey: ["segmento-campanhas"],
-    queryFn: async () => {
-      const { data: rows, error } = await supabase
-        .from("segmento_campanhas")
-        .select("*");
-      if (error) throw error;
-      return (rows || []) as SegmentoCampanha[];
-    },
-    enabled: !!user,
-    staleTime: 5 * 60_000,
-  });
-
-  // Load profiles for names
+  // Load profiles for names (including validador names)
   const { data: profiles = {} } = useQuery({
     queryKey: ["escala-profiles"],
     queryFn: async () => {
@@ -213,10 +209,6 @@ export function useEscalaDiaria(data: string) {
 
   const loading = loadingEscala || loadingTeam;
 
-  const getCampanhasDoSegmento = useCallback((segmentoId: string) => {
-    return campanhas.filter(c => c.segmento_id === segmentoId);
-  }, [campanhas]);
-
   const getCorretoresNoSegmento = useCallback((segmentoId: string) => {
     const userIds = escala
       .filter(e => e.segmento_id === segmentoId && e.aprovacao_status === "aprovado")
@@ -241,26 +233,46 @@ export function useEscalaDiaria(data: string) {
     return entry?.aprovacao_status || null;
   }, [escala]);
 
+  const getEntryApproval = useCallback((segmentoId: string, corretorUserId: string) => {
+    const entry = escala.find(
+      e => e.segmento_id === segmentoId && e.corretor_id === corretorUserId
+    );
+    if (!entry || !entry.aprovado_por) return null;
+    return {
+      aprovadoPor: profiles[entry.aprovado_por] || "—",
+      aprovadoEm: entry.aprovado_em,
+    };
+  }, [escala, profiles]);
+
   const getDisponibilidade = useCallback((userId: string) => {
     return disponibilidades.find((d: any) => d.user_id === userId);
   }, [disponibilidades]);
 
+  // Get equipe label for a corretor
+  const getEquipe = useCallback((corretorUserId: string) => {
+    const tm = teamMembers.find(t => t.user_id === corretorUserId);
+    return tm?.equipe || null;
+  }, [teamMembers]);
+
   const totalPendentes = escala.filter(e => e.aprovacao_status === "pendente").length;
 
-  // Count leads ativos por corretor from pipeline
   const getLeadsAtivos = useCallback((_corretorUserId: string) => {
     const disp = disponibilidades.find((d: any) => d.user_id === _corretorUserId);
     return disp?.leads_recebidos_turno || 0;
   }, [disponibilidades]);
 
+  // Can the current user validate? (gestor or admin, not corretor-only)
+  const canValidate = isGestor || isAdmin;
+
   return {
     escala,
     teamMembers,
     segmentos,
-    campanhas,
     profiles,
     loading,
     totalPendentes,
+    canValidate,
+    isAdmin,
     toggleCorretor: (segmentoId: string, corretorUserId: string) =>
       toggleMutation.mutateAsync({ segmentoId, corretorUserId }),
     aprovar: (entryId: string, status: "aprovado" | "rejeitado") =>
@@ -268,10 +280,11 @@ export function useEscalaDiaria(data: string) {
     aprovarTodos: () => aprovarTodosMutation.mutateAsync(),
     isCorretorEscalado,
     getEntryStatus,
+    getEntryApproval,
     getCorretoresNoSegmento,
     getPendentesNoSegmento,
-    getCampanhasDoSegmento,
     getDisponibilidade,
+    getEquipe,
     getLeadsAtivos,
     reload: () => qc.invalidateQueries({ queryKey: qKey }),
     saving: toggleMutation.isPending || aprovacaoMutation.isPending,
