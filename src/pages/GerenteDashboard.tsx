@@ -251,6 +251,12 @@ export default function GerenteDashboard() {
     return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
+  const greeting = new Date().getHours() < 12 ? "Bom dia" : new Date().getHours() < 18 ? "Boa tarde" : "Boa noite";
+  const ligPct = k.metaLigacoes > 0 ? Math.min(100, Math.round((k.ligacoes / k.metaLigacoes) * 100)) : 0;
+  const totalPipeCount = Object.values(pipe.fases).reduce((s, f) => s + f.count, 0);
+  const visitas3 = (todayVisitas || []).slice(0, 3);
+  const visitasExtra = (todayVisitas || []).length - 3;
+
   const GERENTE_FRASES = [
     "Seu time é reflexo da sua liderança.",
     "Quem desenvolve pessoas, multiplica resultados.",
