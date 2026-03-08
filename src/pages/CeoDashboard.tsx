@@ -167,39 +167,26 @@ export default function CeoDashboard() {
   }), { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0, visitasRealizadas: 0, propostas: 0, vgv: 0 });
 
   return (
-    <div className="space-y-6 max-w-[1440px] mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
       {/* ─── HEADER ─── */}
-      <div className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 border-2 border-white/20">
-              {(profile?.avatar_gamificado_url || profile?.avatar_url) ? (
-                <AvatarImage src={(profile.avatar_gamificado_url || profile.avatar_url)!} className="object-cover" />
-              ) : null}
-              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                {(profile?.nome || "C").substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-xl font-bold">{getGreeting()}, {profile?.nome?.split(" ")[0] || "CEO"} 👋</h1>
-              <p className="text-sm text-white/60 italic mt-0.5">"{frase}"</p>
-              <p className="text-xs text-white/40 mt-1">
-                {format(now, "EEEE, d 'de' MMMM", { locale: ptBR })} — Semana {weekNum} do mês
-              </p>
-            </div>
+      <div className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 p-4 sm:p-5 text-white">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-2 border-white/20 shrink-0">
+            {(profile?.avatar_gamificado_url || profile?.avatar_url) ? (
+              <AvatarImage src={(profile.avatar_gamificado_url || profile.avatar_url)!} className="object-cover" />
+            ) : null}
+            <AvatarFallback className="bg-primary text-primary-foreground text-base sm:text-lg">
+              {(profile?.nome || "C").substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold truncate">{getGreeting()}, {profile?.nome?.split(" ")[0] || "CEO"} 👋</h1>
+            <p className="text-xs sm:text-sm text-white/60 italic mt-0.5 truncate">"{frase}"</p>
+            <p className="text-[11px] text-white/40 mt-0.5">
+              {format(now, "EEEE, d 'de' MMMM", { locale: ptBR })} — Semana {weekNum}
+            </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex bg-white/10 rounded-lg p-0.5">
-              {(["hoje", "semana", "mes"] as DashPeriod[]).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${period === p ? "bg-white text-slate-900" : "text-white/70 hover:text-white"}`}
-                >
-                  {p === "hoje" ? "Hoje" : p === "semana" ? "Semana" : "Mês"}
-                </button>
-              ))}
-            </div>
+          <div className="hidden sm:flex items-center gap-3 shrink-0">
             <div className="text-right text-[10px] text-white/40">
               <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> Atualizado {format(lastUpdate, "HH:mm")}</div>
               <button onClick={reload} className="flex items-center gap-1 text-white/50 hover:text-white mt-0.5">
@@ -207,6 +194,23 @@ export default function CeoDashboard() {
               </button>
             </div>
           </div>
+        </div>
+        {/* Period pills — always visible */}
+        <div className="flex items-center justify-between mt-3 gap-2">
+          <div className="flex bg-white/10 rounded-lg p-0.5">
+            {(["hoje", "semana", "mes"] as DashPeriod[]).map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${period === p ? "bg-white text-slate-900" : "text-white/70 hover:text-white"}`}
+              >
+                {p === "hoje" ? "Hoje" : p === "semana" ? "Semana" : "Mês"}
+              </button>
+            ))}
+          </div>
+          <button onClick={reload} className="sm:hidden flex items-center gap-1 text-[10px] text-white/50 hover:text-white">
+            <RefreshCw className="h-3 w-3" /> {format(lastUpdate, "HH:mm")}
+          </button>
         </div>
       </div>
 
@@ -231,7 +235,7 @@ export default function CeoDashboard() {
           ) : (
             <div className="space-y-2">
               {roletaPendentes.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between p-2.5 rounded-lg border bg-card">
+                <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg border bg-card">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       {c.avatar && <AvatarImage src={c.avatar} />}
@@ -248,7 +252,7 @@ export default function CeoDashboard() {
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => aprovar(c.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
+                  <Button size="sm" onClick={() => aprovar(c.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs w-full sm:w-auto">
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
                   </Button>
                 </div>
@@ -261,34 +265,30 @@ export default function CeoDashboard() {
       {/* ─── FILA CEO ─── */}
       <Card className={filaCeoCount > 0 ? "border-purple-500/40 shadow-[0_0_0_1px_rgba(124,58,237,0.15)]" : ""}>
         <CardContent className="pt-4 pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Inbox className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">📥 Fila CEO</span>
-                  {filaCeoCount > 0 && <Badge className="bg-purple-600 text-white border-none text-xs">{filaCeoCount}</Badge>}
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {filaCeoCount > 0 ? `${filaCeoCount} leads aguardando distribuição` : "Nenhum lead na fila"}
-                  {lastDispatch && (
-                    <span className="ml-2">• Último disparo: {format(new Date(lastDispatch.at), "dd/MM HH:mm")} ({lastDispatch.count} leads)</span>
-                  )}
-                </p>
-              </div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+              <Inbox className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
             </div>
-            <Button
-              size="sm"
-              onClick={() => setDispatchOpen(true)}
-              disabled={filaCeoCount === 0}
-              className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              <Rocket className="h-3.5 w-3.5" />
-              Disparar para Roleta
-            </Button>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-sm font-semibold whitespace-nowrap">📥 Fila CEO</span>
+              {filaCeoCount > 0 && <Badge className="bg-purple-600 text-white border-none text-xs">{filaCeoCount}</Badge>}
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground mb-2">
+            {filaCeoCount > 0 ? `${filaCeoCount} leads aguardando distribuição` : "Nenhum lead na fila"}
+            {lastDispatch && (
+              <span className="hidden sm:inline ml-2">• Último disparo: {format(new Date(lastDispatch.at), "dd/MM HH:mm")} ({lastDispatch.count} leads)</span>
+            )}
+          </p>
+          <Button
+            size="sm"
+            onClick={() => setDispatchOpen(true)}
+            disabled={filaCeoCount === 0}
+            className="w-full sm:w-auto gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Rocket className="h-3.5 w-3.5" />
+            Disparar para Roleta
+          </Button>
         </CardContent>
       </Card>
 
@@ -384,7 +384,7 @@ export default function CeoDashboard() {
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
           <CalendarDays className="h-4 w-4" /> Visitas
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-2 mb-2"><CalendarDays className="h-4 w-4 text-blue-600" /><span className="text-sm font-medium">Marcadas</span></div>
@@ -435,7 +435,7 @@ export default function CeoDashboard() {
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
           <DollarSign className="h-4 w-4" /> Negócios e Propostas
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">Negócios por Fase</CardTitle></CardHeader>
             <CardContent>
@@ -609,11 +609,11 @@ export default function CeoDashboard() {
       {/* ─── SEÇÃO 8: CEO ADVISOR ─── */}
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <CardTitle className="text-sm flex items-center gap-2"><Brain className="h-4 w-4 text-primary" /> CEO Advisor — HOMI</CardTitle>
-            <Button size="sm" onClick={gerarBriefing} disabled={advisorLoading}>
+            <Button size="sm" onClick={gerarBriefing} disabled={advisorLoading} className="w-full sm:w-auto">
               {advisorLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Brain className="h-3.5 w-3.5 mr-1" />}
-              🧠 Gerar Briefing Executivo
+              🧠 Gerar Briefing
             </Button>
           </div>
         </CardHeader>
