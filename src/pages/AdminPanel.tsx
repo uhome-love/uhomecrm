@@ -32,7 +32,7 @@ export default function AdminPanel() {
   const [newEmail, setNewEmail] = useState("");
   const [newNome, setNewNome] = useState("");
   const [newSenha, setNewSenha] = useState("");
-  const [newRole, setNewRole] = useState<"corretor" | "gestor">("corretor");
+  const [newRole, setNewRole] = useState<"corretor" | "gestor" | "backoffice">("corretor");
   const [selectedGerente, setSelectedGerente] = useState("");
   const [gestores, setGestores] = useState<{ user_id: string; nome: string }[]>([]);
   const [creating, setCreating] = useState(false);
@@ -424,13 +424,14 @@ export default function AdminPanel() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium">Tipo de Usuário</Label>
-                <Select value={newRole} onValueChange={(v) => setNewRole(v as "corretor" | "gestor")}>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as "corretor" | "gestor" | "backoffice")}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="corretor">👤 Corretor</SelectItem>
                     <SelectItem value="gestor">📊 Gerente</SelectItem>
+                    <SelectItem value="backoffice">🗂️ Backoffice</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
