@@ -12,8 +12,6 @@ import AproveitadosTab from "@/components/checkpoint/AproveitadosTab";
 import RelatoriosTab from "@/components/checkpoint/RelatoriosTab";
 import CoachIATab from "@/components/checkpoint/CoachIATab";
 import CeoCheckpointViewer from "@/components/ceo/CeoCheckpointViewer";
-import RelatoriosTab from "@/components/checkpoint/RelatoriosTab";
-import CoachIATab from "@/components/checkpoint/CoachIATab";
 
 // ─── TYPES ───
 export interface CheckpointRow {
