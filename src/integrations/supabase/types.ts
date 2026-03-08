@@ -1456,6 +1456,48 @@ export type Database = {
         }
         Relationships: []
       }
+      homi_briefing_diario: {
+        Row: {
+          acao_prioritaria: string | null
+          alertas: Json | null
+          dados_contexto: Json | null
+          data: string
+          destaques: Json | null
+          frase_do_dia: string | null
+          gerado_em: string | null
+          id: string
+          previsao: string | null
+          status_geral: string | null
+          user_id: string
+        }
+        Insert: {
+          acao_prioritaria?: string | null
+          alertas?: Json | null
+          dados_contexto?: Json | null
+          data?: string
+          destaques?: Json | null
+          frase_do_dia?: string | null
+          gerado_em?: string | null
+          id?: string
+          previsao?: string | null
+          status_geral?: string | null
+          user_id: string
+        }
+        Update: {
+          acao_prioritaria?: string | null
+          alertas?: Json | null
+          dados_contexto?: Json | null
+          data?: string
+          destaques?: Json | null
+          frase_do_dia?: string | null
+          gerado_em?: string | null
+          id?: string
+          previsao?: string | null
+          status_geral?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       homi_chunks: {
         Row: {
           content: string
