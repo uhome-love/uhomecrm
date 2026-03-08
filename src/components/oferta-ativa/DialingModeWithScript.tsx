@@ -114,6 +114,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       setExpandedObj(null);
       setObjectionInsert(null);
       setInlineObs("");
+      setSelectedResult(null);
+      setShowResultPopup(false);
     }
   }, [lead?.id, sessionLeadsServed]);
 
