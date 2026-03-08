@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
-import { Flame, Zap, Phone, MessageCircle, ChevronDown, ChevronUp, Clock, MapPin, AlertCircle } from "lucide-react";
+import { Flame, Zap, Phone, MessageCircle, Clock, MapPin, AlertTriangle, Calendar, Star, ChevronRight, ChevronLeft, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { differenceInHours, differenceInDays } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { differenceInHours, differenceInDays, isToday } from "date-fns";
 import { calculateLeadScore } from "@/lib/leadScoring";
 
 interface Props {
@@ -10,6 +11,8 @@ interface Props {
   stages: PipelineStage[];
   corretorNomes: Record<string, string>;
   onSelectLead: (lead: PipelineLead) => void;
+  open: boolean;
+  onToggle: () => void;
 }
 
 function getWhatsAppUrl(phone: string) {
@@ -18,13 +21,104 @@ function getWhatsAppUrl(phone: string) {
   return `https://wa.me/${number}`;
 }
 
-export default function PipelinePrioridades({ leads, stages, corretorNomes, onSelectLead }: Props) {
-  const [expanded, setExpanded] = useState(true);
+type PriorityReason = {
+  icon: React.ReactNode;
+  text: string;
+  severity: "critical" | "high" | "medium";
+};
 
+function computePriority(lead: PipelineLead, stage: PipelineStage): { score: number; reason: PriorityReason } {
+  const now = new Date();
+  const hoursInStage = differenceInHours(now, new Date(lead.stage_changed_at));
+  const daysInStage = differenceInDays(now, new Date(lead.stage_changed_at));
+  const leadScore = calculateLeadScore(lead as any).score;
+
+  // 1. SLA expirado
+  const slaHoras = (lead as any).sla_horas || 24;
+  if (hoursInStage > slaHoras) {
+    return {
+      score: 1000 + hoursInStage,
+      reason: {
+        icon: <AlertTriangle className="h-3 w-3 text-danger-500" />,
+        text: `SLA expirado há ${hoursInStage - slaHoras}h`,
+        severity: "critical",
+      },
+    };
+  }
+
+  // 2. Score alto + sem contato recente
+  if (leadScore > 80) {
+    const lastContact = lead.ultimo_contato ? differenceInHours(now, new Date(lead.ultimo_contato)) : 999;
+    if (lastContact > 2) {
+      return {
+        score: 800 + leadScore,
+        reason: {
+          icon: <Star className="h-3 w-3 text-warning-500" />,
+          text: `Score ${leadScore}, sem contato`,
+          severity: "high",
+        },
+      };
+    }
+  }
+
+  // 3. Visita marcada para hoje
+  if (lead.proxima_acao?.toLowerCase().includes("visita") && stage.tipo === "visita_marcada") {
+    return {
+      score: 700,
+      reason: {
+        icon: <Calendar className="h-3 w-3 text-primary" />,
+        text: "Visita marcada hoje",
+        severity: "high",
+      },
+    };
+  }
+
+  // 4. Visita realizada 24-48h sem proposta
+  if (stage.tipo === "visita_realizada" && daysInStage >= 1 && daysInStage <= 2) {
+    return {
+      score: 600 + (48 - hoursInStage),
+      reason: {
+        icon: <Home className="h-3 w-3 text-primary" />,
+        text: `Visitou há ${daysInStage}d, sem proposta`,
+        severity: "medium",
+      },
+    };
+  }
+
+  // 5. Lead quente + sem ação
+  if (lead.temperatura === "quente" && !lead.proxima_acao) {
+    return {
+      score: 500 + leadScore,
+      reason: {
+        icon: <Flame className="h-3 w-3 text-danger-500" />,
+        text: "Quente, sem ação definida",
+        severity: "high",
+      },
+    };
+  }
+
+  // Fallback
+  let score = leadScore;
+  if (lead.temperatura === "quente") score += 30;
+  if (lead.temperatura === "morno") score += 10;
+  if (!lead.proxima_acao) score += 20;
+  if (hoursInStage >= 48) score += 15;
+  if ((lead.valor_estimado || 0) >= 500000) score += 15;
+
+  return {
+    score,
+    reason: {
+      icon: <Clock className="h-3 w-3 text-muted-foreground" />,
+      text: daysInStage > 0 ? `${daysInStage}d na etapa` : "Recente",
+      severity: "medium",
+    },
+  };
+}
+
+export default function PipelinePrioridades({ leads, stages, corretorNomes, onSelectLead, open, onToggle }: Props) {
   const stageMap = useMemo(() => new Map(stages.map(s => [s.id, s])), [stages]);
 
   const priorities = useMemo(() => {
-    const now = new Date();
     return leads
       .filter(l => {
         const stage = stageMap.get(l.stage_id);
@@ -32,39 +126,8 @@ export default function PipelinePrioridades({ leads, stages, corretorNomes, onSe
       })
       .map(lead => {
         const stage = stageMap.get(lead.stage_id)!;
-        const score = calculateLeadScore(lead as any);
-        const hoursInStage = differenceInHours(now, new Date(lead.stage_changed_at));
-        const daysInStage = differenceInDays(now, new Date(lead.stage_changed_at));
-
-        // Priority score: combination of lead score, temperature, urgency, and action status
-        let priority = score.score;
-
-        // Boost for hot temperature
-        if (lead.temperatura === "quente") priority += 30;
-        else if (lead.temperatura === "morno") priority += 10;
-
-        // Boost for no next action (needs attention)
-        if (!lead.proxima_acao) priority += 20;
-
-        // Boost for stalled leads
-        if (hoursInStage >= 48) priority += 15;
-        else if (hoursInStage >= 24) priority += 10;
-
-        // Boost for high-value leads
-        if ((lead.valor_estimado || 0) >= 500000) priority += 15;
-
-        // Boost for advanced stages
-        if (["possibilidade_visita", "visita_marcada"].includes(stage.tipo)) priority += 20;
-        if (["qualificacao", "atendimento"].includes(stage.tipo)) priority += 10;
-
-        return {
-          lead,
-          priority,
-          score: score.score,
-          stageName: stage.nome,
-          daysInStage,
-          hoursInStage,
-        };
+        const { score, reason } = computePriority(lead, stage);
+        return { lead, priority: score, reason, stageName: stage.nome };
       })
       .sort((a, b) => b.priority - a.priority)
       .slice(0, 5);
@@ -72,96 +135,110 @@ export default function PipelinePrioridades({ leads, stages, corretorNomes, onSe
 
   if (priorities.length === 0) return null;
 
-  return (
-    <div className="shrink-0 rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
+  // Collapsed tab
+  if (!open) {
+    return (
       <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-3 py-2 hover:bg-primary/10 transition-colors"
+        onClick={onToggle}
+        className="flex flex-col items-center justify-center gap-1.5 w-10 bg-card border-l border-border py-4 hover:bg-muted transition-colors duration-150 shrink-0"
       >
+        <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+        <Zap className="h-4 w-4 text-primary" />
+        <span className="text-[10px] font-bold text-primary">{priorities.length}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="w-[280px] shrink-0 border-l border-border bg-card flex flex-col animate-slide-in-left overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
         <div className="flex items-center gap-2">
-          <Flame className="h-4 w-4 text-primary" />
-          <span className="text-xs font-bold text-foreground">Prioridades do Dia</span>
-          <Badge className="text-[9px] h-4 px-1.5 bg-primary/20 text-primary border-0">
+          <Zap className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">Prioridades do Dia</span>
+          <Badge className="text-[10px] h-[18px] px-1.5 bg-primary/10 text-primary border-0 font-bold">
             {priorities.length}
           </Badge>
         </div>
-        {expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-      </button>
+        <button onClick={onToggle} className="p-1 rounded hover:bg-muted transition-colors duration-150">
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
 
-      {expanded && (
-        <div className="px-3 pb-2.5 space-y-1.5">
-          {priorities.map((p, idx) => (
-            <div
-              key={p.lead.id}
-              onClick={() => onSelectLead(p.lead)}
-              className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-card border border-border/50 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all group"
-            >
-              {/* Rank */}
-              <span className="text-xs font-black text-primary w-4 text-center shrink-0">{idx + 1}</span>
-
-              {/* Lead info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-foreground truncate">{p.lead.nome}</span>
-                  {p.lead.temperatura === "quente" && <Flame className="h-3 w-3 text-red-500 shrink-0" />}
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {p.lead.empreendimento && (
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 truncate">
-                      <MapPin className="h-2.5 w-2.5 shrink-0" />
-                      {p.lead.empreendimento}
-                    </span>
-                  )}
-                  <span className="text-[10px] text-muted-foreground">•</span>
-                  <span className="text-[10px] text-muted-foreground">{p.stageName}</span>
-                </div>
-              </div>
-
-              {/* Action / status */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                {p.lead.proxima_acao ? (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold truncate max-w-[80px]">
-                    {p.lead.proxima_acao}
-                  </span>
-                ) : (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-semibold flex items-center gap-0.5">
-                    <AlertCircle className="h-2.5 w-2.5" /> Sem ação
-                  </span>
-                )}
-
-                {p.daysInStage >= 2 && (
-                  <span className="text-[9px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-0.5">
-                    <Clock className="h-2.5 w-2.5" />
-                    {p.daysInStage}d
-                  </span>
-                )}
-
-                {/* Quick actions */}
-                {p.lead.telefone && (
-                  <div className="hidden group-hover:flex items-center gap-0.5">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); window.open(`tel:${p.lead.telefone}`, "_self"); }}
-                      className="p-1 rounded hover:bg-muted transition-colors"
-                    >
-                      <Phone className="h-3 w-3 text-primary" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); window.open(getWhatsAppUrl(p.lead.telefone!), "_blank"); }}
-                      className="p-1 rounded hover:bg-accent transition-colors"
-                    >
-                      <MessageCircle className="h-3 w-3 text-green-600" />
-                    </button>
-                  </div>
-                )}
-
-                <span className="text-[9px] font-bold text-primary bg-primary/10 px-1 py-0.5 rounded">
-                  <Zap className="h-2.5 w-2.5 inline mr-0.5" />{p.score}
-                </span>
-              </div>
+      {/* Items */}
+      <div className="flex-1 overflow-auto px-2 py-2 space-y-1.5">
+        {priorities.map((p, idx) => (
+          <div
+            key={p.lead.id}
+            onClick={() => onSelectLead(p.lead)}
+            className="flex flex-col gap-1.5 px-3 py-2.5 rounded-lg border border-border bg-background cursor-pointer hover:border-primary/30 hover:shadow-card-hover transition-all duration-150 group"
+          >
+            {/* Top row */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-primary w-4 shrink-0">{idx + 1}</span>
+              <span className="text-sm font-semibold text-foreground truncate flex-1">{p.lead.nome}</span>
+              {p.lead.temperatura === "quente" && <Flame className="h-3.5 w-3.5 text-danger-500 shrink-0" />}
             </div>
-          ))}
-        </div>
-      )}
+
+            {/* Empreendimento + stage */}
+            <div className="flex items-center gap-1.5 ml-6">
+              {p.lead.empreendimento && (
+                <span className="text-xs text-muted-foreground flex items-center gap-0.5 truncate">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  {p.lead.empreendimento}
+                </span>
+              )}
+              <span className="text-[10px] text-muted-foreground">• {p.stageName}</span>
+            </div>
+
+            {/* Reason badge */}
+            <div className="flex items-center gap-1.5 ml-6">
+              <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
+                p.reason.severity === "critical"
+                  ? "bg-danger-50 text-danger-700"
+                  : p.reason.severity === "high"
+                  ? "bg-warning-50 text-warning-700"
+                  : "bg-muted text-muted-foreground"
+              }`}>
+                {p.reason.icon}
+                {p.reason.text}
+              </span>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-1.5 ml-6 mt-0.5">
+              {p.lead.telefone && (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="h-7 text-xs gap-1 px-2.5"
+                    onClick={(e) => { e.stopPropagation(); window.open(`tel:${p.lead.telefone}`, "_self"); }}
+                  >
+                    <Phone className="h-3 w-3" /> Ligar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1 px-2.5"
+                    onClick={(e) => { e.stopPropagation(); window.open(getWhatsAppUrl(p.lead.telefone!), "_blank"); }}
+                  >
+                    <MessageCircle className="h-3 w-3 text-success-500" /> WhatsApp
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs ml-auto"
+                onClick={(e) => { e.stopPropagation(); onSelectLead(p.lead); }}
+              >
+                Ver lead
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

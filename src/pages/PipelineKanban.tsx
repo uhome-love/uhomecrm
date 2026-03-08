@@ -28,6 +28,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
+const PRIORIDADES_KEY = "uhome-prioridades-open";
+
 export default function PipelineKanban() {
   const pipeline = usePipeline();
   const { isGestor, isAdmin } = useUserRole();
@@ -39,6 +41,17 @@ export default function PipelineKanban() {
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
+  const [prioridadesOpen, setPrioridadesOpen] = useState(() => {
+    try { return localStorage.getItem(PRIORIDADES_KEY) !== "false"; } catch { return true; }
+  });
+
+  const togglePrioridades = useCallback(() => {
+    setPrioridadesOpen(prev => {
+      const next = !prev;
+      try { localStorage.setItem(PRIORIDADES_KEY, String(next)); } catch {}
+      return next;
+    });
+  }, []);
 
   // Load partnerships
   useEffect(() => {
@@ -134,7 +147,6 @@ export default function PipelineKanban() {
       <div className="shrink-0 space-y-3 pb-3">
         {/* Top bar */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0">
             <TabsList className="h-9">
               <TabsTrigger value="kanban" className="text-xs gap-1.5 px-2 sm:px-3">
@@ -304,58 +316,62 @@ export default function PipelineKanban() {
         )}
       </div>
 
-      {/* Content area */}
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-        {activeTab === "kanban" ? (
-          <>
-            <PipelinePrioridades
+      {/* Content area — kanban + side panel */}
+      <div className="flex-1 min-h-0 overflow-hidden flex">
+        <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
+          {activeTab === "kanban" ? (
+            <PipelineBoard
+              stages={pipeline.stages}
               leads={filteredLeads}
+              segmentos={pipeline.segmentos}
+              corretorNomes={pipeline.corretorNomes}
+              parcerias={parcerias}
+              onMoveLead={pipeline.moveLead}
+              onSelectLead={setSelectedLead}
+              onTransferred={() => pipeline.reload()}
+            />
+          ) : activeTab === "flow" ? (
+            <PipelineFlowDashboard
+              stages={pipeline.stages}
+              leads={filteredLeads}
+              corretorNomes={pipeline.corretorNomes}
+            />
+          ) : activeTab === "materiais" ? (
+            <div className="h-full overflow-auto p-1">
+              <MaterialsLibrary />
+            </div>
+          ) : activeTab === "sequencias" ? (
+            <div className="h-full overflow-auto p-1 space-y-6">
+              <SequenceLibrary onSequenceCreated={() => pipeline.reload()} />
+              <SequenceBuilder />
+            </div>
+          ) : activeTab === "radar" ? (
+            <OpportunityRadar
+              leads={pipeline.leads}
               stages={pipeline.stages}
               corretorNomes={pipeline.corretorNomes}
               onSelectLead={setSelectedLead}
             />
-            <div className="flex-1 min-h-0 mt-2">
-              <PipelineBoard
-                stages={pipeline.stages}
-                leads={filteredLeads}
-                segmentos={pipeline.segmentos}
-                corretorNomes={pipeline.corretorNomes}
-                parcerias={parcerias}
-                onMoveLead={pipeline.moveLead}
-                onSelectLead={setSelectedLead}
-                onTransferred={() => pipeline.reload()}
-              />
-            </div>
-          </>
-        ) : activeTab === "flow" ? (
-          <PipelineFlowDashboard
-            stages={pipeline.stages}
+          ) : activeTab === "relatorios" ? (
+            <PipelineReportsDashboard
+              stages={pipeline.stages}
+              leads={pipeline.leads}
+              corretorNomes={pipeline.corretorNomes}
+            />
+          ) : null}
+        </div>
+
+        {/* Right side panel — Prioridades */}
+        {activeTab === "kanban" && (
+          <PipelinePrioridades
             leads={filteredLeads}
-            corretorNomes={pipeline.corretorNomes}
-          />
-        ) : activeTab === "materiais" ? (
-          <div className="h-full overflow-auto p-1">
-            <MaterialsLibrary />
-          </div>
-        ) : activeTab === "sequencias" ? (
-          <div className="h-full overflow-auto p-1 space-y-6">
-            <SequenceLibrary onSequenceCreated={() => pipeline.reload()} />
-            <SequenceBuilder />
-          </div>
-        ) : activeTab === "radar" ? (
-          <OpportunityRadar
-            leads={pipeline.leads}
             stages={pipeline.stages}
             corretorNomes={pipeline.corretorNomes}
             onSelectLead={setSelectedLead}
+            open={prioridadesOpen}
+            onToggle={togglePrioridades}
           />
-        ) : activeTab === "relatorios" ? (
-          <PipelineReportsDashboard
-            stages={pipeline.stages}
-            leads={pipeline.leads}
-            corretorNomes={pipeline.corretorNomes}
-          />
-        ) : null}
+        )}
       </div>
 
       {/* Dialogs */}
