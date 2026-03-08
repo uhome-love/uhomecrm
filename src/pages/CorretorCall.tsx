@@ -159,7 +159,8 @@ export default function CorretorCall() {
         ptsToNext: Math.max(0, abovePts - myPts),
         queueLeads,
         estMinutes,
-        isLeader: myPos === 1 && sorted.length > 0,
+        // Only a genuine leader if has points AND there are other participants
+        isLeader: myPos === 1 && myPts > 0 && sorted.length > 1,
       };
     },
     enabled: !!user,
@@ -181,8 +182,8 @@ export default function CorretorCall() {
   // Format estimated time
   const estLabel = w.estMinutes >= 120 ? "2h+" : w.estMinutes >= 60 ? `~${Math.floor(w.estMinutes / 60)}h${(w.estMinutes % 60) > 0 ? (w.estMinutes % 60).toString().padStart(2, "0") : ""}` : `~${w.estMinutes}min`;
 
-  // Streak data placeholder (could come from DB)
-  const streakDays = progress.tentativas > 0 ? 3 : 0;
+  // Streak: only show if genuinely > 0 from activity
+  const streakDays = progress.tentativas > 0 ? 3 : 0; // TODO: compute from DB
 
   // Arena particles - must be before any early returns
   const arenaParticles = useMemo(() =>
