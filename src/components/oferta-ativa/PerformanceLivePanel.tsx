@@ -279,15 +279,175 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
     );
   }
 
+  // Fetch ALL team corretores to show who hasn't started
+  const { data: allTeamCorretores = [] } = useQuery({
+    queryKey: ["oa-all-team-corretores", teamOnly, user?.id],
+    queryFn: async () => {
+      if (teamOnly) {
+        const { data } = await supabase
+          .from("team_members")
+          .select("user_id, nome")
+          .eq("gerente_id", user!.id)
+          .eq("status", "ativo");
+        return (data || []).map(t => ({ id: t.user_id, nome: t.nome })).filter(t => t.id);
+      }
+      // Admin: all corretores
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, nome, role")
+        .eq("role", "corretor");
+      return (data || []).map(p => ({ id: p.user_id, nome: p.nome || "Corretor" }));
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  // Fetch team names for corretores (for empty state display)
+  const allCorretorIds = useMemo(() => allTeamCorretores.map(c => c.id).filter(Boolean), [allTeamCorretores]);
+  const { data: corretorTeamMap = {} } = useQuery({
+    queryKey: ["oa-live-team-map", allCorretorIds],
+    queryFn: async () => {
+      if (allCorretorIds.length === 0) return {};
+      const { data: members } = await supabase
+        .from("team_members")
+        .select("user_id, gerente_id")
+        .in("user_id", allCorretorIds)
+        .eq("status", "ativo");
+      const gerenteIds = [...new Set((members || []).map(m => m.gerente_id).filter(Boolean))];
+      const gerenteNameMap: Record<string, string> = {};
+      if (gerenteIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", gerenteIds);
+        for (const p of profiles || []) gerenteNameMap[p.user_id] = p.nome?.split(" ")[0] || "Equipe";
+      }
+      const result: Record<string, string> = {};
+      for (const m of members || []) {
+        if (m.user_id && m.gerente_id) result[m.user_id] = `Eq. ${gerenteNameMap[m.gerente_id] || "?"}`;
+      }
+      return result;
+    },
+    enabled: allCorretorIds.length > 0 && !teamOnly,
+    staleTime: 60_000,
+  });
+
   if (!liveData || liveData.totalCorretores === 0) {
+    // Show day summary even when empty
+    const activeIds = new Set(liveData?.corretores.map(c => c.corretor_id) || []);
+    const naoIniciaram = allTeamCorretores.filter(c => !activeIds.has(c.id));
+    const hasAnySummary = liveData && liveData.totalTentativas > 0;
+
     return (
-      <Card>
-        <CardContent className="py-12 text-center text-muted-foreground">
-          <Activity className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">Sem atividade hoje</p>
-          <p className="text-sm mt-1">Nenhum corretor começou a discar ainda.</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-3 w-3">
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-muted-foreground/40" />
+          </span>
+          <span className="text-xs font-medium text-muted-foreground">
+            {teamOnly ? "Minha equipe · " : ""}Última atualização · {format(now, "HH:mm:ss")}
+          </span>
+        </div>
+
+        {/* Day Summary */}
+        {hasAnySummary && (
+          <div className="grid grid-cols-3 gap-3">
+            <Card>
+              <CardContent className="p-3 text-center">
+                <Phone className="h-4 w-4 text-primary mx-auto mb-1" />
+                <p className="text-2xl font-bold text-foreground">{liveData.totalTentativas}</p>
+                <p className="text-[10px] text-muted-foreground">Tentativas hoje</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <ThumbsUp className="h-4 w-4 text-emerald-600 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-emerald-600">{liveData.totalAproveitados}</p>
+                <p className="text-[10px] text-muted-foreground">Aproveitados</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <TrendingUp className="h-4 w-4 text-purple-600 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-purple-600">{liveData.taxaConversao}%</p>
+                <p className="text-[10px] text-muted-foreground">Taxa Conversão</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Corretores that dialed today (but are now inactive) */}
+        {liveData && liveData.corretores.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" /> Corretores que discaram hoje
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs text-muted-foreground">
+                    <th className="py-2 px-3 text-left">Corretor</th>
+                    {!teamOnly && <th className="py-2 px-3 text-left">Time</th>}
+                    <th className="py-2 px-3 text-center">📞</th>
+                    <th className="py-2 px-3 text-center">✅</th>
+                    <th className="py-2 px-3 text-center">Último contato</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {liveData.corretores.map(c => (
+                    <tr key={c.corretor_id} className="border-b border-border">
+                      <td className="py-2.5 px-3 font-medium">{c.nome}</td>
+                      {!teamOnly && (
+                        <td className="py-2.5 px-3">
+                          <span className="text-[10px] text-muted-foreground">{corretorTeamMap[c.corretor_id] || "—"}</span>
+                        </td>
+                      )}
+                      <td className="py-2.5 px-3 text-center font-semibold">{c.tentativas}</td>
+                      <td className="py-2.5 px-3 text-center font-semibold text-emerald-600">{c.aproveitados}</td>
+                      <td className="py-2.5 px-3 text-center text-xs text-muted-foreground">
+                        {c.ultima_tentativa ? format(new Date(c.ultima_tentativa), "HH:mm") : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Corretores that haven't started */}
+        {naoIniciaram.length > 0 && (
+          <Card className="border-amber-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
+                <AlertTriangle className="h-4 w-4" /> ⚠️ Ainda não iniciaram hoje ({naoIniciaram.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {naoIniciaram.map(c => (
+                  <Badge key={c.id} variant="outline" className="text-xs text-amber-700 border-amber-500/30 bg-amber-500/5">
+                    {c.nome}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Truly empty state */}
+        {!hasAnySummary && naoIniciaram.length === 0 && (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              <Activity className="h-10 w-10 mx-auto mb-3 opacity-40" />
+              <p className="font-medium">Sem atividade hoje</p>
+              <p className="text-sm mt-1">Nenhum corretor começou a discar ainda.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     );
   }
 
