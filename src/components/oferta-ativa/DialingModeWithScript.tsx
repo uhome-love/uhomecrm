@@ -597,7 +597,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       )}
 
       {/* 2-column layout */}
-      <div className={`grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-4 ${arenaShake ? "arena-shake" : ""}`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-4 ${arenaShake ? "arena-shake" : ""}`} style={{ background: "#0A0F1E" }}>
         {/* Left: Lead Card */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -768,60 +768,60 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 </div>
               )}
 
+              {/* ⚡ OBJEÇÕES RÁPIDAS — moved here */}
+              <div style={{ background: "#1C2128", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 12, padding: 14 }} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: 12, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>⚡ OBJEÇÕES RÁPIDAS</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {objections.map((obj, i) => (
+                    <div key={i}>
+                      <button
+                        onClick={() => setExpandedObj(expandedObj === i ? null : i)}
+                        className="w-full text-left transition-colors"
+                        style={{
+                          background: expandedObj === i ? "rgba(245,158,11,0.06)" : "rgba(255,255,255,0.04)",
+                          border: expandedObj === i ? "1px solid rgba(245,158,11,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: 8,
+                          padding: "8px 12px",
+                          color: expandedObj === i ? "#FCD34D" : "#D1D5DB",
+                          fontSize: 14,
+                        }}
+                      >
+                        {obj.emoji} {obj.label}
+                      </button>
+                      {expandedObj === i && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-1 p-2.5 rounded-lg text-xs leading-relaxed"
+                          style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", color: "#E5E7EB" }}
+                        >
+                          {obj.answer}
+                          <div className="flex items-center gap-2 mt-2">
+                            <button onClick={() => { navigator.clipboard.writeText(obj.answer); toast.success("Resposta copiada!"); }} className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.06)", color: "#9CA3AF" }}>
+                              📋 Copiar
+                            </button>
+                            <button className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "#86EFAC" }}>👍 Funcionou</button>
+                            <button className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "#FCA5A5" }}>👎 Não</button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <RecentCallsHistory />
             </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Right: Scripts + Objections */}
+        {/* Right: Scripts */}
         <div className="space-y-3">
           <div className="sticky top-4 space-y-3">
             <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode />
-
-            {/* Objeções Rápidas — always visible */}
-            <div className="arena-card p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-amber-400" />
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Objeções Rápidas</h4>
-                <span className="text-[10px] text-neutral-500">· {lead.nome} · {lead.empreendimento}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {objections.map((obj, i) => (
-                  <div key={i}>
-                    <button
-                      onClick={() => setExpandedObj(expandedObj === i ? null : i)}
-                      className="w-full text-left p-2 rounded-lg text-xs font-medium transition-colors"
-                      style={{
-                        background: expandedObj === i ? "rgba(245,158,11,0.1)" : "rgba(255,255,255,0.04)",
-                        border: expandedObj === i ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.06)",
-                        color: expandedObj === i ? "#FDE68A" : "#D1D5DB",
-                      }}
-                    >
-                      {obj.emoji} {obj.label}
-                    </button>
-                    {expandedObj === i && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-1 p-2.5 rounded-lg text-xs leading-relaxed col-span-2"
-                        style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", color: "#E5E7EB" }}
-                      >
-                        {obj.answer}
-                        <div className="flex items-center gap-2 mt-2">
-                          <button onClick={() => { navigator.clipboard.writeText(obj.answer); toast.success("Resposta copiada!"); }} className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.06)", color: "#9CA3AF" }}>
-                            📋 Copiar
-                          </button>
-                          <button className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "#86EFAC" }}>👍 Funcionou</button>
-                          <button className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "#FCA5A5" }}>👎 Não</button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
