@@ -61,7 +61,16 @@ const MarketingCentral = lazy(() => import("./pages/MarketingCentral"));
 const HomiAna = lazy(() => import("./pages/HomiAna"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2, // 2 min default cache
+      gcTime: 1000 * 60 * 5,    // 5 min garbage collection
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function PageLoader() {
   return (

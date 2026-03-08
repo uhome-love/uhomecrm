@@ -92,12 +92,13 @@ export function useOAListas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("oferta_ativa_listas")
-        .select("*")
+        .select("id, nome, empreendimento, campanha, origem, status, max_tentativas, cooldown_dias, total_leads, criado_por, created_at, updated_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as OALista[];
     },
     enabled: !!user,
+    staleTime: 1000 * 60 * 2, // 2 min cache for list metadata
   });
 
   const createLista = useCallback(async (lista: Partial<OALista>) => {
@@ -138,7 +139,11 @@ export function useOALeads(listaId?: string) {
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ["oa-leads", listaId],
     queryFn: async () => {
-      let query = supabase.from("oferta_ativa_leads").select("*").order("created_at", { ascending: true });
+      let query = supabase
+        .from("oferta_ativa_leads")
+        .select("id, lista_id, nome, telefone, telefone2, email, telefone_normalizado, empreendimento, campanha, origem, data_lead, observacoes, status, motivo_descarte, corretor_id, tentativas_count, ultima_tentativa, proxima_tentativa_apos, created_at, updated_at")
+        .order("created_at", { ascending: true })
+        .limit(200);
       if (listaId) query = query.eq("lista_id", listaId);
       const { data, error } = await query;
       if (error) throw error;
