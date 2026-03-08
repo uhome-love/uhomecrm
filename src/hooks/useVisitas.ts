@@ -29,6 +29,7 @@ export interface Visita {
   converted_to_pdn_at: string | null;
   converted_to_pdn_by: string | null;
   corretor_nome?: string;
+  equipe?: string;
 }
 
 export type VisitaStatus = "marcada" | "confirmada" | "realizada" | "reagendada" | "cancelada" | "no_show";
@@ -106,20 +107,24 @@ export function useVisitas(filters?: {
         
         const nameMap = new Map((profiles || []).map(p => [p.user_id, p.nome]));
 
-        // Fallback to team_members for any missing names
-        const missingIds = corretorIds.filter(id => !nameMap.get(id));
-        if (missingIds.length > 0) {
-          const { data: members } = await supabase
-            .from("team_members")
-            .select("user_id, nome")
-            .in("user_id", missingIds);
-          (members || []).forEach(m => {
-            if (m.user_id) nameMap.set(m.user_id, m.nome);
-          });
-        }
+        // Fetch team_members for missing names + equipe
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("user_id, nome, equipe")
+          .in("user_id", corretorIds)
+          .eq("status", "ativo");
+
+        const equipeMap = new Map<string, string>();
+        (members || []).forEach(m => {
+          if (m.user_id) {
+            if (!nameMap.get(m.user_id)) nameMap.set(m.user_id, m.nome);
+            if (m.equipe) equipeMap.set(m.user_id, m.equipe);
+          }
+        });
 
         rows.forEach(r => {
           r.corretor_nome = nameMap.get(r.corretor_id) || undefined;
+          r.equipe = equipeMap.get(r.corretor_id) || undefined;
         });
       }
 

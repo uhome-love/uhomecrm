@@ -36,15 +36,31 @@ function formatPhone(phone: string) {
   return phone;
 }
 
+const TEAM_BADGE_STYLES: Record<string, { emoji: string; className: string }> = {
+  gabrielle: { emoji: "🟢", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  bruno: { emoji: "🔵", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  gabriel: { emoji: "🟣", className: "bg-purple-50 text-purple-700 border-purple-200" },
+};
+
+export function getTeamBadgeStyle(equipe?: string) {
+  if (!equipe) return null;
+  const key = equipe.toLowerCase().replace(/^equipe\s+/i, "").trim();
+  for (const [name, style] of Object.entries(TEAM_BADGE_STYLES)) {
+    if (key.includes(name)) return { ...style, label: key.charAt(0).toUpperCase() + key.slice(1) };
+  }
+  return { emoji: "⚪", className: "bg-muted text-muted-foreground border-border", label: equipe };
+}
+
 interface Props {
   visita: Visita;
   onUpdateStatus: (id: string, status: VisitaStatus) => void;
   onDelete?: (id: string) => void;
   showCorretor?: boolean;
+  showTeam?: boolean;
   isPastPending?: boolean;
 }
 
-export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCorretor, isPastPending }: Props) {
+export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCorretor, showTeam, isPastPending }: Props) {
   const { convertToPdn } = useVisitaToPdn();
   const [hovered, setHovered] = useState(false);
   const hasPdn = !!(v as any).linked_pdn_id;
@@ -84,10 +100,19 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCor
         <span className="text-xs text-muted-foreground truncate block">{v.empreendimento || "—"}</span>
       </div>
 
-      {/* Corretor */}
+      {/* Corretor + Team */}
       {showCorretor && (
-        <div className="w-28 shrink-0 hidden md:block">
-          <span className="text-xs text-muted-foreground truncate block">{v.corretor_nome || "—"}</span>
+        <div className="w-36 shrink-0 hidden md:flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground truncate">{v.corretor_nome || "—"}</span>
+          {showTeam && (() => {
+            const style = getTeamBadgeStyle(v.equipe);
+            if (!style) return null;
+            return (
+              <span className={cn("text-[11px] px-1.5 py-0 rounded-full border whitespace-nowrap shrink-0", style.className)}>
+                {style.emoji} {style.label}
+              </span>
+            );
+          })()}
         </div>
       )}
 
