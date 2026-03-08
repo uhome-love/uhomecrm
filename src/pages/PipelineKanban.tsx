@@ -273,12 +273,12 @@ export default function PipelineKanban() {
                 {activeFiltersCount > 0
                   ? `${filteredLeads.length} de ${pipeline.leads.length} leads`
                   : `${filteredLeads.length} oportunidades`}
-                {(isGestor || isAdmin) && filaCeoCount > 0 && !filaCeoFilter && (
+                {isAdmin && filaCeoCount > 0 && !filaCeoFilter && (
                   <span className="text-purple-600 dark:text-purple-400 font-normal"> ({filaCeoCount} sem corretor)</span>
                 )}
               </span>
             </div>
-            {(isGestor || isAdmin) && filaCeoCount > 0 && (
+            {isAdmin && filaCeoCount > 0 && (
               <button
                 onClick={() => setFilaCeoFilter(f => !f)}
                 className={`flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${

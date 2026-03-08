@@ -115,6 +115,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
     // Role-based visibility: corretores only see their own leads
     if (!isGestor && !isAdmin) {
       query = query.eq("corretor_id", user.id);
+    } else if (isGestor && !isAdmin) {
+      // Gerentes: only see leads that have a corretor assigned (no Fila CEO)
+      query = query.not("corretor_id", "is", null);
     }
 
     const { data, error } = await query;
