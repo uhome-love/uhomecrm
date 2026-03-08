@@ -76,7 +76,7 @@ export default function ImmersiveScreen({
 
   const content = (
     <div
-      className={`${baseClasses} flex flex-col items-center justify-center overflow-hidden ${className}`}
+      className={`${baseClasses} flex flex-col items-center ${className}`}
       style={{
         background:
           "radial-gradient(ellipse at center, #0F1E3D 0%, #060D1F 60%, #020610 100%)",

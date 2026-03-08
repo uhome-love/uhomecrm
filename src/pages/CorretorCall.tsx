@@ -218,7 +218,7 @@ export default function CorretorCall() {
   // ── WARMUP: IMMERSIVE BATTLE ENTRY ──
   if (phase === "warmup" || phase === "launching") {
     return (
-      <ImmersiveScreen fullScreen className="overflow-y-auto z-50">
+      <ImmersiveScreen fullScreen className="overflow-y-auto z-50 pt-6 pb-12">
 
         {/* ZONA 1 — TOPO */}
         <div className="w-full max-w-lg mx-auto px-6 pt-6 flex items-center justify-between">
