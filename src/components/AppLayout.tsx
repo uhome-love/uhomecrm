@@ -30,6 +30,18 @@ const HomiAvatar = lazy(() => import("@/components/homi/HomiAvatar"));
 const HomiProactiveAlert = lazy(() => import("@/components/homi/HomiProactiveAlert"));
 const HomiGreeting = lazy(() => import("@/components/HomiGreeting"));
 
+// Detect arena-mode class on body reactively
+function useArenaMode() {
+  return useSyncExternalStore(
+    (cb) => {
+      const observer = new MutationObserver(cb);
+      observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      return () => observer.disconnect();
+    },
+    () => document.body.classList.contains("arena-mode")
+  );
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const { isAdmin, isGestor } = useUserRole();
@@ -37,6 +49,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [nome, setNome] = useState("");
   const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const cargo = isAdmin ? "CEO" : isGestor ? "Gerente" : "Corretor";
+  const isArenaMode = useArenaMode();
 
   useEffect(() => {
     if (!user) return;
