@@ -122,9 +122,25 @@ export function useVisitas(filters?: {
           }
         });
 
+        // Fetch gerente names from gerente_id to derive team when equipe is missing
+        const gerenteIds = [...new Set(rows.map(r => r.gerente_id).filter(Boolean))];
+        const gerenteNameMap = new Map<string, string>();
+        if (gerenteIds.length > 0) {
+          const { data: gerenteProfiles } = await supabase
+            .from("profiles")
+            .select("user_id, nome")
+            .in("user_id", gerenteIds);
+          (gerenteProfiles || []).forEach(g => {
+            if (g.user_id && g.nome) {
+              gerenteNameMap.set(g.user_id, g.nome.split(" ")[0]);
+            }
+          });
+        }
+
         rows.forEach(r => {
           r.corretor_nome = nameMap.get(r.corretor_id) || undefined;
-          r.equipe = equipeMap.get(r.corretor_id) || undefined;
+          // Prefer equipe from team_members, fallback to gerente first name
+          r.equipe = equipeMap.get(r.corretor_id) || (r.gerente_id ? gerenteNameMap.get(r.gerente_id) : undefined) || undefined;
         });
       }
 
