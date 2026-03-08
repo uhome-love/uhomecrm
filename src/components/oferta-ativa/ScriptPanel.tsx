@@ -16,6 +16,8 @@ interface Props {
   lead?: OALead | null;
   compact?: boolean;
   darkMode?: boolean;
+  /** Show only "ligacao" or "whatsapp" script. Omit to show both. */
+  scriptFilter?: "ligacao" | "whatsapp";
 }
 
 function buildDefaultScript(leadName: string, emp: string) {
@@ -26,7 +28,7 @@ function applyVars(text: string, leadName: string, emp: string) {
   return text.replace(/\{nome\}/g, leadName).replace(/\{empreendimento\}/g, emp);
 }
 
-export default function ScriptPanel({ empreendimento, lead, compact, darkMode }: Props) {
+export default function ScriptPanel({ empreendimento, lead, compact, darkMode, scriptFilter }: Props) {
   const { templates } = useOATemplates(empreendimento);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -126,10 +128,11 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode }:
   const mutedColor = darkMode ? "text-neutral-400" : "text-muted-foreground";
   const scriptBg = darkMode ? "rgba(255,255,255,0.04)" : undefined;
 
-  const scripts = [
+  const allScripts = [
     { key: "ligacao" as const, label: "Script Ligação", icon: FileText, iconColor: darkMode ? "text-emerald-400" : "text-emerald-600", value: scriptLigacao, setValue: setScriptLigacao, category: "script_ligacao", switchLabel: "Trocar script" },
     { key: "whatsapp" as const, label: "Script WhatsApp", icon: MessageCircle, iconColor: darkMode ? "text-green-400" : "text-green-600", value: scriptWhatsApp, setValue: setScriptWhatsApp, category: "whatsapp", switchLabel: "Trocar mensagem" },
   ];
+  const scripts = scriptFilter ? allScripts.filter(s => s.key === scriptFilter) : allScripts;
 
   return (
     <div className="space-y-3">
@@ -211,13 +214,15 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode }:
         );
       })}
 
-      {/* CTA Final */}
-      <div className="rounded-xl p-3" style={{ background: darkMode ? "rgba(59,130,246,0.06)" : undefined, border: darkMode ? "1px solid rgba(59,130,246,0.15)" : undefined }}>
-        <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className={`uppercase mb-1.5 ${darkMode ? "text-blue-400" : "text-primary"}`}>🎯 CTA Final</h4>
-        <p style={{ fontSize: "15px", fontStyle: "italic", color: darkMode ? "#FDE68A" : undefined }} className={`p-2 rounded-lg ${!darkMode ? "text-muted-foreground" : ""}`} >
-          "Que tal agendar uma visita sem compromisso? Posso reservar o melhor horário para você!"
-        </p>
-      </div>
+      {/* CTA Final — only when showing ligacao or both */}
+      {(!scriptFilter || scriptFilter === "ligacao") && (
+        <div className="rounded-xl p-3" style={{ background: darkMode ? "rgba(59,130,246,0.06)" : undefined, border: darkMode ? "1px solid rgba(59,130,246,0.15)" : undefined }}>
+          <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className={`uppercase mb-1.5 ${darkMode ? "text-blue-400" : "text-primary"}`}>🎯 CTA Final</h4>
+          <p style={{ fontSize: "15px", fontStyle: "italic", color: darkMode ? "#FDE68A" : undefined }} className={`p-2 rounded-lg ${!darkMode ? "text-muted-foreground" : ""}`} >
+            "Que tal agendar uma visita sem compromisso? Posso reservar o melhor horário para você!"
+          </p>
+        </div>
+      )}
     </div>
   );
 }
