@@ -475,9 +475,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   // ─── LEAD CARD (protagonist, left column 55%) ───
 
   const LeadColumn = (
-    <div className="space-y-2 min-w-0">
+    <div className="space-y-3 min-w-0">
       {/* Lead card — compact */}
-      <div className="rounded-xl p-4 space-y-2" style={{ background: "#1C2128", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+      <div className="rounded-xl p-5 space-y-3" style={{ background: "#1C2128", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
         {/* Badge row */}
         <div className="flex items-center gap-2 text-xs flex-wrap" style={{ color: "#6B7280" }}>
           <span className={freshness.color}>{freshness.emoji} {freshness.label}</span>
@@ -627,7 +627,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
         {/* Objection responses — stacked below buttons */}
         {openObjections.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-2 mt-1">
             {openObjections.map(i => (
               <div
                 key={i}
@@ -711,13 +711,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       </div>
 
       {/* Ficha Rápida — between script and CTA */}
-      <div className="shrink-0 px-2 py-1.5" style={{ background: "#161B22" }}>
+      <div className="shrink-0 px-2 py-2" style={{ background: "#161B22" }}>
         <FichaRapida empreendimento={selectedEmp} />
       </div>
 
       {/* CTA Final — pinned at bottom */}
       <div
-        className="shrink-0 rounded-b-xl p-3"
+        className="shrink-0 rounded-b-xl p-4"
         style={{
           background: "rgba(59,130,246,0.06)",
           borderTop: "1px solid rgba(59,130,246,0.15)",
@@ -946,7 +946,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       ) : (
         /* ═══ DESKTOP: 2-column layout (55|45) — viewport height ═══ */
         <div
-          className={`grid grid-cols-[55fr_45fr] gap-4 ${arenaShake ? "arena-shake" : ""}`}
+          className={`grid grid-cols-[45fr_55fr] gap-4 ${arenaShake ? "arena-shake" : ""}`}
           style={{ height: "calc(100vh - 200px)", overflow: "hidden" }}
         >
           <AnimatePresence mode="wait">
