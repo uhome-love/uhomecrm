@@ -145,7 +145,11 @@ export default function CorretorAvatar({
   const isTop1 = ranking === 1;
 
   return (
-    <div className={cn("relative inline-flex items-center justify-center", className)}>
+    <div className={cn(
+      "relative inline-flex items-center justify-center",
+      animated && `avatar-${animationState}`,
+      className,
+    )}>
       {/* Animated aura for higher levels */}
       {animated && level.id !== "iniciante" && (
         <div
