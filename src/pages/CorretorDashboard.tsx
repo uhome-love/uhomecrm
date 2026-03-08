@@ -154,13 +154,13 @@ export default function CorretorDashboard() {
         {/* BLOCO 2 — Radar do Dia */}
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <div className="grid grid-cols-3 gap-3">
-            <Card className="cursor-pointer hover:border-primary/30 hover:shadow-card-hover transition-all duration-150" onClick={() => navigate("/pipeline")}>
+            <Card className="cursor-pointer hover:border-orange-300 hover:shadow-card-hover transition-all duration-150" onClick={() => navigate("/pipeline")}>
               <CardContent className="p-3">
                 <div className="flex items-center gap-1.5 mb-2">
                   <AlertCircle className="h-3.5 w-3.5 text-danger-500" />
                   <span className="text-xs font-medium text-muted-foreground">Leads</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground leading-none">{radar.pendingLeads}</p>
+                <p className={`text-2xl font-bold leading-none ${radar.pendingLeads > 0 ? "text-orange-500" : "text-foreground"}`}>{radar.pendingLeads}</p>
                 <p className="text-xs text-muted-foreground mt-1">p/ contatar</p>
                 {radar.slaExpired > 0 && (
                   <p className="text-[11px] text-danger-500 font-medium mt-0.5">{radar.slaExpired} SLA expirado</p>
@@ -174,7 +174,7 @@ export default function CorretorDashboard() {
                   <CalendarDays className="h-3.5 w-3.5 text-primary" />
                   <span className="text-xs font-medium text-muted-foreground">Agenda</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground leading-none">{radar.visitas.length}</p>
+                <p className={`text-2xl font-bold leading-none ${radar.visitas.length > 0 ? "text-primary" : "text-foreground"}`}>{radar.visitas.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">{radar.visitas.length === 1 ? "visita" : "visitas"}</p>
                 {radar.visitas.length > 0 && (
                   <p className="text-[11px] text-primary font-medium mt-0.5">
@@ -184,16 +184,16 @@ export default function CorretorDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="cursor-pointer hover:border-primary/30 hover:shadow-card-hover transition-all duration-150" onClick={() => navigate("/corretor/call")}>
+            <Card className={`cursor-pointer hover:shadow-card-hover transition-all duration-150 ${radar.rankingPos === 1 ? "bg-amber-50/50 border-amber-200 hover:border-amber-300" : "hover:border-primary/30"}`} onClick={() => navigate("/corretor/call")}>
               <CardContent className="p-3">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Trophy className="h-3.5 w-3.5 text-warning" />
+                  <Trophy className={`h-3.5 w-3.5 ${radar.rankingPos === 1 ? "text-amber-500" : "text-warning"}`} />
                   <span className="text-xs font-medium text-muted-foreground">Ranking</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground leading-none">#{radar.rankingPos || "–"}</p>
+                <p className={`text-2xl font-bold leading-none ${radar.rankingPos === 1 ? "text-[#B45309]" : "text-foreground"}`}>#{radar.rankingPos || "–"}</p>
                 <p className="text-xs text-muted-foreground mt-1">de {radar.totalBrokers}</p>
                 {radar.ptsToNext > 0 && (
-                  <p className="text-[11px] text-warning-700 font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
+                  <p className="text-[11px] text-[#B45309] font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
                 )}
               </CardContent>
             </Card>
@@ -215,25 +215,32 @@ export default function CorretorDashboard() {
                   <Button variant="ghost" size="sm" className="h-6 text-xs text-primary">Editar</Button>
                 </div>
                 {[
-                  { emoji: "🔥", label: "Tentativas", value: progress.tentativas, max: goals?.meta_ligacoes || 30, pct: ligPct },
-                  { emoji: "✅", label: "Aproveitados", value: progress.aproveitados, max: goals?.meta_aproveitados || 5, pct: aprvPct },
-                  { emoji: "📅", label: "Visitas", value: progress.visitasMarcadas, max: goals?.meta_visitas_marcadas || 3, pct: visPct },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted-foreground">{item.emoji} {item.label}</span>
-                      <span className="text-xs font-bold text-foreground">{item.value}/{item.max}</span>
+                  { emoji: "🔥", label: "Tentativas", value: progress.tentativas, max: goals?.meta_ligacoes || 30, pct: ligPct, barColor: "bg-primary" },
+                  { emoji: "✅", label: "Aproveitados", value: progress.aproveitados, max: goals?.meta_aproveitados || 5, pct: aprvPct, barColor: "bg-[#16A34A]" },
+                  { emoji: "📅", label: "Visitas", value: progress.visitasMarcadas, max: goals?.meta_visitas_marcadas || 3, pct: visPct, barColor: "bg-purple-500" },
+                ].map((item) => {
+                  const valueColor = item.value === 0
+                    ? "text-muted-foreground"
+                    : item.pct >= 100
+                    ? "text-[#16A34A]"
+                    : "text-primary";
+                  return (
+                    <div key={item.label}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-muted-foreground">{item.emoji} {item.label}</span>
+                        <span className={`text-xs font-bold ${valueColor}`}>{item.value}/{item.max}</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${item.pct}%` }}
+                          transition={{ duration: 0.6, ease: "easeOut" }}
+                          className={`h-full rounded-full ${item.pct >= 100 ? "bg-[#16A34A]" : item.barColor}`}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${item.pct}%` }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        className={`h-full rounded-full ${getProgressColor(item.pct)}`}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           )}
@@ -246,7 +253,7 @@ export default function CorretorDashboard() {
               disabled={!metaSalva}
               className={`h-20 flex-col gap-1.5 rounded-xl text-base font-bold ${
                 metaSalva
-                  ? "bg-primary hover:bg-primary-600 text-primary-foreground"
+                  ? "bg-[#16A34A] hover:bg-[#15803D] text-white shadow-[0_4px_20px_hsl(142_60%_40%/0.3)]"
                   : "bg-muted text-muted-foreground cursor-not-allowed"
               }`}
               onClick={() => metaSalva && navigate("/corretor/call")}
@@ -257,10 +264,10 @@ export default function CorretorDashboard() {
             </Button>
             <Button
               variant="outline"
-              className="h-20 flex-col gap-1.5 rounded-xl text-base font-bold"
+              className="h-20 flex-col gap-1.5 rounded-xl text-base font-bold hover:bg-primary/5 hover:border-primary/30 group"
               onClick={() => navigate("/pipeline")}
             >
-              <Kanban className="h-5 w-5" />
+              <Kanban className="h-5 w-5 text-primary" />
               Gestão de Leads
               <span className="text-xs font-normal text-muted-foreground">Pipeline</span>
             </Button>
@@ -276,18 +283,18 @@ export default function CorretorDashboard() {
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: "Agenda", icon: CalendarDays, path: "/agenda-visitas" },
-              { label: "HOMI", icon: Bot, path: "/homi" },
-              { label: "Scripts", icon: FileEdit, path: "/scripts" },
-              { label: "Desempenho", icon: BarChart3, path: "/corretor/resumo" },
+              { label: "Agenda", icon: CalendarDays, path: "/agenda-visitas", color: "text-primary" },
+              { label: "HOMI", icon: Bot, path: "/homi", color: "text-purple-500" },
+              { label: "Scripts", icon: FileEdit, path: "/scripts", color: "text-amber-500" },
+              { label: "Desempenho", icon: BarChart3, path: "/corretor/resumo", color: "text-[#16A34A]" },
             ].map((item) => (
               <Button
                 key={item.label}
                 variant="ghost"
-                className="h-auto flex-col gap-1 py-3 text-muted-foreground hover:text-foreground"
+                className="h-auto flex-col gap-1 py-3 text-muted-foreground hover:text-foreground hover:-translate-y-0.5 transition-all duration-150"
                 onClick={() => navigate(item.path)}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className={`h-4 w-4 ${item.color}`} />
                 <span className="text-[11px] font-medium">{item.label}</span>
               </Button>
             ))}
