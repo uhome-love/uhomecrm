@@ -190,13 +190,64 @@ export default function AgendaVisitas() {
     };
   }, [visitas]);
 
-  const pendingCount = useMemo(() => {
+  const pendingVisitas = useMemo(() => {
     const today = startOfDay(new Date());
     return visitas.filter(v => {
       const d = new Date(v.data_visita + "T12:00:00");
       return isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
-    }).length;
+    });
   }, [visitas]);
+
+  const pendingCount = pendingVisitas.length;
+
+  // Group pending visitas by corretor for cobrança
+  const pendingByCorretor = useMemo(() => {
+    const map = new Map<string, { nome: string; count: number; telefone?: string }>();
+    for (const v of pendingVisitas) {
+      const id = v.corretor_id || "unknown";
+      if (!map.has(id)) map.set(id, { nome: v.corretor_nome || "Corretor", count: 0 });
+      map.get(id)!.count++;
+    }
+    return Array.from(map.values());
+  }, [pendingVisitas]);
+
+  const openCobranca = useCallback(() => {
+    const defaultMsg = (nome: string, count: number) =>
+      `Oi ${nome.split(" ")[0]}! 👋 Você tem ${count} visita${count > 1 ? "s" : ""} sem status atualizado no UhomeSales. Por favor, acesse o sistema e atualize: Realizada, No Show ou Reagendada. Obrigado! 🏠`;
+    setCobrancaMsg(defaultMsg("[nome]", 0));
+    setShowCobranca(true);
+  }, []);
+
+  const sendCobranca = useCallback(async () => {
+    setSendingCobranca(true);
+    try {
+      const corretorIds = [...new Set(pendingVisitas.map(v => v.corretor_id).filter(Boolean))] as string[];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, nome, telefone")
+        .in("user_id", corretorIds);
+
+      let sent = 0;
+      for (const p of profiles || []) {
+        if (!p.telefone) continue;
+        const count = pendingVisitas.filter(v => v.corretor_id === p.user_id).length;
+        const msg = cobrancaMsg
+          .replace("[nome]", p.nome?.split(" ")[0] || "")
+          .replace("[X]", String(count));
+
+        await supabase.functions.invoke("whatsapp-notificacao", {
+          body: { telefone: p.telefone, mensagem: msg, tipo: "cobranca_visita" },
+        });
+        sent++;
+      }
+      toast.success(`✅ Cobrança enviada para ${sent} corretor${sent !== 1 ? "es" : ""}`);
+      setShowCobranca(false);
+    } catch (e) {
+      toast.error("Erro ao enviar cobranças");
+    } finally {
+      setSendingCobranca(false);
+    }
+  }, [pendingVisitas, cobrancaMsg]);
 
   const filtered = useMemo(() => {
     let list = [...visitas];
