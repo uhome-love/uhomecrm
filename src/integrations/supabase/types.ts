@@ -475,6 +475,77 @@ export type Database = {
         }
         Relationships: []
       }
+      checkpoint_diario: {
+        Row: {
+          corretor_id: string
+          created_at: string | null
+          data: string
+          id: string
+          meta_aproveitados: number | null
+          meta_ligacoes: number | null
+          meta_visitas_marcar: number | null
+          obs_dia: string | null
+          obs_gerente: string | null
+          presenca: string
+          publicado: boolean | null
+          res_aproveitados: number | null
+          res_ligacoes: number | null
+          res_propostas: number | null
+          res_vgv: number | null
+          res_visitas_marcadas: number | null
+          res_visitas_realizadas: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string | null
+          data: string
+          id?: string
+          meta_aproveitados?: number | null
+          meta_ligacoes?: number | null
+          meta_visitas_marcar?: number | null
+          obs_dia?: string | null
+          obs_gerente?: string | null
+          presenca?: string
+          publicado?: boolean | null
+          res_aproveitados?: number | null
+          res_ligacoes?: number | null
+          res_propostas?: number | null
+          res_vgv?: number | null
+          res_visitas_marcadas?: number | null
+          res_visitas_realizadas?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string | null
+          data?: string
+          id?: string
+          meta_aproveitados?: number | null
+          meta_ligacoes?: number | null
+          meta_visitas_marcar?: number | null
+          obs_dia?: string | null
+          obs_gerente?: string | null
+          presenca?: string
+          publicado?: boolean | null
+          res_aproveitados?: number | null
+          res_ligacoes?: number | null
+          res_propostas?: number | null
+          res_vgv?: number | null
+          res_visitas_marcadas?: number | null
+          res_visitas_realizadas?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkpoint_diario_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkpoint_lines: {
         Row: {
           checkpoint_id: string
