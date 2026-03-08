@@ -88,6 +88,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [inlineObs, setInlineObs] = useState("");
   const [showResultPopup, setShowResultPopup] = useState(false);
   const [selectedResult, setSelectedResult] = useState<string | null>(null);
+  const [objAccordionOpen, setObjAccordionOpen] = useState(false);
 
   // Mobile tab
   const [mobileTab, setMobileTab] = useState<"lead" | "script" | "whatsapp">("lead");
@@ -459,10 +460,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   ];
 
   // ─── LEAD CARD (protagonist, left column 55%) ───
+
   const LeadColumn = (
-    <div className="space-y-3 min-w-0">
-      {/* Lead card with presence */}
-      <div className="rounded-xl p-5 space-y-4" style={{ background: "#1C2128", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+    <div className="space-y-2 min-w-0">
+      {/* Lead card — compact */}
+      <div className="rounded-xl p-4 space-y-2" style={{ background: "#1C2128", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
         {/* Badge row */}
         <div className="flex items-center gap-2 text-xs flex-wrap" style={{ color: "#6B7280" }}>
           <span className={freshness.color}>{freshness.emoji} {freshness.label}</span>
@@ -472,51 +474,49 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           {isHotLead && <span className="text-yellow-400 font-semibold">🔥 Quente</span>}
         </div>
 
-        {/* Name — PROTAGONIST */}
+        {/* Name — text-2xl */}
         <div>
-          <h2 className="text-3xl font-bold text-white leading-tight">{lead.nome}</h2>
-          <div className="flex items-center gap-2 mt-1" style={{ fontSize: "15px", color: "#94A3B8" }}>
-            <Building2 className="h-4 w-4" /> {lead.empreendimento}
+          <h2 className="text-2xl font-bold text-white leading-tight">{lead.nome}</h2>
+          <div className="flex items-center gap-2 mt-0.5" style={{ fontSize: "14px", color: "#94A3B8" }}>
+            <Building2 className="h-3.5 w-3.5" /> {lead.empreendimento}
             {lead.campanha && <span>· {lead.campanha}</span>}
           </div>
         </div>
 
-        {/* Contact — compact lines */}
-        <div className="space-y-1">
+        {/* Contact — simple lines, no boxes */}
+        <div>
           {lead.telefone && (
             <div
-              className="flex items-center justify-between py-2 px-2 rounded-lg cursor-pointer transition-colors hover:bg-white/5 active:scale-[0.98]"
-              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+              className="flex items-center justify-between py-1 cursor-pointer transition-colors hover:bg-white/5 active:scale-[0.98]"
               onClick={() => copyToClipboard(lead.telefone!, "Telefone")}
             >
               <span className="flex items-center gap-2">
-                <Phone className="h-4 w-4" style={{ color: "#6B7280" }} />
-                <span className="font-mono font-bold text-white text-lg">{formatPhone(lead.telefone)}</span>
+                <Phone className="h-3.5 w-3.5" style={{ color: "#6B7280" }} />
+                <span className="font-mono font-bold text-white" style={{ fontSize: "15px" }}>{formatPhone(lead.telefone)}</span>
               </span>
-              <Copy className="h-3.5 w-3.5" style={{ color: "#4B5563" }} />
+              <Copy className="h-3 w-3" style={{ color: "#4B5563" }} />
             </div>
           )}
           {lead.telefone2 && (
             <div
-              className="flex items-center justify-between py-1.5 px-2 rounded cursor-pointer transition-colors hover:bg-white/5"
-              style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+              className="flex items-center justify-between py-1 cursor-pointer transition-colors hover:bg-white/5"
               onClick={() => copyToClipboard(lead.telefone2!, "Telefone 2")}
             >
               <span className="flex items-center gap-2">
                 <Phone className="h-3 w-3" style={{ color: "#4B5563" }} />
-                <span className="font-mono text-neutral-400" style={{ fontSize: "14px" }}>{formatPhone(lead.telefone2)}</span>
+                <span className="font-mono text-neutral-400" style={{ fontSize: "13px" }}>{formatPhone(lead.telefone2)}</span>
               </span>
               <Copy className="h-3 w-3" style={{ color: "#374151" }} />
             </div>
           )}
           {lead.email && (
             <div
-              className="flex items-center justify-between py-1.5 px-2 rounded cursor-pointer transition-colors hover:bg-white/5"
+              className="flex items-center justify-between py-1 cursor-pointer transition-colors hover:bg-white/5"
               onClick={() => copyToClipboard(lead.email!, "E-mail")}
             >
               <span className="flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5" style={{ color: "#4B5563" }} />
-                <span className="text-neutral-400 truncate text-sm">{lead.email}</span>
+                <Mail className="h-3 w-3" style={{ color: "#4B5563" }} />
+                <span className="text-neutral-400 truncate" style={{ fontSize: "13px" }}>{lead.email}</span>
               </span>
               <Copy className="h-3 w-3" style={{ color: "#374151" }} />
             </div>
@@ -525,41 +525,41 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
         {/* Call Timer inline */}
         {callActive && (
-          <div className="flex items-center justify-between py-2 px-3 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
+          <div className="flex items-center justify-between py-1.5 px-2 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
               </span>
               <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Em ligação</span>
-              <span className="text-xl font-mono font-bold text-red-400">{formatTimer(callTimer)}</span>
+              <span className="text-lg font-mono font-bold text-red-400">{formatTimer(callTimer)}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Button size="sm" variant="ghost" className="h-7 text-[11px] text-green-400 hover:bg-green-500/10" onClick={handleWhatsAppDuringCall}>
+              <Button size="sm" variant="ghost" className="h-6 text-[11px] text-green-400 hover:bg-green-500/10" onClick={handleWhatsAppDuringCall}>
                 <MessageCircle className="h-3 w-3 mr-0.5" /> WhatsApp
               </Button>
-              <Button size="sm" className="h-7 text-[11px] bg-red-600 hover:bg-red-700 text-white gap-1" onClick={handleOpenResultPopup}>
+              <Button size="sm" className="h-6 text-[11px] bg-red-600 hover:bg-red-700 text-white gap-1" onClick={handleOpenResultPopup}>
                 <Phone className="h-3 w-3 rotate-[135deg]" /> Finalizar
               </Button>
             </div>
           </div>
         )}
 
-        {/* Action buttons */}
+        {/* Action buttons — compact */}
         {!callActive && (
           <div className="space-y-2">
             <button
               className="arena-btn-call w-full gap-2 rounded-xl flex items-center justify-center"
-              style={{ height: "48px", fontSize: "16px", fontWeight: 700 }}
+              style={{ height: "44px", fontSize: "15px", fontWeight: 700 }}
               onClick={() => handleAction("ligacao")}
               disabled={showModal || showResultPopup}
             >
-              <Phone className="h-5 w-5" /> LIGAR AGORA
+              <Phone className="h-4 w-4" /> LIGAR AGORA
             </button>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 size="sm"
-                className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                className="gap-1 bg-blue-600 hover:bg-blue-700 text-white"
                 style={{ height: "36px", fontSize: "13px" }}
                 onClick={() => setComunicacaoOpen(true)}
                 disabled={showModal || showResultPopup}
@@ -569,7 +569,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="gap-1.5 text-neutral-400 hover:text-white hover:bg-white/5"
+                className="gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
                 style={{ height: "36px", fontSize: "13px", border: "1px solid rgba(255,255,255,0.1)" }}
                 onClick={() => handleAction("email")}
                 disabled={!lead.email || showModal || showResultPopup}
@@ -579,6 +579,40 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             </div>
           </div>
         )}
+
+        {/* ⚡ Objeções Rápidas — accordion inside card */}
+        <Collapsible open={objAccordionOpen} onOpenChange={setObjAccordionOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
+            <span style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>⚡ Objeções Rápidas</span>
+            <ChevronDown className={`h-3 w-3 text-amber-400 transition-transform ${objAccordionOpen ? "rotate-180" : ""}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid grid-cols-2 gap-1.5 pt-1.5">
+              {objections.map((obj, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setExpandedObj(expandedObj === i ? null : i);
+                    setObjectionInsert(obj.answer);
+                  }}
+                  className="transition-all text-left flex items-center"
+                  style={{
+                    background: expandedObj === i ? "rgba(245,158,11,0.12)" : "#1C2128",
+                    border: expandedObj === i ? "1px solid rgba(245,158,11,0.4)" : "1px dashed rgba(255,255,255,0.1)",
+                    borderRadius: 8,
+                    padding: "6px 10px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: expandedObj === i ? "#FCD34D" : "#D1D5DB",
+                    height: 32,
+                  }}
+                >
+                  {obj.emoji} {obj.label}
+                </button>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {/* Recent calls — collapsed, outside card */}
@@ -658,36 +692,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         </AnimatePresence>
       </div>
 
-      {/* ⚡ OBJEÇÕES RÁPIDAS — always visible */}
-      <div className="shrink-0 space-y-2">
-        <span style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>⚡ Objeções Rápidas</span>
-        <div className="grid grid-cols-2 gap-1.5">
-          {objections.map((obj, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                setExpandedObj(expandedObj === i ? null : i);
-                setObjectionInsert(obj.answer);
-              }}
-              className="transition-all text-left"
-              style={{
-                background: expandedObj === i ? "rgba(245,158,11,0.12)" : "#1C2128",
-                border: expandedObj === i ? "1px solid rgba(245,158,11,0.4)" : "1px dashed rgba(255,255,255,0.1)",
-                borderRadius: 10,
-                padding: "10px 12px",
-                fontSize: 12,
-                fontWeight: 600,
-                color: expandedObj === i ? "#FCD34D" : "#D1D5DB",
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {obj.emoji} {obj.label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
