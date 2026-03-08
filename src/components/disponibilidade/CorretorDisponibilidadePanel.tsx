@@ -84,15 +84,15 @@ export default function CorretorDisponibilidadePanel() {
     toast.success("Você está na roleta! Aguarde leads dos seus segmentos.");
   };
 
-  const toggleSegmento = (seg: string) => {
-    if (pendingSegmentos.includes(seg)) {
-      setPendingSegmentos((prev) => prev.filter((s) => s !== seg));
+  const toggleSegmento = (segNome: string) => {
+    if (pendingSegmentos.includes(segNome)) {
+      setPendingSegmentos((prev) => prev.filter((s) => s !== segNome));
     } else {
       if (pendingSegmentos.length >= 2) {
         toast.warning("Você pode selecionar no máximo 2 segmentos.");
         return;
       }
-      setPendingSegmentos((prev) => [...prev, seg]);
+      setPendingSegmentos((prev) => [...prev, segNome]);
     }
   };
 
@@ -184,11 +184,18 @@ export default function CorretorDisponibilidadePanel() {
               )}
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {currentSegmentos.map((seg) => (
-                <Badge key={seg} variant="secondary" className="text-[10px]">
-                  {seg}
-                </Badge>
-              ))}
+              {currentSegmentos.map((segNome) => {
+                const segInfo = SEGMENTOS_OFICIAIS.find(s => s.nome === segNome);
+                return (
+                  <Badge
+                    key={segNome}
+                    className="text-[10px] text-white border-0"
+                    style={{ backgroundColor: segInfo?.cor || "hsl(var(--primary))" }}
+                  >
+                    {segInfo?.badge || segNome}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
         )}
@@ -207,25 +214,30 @@ export default function CorretorDisponibilidadePanel() {
                   Selecione seus segmentos (máx. 2):
                 </p>
                 {SEGMENTOS_OFICIAIS.map((seg) => {
-                  const checked = pendingSegmentos.includes(seg);
+                  const checked = pendingSegmentos.includes(seg.nome);
                   const disabled = !checked && pendingSegmentos.length >= 2;
                   return (
                     <label
-                      key={seg}
-                      className={`flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${
+                      key={seg.nome}
+                      className={`flex items-start gap-2.5 p-2 rounded-md cursor-pointer transition-colors ${
                         checked
-                          ? "bg-primary/10 border border-primary/20"
+                          ? "border border-primary/20"
                           : disabled
                           ? "opacity-40 cursor-not-allowed"
                           : "hover:bg-muted border border-transparent"
                       }`}
+                      style={checked ? { backgroundColor: `${seg.cor}15` } : undefined}
                     >
                       <Checkbox
                         checked={checked}
                         disabled={disabled}
-                        onCheckedChange={() => toggleSegmento(seg)}
+                        onCheckedChange={() => toggleSegmento(seg.nome)}
+                        className="mt-0.5"
                       />
-                      <span className="text-xs">{seg}</span>
+                      <div>
+                        <span className="text-xs font-medium" style={{ color: seg.cor }}>{seg.badge}</span>
+                        <p className="text-[10px] text-muted-foreground">{seg.empreendimentos.join(" · ")}</p>
+                      </div>
                     </label>
                   );
                 })}
