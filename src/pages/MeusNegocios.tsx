@@ -8,10 +8,11 @@ import JornadaLead from "@/components/pipeline/JornadaLead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, RefreshCw, Briefcase, X, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight, TrendingUp, Clock } from "lucide-react";
+import { Loader2, Search, RefreshCw, Briefcase, X, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight, TrendingUp, Clock, MessageCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { differenceInDays } from "date-fns";
 import { toast } from "sonner";
+import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 
 function formatVGV(value: number) {
   if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
@@ -28,61 +29,82 @@ function NegocioCard({ negocio, corretorNome, paradoInfo, onDragStart, onClick }
 }) {
   const faseInfo = NEGOCIOS_FASES.find(f => f.key === negocio.fase);
   const daysInFase = differenceInDays(new Date(), new Date(negocio.fase_changed_at || negocio.created_at));
+  const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
 
   return (
-    <div
-      draggable
-      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
-      onClick={onClick}
-      className="group rounded-lg border bg-card cursor-pointer active:cursor-grabbing hover:bg-accent/40 transition-all duration-150 select-none overflow-hidden"
-      style={{ borderLeftWidth: 3, borderLeftColor: faseInfo?.cor || "#6B7280" }}
-    >
-      <div className="px-3 pt-2.5 pb-2 space-y-1.5">
-        {/* Header: JornadaLead + parado badge */}
-        <div className="flex items-center justify-between">
-          <JornadaLead moduloAtual="negocios" size="sm" />
-          <div className="flex items-center gap-1">
-            {paradoInfo && (
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                paradoInfo.severity === "danger"
-                  ? "bg-red-500/10 text-red-600"
-                  : "bg-amber-500/10 text-amber-600"
+    <>
+      <div
+        draggable
+        onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
+        onClick={onClick}
+        className="group rounded-lg border bg-card cursor-pointer active:cursor-grabbing hover:bg-accent/40 transition-all duration-150 select-none overflow-hidden"
+        style={{ borderLeftWidth: 3, borderLeftColor: faseInfo?.cor || "#6B7280" }}
+      >
+        <div className="px-3 pt-2.5 pb-2 space-y-1.5">
+          {/* Header: JornadaLead + parado badge */}
+          <div className="flex items-center justify-between">
+            <JornadaLead moduloAtual="negocios" size="sm" />
+            <div className="flex items-center gap-1">
+              {paradoInfo && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  paradoInfo.severity === "danger"
+                    ? "bg-red-500/10 text-red-600"
+                    : "bg-amber-500/10 text-amber-600"
+                }`}>
+                  {paradoInfo.severity === "danger" ? "🔥" : "⚠️"} {paradoInfo.diasParado}d
+                </span>
+              )}
+              <span className={`text-[10px] font-bold ${
+                daysInFase <= 3 ? "text-emerald-600" : daysInFase <= 7 ? "text-amber-600" : "text-red-600"
               }`}>
-                {paradoInfo.severity === "danger" ? "🔥" : "⚠️"} {paradoInfo.diasParado}d
+                {daysInFase}d
               </span>
+            </div>
+          </div>
+
+          {/* Name */}
+          <p className="text-[13px] font-bold text-foreground truncate">{negocio.nome_cliente}</p>
+
+          {/* Empreendimento */}
+          {negocio.empreendimento && (
+            <p className="text-[11px] text-muted-foreground truncate">{negocio.empreendimento}</p>
+          )}
+
+          {/* VGV + Corretor */}
+          <div className="flex items-center justify-between text-[10px]">
+            {negocio.vgv_estimado ? (
+              <span className="font-semibold text-foreground flex items-center gap-0.5">
+                <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                {formatVGV(negocio.vgv_estimado)}
+              </span>
+            ) : (
+              <span className="text-muted-foreground italic">Sem VGV</span>
             )}
-            <span className={`text-[10px] font-bold ${
-              daysInFase <= 3 ? "text-emerald-600" : daysInFase <= 7 ? "text-amber-600" : "text-red-600"
-            }`}>
-              {daysInFase}d
-            </span>
+            {corretorNome && (
+              <span className="text-muted-foreground truncate max-w-[100px]">👤 {corretorNome}</span>
+            )}
+          </div>
+
+          {/* Comunicar button */}
+          <div className="pt-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-[10px] px-2 gap-1 text-primary hover:text-primary/80"
+              onClick={(e) => { e.stopPropagation(); setComunicacaoOpen(true); }}
+            >
+              <MessageCircle className="h-3 w-3" /> 💬 Comunicar
+            </Button>
           </div>
         </div>
-
-        {/* Name */}
-        <p className="text-[13px] font-bold text-foreground truncate">{negocio.nome_cliente}</p>
-
-        {/* Empreendimento */}
-        {negocio.empreendimento && (
-          <p className="text-[11px] text-muted-foreground truncate">{negocio.empreendimento}</p>
-        )}
-
-        {/* VGV + Corretor */}
-        <div className="flex items-center justify-between text-[10px]">
-          {negocio.vgv_estimado ? (
-            <span className="font-semibold text-foreground flex items-center gap-0.5">
-              <TrendingUp className="h-2.5 w-2.5 text-primary" />
-              {formatVGV(negocio.vgv_estimado)}
-            </span>
-          ) : (
-            <span className="text-muted-foreground italic">Sem VGV</span>
-          )}
-          {corretorNome && (
-            <span className="text-muted-foreground truncate max-w-[100px]">👤 {corretorNome}</span>
-          )}
-        </div>
       </div>
-    </div>
+      <CentralComunicacao
+        open={comunicacaoOpen}
+        onOpenChange={setComunicacaoOpen}
+        leadNome={negocio.nome_cliente}
+        leadEmpreendimento={negocio.empreendimento}
+      />
+    </>
   );
 }
 

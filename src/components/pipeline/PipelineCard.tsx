@@ -17,6 +17,7 @@ import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
 import PipelineQuickTransfer from "./PipelineQuickTransfer";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
+import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -126,6 +127,7 @@ const PipelineCard = memo(function PipelineCard({
   const [scheduleTime, setScheduleTime] = useState("10:00");
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
 
   const tempBorder = lead.temperatura ? TEMP_BORDER[lead.temperatura] || getCalcTempBorder(lead) : getCalcTempBorder(lead);
   const tempEmoji = getCalcTempEmoji(lead);
@@ -385,12 +387,10 @@ const PipelineCard = memo(function PipelineCard({
             </Button>
           )}
 
-          {/* WhatsApp */}
-          {lead.telefone && (
-            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-green-600 hover:text-green-700" onClick={handleWhatsApp}>
-              <MessageCircle className="h-3 w-3" /> WhatsApp
-            </Button>
-          )}
+          {/* Comunicar */}
+          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-blue-500 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); setComunicacaoOpen(true); }}>
+            <MessageCircle className="h-3 w-3" /> 💬 Comunicar
+          </Button>
 
           {/* Agendar Visita */}
           <Popover open={scheduleOpen} onOpenChange={setScheduleOpen}>
@@ -485,6 +485,13 @@ const PipelineCard = memo(function PipelineCard({
           currentCorretorId={lead.corretor_id}
           stages={stages}
           onTransferred={(corretorId, nome) => onTransferred?.(lead.id, corretorId, nome)}
+        />
+        <CentralComunicacao
+          open={comunicacaoOpen}
+          onOpenChange={setComunicacaoOpen}
+          leadId={lead.id}
+          leadNome={lead.nome}
+          leadEmpreendimento={lead.empreendimento}
         />
       </div>
     </TooltipProvider>

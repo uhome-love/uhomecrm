@@ -23,6 +23,7 @@ import PendingAttemptsBar from "./PendingAttemptsBar";
 import SessionCoachingModal, { type SessionMetrics } from "./SessionCoachingModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { playSoundSuccess, playSoundDing } from "@/lib/celebrations";
+import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 
 /** Format Brazilian phone */
 function formatPhone(phone: string): string {
@@ -94,6 +95,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [showMilestone, setShowMilestone] = useState<string | null>(null);
   const [expandedObj, setExpandedObj] = useState<number | null>(null);
+  const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
 
   // === ARENA: Round announcement ===
   const [showRound, setShowRound] = useState(false);
@@ -737,12 +739,12 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       size="sm"
-                      className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                      className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
                       style={{ height: "48px", fontSize: "15px" }}
-                      onClick={() => handleAction("whatsapp")}
+                      onClick={() => setComunicacaoOpen(true)}
                       disabled={showModal}
                     >
-                      <MessageCircle className="h-4 w-4" /> WhatsApp
+                      <MessageCircle className="h-4 w-4" /> 💬 Comunicar
                     </Button>
                     <Button
                       size="sm"
@@ -853,6 +855,16 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             setShowCoachingModal(false);
             onBack();
           }}
+        />
+      )}
+
+      {lead && (
+        <CentralComunicacao
+          open={comunicacaoOpen}
+          onOpenChange={setComunicacaoOpen}
+          leadId={lead.id}
+          leadNome={lead.nome}
+          leadEmpreendimento={lead.empreendimento}
         />
       )}
     </div>

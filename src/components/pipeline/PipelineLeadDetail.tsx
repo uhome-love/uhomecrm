@@ -29,6 +29,7 @@ import PartnershipDialog from "./PartnershipDialog";
 import GerenteManagementSection from "./GerenteManagementSection";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
 import HomiLeadAssistant from "./HomiLeadAssistant";
+import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import { format, formatDistanceToNow, differenceInHours, differenceInDays } from "date-fns";
@@ -110,6 +111,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   // Partnership
   const [partnerOpen, setPartnerOpen] = useState(false);
+  const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
@@ -262,6 +264,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   </Button>
                 </a>
               )}
+              <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
+                <MessageSquare className="h-3 w-3" /> 💬 Comunicar
+              </Button>
               <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full" onClick={() => { setActiveTab("historico"); setShowNewAtividade(true); }}>
                 <Plus className="h-3 w-3" /> Ação
               </Button>
@@ -721,6 +726,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       </SheetContent>
 
       <PartnershipDialog open={partnerOpen} onOpenChange={setPartnerOpen} leadId={lead.id} leadNome={lead.nome} corretorPrincipalId={lead.corretor_id} />
+      <CentralComunicacao open={comunicacaoOpen} onOpenChange={setComunicacaoOpen} leadId={lead.id} leadNome={lead.nome} leadEmpreendimento={lead.empreendimento} />
     </Sheet>
   );
 }
