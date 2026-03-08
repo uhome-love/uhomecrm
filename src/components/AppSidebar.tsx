@@ -374,9 +374,9 @@ export function AppSidebar() {
               <TooltipTrigger asChild>
                 <button
                   onClick={toggleSidebar}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <PanelLeftOpen className="h-4 w-4" />
+                  <img src="/images/uhome-logo-36.png" alt="Uhome" className="h-8 w-8 object-contain" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right" className="bg-neutral-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg">
@@ -386,7 +386,7 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center animate-slide-in-left">
-                <img src="/images/uhomesales-logo.png" alt="UhomeSales — Powered by Homi AI" className="h-10 w-auto object-contain shrink-0" />
+                <img src="/images/uhomesales-logo.png" alt="UhomeSales — Powered by Homi AI" className="w-full max-h-[55px] object-contain shrink-0" />
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
