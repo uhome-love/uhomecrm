@@ -47,6 +47,7 @@ import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
 import { getLevel } from "@/lib/gamification";
 import { useNavigate } from "react-router-dom";
+import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 
 const homiMascot = "/images/homi-mascot-opt.png";
 
@@ -349,11 +350,14 @@ export function AppSidebar() {
             /* Collapsed: just the avatar circle with tooltip */
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  onClick={() => navigate("/configuracoes")}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 text-white text-sm font-bold shrink-0 hover:ring-2 hover:ring-blue-400/50 transition-all"
-                >
-                  {initials}
+              <button onClick={() => navigate("/configuracoes")} className="shrink-0">
+                  <CorretorAvatar
+                    nome={profile.nome || user?.email || "U"}
+                    avatarUrl={profile.avatar_url}
+                    points={points}
+                    size="sm"
+                    showBadges={false}
+                  />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right" className="bg-neutral-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg">
@@ -363,10 +367,13 @@ export function AppSidebar() {
             </Tooltip>
           ) : (
             <>
-              {/* Avatar with initials */}
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-700 text-white text-sm font-bold shrink-0">
-                {initials}
-              </div>
+              <CorretorAvatar
+                nome={profile.nome || user?.email || "U"}
+                avatarUrl={profile.avatar_url}
+                points={points}
+                size="sm"
+                showBadges={false}
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
                   {profile.nome || user?.email}

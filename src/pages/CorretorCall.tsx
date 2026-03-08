@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, Pause, X, ChevronRight, Loader2 } from "lucide-react";
+import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
@@ -215,11 +216,16 @@ export default function CorretorCall() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="flex flex-col items-center text-center mt-8 px-6 w-full max-w-lg mx-auto"
         >
-          {/* Homi avatar with pulse */}
-          <div className="relative mb-4">
-            <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping" style={{ animationDuration: "3s" }} />
-            <img src={homiMascot} alt="Homi" className="h-14 w-14 object-contain relative z-10" />
-          </div>
+          {/* Corretor avatar with level effects */}
+          <CorretorAvatar
+            nome={nome || "Corretor"}
+            points={progress.pontos}
+            ranking={w.rankingPos}
+            streak={streakDays}
+            size="xl"
+            animated
+            showBadges
+          />
 
           <p className="text-[#60A5FA] text-sm font-semibold tracking-[0.3em] uppercase mb-2">
             ✦ MODO BATALHA ✦

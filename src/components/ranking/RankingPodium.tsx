@@ -1,6 +1,6 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getLevel } from "@/lib/gamification";
 import { motion } from "framer-motion";
+import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 
 export interface PodiumEntry {
   id: string;
@@ -52,12 +52,15 @@ export default function RankingPodium({ entries }: Props) {
             transition={{ delay: cfg.delay, duration: 0.4 }}
             className="flex flex-col items-center gap-1.5 min-w-[80px] sm:min-w-[100px]"
           >
-            <span className="text-2xl">{cfg.medal}</span>
-            <Avatar className={`h-12 w-12 ${avatarBorder[realPos]}`}>
-              <AvatarFallback className="text-sm font-bold bg-muted">
-                {getInitials(entry.nome)}
-              </AvatarFallback>
-            </Avatar>
+            <CorretorAvatar
+              nome={entry.nome}
+              avatarUrl={entry.avatarUrl}
+              points={entry.points}
+              ranking={realPos + 1}
+              size="lg"
+              animated
+              showBadges
+            />
             <p className="text-xs font-bold text-foreground text-center truncate max-w-[90px]">
               {entry.nome}
             </p>
