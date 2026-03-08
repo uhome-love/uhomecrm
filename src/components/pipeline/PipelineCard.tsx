@@ -340,7 +340,7 @@ const PipelineCard = memo(function PipelineCard({
             </div>
           </div>
 
-          {/* Game: Journey progress dots */}
+          {/* Game: Journey progress dots + module indicator */}
           {stageIndexMap && (
             <div className="flex items-center gap-0.5 pt-1">
               {stages.map((s, i) => {
