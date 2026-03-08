@@ -700,7 +700,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           scrollbarWidth: "thin",
         }}
       >
-        <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode scriptFilter={scriptTab} />
+        <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode scriptFilter={scriptTab} hideCta />
       </div>
 
       {/* CTA Final — pinned at bottom */}
