@@ -609,11 +609,11 @@ export default function CeoDashboard() {
       {/* ─── SEÇÃO 8: CEO ADVISOR ─── */}
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <CardTitle className="text-sm flex items-center gap-2"><Brain className="h-4 w-4 text-primary" /> CEO Advisor — HOMI</CardTitle>
-            <Button size="sm" onClick={gerarBriefing} disabled={advisorLoading}>
+            <Button size="sm" onClick={gerarBriefing} disabled={advisorLoading} className="w-full sm:w-auto">
               {advisorLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Brain className="h-3.5 w-3.5 mr-1" />}
-              🧠 Gerar Briefing Executivo
+              🧠 Gerar Briefing
             </Button>
           </div>
         </CardHeader>
