@@ -162,7 +162,10 @@ export default function CorretorDashboard() {
     slaExpired: radar.slaExpired,
     streak: 0,
   });
-  const streak = formatStreak(0); // TODO: compute from DB
+  const streakData = formatStreak(0); // TODO: compute from DB
+  const currentLevel = getLevel(progress.pontos);
+  const nextLevel = getNextLevel(progress.pontos);
+  const levelProgress = getLevelProgress(progress.pontos);
 
   return (
     <div className="flex flex-col h-[calc(100vh-56px-2rem)] px-4 md:px-6 lg:px-8 py-4 overflow-auto">
