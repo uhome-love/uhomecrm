@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useAuth } from "@/hooks/useAuth";
@@ -94,8 +94,9 @@ export default function CorretorCall() {
   const [phase, setPhase] = useState<CallPhase>("warmup");
   const [nome, setNome] = useState("");
   const [activeTab, setActiveTab] = useState("call");
-  const { setOpen } = useSidebar();
+  const { setOpen, open } = useSidebar();
   const [hasInteracted, setHasInteracted] = useState(false);
+  const prevOpenRef = useRef(open);
 
   // Track user interaction for sound
   useEffect(() => {
@@ -109,11 +110,13 @@ export default function CorretorCall() {
     if (hasInteracted) playWhoosh();
   }, [hasInteracted]);
 
-  // Auto-collapse sidebar in warmup & session
+  // Auto-collapse sidebar on mount, restore previous state on unmount
   useEffect(() => {
+    prevOpenRef.current = open;
     setOpen(false);
-    return () => { setOpen(true); };
-  }, [setOpen]);
+    return () => { setOpen(prevOpenRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Check meta exists
   const metaSalva = !!goals;

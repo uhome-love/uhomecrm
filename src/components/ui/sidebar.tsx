@@ -51,9 +51,13 @@ const SidebarProvider = React.forwardRef<
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen);
+  // Read persisted state from localStorage on init
+  const [_open, _setOpen] = React.useState(() => {
+    if (typeof window === "undefined") return defaultOpen;
+    const stored = localStorage.getItem("sidebar-collapsed");
+    if (stored !== null) return stored !== "true"; // stored "true" means collapsed, so open=false
+    return defaultOpen;
+  });
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -64,7 +68,9 @@ const SidebarProvider = React.forwardRef<
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
+      // Persist to localStorage
+      localStorage.setItem("sidebar-collapsed", String(!openState));
+      // Also set cookie for SSR compat
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [setOpenProp, open],
