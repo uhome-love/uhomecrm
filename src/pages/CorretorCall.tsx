@@ -475,19 +475,18 @@ export default function CorretorCall() {
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-neutral-500 w-4">🔥</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
                   <motion.div
                     animate={{ width: `${ligPct}%` }}
                     transition={{ duration: 0.5 }}
-                    className="h-full rounded-full"
-                    style={{ background: "linear-gradient(90deg, #22C55E, #3B82F6)" }}
+                    className="h-full rounded-full bg-orange-500"
                   />
                 </div>
                 <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.tentativas}/{progress.metaLigacoes}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-neutral-500 w-4">✅</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
                   <motion.div
                     animate={{ width: `${aprvPct}%` }}
                     transition={{ duration: 0.5 }}
@@ -498,7 +497,7 @@ export default function CorretorCall() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-neutral-500 w-4">📅</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
                   <motion.div
                     animate={{ width: `${Math.min(100, ((progress.visitasMarcadas || 0) / Math.max(1, progress.metaVisitas)) * 100)}%` }}
                     transition={{ duration: 0.5 }}
