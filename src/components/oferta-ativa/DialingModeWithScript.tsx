@@ -408,8 +408,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   // Objections with context-specific answers
   const objections = [
     { emoji: "💰", label: "Está caro", answer: `Para o ${lead.empreendimento || "empreendimento"} especificamente: compare o m² com a região. Temos condições de entrada facilitada e financiamento. Posso montar uma simulação para você?` },
-    { emoji: "⏰", label: "Não é o momento", answer: `Entendo! Mas o ${lead.empreendimento || "empreendimento"} já vendeu boa parte das unidades. As melhores — com melhor posição e sol — vão primeiro. Reservar sem custo garante a oportunidade.` },
     { emoji: "🤔", label: "Preciso pensar", answer: `Faz sentido! Que tal uma visita sem compromisso? Muitos clientes decidem ao ver pessoalmente. Posso agendar algo rápido de 20 minutos?` },
+    { emoji: "❌", label: "Não é o momento", answer: `Entendo! Mas o ${lead.empreendimento || "empreendimento"} já vendeu boa parte das unidades. As melhores — com melhor posição e sol — vão primeiro. Reservar sem custo garante a oportunidade.` },
     { emoji: "👫", label: "Falar com cônjuge", answer: `Claro! Que tal agendar uma visita juntos? Assim vocês dois conhecem e decidem juntos. Qual o melhor dia para vocês dois?` },
   ];
 
