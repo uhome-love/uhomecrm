@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Phone, CheckCircle, CalendarDays, Building2, Flame, AlertTriangle,
+  Phone, CheckCircle, CalendarDays, Building2, Flame,
   Trophy, ArrowRight, Clock, Loader2, Send,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
