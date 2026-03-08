@@ -260,14 +260,6 @@ serve(async (req) => {
             prioridade_lead: prioridadeLead,
             aceite_status: "pendente_distribuicao",
           });
-            origem_detalhe: lead.source || lead.origin || null,
-            jetimob_lead_id: jetimobId,
-            observacoes: msg || null,
-            corretor_id: null,
-            created_by: userId,
-            prioridade_lead: prioridadeLead,
-            aceite_status: "pendente_distribuicao",
-          });
 
         if (insertError) {
           console.error(`Insert error for ${jetimobId}:`, insertError.message);
