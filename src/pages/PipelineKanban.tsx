@@ -8,7 +8,7 @@ import MaterialsLibrary from "@/components/pipeline/MaterialsLibrary";
 import SequenceBuilder from "@/components/pipeline/SequenceBuilder";
 import SequenceLibrary from "@/components/pipeline/SequenceLibrary";
 import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
-import PipelinePrioridades from "@/components/pipeline/PipelinePrioridades";
+
 import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashboard";
 import ForecastPonderadoPanel from "@/components/pipeline/ForecastPonderadoPanel";
 import PipelineAdvancedFilters, {
@@ -28,7 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-const PRIORIDADES_KEY = "uhome-prioridades-open";
+
 
 export default function PipelineKanban() {
   const pipeline = usePipeline();
@@ -42,17 +42,6 @@ export default function PipelineKanban() {
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
-  const [prioridadesOpen, setPrioridadesOpen] = useState(() => {
-    try { return localStorage.getItem(PRIORIDADES_KEY) !== "false"; } catch { return true; }
-  });
-
-  const togglePrioridades = useCallback(() => {
-    setPrioridadesOpen(prev => {
-      const next = !prev;
-      try { localStorage.setItem(PRIORIDADES_KEY, String(next)); } catch {}
-      return next;
-    });
-  }, []);
 
   // Load partnerships
   useEffect(() => {
@@ -419,17 +408,6 @@ export default function PipelineKanban() {
           ) : null}
         </div>
 
-        {/* Right side panel — Prioridades */}
-        {activeTab === "kanban" && (
-          <PipelinePrioridades
-            leads={filteredLeads}
-            stages={pipeline.stages}
-            corretorNomes={pipeline.corretorNomes}
-            onSelectLead={setSelectedLead}
-            open={prioridadesOpen}
-            onToggle={togglePrioridades}
-          />
-        )}
       </div>
 
       {/* Dialogs */}
