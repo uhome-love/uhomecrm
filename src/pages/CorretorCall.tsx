@@ -9,11 +9,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowLeft, Flame, Target, Trophy, Users, Clock, Zap, CheckCircle } from "lucide-react";
+import { Phone, ArrowLeft, Flame, Target, Trophy, Users, Clock, Zap, CheckCircle, Pause, X, ChevronRight } from "lucide-react";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSidebar } from "@/components/ui/sidebar";
+import { getLevel, getNextLevel } from "@/lib/gamification";
 import { toast } from "sonner";
 
 const homiMascot = "/images/homi-mascot-opt.png";
@@ -21,10 +23,10 @@ const homiMascot = "/images/homi-mascot-opt.png";
 type CallPhase = "warmup" | "session";
 
 function getProgressColor(pct: number) {
-  if (pct >= 100) return "bg-success";
+  if (pct >= 100) return "bg-emerald-500";
   if (pct >= 70) return "bg-primary";
-  if (pct >= 40) return "bg-warning";
-  return "bg-danger-500/70";
+  if (pct >= 40) return "bg-amber-500";
+  return "bg-red-500/70";
 }
 
 export default function CorretorCall() {
@@ -35,6 +37,18 @@ export default function CorretorCall() {
   const [phase, setPhase] = useState<CallPhase>("warmup");
   const [nome, setNome] = useState("");
   const [activeTab, setActiveTab] = useState("call");
+  const { setOpen } = useSidebar();
+
+  // Auto-collapse sidebar in session mode
+  useEffect(() => {
+    if (phase === "session") {
+      setOpen(false);
+    }
+    return () => {
+      // Restore sidebar when leaving
+      setOpen(true);
+    };
+  }, [phase, setOpen]);
 
   // Check meta exists
   const metaSalva = !!goals;
@@ -59,14 +73,12 @@ export default function CorretorCall() {
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
 
-      // Ranking
       const { data: rankingData } = await supabase
         .from("oferta_ativa_tentativas")
         .select("corretor_id, pontos")
         .gte("created_at", today + "T00:00:00");
 
       const points: Record<string, number> = {};
-      const names: Record<string, string> = {};
       rankingData?.forEach(r => {
         points[r.corretor_id] = (points[r.corretor_id] || 0) + (r.pontos || 0);
       });
@@ -77,15 +89,12 @@ export default function CorretorCall() {
       const aboveId = myPos > 1 ? sorted[myPos - 2]?.[0] : null;
       const abovePts = aboveId ? points[aboveId] : 0;
 
-      // Get name of person above
       let aboveName = "";
       if (aboveId) {
         const { data: profile } = await (supabase.from("profiles").select("nome") as any).eq("user_id", aboveId).single();
         aboveName = profile?.nome?.split(" ")[0] || "Líder";
       }
 
-      // Available leads count
-      const now = new Date().toISOString();
       const { count: availableLeads } = await supabase
         .from("oferta_ativa_leads")
         .select("id", { count: "exact", head: true })
@@ -99,7 +108,7 @@ export default function CorretorCall() {
         abovePts,
         ptsToNext: Math.max(0, abovePts - myPts),
         availableLeads: availableLeads || 0,
-        estimatedMinutes: Math.round((availableLeads || 0) * 2), // ~2min per lead
+        estimatedMinutes: Math.round((availableLeads || 0) * 2),
       };
     },
     enabled: !!user,
@@ -110,6 +119,10 @@ export default function CorretorCall() {
 
   const ligPct = Math.min(100, Math.round((progress.tentativas / progress.metaLigacoes) * 100));
   const aprvPct = Math.min(100, Math.round((progress.aproveitados / progress.metaAproveitados) * 100));
+
+  const currentLevel = getLevel(progress.pontos);
+  const nextLevel = getNextLevel(progress.pontos);
+  const ligacoesFaltam = Math.max(0, progress.metaLigacoes - progress.tentativas);
 
   if (!metaSalva) return null;
 
@@ -122,16 +135,13 @@ export default function CorretorCall() {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md space-y-6"
         >
-          {/* Back button */}
           <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => navigate("/corretor")}>
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar à Central
           </Button>
 
-          {/* Mission card */}
           <Card className="border-primary/20 overflow-hidden">
             <div className="h-1.5 bg-gradient-to-r from-primary to-primary/60" />
             <CardContent className="p-6 space-y-5">
-              {/* Header */}
               <div className="text-center space-y-2">
                 <div className="flex items-center justify-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
@@ -142,7 +152,6 @@ export default function CorretorCall() {
                 </p>
               </div>
 
-              {/* Progress so far (if already started) */}
               {progress.tentativas > 0 && (
                 <div className="space-y-2 p-3 rounded-xl bg-muted/50 border border-border">
                   <p className="text-xs font-medium text-muted-foreground text-center">Progresso até agora</p>
@@ -169,7 +178,6 @@ export default function CorretorCall() {
                 </div>
               )}
 
-              {/* Ranking info */}
               {w.rankingPos > 0 && (
                 <div className="p-3 rounded-xl bg-warning/5 border border-warning/20 space-y-1">
                   <div className="flex items-center gap-2">
@@ -180,16 +188,15 @@ export default function CorretorCall() {
                   </div>
                   {w.ptsToNext > 0 && w.aboveName && (
                     <p className="text-xs text-muted-foreground pl-6">
-                      {w.aboveName} tem {w.abovePts}pts. Você tem {w.myPts}pts. <span className="font-bold text-warning-700">{w.ptsToNext} pontos para ultrapassá-lo.</span>
+                      {w.aboveName} tem {w.abovePts}pts. Você tem {w.myPts}pts. <span className="font-bold text-warning">{w.ptsToNext} pontos para ultrapassá-lo.</span>
                     </p>
                   )}
                   {w.ptsToNext === 0 && w.rankingPos === 1 && (
-                    <p className="text-xs text-success pl-6 font-medium">🏆 Você lidera o ranking!</p>
+                    <p className="text-xs text-emerald-600 pl-6 font-medium">🏆 Você lidera o ranking!</p>
                   )}
                 </div>
               )}
 
-              {/* Available leads */}
               <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
                 <span className="flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5" /> Leads disponíveis: <span className="font-bold text-foreground">{w.availableLeads}</span>
@@ -201,10 +208,10 @@ export default function CorretorCall() {
                 )}
               </div>
 
-              {/* CTA */}
               <Button
                 size="lg"
-                className="w-full h-14 text-lg font-bold gap-2 bg-primary hover:bg-primary-600 rounded-xl"
+                className="w-full h-14 text-lg font-bold gap-2 rounded-xl"
+                style={{ background: "linear-gradient(135deg, #16A34A, #15803D)" }}
                 onClick={() => setPhase("session")}
               >
                 <Flame className="h-5 w-5" /> COMEÇAR AGORA
@@ -223,39 +230,74 @@ export default function CorretorCall() {
     );
   }
 
-  // ── SESSION SCREEN ──
+  // ── IMMERSIVE SESSION SCREEN ──
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] max-w-full">
-      {/* Progress bar (always visible at top) */}
-      <div className="shrink-0 px-4 py-2 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 text-sm">
-            <span className="flex items-center gap-1">🔥 <strong className="text-foreground">{progress.tentativas}/{progress.metaLigacoes}</strong></span>
-            <span className="flex items-center gap-1">✅ <strong className="text-foreground">{progress.aproveitados}/{progress.metaAproveitados}</strong></span>
-            <span className="flex items-center gap-1">📅 <strong className="text-foreground">{progress.visitasMarcadas}/{progress.metaVisitas}</strong></span>
-            <span className="flex items-center gap-1">⭐ <strong className="text-primary">{progress.pontos}pts</strong></span>
+      {/* ═══ TOP SESSION BAR ═══ */}
+      <div className="shrink-0 border-b border-border bg-card/95 backdrop-blur-sm">
+        <div className="px-4 py-2.5 max-w-[1600px] mx-auto">
+          {/* Row 1: Title + stats + actions */}
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Flame className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-bold text-foreground">Sessão em andamento</span>
+              </div>
+              <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
+                <span>🔥 <strong className="text-foreground">{progress.tentativas}</strong>/{progress.metaLigacoes} ligações</span>
+                <span>✅ <strong className="text-emerald-600">{progress.aproveitados}</strong>/{progress.metaAproveitados} aprov.</span>
+                <span>⭐ <strong className="text-primary">{progress.pontos}pts</strong></span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                onClick={() => navigate("/corretor")}
+              >
+                <Pause className="h-3 w-3" /> Pausar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1 text-destructive hover:bg-destructive/10"
+                onClick={() => navigate("/corretor")}
+              >
+                <X className="h-3 w-3" /> Encerrar
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" onClick={() => navigate("/corretor")}>
-              <ArrowLeft className="h-3 w-3" /> Central
-            </Button>
+
+          {/* Row 2: Progress bar */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  animate={{ width: `${ligPct}%` }}
+                  transition={{ duration: 0.5 }}
+                  className={`h-full rounded-full ${getProgressColor(ligPct)}`}
+                />
+              </div>
+            </div>
+            <span className="text-xs text-muted-foreground font-medium shrink-0 tabular-nums">{ligPct}% da meta</span>
           </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-1">
-          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-            <motion.div
-              animate={{ width: `${ligPct}%` }}
-              transition={{ duration: 0.5 }}
-              className={`h-full rounded-full ${getProgressColor(ligPct)}`}
-            />
-          </div>
-          <p className="text-[10px] text-muted-foreground text-right mt-0.5">{ligPct}% da meta</p>
+
+          {/* Row 3: Level progression hint */}
+          {nextLevel && ligacoesFaltam > 0 && (
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className={`text-[10px] font-semibold ${currentLevel.color}`}>{currentLevel.emoji} {currentLevel.label}</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <span className={`text-[10px] font-semibold ${nextLevel.color}`}>{nextLevel.emoji} {nextLevel.label}</span>
+              <span className="text-[10px] text-muted-foreground">: faltam {ligacoesFaltam} ligações</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Session content with tabs */}
+      {/* ═══ SESSION CONTENT ═══ */}
       <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 h-auto mb-4">
               <TabsTrigger value="call" className="gap-1 text-xs py-2">
