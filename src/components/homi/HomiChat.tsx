@@ -7,7 +7,8 @@ import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-const homiMascot = "/images/homi-mascot-opt.png";
+import HomiAnimated from "./HomiAnimated";
+import type { HomiAnimState } from "./HomiAnimated";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -30,6 +31,7 @@ export default function HomiChat({ onBack }: Props) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -40,6 +42,11 @@ export default function HomiChat({ onBack }: Props) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Derive animation state
+  const homiState: HomiAnimState = isLoading
+    ? (isStreaming ? "talking" : "thinking")
+    : "idle";
 
   // Save conversation to DB
   const saveConversation = async (msgs: Msg[]) => {
@@ -75,6 +82,7 @@ export default function HomiChat({ onBack }: Props) {
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
+    setIsStreaming(false);
 
     let assistantSoFar = "";
 
@@ -105,6 +113,7 @@ export default function HomiChat({ onBack }: Props) {
       let streamDone = false;
 
       const upsertAssistant = (nextChunk: string) => {
+        if (!isStreaming) setIsStreaming(true);
         assistantSoFar += nextChunk;
         setMessages(prev => {
           const last = prev[prev.length - 1];
@@ -166,6 +175,7 @@ export default function HomiChat({ onBack }: Props) {
     }
 
     setIsLoading(false);
+    setIsStreaming(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -182,7 +192,7 @@ export default function HomiChat({ onBack }: Props) {
         <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" />
         </button>
-        <img src={homiMascot} alt="HOMI" className="h-8 w-8 rounded-lg" />
+        <HomiAnimated state={homiState} size={32} />
         <div>
           <p className="font-display font-bold text-sm text-foreground">Chat com HOMI</p>
           <p className="text-[11px] text-muted-foreground">Pergunte qualquer coisa sobre vendas</p>
@@ -194,7 +204,7 @@ export default function HomiChat({ onBack }: Props) {
         {messages.length === 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center h-full gap-6">
             <div className="text-center">
-              <img src={homiMascot} alt="HOMI" className="h-16 w-16 mx-auto rounded-2xl shadow-lg mb-3" />
+              <HomiAnimated state="idle" size={64} className="mx-auto mb-3" />
               <p className="text-sm font-semibold text-foreground mb-1">Fala, corretor! 💪</p>
               <p className="text-xs text-muted-foreground max-w-sm">
                 Me conta o que tá rolando com seu lead que eu te ajudo na hora.
@@ -218,7 +228,13 @@ export default function HomiChat({ onBack }: Props) {
             <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
               className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.role === "assistant" && <img src={homiMascot} alt="HOMI" className="h-7 w-7 rounded-lg shrink-0 mt-1" />}
+              {msg.role === "assistant" && (
+                <HomiAnimated
+                  state={i === messages.length - 1 && isStreaming ? "talking" : "idle"}
+                  size={28}
+                  className="shrink-0 mt-1"
+                />
+              )}
               <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 msg.role === "user" ? "bg-primary text-primary-foreground rounded-br-md" : "bg-card border border-border rounded-bl-md"
               }`}>
@@ -234,7 +250,7 @@ export default function HomiChat({ onBack }: Props) {
 
         {isLoading && messages[messages.length - 1]?.role === "user" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2.5">
-            <img src={homiMascot} alt="HOMI" className="h-7 w-7 rounded-lg shrink-0 mt-1" />
+            <HomiAnimated state="thinking" size={28} className="shrink-0 mt-1" />
             <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3">
               <div className="flex gap-1">
                 <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:0ms]" />

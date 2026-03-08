@@ -1,7 +1,7 @@
 import { useState, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Bot } from "lucide-react";
-const homiMascot = "/images/homi-mascot-opt.png";
+import HomiAnimated from "@/components/homi/HomiAnimated";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,7 +59,6 @@ function HomiGreetingInner() {
   const { user } = useAuth();
   const { isAdmin, isGestor } = useUserRole();
   const [show, setShow] = useState(false);
-  const [nome, setNome] = useState("");
   const [greeting, setGreeting] = useState("");
   const [tip, setTip] = useState("");
 
@@ -77,7 +76,6 @@ function HomiGreetingInner() {
       .single()
       .then(({ data }) => {
         const firstName = data?.nome?.split(" ")[0] || "você";
-        setNome(firstName);
 
         const tod = getTimeOfDay();
         setGreeting(pickRandom(greetings[tod]).replace("{nome}", firstName));
@@ -115,15 +113,11 @@ function HomiGreetingInner() {
             </button>
 
             <div className="flex gap-3 items-start">
-              <motion.div
-                animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
-                transition={{ duration: 1.5, ease: "easeInOut", repeat: 1, repeatDelay: 1 }}
-                className="shrink-0 origin-bottom-right"
-              >
+              <div className="shrink-0">
                 <div className="h-16 w-16 rounded-2xl bg-accent border-2 border-primary/20 flex items-center justify-center overflow-hidden">
-                  <img src={homiMascot} alt="Homi" className="h-14 w-14 object-contain" />
+                  <HomiAnimated state="idle" size={56} />
                 </div>
-              </motion.div>
+              </div>
 
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-1 mb-1">

@@ -1,13 +1,12 @@
-import { useRef, useEffect, memo } from "react";
+import { useRef, useEffect, memo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Loader2, Trash2, Clock, Sparkles } from "lucide-react";
+import { X, Send, Loader2, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useHomi } from "@/contexts/HomiContext";
 import ReactMarkdown from "react-markdown";
-import { useState } from "react";
-
-const homiMascot = "/images/homi-mascot-opt.png";
+import HomiAnimated from "./HomiAnimated";
+import type { HomiAnimState } from "./HomiAnimated";
 
 const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
   corretor: [
@@ -38,8 +37,22 @@ function HomiPanelInner() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [prevMsgCount, setPrevMsgCount] = useState(0);
 
   const actions = QUICK_ACTIONS[homiRole] || QUICK_ACTIONS.gestor;
+
+  // Derive HOMI animation state
+  const homiAnimState: HomiAnimState = isLoading
+    ? (messages.length > 0 && messages[messages.length - 1]?.role === "user" ? "thinking" : "talking")
+    : messages.length > prevMsgCount && messages[messages.length - 1]?.role === "assistant"
+      ? "talking"
+      : "idle";
+
+  useEffect(() => {
+    if (!isLoading && messages.length > 0) {
+      setPrevMsgCount(messages.length);
+    }
+  }, [isLoading, messages.length]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -97,7 +110,7 @@ function HomiPanelInner() {
             <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shrink-0">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary-foreground/20 border border-primary-foreground/30 flex items-center justify-center overflow-hidden shrink-0">
-                  <img src={homiMascot} alt="Homi" className="h-9 w-9 object-contain" />
+                  <HomiAnimated state={homiAnimState} size={36} />
                 </div>
                 <div>
                   <p className="text-sm font-bold tracking-tight flex items-center gap-1.5">
@@ -121,7 +134,7 @@ function HomiPanelInner() {
               {messages.length === 0 ? (
                 <div className="space-y-4 pt-4">
                   <div className="flex flex-col items-center gap-2">
-                    <img src={homiMascot} alt="Homi" className="h-20 w-20 object-contain" />
+                    <HomiAnimated state="idle" size={80} />
                     <p className="text-sm text-muted-foreground text-center">
                       {userName ? `Fala, ${userName}!` : "Olá!"} 💪 Eu sou o <strong className="text-primary">HOMI</strong>.
                       <br />Como posso ajudar?
@@ -149,7 +162,10 @@ function HomiPanelInner() {
                   <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} gap-2`}>
                     {msg.role === "assistant" && (
                       <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden shrink-0 mt-0.5">
-                        <img src={homiMascot} alt="Homi" className="h-6 w-6 object-contain" />
+                        <HomiAnimated
+                          state={i === messages.length - 1 && isLoading ? "talking" : "idle"}
+                          size={24}
+                        />
                       </div>
                     )}
                     <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
@@ -171,7 +187,7 @@ function HomiPanelInner() {
               {isLoading && messages[messages.length - 1]?.role === "user" && (
                 <div className="flex justify-start gap-2">
                   <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={homiMascot} alt="Homi" className="h-6 w-6 object-contain animate-pulse" />
+                    <HomiAnimated state="thinking" size={24} />
                   </div>
                   <div className="bg-muted rounded-xl rounded-bl-md px-3 py-2">
                     <div className="flex gap-1">

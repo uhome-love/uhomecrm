@@ -1,13 +1,14 @@
 import { memo } from "react";
 import { motion } from "framer-motion";
 import { useHomi } from "@/contexts/HomiContext";
-
-const homiMascot = "/images/homi-mascot-opt.png";
+import HomiAnimated from "./HomiAnimated";
 
 function HomiAvatarInner() {
   const { isOpen, toggleHomi, unseenCount, isLoading } = useHomi();
 
   if (isOpen) return null;
+
+  const animState = isLoading ? "thinking" : unseenCount > 0 ? "alert" : "idle";
 
   return (
     <button
@@ -32,11 +33,7 @@ function HomiAvatarInner() {
         className="relative rounded-full bg-card border-2 border-primary/30 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center overflow-hidden"
         style={{ height: "4.5rem", width: "4.5rem" }}
       >
-        <img
-          src={homiMascot}
-          alt="Homi"
-          className={`h-16 w-16 object-contain ${isLoading ? "animate-pulse" : ""}`}
-        />
+        <HomiAnimated state={animState} size={64} />
 
         {/* Thinking indicator */}
         {isLoading && (
