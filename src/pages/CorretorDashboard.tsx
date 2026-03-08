@@ -41,6 +41,7 @@ export default function CorretorDashboard() {
   const navigate = useNavigate();
 
   const [nome, setNome] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [finalizando, setFinalizando] = useState(false);
   const [showMetaCelebration, setShowMetaCelebration] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
@@ -112,8 +113,9 @@ export default function CorretorDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("nome").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("nome, avatar_preview_url").eq("user_id", user.id).single().then(({ data }) => {
       if (data?.nome) setNome(data.nome.split(" ")[0]);
+      if ((data as any)?.avatar_preview_url) setAvatarUrl((data as any).avatar_preview_url);
     });
   }, [user]);
 
@@ -179,19 +181,25 @@ export default function CorretorDashboard() {
 
       {/* HEADER — full width */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-4">
-        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-          <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain" />
+        <div className="h-14 w-14 rounded-full shrink-0 overflow-hidden flex items-center justify-center"
+          style={{
+            background: avatarUrl ? "transparent" : "linear-gradient(135deg, #3B82F6, #6366F1)",
+            border: avatarUrl ? "2px solid hsl(var(--border))" : "none",
+          }}
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={nome || "Avatar"} className="h-full w-full object-cover rounded-full" />
+          ) : (
+            <span className="text-lg font-bold text-white">
+              {(nome || "C").slice(0, 2).toUpperCase()}
+            </span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-semibold text-foreground">
             {greetingData.greeting}
           </h1>
           <p className="text-sm text-muted-foreground truncate">{greetingData.subtitle}</p>
-          {streakData.emoji && (
-            <p className={`text-xs font-semibold mt-0.5 ${streakData.color}`}>
-              {streakData.emoji} {streakData.label}
-            </p>
-          )}
         </div>
       </motion.div>
 
@@ -292,36 +300,53 @@ export default function CorretorDashboard() {
             <Card className="border-border/60">
               <CardContent className="p-3 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{streakData.emoji || "🔥"}</span>
-                    <span className={`text-xl font-bold ${streakData.color || "text-muted-foreground"}`}>0</span>
-                    <span className="text-xs text-muted-foreground">dias de streak</span>
-                  </div>
+                  {/* Streak = 0: motivational text only, no empty bar */}
+                  {progress.pontos === 0 && !streakData.label.includes("dias") ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🔥</span>
+                      <span className="text-sm text-muted-foreground italic">Comece seu streak hoje!</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{streakData.emoji || "🔥"}</span>
+                      <span className={`text-xl font-bold ${streakData.color || "text-muted-foreground"}`}>0</span>
+                      <span className="text-xs text-muted-foreground">dias de streak</span>
+                    </div>
+                  )}
                   <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${currentLevel.bgColor} ${currentLevel.color}`}>
                     {currentLevel.emoji} {currentLevel.label}
                   </span>
                 </div>
-                <div className="relative h-2 rounded-full bg-muted overflow-hidden">
-                  <motion.div
-                    className={`absolute inset-y-0 left-0 rounded-full ${
-                      currentLevel.id === "iniciante" ? "bg-muted-foreground/40"
-                      : currentLevel.id === "ativo" ? "bg-emerald-500"
-                      : currentLevel.id === "engajado" ? "bg-orange-500"
-                      : currentLevel.id === "destaque" ? "bg-amber-500"
-                      : currentLevel.id === "elite" ? "bg-primary"
-                      : "bg-purple-500"
-                    }`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${levelProgress}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-muted-foreground font-medium">{progress.pontos}/{nextLevel ? nextLevel.minPoints : "MAX"} pts</p>
-                  <p className="text-[10px] text-muted-foreground italic">
-                    {progress.pontos === 0 ? "Faça sua primeira ligação!" : streakData.label}
-                  </p>
-                </div>
+                {/* Only show progress bar if there's actual progress */}
+                {progress.pontos > 0 && (
+                  <>
+                    <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        className={`absolute inset-y-0 left-0 rounded-full ${
+                          currentLevel.id === "iniciante" ? "bg-muted-foreground/40"
+                          : currentLevel.id === "ativo" ? "bg-emerald-500"
+                          : currentLevel.id === "engajado" ? "bg-orange-500"
+                          : currentLevel.id === "destaque" ? "bg-amber-500"
+                          : currentLevel.id === "elite" ? "bg-primary"
+                          : "bg-purple-500"
+                        }`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${levelProgress}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-muted-foreground font-medium">{progress.pontos}/{nextLevel ? nextLevel.minPoints : "MAX"} pts</p>
+                      <p className="text-[10px] text-muted-foreground italic">{streakData.label}</p>
+                    </div>
+                  </>
+                )}
+                {progress.pontos === 0 && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground font-medium">0/{nextLevel ? nextLevel.minPoints : "100"} pts</p>
+                    <p className="text-[10px] text-muted-foreground italic">Faça sua primeira ligação!</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
