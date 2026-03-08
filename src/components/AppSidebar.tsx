@@ -435,7 +435,7 @@ export function AppSidebar() {
               </TooltipTrigger>
               <TooltipContent side="right" className="bg-neutral-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg">
                 <p className="font-medium">{profile.nome || user?.email}</p>
-                <p className="text-xs text-neutral-400">{roleLabel} · {level.emoji} {level.label}</p>
+                <p className="text-xs text-neutral-400">{roleLabel}</p>
               </TooltipContent>
             </Tooltip>
           ) : (
@@ -453,7 +453,7 @@ export function AppSidebar() {
                   {profile.nome || user?.email}
                 </p>
                 <p className="text-xs text-neutral-400 font-medium flex items-center gap-1">
-                  {roleLabel} · <span>{level.emoji} {level.label}</span>
+                  {roleLabel}
                 </p>
               </div>
               <Button
