@@ -33,6 +33,7 @@ interface SystemUser {
 
 export default function TeamManagement() {
   const { user } = useAuth();
+  const { user } = useAuth();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
