@@ -587,6 +587,77 @@ export type Database = {
           },
         ]
       }
+      custom_list_sessions: {
+        Row: {
+          aproveitados: number
+          corretor_id: string
+          encerrada_at: string | null
+          id: string
+          iniciada_at: string
+          ligacoes: number
+          lista_id: string
+          pts_ganhos: number
+        }
+        Insert: {
+          aproveitados?: number
+          corretor_id: string
+          encerrada_at?: string | null
+          id?: string
+          iniciada_at?: string
+          ligacoes?: number
+          lista_id: string
+          pts_ganhos?: number
+        }
+        Update: {
+          aproveitados?: number
+          corretor_id?: string
+          encerrada_at?: string | null
+          id?: string
+          iniciada_at?: string
+          ligacoes?: number
+          lista_id?: string
+          pts_ganhos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_list_sessions_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "custom_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_lists: {
+        Row: {
+          corretor_id: string
+          criada_at: string
+          filtros: Json
+          id: string
+          nome: string
+          ultima_usada_at: string | null
+          vezes_usada: number
+        }
+        Insert: {
+          corretor_id: string
+          criada_at?: string
+          filtros?: Json
+          id?: string
+          nome?: string
+          ultima_usada_at?: string | null
+          vezes_usada?: number
+        }
+        Update: {
+          corretor_id?: string
+          criada_at?: string
+          filtros?: Json
+          id?: string
+          nome?: string
+          ultima_usada_at?: string | null
+          vezes_usada?: number
+        }
+        Relationships: []
+      }
       distribuicao_escala: {
         Row: {
           aprovacao_status: string
