@@ -432,7 +432,7 @@ export default function CorretorCall() {
               <div className="hidden sm:flex items-center gap-3 text-xs text-neutral-400">
                 <span>🔥 <strong className="text-white">{progress.tentativas}</strong>/{progress.metaLigacoes}</span>
                 <span>✅ <strong className="text-emerald-400">{progress.aproveitados}</strong>/{progress.metaAproveitados}</span>
-                <span>📅 <strong className="text-blue-400">{progress.visitas || 0}</strong>/{progress.metaVisitas}</span>
+                <span>📅 <strong className="text-blue-400">{progress.visitasMarcadas || 0}</strong>/{progress.metaVisitas}</span>
                 <motion.span
                   key={progress.pontos}
                   initial={{ scale: 1.3, color: "#facc15" }}
@@ -494,12 +494,12 @@ export default function CorretorCall() {
                 <span className="text-[10px] text-neutral-500 w-4">📅</span>
                 <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
                   <motion.div
-                    animate={{ width: `${Math.min(100, ((progress.visitas || 0) / Math.max(1, progress.metaVisitas)) * 100)}%` }}
+                    animate={{ width: `${Math.min(100, ((progress.visitasMarcadas || 0) / Math.max(1, progress.metaVisitas)) * 100)}%` }}
                     transition={{ duration: 0.5 }}
                     className="h-full rounded-full bg-blue-500"
                   />
                 </div>
-                <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.visitas || 0}/{progress.metaVisitas}</span>
+                <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
               </div>
             </div>
           </div>
