@@ -133,13 +133,14 @@ export default function CorretorCall() {
         belowName = profile?.nome?.split(" ")[0] || "#2";
       }
 
-      // Count leads available for this corretor specifically
+      // Count leads available — corretor-specific: only from lists they have access to
       const now = new Date().toISOString();
       const { count: myQueueCount } = await supabase
         .from("oferta_ativa_leads")
         .select("id", { count: "exact", head: true })
         .in("status", ["na_fila", "em_cooldown"])
-        .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`);
+        .or(`proxima_tentativa_apos.is.null,proxima_tentativa_apos.lt.${now}`)
+        .or(`corretor_id.is.null,corretor_id.eq.${user!.id}`);
 
       const queueLeads = myQueueCount || 0;
       const estMinutes = Math.min(120, queueLeads * 2); // cap at 2h
@@ -190,10 +191,10 @@ export default function CorretorCall() {
   // ── WARMUP: IMMERSIVE BATTLE ENTRY ──
   if (phase === "warmup" || phase === "launching") {
     return (
-      <ImmersiveScreen fullScreen className="flex flex-col items-center overflow-y-auto z-50">
+      <ImmersiveScreen fullScreen className="overflow-y-auto z-50">
 
         {/* ZONA 1 — TOPO */}
-        <div className="relative z-10 w-full max-w-2xl px-6 pt-6 flex items-center justify-between">
+        <div className="w-full max-w-lg mx-auto px-6 pt-6 flex items-center justify-between">
           <button
             onClick={() => navigate("/corretor")}
             className="text-neutral-400 text-sm hover:text-white transition-colors flex items-center gap-1.5"
@@ -212,7 +213,7 @@ export default function CorretorCall() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 flex flex-col items-center text-center mt-8 px-6"
+          className="flex flex-col items-center text-center mt-8 px-6 w-full max-w-lg mx-auto"
         >
           {/* Homi avatar with pulse */}
           <div className="relative mb-4">
@@ -261,7 +262,7 @@ export default function CorretorCall() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.25 }}
-          className="relative z-10 w-full max-w-lg px-6 mt-8 space-y-4"
+          className="w-full max-w-lg mx-auto px-6 mt-8 space-y-4"
         >
           {/* Ranking rivalry card */}
           {w.rankingPos > 0 && (
@@ -316,12 +317,12 @@ export default function CorretorCall() {
                 </span>
               )}
             </div>
-            <div className="h-2 rounded-full bg-white/[0.12] overflow-hidden">
+            <div className="h-2 rounded-full bg-white/20 overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${levelProg}%` }}
                 transition={{ duration: 1, delay: 0.5 }}
-                className="h-full rounded-full bg-[#60A5FA]"
+                className="h-full rounded-full bg-blue-400"
               />
             </div>
           </div>
@@ -332,7 +333,7 @@ export default function CorretorCall() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
-          className="relative z-10 w-full max-w-lg px-6 mt-8 mb-12 flex flex-col items-center space-y-5"
+          className="w-full max-w-lg mx-auto px-6 mt-8 mb-12 flex flex-col items-center space-y-5"
         >
           {/* Queue info */}
           <p className="text-sm text-neutral-400 flex items-center gap-3">

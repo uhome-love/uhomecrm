@@ -85,7 +85,7 @@ export default function ImmersiveScreen({
     >
       <Particles count={particleCount} />
       <div
-        className="relative z-10 w-full"
+        className="relative z-10 w-full flex flex-col items-center"
         onClick={onClose ? (e) => e.stopPropagation() : undefined}
       >
         {children}
