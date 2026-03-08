@@ -91,7 +91,8 @@ export default function CorretorDashboard() {
       const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
       const myPos = sorted.findIndex(([id]) => id === user!.id) + 1;
       const totalBrokers = sorted.length || 1;
-      const nextAbove = myPos > 1 ? sorted[myPos - 2]?.[1] - (counts[user!.id] || 0) : 0;
+      const myPts = counts[user!.id] || 0;
+      const nextAbove = myPos > 1 ? sorted[myPos - 2]?.[1] - myPts : 0;
 
       return {
         pendingLeads: pendingLeads || 0,
@@ -101,6 +102,8 @@ export default function CorretorDashboard() {
         totalBrokers,
         ptsToNext: Math.max(0, nextAbove),
         priorityLeads: (priorityLeads || []).slice(0, 3),
+        myPts,
+        totalWithPoints: sorted.length,
       };
     },
     enabled: !!user,
@@ -153,7 +156,7 @@ export default function CorretorDashboard() {
     }
   };
 
-  const radar = radarData || { pendingLeads: 0, slaExpired: 0, visitas: [], rankingPos: 0, totalBrokers: 1, ptsToNext: 0, priorityLeads: [] };
+  const radar = radarData || { pendingLeads: 0, slaExpired: 0, visitas: [], rankingPos: 0, totalBrokers: 1, ptsToNext: 0, priorityLeads: [], myPts: 0, totalWithPoints: 0 };
 
   // Dynamic greeting
   const greetingData = getDynamicGreeting({
@@ -161,6 +164,8 @@ export default function CorretorDashboard() {
     rankingPos: radar.rankingPos,
     slaExpired: radar.slaExpired,
     streak: 0,
+    myPts: radar.myPts,
+    totalWithPoints: radar.totalWithPoints,
   });
   const streakData = formatStreak(0); // TODO: compute from DB
   const currentLevel = getLevel(progress.pontos);
