@@ -130,6 +130,10 @@ export default function TeamManagement() {
   // Detect unlinked system corretores that could be added to this team
   const linkedUserIds = members.filter((m) => m.user_id).map((m) => m.user_id!);
   const availableUsers = systemUsers.filter((u) => !linkedUserIds.includes(u.user_id));
+  
+  // Onboarding status for team members
+  const { data: onboardingMap = {} } = useTeamOnboarding(linkedUserIds);
+  const totalOnboardingSteps = ONBOARDING_STEPS.length;
 
   // Auto-add: find corretores created in Admin for this manager but not yet in team_members
   const syncFromAdmin = async () => {
