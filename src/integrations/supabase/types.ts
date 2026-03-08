@@ -693,6 +693,95 @@ export type Database = {
         }
         Relationships: []
       }
+      comunicacao_historico: {
+        Row: {
+          canal: string
+          corretor_id: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          mensagem_enviada: string | null
+          personalizado_homi: boolean | null
+          template_id: string | null
+        }
+        Insert: {
+          canal: string
+          corretor_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          mensagem_enviada?: string | null
+          personalizado_homi?: boolean | null
+          template_id?: string | null
+        }
+        Update: {
+          canal?: string
+          corretor_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          mensagem_enviada?: string | null
+          personalizado_homi?: boolean | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comunicacao_historico_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "comunicacao_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comunicacao_templates: {
+        Row: {
+          ativo: boolean | null
+          campanha: string | null
+          canal: string
+          conteudo: string
+          created_at: string | null
+          criado_por: string | null
+          empreendimento: string | null
+          id: string
+          tipo: string
+          titulo: string
+          uso_count: number | null
+          variaveis: Json | null
+          visivel_para: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          campanha?: string | null
+          canal: string
+          conteudo: string
+          created_at?: string | null
+          criado_por?: string | null
+          empreendimento?: string | null
+          id?: string
+          tipo: string
+          titulo: string
+          uso_count?: number | null
+          variaveis?: Json | null
+          visivel_para?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          campanha?: string | null
+          canal?: string
+          conteudo?: string
+          created_at?: string | null
+          criado_por?: string | null
+          empreendimento?: string | null
+          id?: string
+          tipo?: string
+          titulo?: string
+          uso_count?: number | null
+          variaveis?: Json | null
+          visivel_para?: string | null
+        }
+        Relationships: []
+      }
       conteudos_marketing: {
         Row: {
           aprovado_at: string | null
