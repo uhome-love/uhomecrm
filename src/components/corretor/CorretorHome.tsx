@@ -153,28 +153,25 @@ export default function CorretorHome() {
         />
       </motion.div>
 
-      {/* Gamification — Points & Level */}
+      {/* Gamification — Level Progress + Recent Achievements */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <Card className="border-primary/10 overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                  <Trophy className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-display font-extrabold text-foreground">{progress.pontos} pts</p>
-                  <p className="text-[10px] text-muted-foreground">Pontuação de hoje</p>
-                </div>
+          <CardContent className="p-4 space-y-3">
+            <LevelProgressBar points={progress.pontos} />
+            {unlocked.length > 0 && (
+              <div className="flex items-center gap-1.5 pt-1">
+                <p className="text-[10px] text-muted-foreground font-medium shrink-0">Recentes:</p>
+                {unlocked.slice(0, 5).map(u => {
+                  const def = ACHIEVEMENTS_MAP[u.conquista_id];
+                  return def ? (
+                    <span key={u.conquista_id} className="text-sm" title={def.label}>{def.emoji}</span>
+                  ) : null;
+                })}
+                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-primary ml-auto" onClick={() => navigate("/conquistas")}>
+                  Ver todas →
+                </Button>
               </div>
-              <div className="text-right">
-                <Badge variant="outline" className={`gap-1 text-xs font-bold ${progress.levelColor}`}>
-                  {progress.level}
-                </Badge>
-                <p className="text-[9px] text-muted-foreground mt-0.5">{progress.pontos}/{progress.nextLevelTarget} pts</p>
-              </div>
-            </div>
-            <Progress value={progress.levelProgress} className="h-1.5" />
+            )}
           </CardContent>
         </Card>
       </motion.div>
