@@ -23,6 +23,7 @@ import PendingAttemptsBar from "./PendingAttemptsBar";
 import SessionCoachingModal, { type SessionMetrics } from "./SessionCoachingModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { playSoundSuccess, playSoundDing } from "@/lib/celebrations";
+import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 
 /** Format Brazilian phone */
 function formatPhone(phone: string): string {
