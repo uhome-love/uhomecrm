@@ -14,6 +14,273 @@ export type Database = {
   }
   public: {
     Tables: {
+      academia_aulas: {
+        Row: {
+          conteudo_url: string | null
+          created_at: string | null
+          descricao: string | null
+          duracao_minutos: number | null
+          id: string
+          obrigatoria: boolean | null
+          ordem: number | null
+          tipo: string
+          titulo: string
+          trilha_id: string | null
+          xp_recompensa: number | null
+          youtube_id: string | null
+        }
+        Insert: {
+          conteudo_url?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_minutos?: number | null
+          id?: string
+          obrigatoria?: boolean | null
+          ordem?: number | null
+          tipo: string
+          titulo: string
+          trilha_id?: string | null
+          xp_recompensa?: number | null
+          youtube_id?: string | null
+        }
+        Update: {
+          conteudo_url?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_minutos?: number | null
+          id?: string
+          obrigatoria?: boolean | null
+          ordem?: number | null
+          tipo?: string
+          titulo?: string
+          trilha_id?: string | null
+          xp_recompensa?: number | null
+          youtube_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_aulas_trilha_id_fkey"
+            columns: ["trilha_id"]
+            isOneToOne: false
+            referencedRelation: "academia_trilhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_certificados: {
+        Row: {
+          codigo: string | null
+          corretor_id: string | null
+          emitido_at: string | null
+          id: string
+          trilha_id: string | null
+        }
+        Insert: {
+          codigo?: string | null
+          corretor_id?: string | null
+          emitido_at?: string | null
+          id?: string
+          trilha_id?: string | null
+        }
+        Update: {
+          codigo?: string | null
+          corretor_id?: string | null
+          emitido_at?: string | null
+          id?: string
+          trilha_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_certificados_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_certificados_trilha_id_fkey"
+            columns: ["trilha_id"]
+            isOneToOne: false
+            referencedRelation: "academia_trilhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_checklist: {
+        Row: {
+          aula_id: string | null
+          id: string
+          item: string
+          ordem: number | null
+        }
+        Insert: {
+          aula_id?: string | null
+          id?: string
+          item: string
+          ordem?: number | null
+        }
+        Update: {
+          aula_id?: string | null
+          id?: string
+          item?: string
+          ordem?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_checklist_aula_id_fkey"
+            columns: ["aula_id"]
+            isOneToOne: false
+            referencedRelation: "academia_aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_progresso: {
+        Row: {
+          aula_id: string | null
+          checklist_items: Json | null
+          concluida_at: string | null
+          corretor_id: string | null
+          created_at: string | null
+          id: string
+          quiz_score: number | null
+          status: string | null
+          trilha_id: string | null
+          xp_ganho: number | null
+        }
+        Insert: {
+          aula_id?: string | null
+          checklist_items?: Json | null
+          concluida_at?: string | null
+          corretor_id?: string | null
+          created_at?: string | null
+          id?: string
+          quiz_score?: number | null
+          status?: string | null
+          trilha_id?: string | null
+          xp_ganho?: number | null
+        }
+        Update: {
+          aula_id?: string | null
+          checklist_items?: Json | null
+          concluida_at?: string | null
+          corretor_id?: string | null
+          created_at?: string | null
+          id?: string
+          quiz_score?: number | null
+          status?: string | null
+          trilha_id?: string | null
+          xp_ganho?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_progresso_aula_id_fkey"
+            columns: ["aula_id"]
+            isOneToOne: false
+            referencedRelation: "academia_aulas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_progresso_corretor_id_fkey"
+            columns: ["corretor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_progresso_trilha_id_fkey"
+            columns: ["trilha_id"]
+            isOneToOne: false
+            referencedRelation: "academia_trilhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_quiz: {
+        Row: {
+          aula_id: string | null
+          explicacao: string | null
+          id: string
+          opcoes: Json
+          ordem: number | null
+          pergunta: string
+        }
+        Insert: {
+          aula_id?: string | null
+          explicacao?: string | null
+          id?: string
+          opcoes: Json
+          ordem?: number | null
+          pergunta: string
+        }
+        Update: {
+          aula_id?: string | null
+          explicacao?: string | null
+          id?: string
+          opcoes?: Json
+          ordem?: number | null
+          pergunta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_quiz_aula_id_fkey"
+            columns: ["aula_id"]
+            isOneToOne: false
+            referencedRelation: "academia_aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_trilhas: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          nivel: string | null
+          ordem: number | null
+          publicada: boolean | null
+          thumbnail_url: string | null
+          titulo: string
+          xp_total: number | null
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nivel?: string | null
+          ordem?: number | null
+          publicada?: boolean | null
+          thumbnail_url?: string | null
+          titulo: string
+          xp_total?: number | null
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          nivel?: string | null
+          ordem?: number | null
+          publicada?: boolean | null
+          thumbnail_url?: string | null
+          titulo?: string
+          xp_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_trilhas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           acao: string
