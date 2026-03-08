@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
 import { Phone, MessageCircle, Mail, Trophy, CheckCircle, Zap, Bot, CalendarCheck } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -26,7 +29,7 @@ import { useNavigate } from "react-router-dom";
 const ACHIEVEMENTS_MAP: Record<string, { emoji: string; label: string }> = Object.fromEntries(
   ACHIEVEMENTS.map(a => [a.id, { emoji: a.emoji, label: a.label }])
 );
-const homiMascot = "/images/homi-mascot-opt.png";
+
 
 export default function CorretorHome() {
   const { progress, goals, saveGoals } = useCorretorProgress();
@@ -35,6 +38,18 @@ export default function CorretorHome() {
   const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading } = useCorretorHomeData();
   const { newlyUnlocked, dismissCelebration, unlocked } = useConquistas();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<{ nome?: string; avatar_url?: string; avatar_preview_url?: string } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("nome, avatar_url, avatar_preview_url").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data) setProfile(data);
+    });
+  }, [user]);
+
+  const avatarSrc = profile?.avatar_url || profile?.avatar_preview_url;
+  const initials = (profile?.nome || "").split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
@@ -55,9 +70,21 @@ export default function CorretorHome() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="border-primary/15 bg-accent/50 overflow-hidden">
           <CardContent className="p-4 flex items-start gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shrink-0 overflow-hidden">
-              <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain" />
-            </div>
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt={profile?.nome || "Avatar"}
+                className="h-14 w-14 shrink-0 rounded-full object-cover"
+                style={{ border: "2px solid hsl(217 91% 60%)", boxShadow: "0 0 12px hsl(217 91% 60% / 0.3)" }}
+              />
+            ) : (
+              <div
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white font-black text-xl select-none"
+                style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(258 90% 66%))", border: "2px solid hsl(217 91% 60%)", boxShadow: "0 0 12px hsl(217 91% 60% / 0.3)" }}
+              >
+                {initials || "?"}
+              </div>
+            )}
             <div>
               <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
                 <Bot className="h-3.5 w-3.5" /> Homi diz
