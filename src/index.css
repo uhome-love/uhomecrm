@@ -201,3 +201,62 @@
     @apply border-primary/20 -translate-y-px;
   }
 }
+
+/* ── Avatar 3D Title Effects ── */
+
+/* Ativo — aura azul pulsante */
+.avatar-ativo {
+  box-shadow: 0 0 24px rgba(59,130,246,0.5);
+  animation: pulseBlue 2s ease-in-out infinite;
+}
+@keyframes pulseBlue {
+  0%, 100% { box-shadow: 0 0 16px rgba(59,130,246,0.3); }
+  50%       { box-shadow: 0 0 32px rgba(59,130,246,0.7); }
+}
+
+/* Dedicado — borda laranja girando */
+.avatar-dedicado {
+  border-radius: 12px;
+  background: conic-gradient(#F97316, #FCD34D, #F97316);
+  padding: 2px;
+  animation: spinBorder 3s linear infinite;
+}
+@keyframes spinBorder {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
+}
+
+/* Mestre — shimmer roxo */
+.avatar-mestre {
+  background: linear-gradient(135deg, #7C3AED, #EC4899, #7C3AED);
+  background-size: 200% 200%;
+  animation: shimmerPurple 2s ease infinite;
+  padding: 2px;
+  border-radius: 12px;
+}
+@keyframes shimmerPurple {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Lenda — partículas orbitando */
+.avatar-lenda-glow {
+  box-shadow: 0 0 32px rgba(234,179,8,0.7);
+}
+.avatar-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FCD34D;
+  pointer-events: none;
+  animation: avatarOrbit 3s linear infinite;
+}
+.avatar-particle:nth-child(2) { animation-delay: -0.75s; }
+.avatar-particle:nth-child(3) { animation-delay: -1.5s; }
+.avatar-particle:nth-child(4) { animation-delay: -2.25s; }
+@keyframes avatarOrbit {
+  from { transform: rotate(0deg) translateX(50px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+}
