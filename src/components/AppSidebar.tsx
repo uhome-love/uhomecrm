@@ -30,6 +30,7 @@ import {
   Cog,
   GraduationCap,
   Handshake,
+  ListChecks,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";

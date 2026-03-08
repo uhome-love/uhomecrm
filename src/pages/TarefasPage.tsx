@@ -333,7 +333,7 @@ export default function TarefasPage() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           draggable
-                          onDragStart={e => onDragStart(e, t.id)}
+                          onDragStart={e => onDragStart(e as unknown as React.DragEvent, t.id)}
                           className="rounded-lg border border-border bg-background p-3 cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md transition-all group"
                           style={{ borderLeft: prio.border }}
                         >

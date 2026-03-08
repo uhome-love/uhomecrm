@@ -59,6 +59,7 @@ const PagadoriasPage = lazy(() => import("./pages/PagadoriasPage"));
 const ComissoesPage = lazy(() => import("./pages/ComissoesPage"));
 const MarketingCentral = lazy(() => import("./pages/MarketingCentral"));
 const HomiAna = lazy(() => import("./pages/HomiAna"));
+const TarefasPage = lazy(() => import("./pages/TarefasPage"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const TemplatesComunicacao = lazy(() => import("./pages/TemplatesComunicacao"));
 const AcademiaPage = lazy(() => import("./pages/AcademiaPage"));
@@ -177,6 +178,7 @@ const App = () => (
             <Route path="/backoffice/comissoes" element={<ProtectedPage roles={["backoffice", "admin"]}><ComissoesPage /></ProtectedPage>} />
             <Route path="/backoffice/marketing" element={<ProtectedPage roles={["backoffice", "admin"]}><MarketingCentral /></ProtectedPage>} />
             <Route path="/backoffice/homi-ana" element={<ProtectedPage roles={["backoffice", "admin"]}><HomiAna /></ProtectedPage>} />
+            <Route path="/backoffice/tarefas" element={<ProtectedPage roles={["backoffice", "admin"]}><TarefasPage /></ProtectedPage>} />
 
             <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
           </Routes>
