@@ -29,7 +29,7 @@ export const NEGOCIOS_FASES = [
   { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "🤝" },
   { key: "documentacao", label: "Documentação", cor: "#8B5CF6", icon: "📄" },
   { key: "assinado", label: "Assinado", cor: "#22C55E", icon: "✅" },
-  { key: "distrato", label: "Distrato", cor: "#EF4444", icon: "❌" },
+  { key: "distrato", label: "Caiu", cor: "#EF4444", icon: "❌" },
 ] as const;
 
 export function useNegocios() {
