@@ -130,10 +130,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
         .filter(Boolean) as string[];
 
       if (teamUserIds.length > 0) {
-        const ids = teamUserIds.join(",");
-        query = query.or(`corretor_id.in.(${ids}),corretor_id.is.null`);
+        query = query.in("corretor_id", teamUserIds);
       } else {
-        query = query.is("corretor_id", null);
+        // Gerente sem time vinculado: retorna vazio
+        query = query.eq("id", "00000000-0000-0000-0000-000000000000");
       }
     } else {
       // Corretores: only their own leads
