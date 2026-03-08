@@ -239,9 +239,10 @@ const PipelineCard = memo(function PipelineCard({
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't open detail if clicking on action buttons area
+    // Don't open detail if clicking on action buttons area or if comunicacao drawer is opening
     const target = e.target as HTMLElement;
-    if (target.closest("[data-actions-area]")) return;
+    if (target.closest("[data-actions-area]") || target.closest("[data-no-card-click]")) return;
+    if (comunicacaoOpen) return;
     onClick();
   };
 
@@ -398,8 +399,8 @@ const PipelineCard = memo(function PipelineCard({
           ) : null}
 
           {/* Comunicar */}
-          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-blue-500 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); setComunicacaoOpen(true); }}>
-            <MessageCircle className="h-3 w-3" /> 💬 Comunicar
+          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-blue-500 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setComunicacaoOpen(true); }}>
+            <MessageCircle className="h-3 w-3" /> 💬 Mensagem
           </Button>
 
           {/* Agendar Visita */}
@@ -479,7 +480,8 @@ const PipelineCard = memo(function PipelineCard({
           </DropdownMenu>
         </div>
 
-        {/* Dialogs */}
+        {/* Dialogs - rendered inside card but use portals */}
+        <div data-no-card-click onClick={(e) => e.stopPropagation()}>
         <PartnershipDialog
           open={partnerOpen}
           onOpenChange={setPartnerOpen}
@@ -503,6 +505,7 @@ const PipelineCard = memo(function PipelineCard({
           leadNome={lead.nome}
           leadEmpreendimento={lead.empreendimento}
         />
+        </div>
       </div>
     </TooltipProvider>
   );
