@@ -446,5 +446,3 @@
 .homi-particle-3 { animation: homiParticleExplode3 0.8s ease-out 0.3s forwards; }
 .homi-particle-4 { animation: homiParticleExplode4 0.8s ease-out 0.4s forwards; }
 .homi-particle-5 { animation: homiParticleExplode5 0.8s ease-out 0.5s forwards; }
-  filter: drop-shadow(0 0 8px rgba(239,68,68,0.6));
-}
