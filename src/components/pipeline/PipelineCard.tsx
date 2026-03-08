@@ -1,6 +1,6 @@
 import { memo, useState, useMemo } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, Mail, Clock, MessageCircle, Calendar, AlertCircle, Timer, ChevronDown, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft } from "lucide-react";
+import { Phone, Mail, Clock, MessageCircle, Calendar, AlertCircle, Timer, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { differenceInHours, differenceInMinutes, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
