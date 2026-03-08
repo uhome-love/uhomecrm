@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { PhoneOff, ThumbsDown, ThumbsUp, AlertCircle, PhoneMissed, Loader2, CalendarCheck, Timer } from "lucide-react";
+import { Loader2, CalendarCheck, Timer } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
