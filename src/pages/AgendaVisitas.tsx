@@ -14,109 +14,11 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import VisitasList from "@/components/visitas/VisitasList";
+import VisitasByCorretor from "@/components/visitas/VisitasByCorretor";
 import VisitasCalendar from "@/components/visitas/VisitasCalendar";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
 
-// ─── By-Corretor View ───
-function VisitasByCorretor({
-  visitas,
-  onUpdateStatus,
-}: {
-  visitas: Visita[];
-  onUpdateStatus: (id: string, status: VisitaStatus) => void;
-}) {
-  const today = startOfDay(new Date());
-  const weekEnd = addDays(startOfWeek(today, { weekStartsOn: 1 }), 6);
-
-  const corretorMap = useMemo(() => {
-    const map = new Map<string, { nome: string; visitas: Visita[] }>();
-    for (const v of visitas) {
-      const key = v.corretor_id;
-      if (!map.has(key)) map.set(key, { nome: v.corretor_nome || "Sem corretor", visitas: [] });
-      map.get(key)!.visitas.push(v);
-    }
-    return Array.from(map.values()).sort((a, b) => {
-      const aToday = a.visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00"))).length;
-      const bToday = b.visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00"))).length;
-      return bToday - aToday;
-    });
-  }, [visitas]);
-
-  const getCorretorStatus = (vs: Visita[]) => {
-    const hasToday = vs.some(v => isToday(new Date(v.data_visita + "T12:00:00")));
-    if (hasToday) return { dot: "bg-green-500", label: "Visita hoje" };
-    const hasWeek = vs.some(v => {
-      const d = new Date(v.data_visita + "T12:00:00");
-      return !isBefore(d, today) && !isBefore(weekEnd, d);
-    });
-    if (hasWeek) return { dot: "bg-amber-400", label: "Visitas na semana" };
-    return { dot: "bg-gray-400", label: "Sem visitas agendadas" };
-  };
-
-  const STATUS_EMOJI: Record<string, string> = {
-    marcada: "🟡", confirmada: "🔵", realizada: "✅", no_show: "❌", reagendada: "🔄", cancelada: "⚫",
-  };
-
-  if (corretorMap.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-8">Nenhuma visita encontrada.</p>;
-  }
-
-  return (
-    <div className="space-y-3">
-      {corretorMap.map((c) => {
-        const todayVisitas = c.visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00")));
-        const status = getCorretorStatus(c.visitas);
-        return (
-          <div key={c.nome} className="rounded-xl border bg-card overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b">
-              <div className="flex items-center gap-2">
-                <div className={cn("h-2.5 w-2.5 rounded-full", status.dot)} />
-                <span className="text-sm font-bold text-foreground">{c.nome}</span>
-              </div>
-              <span className="text-xs text-muted-foreground font-medium">
-                {todayVisitas.length > 0 ? `${todayVisitas.length} visita${todayVisitas.length > 1 ? "s" : ""} hoje` : `${c.visitas.length} visita${c.visitas.length > 1 ? "s" : ""}`}
-              </span>
-            </div>
-            <div className="divide-y divide-border/50">
-              {c.visitas.map(v => {
-                const d = new Date(v.data_visita + "T12:00:00");
-                const isPastPending = isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
-                return (
-                  <div key={v.id} className={cn("flex items-center gap-3 px-4 py-2.5 group hover:bg-muted/30 transition-colors", isPastPending && "bg-red-50/50")}>
-                    <span className="text-xs font-mono font-semibold text-muted-foreground w-12 shrink-0">
-                      {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-semibold text-foreground">{v.nome_cliente}</span>
-                      {v.empreendimento && <span className="text-xs text-muted-foreground"> — {v.empreendimento}</span>}
-                      {!isToday(d) && (
-                        <span className="text-[10px] text-muted-foreground ml-2">
-                          {format(d, "dd/MM", { locale: ptBR })}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-sm shrink-0">{STATUS_EMOJI[v.status] || "🟡"}</span>
-                    {/* Quick inline actions on hover */}
-                    <div className="hidden group-hover:flex items-center gap-1 shrink-0">
-                      {(v.status === "marcada" || v.status === "confirmada") && (
-                        <>
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5 text-green-600" onClick={() => onUpdateStatus(v.id, "realizada")}>✅</Button>
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5 text-red-600" onClick={() => onUpdateStatus(v.id, "no_show")}>❌</Button>
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5 text-purple-600" onClick={() => onUpdateStatus(v.id, "reagendada")}>🔄</Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── Day Summary Card ───
 function DaySummary({ visitas }: { visitas: Visita[] }) {
@@ -483,7 +385,7 @@ export default function AgendaVisitas() {
 
         {(isAdmin || isGestor) && (
           <TabsContent value="por-corretor" className="mt-3">
-            <VisitasByCorretor visitas={filtered} onUpdateStatus={handleUpdateStatus} />
+            <VisitasByCorretor visitas={filtered} onUpdateStatus={handleUpdateStatus} onDelete={deleteVisita} />
           </TabsContent>
         )}
       </Tabs>
