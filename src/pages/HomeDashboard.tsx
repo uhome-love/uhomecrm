@@ -63,14 +63,16 @@ export default function HomeDashboard() {
   const [nome, setNome] = useState("");
   const [period, setPeriod] = useState<Period>("semana");
 
-  // Route by role: admin→/ceo, backoffice→/backoffice, corretor→/corretor
+  // Route by role: admin→/ceo, gestor→/gerente/dashboard, backoffice→/backoffice, corretor→/corretor
   useEffect(() => {
     if (roleLoading) return;
     if (isAdmin) {
       navigate("/ceo", { replace: true });
     } else if (isBackoffice) {
       navigate("/backoffice", { replace: true });
-    } else if (!isGestor) {
+    } else if (isGestor) {
+      navigate("/gerente/dashboard", { replace: true });
+    } else {
       navigate("/corretor", { replace: true });
     }
   }, [isAdmin, isGestor, isBackoffice, roleLoading, navigate]);
