@@ -417,29 +417,38 @@ export default function CorretorCall() {
     );
   }
 
-  // ── IMMERSIVE SESSION SCREEN ──
+  // ── IMMERSIVE SESSION SCREEN (dark theme) ──
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] max-w-full">
+    <div className="flex flex-col h-[calc(100vh-56px)] max-w-full" style={{ background: "#0D1117" }}>
       {/* ═══ TOP SESSION BAR ═══ */}
-      <div className="shrink-0 border-b border-border bg-card/95 backdrop-blur-sm">
+      <div className="shrink-0 border-b" style={{ borderColor: "rgba(255,255,255,0.08)", background: "#161B22" }}>
         <div className="px-4 py-2.5 max-w-[1600px] mx-auto">
           <div className="flex items-center justify-between gap-4 mb-2">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
                 <Flame className="h-4 w-4 text-red-500" />
-                <span className="text-sm font-bold text-foreground">Sessão em andamento</span>
+                <span className="text-sm font-bold text-white">Sessão em andamento</span>
               </div>
-              <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
-                <span>🔥 <strong className="text-foreground">{progress.tentativas}</strong>/{progress.metaLigacoes} ligações</span>
-                <span>✅ <strong className="text-emerald-600">{progress.aproveitados}</strong>/{progress.metaAproveitados} aprov.</span>
-                <span>⭐ <strong className="text-primary">{progress.pontos}pts</strong></span>
+              <div className="hidden sm:flex items-center gap-3 text-xs text-neutral-400">
+                <span>🔥 <strong className="text-white">{progress.tentativas}</strong>/{progress.metaLigacoes}</span>
+                <span>✅ <strong className="text-emerald-400">{progress.aproveitados}</strong>/{progress.metaAproveitados}</span>
+                <span>📅 <strong className="text-blue-400">{progress.visitas || 0}</strong>/{progress.metaVisitas}</span>
+                <motion.span
+                  key={progress.pontos}
+                  initial={{ scale: 1.3, color: "#facc15" }}
+                  animate={{ scale: 1, color: "#60A5FA" }}
+                  transition={{ duration: 0.5 }}
+                  className="font-bold"
+                >
+                  ⭐ {progress.pontos}pts
+                </motion.span>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                className="h-7 text-xs gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
                 onClick={() => navigate("/corretor")}
               >
                 <Pause className="h-3 w-3" /> Pausar
@@ -447,7 +456,7 @@ export default function CorretorCall() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs gap-1 text-destructive hover:bg-destructive/10"
+                className="h-7 text-xs gap-1 text-red-400 hover:bg-red-500/10"
                 onClick={() => navigate("/corretor")}
               >
                 <X className="h-3 w-3" /> Encerrar
@@ -455,25 +464,52 @@ export default function CorretorCall() {
             </div>
           </div>
 
+          {/* 3 separate progress bars */}
           <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <motion.div
-                  animate={{ width: `${ligPct}%` }}
-                  transition={{ duration: 0.5 }}
-                  className={`h-full rounded-full ${getProgressColor(ligPct)}`}
-                />
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-neutral-500 w-4">🔥</span>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <motion.div
+                    animate={{ width: `${ligPct}%` }}
+                    transition={{ duration: 0.5 }}
+                    className="h-full rounded-full"
+                    style={{ background: "linear-gradient(90deg, #22C55E, #3B82F6)" }}
+                  />
+                </div>
+                <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.tentativas}/{progress.metaLigacoes}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-neutral-500 w-4">✅</span>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <motion.div
+                    animate={{ width: `${aprvPct}%` }}
+                    transition={{ duration: 0.5 }}
+                    className="h-full rounded-full bg-emerald-500"
+                  />
+                </div>
+                <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.aproveitados}/{progress.metaAproveitados}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-neutral-500 w-4">📅</span>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <motion.div
+                    animate={{ width: `${Math.min(100, ((progress.visitas || 0) / Math.max(1, progress.metaVisitas)) * 100)}%` }}
+                    transition={{ duration: 0.5 }}
+                    className="h-full rounded-full bg-blue-500"
+                  />
+                </div>
+                <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.visitas || 0}/{progress.metaVisitas}</span>
               </div>
             </div>
-            <span className="text-xs text-muted-foreground font-medium shrink-0 tabular-nums">{ligPct}% da meta</span>
           </div>
 
           {nextLevel && ligacoesFaltam > 0 && (
             <div className="flex items-center gap-1.5 mt-1">
-              <span className={`text-[10px] font-semibold ${currentLevel.color}`}>{currentLevel.emoji} {currentLevel.label}</span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              <span className={`text-[10px] font-semibold ${nextLevel.color}`}>{nextLevel.emoji} {nextLevel.label}</span>
-              <span className="text-[10px] text-muted-foreground">: faltam {ligacoesFaltam} ligações</span>
+              <span className="text-[10px] font-semibold text-neutral-300">{currentLevel.emoji} {currentLevel.label}</span>
+              <ChevronRight className="h-3 w-3 text-neutral-500" />
+              <span className="text-[10px] font-semibold text-neutral-300">{nextLevel.emoji} {nextLevel.label}</span>
+              <span className="text-[10px] text-neutral-500">: faltam {ligacoesFaltam}</span>
             </div>
           )}
         </div>
@@ -483,14 +519,14 @@ export default function CorretorCall() {
       <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 h-auto mb-4">
-              <TabsTrigger value="call" className="gap-1 text-xs py-2">
+            <TabsList className="grid w-full grid-cols-3 h-auto mb-4" style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)" }}>
+              <TabsTrigger value="call" className="gap-1 text-xs py-2 text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/10">
                 <Phone className="h-3.5 w-3.5" /> Call
               </TabsTrigger>
-              <TabsTrigger value="aproveitados" className="gap-1 text-xs py-2">
+              <TabsTrigger value="aproveitados" className="gap-1 text-xs py-2 text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/10">
                 <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
               </TabsTrigger>
-              <TabsTrigger value="ranking" className="gap-1 text-xs py-2">
+              <TabsTrigger value="ranking" className="gap-1 text-xs py-2 text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/10">
                 <Trophy className="h-3.5 w-3.5" /> Ranking
               </TabsTrigger>
             </TabsList>
