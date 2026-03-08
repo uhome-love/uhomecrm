@@ -50,28 +50,28 @@ export default function BackofficeDashboard() {
 
   // Fetch marketing stats
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-
-    Promise.all([
-      supabase.from("marketing_entries").select("id", { count: "exact", head: true }).gte("created_at", weekAgo),
-      supabase.from("conteudos_marketing").select("tema, data_publicacao, status").order("data_publicacao", { ascending: false }).limit(1),
-    ]).then(([campaigns, posts]) => {
+    const fetchMkt = async () => {
+      const campaigns: any = await supabase.from("marketing_entries").select("id", { count: "exact", head: true }).gte("created_at", weekAgo);
+      const posts: any = await supabase.from("conteudos_marketing").select("tema, data_publicacao, status").order("data_publicacao", { ascending: false }).limit(1);
       setMktStats({
         campanhas: campaigns.count ?? 0,
         leadsHoje: 0,
         leadsSemana: 0,
         ultimoPost: posts.data?.[0]?.tema || "Nenhum ainda",
       });
-    });
+    };
+    fetchMkt();
   }, []);
 
   // Fetch financeiro stats
   useEffect(() => {
-    supabase.from("pagadorias").select("status, created_at").order("created_at", { ascending: false }).then(({ data }) => {
+    const fetchFin = async () => {
+      const { data }: any = await supabase.from("pagadorias").select("status, created_at").order("created_at", { ascending: false });
       const pendentes = (data || []).filter((p: any) => p.status === "pendente" || p.status === "rascunho").length;
       setFinStats({ pendentes, ultimoContrato: data?.[0]?.created_at ? format(new Date(data[0].created_at), "dd/MM") : "—" });
-    });
+    };
+    fetchFin();
   }, []);
 
   // Fetch marketplace stats
