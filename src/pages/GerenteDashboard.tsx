@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import PulseFeed from "@/components/pulse/PulseFeed";
 
 type Period = "dia" | "semana" | "mes";
 const periodLabels: Record<Period, string> = { dia: "Hoje", semana: "Esta Semana", mes: "Este Mês" };
@@ -612,6 +613,11 @@ export default function GerenteDashboard() {
           </Card>
         </motion.div>
       </div>
+
+      {/* ─── 5b. PULSE FEED ─── */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+        <PulseFeed />
+      </motion.div>
 
       {/* ─── 6. ATALHOS ─── */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
