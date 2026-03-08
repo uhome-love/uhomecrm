@@ -205,6 +205,11 @@ export default function CorretorDashboard() {
         </div>
       </motion.div>
 
+      {/* STATUS BAR — Roleta */}
+      <div className="mb-4">
+        <RoletaStatusBar />
+      </div>
+
       {/* GRID PRINCIPAL — 2 colunas desktop, 1 coluna mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-4 flex-1 min-h-0">
 
