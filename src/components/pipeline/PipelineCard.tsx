@@ -403,7 +403,7 @@ const PipelineCard = memo(function PipelineCard({
           )}
         </div>
 
-        <Separator />
+        <div className="h-px bg-border/50" />
 
         {/* ─── Actions section — semantic colors ─── */}
         <div data-actions-area className="px-2 py-1.5 flex items-center justify-between bg-muted/20">
