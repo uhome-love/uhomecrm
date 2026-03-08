@@ -824,7 +824,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode />
 
             {/* Objeções Rápidas — always visible */}
-            <div className="rounded-xl p-3 space-y-2" style={{ background: "#161B22", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="arena-card p-3 space-y-2">
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-amber-400" />
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Objeções Rápidas</h4>

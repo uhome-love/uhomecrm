@@ -82,23 +82,9 @@ function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaSt
 
   return (
     <div
-      className={`rounded-xl p-5 space-y-3 transition-all duration-150 cursor-pointer group ${
-        hasLeads ? "hover:border-white/20" : "opacity-50"
+      className={`arena-card rounded-xl p-5 space-y-3 cursor-pointer group ${
+        hasLeads ? "" : "opacity-50"
       }`}
-      style={{
-        background: "#161B22",
-        border: "1px solid rgba(255,255,255,0.08)",
-      }}
-      onMouseEnter={(e) => {
-        if (hasLeads) {
-          e.currentTarget.style.background = "#1C2128";
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "#161B22";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-      }}
     >
       <div className="flex items-start justify-between">
         <div>
