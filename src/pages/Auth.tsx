@@ -1,3 +1,4 @@
+import UhomeLogo from "@/components/UhomeLogo";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import { Mail, Lock, User, Loader2, ArrowRight } from "lucide-react";
@@ -232,7 +233,7 @@ export default function Auth() {
 
         {/* Logo — text-based, no image tint issues */}
         <div className="flex flex-col items-center anim-fis" style={{ marginBottom: 4 }}>
-          <img src="/images/uhomesales-logo.png" alt="UhomeSales — Powered by Homi AI" style={{ height: 120, width: "auto" }} className="object-contain" />
+          <UhomeLogo size="lg" showTagline />
         </div>
 
         {/* Subtitle */}
