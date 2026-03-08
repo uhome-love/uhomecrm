@@ -22,6 +22,7 @@ import RecentCallsHistory from "./RecentCallsHistory";
 import PendingAttemptsBar from "./PendingAttemptsBar";
 import SessionCoachingModal, { type SessionMetrics } from "./SessionCoachingModal";
 import { motion, AnimatePresence } from "framer-motion";
+import { playSoundSuccess, playSoundDing } from "@/lib/celebrations";
 
 /** Format Brazilian phone */
 function formatPhone(phone: string): string {
@@ -235,6 +236,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
         if (resultado === "com_interesse") {
           setStreak(prev => prev + 1);
+          playSoundSuccess();
           const tipoLabel = interesseTipo === "visita_marcada" ? "Visita Marcada" 
             : interesseTipo === "quer_visitar" ? "Possibilidade de Visita"
             : interesseTipo === "demonstrou_interesse" ? "Atendimento"

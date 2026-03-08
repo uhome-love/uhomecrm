@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
-import { Loader2, Save, Lock, User, Mail, Phone } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import { useUserRole } from "@/hooks/useUserRole";
+import { getSoundEnabled, setSoundEnabled, getCelebrationEnabled, setCelebrationEnabled } from "@/lib/celebrations";
 
 export default function Configuracoes() {
   const { user } = useAuth();
@@ -221,6 +223,44 @@ export default function Configuracoes() {
 
       {/* Notification Preferences */}
       <NotificationPreferences />
+
+      {/* Sound & Celebration Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <PartyPopper className="h-5 w-5 text-primary" />
+            Experiência
+          </CardTitle>
+          <CardDescription>Sons e celebrações do sistema</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="flex items-center gap-1.5 text-sm">
+                <Volume2 className="h-3.5 w-3.5" /> Sons de notificação
+              </Label>
+              <p className="text-xs text-muted-foreground">Toques sonoros ao registrar ações</p>
+            </div>
+            <Switch
+              checked={getSoundEnabled()}
+              onCheckedChange={(v) => { setSoundEnabled(v); toast.success(v ? "🔔 Sons ativados!" : "🔇 Sons desativados."); }}
+            />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="flex items-center gap-1.5 text-sm">
+                <PartyPopper className="h-3.5 w-3.5" /> Celebrações visuais
+              </Label>
+              <p className="text-xs text-muted-foreground">Confete e animações ao bater metas</p>
+            </div>
+            <Switch
+              checked={getCelebrationEnabled()}
+              onCheckedChange={(v) => { setCelebrationEnabled(v); toast.success(v ? "🎉 Celebrações ativadas!" : "Celebrações desativadas."); }}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Password Card */}
       <Card>

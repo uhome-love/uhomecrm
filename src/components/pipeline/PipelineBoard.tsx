@@ -5,6 +5,7 @@ import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlertTriangle, Clock, TrendingUp } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
+import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
 
 interface PipelineBoardProps {
   stages: PipelineStage[];
@@ -161,7 +162,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
               }`}
             >
               <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: isActive ? "white" : stage.cor }} />
-              <span className="hidden sm:inline">{stage.nome}</span>
+              <span className="hidden sm:inline">{PIPELINE_STAGE_EMOJIS[stage.nome] || ""} {stage.nome}</span>
               <Badge variant="secondary" className={`text-[9px] px-1 py-0 h-3.5 font-bold ${isActive ? "bg-white/20 text-primary-foreground" : ""}`}>
                 {stageLeads.length}
               </Badge>

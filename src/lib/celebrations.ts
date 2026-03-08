@@ -1,0 +1,186 @@
+/**
+ * Gamification celebrations system — confetti, sounds, and micro-celebrations.
+ */
+
+// ─── Web Audio Sounds (no external files) ───
+
+const audioCtx = typeof window !== "undefined" ? new (window.AudioContext || (window as any).webkitAudioContext)() : null;
+
+function playTone(freq: number, duration: number, type: OscillatorType = "sine", volume = 0.15) {
+  if (!audioCtx || !getSoundEnabled()) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch { /* silent fail */ }
+}
+
+export function playSoundDing() {
+  playTone(880, 0.3, "sine", 0.1);
+  setTimeout(() => playTone(1100, 0.2, "sine", 0.08), 100);
+}
+
+export function playSoundSuccess() {
+  playTone(523, 0.15, "sine", 0.12);
+  setTimeout(() => playTone(659, 0.15, "sine", 0.12), 120);
+  setTimeout(() => playTone(784, 0.3, "sine", 0.12), 240);
+}
+
+export function playSoundFanfare() {
+  [523, 659, 784, 1047].forEach((freq, i) => {
+    setTimeout(() => playTone(freq, 0.25, "triangle", 0.1), i * 150);
+  });
+}
+
+export function playSoundAchievement() {
+  [440, 554, 659, 880].forEach((freq, i) => {
+    setTimeout(() => playTone(freq, 0.3, "sine", 0.1), i * 100);
+  });
+  setTimeout(() => playTone(1047, 0.5, "triangle", 0.08), 450);
+}
+
+// ─── Sound preferences ───
+
+export function getSoundEnabled(): boolean {
+  try { return localStorage.getItem("uhome-sounds") === "true"; } catch { return false; }
+}
+
+export function setSoundEnabled(v: boolean) {
+  try { localStorage.setItem("uhome-sounds", v ? "true" : "false"); } catch { /* */ }
+}
+
+export function getCelebrationEnabled(): boolean {
+  try { return localStorage.getItem("uhome-celebrations") !== "false"; } catch { return true; }
+}
+
+export function setCelebrationEnabled(v: boolean) {
+  try { localStorage.setItem("uhome-celebrations", v ? "true" : "false"); } catch { /* */ }
+}
+
+// ─── Dynamic greetings ───
+
+interface GreetingContext {
+  nome: string;
+  rankingPos: number;
+  slaExpired: number;
+  metaBatidaOntem?: boolean;
+  streak?: number;
+}
+
+export function getDynamicGreeting(ctx: GreetingContext): { greeting: string; subtitle: string } {
+  const hour = new Date().getHours();
+  const { nome, rankingPos, slaExpired, metaBatidaOntem, streak } = ctx;
+  const n = nome || "Corretor";
+
+  // Priority contexts first
+  if (slaExpired > 0) {
+    return { greeting: `Atenção, ${n}! 🚨`, subtitle: `Tem ${slaExpired} lead${slaExpired > 1 ? "s" : ""} te esperando. Bora resolver!` };
+  }
+  if (rankingPos === 1) {
+    return { greeting: `Líder do ranking, ${n}! 👑`, subtitle: "Defende o trono. Ninguém tira isso de quem executa." };
+  }
+  if (metaBatidaOntem) {
+    return { greeting: `Que dia ontem, ${n}! 🏆`, subtitle: "Repete hoje? Eu sei que dá." };
+  }
+
+  // Time-based
+  const morningGreets = [
+    { greeting: `Fala, ${n}! ☀️`, subtitle: "Bora começar forte! O ranking te espera." },
+    { greeting: `Bom dia, ${n}! 🚀`, subtitle: "Hoje é dia de superar ontem." },
+    { greeting: `Oi, ${n}! 💪`, subtitle: "Foco total. Uma ligação por vez, um resultado por vez." },
+  ];
+  const afternoonGreets = [
+    { greeting: `Ainda dá tempo, ${n}! 🔥`, subtitle: "Foco total na segunda metade." },
+    { greeting: `Hora do gás, ${n}! ⚡`, subtitle: "Acelera! Bora fechar mais um." },
+    { greeting: `Segue firme, ${n}! 🎯`, subtitle: "As melhores ligações vêm agora." },
+  ];
+  const eveningGreets = [
+    { greeting: `Reta final, ${n}! 🌙`, subtitle: "Cada ligação conta. Finaliza com chave de ouro." },
+    { greeting: `Ainda por aqui, ${n}? 💎`, subtitle: "Quem fica mais, conquista mais." },
+  ];
+
+  const pool = hour < 12 ? morningGreets : hour < 18 ? afternoonGreets : eveningGreets;
+
+  // Use day seed + streak for variety
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const idx = (dayOfYear + (streak || 0)) % pool.length;
+  return pool[idx];
+}
+
+// ─── Streak formatting ───
+
+export function formatStreak(streak: number): { emoji: string; label: string; color: string } {
+  if (streak <= 0) return { emoji: "", label: "", color: "" };
+  if (streak === 1) return { emoji: "🔥", label: "Começou bem!", color: "text-orange-500" };
+  if (streak <= 3) return { emoji: "🔥🔥", label: `Sequência de ${streak}!`, color: "text-orange-500" };
+  if (streak <= 5) return { emoji: "🔥🔥🔥", label: `${streak} dias! Consistente!`, color: "text-orange-600" };
+  if (streak <= 10) return { emoji: "⚡", label: `${streak} dias! Lendário!`, color: "text-amber-500" };
+  return { emoji: "💎", label: `${streak} dias! Histórico!`, color: "text-purple-500" };
+}
+
+// ─── Emoji maps ───
+
+export const PIPELINE_STAGE_EMOJIS: Record<string, string> = {
+  "Novo Lead": "📥",
+  "Contato Iniciado": "📞",
+  "Qualificação": "🔍",
+  "Possível Visita": "🏠",
+  "Visita Marcada": "📅",
+  "Visita Realizada": "✅",
+  "Descarte": "🗑️",
+};
+
+export const TEMPERATURA_EMOJIS: Record<string, string> = {
+  quente: "🔥",
+  morno: "🌤️",
+  frio: "🧊",
+  gelado: "❄️",
+};
+
+export const VISITA_STATUS_EMOJIS: Record<string, string> = {
+  marcada: "📅",
+  confirmada: "✅",
+  realizada: "🏠",
+  reagendada: "🔄",
+  cancelada: "❌",
+  no_show: "👻",
+};
+
+export const OA_RESULTADO_EMOJIS: Record<string, string> = {
+  com_interesse: "✅",
+  agendar_visita: "📅",
+  ligar_depois: "🔄",
+  sem_interesse: "😐",
+  nao_atendeu: "📵",
+  numero_errado: "🚫",
+  caixa_postal: "📵",
+  ocupado: "🔄",
+};
+
+// ─── Ranking personality ───
+
+export function getRankingStyle(pos: number, isMe: boolean) {
+  if (pos === 1) return { bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800", icon: "👑", phrase: isMe ? "Você é o rei/rainha hoje!" : "" };
+  if (pos === 2) return { bg: "bg-gray-50 dark:bg-gray-900/30", border: "border-gray-200 dark:border-gray-700", icon: "🥈", phrase: isMe ? "Tão perto do topo..." : "" };
+  if (pos === 3) return { bg: "bg-orange-50 dark:bg-orange-950/30", border: "border-orange-200 dark:border-orange-800", icon: "🥉", phrase: isMe ? "Pódio! Mas dá pra mais." : "" };
+  if (pos <= 6) return { bg: "", border: "", icon: "🔥", phrase: isMe ? "Bora subir!" : "" };
+  return { bg: "", border: "", icon: "", phrase: isMe ? "💪 Bora subir!" : "" };
+}
+
+// ─── Empty states ───
+
+export const EMPTY_STATES = {
+  pipeline: { emoji: "🎉", text: "Nenhum lead parado! Você está em dia." },
+  visitas: { emoji: "😴", text: "Agenda livre hoje. Que tal marcar uma?" },
+  aproveitamentos: { emoji: "🎯", text: "Ainda zerado. O primeiro é o mais difícil!" },
+  notificacoes: { emoji: "🦗", text: "Silêncio total por aqui. Aproveita!" },
+  pdn: { emoji: "✨", text: "Tudo em movimento! Nenhum negócio parado." },
+  prioridades: { emoji: "✅", text: "Tudo em dia! Bora prospectar." },
+};
