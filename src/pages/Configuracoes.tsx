@@ -78,12 +78,15 @@ export default function Configuracoes() {
     if (!mv) return;
     mv.src = glbPublicUrl;
 
-    // Wait for model to load
+    // Wait for model to fully load and render
     await new Promise<void>((resolve) => {
-      const onLoad = () => { mv.removeEventListener("load", onLoad); resolve(); };
-      mv.addEventListener("load", onLoad);
-      // Timeout fallback
-      setTimeout(resolve, 8000);
+      const onLoad = () => { mv.removeEventListener("load", onLoad); setTimeout(resolve, 1500); };
+      if (mv.loaded) {
+        setTimeout(resolve, 1500);
+      } else {
+        mv.addEventListener("load", onLoad);
+        setTimeout(resolve, 10000);
+      }
     });
 
     try {
