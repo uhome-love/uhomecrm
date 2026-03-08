@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
-const homiHero = "/images/homi-hero.png";
+const homiHero = "/images/homi-120.png";
 
 const HOMI_PHRASES = [
   "Pronto para sua melhor sessão hoje? ⚡",

@@ -386,12 +386,12 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center gap-2.5 animate-slide-in-left">
-                <img src={homiMascot} alt="Homi AI" className="h-8 w-8 object-contain shrink-0" />
+                <img src="/images/homi-48.png" alt="Homi AI" className="h-8 w-8 object-contain shrink-0" />
                 <div className="flex flex-col">
                   <span className="text-sm font-bold tracking-tight leading-tight">
-                    <span className="text-white" style={{ color: "#e2e8f0" }}>Uhome</span><span className="text-primary">Sales</span>
+                    <span style={{ color: "#FFFFFF", fontWeight: 700 }}>Uhome</span><span style={{ color: "#3B82F6", fontWeight: 700 }}>Sales</span>
                   </span>
-                  <span className="text-2xs font-normal text-neutral-400 tracking-wider">
+                  <span className="text-[11px] font-normal tracking-wider" style={{ color: "#9CA3AF" }}>
                     Powered by Homi AI
                   </span>
                 </div>
