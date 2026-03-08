@@ -11,6 +11,10 @@ declare global {
           alt?: string;
           "camera-orbit"?: string;
           "camera-target"?: string;
+          "field-of-view"?: string;
+          "min-camera-orbit"?: string;
+          "max-camera-orbit"?: string;
+          bounds?: string;
           "auto-rotate"?: boolean;
           "rotation-per-second"?: string;
           "interaction-prompt"?: string;
