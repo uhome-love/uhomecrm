@@ -57,7 +57,7 @@ export default function PipelineCeoIntelligence({ leads, stages, corretorNomes, 
   const alerts = useMemo(() => {
     const now = new Date();
     const semContato7d = leads.filter(l => {
-      const last = l.ultimo_contato || l.created_at;
+      const last = (l as any).ultimo_contato || l.updated_at || l.created_at;
       return last && differenceInDays(now, new Date(last)) > 7 && l.corretor_id;
     });
     const filaCeo24h = leads.filter(l => !l.corretor_id && differenceInHours(now, new Date(l.created_at)) > 24);

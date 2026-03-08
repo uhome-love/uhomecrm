@@ -64,7 +64,7 @@ export default function PipelineManagerActions({ leads, corretorNomes }: Props) 
     const map = new Map<string, PipelineLead[]>();
     for (const l of leads) {
       if (!l.corretor_id) continue;
-      const last = l.ultimo_contato || l.updated_at || l.created_at;
+      const last = (l as any).ultimo_contato || l.updated_at || l.created_at;
       if (last && differenceInHours(now, new Date(last)) > 3) {
         const arr = map.get(l.corretor_id) || [];
         arr.push(l);
