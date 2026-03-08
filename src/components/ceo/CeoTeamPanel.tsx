@@ -55,6 +55,13 @@ function getInitials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("");
 }
 
+function nameToHsl(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const h = ((hash % 360) + 360) % 360;
+  return `hsl(${h}, 55%, 45%)`;
+}
+
 export default function CeoTeamPanel() {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -96,15 +103,31 @@ export default function CeoTeamPanel() {
       .in("user_id", allUserIds as string[]);
     const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
-    // 4. Load admin/marketing staff
+    // 4. Load admin/marketing staff — broad search
+    let adminResults: typeof profiles = [];
     const { data: adminProfiles } = await supabase
       .from("profiles")
       .select("user_id, nome, avatar_url, avatar_gamificado_url, cargo")
-      .or("cargo.in.(marketing,admin,financeiro,administrativo),nome.ilike.%Ana Paula%")
-      .not("cargo", "in", "(ceo,corretor,gestor)");
+      .or("cargo.in.(marketing,admin,financeiro,administrativo),nome.ilike.%Ana%")
+      .not("cargo", "in", "(corretor,gestor,ceo)");
+    adminResults = adminProfiles || [];
+
+    // Fallback: if Ana Paula not found, search by name directly
+    const hasAna = adminResults.some(p => (p.nome || "").toLowerCase().includes("ana paula"));
+    if (!hasAna) {
+      const { data: anaFallback } = await supabase
+        .from("profiles")
+        .select("user_id, nome, avatar_url, avatar_gamificado_url, cargo")
+        .ilike("nome", "%Ana Paula%")
+        .limit(1);
+      if (anaFallback?.length) {
+        const existing = new Set(adminResults.map(p => p.user_id));
+        anaFallback.forEach(p => { if (!existing.has(p.user_id)) adminResults.push(p); });
+      }
+    }
 
     setAdminStaff(
-      (adminProfiles || []).map(p => ({
+      adminResults.map(p => ({
         user_id: p.user_id,
         nome: p.nome || "Colaborador",
         avatar_url: p.avatar_url,
@@ -214,10 +237,14 @@ export default function CeoTeamPanel() {
     const src = gamUrl || url;
     const sizeClass = size === "lg" ? "h-14 w-14" : size === "md" ? "h-12 w-12" : "h-8 w-8";
     const textSize = size === "lg" ? "text-lg" : size === "md" ? "text-base" : "text-xs";
+    const bgColor = nameToHsl(name);
     return src ? (
       <img src={src} alt={name} className={`${sizeClass} rounded-full object-cover border-2 ${ringColor || "border-border"}`} />
     ) : (
-      <div className={`${sizeClass} rounded-full bg-primary/10 flex items-center justify-center ${textSize} font-bold text-primary ${ringColor ? `ring-2 ${ringColor}` : ""}`}>
+      <div
+        className={`${sizeClass} rounded-full flex items-center justify-center ${textSize} font-bold text-white ${ringColor ? `ring-2 ${ringColor}` : ""}`}
+        style={{ backgroundColor: bgColor }}
+      >
         {getInitials(name)}
       </div>
     );
