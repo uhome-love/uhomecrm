@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlertTriangle, Clock, TrendingUp } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
 import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
+import { toast } from "sonner";
 
 interface PipelineBoardProps {
   stages: PipelineStage[];
   leads: PipelineLead[];
   segmentos: PipelineSegmento[];
   corretorNomes: Record<string, string>;
-  parcerias: Record<string, string>; // leadId -> parceiro nome
+  parcerias: Record<string, string>;
   onMoveLead: (leadId: string, newStageId: string) => void;
   onSelectLead: (lead: PipelineLead) => void;
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
@@ -48,8 +49,34 @@ function getAvgTimeLabel(leads: PipelineLead[]) {
   return `${Math.round(avg / 24)}d`;
 }
 
+// Confetti for Visita Realizada
+function spawnConfetti() {
+  const colors = ["#F59E0B", "#10B981", "#3B82F6", "#FFFFFF"];
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden";
+  document.body.appendChild(container);
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement("div");
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const left = Math.random() * 100;
+    const delay = Math.random() * 0.5;
+    const size = 6 + Math.random() * 6;
+    p.style.cssText = `position:absolute;top:-10px;left:${left}%;width:${size}px;height:${size}px;background:${color};border-radius:${Math.random() > 0.5 ? "50%" : "2px"};opacity:0.9;animation:confettiFall ${2 + Math.random()}s ease-in ${delay}s forwards`;
+    container.appendChild(p);
+  }
+  setTimeout(() => container.remove(), 4000);
+}
+
+const formatVGV = (value: number) => {
+  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1).replace(".", ",")}M`;
+  if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}mil`;
+  return `R$ ${value.toLocaleString("pt-BR")}`;
+};
+
 export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, parcerias, onMoveLead, onSelectLead, onTransferred }: PipelineBoardProps) {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [flashStage, setFlashStage] = useState<string | null>(null);
+  const [arrivedLeadId, setArrivedLeadId] = useState<string | null>(null);
   const dragLeadId = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDraggingScroll, setIsDraggingScroll] = useState(false);
@@ -65,12 +92,17 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       const arr = map.get(lead.stage_id);
       if (arr) arr.push(lead);
     }
-    // Sort each stage: most recently updated first
     for (const [, arr] of map) {
       arr.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
     }
     return map;
   }, [stages, leads]);
+
+  const stageIndexMap = useMemo(() => {
+    const m = new Map<string, number>();
+    stages.forEach((s, i) => m.set(s.id, i));
+    return m;
+  }, [stages]);
 
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current;
@@ -132,21 +164,69 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const handleDrop = (e: React.DragEvent, stageId: string) => {
     e.preventDefault();
     setDragOverStage(null);
-    if (dragLeadId.current) {
-      onMoveLead(dragLeadId.current, stageId);
-      dragLeadId.current = null;
-    }
-  };
+    if (!dragLeadId.current) return;
+    const lid = dragLeadId.current;
+    const lead = leads.find(l => l.id === lid);
+    if (!lead || lead.stage_id === stageId) { dragLeadId.current = null; return; }
 
-  const formatVGV = (value: number) => {
-    if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1).replace(".", ",")}M`;
-    if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}mil`;
-    return `R$ ${value.toLocaleString("pt-BR")}`;
+    const targetStage = stages.find(s => s.id === stageId);
+    onMoveLead(lid, stageId);
+    dragLeadId.current = null;
+
+    // Flash animation on target column
+    setFlashStage(stageId);
+    setTimeout(() => setFlashStage(null), 600);
+
+    // Arrived animation on card
+    setArrivedLeadId(lid);
+    setTimeout(() => setArrivedLeadId(null), 500);
+
+    // Toast
+    if (targetStage) {
+      const emoji = PIPELINE_STAGE_EMOJIS[targetStage.nome] || "📍";
+      toast(`${emoji} ${lead.nome} avançou para ${targetStage.nome}!`, {
+        description: "+10 XP",
+        duration: 3000,
+      });
+    }
+
+    // Visita Realizada special effect
+    if (targetStage?.tipo === "venda" || targetStage?.nome.toLowerCase().includes("realizada")) {
+      spawnConfetti();
+      setTimeout(() => {
+        toast("👑 BOSS ENCONTRADO!", {
+          description: `${lead.nome} está pronto para fechar negócio! +50 XP`,
+          duration: 4000,
+        });
+      }, 300);
+    }
   };
 
   return (
     <div className="relative flex flex-col h-full w-full max-w-full min-w-0 overflow-hidden">
-      {/* Mini-map nav pills — fixed top */}
+      {/* Animation keyframes */}
+      <style>{`
+        @keyframes confettiFall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes columnFlash {
+          0%   { box-shadow: inset 0 0 0 2px var(--flash-color); }
+          50%  { box-shadow: inset 0 0 20px 2px var(--flash-color); }
+          100% { box-shadow: inset 0 0 0 2px transparent; }
+        }
+        @keyframes cardArrived {
+          0%   { transform: translateY(-20px) scale(0.9); opacity: 0; }
+          60%  { transform: translateY(4px) scale(1.02); opacity: 1; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes pulseDot {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 0.7; }
+        }
+      `}</style>
+
+      {/* Mini-map nav pills */}
       <div className="shrink-0 flex items-center gap-1 mb-2 px-1 overflow-x-auto scrollbar-none">
         {stages.map((stage, idx) => {
           const stageLeads = leadsByStage.get(stage.id) || [];
@@ -171,9 +251,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         })}
       </div>
 
-      {/* Kanban scroll area — fills remaining height */}
+      {/* Kanban scroll area */}
       <div className="relative flex-1 min-h-0">
-        {/* Navigation arrows */}
         {canScrollLeft && (
           <button
             onClick={() => scrollTo("left")}
@@ -191,7 +270,6 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           </button>
         )}
 
-        {/* Scrollable container — full height, hidden scrollbar */}
         <div
           ref={scrollRef}
           onMouseDown={handleMouseDown}
@@ -204,6 +282,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           {stages.map((stage) => {
             const stageLeads = leadsByStage.get(stage.id) || [];
             const isDragOver = dragOverStage === stage.id;
+            const isFlashing = flashStage === stage.id;
             const totalVGV = stageLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
             const alerts = getStageAlerts(stageLeads);
             const avgTime = getAvgTimeLabel(stageLeads);
@@ -216,12 +295,17 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     ? "ring-2 ring-primary/50 bg-primary/5 shadow-xl shadow-primary/10 scale-[1.01]"
                     : "bg-muted/20"
                 }`}
-                style={{ width: `${getColumnWidth()}px`, scrollSnapAlign: "start" }}
+                style={{
+                  width: `${getColumnWidth()}px`,
+                  scrollSnapAlign: "start",
+                  animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
+                  ["--flash-color" as any]: stage.cor,
+                }}
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
-                {/* Column header — fixed */}
+                {/* Column header */}
                 <div className="shrink-0 px-3.5 py-3 bg-card border border-border/40 rounded-t-xl">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="h-3 w-1 rounded-full" style={{ backgroundColor: stage.cor }} />
@@ -252,7 +336,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   </div>
                 </div>
 
-                {/* Cards list — fills remaining height, scrolls vertically */}
+                {/* Cards list */}
                 <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2 scrollbar-thin">
                   {stageLeads.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -263,21 +347,29 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     </div>
                   )}
                   {stageLeads.map((lead) => (
-                    <PipelineCardHover key={lead.id} lead={lead} onOpenLead={() => onSelectLead(lead)}>
-                      <PipelineCard
-                        lead={lead}
-                        stage={stage}
-                        stages={stages}
-                        segmentos={segmentos}
-                        corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
-                        gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
-                        parceiroNome={parcerias[lead.id]}
-                        onDragStart={() => handleDragStart(lead.id)}
-                        onClick={() => onSelectLead(lead)}
-                        onMoveLead={onMoveLead}
-                        onTransferred={onTransferred}
-                      />
-                    </PipelineCardHover>
+                    <div
+                      key={lead.id}
+                      style={{
+                        animation: arrivedLeadId === lead.id ? "cardArrived 0.4s cubic-bezier(0.34,1.56,0.64,1)" : undefined,
+                      }}
+                    >
+                      <PipelineCardHover lead={lead} onOpenLead={() => onSelectLead(lead)}>
+                        <PipelineCard
+                          lead={lead}
+                          stage={stage}
+                          stages={stages}
+                          segmentos={segmentos}
+                          corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                          gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
+                          parceiroNome={parcerias[lead.id]}
+                          onDragStart={() => handleDragStart(lead.id)}
+                          onClick={() => onSelectLead(lead)}
+                          onMoveLead={onMoveLead}
+                          onTransferred={onTransferred}
+                          stageIndexMap={stageIndexMap}
+                        />
+                      </PipelineCardHover>
+                    </div>
                   ))}
                 </div>
               </div>
