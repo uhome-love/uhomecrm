@@ -479,7 +479,7 @@ export default function AdminPanel() {
               className="gap-1.5"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-              {creating ? "Criando..." : `Criar ${newRole === "gestor" ? "Gerente" : "Corretor"}`}
+              {creating ? "Criando..." : `Criar ${newRole === "gestor" ? "Gerente" : newRole === "backoffice" ? "Backoffice" : "Corretor"}`}
             </Button>
           </DialogFooter>
         </DialogContent>
