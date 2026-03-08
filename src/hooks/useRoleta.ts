@@ -1,0 +1,485 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+// ─── Time Window Logic ───
+
+export type JanelaId = "manha" | "tarde" | "noturna" | "madrugada";
+
+interface JanelaInfo {
+  id: JanelaId;
+  label: string;
+  emoji: string;
+  inicio: string; // HH:mm
+  fim: string;    // HH:mm
+  credenciamentoAberto: boolean;
+  descricao: string;
+}
+
+const JANELAS: JanelaInfo[] = [
+  { id: "manha", label: "Manhã", emoji: "🌅", inicio: "09:30", fim: "13:30", credenciamentoAberto: false, descricao: "Roleta da manhã ativa" },
+  { id: "tarde", label: "Tarde", emoji: "🌞", inicio: "13:30", fim: "18:00", credenciamentoAberto: false, descricao: "Roleta da tarde ativa" },
+  { id: "noturna", label: "Noturna", emoji: "🌙", inicio: "18:00", fim: "23:30", credenciamentoAberto: false, descricao: "Roleta noturna ativa" },
+  { id: "madrugada", label: "Madrugada", emoji: "🔒", inicio: "23:30", fim: "09:30", credenciamentoAberto: false, descricao: "Acumulando leads para amanhã" },
+];
+
+function getMinutesFromMidnight(h: number, m: number) {
+  return h * 60 + m;
+}
+
+function parseTime(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  return getMinutesFromMidnight(h, m);
+}
+
+export function getCurrentWindowInfo(): {
+  janela: JanelaId;
+  label: string;
+  emoji: string;
+  descricao: string;
+  credenciamentoAberto: boolean;
+  credenciamentoJanela: JanelaId | null;
+  proximaTransicao: Date;
+  minutosRestantes: number;
+} {
+  const now = new Date();
+  const mins = getMinutesFromMidnight(now.getHours(), now.getMinutes());
+
+  // Time ranges:
+  // 00:00-09:30 → madrugada (credenciamento manhã aberto)
+  // 09:30-13:30 → manhã ativa (credenciamento tarde aberto)
+  // 13:30-18:00 → tarde ativa (credenciamento noturna aberto)
+  // 18:00-23:30 → noturna ativa
+  // 23:30-00:00 → madrugada
+
+  const t0930 = parseTime("09:30");
+  const t1330 = parseTime("13:30");
+  const t1800 = parseTime("18:00");
+  const t2330 = parseTime("23:30");
+
+  let janela: JanelaId;
+  let descricao: string;
+  let emoji: string;
+  let credenciamentoAberto = false;
+  let credenciamentoJanela: JanelaId | null = null;
+  let nextTransitionMins: number;
+
+  if (mins < t0930) {
+    janela = "madrugada";
+    emoji = "🌅";
+    descricao = `Credenciamento manhã aberto até 09:30`;
+    credenciamentoAberto = true;
+    credenciamentoJanela = "manha";
+    nextTransitionMins = t0930;
+  } else if (mins < t1330) {
+    janela = "manha";
+    emoji = "☀️";
+    descricao = "Roleta da manhã ativa";
+    credenciamentoAberto = true;
+    credenciamentoJanela = "tarde";
+    nextTransitionMins = t1330;
+  } else if (mins < t1800) {
+    janela = "tarde";
+    emoji = "🌞";
+    descricao = "Roleta da tarde ativa";
+    credenciamentoAberto = true;
+    credenciamentoJanela = "noturna";
+    nextTransitionMins = t1800;
+  } else if (mins < t2330) {
+    janela = "noturna";
+    emoji = "🌙";
+    descricao = "Roleta noturna ativa";
+    credenciamentoAberto = false;
+    nextTransitionMins = t2330;
+  } else {
+    janela = "madrugada";
+    emoji = "🔒";
+    descricao = "Acumulando leads para amanhã";
+    credenciamentoAberto = false;
+    nextTransitionMins = 24 * 60 + t0930; // next day 09:30
+  }
+
+  const proximaTransicao = new Date(now);
+  const diffMins = nextTransitionMins - mins;
+  proximaTransicao.setMinutes(proximaTransicao.getMinutes() + diffMins);
+  proximaTransicao.setSeconds(0);
+
+  return {
+    janela,
+    label: janela === "madrugada" ? "Madrugada" : janela === "manha" ? "Manhã" : janela === "tarde" ? "Tarde" : "Noturna",
+    emoji,
+    descricao,
+    credenciamentoAberto,
+    credenciamentoJanela,
+    proximaTransicao,
+    minutosRestantes: Math.max(0, diffMins),
+  };
+}
+
+// ─── Types ───
+
+export interface RoletaSegmento {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  faixa_preco: string | null;
+  campanhas: string[];
+}
+
+export interface RoletaCredenciamento {
+  id: string;
+  corretor_id: string | null;
+  janela: string;
+  segmento_1_id: string | null;
+  segmento_2_id: string | null;
+  status: string | null;
+  data: string;
+  aprovado_por: string | null;
+  aprovado_em: string | null;
+  saiu_em: string | null;
+  created_at: string | null;
+  corretor_nome?: string;
+  corretor_avatar?: string | null;
+}
+
+export interface RoletaFilaItem {
+  id: string;
+  corretor_id: string | null;
+  segmento_id: string | null;
+  janela: string;
+  posicao: number;
+  leads_recebidos: number | null;
+  ativo: boolean | null;
+  data: string;
+  corretor_nome?: string;
+  corretor_avatar?: string | null;
+}
+
+export interface RoletaDistribuicao {
+  id: string;
+  lead_id: string | null;
+  corretor_id: string | null;
+  segmento_id: string | null;
+  janela: string;
+  status: string | null;
+  enviado_em: string | null;
+  expira_em: string | null;
+  aceito_em: string | null;
+  primeira_interacao_em: string | null;
+  lead_nome?: string;
+  corretor_nome?: string;
+  segmento_nome?: string;
+}
+
+// ─── Hook ───
+
+export function useRoleta() {
+  const { user } = useAuth();
+  const { isAdmin } = useUserRole();
+  const [segmentos, setSegmentos] = useState<RoletaSegmento[]>([]);
+  const [credenciamentos, setCredenciamentos] = useState<RoletaCredenciamento[]>([]);
+  const [fila, setFila] = useState<RoletaFilaItem[]>([]);
+  const [distribuicoes, setDistribuicoes] = useState<RoletaDistribuicao[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const hoje = format(new Date(), "yyyy-MM-dd");
+
+  // Load segmentos + campanhas
+  const loadSegmentos = useCallback(async () => {
+    const { data: segs } = await supabase
+      .from("roleta_segmentos")
+      .select("id, nome, descricao, faixa_preco, ativo")
+      .eq("ativo", true);
+    const { data: camps } = await supabase
+      .from("roleta_campanhas")
+      .select("id, empreendimento, segmento_id, ativo")
+      .eq("ativo", true);
+
+    const mapped = (segs || []).map(s => ({
+      id: s.id,
+      nome: s.nome,
+      descricao: s.descricao,
+      faixa_preco: s.faixa_preco,
+      campanhas: (camps || []).filter(c => c.segmento_id === s.id).map(c => c.empreendimento),
+    }));
+    setSegmentos(mapped);
+  }, []);
+
+  // Load credenciamentos for today
+  const loadCredenciamentos = useCallback(async () => {
+    const { data: creds } = await supabase
+      .from("roleta_credenciamentos")
+      .select("*")
+      .eq("data", hoje)
+      .order("created_at", { ascending: true });
+
+    if (!creds?.length) { setCredenciamentos([]); return; }
+
+    const userIds = [...new Set(creds.map(c => c.corretor_id).filter(Boolean))] as string[];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, nome, avatar_url")
+      .in("id", userIds);
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    setCredenciamentos(creds.map(c => ({
+      ...c,
+      corretor_nome: c.corretor_id ? profileMap.get(c.corretor_id)?.nome || "Corretor" : "Corretor",
+      corretor_avatar: c.corretor_id ? profileMap.get(c.corretor_id)?.avatar_url || null : null,
+    })));
+  }, [hoje]);
+
+  // Load fila for today
+  const loadFila = useCallback(async () => {
+    const { data: filaData } = await supabase
+      .from("roleta_fila")
+      .select("*")
+      .eq("data", hoje)
+      .eq("ativo", true)
+      .order("posicao");
+
+    if (!filaData?.length) { setFila([]); return; }
+
+    const userIds = [...new Set(filaData.map(f => f.corretor_id).filter(Boolean))] as string[];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, nome, avatar_url")
+      .in("id", userIds);
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    setFila(filaData.map(f => ({
+      ...f,
+      corretor_nome: f.corretor_id ? profileMap.get(f.corretor_id)?.nome || "Corretor" : "Corretor",
+      corretor_avatar: f.corretor_id ? profileMap.get(f.corretor_id)?.avatar_url || null : null,
+    })));
+  }, [hoje]);
+
+  // Load recent distributions
+  const loadDistribuicoes = useCallback(async () => {
+    const { data: dists } = await supabase
+      .from("roleta_distribuicoes")
+      .select("*")
+      .order("enviado_em", { ascending: false })
+      .limit(50);
+
+    if (!dists?.length) { setDistribuicoes([]); return; }
+
+    // Get lead names
+    const leadIds = [...new Set(dists.map(d => d.lead_id).filter(Boolean))] as string[];
+    const corretorIds = [...new Set(dists.map(d => d.corretor_id).filter(Boolean))] as string[];
+    const segIds = [...new Set(dists.map(d => d.segmento_id).filter(Boolean))] as string[];
+
+    const [leadsRes, profilesRes, segsRes] = await Promise.all([
+      leadIds.length > 0 ? supabase.from("leads").select("id, nome").in("id", leadIds) : { data: [] },
+      corretorIds.length > 0 ? supabase.from("profiles").select("id, nome").in("id", corretorIds) : { data: [] },
+      segIds.length > 0 ? supabase.from("roleta_segmentos").select("id, nome").in("id", segIds) : { data: [] },
+    ]);
+
+    const leadMap = new Map((leadsRes.data || []).map(l => [l.id, l.nome]));
+    const profMap = new Map((profilesRes.data || []).map(p => [p.id, p.nome]));
+    const segMap = new Map((segsRes.data || []).map(s => [s.id, s.nome]));
+
+    setDistribuicoes(dists.map(d => ({
+      ...d,
+      lead_nome: d.lead_id ? leadMap.get(d.lead_id) || "Lead" : "Lead",
+      corretor_nome: d.corretor_id ? profMap.get(d.corretor_id) || "Corretor" : "—",
+      segmento_nome: d.segmento_id ? segMap.get(d.segmento_id) || "—" : "—",
+    })));
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    if (!user) { setLoading(false); return; }
+    Promise.all([loadSegmentos(), loadCredenciamentos(), loadFila(), loadDistribuicoes()])
+      .finally(() => setLoading(false));
+  }, [user, loadSegmentos, loadCredenciamentos, loadFila, loadDistribuicoes]);
+
+  // Realtime
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("roleta-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "roleta_credenciamentos" }, () => {
+        loadCredenciamentos();
+        loadFila();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "roleta_fila" }, () => { loadFila(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "roleta_distribuicoes" }, () => { loadDistribuicoes(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, loadCredenciamentos, loadFila, loadDistribuicoes]);
+
+  // ─── Corretor Actions ───
+
+  const credenciar = useCallback(async (janela: string, segmento1Id: string, segmento2Id: string | null) => {
+    if (!user) return;
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("roleta_credenciamentos").insert({
+        corretor_id: user.id,
+        janela,
+        segmento_1_id: segmento1Id,
+        segmento_2_id: segmento2Id || null,
+        data: hoje,
+        status: "pendente",
+      });
+      if (error) throw error;
+      toast.success("Credenciamento enviado! Aguardando aprovação.");
+      await loadCredenciamentos();
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao se credenciar: " + (e.message || ""));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [user, hoje, loadCredenciamentos]);
+
+  const sairDaRoleta = useCallback(async (credenciamentoId: string) => {
+    if (!user) return;
+    setSubmitting(true);
+    try {
+      await supabase.from("roleta_credenciamentos")
+        .update({ status: "saiu", saiu_em: new Date().toISOString() })
+        .eq("id", credenciamentoId);
+      // Deactivate from fila
+      await supabase.from("roleta_fila")
+        .update({ ativo: false })
+        .eq("credenciamento_id", credenciamentoId);
+      toast.success("Você saiu da roleta.");
+      await Promise.all([loadCredenciamentos(), loadFila()]);
+    } catch (e: any) {
+      toast.error("Erro ao sair da roleta.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [user, loadCredenciamentos, loadFila]);
+
+  // ─── CEO Actions ───
+
+  const aprovarCredenciamento = useCallback(async (credId: string) => {
+    if (!user) return;
+    setSubmitting(true);
+    try {
+      // Approve
+      const { data: cred } = await supabase.from("roleta_credenciamentos")
+        .update({ status: "aprovado", aprovado_por: user.id, aprovado_em: new Date().toISOString() })
+        .eq("id", credId)
+        .select()
+        .single();
+
+      if (!cred) throw new Error("Credenciamento não encontrado");
+
+      // Add to fila for each segmento
+      const segmentoIds = [cred.segmento_1_id, cred.segmento_2_id].filter(Boolean) as string[];
+      for (const segId of segmentoIds) {
+        // Get next position
+        const { data: existing } = await supabase.from("roleta_fila")
+          .select("posicao")
+          .eq("data", hoje)
+          .eq("segmento_id", segId)
+          .eq("janela", cred.janela)
+          .eq("ativo", true)
+          .order("posicao", { ascending: false })
+          .limit(1);
+
+        const nextPos = (existing?.[0]?.posicao || 0) + 1;
+
+        await supabase.from("roleta_fila").insert({
+          corretor_id: cred.corretor_id,
+          segmento_id: segId,
+          janela: cred.janela,
+          posicao: nextPos,
+          data: hoje,
+          ativo: true,
+          credenciamento_id: credId,
+        });
+      }
+
+      toast.success("Corretor aprovado e adicionado à fila!");
+      await Promise.all([loadCredenciamentos(), loadFila()]);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao aprovar: " + (e.message || ""));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [user, hoje, loadCredenciamentos, loadFila]);
+
+  const recusarCredenciamento = useCallback(async (credId: string) => {
+    if (!user) return;
+    setSubmitting(true);
+    try {
+      await supabase.from("roleta_credenciamentos")
+        .update({ status: "recusado", aprovado_por: user.id, aprovado_em: new Date().toISOString() })
+        .eq("id", credId);
+      toast.success("Credenciamento recusado.");
+      await loadCredenciamentos();
+    } catch (e: any) {
+      toast.error("Erro ao recusar.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [user, loadCredenciamentos]);
+
+  const aprovarTodos = useCallback(async () => {
+    const pendentes = credenciamentos.filter(c => c.status === "pendente");
+    for (const c of pendentes) {
+      await aprovarCredenciamento(c.id);
+    }
+  }, [credenciamentos, aprovarCredenciamento]);
+
+  const removerDaFila = useCallback(async (filaId: string) => {
+    if (!user) return;
+    try {
+      await supabase.from("roleta_fila").update({ ativo: false }).eq("id", filaId);
+      toast.success("Corretor removido da fila.");
+      await loadFila();
+    } catch (e: any) {
+      toast.error("Erro ao remover da fila.");
+    }
+  }, [user, loadFila]);
+
+  // Current corretor's credenciamento
+  const meuCredenciamento = useMemo(() => {
+    if (!user) return null;
+    return credenciamentos.find(c => c.corretor_id === user.id && c.data === hoje && c.status !== "recusado" && c.status !== "saiu") || null;
+  }, [user, credenciamentos, hoje]);
+
+  // Pending count
+  const pendentesCount = useMemo(() => {
+    return credenciamentos.filter(c => c.status === "pendente").length;
+  }, [credenciamentos]);
+
+  // Leads acumulados (simplified: pipeline_leads without corretor from overnight)
+  const [leadsAcumulados, setLeadsAcumulados] = useState(0);
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase.from("pipeline_leads")
+      .select("id", { count: "exact", head: true })
+      .is("corretor_id", null)
+      .then(({ count }) => setLeadsAcumulados(count || 0));
+  }, [isAdmin]);
+
+  return {
+    segmentos,
+    credenciamentos,
+    fila,
+    distribuicoes,
+    loading,
+    submitting,
+    meuCredenciamento,
+    pendentesCount,
+    leadsAcumulados,
+    credenciar,
+    sairDaRoleta,
+    aprovarCredenciamento,
+    recusarCredenciamento,
+    aprovarTodos,
+    removerDaFila,
+    reload: () => Promise.all([loadCredenciamentos(), loadFila(), loadDistribuicoes()]),
+  };
+}
