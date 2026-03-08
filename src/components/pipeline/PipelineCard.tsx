@@ -1,6 +1,6 @@
 import { memo, useState, useMemo } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, Mail, Clock, MessageCircle, Calendar, Flame, Thermometer, Snowflake, Zap, AlertCircle, Timer, ChevronDown, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft } from "lucide-react";
+import { Phone, Mail, Clock, MessageCircle, Calendar, AlertCircle, Timer, ChevronDown, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft } from "lucide-react";
 import { differenceInHours, differenceInMinutes, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,7 +14,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
-import PipelineQuickTransfer from "./PipelineQuickTransfer";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
@@ -44,18 +43,14 @@ function getWhatsAppUrl(phone: string) {
   return `https://wa.me/${number}`;
 }
 
-/** Deduplicate empreendimento text (e.g. "Open Bosque (Video) · Open Bosque (X)" → "Open Bosque") */
 function deduplicateEmpreendimento(raw: string): string {
   if (!raw) return "";
-  // Split by common separators
   const parts = raw.split(/[·,;|]/).map(s => s.trim()).filter(Boolean);
-  // Normalize: strip parenthetical suffixes for comparison
   const normalize = (s: string) => s.replace(/\s*\(.*?\)\s*/g, "").trim().toLowerCase();
   const seen = new Map<string, string>();
   for (const part of parts) {
     const key = normalize(part);
     if (!seen.has(key)) {
-      // Use the shortest clean version
       seen.set(key, part.replace(/\s*\(.*?\)\s*/g, "").trim());
     }
   }
@@ -76,30 +71,65 @@ const MISSION_BADGES: Record<string, { badge: string; color: string }> = {
 function getMissionBadge(stageName: string) {
   return MISSION_BADGES[stageName] || { badge: "📍 MISSÃO", color: "#6B7280" };
 }
-const TEMP_BORDER: Record<string, string> = {
-  quente: "border-l-red-500",
-  morno: "border-l-amber-400",
-  frio: "border-l-blue-400",
-};
 
-function getCalcTempBorder(lead: PipelineLead): string {
+/* ─── Semantic border: blue=recent, amber=warning, red=urgent, green=visita ─── */
+function getSemanticBorder(lead: PipelineLead, stageName?: string): string {
+  // Visita marcada or realizada → green
+  const sn = (stageName || "").toLowerCase();
+  if (sn.includes("visita marcada") || sn.includes("visita realizada")) return "border-l-[#22c55e]";
+  // Time-based
   const refDate = lead.updated_at || lead.created_at;
   const hours = differenceInHours(new Date(), new Date(refDate));
-  const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
-  if (hours < 2 || isIndicacao) return "border-l-red-500";
-  if (hours < 24) return "border-l-amber-400";
-  if (hours < 72) return "border-l-blue-400";
-  return "border-l-muted-foreground/30";
+  if (hours < 3) return "border-l-[#3b82f6]";   // recent → blue
+  if (hours < 6) return "border-l-[#f59e0b]";   // warning → amber
+  return "border-l-[#ef4444]";                    // urgent → red
 }
 
-function getCalcTempEmoji(lead: PipelineLead): string {
-  const refDate = lead.updated_at || lead.created_at;
-  const hours = differenceInHours(new Date(), new Date(refDate));
-  const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
-  if (hours < 2 || isIndicacao) return "🔥";
-  if (hours < 24) return "🟡";
-  if (hours < 72) return "🔵";
-  return "❄️";
+/* ─── Time badge: <3h gray, 3-6h amber, >6h red, >24h red+pulse ─── */
+function getTimeBadge(lead: PipelineLead) {
+  const refDate = lead.stage_changed_at || lead.updated_at || lead.created_at;
+  const mins = differenceInMinutes(new Date(), new Date(refDate));
+  const hours = mins / 60;
+
+  if (hours < 3) {
+    // Discrete gray
+    const label = mins < 60 ? `${mins}m nesta etapa` : `${Math.floor(hours)}h nesta etapa`;
+    return {
+      cls: "text-muted-foreground",
+      bg: "",
+      icon: "clock" as const,
+      label,
+      pulse: false,
+    };
+  }
+  if (hours < 6) {
+    return {
+      cls: "text-[#92400e]",
+      bg: "bg-[#fef3c7]",
+      icon: "warning" as const,
+      label: `⏰ ${Math.floor(hours)}h sem contato`,
+      pulse: false,
+    };
+  }
+  // >6h → red
+  const pulse = hours >= 24;
+  const label = hours >= 24
+    ? `🚨 ${Math.floor(hours / 24)}d sem contato`
+    : `🚨 ${Math.floor(hours)}h sem contato`;
+  return {
+    cls: "text-[#991b1b]",
+    bg: hours >= 24 ? "bg-[#fecaca]" : "bg-[#fee2e2]",
+    icon: "alert" as const,
+    label,
+    pulse,
+  };
+}
+
+/* ─── Score colors: >70 green, 40-70 amber, <40 red — text only ─── */
+function getScoreStyle(score: number) {
+  if (score > 70) return "text-[#22c55e] font-bold";
+  if (score >= 40) return "text-[#f59e0b] font-bold";
+  return "text-[#ef4444] font-bold";
 }
 
 interface PipelineCardProps {
@@ -129,14 +159,14 @@ const PipelineCard = memo(function PipelineCard({
   const [transferOpen, setTransferOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
 
-  const tempBorder = lead.temperatura ? TEMP_BORDER[lead.temperatura] || getCalcTempBorder(lead) : getCalcTempBorder(lead);
-  const tempEmoji = getCalcTempEmoji(lead);
+  const semanticBorder = getSemanticBorder(lead, stage?.nome);
   const leadScore = calculateLeadScore(lead as any);
-  const sla = stage ? getSlaStatus(stage.tipo, lead.stage_changed_at) : null;
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || "");
   const missionBadge = stage ? getMissionBadge(stage.nome) : getMissionBadge("");
   const daysInStage = differenceInDays(new Date(), new Date(lead.stage_changed_at));
   const currentIdx = stageIndexMap?.get(lead.stage_id) ?? 0;
+  const timeBadge = useMemo(() => getTimeBadge(lead), [lead.stage_changed_at, lead.updated_at, lead.created_at]);
+  const scoreStyle = getScoreStyle(leadScore.score);
 
   const daysLabel = useMemo(() => {
     if (daysInStage <= 2) return { text: `✅ ${daysInStage}d`, cls: "text-emerald-600 dark:text-emerald-400" };
@@ -239,7 +269,6 @@ const PipelineCard = memo(function PipelineCard({
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't open detail if clicking on action buttons area or if comunicacao drawer is opening
     const target = e.target as HTMLElement;
     if (target.closest("[data-actions-area]") || target.closest("[data-no-card-click]")) return;
     if (comunicacaoOpen) return;
@@ -255,7 +284,10 @@ const PipelineCard = memo(function PipelineCard({
           onDragStart();
         }}
         onClick={handleCardClick}
-        className={`group relative rounded-lg border-l-[3px] border bg-card cursor-pointer active:cursor-grabbing hover:bg-accent/40 transition-all duration-150 select-none overflow-hidden ${tempBorder}`}
+        className={cn(
+          "group relative rounded-lg border-l-[3px] border border-[#e5e7eb] bg-white dark:bg-card cursor-pointer active:cursor-grabbing hover:shadow-md transition-all duration-150 select-none overflow-hidden",
+          semanticBorder
+        )}
       >
         {/* Info section */}
         <div className="px-3 pt-2.5 pb-2 space-y-1">
@@ -279,13 +311,10 @@ const PipelineCard = memo(function PipelineCard({
             </Tooltip>
           </div>
 
-          {/* Line 1: emoji + name + score */}
+          {/* Line 1: name + score */}
           <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 min-w-0">
-              <span className="text-xs">{tempEmoji}</span>
-              <span className="text-[13px] font-bold text-foreground truncate">{lead.nome}</span>
-            </div>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${leadScore.bgColor} ${leadScore.color}`}>
+            <span className="text-[13px] font-bold text-foreground truncate">{lead.nome}</span>
+            <span className={cn("text-[10px] px-1.5 py-0.5 rounded shrink-0", scoreStyle)}>
               {leadScore.score}
             </span>
           </div>
@@ -310,27 +339,22 @@ const PipelineCard = memo(function PipelineCard({
             </div>
           )}
 
-          {/* Line 4: SLA + corretor + parceria badge */}
+          {/* Line 4: Time badge + corretor */}
           <div className="flex items-center justify-between gap-2">
-            {sla && sla.status !== "ok" ? (
-              <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                sla.status === "breach" ? "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400" : "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
-              }`}>
-                {sla.status === "breach" ? <AlertCircle className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
-                {sla.status === "breach" ? `⏰ ${formatSlaTime(sla.minutesRemaining)} sem contato` : `⏱ ${formatSlaTime(sla.minutesRemaining)}`}
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Clock className="h-2.5 w-2.5" />
-                {(() => {
-                  const mins = differenceInMinutes(new Date(), new Date(lead.stage_changed_at));
-                  if (mins < 60) return `${mins}m nesta etapa`;
-                  const hrs = Math.floor(mins / 60);
-                  if (hrs < 24) return `${hrs}h nesta etapa`;
-                  return `${Math.floor(hrs / 24)}d nesta etapa`;
-                })()}
-              </span>
-            )}
+            {/* Semantic time badge */}
+            <span className={cn(
+              "flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full",
+              timeBadge.bg,
+              timeBadge.cls
+            )}>
+              {timeBadge.icon === "clock" && <Clock className="h-2.5 w-2.5" />}
+              {timeBadge.icon === "warning" && <Timer className="h-3 w-3" />}
+              {timeBadge.icon === "alert" && (
+                <AlertCircle className={cn("h-3 w-3", timeBadge.pulse && "animate-pulse")} />
+              )}
+              {timeBadge.label}
+            </span>
+
             <div className="flex items-center gap-1">
               {parceiroNome && (
                 <Badge variant="secondary" className="text-[9px] px-1 py-0 gap-0.5 h-4">
@@ -338,7 +362,7 @@ const PipelineCard = memo(function PipelineCard({
                 </Badge>
               )}
               {!corretorNome ? (
-                <Badge className="text-[9px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-none font-semibold">
+                <Badge className="text-[9px] px-1.5 py-0 h-4 bg-[#7c3aed]/10 text-[#7c3aed] border-[#7c3aed]/30 border font-semibold hover:bg-[#7c3aed]/20">
                   📥 Fila CEO
                 </Badge>
               ) : (
@@ -349,7 +373,7 @@ const PipelineCard = memo(function PipelineCard({
             </div>
           </div>
 
-          {/* Game: Journey progress dots + module indicator */}
+          {/* Game: Journey progress dots */}
           {stageIndexMap && (
             <div className="flex items-center gap-0.5 pt-1">
               {stages.map((s, i) => {
@@ -385,29 +409,49 @@ const PipelineCard = memo(function PipelineCard({
 
         <Separator />
 
-        {/* Actions section */}
+        {/* ─── Actions section — semantic colors ─── */}
         <div data-actions-area className="px-2 py-1.5 flex items-center gap-1 flex-wrap">
-          {/* Ligar ou Atribuir */}
+          {/* Atribuir (purple) or Ligar (green) */}
           {!corretorNome ? (
-            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-purple-600 hover:text-purple-700 font-semibold" onClick={(e) => { e.stopPropagation(); setTransferOpen(true); }}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#3b82f6]/10 text-[#1e40af] hover:bg-[#3b82f6]/20"
+              onClick={(e) => { e.stopPropagation(); setTransferOpen(true); }}
+            >
               <UserPlus className="h-3 w-3" /> 👤 Atribuir Corretor
             </Button>
           ) : lead.telefone ? (
-            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1" onClick={handleCall}>
-              <Phone className="h-3 w-3" /> Ligar
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#dcfce7] text-[#166534] hover:bg-[#bbf7d0]"
+              onClick={handleCall}
+            >
+              <Phone className="h-3 w-3 text-[#22c55e]" /> 📞 Ligar
             </Button>
           ) : null}
 
-          {/* Comunicar */}
-          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-blue-500 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setComunicacaoOpen(true); }}>
-            <MessageCircle className="h-3 w-3" /> 💬 Mensagem
+          {/* Mensagem (green) */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#dcfce7] text-[#166534] hover:bg-[#bbf7d0]"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setComunicacaoOpen(true); }}
+          >
+            <MessageCircle className="h-3 w-3 text-[#22c55e]" /> 💬 Mensagem
           </Button>
 
-          {/* Agendar Visita */}
+          {/* Agendar Visita (blue) */}
           <Popover open={scheduleOpen} onOpenChange={setScheduleOpen}>
             <PopoverTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1" onClick={(e) => e.stopPropagation()}>
-                <Calendar className="h-3 w-3" /> Agendar
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#dbeafe] text-[#1e40af] hover:bg-[#bfdbfe]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Calendar className="h-3 w-3 text-[#3b82f6]" /> 📅 Agendar
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-3 space-y-2" align="start" onClick={(e) => e.stopPropagation()}>
@@ -434,10 +478,15 @@ const PipelineCard = memo(function PipelineCard({
             </PopoverContent>
           </Popover>
 
-          {/* Mover etapa */}
+          {/* Mover (blue outline) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1 ml-auto" onClick={(e) => e.stopPropagation()}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-[10px] px-2 gap-1 ml-auto font-semibold border-[#3b82f6]/40 text-[#1e40af] hover:bg-[#dbeafe]"
+                onClick={(e) => e.stopPropagation()}
+              >
                 Mover <ChevronDown className="h-2.5 w-2.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -451,10 +500,10 @@ const PipelineCard = memo(function PipelineCard({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Mais */}
+          {/* Mais (neutral gray) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -480,31 +529,31 @@ const PipelineCard = memo(function PipelineCard({
           </DropdownMenu>
         </div>
 
-        {/* Dialogs - rendered inside card but use portals */}
+        {/* Dialogs */}
         <div data-no-card-click onClick={(e) => e.stopPropagation()}>
-        <PartnershipDialog
-          open={partnerOpen}
-          onOpenChange={setPartnerOpen}
-          leadId={lead.id}
-          leadNome={lead.nome}
-          corretorPrincipalId={lead.corretor_id}
-        />
-        <PipelineTransferDialog
-          open={transferOpen}
-          onOpenChange={setTransferOpen}
-          leadId={lead.id}
-          leadNome={lead.nome}
-          currentCorretorId={lead.corretor_id}
-          stages={stages}
-          onTransferred={(corretorId, nome) => onTransferred?.(lead.id, corretorId, nome)}
-        />
-        <CentralComunicacao
-          open={comunicacaoOpen}
-          onOpenChange={setComunicacaoOpen}
-          leadId={lead.id}
-          leadNome={lead.nome}
-          leadEmpreendimento={lead.empreendimento}
-        />
+          <PartnershipDialog
+            open={partnerOpen}
+            onOpenChange={setPartnerOpen}
+            leadId={lead.id}
+            leadNome={lead.nome}
+            corretorPrincipalId={lead.corretor_id}
+          />
+          <PipelineTransferDialog
+            open={transferOpen}
+            onOpenChange={setTransferOpen}
+            leadId={lead.id}
+            leadNome={lead.nome}
+            currentCorretorId={lead.corretor_id}
+            stages={stages}
+            onTransferred={(corretorId, nome) => onTransferred?.(lead.id, corretorId, nome)}
+          />
+          <CentralComunicacao
+            open={comunicacaoOpen}
+            onOpenChange={setComunicacaoOpen}
+            leadId={lead.id}
+            leadNome={lead.nome}
+            leadEmpreendimento={lead.empreendimento}
+          />
         </div>
       </div>
     </TooltipProvider>
