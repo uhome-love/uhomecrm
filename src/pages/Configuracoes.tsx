@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,12 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
-import AvaturnCreatorModal from "@/components/avaturn/AvaturnCreatorModal";
-import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Gamepad2, RefreshCw } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Gamepad2, ExternalLink, Upload } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import { useUserRole } from "@/hooks/useUserRole";
 import { getSoundEnabled, setSoundEnabled, getCelebrationEnabled, setCelebrationEnabled } from "@/lib/celebrations";
+import "@google/model-viewer";
 
 export default function Configuracoes() {
   const { user } = useAuth();
@@ -22,6 +22,10 @@ export default function Configuracoes() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [uploadingGlb, setUploadingGlb] = useState(false);
+
+  const glbInputRef = useRef<HTMLInputElement>(null);
+  const modelViewerRef = useRef<HTMLElement>(null);
 
   // Profile fields
   const [nome, setNome] = useState("");
@@ -30,9 +34,6 @@ export default function Configuracoes() {
   const [cargo, setCargo] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
-
-  // Avaturn modal
-  const [avaturnOpen, setAvaturnOpen] = useState(false);
 
   // Password fields
   const [currentPassword, setCurrentPassword] = useState("");
@@ -70,25 +71,104 @@ export default function Configuracoes() {
     setLoading(false);
   }
 
-  async function handleAvatarCreated(glbUrl: string, previewUrl: string) {
+  async function generatePreviewPng(glbPublicUrl: string) {
     if (!user) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        avatar_url: glbUrl,
-        avatar_preview_url: previewUrl || null,
-        avatar_updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id);
+    // Use a hidden model-viewer to capture a screenshot
+    const mv = modelViewerRef.current as any;
+    if (!mv) return;
+    mv.src = glbPublicUrl;
 
-    if (error) {
-      toast.error("Erro ao salvar avatar: " + error.message);
+    // Wait for model to load
+    await new Promise<void>((resolve) => {
+      const onLoad = () => { mv.removeEventListener("load", onLoad); resolve(); };
+      mv.addEventListener("load", onLoad);
+      // Timeout fallback
+      setTimeout(resolve, 8000);
+    });
+
+    try {
+      const blob = await mv.toBlob({ idealAspect: true });
+      const previewPath = `${user.id}/avatar-preview.png`;
+      const { error: uploadErr } = await supabase.storage
+        .from("avatars")
+        .upload(previewPath, blob, { upsert: true, contentType: "image/png" });
+
+      if (uploadErr) {
+        console.error("Preview upload error:", uploadErr);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(previewPath);
+
+      const previewUrlWithBust = `${publicUrl}?t=${Date.now()}`;
+
+      await supabase
+        .from("profiles")
+        .update({ avatar_preview_url: previewUrlWithBust })
+        .eq("user_id", user.id);
+
+      setAvatarPreviewUrl(previewUrlWithBust);
+    } catch (err) {
+      console.error("Error generating preview:", err);
+    }
+  }
+
+  async function handleGlbUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate extension
+    if (!file.name.toLowerCase().endsWith(".glb")) {
+      toast.error("Selecione um arquivo .glb válido");
       return;
     }
 
-    setAvatarUrl(glbUrl);
-    setAvatarPreviewUrl(previewUrl || null);
-    toast.success("Avatar 3D criado com sucesso! 🎮");
+    // Validate size (50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 50MB");
+      return;
+    }
+
+    setUploadingGlb(true);
+    try {
+      const filePath = `${user.id}/avatar.glb`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true, contentType: "model/gltf-binary" });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      const urlWithBust = `${publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          avatar_url: urlWithBust,
+          avatar_updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(urlWithBust);
+      toast.success("Avatar 3D enviado! 🎮");
+
+      // Generate preview PNG in background
+      generatePreviewPng(urlWithBust);
+    } catch (err: any) {
+      console.error("GLB upload error:", err);
+      toast.error("Erro ao enviar avatar: " + (err.message || "tente novamente"));
+    } finally {
+      setUploadingGlb(false);
+      if (glbInputRef.current) glbInputRef.current.value = "";
+    }
   }
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -184,14 +264,20 @@ export default function Configuracoes() {
               />
 
               {/* 3D Avatar preview */}
-              {has3DAvatar && avatarPreviewUrl && (
-                <div className="relative">
-                  <div className="h-20 w-20 rounded-full overflow-hidden ring-2 ring-indigo-500/40 shadow-lg bg-muted">
-                    <img src={avatarPreviewUrl} alt="Avatar 3D preview" className="h-full w-full object-cover" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 bg-indigo-600 text-white rounded-full p-1">
-                    <Gamepad2 className="h-3 w-3" />
-                  </div>
+              {has3DAvatar && avatarUrl && (
+                <div className="rounded-xl overflow-hidden ring-2 ring-indigo-500/40 shadow-lg bg-muted/30"
+                     style={{ width: 200, height: 280 }}>
+                  {/* @ts-ignore */}
+                  <model-viewer
+                    src={avatarUrl}
+                    camera-orbit="0deg 80deg 2.2m"
+                    camera-target="0m 0.9m 0m"
+                    auto-rotate
+                    rotation-per-second="18deg"
+                    interaction-prompt="none"
+                    shadow-intensity="0"
+                    style={{ width: "100%", height: "100%", background: "transparent" } as React.CSSProperties}
+                  />
                 </div>
               )}
 
@@ -199,15 +285,44 @@ export default function Configuracoes() {
                 <p className="text-sm font-medium text-foreground">{nome || "Seu nome"}</p>
                 <p className="text-xs text-muted-foreground">Clique na foto para alterar</p>
 
-                {/* Avaturn button */}
+                {/* Link to Avaturn */}
+                <a
+                  href="https://avaturn.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 underline transition-colors"
+                >
+                  Não tem avatar? Crie gratuitamente em avaturn.me
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+
+                {/* GLB upload button */}
                 <button
                   type="button"
-                  onClick={() => setAvaturnOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-sm"
+                  onClick={() => glbInputRef.current?.click()}
+                  disabled={uploadingGlb}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition-colors shadow-sm"
                 >
-                  <Gamepad2 className="h-3.5 w-3.5" />
-                  {has3DAvatar ? "Recriar avatar 3D" : "🎮 Criar meu avatar 3D"}
+                  {uploadingGlb ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
+                  {uploadingGlb
+                    ? "Enviando avatar..."
+                    : has3DAvatar
+                    ? "Recriar avatar 3D"
+                    : "🎮 Enviar meu avatar 3D (.glb)"}
                 </button>
+
+                <input
+                  ref={glbInputRef}
+                  type="file"
+                  accept=".glb"
+                  className="hidden"
+                  onChange={handleGlbUpload}
+                  disabled={uploadingGlb}
+                />
               </div>
             </div>
 
@@ -362,12 +477,18 @@ export default function Configuracoes() {
         </CardContent>
       </Card>
 
-      {/* Avaturn Modal */}
-      <AvaturnCreatorModal
-        open={avaturnOpen}
-        onClose={() => setAvaturnOpen(false)}
-        onAvatarCreated={handleAvatarCreated}
-      />
+      {/* Hidden model-viewer for generating preview PNGs */}
+      <div style={{ position: "absolute", left: -9999, top: -9999, width: 512, height: 512 }}>
+        {/* @ts-ignore */}
+        <model-viewer
+          ref={modelViewerRef}
+          camera-orbit="0deg 80deg 2.2m"
+          camera-target="0m 0.9m 0m"
+          interaction-prompt="none"
+          shadow-intensity="0"
+          style={{ width: 512, height: 512, background: "transparent" } as React.CSSProperties}
+        />
+      </div>
     </div>
   );
 }
