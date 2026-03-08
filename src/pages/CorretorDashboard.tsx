@@ -243,32 +243,37 @@ export default function CorretorDashboard() {
           {/* Botões de Ação */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <div className="grid grid-cols-2 gap-3">
-              <Button
+              <motion.button
                 disabled={!metaSalva}
-                className={`h-14 flex-col gap-1 rounded-xl text-sm font-bold ${
+                whileHover={metaSalva ? { scale: 1.02 } : {}}
+                whileTap={metaSalva ? { scale: 0.98 } : {}}
+                className={`h-16 rounded-xl flex items-center gap-3 px-4 transition-all duration-200 ${
                   metaSalva
-                    ? "bg-[#16A34A] hover:bg-[#15803D] text-white shadow-[0_4px_20px_hsl(142_60%_40%/0.3)]"
+                    ? "bg-gradient-to-br from-[#16A34A] to-[#15803D] hover:from-[#15803D] hover:to-[#166534] text-white shadow-[0_4px_14px_rgba(22,163,74,0.4)]"
                     : "bg-muted text-muted-foreground cursor-not-allowed"
                 }`}
                 onClick={() => metaSalva && navigate("/corretor/call")}
               >
-                <div className="flex items-center gap-1.5">
-                  {!metaSalva ? <Lock className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
-                  {metaSalva ? "Iniciar Call" : "🔒 Iniciar Call"}
+                {!metaSalva ? <Lock className="h-6 w-6 shrink-0" /> : <Phone className="h-6 w-6 shrink-0" />}
+                <div className="text-left">
+                  <p className="text-base font-bold uppercase tracking-wide leading-tight">
+                    {metaSalva ? "Iniciar Call" : "🔒 Call"}
+                  </p>
+                  <p className="text-[10px] font-normal opacity-80">Oferta Ativa</p>
                 </div>
-                <span className="text-[10px] font-normal opacity-70">Oferta Ativa</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-14 flex-col gap-1 rounded-xl text-sm font-bold border-2 hover:bg-primary/5 hover:border-primary/30 group"
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="h-16 rounded-xl flex items-center gap-3 px-4 bg-gradient-to-br from-[#1E40AF] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#2563EB] text-white shadow-[0_4px_14px_rgba(29,78,216,0.35)] transition-all duration-200"
                 onClick={() => navigate("/pipeline")}
               >
-                <div className="flex items-center gap-1.5">
-                  <Kanban className="h-4 w-4 text-primary" />
-                  Gestão de Leads
+                <Kanban className="h-6 w-6 shrink-0" />
+                <div className="text-left">
+                  <p className="text-base font-bold uppercase tracking-wide leading-tight">Gestão de Leads</p>
+                  <p className="text-[10px] font-normal opacity-80">Pipeline</p>
                 </div>
-                <span className="text-[10px] font-normal text-muted-foreground">Pipeline</span>
-              </Button>
+              </motion.button>
             </div>
             {!metaSalva && (
               <p className="text-xs text-muted-foreground text-center mt-2">
@@ -280,28 +285,34 @@ export default function CorretorDashboard() {
           {/* Streak + Nível */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
             <Card className="border-border/60">
-              <CardContent className="p-3 space-y-2">
+              <CardContent className="p-3 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">{streakData.emoji || "🔥"}</span>
-                    <span className="text-xs font-semibold text-foreground">Streak</span>
-                    <span className={`text-xs font-bold ${streakData.color || "text-muted-foreground"}`}>0 dias</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{streakData.emoji || "🔥"}</span>
+                    <span className={`text-xl font-bold ${streakData.color || "text-muted-foreground"}`}>0</span>
+                    <span className="text-xs text-muted-foreground">dias de streak</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">{currentLevel.emoji}</span>
-                    <span className={`text-xs font-bold ${currentLevel.color}`}>{currentLevel.label}</span>
-                  </div>
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${currentLevel.bgColor} ${currentLevel.color}`}>
+                    {currentLevel.emoji} {currentLevel.label}
+                  </span>
                 </div>
-                <div className="relative h-1.5 rounded-full bg-muted overflow-hidden">
+                <div className="relative h-2 rounded-full bg-muted overflow-hidden">
                   <motion.div
-                    className="absolute inset-y-0 left-0 rounded-full bg-primary"
+                    className={`absolute inset-y-0 left-0 rounded-full ${
+                      currentLevel.id === "iniciante" ? "bg-muted-foreground/40"
+                      : currentLevel.id === "ativo" ? "bg-emerald-500"
+                      : currentLevel.id === "engajado" ? "bg-orange-500"
+                      : currentLevel.id === "destaque" ? "bg-amber-500"
+                      : currentLevel.id === "elite" ? "bg-primary"
+                      : "bg-purple-500"
+                    }`}
                     initial={{ width: 0 }}
                     animate={{ width: `${levelProgress}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-muted-foreground">{progress.pontos}/{nextLevel ? nextLevel.minPoints : "MAX"} pts</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">{progress.pontos}/{nextLevel ? nextLevel.minPoints : "MAX"} pts</p>
                   <p className="text-[10px] text-muted-foreground italic">
                     {streakData.label || "Bata a meta hoje para começar! 🚀"}
                   </p>
@@ -314,7 +325,7 @@ export default function CorretorDashboard() {
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <Card className="border-border/60">
               <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-1.5">
                     <span className="text-base">🏆</span>
                     <span className="text-xs font-semibold text-foreground">Ranking Hoje</span>
@@ -323,24 +334,34 @@ export default function CorretorDashboard() {
                     Ver completo →
                   </Button>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {[
-                    { pos: 1, name: nome || "Você", pts: progress.pontos, isMe: true, streak: 0 },
-                    { pos: 2, name: "—", pts: 0, isMe: false, streak: 0 },
-                    { pos: 3, name: "—", pts: 0, isMe: false, streak: 0 },
+                    { pos: 1, name: nome || "Você", pts: progress.pontos, isMe: true, streak: 0, level: currentLevel },
+                    { pos: 2, name: null, pts: null, isMe: false, streak: 0, level: null },
+                    { pos: 3, name: null, pts: null, isMe: false, streak: 0, level: null },
                   ].map((r) => (
                     <div
                       key={r.pos}
-                      className={`flex items-center gap-2 px-2 py-1 rounded-md text-xs ${
-                        r.isMe ? "bg-primary/5 font-semibold" : ""
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs ${
+                        r.isMe ? "bg-primary/5 border-l-2 border-primary" : ""
                       }`}
                     >
-                      <span className="w-5 text-center shrink-0">
+                      <span className="w-5 text-center shrink-0 text-sm">
                         {r.pos === 1 ? "👑" : r.pos === 2 ? "🥈" : "🥉"}
                       </span>
-                      <span className="flex-1 truncate text-foreground">{r.name}</span>
-                      <span className="font-bold text-foreground">{r.pts}pts</span>
-                      {r.streak > 0 && <span className="text-orange-500">🔥{r.streak}</span>}
+                      <span className="w-5 text-center shrink-0 text-muted-foreground font-medium">#{r.pos}</span>
+                      {r.name ? (
+                        <>
+                          <span className="flex-1 truncate text-foreground font-medium">{r.name}</span>
+                          {r.level && (
+                            <span className={`text-[10px] ${r.level.color}`}>{r.level.emoji}</span>
+                          )}
+                          <span className="font-bold text-foreground tabular-nums">{r.pts}pts</span>
+                          {r.isMe && <span className="text-[10px] text-primary font-medium">← você</span>}
+                        </>
+                      ) : (
+                        <span className="flex-1 text-muted-foreground/50 italic">Aguardando...</span>
+                      )}
                     </div>
                   ))}
                 </div>
