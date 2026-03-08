@@ -2181,6 +2181,68 @@ export type Database = {
           },
         ]
       }
+      marketplace_scripts: {
+        Row: {
+          ativo: boolean | null
+          autor_id: string | null
+          autor_nome: string | null
+          categoria: string
+          conteudo: string
+          created_at: string | null
+          descricao: string | null
+          downloads: number | null
+          empreendimento: string | null
+          id: string
+          likes: number | null
+          tags: string[] | null
+          tipo: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          autor_id?: string | null
+          autor_nome?: string | null
+          categoria: string
+          conteudo: string
+          created_at?: string | null
+          descricao?: string | null
+          downloads?: number | null
+          empreendimento?: string | null
+          id?: string
+          likes?: number | null
+          tags?: string[] | null
+          tipo?: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          autor_id?: string | null
+          autor_nome?: string | null
+          categoria?: string
+          conteudo?: string
+          created_at?: string | null
+          descricao?: string | null
+          downloads?: number | null
+          empreendimento?: string | null
+          id?: string
+          likes?: number | null
+          tags?: string[] | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_scripts_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_usage: {
         Row: {
           id: string
