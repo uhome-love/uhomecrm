@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-mascot-official.png";
 
 export interface SessionMetrics {
   total_tentativas: number;

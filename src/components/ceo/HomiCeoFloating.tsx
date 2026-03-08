@@ -196,7 +196,7 @@ export default function HomiCeoFloating({ dashboardData }: Props) {
         className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-white shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center group"
         title="HOMI CEO"
       >
-        <img src="/images/homi-48.png" alt="HOMI" className="h-10 w-10 object-contain" />
+        <img src="/images/homi-mascot-official.png" alt="HOMI" className="h-10 w-10 object-contain" />
         {alerts.length > 0 && (
           <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
             {alerts.length}

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useHomi } from "@/contexts/HomiContext";
 
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-mascot-official.png";
 
 interface Props {
   suggestion: string;

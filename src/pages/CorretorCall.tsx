@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLevel, getNextLevel, getLevelProgress } from "@/lib/gamification";
 import { toast } from "sonner";
 
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-mascot-official.png";
 
 type CallPhase = "warmup" | "launching" | "session";
 

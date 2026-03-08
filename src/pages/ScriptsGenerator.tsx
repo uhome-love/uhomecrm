@@ -5,7 +5,7 @@ import ScriptLibrary from "@/components/scripts/ScriptLibrary";
 import TeamScriptAssignment from "@/components/scripts/TeamScriptAssignment";
 import CorretorScriptsView from "@/components/scripts/CorretorScriptsView";
 import { useUserRole } from "@/hooks/useUserRole";
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-mascot-official.png";
 
 export default function ScriptsGenerator() {
   const { isGestor, isAdmin } = useUserRole();

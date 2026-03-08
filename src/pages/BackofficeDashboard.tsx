@@ -323,7 +323,7 @@ export default function BackofficeDashboard() {
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 rounded-full bg-white shadow flex items-center justify-center shrink-0">
-                <img src="/images/homi-48.png" alt="HOMI" className="h-7 w-7 object-contain" />
+                <img src="/images/homi-mascot-official.png" alt="HOMI" className="h-7 w-7 object-contain" />
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-foreground flex items-center gap-1.5">

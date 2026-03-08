@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-mascot-official.png";
 
 type Acao = "responder_whatsapp" | "criar_followup" | "script_ligacao" | "quebrar_objecao" | "preparar_visita";
 

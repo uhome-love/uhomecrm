@@ -23,7 +23,7 @@ import NewLeadBanner from "@/components/notifications/NewLeadBanner";
 import GlobalSearch from "@/components/GlobalSearch";
 import { Search } from "lucide-react";
 import { HomiProvider } from "@/contexts/HomiContext";
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-mascot-official.png";
 
 const HomiPanel = lazy(() => import("@/components/homi/HomiPanel"));
 const HomiAvatar = lazy(() => import("@/components/homi/HomiAvatar"));

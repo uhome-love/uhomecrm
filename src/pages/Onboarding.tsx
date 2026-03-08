@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useOnboarding, ONBOARDING_STEPS } from "@/hooks/useOnboarding";
 import { useNavigate } from "react-router-dom";
 
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-mascot-official.png";
 
 export default function Onboarding() {
   const { completedSteps, completedCount, totalSteps, progress, isComplete, completeStep } = useOnboarding();
