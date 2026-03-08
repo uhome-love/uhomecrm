@@ -10,7 +10,10 @@ import SequenceLibrary from "@/components/pipeline/SequenceLibrary";
 import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
 
 import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashboard";
-import ForecastPonderadoPanel from "@/components/pipeline/ForecastPonderadoPanel";
+import type { PipelineStage } from "@/hooks/usePipeline";
+import { useMemo as useMemoReact } from "react";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import PipelineAdvancedFilters, {
   EMPTY_FILTERS,
   applyFilters,
