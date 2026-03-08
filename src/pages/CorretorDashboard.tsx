@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Trophy } from "lucide-react";
 import { differenceInHours } from "date-fns";
 import { getDynamicGreeting, formatStreak } from "@/lib/celebrations";
+import { getLevel, getNextLevel, getLevelProgress } from "@/lib/gamification";
 import MetaCelebration from "@/components/corretor/MetaCelebration";
 import ConfettiBurst from "@/components/corretor/ConfettiToast";
 
