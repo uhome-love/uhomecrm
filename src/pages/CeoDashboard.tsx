@@ -258,6 +258,40 @@ export default function CeoDashboard() {
         </CardContent>
       </Card>
 
+      {/* ─── FILA CEO ─── */}
+      <Card className={filaCeoCount > 0 ? "border-purple-500/40 shadow-[0_0_0_1px_rgba(124,58,237,0.15)]" : ""}>
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <Inbox className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">📥 Fila CEO</span>
+                  {filaCeoCount > 0 && <Badge className="bg-purple-600 text-white border-none text-xs">{filaCeoCount}</Badge>}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {filaCeoCount > 0 ? `${filaCeoCount} leads aguardando distribuição` : "Nenhum lead na fila"}
+                  {lastDispatch && (
+                    <span className="ml-2">• Último disparo: {format(new Date(lastDispatch.at), "dd/MM HH:mm")} ({lastDispatch.count} leads)</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setDispatchOpen(true)}
+              disabled={filaCeoCount === 0}
+              className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Rocket className="h-3.5 w-3.5" />
+              Disparar para Roleta
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* ─── SEÇÃO 2: KPIs ─── */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">📊 Processo</h2>
