@@ -14,16 +14,17 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Inter", "Arial", "system-ui", "sans-serif"],
+        display: ["Inter", "Arial", "system-ui", "sans-serif"],
       },
       fontSize: {
-        xs: ["0.6875rem", { lineHeight: "1rem" }],
-        sm: ["0.8125rem", { lineHeight: "1.25rem" }],
-        base: ["0.9375rem", { lineHeight: "1.5rem" }],
-        lg: ["1.0625rem", { lineHeight: "1.75rem" }],
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }],       /* 11px — tagline HOMI */
+        xs: ["0.75rem", { lineHeight: "1rem" }],             /* 12px — badges/micro */
+        sm: ["0.8125rem", { lineHeight: "1.25rem" }],        /* 13px — secondary text */
+        base: ["0.875rem", { lineHeight: "1.5rem" }],        /* 14px — corpo padrão */
+        lg: ["1.125rem", { lineHeight: "1.75rem" }],         /* 18px — seção */
         xl: ["1.25rem", { lineHeight: "2rem" }],
-        "2xl": ["1.5rem", { lineHeight: "2.25rem" }],
+        "2xl": ["1.5rem", { lineHeight: "2.25rem" }],        /* 24px — página */
       },
       colors: {
         border: "hsl(var(--border))",
@@ -64,6 +65,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        /* ── Semantic colors (UhomeSales v1.0) ── */
+        brand: {
+          dark: "hsl(var(--brand-dark))",
+          medium: "hsl(var(--brand-medium))",
+          homi: "hsl(var(--brand-homi))",
+        },
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
@@ -84,6 +91,13 @@ export default {
           500: "hsl(var(--danger-500))",
           700: "hsl(var(--danger-700))",
         },
+        purple: {
+          DEFAULT: "hsl(var(--purple))",
+          foreground: "hsl(var(--purple-foreground))",
+          50: "hsl(var(--purple-50))",
+          500: "hsl(var(--purple-500))",
+          700: "hsl(var(--purple-700))",
+        },
         info: {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
@@ -92,8 +106,11 @@ export default {
           50: "hsl(var(--neutral-50))",
           100: "hsl(var(--neutral-100))",
           200: "hsl(var(--neutral-200))",
+          300: "hsl(var(--neutral-300))",
           400: "hsl(var(--neutral-400))",
+          500: "hsl(var(--neutral-500))",
           600: "hsl(var(--neutral-600))",
+          700: "hsl(var(--neutral-700))",
           900: "hsl(var(--neutral-900))",
         },
         priority: {
@@ -116,6 +133,12 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        "card-hover": "var(--shadow-card-hover)",
+        elevated: "var(--shadow-elevated)",
+        homi: "var(--shadow-homi)",
       },
       keyframes: {
         "accordion-down": {

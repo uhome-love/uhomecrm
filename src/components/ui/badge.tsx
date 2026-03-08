@@ -12,6 +12,16 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        /* ── UhomeSales Status Pills ── */
+        success: "border-transparent bg-success-50 text-success-700",
+        warning: "border-transparent bg-warning-50 text-warning-700",
+        danger: "border-transparent bg-danger-50 text-danger-700",
+        purple: "border-transparent bg-purple-50 text-purple-700",
+        neutral: "border-transparent bg-neutral-900 text-white",
+        /* ── Team badges ── */
+        teamGreen: "border-transparent bg-success-50 text-success-700",
+        teamBlue: "border-transparent bg-primary-50 text-primary-600",
+        teamPurple: "border-transparent bg-purple-50 text-purple-700",
       },
     },
     defaultVariants: {
