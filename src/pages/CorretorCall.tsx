@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowLeft, Flame, Target, Trophy, Clock, Zap, CheckCircle, Pause, X, ChevronRight, Loader2 } from "lucide-react";
+import ImmersiveScreen from "@/components/immersive/ImmersiveScreen";
 import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelection";
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
@@ -27,45 +28,7 @@ function getProgressColor(pct: number) {
   return "bg-red-500/70";
 }
 
-// ── Floating particles (CSS-only) ──
-function Particles() {
-  const particles = useMemo(() =>
-    Array.from({ length: 25 }, (_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      size: 1 + Math.random() * 2,
-      opacity: 0.15 + Math.random() * 0.35,
-      duration: 8 + Math.random() * 7,
-      delay: Math.random() * 10,
-    })), []);
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      {particles.map(p => (
-        <div
-          key={p.id}
-          className="absolute rounded-full bg-white"
-          style={{
-            left: p.left,
-            width: p.size,
-            height: p.size,
-            opacity: p.opacity,
-            bottom: "-10px",
-            animation: `particle-rise ${p.duration}s linear ${p.delay}s infinite`,
-          }}
-        />
-      ))}
-      <style>{`
-        @keyframes particle-rise {
-          0% { transform: translateY(0); opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translateY(-110vh); opacity: 0; }
-        }
-      `}</style>
-    </div>
-  );
-}
+// Particles now provided by ImmersiveScreen component
 
 // ── Whoosh sound effect ──
 function playWhoosh() {
@@ -227,13 +190,7 @@ export default function CorretorCall() {
   // ── WARMUP: IMMERSIVE BATTLE ENTRY ──
   if (phase === "warmup" || phase === "launching") {
     return (
-      <div
-        className="fixed inset-0 z-50 flex flex-col items-center overflow-y-auto"
-        style={{
-          background: "radial-gradient(ellipse at center, #0F1E3D 0%, #060D1F 60%, #020610 100%)",
-        }}
-      >
-        <Particles />
+      <ImmersiveScreen fullScreen className="flex flex-col items-center overflow-y-auto z-50">
 
         {/* ZONA 1 — TOPO */}
         <div className="relative z-10 w-full max-w-2xl px-6 pt-6 flex items-center justify-between">
@@ -455,7 +412,7 @@ export default function CorretorCall() {
             100% { box-shadow: 0 0 40px rgba(22,163,74,0.4), 0 0 80px rgba(22,163,74,0.1); }
           }
         `}</style>
-      </div>
+      </ImmersiveScreen>
     );
   }
 
