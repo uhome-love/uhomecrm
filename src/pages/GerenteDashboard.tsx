@@ -245,7 +245,7 @@ export default function GerenteDashboard() {
   const { data: todayVisitas } = useQuery({
     queryKey: ["gerente-visitas-hoje", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("visitas").select("id, nome_cliente, empreendimento, hora_visita, status, corretor_nome").eq("gerente_id", user!.id).eq("data_visita", today).order("hora_visita");
+      const { data } = await supabase.from("visitas").select("id, nome_cliente, empreendimento, hora_visita, status, corretor_id").eq("gerente_id", user!.id).eq("data_visita", today).order("hora_visita");
       return data || [];
     },
     enabled: !!user,
@@ -536,7 +536,7 @@ export default function GerenteDashboard() {
                     <span className="text-sm font-mono font-semibold text-foreground w-12">{v.hora_visita?.slice(0, 5) || "--:--"}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{v.nome_cliente}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{v.empreendimento} · {v.corretor_nome}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{v.empreendimento}</p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] ${statusColors[v.status] || ""}`}>
                       {statusIcons[v.status] || "⚪"} {v.status}
@@ -656,7 +656,7 @@ function CorretorLeadsTab({ userId }: { userId: string }) {
   const { data } = useQuery({
     queryKey: ["corretor-leads-drawer", userId],
     queryFn: async () => {
-      const { data } = await supabase.from("pipeline_leads").select("id, nome, empreendimento, pipeline_fase, updated_at").eq("corretor_id", userId).order("updated_at", { ascending: false }).limit(10);
+      const { data } = await supabase.from("pipeline_leads").select("id, nome, empreendimento, prioridade_lead, updated_at").eq("corretor_id", userId).order("updated_at", { ascending: false }).limit(10);
       return data || [];
     },
   });
@@ -669,7 +669,7 @@ function CorretorLeadsTab({ userId }: { userId: string }) {
             <p className="text-sm font-medium text-foreground truncate">{l.nome}</p>
             <p className="text-[10px] text-muted-foreground">{l.empreendimento}</p>
           </div>
-          <Badge variant="outline" className="text-[10px] shrink-0">{l.pipeline_fase || "novo"}</Badge>
+          <Badge variant="outline" className="text-[10px] shrink-0">{l.prioridade_lead || "novo"}</Badge>
         </div>
       ))}
     </div>
