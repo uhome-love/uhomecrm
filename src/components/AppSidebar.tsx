@@ -136,6 +136,25 @@ export function AppSidebar() {
       });
   }, [user]);
 
+  // Fetch roleta pending approvals count for CEO
+  const fetchRoletaPendentes = useCallback(async () => {
+    if (!isAdmin) return;
+    const hoje = new Date().toISOString().slice(0, 10);
+    const { count } = await supabase
+      .from("roleta_credenciamentos")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pendente")
+      .eq("data", hoje);
+    setRoletaPendentes(count ?? 0);
+  }, [isAdmin]);
+
+  useEffect(() => {
+    fetchRoletaPendentes();
+    if (!isAdmin) return;
+    const interval = setInterval(fetchRoletaPendentes, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchRoletaPendentes, isAdmin]);
+
   useEffect(() => {
     if (toastShown.current || alerts.length === 0) return;
     toastShown.current = true;
