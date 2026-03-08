@@ -426,110 +426,147 @@ export default function CorretorCall() {
     );
   }
 
-  // ── IMMERSIVE SESSION SCREEN (dark theme) ──
+  // ── ARENA DE LIGAÇÃO ──
+  const visitPct = Math.min(100, Math.round(((progress.visitasMarcadas || 0) / Math.max(1, progress.metaVisitas)) * 100));
+
+  // Arena particles
+  const arenaParticles = useMemo(() =>
+    Array.from({ length: 10 }, (_, i) => ({
+      left: `${5 + Math.random() * 90}%`,
+      top: `${10 + Math.random() * 70}%`,
+      duration: `${3 + Math.random() * 4}s`,
+      delay: `${Math.random() * 3}s`,
+      size: `${2 + Math.random() * 2}px`,
+      opacity: 0.2 + Math.random() * 0.4,
+    })), []
+  );
+
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] max-w-full" style={{ background: "#0D1117" }}>
-      {/* ═══ TOP SESSION BAR ═══ */}
-      <div className="shrink-0 border-b" style={{ borderColor: "rgba(255,255,255,0.08)", background: "#161B22" }}>
-        <div className="px-4 py-2.5 max-w-[1600px] mx-auto">
-          <div className="flex items-center justify-between gap-4 mb-2">
+    <div className="arena-bg flex flex-col h-[calc(100vh-56px)] max-w-full overflow-hidden">
+      {/* Arena layers */}
+      <div className="arena-floor" />
+      <div className="arena-vignette" />
+      {arenaParticles.map((p, i) => (
+        <div
+          key={i}
+          className="arena-particle"
+          style={{
+            left: p.left, top: p.top,
+            width: p.size, height: p.size,
+            animationDuration: p.duration,
+            animationDelay: p.delay,
+            opacity: p.opacity,
+          }}
+        />
+      ))}
+
+      {/* ═══ ARENA SCOREBOARD ═══ */}
+      <div className="arena-scoreboard shrink-0 relative z-10">
+        <div className="px-4 py-3 max-w-[1600px] mx-auto">
+          {/* Title row */}
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <Flame className="h-4 w-4 text-red-500" />
-                <span className="text-sm font-bold text-white">Sessão em andamento</span>
-              </div>
-              <div className="hidden sm:flex items-center gap-3 text-xs text-neutral-400">
-                <span>🔥 <strong className="text-white">{progress.tentativas}</strong>/{progress.metaLigacoes}</span>
-                <span>✅ <strong className="text-emerald-400">{progress.aproveitados}</strong>/{progress.metaAproveitados}</span>
-                <span>📅 <strong className="text-blue-400">{progress.visitasMarcadas || 0}</strong>/{progress.metaVisitas}</span>
-                <motion.span
-                  key={progress.pontos}
-                  initial={{ scale: 1.3, color: "#facc15" }}
-                  animate={{ scale: 1, color: "#60A5FA" }}
-                  transition={{ duration: 0.5 }}
-                  className="font-bold"
-                >
-                  ⭐ {progress.pontos}pts
-                </motion.span>
-              </div>
+              <h2 className="text-sm font-black tracking-[0.2em] uppercase arena-title-gradient">
+                ⚡ ARENA DE LIGAÇÃO
+              </h2>
+              <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 live-dot" />
+                AO VIVO
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
-                onClick={() => navigate("/corretor")}
+            <div className="flex items-center gap-3">
+              <motion.span
+                key={progress.pontos}
+                className="text-sm font-black text-amber-400"
+                initial={{ scale: 1.5 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 300 }}
               >
-                <Pause className="h-3 w-3" /> Pausar
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1 text-red-400 hover:bg-red-500/10"
-                onClick={() => navigate("/corretor")}
-              >
-                <X className="h-3 w-3" /> Encerrar
-              </Button>
+                ⭐ {progress.pontos} pts
+              </motion.span>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="ghost" size="sm"
+                  className="h-7 text-xs gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
+                  onClick={() => navigate("/corretor")}
+                >
+                  <Pause className="h-3 w-3" /> Pausar
+                </Button>
+                <Button
+                  variant="ghost" size="sm"
+                  className="h-7 text-xs gap-1 text-red-400 hover:bg-red-500/10"
+                  onClick={() => navigate("/corretor")}
+                >
+                  <X className="h-3 w-3" /> Sair
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* 3 separate progress bars */}
-          <div className="flex items-center gap-3">
+          {/* Progress bars */}
+          <div className="flex items-center gap-6">
+            {/* Ligações */}
             <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-neutral-500 w-4">🔥</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
-                  <motion.div
-                    animate={{ width: `${ligPct}%` }}
-                    transition={{ duration: 0.5 }}
-                    className="h-full rounded-full bg-orange-500"
-                  />
-                </div>
-                <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.tentativas}/{progress.metaLigacoes}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-neutral-400">🔥 Ligações</span>
+                <span className="text-xs font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-neutral-500 w-4">✅</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
-                  <motion.div
-                    animate={{ width: `${aprvPct}%` }}
-                    transition={{ duration: 0.5 }}
-                    className="h-full rounded-full bg-emerald-500"
-                  />
-                </div>
-                <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.aproveitados}/{progress.metaAproveitados}</span>
+              <div className="h-1.5 rounded-full overflow-hidden bg-white/10 arena-bar-glow-green">
+                <motion.div
+                  animate={{ width: `${ligPct}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="h-full rounded-full bg-gradient-to-r from-orange-500 to-orange-400"
+                />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-neutral-500 w-4">📅</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
-                  <motion.div
-                    animate={{ width: `${Math.min(100, ((progress.visitasMarcadas || 0) / Math.max(1, progress.metaVisitas)) * 100)}%` }}
-                    transition={{ duration: 0.5 }}
-                    className="h-full rounded-full bg-blue-500"
-                  />
-                </div>
-                <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
+            </div>
+            {/* Aproveitados */}
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-neutral-400">✅ Aproveit.</span>
+                <span className="text-xs font-mono font-bold text-emerald-400">{progress.aproveitados}/{progress.metaAproveitados}</span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden bg-white/10 arena-bar-glow-green">
+                <motion.div
+                  animate={{ width: `${aprvPct}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                />
+              </div>
+            </div>
+            {/* Visitas */}
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-neutral-400">📅 Visitas</span>
+                <span className="text-xs font-mono font-bold text-blue-400">{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden bg-white/10 arena-bar-glow-blue">
+                <motion.div
+                  animate={{ width: `${visitPct}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400"
+                />
               </div>
             </div>
           </div>
 
           {nextLevel && ligacoesFaltam > 0 && (
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex items-center gap-1.5 mt-2">
               <span className="text-[10px] font-semibold text-neutral-300">{currentLevel.emoji} {currentLevel.label}</span>
               <ChevronRight className="h-3 w-3 text-neutral-500" />
               <span className="text-[10px] font-semibold text-neutral-300">{nextLevel.emoji} {nextLevel.label}</span>
-              <span className="text-[10px] text-neutral-500">: faltam {ligacoesFaltam}</span>
+              <span className="text-[10px] text-neutral-500">· faltam {ligacoesFaltam}</span>
             </div>
           )}
         </div>
       </div>
 
       {/* ═══ SESSION CONTENT ═══ */}
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-4 relative z-10">
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 h-auto mb-4 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.05)" }}>
               <TabsTrigger value="call" className="gap-1 text-xs py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none">
-                <Phone className="h-3.5 w-3.5" /> Call
+                <Phone className="h-3.5 w-3.5" /> Arena
               </TabsTrigger>
               <TabsTrigger value="aproveitados" className="gap-1 text-xs py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none">
                 <CheckCircle className="h-3.5 w-3.5" /> Aproveitados

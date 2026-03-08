@@ -94,6 +94,36 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [showMilestone, setShowMilestone] = useState<string | null>(null);
   const [expandedObj, setExpandedObj] = useState<number | null>(null);
+
+  // === ARENA: Round announcement ===
+  const [showRound, setShowRound] = useState(false);
+  const [showFlash, setShowFlash] = useState(false);
+  const [arenaShake, setArenaShake] = useState(false);
+  const [arenaConfetti, setArenaConfetti] = useState<string[]>([]);
+  const prevLeadIdRef = useRef<string | null>(null);
+
+  // Trigger round animation on new lead
+  useEffect(() => {
+    if (lead && lead.id !== prevLeadIdRef.current) {
+      prevLeadIdRef.current = lead.id;
+      if (sessionLeadsServed > 0) {
+        setShowFlash(true);
+        setShowRound(true);
+        setTimeout(() => setShowFlash(false), 350);
+        setTimeout(() => setShowRound(false), 900);
+      }
+    }
+  }, [lead?.id, sessionLeadsServed]);
+
+  // Arena confetti burst
+  const triggerConfetti = useCallback(() => {
+    const emojis = ['🎉', '✨', '🌟', '⭐', '🔥', '💫', '🎊', '✅', '💎', '🏆',
+                    '🎉', '✨', '🌟', '⭐', '🔥', '💫', '🎊', '✅', '💎', '🏆',
+                    '🎉', '✨', '🌟', '⭐', '🔥', '💫', '🎊', '✅', '💎', '🏆'];
+    setArenaConfetti(emojis);
+    setTimeout(() => setArenaConfetti([]), 3000);
+  }, []);
+
   // === FETCH FIRST LEAD on mount ===
   const hasFetchedRef = useRef(false);
   useEffect(() => {
