@@ -65,16 +65,16 @@ export default function CorretorDashboard() {
 
       // SLA expired
       const slaThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { count: slaExpired } = await supabase
+      const { count: slaExpired } = await (supabase
         .from("pipeline_leads")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true }) as any)
         .eq("corretor_id", user!.id)
         .lt("stage_changed_at", slaThreshold);
 
       // Visits today
-      const { data: visitas } = await supabase
+      const { data: visitas } = await (supabase
         .from("visitas")
-        .select("horario")
+        .select("horario") as any)
         .eq("corretor_id", user!.id)
         .eq("data", today)
         .order("horario");
