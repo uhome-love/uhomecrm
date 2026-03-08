@@ -1,11 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Sparkles, ClipboardList, Briefcase, Trophy, HeartCrack, ArrowLeft, ArrowRight, Loader2, Flame } from "lucide-react";
+import { Sparkles, ClipboardList, Briefcase, Trophy, HeartCrack, ArrowLeft, ArrowRight, Loader2, Flame, Search, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomLists, resolveCustomListLeads, type CustomListFilters } from "@/hooks/useCustomLists";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +36,25 @@ const TEMPO_SEM_CONTATO = [
   { id: "7dias", label: "Mais de 7 dias" },
   { id: "15dias", label: "Mais de 15 dias" },
   { id: "nunca", label: "Nunca contatados" },
+];
+
+const ORIGENS = [
+  { id: "instagram", label: "📱 Instagram" },
+  { id: "facebook", label: "📘 Facebook" },
+  { id: "google", label: "🔍 Google" },
+  { id: "indicacao", label: "📞 Indicação" },
+  { id: "stand", label: "🏢 Stand" },
+  { id: "email", label: "📧 Email" },
+  { id: "site", label: "🌐 Site" },
+  { id: "meta_ads", label: "🎯 Meta Ads" },
+  { id: "outros", label: "Outros" },
+];
+
+const SCORES = [
+  { id: "qualquer", label: "Qualquer score" },
+  { id: "50", label: "Score > 50" },
+  { id: "70", label: "Score > 70" },
+  { id: "85", label: "Score > 85" },
 ];
 
 const MOTIVOS_PERDA = [
@@ -88,6 +105,8 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
   const [resolving, setResolving] = useState(false);
   const [previewCount, setPreviewCount] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
+  const [empSearch, setEmpSearch] = useState("");
+  const [empExpanded, setEmpExpanded] = useState(false);
 
   // Load empreendimentos from corretor's leads
   const { data: empreendimentos = [] } = useQuery({
@@ -100,7 +119,7 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
         .eq("corretor_id", user.id)
         .not("empreendimento", "is", null);
       const unique = [...new Set((data || []).map(d => d.empreendimento).filter(Boolean))];
-      return unique as string[];
+      return unique.sort() as string[];
     },
     enabled: !!user && open,
   });
@@ -110,7 +129,6 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
     queryKey: ["custom-list-homi-suggestion", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      // Count leads in Qualificação without contact >5 days
       const { data: stages } = await supabase
         .from("pipeline_stages")
         .select("id, nome")
@@ -127,6 +145,34 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
         .lt("updated_at", cutoff);
 
       if (count && count >= 3) {
+        // Find the most common empreendimento for a better suggestion
+        const { data: empData } = await supabase
+          .from("pipeline_leads")
+          .select("empreendimento")
+          .eq("corretor_id", user.id)
+          .eq("stage_id", qualStage.id)
+          .lt("updated_at", cutoff)
+          .not("empreendimento", "is", null);
+        
+        const empCounts: Record<string, number> = {};
+        (empData || []).forEach(l => {
+          if (l.empreendimento) empCounts[l.empreendimento] = (empCounts[l.empreendimento] || 0) + 1;
+        });
+        const topEmp = Object.entries(empCounts).sort((a, b) => b[1] - a[1])[0];
+
+        if (topEmp) {
+          return {
+            text: `Você tem ${topEmp[1]} leads no ${topEmp[0]} em Possível Visita sem contato há mais de 5 dias. Vale trabalhar! 🎯`,
+            filtros: {
+              fontes: ["meus_leads"],
+              etapas: ["Possível Visita"],
+              empreendimentos: [topEmp[0]],
+              tempoSemContato: "3dias",
+              ordem: "score",
+            } as CustomListFilters,
+          };
+        }
+
         return {
           text: `Você tem ${count} leads em Qualificação há mais de 5 dias sem contato. Vale uma lista focada nisso! 🎯`,
           filtros: {
@@ -139,7 +185,7 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
       }
       return null;
     },
-    enabled: !!user && open && step === 1,
+    enabled: !!user && open,
     staleTime: 60000,
   });
 
@@ -162,7 +208,7 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
       return {
         meus_leads: all.filter(l => stageMap.get(l.stage_id) === "leads" && !l.motivo_descarte).length,
         meus_negocios: all.filter(l => stageMap.get(l.stage_id) === "negocios").length,
-        pos_venda: 0, // placeholder
+        pos_venda: 0,
         perdidos: all.filter(l => l.motivo_descarte != null).length,
       };
     },
@@ -216,6 +262,13 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
 
   const canProceedStep1 = filtros.fontes.length > 0;
 
+  // Filtered empreendimentos for search
+  const filteredEmps = empSearch
+    ? empreendimentos.filter(e => e.toLowerCase().includes(empSearch.toLowerCase()))
+    : empreendimentos;
+  const visibleEmps = empExpanded ? filteredEmps : filteredEmps.slice(0, 6);
+  const hiddenCount = filteredEmps.length - 6;
+
   const renderStep1 = () => (
     <div className="space-y-4">
       {homiSuggestion && (
@@ -255,7 +308,7 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
 
   const renderStep2 = () => (
     <div className="space-y-5 max-h-[50vh] overflow-y-auto pr-1">
-      {/* Etapas for leads */}
+      {/* 1. Etapas for leads */}
       {filtros.fontes.includes("meus_leads") && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-foreground">Por etapa</p>
@@ -289,12 +342,23 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
         </div>
       )}
 
-      {/* Empreendimento */}
+      {/* 2. Empreendimento with search + expand */}
       {empreendimentos.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-foreground">Por empreendimento</p>
+          {empreendimentos.length > 6 && (
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={empSearch}
+                onChange={e => setEmpSearch(e.target.value)}
+                placeholder="Buscar empreendimento..."
+                className="pl-8 h-8 text-xs"
+              />
+            </div>
+          )}
           <div className="flex flex-wrap gap-1.5">
-            {empreendimentos.map(e => (
+            {visibleEmps.map(e => (
               <ChipToggle
                 key={e}
                 label={e}
@@ -303,10 +367,36 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
               />
             ))}
           </div>
+          {!empExpanded && hiddenCount > 0 && !empSearch && (
+            <button
+              type="button"
+              onClick={() => setEmpExpanded(true)}
+              className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+            >
+              Ver mais ({hiddenCount}) <ChevronDown className="h-3 w-3" />
+            </button>
+          )}
         </div>
       )}
 
-      {/* Tempo sem contato */}
+      {/* 3. Origem do lead */}
+      {(filtros.fontes.includes("meus_leads") || filtros.fontes.includes("meus_negocios")) && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-foreground">Por origem do lead</p>
+          <div className="flex flex-wrap gap-1.5">
+            {ORIGENS.map(o => (
+              <ChipToggle
+                key={o.id}
+                label={o.label}
+                selected={filtros.origens?.includes(o.id) || false}
+                onClick={() => toggleArrayFilter("origens", o.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Tempo sem contato */}
       {(filtros.fontes.includes("meus_leads") || filtros.fontes.includes("meus_negocios")) && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-foreground">Tempo sem contato</p>
@@ -323,7 +413,7 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
         </div>
       )}
 
-      {/* Temperatura */}
+      {/* 5. Temperatura */}
       {filtros.fontes.includes("meus_leads") && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-foreground">Por temperatura</p>
@@ -334,6 +424,23 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
                 label={t.label}
                 selected={filtros.temperatura?.includes(t.id) || false}
                 onClick={() => toggleArrayFilter("temperatura", t.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 6. Score */}
+      {(filtros.fontes.includes("meus_leads") || filtros.fontes.includes("meus_negocios")) && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-foreground">Por score</p>
+          <div className="flex flex-wrap gap-1.5">
+            {SCORES.map(s => (
+              <ChipToggle
+                key={s.id}
+                label={s.label}
+                selected={(filtros.score || "qualquer") === s.id}
+                onClick={() => setFiltros(f => ({ ...f, score: s.id }))}
               />
             ))}
           </div>
@@ -356,77 +463,139 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
           </div>
         </div>
       )}
+
+      {/* HOMI suggestion at bottom of step 2 */}
+      {homiSuggestion && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3 flex items-start gap-2">
+            <span className="text-lg">🤖</span>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-foreground mb-1">HOMI sugere:</p>
+              <p className="text-xs text-muted-foreground">{homiSuggestion.text}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleUseSuggestion}
+                className="mt-1.5 h-7 text-xs text-primary hover:text-primary/80 px-2"
+              >
+                Usar sugestão
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 
-  const renderStep3 = () => (
-    <div className="space-y-4">
-      <Card className="bg-muted/50">
-        <CardContent className="p-4 space-y-2">
-          <p className="text-xs font-semibold text-foreground">📋 Resumo da lista</p>
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p><span className="text-foreground font-medium">Fonte:</span> {filtros.fontes.map(f => FONTES.find(x => x.id === f)?.label).join(", ")}</p>
-            {filtros.etapas && filtros.etapas.length > 0 && (
-              <p><span className="text-foreground font-medium">Etapas:</span> {filtros.etapas.join(", ")}</p>
-            )}
-            {filtros.empreendimentos && filtros.empreendimentos.length > 0 && (
-              <p><span className="text-foreground font-medium">Produto:</span> {filtros.empreendimentos.join(", ")}</p>
-            )}
-            {filtros.tempoSemContato && filtros.tempoSemContato !== "qualquer" && (
-              <p><span className="text-foreground font-medium">Sem contato:</span> {TEMPO_SEM_CONTATO.find(t => t.id === filtros.tempoSemContato)?.label}</p>
-            )}
-            {filtros.temperatura && filtros.temperatura.length > 0 && (
-              <p><span className="text-foreground font-medium">Temperatura:</span> {filtros.temperatura.join(", ")}</p>
-            )}
-          </div>
+  // Preview count styling
+  const getPreviewCountDisplay = (count: number) => {
+    if (count === 0) {
+      return {
+        icon: "⚠️",
+        text: `0 leads encontrados`,
+        className: "text-amber-600",
+        hint: "Tente ampliar os filtros",
+      };
+    }
+    if (count <= 10) {
+      return {
+        icon: "🎯",
+        text: `${count} leads encontrados`,
+        className: "text-blue-600",
+        hint: null,
+      };
+    }
+    return {
+      icon: "✅",
+      text: `${count} leads encontrados`,
+      className: "text-emerald-600",
+      hint: null,
+    };
+  };
 
-          <div className="pt-2 border-t border-border">
-            {resolving ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" /> Calculando...
-              </div>
-            ) : (
-              <p className="text-sm font-bold text-emerald-600">
-                ✅ {previewCount ?? 0} leads encontrados
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+  const renderStep3 = () => {
+    const countDisplay = getPreviewCountDisplay(previewCount ?? 0);
 
-      {/* Ordem */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-foreground">Ordem de prioridade</p>
+    return (
+      <div className="space-y-4">
+        <Card className="bg-muted/50">
+          <CardContent className="p-4 space-y-2">
+            <p className="text-xs font-semibold text-foreground">📋 Resumo da lista</p>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p><span className="text-foreground font-medium">Fonte:</span> {filtros.fontes.map(f => FONTES.find(x => x.id === f)?.label).join(", ")}</p>
+              {filtros.etapas && filtros.etapas.length > 0 && (
+                <p><span className="text-foreground font-medium">Etapas:</span> {filtros.etapas.join(", ")}</p>
+              )}
+              {filtros.empreendimentos && filtros.empreendimentos.length > 0 && (
+                <p><span className="text-foreground font-medium">Empreendimentos:</span> {filtros.empreendimentos.join(", ")}</p>
+              )}
+              {filtros.origens && filtros.origens.length > 0 && (
+                <p><span className="text-foreground font-medium">Origem:</span> {filtros.origens.map(o => ORIGENS.find(x => x.id === o)?.label.replace(/^[^\s]+ /, "") || o).join(", ")}</p>
+              )}
+              {filtros.tempoSemContato && filtros.tempoSemContato !== "qualquer" && (
+                <p><span className="text-foreground font-medium">Sem contato:</span> {TEMPO_SEM_CONTATO.find(t => t.id === filtros.tempoSemContato)?.label}</p>
+              )}
+              {filtros.temperatura && filtros.temperatura.length > 0 && (
+                <p><span className="text-foreground font-medium">Temperatura:</span> {filtros.temperatura.join(", ")}</p>
+              )}
+              {filtros.score && filtros.score !== "qualquer" && (
+                <p><span className="text-foreground font-medium">Score:</span> {">"} {filtros.score}</p>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-border">
+              {resolving ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Calculando...
+                </div>
+              ) : (
+                <div>
+                  <p className={`text-sm font-bold ${countDisplay.className}`}>
+                    {countDisplay.icon} {countDisplay.text}
+                  </p>
+                  {countDisplay.hint && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{countDisplay.hint}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ordem */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-foreground">Ordem de prioridade</p>
+          <div className="space-y-1.5">
+            {ORDENS.map(o => (
+              <label key={o.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                <input
+                  type="radio"
+                  name="ordem"
+                  checked={filtros.ordem === o.id}
+                  onChange={() => setFiltros(f => ({ ...f, ordem: o.id }))}
+                  className="accent-primary"
+                />
+                <span className={filtros.ordem === o.id ? "text-foreground font-medium" : "text-muted-foreground"}>
+                  {o.label}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Nome */}
         <div className="space-y-1.5">
-          {ORDENS.map(o => (
-            <label key={o.id} className="flex items-center gap-2 text-xs cursor-pointer">
-              <input
-                type="radio"
-                name="ordem"
-                checked={filtros.ordem === o.id}
-                onChange={() => setFiltros(f => ({ ...f, ordem: o.id }))}
-                className="accent-primary"
-              />
-              <span className={filtros.ordem === o.id ? "text-foreground font-medium" : "text-muted-foreground"}>
-                {o.label}
-              </span>
-            </label>
-          ))}
+          <p className="text-xs font-semibold text-foreground">Nome da lista (opcional)</p>
+          <Input
+            value={nome}
+            onChange={e => setNome(e.target.value)}
+            placeholder="Ex: Qualificação Alfa - sem contato"
+            className="text-sm"
+          />
         </div>
       </div>
-
-      {/* Nome */}
-      <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-foreground">Nome da lista (opcional)</p>
-        <Input
-          value={nome}
-          onChange={e => setNome(e.target.value)}
-          placeholder="Ex: Qualificação Alfa - sem contato"
-          className="text-sm"
-        />
-      </div>
-    </div>
-  );
+    );
+  };
 
   const stepTitles = ["De onde vêm os leads?", "Filtros", "Preview e confirmação"];
 

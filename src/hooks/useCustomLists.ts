@@ -7,6 +7,7 @@ export interface CustomListFilters {
   fontes: string[];
   etapas?: string[];
   empreendimentos?: string[];
+  origens?: string[];
   tempoSemContato?: string;
   temperatura?: string[];
   score?: string;
@@ -98,7 +99,7 @@ export async function resolveCustomListLeads(
   // For now we query pipeline_leads for the corretor
   let query = supabase
     .from("pipeline_leads")
-    .select("id, stage_id, empreendimento, temperatura, updated_at, motivo_descarte, oportunidade_score")
+    .select("id, stage_id, empreendimento, temperatura, updated_at, motivo_descarte, oportunidade_score, origem")
     .eq("corretor_id", userId);
 
   // Filter by pipeline type based on fontes
@@ -162,6 +163,33 @@ export async function resolveCustomListLeads(
     if (days > 0 && days < 9999) {
       const cutoff = new Date(now.getTime() - days * 86400000).toISOString();
       filtered = filtered.filter(l => l.updated_at < cutoff);
+    }
+  }
+
+  // Filter by origem
+  if (filtros.origens && filtros.origens.length > 0) {
+    filtered = filtered.filter(l => {
+      const origem = ((l as any).origem || "").toLowerCase();
+      return filtros.origens!.some(o => {
+        if (o === "instagram") return origem.includes("instagram");
+        if (o === "facebook") return origem.includes("facebook");
+        if (o === "google") return origem.includes("google");
+        if (o === "indicacao") return origem.includes("indica");
+        if (o === "stand") return origem.includes("stand") || origem.includes("plantão");
+        if (o === "email") return origem.includes("email");
+        if (o === "site") return origem.includes("site") || origem.includes("portal");
+        if (o === "meta_ads") return origem.includes("meta") || origem.includes("ads");
+        if (o === "outros") return true;
+        return false;
+      });
+    });
+  }
+
+  // Filter by score
+  if (filtros.score && filtros.score !== "qualquer") {
+    const minScore = parseInt(filtros.score, 10);
+    if (!isNaN(minScore)) {
+      filtered = filtered.filter(l => (l.oportunidade_score || 0) > minScore);
     }
   }
 
