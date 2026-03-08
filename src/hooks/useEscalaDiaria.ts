@@ -27,6 +27,7 @@ export interface Segmento {
   nome: string;
   cor: string | null;
   ordem: number;
+  empreendimentos: string[];
 }
 
 export interface TeamMember {
@@ -78,7 +79,7 @@ export function useEscalaDiaria(data: string) {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("pipeline_segmentos")
-        .select("id, nome, cor, ordem")
+        .select("id, nome, cor, ordem, empreendimentos")
         .eq("ativo", true)
         .order("ordem");
       if (error) throw error;

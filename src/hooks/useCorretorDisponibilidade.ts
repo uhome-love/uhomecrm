@@ -7,13 +7,13 @@ import { toast } from "sonner";
 export type DisponibilidadeStatus = "offline" | "na_empresa" | "em_pausa" | "em_visita";
 
 export const SEGMENTOS_OFICIAIS = [
-  "MCMV",
-  "Médio-Alto Padrão",
-  "Alto Padrão",
-  "Investimento",
+  { nome: "MCMV / até R$500k", badge: "S1 · MCMV", cor: "#16A34A", empreendimentos: ["Open Bosque"] },
+  { nome: "Médio-Alto Padrão", badge: "S2 · Médio-Alto", cor: "#2563EB", empreendimentos: ["Orygem", "Las Casas", "Casa Tua"] },
+  { nome: "Altíssimo Padrão", badge: "S3 · Alto Padrão", cor: "#7C3AED", empreendimentos: ["Lake Eyre"] },
+  { nome: "Investimento", badge: "S4 · Investimento", cor: "#B45309", empreendimentos: ["Casa Bastian", "Shift"] },
 ] as const;
 
-export type SegmentoOficial = (typeof SEGMENTOS_OFICIAIS)[number];
+export type SegmentoOficial = (typeof SEGMENTOS_OFICIAIS)[number]["nome"];
 
 export interface Disponibilidade {
   id: string;
