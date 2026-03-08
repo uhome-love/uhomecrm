@@ -23,9 +23,9 @@ export default function Configuracoes() {
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [uploadingGlb, setUploadingGlb] = useState(false);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
 
-  const glbInputRef = useRef<HTMLInputElement>(null);
-  const modelViewerRef = useRef<HTMLElement>(null);
+  const pngInputRef = useRef<HTMLInputElement>(null);
 
   // Profile fields
   const [nome, setNome] = useState("");
