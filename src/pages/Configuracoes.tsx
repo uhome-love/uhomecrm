@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
-import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Sparkles, RefreshCw } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -28,6 +28,8 @@ export default function Configuracoes() {
   const [telefone, setTelefone] = useState("");
   const [cargo, setCargo] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [gamifiedAvatarUrl, setGamifiedAvatarUrl] = useState<string | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
 
   // Password fields
   const [currentPassword, setCurrentPassword] = useState("");
@@ -44,7 +46,7 @@ export default function Configuracoes() {
     setLoading(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("nome, email, telefone, cargo, avatar_url")
+      .select("nome, email, telefone, cargo, avatar_url, avatar_gamificado_url")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -58,6 +60,7 @@ export default function Configuracoes() {
       setTelefone(data.telefone || "");
       setCargo(data.cargo || "");
       setAvatarUrl(data.avatar_url);
+      setGamifiedAvatarUrl((data as any).avatar_gamificado_url);
     }
     setLoading(false);
   }
