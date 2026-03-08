@@ -118,7 +118,14 @@ export default function EscalaDiariaPage() {
                       className="h-5 w-5 rounded-full shadow-sm"
                       style={{ backgroundColor: segmento.cor || "#3b82f6" }}
                     />
-                    <CardTitle className="text-lg">{segmento.nome}</CardTitle>
+                    <div>
+                      <CardTitle className="text-lg">{segmento.nome}</CardTitle>
+                      {segmento.empreendimentos && segmento.empreendimentos.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {segmento.empreendimentos.join(" · ")}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="gap-1 text-xs">
@@ -133,17 +140,6 @@ export default function EscalaDiariaPage() {
                     )}
                   </div>
                 </div>
-
-                {/* Campaigns */}
-                {campanhasDoSeg.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {campanhasDoSeg.map(c => (
-                      <Badge key={c.id} variant="outline" className="text-[10px] font-normal">
-                        {c.campanha_nome}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
 
                 {/* Alert: no one scheduled */}
                 {hasNoAprovados && (
