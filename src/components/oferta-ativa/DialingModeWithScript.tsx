@@ -7,11 +7,11 @@ import { createVisitaFromOA } from "@/hooks/useVisitas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Zap, ChevronDown, LogOut, SkipForward, Clock, ChevronRight, AlertTriangle } from "lucide-react";
+import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, CheckCircle, Zap, ChevronDown, LogOut, SkipForward, Clock, ChevronRight, AlertTriangle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
-import DailyProgressCard from "@/components/corretor/DailyProgressCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import AttemptModal from "./AttemptModal";
@@ -24,6 +24,7 @@ import SessionCoachingModal, { type SessionMetrics } from "./SessionCoachingModa
 import { motion, AnimatePresence } from "framer-motion";
 import { playSoundSuccess, playSoundDing } from "@/lib/celebrations";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /** Format Brazilian phone */
 function formatPhone(phone: string): string {
@@ -34,28 +35,14 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-/** Lead freshness — always positive framing to motivate the broker */
+/** Lead freshness */
 function getLeadFreshness(dataLead: string | null): { label: string; emoji: string; color: string; tip: string } {
-  if (!dataLead) return { label: "Lead novo", emoji: "✨", color: "text-primary", tip: "Sem data de entrada — trate como oportunidade!" };
+  if (!dataLead) return { label: "Lead novo", emoji: "✨", color: "text-primary", tip: "Sem data de entrada" };
   const days = Math.floor((Date.now() - new Date(dataLead).getTime()) / (1000 * 60 * 60 * 24));
-  if (days <= 3) return { label: "Fresquíssimo", emoji: "🔥", color: "text-red-500", tip: `Lead de ${days === 0 ? "hoje" : `${days} dia(s)`} — alta chance de atendimento!` };
-  if (days <= 14) return { label: "Boa janela", emoji: "☀️", color: "text-amber-500", tip: `Lead de ${days} dias — ainda é boa hora!` };
-  if (days <= 30) return { label: "Oportunidade", emoji: "💎", color: "text-primary", tip: `Lead de ${days} dias — poucos corretores ligam, você sai na frente!` };
-  return { label: "Diferencial", emoji: "🎯", color: "text-emerald-600", tip: `Lead de ${days} dias — abordagem diferenciada te destaca!` };
-}
-
-/** Motivational messages based on progress */
-function getMotivationalMessage(tentativas: number, aproveitados: number, streak: number, metaLig: number): string {
-  if (streak >= 5) return "🔥 PEGOU FOGO! Sequência incrível!";
-  if (streak >= 3) return "💪 Tá voando! Mantém o ritmo!";
-  if (aproveitados > 0 && tentativas < 5) return "🎯 Já aproveitou lead! Bora continuar!";
-  if (tentativas === 0) return "☕ Bora começar! O primeiro é o mais difícil.";
-  if (tentativas <= 3) return "🚀 Aquecendo... as melhores ligações vêm agora!";
-  if (tentativas <= 10) return "👊 Tá no ritmo! Segue firme!";
-  if (tentativas >= metaLig) return "🏆 META BATIDA! Cada ligação agora é bônus!";
-  if (tentativas >= metaLig * 0.8) return "⚡ Quase lá! Faltam poucas pra meta!";
-  if (tentativas >= metaLig * 0.5) return "🎯 Metade da meta! Bora fechar!";
-  return "📞 Cada ligação te aproxima do resultado!";
+  if (days <= 3) return { label: "Fresquíssimo", emoji: "🔥", color: "text-red-500", tip: `Lead de ${days === 0 ? "hoje" : `${days} dia(s)`}` };
+  if (days <= 14) return { label: "Boa janela", emoji: "☀️", color: "text-amber-500", tip: `Lead de ${days} dias` };
+  if (days <= 30) return { label: "Oportunidade", emoji: "💎", color: "text-primary", tip: `Lead de ${days} dias` };
+  return { label: "Diferencial", emoji: "🎯", color: "text-emerald-600", tip: `Lead de ${days} dias` };
 }
 
 interface Props {
@@ -72,6 +59,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const queryClient = useQueryClient();
   const { addPending } = useOAPendingQueue();
   const { sessionId, blocked, otherSessionActive, claimSession } = useOASessionGuard();
+  const isMobile = useIsMobile();
   const [skipCount, setSkipCount] = useState(0);
 
   const [sessionLeadsServed, setSessionLeadsServed] = useState(0);
@@ -83,28 +71,32 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [finalizando, setFinalizando] = useState(false);
   const [showCoachingModal, setShowCoachingModal] = useState(false);
   const [sessionMetricsSnapshot, setSessionMetricsSnapshot] = useState<SessionMetrics | null>(null);
-  
-  // === TIMESTAMP-BASED TIMER ===
+
+  // Timer
   const [callStartTimestamp, setCallStartTimestamp] = useState<number | null>(null);
   const [callTimer, setCallTimer] = useState(0);
   const [callActive, setCallActive] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
+
   const [streak, setStreak] = useState(0);
   const [sessionStart] = useState(() => Date.now());
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [showMilestone, setShowMilestone] = useState<string | null>(null);
   const [expandedObj, setExpandedObj] = useState<number | null>(null);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
+  const [objectionInsert, setObjectionInsert] = useState<string | null>(null);
+  const [inlineObs, setInlineObs] = useState("");
 
-  // === ARENA: Round announcement ===
+  // Mobile tab
+  const [mobileTab, setMobileTab] = useState<"lead" | "script" | "whatsapp">("lead");
+
+  // Arena overlays
   const [showRound, setShowRound] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
   const [arenaShake, setArenaShake] = useState(false);
   const [arenaConfetti, setArenaConfetti] = useState<string[]>([]);
   const prevLeadIdRef = useRef<string | null>(null);
 
-  // Trigger round animation on new lead
   useEffect(() => {
     if (lead && lead.id !== prevLeadIdRef.current) {
       prevLeadIdRef.current = lead.id;
@@ -114,19 +106,19 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         setTimeout(() => setShowFlash(false), 350);
         setTimeout(() => setShowRound(false), 900);
       }
+      setExpandedObj(null);
+      setObjectionInsert(null);
+      setInlineObs("");
     }
   }, [lead?.id, sessionLeadsServed]);
 
-  // Arena confetti burst
   const triggerConfetti = useCallback(() => {
     const emojis = ['🎉', '✨', '🌟', '⭐', '🔥', '💫', '🎊', '✅', '💎', '🏆',
-                    '🎉', '✨', '🌟', '⭐', '🔥', '💫', '🎊', '✅', '💎', '🏆',
                     '🎉', '✨', '🌟', '⭐', '🔥', '💫', '🎊', '✅', '💎', '🏆'];
     setArenaConfetti(emojis);
     setTimeout(() => setArenaConfetti([]), 3000);
   }, []);
 
-  // === FETCH FIRST LEAD on mount ===
   const hasFetchedRef = useRef(false);
   useEffect(() => {
     if (!hasFetchedRef.current) {
@@ -135,7 +127,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   }, [fetchNext]);
 
-  // Session timer
   useEffect(() => {
     const interval = setInterval(() => {
       setSessionSeconds(Math.floor((Date.now() - sessionStart) / 1000));
@@ -150,7 +141,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     return `${m}min`;
   };
 
-  // TIMESTAMP-BASED call timer
   const startTimer = useCallback(() => {
     const now = Date.now();
     setCallStartTimestamp(now);
@@ -180,16 +170,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     return `${m}:${s}`;
   };
 
-  // Milestone check
   const checkMilestone = useCallback((totalAttempts: number) => {
     const milestones: Record<number, string> = {
-      5: "🎯 5 ligações! Aqueceu!",
-      10: "🔟 10 ligações! Tá on fire!",
-      15: "💪 15! Você é uma máquina!",
-      20: "🏆 20 ligações! Poucos chegam aqui!",
-      25: "⭐ 25! Desempenho de elite!",
-      30: "👑 30! Você é LENDA!",
-      50: "🚀 50 LIGAÇÕES! HISTÓRICO!",
+      5: "🎯 5 ligações! Aqueceu!", 10: "🔟 10 ligações! Tá on fire!",
+      15: "💪 15! Você é uma máquina!", 20: "🏆 20 ligações! Poucos chegam aqui!",
+      25: "⭐ 25! Desempenho de elite!", 30: "👑 30! Você é LENDA!", 50: "🚀 50 LIGAÇÕES! HISTÓRICO!",
     };
     if (milestones[totalAttempts]) {
       setShowMilestone(milestones[totalAttempts]);
@@ -197,9 +182,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   }, []);
 
-  const shouldSuggestBreak = progress.tentativas > 0 && progress.tentativas % 15 === 0;
-
-  // Start heartbeat when lead is locked
   useEffect(() => {
     if (lead) startHeartbeat(lead.id);
     return () => stopHeartbeat();
@@ -261,16 +243,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       if (!result?.success) { setSubmitting(false); return; }
 
       if (!result.idempotent) {
-        // Determine points for optimistic update
         const pontos = resultado === "com_interesse" ? 3 : resultado === "numero_errado" ? 0 : 1;
-        // Apply optimistic update IMMEDIATELY so card updates without waiting for refetch
         applyOptimisticUpdate(resultado, actionTaken, pontos, visitaMarcada ?? false);
 
         if (resultado === "com_interesse") {
           setStreak(prev => prev + 1);
           playSoundSuccess();
           triggerConfetti();
-          const tipoLabel = interesseTipo === "visita_marcada" ? "Visita Marcada" 
+          const tipoLabel = interesseTipo === "visita_marcada" ? "Visita Marcada"
             : interesseTipo === "quer_visitar" ? "Possibilidade de Visita"
             : interesseTipo === "demonstrou_interesse" ? "Atendimento"
             : "Contato Inicial";
@@ -307,15 +287,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       setActionTaken(null);
       setCurrentIdempotencyKey(null);
       setSessionLeadsServed(prev => prev + 1);
+      setInlineObs("");
       queryClient.invalidateQueries({ queryKey: ["checkpoint"] });
       queryClient.invalidateQueries({ queryKey: ["oa-ranking"] });
       queryClient.invalidateQueries({ queryKey: ["oa-performance-live"] });
 
-      // Fetch next lead from server (atomic, server-side selection)
       await fetchNext();
     } catch (err: any) {
       console.error("Erro ao registrar tentativa:", err);
-      // Offline retry: save to pending queue
       if (lead && actionTaken && currentIdempotencyKey && user) {
         addPending({
           leadId: lead.id,
@@ -328,8 +307,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           idempotencyKey: currentIdempotencyKey,
           visitaMarcada: visitaMarcada || false,
         });
-        toast.error("Sem conexão — resultado salvo localmente. Será reenviado automaticamente.");
-        // Still advance to next lead
+        toast.error("Sem conexão — resultado salvo localmente.");
         stopTimer();
         stopHeartbeat();
         setShowModal(false);
@@ -345,25 +323,44 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   };
 
+  // Inline result (quick buttons in right column)
+  const handleInlineResult = (resultado: string) => {
+    if (!lead) return;
+    if (!actionTaken) {
+      setActionTaken("ligacao");
+      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+    }
+    if (resultado === "com_interesse" || resultado === "agendar") {
+      setShowModal(true);
+      return;
+    }
+    const feedbackMap: Record<string, string> = {
+      nao_atendeu: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Não atendeu a ligação",
+      sem_interesse: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Sem interesse no momento",
+      numero_errado: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Número errado/inválido",
+    };
+    handleResultSubmit(resultado, feedbackMap[resultado] || resultado);
+  };
+
   // Auto-redirect when queue is empty
   const hasRedirectedRef = useRef(false);
   useEffect(() => {
     if (!lead && !isLoading && queueEmpty && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
-      toast.info("📋 Leads desta lista acabaram! Escolha outra lista para continuar.", { duration: 5000 });
+      toast.info("📋 Leads desta lista acabaram!", { duration: 5000 });
       const timer = setTimeout(() => onBack(), 3000);
       return () => clearTimeout(timer);
     }
   }, [lead, isLoading, queueEmpty, onBack]);
 
-  // Session guard: block if another tab is active
+  // Session guard
   if (blocked) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
           <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-3" />
           <p className="font-bold text-lg text-foreground">Sessão ativa em outra aba</p>
-          <p className="text-sm text-muted-foreground mt-1">Você já tem o discador aberto em outra aba do navegador.</p>
+          <p className="text-sm text-muted-foreground mt-1">Você já tem o discador aberto em outra aba.</p>
           <div className="flex gap-2 justify-center mt-4">
             <Button onClick={claimSession}>Assumir esta aba</Button>
             <Button variant="outline" onClick={onBack}>Voltar</Button>
@@ -388,7 +385,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             <p>📊 Sessão: <strong className="text-foreground">{formatSessionTime(sessionSeconds)}</strong> · Leads: <strong className="text-foreground">{sessionLeadsServed}</strong></p>
             <p>📞 Tentativas: <strong className="text-foreground">{progress.tentativas}</strong> · Aproveitados: <strong className="text-emerald-600">{progress.aproveitados}</strong></p>
           </div>
-          <p className="text-xs text-muted-foreground mt-3 animate-pulse">Redirecionando para as listas em instantes...</p>
+          <p className="text-xs text-muted-foreground mt-3 animate-pulse">Redirecionando...</p>
           <Button className="mt-4" onClick={onBack}>Voltar às listas agora</Button>
         </CardContent>
       </Card>
@@ -396,9 +393,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   }
 
   const freshness = getLeadFreshness(lead.data_lead);
-  const motivationalMsg = getMotivationalMessage(progress.tentativas, progress.aproveitados, streak, progress.metaLigacoes);
-  
-  // Lead score simulation (based on freshness + attempts)
   const leadScore = lead.data_lead
     ? Math.max(30, 95 - Math.floor((Date.now() - new Date(lead.data_lead).getTime()) / (1000 * 60 * 60 * 24)) * 2 - lead.tentativas_count * 10)
     : 65;
@@ -407,115 +401,272 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     ? (() => { const h = Math.floor((Date.now() - new Date(lead.data_lead).getTime()) / (1000 * 60 * 60)); return h < 1 ? "agora" : h < 24 ? `há ${h}h` : `há ${Math.floor(h / 24)}d`; })()
     : null;
 
-  // Objections with context-specific answers
-  const objections = [
-    { emoji: "💰", label: "Está caro", answer: `Para o ${lead.empreendimento || "empreendimento"} especificamente: compare o m² com a região. Temos condições de entrada facilitada e financiamento. Posso montar uma simulação para você?` },
-    { emoji: "🤔", label: "Preciso pensar", answer: `Faz sentido! Que tal uma visita sem compromisso? Muitos clientes decidem ao ver pessoalmente. Posso agendar algo rápido de 20 minutos?` },
-    { emoji: "❌", label: "Não é o momento", answer: `Entendo! Mas o ${lead.empreendimento || "empreendimento"} já vendeu boa parte das unidades. As melhores — com melhor posição e sol — vão primeiro. Reservar sem custo garante a oportunidade.` },
-    { emoji: "👫", label: "Falar com cônjuge", answer: `Claro! Que tal agendar uma visita juntos? Assim vocês dois conhecem e decidem juntos. Qual o melhor dia para vocês dois?` },
-  ];
-
-  // Inline result handler
-  const handleInlineResult = (resultado: string) => {
-    if (!lead) return;
-    if (!actionTaken) {
-      setActionTaken("ligacao");
-      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
-    }
-    if (resultado === "com_interesse" || resultado === "agendar") {
-      setShowModal(true);
-      return;
-    }
-    // Direct submit for simple results
-    const feedbackMap: Record<string, string> = {
-      nao_atendeu: "Não atendeu",
-      sem_interesse: "Sem interesse",
-      numero_errado: "Número errado/inválido",
-      depois: "Retornar depois",
-    };
-    handleResultSubmit(resultado === "depois" ? "nao_atendeu" : resultado, feedbackMap[resultado] || resultado);
-  };
-
-  // Timer color based on duration
   const timerColorClass = callTimer <= 30 ? "arena-timer-green" : callTimer <= 60 ? "arena-timer-amber" : "arena-timer-red";
 
-  return (
-    <div className="space-y-3 relative" style={{ background: "#0A0F1E" }}>
-      {/* ═══ ARENA OVERLAYS ═══ */}
-      {showFlash && <div className="round-flash" />}
-      {showRound && (
-        <div className="fixed inset-0 flex flex-col items-center justify-center z-[59] pointer-events-none">
-          <div className="round-number">ROUND {sessionLeadsServed + 1}</div>
-          <div className="round-sub">{lead?.empreendimento || "Arena"}</div>
-        </div>
-      )}
-      {/* Confetti */}
-      {arenaConfetti.length > 0 && arenaConfetti.map((emoji, i) => (
-        <span
-          key={`confetti-${i}`}
-          className="arena-confetti"
-          style={{
-            left: `${5 + Math.random() * 90}%`,
-            animationDuration: `${1.5 + Math.random() * 1.5}s`,
-            animationDelay: `${Math.random() * 0.3}s`,
-          }}
-        >
-          {emoji}
-        </span>
-      ))}
+  const objections = [
+    { emoji: "💰", label: "Está caro", answer: `Para o ${lead.empreendimento || "empreendimento"}: compare o m² com a região. Temos condições de entrada facilitada e financiamento. Posso montar uma simulação?` },
+    { emoji: "🤔", label: "Preciso pensar", answer: `Faz sentido! Que tal uma visita sem compromisso? Muitos clientes decidem ao ver pessoalmente. Posso agendar algo rápido de 20 min?` },
+    { emoji: "❌", label: "Não é o momento", answer: `Entendo! Mas o ${lead.empreendimento || "empreendimento"} já vendeu boa parte. As melhores unidades vão primeiro. Reservar sem custo garante a oportunidade.` },
+    { emoji: "👫", label: "Falar c/ cônjuge", answer: `Claro! Que tal agendar uma visita juntos? Assim vocês conhecem e decidem juntos. Qual o melhor dia?` },
+  ];
 
-      {/* Pending attempts bar */}
-      <PendingAttemptsBar />
+  // ─── COLUMN: LEFT (Lead + Actions + Objections) ───
+  const LeftColumn = (
+    <div className="space-y-3 min-w-0">
+      {/* Context line */}
+      <div className="flex items-center gap-2 text-[10px] flex-wrap" style={{ color: "#6B7280" }}>
+        <span className={freshness.color}>{freshness.emoji} {freshness.label}</span>
+        <span>·</span>
+        <span className={isHotLead ? "text-yellow-400 font-semibold" : ""}>🎯 Score: {leadScore}</span>
+        {timeAgo && <><span>·</span><span>⏱ {timeAgo}</span></>}
+        {isHotLead && <span className="text-yellow-400 font-semibold">🔥 Quente</span>}
+      </div>
 
-      {/* Milestone Animation */}
-      <AnimatePresence>
-        {showMilestone && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: -20 }}
-            className="text-center p-4 rounded-2xl border-2"
-            style={{ background: "rgba(99,102,241,0.15)", borderColor: "rgba(99,102,241,0.3)" }}
-          >
-            <p className="text-lg font-bold text-white">{showMilestone}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Mini-break suggestion */}
-      {shouldSuggestBreak && (
-        <div className="text-center p-2 rounded-xl text-xs" style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", color: "#93C5FD" }}>
-          ☕ <strong>{progress.tentativas} ligações!</strong> Que tal uma pausa rápida de 2 min?
-        </div>
-      )}
-
-      {/* Motivational bar + session info */}
-      <div className="flex items-center justify-between px-1">
-        <p style={{ fontSize: "15px" }} className="font-medium text-neutral-400">{motivationalMsg}</p>
-        <div className="flex items-center gap-2 text-[10px] text-neutral-500">
-          <Clock className="h-3 w-3" />
-          <span>{formatSessionTime(sessionSeconds)}</span>
-          {streak >= 2 && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>
-              🔥 {streak}x
-            </span>
-          )}
+      {/* Name */}
+      <div>
+        <h2 className="text-2xl font-black text-white flex items-center gap-2 leading-tight">
+          <User className="h-5 w-5 shrink-0" style={{ color: "#60A5FA" }} /> {lead.nome}
+        </h2>
+        <div className="flex items-center gap-2 mt-0.5" style={{ fontSize: "13px", color: "#94A3B8" }}>
+          <Building2 className="h-3.5 w-3.5" /> {lead.empreendimento}
+          {lead.campanha && <span>· {lead.campanha}</span>}
         </div>
       </div>
 
-      {/* Controls Row */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <ScoringLegend />
-          <span className="text-[10px] text-neutral-600">•</span>
-          <span className="text-[10px] text-blue-400 font-semibold">{lista.empreendimento}</span>
+      {/* Contact — compact single lines */}
+      <div className="space-y-1">
+        {lead.telefone && (
+          <div
+            className="flex items-center justify-between py-1.5 px-2 rounded cursor-pointer transition-colors hover:bg-white/5 active:scale-[0.98]"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+            onClick={() => copyToClipboard(lead.telefone!, "Telefone")}
+          >
+            <span className="flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5" style={{ color: "#6B7280" }} />
+              <span className="font-mono font-bold text-white" style={{ fontSize: "16px" }}>{formatPhone(lead.telefone)}</span>
+            </span>
+            <Copy className="h-3 w-3" style={{ color: "#4B5563" }} />
+          </div>
+        )}
+        {lead.telefone2 && (
+          <div
+            className="flex items-center justify-between py-1 px-2 rounded cursor-pointer transition-colors hover:bg-white/5"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+            onClick={() => copyToClipboard(lead.telefone2!, "Telefone 2")}
+          >
+            <span className="flex items-center gap-2">
+              <Phone className="h-3 w-3" style={{ color: "#4B5563" }} />
+              <span className="font-mono text-neutral-400" style={{ fontSize: "13px" }}>{formatPhone(lead.telefone2)}</span>
+            </span>
+            <Copy className="h-3 w-3" style={{ color: "#374151" }} />
+          </div>
+        )}
+        {lead.email && (
+          <div
+            className="flex items-center justify-between py-1 px-2 rounded cursor-pointer transition-colors hover:bg-white/5"
+            onClick={() => copyToClipboard(lead.email!, "E-mail")}
+          >
+            <span className="flex items-center gap-2">
+              <Mail className="h-3 w-3" style={{ color: "#4B5563" }} />
+              <span className="text-neutral-400 truncate" style={{ fontSize: "13px", maxWidth: 180 }}>{lead.email}</span>
+            </span>
+            <Copy className="h-3 w-3" style={{ color: "#374151" }} />
+          </div>
+        )}
+      </div>
+
+      {/* Call Timer inline */}
+      {callActive && (
+        <div className="flex items-center justify-between py-2 px-3 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+            </span>
+            <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Em ligação</span>
+            <span className="text-xl font-mono font-bold text-red-400">{formatTimer(callTimer)}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" variant="ghost" className="h-7 text-[11px] text-green-400 hover:bg-green-500/10" onClick={handleWhatsAppDuringCall}>
+              <MessageCircle className="h-3 w-3 mr-0.5" /> WhatsApp
+            </Button>
+            <Button size="sm" className="h-7 text-[11px] bg-red-600 hover:bg-red-700 text-white gap-1" onClick={handleFinalizarLigacao}>
+              <Phone className="h-3 w-3 rotate-[135deg]" /> Finalizar
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
-            style={{ fontSize: "14px", fontWeight: 500 }}
+      )}
+
+      {/* Action buttons */}
+      {!callActive && (
+        <div className="space-y-2">
+          <button
+            className="arena-btn-call w-full gap-2 rounded-xl flex items-center justify-center"
+            style={{ height: "48px", fontSize: "16px", fontWeight: 700 }}
+            onClick={() => handleAction("ligacao")}
+            disabled={showModal}
+          >
+            <Phone className="h-5 w-5" /> LIGAR AGORA
+          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              size="sm"
+              className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+              style={{ height: "40px", fontSize: "13px" }}
+              onClick={() => setComunicacaoOpen(true)}
+              disabled={showModal}
+            >
+              <MessageCircle className="h-3.5 w-3.5" /> Mensagem
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="gap-1.5 text-neutral-400 hover:text-white hover:bg-white/5"
+              style={{ height: "40px", fontSize: "13px", border: "1px solid rgba(255,255,255,0.1)" }}
+              onClick={() => handleAction("email")}
+              disabled={!lead.email || showModal}
+            >
+              <Mail className="h-3.5 w-3.5" /> E-mail
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ⚡ OBJEÇÕES RÁPIDAS */}
+      <div className="space-y-2 pt-1">
+        <span style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>⚡ Objeções Rápidas</span>
+        <div className="grid grid-cols-2 gap-1.5">
+          {objections.map((obj, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                setExpandedObj(expandedObj === i ? null : i);
+                setObjectionInsert(obj.answer);
+              }}
+              className="transition-all text-left"
+              style={{
+                background: expandedObj === i ? "rgba(245,158,11,0.12)" : "#1C2128",
+                border: expandedObj === i ? "1px solid rgba(245,158,11,0.4)" : "1px dashed rgba(255,255,255,0.1)",
+                borderRadius: 10,
+                padding: "8px 10px",
+                fontSize: 12,
+                fontWeight: 600,
+                color: expandedObj === i ? "#FCD34D" : "#D1D5DB",
+              }}
+            >
+              {obj.emoji} {obj.label}
+            </button>
+          ))}
+        </div>
+        <AnimatePresence>
+          {expandedObj !== null && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="p-2.5 rounded-lg text-xs leading-relaxed"
+              style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", color: "#E5E7EB" }}
+            >
+              💡 <strong style={{ color: "#FCD34D" }}>Resposta sugerida:</strong> {objections[expandedObj].answer}
+              <div className="flex items-center gap-2 mt-2">
+                <button onClick={() => { navigator.clipboard.writeText(objections[expandedObj].answer); toast.success("Copiada!"); }} className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.06)", color: "#9CA3AF" }}>
+                  📋 Copiar
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Recent calls — collapsed */}
+      <Collapsible>
+        <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors w-full">
+          <History className="h-3 w-3" />
+          <span>Últimas Ligações ({lead.tentativas_count})</span>
+          <ChevronDown className="h-3 w-3 ml-auto" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">
+          <RecentCallsHistory />
+          {lead.tentativas_count > 0 && <AttemptHistory leadId={lead.id} />}
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+
+  // ─── COLUMN: CENTER (Script Ligação) ───
+  const CenterColumn = (
+    <div className="min-w-0">
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ background: "#1a2332", borderLeft: "3px solid rgba(34,197,94,0.3)" }}
+      >
+        <div className="sticky top-0" style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}>
+          <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode />
+        </div>
+      </div>
+
+      {/* Objection insert block */}
+      <AnimatePresence>
+        {objectionInsert && expandedObj !== null && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="mt-2 p-3 rounded-lg text-sm leading-relaxed"
+            style={{ background: "rgba(245,158,11,0.08)", border: "2px solid rgba(245,158,11,0.25)", color: "#E5E7EB" }}
+          >
+            <div className="flex items-center gap-1.5 mb-1">
+              <Sparkles className="h-3.5 w-3.5" style={{ color: "#FBBF24" }} />
+              <span className="text-xs font-bold" style={{ color: "#FBBF24" }}>RESPOSTA P/ OBJEÇÃO: {objections[expandedObj].label}</span>
+            </div>
+            <p style={{ fontSize: "14px", lineHeight: 1.6 }}>{objectionInsert}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
+  // ─── COLUMN: RIGHT (WhatsApp Script + Result) ───
+  const RightColumn = (
+    <div className="space-y-3 min-w-0">
+      {/* WhatsApp Script — compact */}
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ background: "#0d1f0d", borderLeft: "3px solid rgba(34,197,94,0.5)" }}
+      >
+        <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+          <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode />
+        </div>
+      </div>
+
+      {/* Separator */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
+
+      {/* 📊 RESULTADO DA LIGAÇÃO */}
+      <div className="space-y-2">
+        <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>📊 Resultado da Ligação</span>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => handleInlineResult("com_interesse")}
+            className="flex items-center justify-center gap-1.5 rounded-lg py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)", color: "#86EFAC" }}
+          >
+            ✅ Aproveitado
+          </button>
+          <button
+            onClick={() => {
+              if (!actionTaken) {
+                setActionTaken("ligacao");
+                setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+              }
+              setShowModal(true);
+            }}
+            className="flex items-center justify-center gap-1.5 rounded-lg py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.35)", color: "#FCD34D" }}
+          >
+            📅 Agendar Visita
+          </button>
+          <button
             onClick={async () => {
               if (lead && user) {
                 setSkipCount(prev => prev + 1);
@@ -534,15 +685,93 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               await fetchNext();
               toast("Lead pulado — próximo da fila", { duration: 1500 });
             }}
+            className="flex items-center justify-center gap-1.5 rounded-lg py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: "rgba(107,114,128,0.15)", border: "1px solid rgba(107,114,128,0.35)", color: "#9CA3AF" }}
             disabled={callActive}
           >
-            <SkipForward className="h-3.5 w-3.5" /> <span style={{ fontSize: "14px", fontWeight: 500 }}>Pular</span>
-          </Button>
+            ⏭️ Pular
+          </button>
+          <button
+            onClick={() => handleInlineResult("nao_atendeu")}
+            className="flex items-center justify-center gap-1.5 rounded-lg py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)", color: "#FCA5A5" }}
+          >
+            🔴 Não Atendeu
+          </button>
+        </div>
+
+        {/* Observação inline */}
+        <Textarea
+          placeholder="📝 Observação (opcional)..."
+          value={inlineObs}
+          onChange={(e) => setInlineObs(e.target.value)}
+          rows={2}
+          className="resize-none text-xs"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#E2E8F0", borderRadius: 10 }}
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-2 relative" style={{ background: "#0A0F1E" }}>
+      {/* ═══ ARENA OVERLAYS ═══ */}
+      {showFlash && <div className="round-flash" />}
+      {showRound && (
+        <div className="fixed inset-0 flex flex-col items-center justify-center z-[59] pointer-events-none">
+          <div className="round-number">ROUND {sessionLeadsServed + 1}</div>
+          <div className="round-sub">{lead?.empreendimento || "Arena"}</div>
+        </div>
+      )}
+      {arenaConfetti.length > 0 && arenaConfetti.map((emoji, i) => (
+        <span
+          key={`confetti-${i}`}
+          className="arena-confetti"
+          style={{
+            left: `${5 + Math.random() * 90}%`,
+            animationDuration: `${1.5 + Math.random() * 1.5}s`,
+            animationDelay: `${Math.random() * 0.3}s`,
+          }}
+        >
+          {emoji}
+        </span>
+      ))}
+
+      <PendingAttemptsBar />
+
+      {/* Milestone */}
+      <AnimatePresence>
+        {showMilestone && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+            className="text-center p-3 rounded-2xl border-2"
+            style={{ background: "rgba(99,102,241,0.15)", borderColor: "rgba(99,102,241,0.3)" }}
+          >
+            <p className="text-lg font-bold text-white">{showMilestone}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Subheader — clean */}
+      <div className="flex items-center justify-between px-1" style={{ fontSize: "13px" }}>
+        <span className="text-neutral-500">
+          Lead <strong className="text-white">#{sessionLeadsServed + 1}</strong> · ROUND {sessionLeadsServed + 1} · {lead.empreendimento}
+        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-emerald-400/70">🔒 Reservado p/ você</span>
+          <span className="text-[10px] text-neutral-600 flex items-center gap-1"><Clock className="h-3 w-3" />{formatSessionTime(sessionSeconds)}</span>
+          {streak >= 2 && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>
+              🔥 {streak}x
+            </span>
+          )}
+          <ScoringLegend />
           <Button
             size="sm"
             variant="ghost"
-            className="gap-1.5 text-red-400 hover:bg-red-500/10"
-            style={{ fontSize: "14px", fontWeight: 500 }}
+            className="h-6 gap-1 text-red-400 hover:bg-red-500/10 text-[11px]"
             onClick={async () => {
               if (!user) return;
               setFinalizando(true);
@@ -568,7 +797,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   setSessionMetricsSnapshot(snapshot);
                   setShowCoachingModal(true);
                 } else {
-                  toast.error(result?.message || "Erro ao finalizar trabalho.");
+                  toast.error(result?.message || "Erro ao finalizar.");
                 }
               } catch (err: any) {
                 toast.error("Erro ao finalizar: " + err.message);
@@ -578,258 +807,75 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             }}
             disabled={finalizando || progress.tentativas === 0}
           >
-            <LogOut className="h-3.5 w-3.5" /> {finalizando ? "Enviando..." : "Finalizar"}
+            <LogOut className="h-3 w-3" /> {finalizando ? "..." : "Finalizar"}
           </Button>
         </div>
       </div>
 
-      {/* Lead counter */}
-      <div className="flex items-center justify-between" style={{ fontSize: "15px" }}>
-        <span className="text-neutral-500">Lead <strong className="text-white">#{sessionLeadsServed + 1}</strong> · ROUND {sessionLeadsServed + 1}</span>
-        <span className="text-[10px] text-emerald-400/70">🔒 Reservado p/ você</span>
-      </div>
-
-      {/* Arena Timer — prominent when calling */}
+      {/* Arena timer — prominent */}
       {callActive && (
-        <div className="flex items-center justify-center py-2">
+        <div className="flex items-center justify-center py-1">
           <div className={`arena-timer ${timerColorClass}`}>
             {formatTimer(callTimer)}
           </div>
         </div>
       )}
 
-      {/* 2-column layout */}
-      <div className={`grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-4 ${arenaShake ? "arena-shake" : ""}`} style={{ background: "#0A0F1E" }}>
-        {/* Left: Lead Card */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={lead.id}
-            initial={{ opacity: 0, y: 60 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-            className="space-y-3 lead-card-enter"
-          >
-            <div
-              className="arena-card p-4 space-y-3"
-              style={isHotLead ? { borderColor: "rgba(234,179,8,0.4)" } : undefined}
-            >
-              {/* Context line */}
-              <div className="flex items-center gap-2 text-[10px] text-neutral-500">
-                <span className={freshness.color}>{freshness.emoji} {freshness.label}</span>
-                <span>·</span>
-                <span className={isHotLead ? "text-yellow-400 font-semibold" : ""}>🎯 Score: {leadScore}</span>
-                {timeAgo && <><span>·</span><span>⏱ {timeAgo}</span></>}
-                {isHotLead && <span className="text-yellow-400 font-semibold">🔥 Lead quente</span>}
-              </div>
-
-              {/* Name */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-3xl lg:text-4xl font-black text-white flex items-center gap-2">
-                    <User className="h-5 w-5 shrink-0" style={{ color: "#60A5FA" }} /> {lead.nome}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-1" style={{ fontSize: "16px", color: "#94A3B8", fontWeight: 500 }}>
-                    <Building2 className="h-4 w-4" /> {lead.empreendimento}
-                    {lead.campanha && <span>· {lead.campanha}</span>}
-                    {lead.origem && <span>· {lead.origem}</span>}
-                  </div>
-                </div>
-                {lead.tentativas_count > 0 && (
-                  <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(245,158,11,0.15)", color: "#FBBF24", border: "1px solid rgba(245,158,11,0.3)" }}>
-                    <History className="h-3 w-3 inline mr-0.5" />{lead.tentativas_count}x
-                  </span>
-                )}
-              </div>
-
-              {/* Call Timer */}
-              {callActive && (
-                <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: "rgba(239,68,68,0.1)", border: "2px solid rgba(239,68,68,0.3)" }}>
-                  <div className="flex items-center gap-3">
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
-                    </span>
-                    <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Em ligação</span>
-                    <span className="text-2xl font-mono font-bold text-red-400">{formatTimer(callTimer)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 text-xs text-green-400 hover:bg-green-500/10"
-                      onClick={handleWhatsAppDuringCall}
-                    >
-                      <MessageCircle className="h-3.5 w-3.5 mr-1" /> WhatsApp
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white gap-1"
-                      onClick={handleFinalizarLigacao}
-                    >
-                      <Phone className="h-3.5 w-3.5 rotate-[135deg]" /> Finalizar
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Contact info */}
-              <div className="grid gap-2">
-                {lead.telefone && (
-                  <div
-                    className="flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors active:scale-[0.98]"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                    onClick={() => copyToClipboard(lead.telefone!, "Telefone")}
-                  >
-                    <div>
-                      <p className="text-[10px] text-neutral-500">Telefone principal · toque para copiar</p>
-                      <p style={{ fontSize: "22px", fontFamily: "monospace", fontWeight: 700, color: "white" }}>{formatPhone(lead.telefone)}</p>
-                    </div>
-                    <Copy className="h-3.5 w-3.5 text-neutral-500" />
-                  </div>
-                )}
-                {lead.telefone2 && (
-                  <div
-                    className="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors active:scale-[0.98]"
-                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
-                    onClick={() => copyToClipboard(lead.telefone2!, "Telefone 2")}
-                  >
-                    <div>
-                      <p className="text-[10px] text-neutral-500">Secundário</p>
-                      <p className="text-sm font-mono text-neutral-300">{formatPhone(lead.telefone2)}</p>
-                    </div>
-                    <Copy className="h-3.5 w-3.5 text-neutral-600" />
-                  </div>
-                )}
-                {lead.email && (
-                  <div
-                    className="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors active:scale-[0.98]"
-                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
-                    onClick={() => copyToClipboard(lead.email!, "E-mail")}
-                  >
-                    <div>
-                      <p className="text-[10px] text-neutral-500">E-mail</p>
-                      <p style={{ fontSize: "15px", color: "#94A3B8" }}>{lead.email}</p>
-                    </div>
-                    <Copy className="h-3.5 w-3.5 text-neutral-600" />
-                  </div>
-                )}
-              </div>
-
-              {lead.data_lead && (
-                <div className="flex flex-wrap gap-2 text-[10px] text-neutral-500">
-                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Lead de {lead.data_lead}</span>
-                  {lead.observacoes && <span className="italic text-neutral-400">"{lead.observacoes}"</span>}
-                </div>
-              )}
-
-              {lead.tentativas_count > 0 && <AttemptHistory leadId={lead.id} />}
-
-              {/* ACTION BUTTONS — Line 1: Contact */}
-              {!callActive ? (
-                <div className="space-y-2 pt-1">
-                  <button
-                    className="arena-btn-call w-full gap-2 rounded-xl flex items-center justify-center"
-                    style={{ height: "56px", fontSize: "18px", fontWeight: 700 }}
-                    onClick={() => handleAction("ligacao")}
-                    disabled={showModal}
-                  >
-                    <Phone className="h-5 w-5" /> LIGAR AGORA
-                  </button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      size="sm"
-                      className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
-                      style={{ height: "48px", fontSize: "15px" }}
-                      onClick={() => setComunicacaoOpen(true)}
-                      disabled={showModal}
-                    >
-                      <MessageCircle className="h-4 w-4" /> 💬 Comunicar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1.5 text-neutral-400 hover:text-white hover:bg-white/5"
-                      style={{ height: "48px", fontSize: "15px", border: "1px solid rgba(255,255,255,0.1)" }}
-                      onClick={() => handleAction("email")}
-                      disabled={!lead.email || showModal}
-                    >
-                      <Mail className="h-4 w-4" /> E-mail
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="pt-1">
-                  <Button
-                    size="lg"
-                    className="w-full gap-2 bg-red-600 hover:bg-red-700 h-14 text-base text-white"
-                    onClick={handleFinalizarLigacao}
-                  >
-                    <Phone className="h-5 w-5 rotate-[135deg]" /> Finalizar Ligação · {formatTimer(callTimer)}
-                  </Button>
-                </div>
-              )}
-
-
-              <RecentCallsHistory />
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Right: Scripts + Objections */}
-        <div className="space-y-3">
-          <div className="sticky top-4 space-y-3">
-            <div style={{ maxHeight: 480 }} className="overflow-y-auto">
-              <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode />
-            </div>
-
-            {/* ⚡ OBJEÇÕES RÁPIDAS */}
-            <div style={{ background: "#1C2128", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 12, padding: 12 }} className="space-y-2">
-              <span style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>⚡ OBJEÇÕES RÁPIDAS</span>
-              <div className="flex flex-wrap gap-1.5">
-                {objections.map((obj, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setExpandedObj(expandedObj === i ? null : i)}
-                    className="transition-colors"
-                    style={{
-                      background: expandedObj === i ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.08)",
-                      border: expandedObj === i ? "1px solid rgba(245,158,11,0.5)" : "1px solid rgba(255,255,255,0.15)",
-                      borderRadius: 999,
-                      padding: "6px 12px",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: expandedObj === i ? "#FCD34D" : "#D1D5DB",
-                    }}
-                  >
-                    {obj.emoji} {obj.label}
-                  </button>
-                ))}
-              </div>
-              <AnimatePresence>
-                {expandedObj !== null && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="p-2.5 rounded-lg text-xs leading-relaxed"
-                    style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", color: "#E5E7EB", maxHeight: 120, overflowY: "auto" }}
-                  >
-                    {objections[expandedObj].answer}
-                    <div className="flex items-center gap-2 mt-2">
-                      <button onClick={() => { navigator.clipboard.writeText(objections[expandedObj].answer); toast.success("Resposta copiada!"); }} className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.06)", color: "#9CA3AF" }}>
-                        📋 Copiar
-                      </button>
-                      <button className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "#86EFAC" }}>👍 Funcionou</button>
-                      <button className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "#FCA5A5" }}>👎 Não</button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+      {/* ═══ MOBILE: Tabs ═══ */}
+      {isMobile ? (
+        <div className="space-y-2">
+          <div className="flex gap-1 p-1 rounded-lg" style={{ background: "#161B22" }}>
+            {([
+              { key: "lead" as const, label: "Lead", emoji: "👤" },
+              { key: "script" as const, label: "Script", emoji: "📋" },
+              { key: "whatsapp" as const, label: "Resultado", emoji: "📊" },
+            ]).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setMobileTab(tab.key)}
+                className="flex-1 py-2 rounded-md text-xs font-semibold transition-all"
+                style={{
+                  background: mobileTab === tab.key ? "rgba(59,130,246,0.2)" : "transparent",
+                  color: mobileTab === tab.key ? "#93C5FD" : "#6B7280",
+                  border: mobileTab === tab.key ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
+                }}
+              >
+                {tab.emoji} {tab.label}
+              </button>
+            ))}
           </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={mobileTab}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.2 }}
+            >
+              {mobileTab === "lead" && LeftColumn}
+              {mobileTab === "script" && CenterColumn}
+              {mobileTab === "whatsapp" && RightColumn}
+            </motion.div>
+          </AnimatePresence>
         </div>
-      </div>
+      ) : (
+        /* ═══ DESKTOP: 3-column layout (30|40|30) ═══ */
+        <div className={`grid grid-cols-[3fr_4fr_3fr] gap-4 ${arenaShake ? "arena-shake" : ""}`}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={lead.id + "-left"}
+              initial={{ opacity: 0, x: -40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+            >
+              {LeftColumn}
+            </motion.div>
+          </AnimatePresence>
+          {CenterColumn}
+          {RightColumn}
+        </div>
+      )}
 
       {/* Attempt Modal */}
       {showModal && lead && (
@@ -846,15 +892,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       {sessionMetricsSnapshot && (
         <SessionCoachingModal
           open={showCoachingModal}
-          onClose={() => {
-            setShowCoachingModal(false);
-            onBack();
-          }}
+          onClose={() => { setShowCoachingModal(false); onBack(); }}
           metrics={sessionMetricsSnapshot}
-          onViewLeadsQuentes={() => {
-            setShowCoachingModal(false);
-            onBack();
-          }}
+          onViewLeadsQuentes={() => { setShowCoachingModal(false); onBack(); }}
         />
       )}
 
