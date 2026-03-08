@@ -214,11 +214,21 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </span>
               )}
               <span className={`font-medium ${temperatureInfo.color}`}>{temperatureInfo.label}</span>
-              {lead.oportunidade_score != null && (
-                <span className="flex items-center gap-0.5 font-semibold text-primary">
-                  <Target className="h-3 w-3" /> Score {lead.oportunidade_score}
-                </span>
-              )}
+              {lead.oportunidade_score != null && (() => {
+                const s = lead.oportunidade_score!;
+                const scoreStyle = s >= 81
+                  ? { emoji: "💎", label: "Hot", cls: "text-red-500 font-black", glow: "0 0 12px rgba(239,68,68,0.4)" }
+                  : s >= 61
+                  ? { emoji: "⚡", label: "Quente", cls: "text-orange-500 font-bold", glow: undefined }
+                  : s >= 31
+                  ? { emoji: "🔥", label: "Morno", cls: "text-amber-500 font-semibold", glow: undefined }
+                  : { emoji: "🧊", label: "Frio", cls: "text-blue-500 font-semibold", glow: undefined };
+                return (
+                  <span className={`flex items-center gap-0.5 ${scoreStyle.cls}`} style={scoreStyle.glow ? { textShadow: scoreStyle.glow } : undefined}>
+                    <Target className="h-3 w-3" /> {scoreStyle.emoji} {s} {scoreStyle.label}
+                  </span>
+                );
+              })()}
               {lead.valor_estimado ? (
                 <span className="flex items-center gap-0.5 font-semibold text-primary">
                   <DollarSign className="h-3 w-3" />
@@ -329,14 +339,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           {/* Quick action chips */}
           <div className="flex flex-wrap gap-1">
             {[
-              { label: "Ligar", icon: "📞" },
-              { label: "Enviar material", icon: "📄" },
-              { label: "Marcar visita", icon: "🏠" },
-              { label: "Enviar proposta", icon: "💰" },
-              { label: "Follow-up WhatsApp", icon: "💬" },
-              { label: "Confirmar visita", icon: "✅" },
-              { label: "Retornar cliente", icon: "🔄" },
-              { label: "Enviar localização", icon: "📍" },
+              { label: "Ligar", icon: "📞", borderColor: "border-orange-300", textColor: "text-orange-600", hoverBg: "hover:bg-orange-50" },
+              { label: "Enviar material", icon: "📄", borderColor: "border-blue-300", textColor: "text-blue-600", hoverBg: "hover:bg-blue-50" },
+              { label: "Marcar visita", icon: "🏠", borderColor: "border-green-300", textColor: "text-green-600", hoverBg: "hover:bg-green-50" },
+              { label: "Enviar proposta", icon: "💰", borderColor: "border-purple-300", textColor: "text-purple-600", hoverBg: "hover:bg-purple-50" },
+              { label: "Follow-up WhatsApp", icon: "💬", borderColor: "border-emerald-300", textColor: "text-emerald-600", hoverBg: "hover:bg-emerald-50" },
+              { label: "Confirmar visita", icon: "✅", borderColor: "border-teal-300", textColor: "text-teal-600", hoverBg: "hover:bg-teal-50" },
+              { label: "Retornar cliente", icon: "🔄", borderColor: "border-border", textColor: "text-foreground", hoverBg: "hover:bg-accent" },
+              { label: "Enviar localização", icon: "📍", borderColor: "border-border", textColor: "text-foreground", hoverBg: "hover:bg-accent" },
             ].map(action => (
               <button
                 key={action.label}
@@ -344,7 +354,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors ${
                   proximaAcao === action.label
                     ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-foreground border-border hover:bg-accent"
+                    : `bg-background ${action.textColor} ${action.borderColor} ${action.hoverBg}`
                 }`}
               >
                 {action.icon} {action.label}
@@ -364,22 +374,31 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
         {/* ════════════ ZONA 3 — CONTEÚDO (4 Abas) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="shrink-0 mx-4 mt-2 bg-muted/50 h-8">
-            <TabsTrigger value="inteligencia" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-              <Brain className="h-3 w-3 mr-1" /> Inteligência
-            </TabsTrigger>
-            <TabsTrigger value="historico" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-              <History className="h-3 w-3 mr-1" /> Histórico
-              {leadData.atividades.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{leadData.atividades.length}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="visitas-propostas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-              <MapPin className="h-3 w-3 mr-1" /> Visitas
-            </TabsTrigger>
-            <TabsTrigger value="tarefas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-              <ClipboardList className="h-3 w-3 mr-1" /> Tarefas
-              {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
-            </TabsTrigger>
-          </TabsList>
+          <div className="shrink-0 mx-4 mt-2 flex items-center gap-2">
+            <TabsList className="bg-muted/50 h-8 flex-1">
+              <TabsTrigger value="inteligencia" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+                <Brain className="h-3 w-3 mr-1" /> Inteligência
+              </TabsTrigger>
+              <TabsTrigger value="historico" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+                <History className="h-3 w-3 mr-1" /> Histórico
+                {leadData.atividades.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{leadData.atividades.length}</Badge>}
+              </TabsTrigger>
+              <TabsTrigger value="visitas-propostas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+                <MapPin className="h-3 w-3 mr-1" /> Visitas
+              </TabsTrigger>
+              <TabsTrigger value="tarefas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+                <ClipboardList className="h-3 w-3 mr-1" /> Tarefas
+                {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
+              </TabsTrigger>
+            </TabsList>
+            <Button
+              size="sm"
+              className="h-8 text-[11px] px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md shrink-0"
+              onClick={() => setComunicacaoOpen(true)}
+            >
+              ✨ HOMI
+            </Button>
+          </div>
 
           <ScrollArea className="flex-1 min-h-0">
             {/* ===== TAB: INTELIGÊNCIA ===== */}

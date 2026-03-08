@@ -11,9 +11,9 @@ import { Shield, UserPlus, UserMinus, HelpCircle, Zap, Users } from "lucide-reac
 import type { PipelineLead } from "@/hooks/usePipeline";
 
 const MODO_OPTIONS = [
-  { value: "corretor_conduz", label: "Corretor conduz", description: "Corretor toca todo o processo", icon: "👤" },
-  { value: "corretor_gerente", label: "Corretor + Gerente", description: "Ambos acompanham juntos", icon: "👥" },
-  { value: "gerente_conduz", label: "Gerente conduz", description: "Gerente assume a negociação", icon: "🎯" },
+  { value: "corretor_conduz", label: "Corretor conduz", description: "Corretor gerencia sozinho", icon: "👤" },
+  { value: "corretor_gerente", label: "Corretor + Gerente", description: "Trabalham juntos", icon: "👥" },
+  { value: "gerente_conduz", label: "Gerente conduz", description: "Gerente assume o lead", icon: "🎯" },
 ];
 
 interface Props {
@@ -140,14 +140,15 @@ export default function GerenteManagementSection({ lead, onUpdate }: Props) {
               key={m.value}
               onClick={() => handleChangeModo(m.value)}
               disabled={!isGestor && !isAdmin && m.value === "gerente_conduz"}
-              className={`flex-1 text-center px-2 py-1.5 rounded-md text-[10px] font-medium border transition-all ${
+              className={`flex-1 text-center px-2 py-2 rounded-md text-[10px] font-medium border-2 transition-all ${
                 lead.modo_conducao === m.value
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-card text-muted-foreground border-border hover:border-primary/30"
+                  ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                  : "bg-card text-muted-foreground border-gray-200 hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:hover:border-blue-500/40 dark:hover:bg-blue-950/20"
               } disabled:opacity-40`}
             >
               <span className="block text-sm mb-0.5">{m.icon}</span>
-              {m.label}
+              <span className="block font-semibold">{m.label}</span>
+              <span className="block text-[9px] mt-0.5 opacity-70">{m.description}</span>
             </button>
           ))}
         </div>
