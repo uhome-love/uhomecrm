@@ -24,6 +24,13 @@ export interface Negocio {
   updated_at: string;
 }
 
+export interface CorretorInfo {
+  nome: string;
+  avatar_url: string | null;
+  avatar_gamificado_url: string | null;
+  equipe: string | null;
+}
+
 export const NEGOCIOS_FASES = [
   { key: "proposta", label: "Proposta", cor: "#3B82F6", icon: "📋" },
   { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "🤝" },
@@ -36,6 +43,7 @@ export function useNegocios() {
   const { user } = useAuth();
   const [negocios, setNegocios] = useState<Negocio[]>([]);
   const [corretorNomes, setCorretorNomes] = useState<Record<string, string>>({});
+  const [corretorInfoMap, setCorretorInfoMap] = useState<Record<string, CorretorInfo>>({});
   const [loading, setLoading] = useState(true);
 
   const loadNegocios = useCallback(async () => {
@@ -55,26 +63,48 @@ export function useNegocios() {
     const rows = (data || []) as Negocio[];
     setNegocios(rows);
 
-    // Load names
+    // Load corretor info (profiles + team_members for equipe)
     const userIds = [...new Set([
       ...rows.map(n => n.corretor_id).filter(Boolean),
       ...rows.map(n => n.gerente_id).filter(Boolean),
     ])] as string[];
 
     if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, nome, avatar_url")
-        .in("user_id", userIds);
-      const { data: members } = await supabase
-        .from("team_members")
-        .select("user_id, nome")
-        .in("user_id", userIds);
+      const [profilesRes, membersRes] = await Promise.all([
+        supabase.from("profiles").select("id, user_id, nome, avatar_url, avatar_gamificado_url").in("id", userIds),
+        supabase.from("team_members").select("user_id, nome, equipe").in("user_id", userIds),
+      ]);
 
-      const map: Record<string, string> = {};
-      members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
-      profiles?.forEach(p => { if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome; });
-      setCorretorNomes(map);
+      const nameMap: Record<string, string> = {};
+      const infoMap: Record<string, CorretorInfo> = {};
+
+      // profiles.id matches corretor_id in negocios
+      profilesRes.data?.forEach(p => {
+        nameMap[p.id] = p.nome;
+        infoMap[p.id] = {
+          nome: p.nome,
+          avatar_url: p.avatar_url,
+          avatar_gamificado_url: p.avatar_gamificado_url,
+          equipe: null,
+        };
+      });
+
+      // Enrich with equipe from team_members (user_id != profiles.id, need mapping)
+      const profileIdByUserId = new Map<string, string>();
+      profilesRes.data?.forEach(p => { if (p.user_id) profileIdByUserId.set(p.user_id, p.id); });
+
+      membersRes.data?.forEach(m => {
+        if (!m.user_id) return;
+        const profileId = profileIdByUserId.get(m.user_id);
+        if (profileId && infoMap[profileId]) {
+          infoMap[profileId].equipe = m.equipe || null;
+        }
+        // Also fill name if not from profiles
+        if (profileId && !nameMap[profileId]) nameMap[profileId] = m.nome;
+      });
+
+      setCorretorNomes(nameMap);
+      setCorretorInfoMap(infoMap);
     }
   }, [user]);
 
@@ -145,6 +175,7 @@ export function useNegocios() {
   return {
     negocios,
     corretorNomes,
+    corretorInfoMap,
     loading,
     moveFase,
     updateNegocio,

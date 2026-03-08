@@ -101,12 +101,24 @@ export default function BaseConhecimento() {
       let fileUrl: string | null = null;
 
       if (needsStorage) {
-        // Upload binary file to storage, edge function will extract text
+        // Upload binary file to storage
         const filePath = `${user.id}/${Date.now()}-${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("homi-documents")
-          .upload(filePath, file, { contentType: file.type });
-        if (uploadError) throw new Error("Erro no upload: " + uploadError.message);
+          .upload(filePath, file, { contentType: file.type, upsert: false });
+        if (uploadError) {
+          console.error("Storage upload error:", uploadError);
+          if (uploadError.message?.includes("security") || uploadError.message?.includes("policy")) {
+            throw new Error("Sem permissão para upload. Verifique se você está logado e tem as permissões necessárias.");
+          }
+          if (uploadError.message?.includes("mime") || uploadError.message?.includes("type")) {
+            throw new Error("Tipo de arquivo não permitido. Envie PDF, TXT ou MD.");
+          }
+          if (uploadError.message?.includes("size")) {
+            throw new Error("Arquivo muito grande. Limite: 50MB.");
+          }
+          throw new Error(`Erro no upload do arquivo: ${uploadError.message}`);
+        }
         fileUrl = filePath;
       } else {
         // Text-based: extract inline
