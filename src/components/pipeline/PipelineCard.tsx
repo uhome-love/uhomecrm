@@ -412,10 +412,10 @@ const PipelineCard = memo(function PipelineCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#dcfce7] text-[#166534] hover:bg-[#bbf7d0]"
+                className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#ede9fe] text-[#5b21b6] hover:bg-[#ddd6fe]"
                 onClick={handleCall}
               >
-                <Phone className="h-3 w-3 text-[#22c55e]" /> Ligar
+                <Phone className="h-3 w-3 text-[#7c3aed]" /> Ligar
               </Button>
             )}
 
