@@ -591,38 +591,34 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           </div>
         )}
 
-        {/* ⚡ Objeções Rápidas — accordion inside card */}
-        <Collapsible open={objAccordionOpen} onOpenChange={setObjAccordionOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full py-1 cursor-pointer group">
-            <span style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>⚡ Objeções Rápidas</span>
-            <ChevronDown className={`h-3 w-3 text-amber-400 transition-transform ${objAccordionOpen ? "rotate-180" : ""}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="grid grid-cols-2 gap-1.5 pt-1.5">
-              {objections.map((obj, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setExpandedObj(expandedObj === i ? null : i);
-                    setObjectionInsert(obj.answer);
-                  }}
-                  className="transition-all text-left flex items-center"
-                  style={{
-                    background: expandedObj === i ? "rgba(245,158,11,0.12)" : "#1C2128",
-                    border: expandedObj === i ? "1px solid rgba(245,158,11,0.4)" : "1px dashed rgba(255,255,255,0.1)",
-                    borderRadius: 8,
-                    padding: "6px 10px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: expandedObj === i ? "#FCD34D" : "#D1D5DB",
-                    height: 32,
-                  }}
-                >
-                  {obj.emoji} {obj.label}
-                </button>
-              ))}
-            </div>
-          </CollapsibleContent>
+        {/* ⚡ Objeções Rápidas — always visible */}
+        <div>
+          <span style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>⚡ Objeções Rápidas</span>
+          <div className="grid grid-cols-2 gap-1.5 pt-1.5">
+            {objections.map((obj, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setExpandedObj(expandedObj === i ? null : i);
+                  setObjectionInsert(obj.answer);
+                }}
+                className="transition-all text-left flex items-center"
+                style={{
+                  background: expandedObj === i ? "rgba(245,158,11,0.12)" : "#1C2128",
+                  border: expandedObj === i ? "1px solid rgba(245,158,11,0.4)" : "1px dashed rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: expandedObj === i ? "#FCD34D" : "#D1D5DB",
+                  height: 32,
+                }}
+              >
+                {obj.emoji} {obj.label}
+              </button>
+            ))}
+          </div>
+        </div>
         </Collapsible>
       </div>
 
