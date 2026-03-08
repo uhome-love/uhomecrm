@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, Target, TrendingUp, AlertTriangle, CheckCircle2, Brain } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RefreshCw, Target, TrendingUp, AlertTriangle, CheckCircle2, Brain, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -23,11 +24,21 @@ interface Props {
   dashboardData: Record<string, any>;
 }
 
+const STORAGE_KEY = "homi-briefing-collapsed";
+
 export default function HomiBriefingCard({ dashboardData }: Props) {
   const { user, session } = useAuth();
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => {
+    try { return localStorage.getItem(STORAGE_KEY) !== "true"; } catch { return false; }
+  });
+
+  const handleToggle = (open: boolean) => {
+    setIsOpen(open);
+    try { localStorage.setItem(STORAGE_KEY, open ? "false" : "true"); } catch {}
+  };
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -144,81 +155,89 @@ export default function HomiBriefingCard({ dashboardData }: Props) {
   }
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-900 dark:to-blue-950/20 overflow-hidden">
-      <CardContent className="pt-4 pb-4 space-y-3">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Brain className="h-5 w-5 text-primary shrink-0" />
-            <span className="text-sm font-bold truncate">🧠 HOMI · Briefing de hoje</span>
-            {briefing.gerado_em && (
-              <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
-                {format(new Date(briefing.gerado_em), "HH:mm")}
-              </span>
+    <Collapsible open={isOpen} onOpenChange={handleToggle}>
+      <Card className="border-primary/20 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-900 dark:to-blue-950/20 overflow-hidden">
+        <CollapsibleTrigger asChild>
+          <div className="flex items-center justify-between px-6 pt-4 pb-3 cursor-pointer select-none hover:bg-muted/30 transition-colors rounded-t-lg">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Brain className="h-5 w-5 text-primary shrink-0" />
+              <span className="text-sm font-bold truncate">🧠 HOMI · Briefing de hoje</span>
+              {briefing.gerado_em && (
+                <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
+                  {format(new Date(briefing.gerado_em), "HH:mm")}
+                </span>
+              )}
+              <Badge className={`text-[10px] shrink-0 border ${statusColor}`}>
+                {briefing.status_geral}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs gap-1"
+                onClick={(e) => { e.stopPropagation(); generateBriefing(); }}
+                disabled={generating}
+              >
+                <RefreshCw className={`h-3 w-3 ${generating ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Regenerar</span>
+              </Button>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+            </div>
+          </div>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
+          <CardContent className="pt-0 pb-4 space-y-3">
+            {/* Frase do dia */}
+            {briefing.frase_do_dia && (
+              <p className="text-xs italic text-muted-foreground border-l-2 border-primary/30 pl-2">
+                "{briefing.frase_do_dia}"
+              </p>
             )}
-            <Badge className={`text-[10px] shrink-0 border ${statusColor}`}>
-              {briefing.status_geral}
-            </Badge>
-          </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-xs gap-1 shrink-0"
-            onClick={generateBriefing}
-            disabled={generating}
-          >
-            <RefreshCw className={`h-3 w-3 ${generating ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Regenerar</span>
-          </Button>
-        </div>
 
-        {/* Frase do dia */}
-        {briefing.frase_do_dia && (
-          <p className="text-xs italic text-muted-foreground border-l-2 border-primary/30 pl-2">
-            "{briefing.frase_do_dia}"
-          </p>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Destaques */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Destaques
-            </p>
-            {briefing.destaques.map((d, i) => (
-              <div key={i} className="text-[11px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 rounded-md px-2.5 py-1.5 border border-emerald-200/50 dark:border-emerald-800/30">
-                {d}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Destaques */}
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Destaques
+                </p>
+                {briefing.destaques.map((d, i) => (
+                  <div key={i} className="text-[11px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 rounded-md px-2.5 py-1.5 border border-emerald-200/50 dark:border-emerald-800/30">
+                    {d}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Alertas */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold flex items-center gap-1 text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="h-3.5 w-3.5" /> Alertas
-            </p>
-            {briefing.alertas.map((a, i) => (
-              <div key={i} className="text-[11px] bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 rounded-md px-2.5 py-1.5 border border-amber-200/50 dark:border-amber-800/30">
-                {a}
+              {/* Alertas */}
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Alertas
+                </p>
+                {briefing.alertas.map((a, i) => (
+                  <div key={i} className="text-[11px] bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 rounded-md px-2.5 py-1.5 border border-amber-200/50 dark:border-amber-800/30">
+                    {a}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Ação prioritária */}
-        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/30 rounded-lg p-3">
-          <p className="text-xs font-semibold flex items-center gap-1 text-blue-700 dark:text-blue-400 mb-1">
-            <Target className="h-3.5 w-3.5" /> Ação Prioritária
-          </p>
-          <p className="text-sm font-medium text-blue-900 dark:text-blue-200">{briefing.acao_prioritaria}</p>
-        </div>
+            {/* Ação prioritária */}
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/30 rounded-lg p-3">
+              <p className="text-xs font-semibold flex items-center gap-1 text-blue-700 dark:text-blue-400 mb-1">
+                <Target className="h-3.5 w-3.5" /> Ação Prioritária
+              </p>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-200">{briefing.acao_prioritaria}</p>
+            </div>
 
-        {/* Previsão */}
-        <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-md p-2.5">
-          <TrendingUp className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-          <span>{briefing.previsao}</span>
-        </div>
-      </CardContent>
-    </Card>
+            {/* Previsão */}
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-md p-2.5">
+              <TrendingUp className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span>{briefing.previsao}</span>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
