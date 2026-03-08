@@ -63,10 +63,12 @@ export default function HomeDashboard() {
   const [nome, setNome] = useState("");
   const [period, setPeriod] = useState<Period>("semana");
 
-  // Corretor should never see Centro de Comando — redirect to /corretor
+  // Admin/CEO should go to /ceo, Corretor to /corretor
   useEffect(() => {
-    if (roleLoading) return; // Wait for roles to load before deciding
-    if (!isAdmin && !isGestor) {
+    if (roleLoading) return;
+    if (isAdmin) {
+      navigate("/ceo", { replace: true });
+    } else if (!isGestor) {
       navigate("/corretor", { replace: true });
     }
   }, [isAdmin, isGestor, roleLoading, navigate]);
