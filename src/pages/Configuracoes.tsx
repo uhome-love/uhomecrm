@@ -272,6 +272,7 @@ export default function Configuracoes() {
               onGenerated={(url) => {
                 setAvatarUrl(url);
                 setAvatarPreviewUrl(url);
+                emitProfileUpdated();
               }}
             />
 
