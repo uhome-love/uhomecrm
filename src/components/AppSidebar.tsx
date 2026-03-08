@@ -433,7 +433,7 @@ export function AppSidebar() {
               key={g.label}
               label={g.label}
               items={g.items}
-              badges={badges}
+              badges={mergedBadges}
               collapsed={collapsed}
               index={i}
             />
