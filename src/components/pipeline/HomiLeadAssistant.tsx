@@ -282,8 +282,7 @@ ${histCtx}
     toast.success("Texto copiado!");
   };
 
-  const tempIcon = temperatura === "quente" ? Flame : temperatura === "frio" ? Snowflake : Sun;
-  const tempColor = temperatura === "quente" ? "text-destructive" : temperatura === "frio" ? "text-blue-500" : "text-warning";
+  const tempColor = temperatura === "quente" ? "text-destructive" : temperatura === "frio" ? "text-primary" : "text-warning";
 
   return (
     <Card className="p-3 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
