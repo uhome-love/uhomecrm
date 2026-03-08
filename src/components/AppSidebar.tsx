@@ -171,7 +171,7 @@ export function AppSidebar() {
   const level = getLevel(points);
 
   // ── Build navigation groups by role ──
-  function getGroupsByRole(): { topItem: NavItem | null; groups: { label: string; items: NavItem[] }[]; roleLabel: string } {
+  function getGroupsByRole(): { topItem: NavItem | null; groups: { label: string; items: NavItem[] }[]; roleLabel: string; extraBadges?: Record<string, number> } {
     // ── CEO / Admin ──
     if (isAdmin) {
       const roletaBadges: Record<string, number> = roletaPendentes > 0 ? { "/roleta": roletaPendentes } : {};
@@ -344,7 +344,8 @@ export function AppSidebar() {
     };
   }
 
-  const { topItem, groups, roleLabel } = getGroupsByRole();
+  const { topItem, groups, roleLabel, extraBadges } = getGroupsByRole();
+  const mergedBadges = { ...badges, ...extraBadges };
 
   // Footer initials
   const initials = (profile.nome || user?.email || "U")
