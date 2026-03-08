@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
-const uhomeSalesLogo = "/images/uhomesales-logo.png";
 const homiHero = "/images/homi-hero.png";
 
 const HOMI_PHRASES = [
@@ -23,7 +22,7 @@ const MOTIVATIONAL = [
   "A Arena está aberta. Entre agora.",
 ];
 
-/* ─── Particle Canvas ─── */
+/* ─── Particle Canvas (blue theme) ─── */
 function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -49,7 +48,7 @@ function ParticleCanvas() {
     interface Particle {
       x: number; y: number; r: number; vx: number; vy: number;
       baseOpacity: number; opacity: number; twinkle: boolean;
-      twinkleSpeed: number; twinklePhase: number; isGreen: boolean; glow: boolean;
+      twinkleSpeed: number; twinklePhase: number; isBlue: boolean; glow: boolean;
     }
 
     const W = () => window.innerWidth;
@@ -57,7 +56,7 @@ function ParticleCanvas() {
 
     const particles: Particle[] = Array.from({ length: 90 }, (_, i) => {
       const isStar = i < 5;
-      const isGreen = Math.random() < 0.25;
+      const isBlue = Math.random() < 0.25;
       return {
         x: Math.random() * W(),
         y: Math.random() * H(),
@@ -69,7 +68,7 @@ function ParticleCanvas() {
         twinkle: isStar || Math.random() < 0.3,
         twinkleSpeed: 0.006 + Math.random() * 0.012,
         twinklePhase: Math.random() * Math.PI * 2,
-        isGreen,
+        isBlue,
         glow: isStar,
       };
     });
@@ -88,7 +87,7 @@ function ParticleCanvas() {
           p.opacity = p.baseOpacity * (0.3 + 0.7 * ((Math.sin(p.twinklePhase) + 1) / 2));
         }
         if (p.glow) {
-          ctx.shadowColor = p.isGreen ? "rgba(34,197,94,0.6)" : "rgba(99,179,237,0.6)";
+          ctx.shadowColor = p.isBlue ? "rgba(59,130,246,0.6)" : "rgba(147,197,253,0.5)";
           ctx.shadowBlur = 10;
         } else {
           ctx.shadowColor = "transparent";
@@ -96,8 +95,8 @@ function ParticleCanvas() {
         }
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.isGreen
-          ? `rgba(34,197,94,${p.opacity})`
+        ctx.fillStyle = p.isBlue
+          ? `rgba(59,130,246,${p.opacity})`
           : `rgba(255,255,255,${p.opacity})`;
         ctx.fill();
       }
@@ -131,10 +130,10 @@ function HomiSpeechBubble() {
   if (!visible) return null;
   return (
     <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap transition-opacity duration-300 z-20" style={{ opacity: fade ? 1 : 0 }}>
-      <div style={{ background: "rgba(15,23,42,0.95)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 12, padding: "8px 14px", fontSize: 13, color: "#E2E8F0", boxShadow: "0 0 20px rgba(34,197,94,0.15)" }}>
+      <div style={{ background: "rgba(13,27,75,0.95)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: 12, padding: "8px 14px", fontSize: 13, color: "#E2E8F0", boxShadow: "0 0 20px rgba(59,130,246,0.15)" }}>
         {HOMI_PHRASES[idx]}
       </div>
-      <div className="mx-auto" style={{ width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid rgba(15,23,42,0.95)" }} />
+      <div className="mx-auto" style={{ width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid rgba(13,27,75,0.95)" }} />
     </div>
   );
 }
@@ -163,14 +162,14 @@ const styles = `
 @keyframes fade-in-scale { from { opacity:0; transform:scale(0.92) } to { opacity:1; transform:scale(1) } }
 @keyframes homiEntrada { 0%{transform:translateY(60px);opacity:0} 60%{transform:translateY(-8px);opacity:1} 80%{transform:translateY(3px)} 100%{transform:translateY(0)} }
 @keyframes homiAceno { 0%,100%{transform:translateY(0) rotate(0)} 25%{transform:translateY(-5px) rotate(2deg)} 75%{transform:translateY(-2px) rotate(-1.5deg)} }
-@keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(34,197,94,0.4),0 0 0 0 rgba(34,197,94,0.3)} 50%{box-shadow:0 0 20px rgba(34,197,94,0.4),0 0 0 8px rgba(34,197,94,0)} }
-@keyframes glow-pulse { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
+@keyframes pulse-glow-blue { 0%,100%{box-shadow:0 0 20px rgba(59,130,246,0.4),0 0 0 0 rgba(59,130,246,0.3)} 50%{box-shadow:0 0 20px rgba(59,130,246,0.4),0 0 0 8px rgba(59,130,246,0)} }
+@keyframes glow-pulse-blue { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
 .anim-fiu { animation: fade-in-up 0.5s cubic-bezier(.22,1,.36,1) both }
 .anim-fis { animation: fade-in-scale 0.6s cubic-bezier(.22,1,.36,1) both }
 .anim-d1 { animation-delay:.12s } .anim-d2 { animation-delay:.25s } .anim-d3 { animation-delay:.38s }
 .homi-entrance { opacity:0; animation: homiEntrada .8s cubic-bezier(.34,1.56,.64,1) forwards; animation-delay:.3s }
 .homi-wave { animation: homiAceno 3s ease-in-out infinite; animation-delay:1.2s }
-.auth-input:focus { border-color: rgba(34,197,94,0.5) !important; box-shadow: 0 0 0 3px rgba(34,197,94,0.1), 0 0 16px rgba(34,197,94,0.08) !important }
+.auth-input:focus { border-color: rgba(59,130,246,0.5) !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1), 0 0 16px rgba(59,130,246,0.08) !important }
 `;
 
 export default function Auth() {
@@ -184,7 +183,7 @@ export default function Auth() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#0A0F1E" }}>
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#22C55E" }} />
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#3B82F6" }} />
       </div>
     );
   }
@@ -217,27 +216,42 @@ export default function Auth() {
     <div className="relative min-h-screen flex flex-col items-center justify-between overflow-hidden" style={{ background: "#0A0F1E" }}>
       <style>{styles}</style>
 
-      {/* BG layers */}
-      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 800px 500px at 50% 10%, rgba(34,197,94,0.08) 0%, transparent 70%)" }} />
-      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 400px 300px at 50% 20%, rgba(34,197,94,0.05) 0%, transparent 60%)" }} />
+      {/* BG layers — blue radials, no green */}
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 800px 500px at 50% 10%, rgba(59,130,246,0.08) 0%, transparent 70%)" }} />
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 400px 300px at 50% 20%, rgba(13,27,75,0.12) 0%, transparent 60%)" }} />
       <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
       <ParticleCanvas />
 
       {/* CONTENT */}
       <div className="relative z-10 w-full max-w-[400px] px-5 pt-10 pb-4 flex-1 flex flex-col">
 
-        {/* Badge */}
-        <p className="text-center anim-fiu" style={{ letterSpacing: "0.3em", color: "rgba(255,255,255,0.4)", fontSize: 11, marginBottom: 4 }}>
+        {/* Badge top text — white 30% opacity */}
+        <p className="text-center anim-fiu" style={{ letterSpacing: "0.3em", color: "rgba(255,255,255,0.3)", fontSize: 11, marginBottom: 4 }}>
           ✦ UHOMESALES ✦
         </p>
 
-        {/* Logo */}
-        <div className="flex flex-col items-center anim-fis">
-          <img src={uhomeSalesLogo} alt="UhomeSales" loading="eager" decoding="async" className="relative w-auto object-contain" style={{ height: 200, clipPath: "inset(10% 0 8% 0)", margin: "-16px 0 -28px 0", filter: "drop-shadow(0 0 50px rgba(34,197,94,0.25))" }} />
+        {/* Logo — text-based, no image tint issues */}
+        <div className="flex flex-col items-center anim-fis" style={{ marginBottom: 4 }}>
+          {/* Icon circle */}
+          <div className="flex items-center justify-center rounded-full mb-3" style={{ width: 56, height: 56, background: "linear-gradient(135deg, #3B82F6, #2563EB)", boxShadow: "0 0 30px rgba(59,130,246,0.4)" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M3 9.5L12 4L21 9.5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V9.5Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9 21V12H15V21" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          {/* Text logo */}
+          <h1 className="text-3xl font-bold tracking-tight" style={{ lineHeight: 1.1 }}>
+            <span style={{ color: "#FFFFFF" }}>Uhome</span>
+            <span style={{ color: "#60A5FA" }}>Sales</span>
+          </h1>
+          {/* Tagline */}
+          <p className="mt-1.5" style={{ fontSize: 11, color: "#9CA3AF", letterSpacing: "0.04em" }}>
+            Powered by Homi AI
+          </p>
         </div>
 
         {/* Subtitle */}
-        <p className="text-center anim-fiu anim-d1" style={{ color: "rgba(255,255,255,0.6)", fontSize: 15, marginTop: -8, marginBottom: 20 }}>
+        <p className="text-center anim-fiu anim-d1" style={{ color: "rgba(255,255,255,0.6)", fontSize: 15, marginTop: 4, marginBottom: 20 }}>
           A plataforma dos corretores que vendem mais.
         </p>
 
@@ -262,7 +276,7 @@ export default function Auth() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-1">
-                  <Button type="submit" disabled={submitting} className="h-12 flex-1 gap-2 font-black text-sm border-0 rounded-xl text-white" style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)", letterSpacing: "0.05em", animation: submitting ? "none" : "pulse-glow 2s ease-in-out infinite" }}>
+                  <Button type="submit" disabled={submitting} className="h-12 flex-1 gap-2 font-black text-sm border-0 rounded-xl text-white" style={{ background: "linear-gradient(135deg, #3B82F6, #2563EB)", letterSpacing: "0.05em", animation: submitting ? "none" : "pulse-glow-blue 2s ease-in-out infinite" }}>
                     {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /><span>Entrando...</span></> : <>{isLogin ? "ENTRAR" : "CRIAR CONTA"}<ArrowRight className="h-4 w-4" /></>}
                   </Button>
                   {isLogin && (
@@ -295,8 +309,13 @@ export default function Auth() {
         <div className="relative homi-entrance">
           <HomiSpeechBubble />
           <div className="homi-wave">
-            <div className="absolute inset-0 -m-4 rounded-full blur-[40px]" style={{ background: "rgba(34,197,94,0.15)", animation: "glow-pulse 3s ease-in-out infinite" }} />
-            <img src={homiHero} alt="Homi AI" className="relative object-contain" style={{ height: 80, filter: "drop-shadow(0 0 24px rgba(34,197,94,0.4))" }} />
+            <div className="absolute inset-0 -m-4 rounded-full blur-[40px]" style={{ background: "rgba(59,130,246,0.15)", animation: "glow-pulse-blue 3s ease-in-out infinite" }} />
+            <img
+              src={homiHero}
+              alt="Homi AI"
+              className="relative object-contain"
+              style={{ height: 80, filter: "brightness(1.1) saturate(1.2) drop-shadow(0 0 24px rgba(59,130,246,0.4))" }}
+            />
           </div>
         </div>
         <p className="text-center tracking-wider" style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>
