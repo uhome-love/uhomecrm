@@ -664,44 +664,60 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   // ─── TOOLS COLUMN (right 45%): Scripts in tabs ───
   const ToolsColumn = (
-    <div className="min-w-0 h-full flex flex-col gap-3">
-      {/* Script Tabs — fixed header */}
-      <div className="flex gap-1 p-1 rounded-lg shrink-0" style={{ background: "#161B22" }}>
+    <div className="min-w-0 h-full flex flex-col">
+      {/* Script Tabs — flush with content */}
+      <div className="flex shrink-0 rounded-t-xl overflow-hidden" style={{ background: "#161B22" }}>
         <button
           onClick={() => setScriptTab("ligacao")}
-          className="flex-1 py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
           style={{
-            background: scriptTab === "ligacao" ? "rgba(34,197,94,0.15)" : "transparent",
+            background: scriptTab === "ligacao" ? "#1a2332" : "transparent",
             color: scriptTab === "ligacao" ? "#86EFAC" : "#6B7280",
-            border: scriptTab === "ligacao" ? "1px solid rgba(34,197,94,0.3)" : "1px solid transparent",
+            borderBottom: scriptTab === "ligacao" ? "2px solid rgba(34,197,94,0.6)" : "2px solid transparent",
           }}
         >
           📋 Script Ligação
         </button>
         <button
           onClick={() => setScriptTab("whatsapp")}
-          className="flex-1 py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
           style={{
-            background: scriptTab === "whatsapp" ? "rgba(34,197,94,0.15)" : "transparent",
+            background: scriptTab === "whatsapp" ? "#0d1f0d" : "transparent",
             color: scriptTab === "whatsapp" ? "#86EFAC" : "#6B7280",
-            border: scriptTab === "whatsapp" ? "1px solid rgba(34,197,94,0.3)" : "1px solid transparent",
+            borderBottom: scriptTab === "whatsapp" ? "2px solid rgba(34,197,94,0.6)" : "2px solid transparent",
           }}
         >
           💬 Script WhatsApp
         </button>
       </div>
 
-      {/* Scrollable content area: Script + Objection Response + CTA */}
+      {/* Script content — fills available space */}
       <div
         ref={objScrollRef}
-        className="flex-1 min-h-0 rounded-xl overflow-y-auto"
+        className="flex-1 min-h-0 overflow-y-auto"
         style={{
           background: scriptTab === "ligacao" ? "#1a2332" : "#0d1f0d",
-          borderLeft: scriptTab === "ligacao" ? "3px solid rgba(34,197,94,0.3)" : "3px solid rgba(34,197,94,0.5)",
           scrollbarWidth: "thin",
         }}
       >
         <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode scriptFilter={scriptTab} />
+      </div>
+
+      {/* CTA Final — pinned at bottom */}
+      <div
+        className="shrink-0 rounded-b-xl p-3"
+        style={{
+          background: "rgba(59,130,246,0.06)",
+          borderTop: "1px solid rgba(59,130,246,0.15)",
+          borderLeft: "1px solid rgba(59,130,246,0.08)",
+          borderRight: "1px solid rgba(59,130,246,0.08)",
+          borderBottom: "1px solid rgba(59,130,246,0.15)",
+        }}
+      >
+        <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className="uppercase mb-1.5 text-blue-400">🎯 CTA Final</h4>
+        <p style={{ fontSize: "15px", fontStyle: "italic", color: "#FDE68A" }} className="p-2 rounded-lg">
+          "Que tal agendar uma visita sem compromisso? Posso reservar o melhor horário para você!"
+        </p>
       </div>
     </div>
   );
