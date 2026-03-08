@@ -319,7 +319,7 @@ export default function CorretorDashboard() {
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] text-muted-foreground font-medium">{progress.pontos}/{nextLevel ? nextLevel.minPoints : "MAX"} pts</p>
                   <p className="text-[10px] text-muted-foreground italic">
-                    {streakData.label || "Bata a meta hoje para começar! 🚀"}
+                    {progress.pontos === 0 ? "Faça sua primeira ligação!" : streakData.label}
                   </p>
                 </div>
               </CardContent>
