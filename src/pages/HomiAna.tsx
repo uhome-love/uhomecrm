@@ -173,25 +173,15 @@ Seja breve e energético. Comece com "Oi Ana! 👋"`;
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: isSystem ? [userMsg] : updated,
-          systemContext: SYSTEM_CONTEXT,
-          assistantType: "backoffice",
-        }),
+      const { data, error } = await supabase.functions.invoke("homi-ana", {
+        body: { messages: isSystem ? [userMsg] : updated },
       });
-      if (!res.ok) throw new Error("Erro na API");
-      const data = await res.json();
-      const reply = data.reply || data.message || "Sem resposta.";
-      setMessages((prev) => [...prev, ...(isSystem ? [] : []), { role: "assistant" as const, content: reply }]);
+      if (error) throw error;
+      const reply = data?.reply || data?.message || "Sem resposta.";
+      setMessages((prev) => [...prev, { role: "assistant" as const, content: reply }]);
     } catch {
-      toast.error("Erro ao enviar mensagem");
+      toast.error("Ops! O HOMI está descansando um segundo. Tente novamente 🤖");
+    }
     } finally {
       setLoading(false);
     }
