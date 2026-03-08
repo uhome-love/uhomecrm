@@ -84,7 +84,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [showMilestone, setShowMilestone] = useState<string | null>(null);
   const [expandedObj, setExpandedObj] = useState<number | null>(null);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
-  const [objectionInsert, setObjectionInsert] = useState<string | null>(null);
+  const [openObjections, setOpenObjections] = useState<number[]>([]);
   const [inlineObs, setInlineObs] = useState("");
   const [showResultPopup, setShowResultPopup] = useState(false);
   const [selectedResult, setSelectedResult] = useState<string | null>(null);
