@@ -438,7 +438,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const timerColorClass = callTimer <= 30 ? "arena-timer-green" : callTimer <= 60 ? "arena-timer-amber" : "arena-timer-red";
 
   return (
-    <div className="space-y-3 relative">
+    <div className="space-y-3 relative" style={{ background: "#0A0F1E" }}>
       {/* ═══ ARENA OVERLAYS ═══ */}
       {showFlash && <div className="round-flash" />}
       {showRound && (
@@ -764,54 +764,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 </div>
               )}
 
-              {/* ACTION BUTTONS — Line 2: Result (always visible) */}
-              <div className="space-y-1.5 pt-1">
-                <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Registrar resultado</p>
-                <div className="grid grid-cols-3 gap-1.5">
-                  <button
-                    onClick={() => handleInlineResult("com_interesse")}
-                    className="arena-result-btn arena-result-green flex flex-col items-center gap-0.5 p-2 rounded-lg text-[10px] font-medium"
-                    style={{ color: "#86EFAC" }}
-                  >
-                    <span>✅</span>Aproveitou
-                  </button>
-                  <button
-                    onClick={() => handleInlineResult("agendar")}
-                    className="arena-result-btn arena-result-blue flex flex-col items-center gap-0.5 p-2 rounded-lg text-[10px] font-medium"
-                    style={{ color: "#93C5FD" }}
-                  >
-                    <span>📅</span>Agendar
-                  </button>
-                  <button
-                    onClick={() => handleInlineResult("depois")}
-                    className="arena-result-btn arena-result-gray flex flex-col items-center gap-0.5 p-2 rounded-lg text-[10px] font-medium"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    <span>🔄</span>Depois
-                  </button>
-                  <button
-                    onClick={() => handleInlineResult("nao_atendeu")}
-                    className="arena-result-btn arena-result-orange flex flex-col items-center gap-0.5 p-2 rounded-lg text-[10px] font-medium"
-                    style={{ color: "#FDBA74" }}
-                  >
-                    <span>📵</span>N. Atendeu
-                  </button>
-                  <button
-                    onClick={() => handleInlineResult("sem_interesse")}
-                    className="arena-result-btn arena-result-yellow flex flex-col items-center gap-0.5 p-2 rounded-lg text-[10px] font-medium"
-                    style={{ color: "#FDE68A" }}
-                  >
-                    <span>😐</span>S. Interes.
-                  </button>
-                  <button
-                    onClick={() => handleInlineResult("numero_errado")}
-                    className="arena-result-btn arena-result-red flex flex-col items-center gap-0.5 p-2 rounded-lg text-[10px] font-medium"
-                    style={{ color: "#FCA5A5" }}
-                  >
-                    <span>🚫</span>Errado
-                  </button>
-                </div>
-              </div>
 
               <RecentCallsHistory />
             </div>
