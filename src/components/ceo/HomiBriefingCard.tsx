@@ -32,12 +32,12 @@ export default function HomiBriefingCard({ dashboardData }: Props) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [isOpen, setIsOpen] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) !== "true"; } catch { return false; }
+    try { return localStorage.getItem(STORAGE_KEY) === "open"; } catch { return false; }
   });
 
   const handleToggle = (open: boolean) => {
     setIsOpen(open);
-    try { localStorage.setItem(STORAGE_KEY, open ? "false" : "true"); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, open ? "open" : "closed"); } catch {}
   };
 
   const today = new Date().toISOString().slice(0, 10);
