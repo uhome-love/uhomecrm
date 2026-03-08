@@ -458,130 +458,208 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     { emoji: "👫", label: "Falar c/ cônjuge", answer: `Claro! Que tal agendar uma visita juntos? Assim vocês conhecem e decidem juntos. Qual o melhor dia?` },
   ];
 
-  // ─── COLUMN: LEFT (Lead + Actions + Objections) ───
-  const LeftColumn = (
+  // ─── LEAD CARD (protagonist, left column 55%) ───
+  const LeadColumn = (
     <div className="space-y-3 min-w-0">
-      {/* Context line */}
-      <div className="flex items-center gap-2 text-[10px] flex-wrap" style={{ color: "#6B7280" }}>
-        <span className={freshness.color}>{freshness.emoji} {freshness.label}</span>
-        <span>·</span>
-        <span className={isHotLead ? "text-yellow-400 font-semibold" : ""}>🎯 Score: {leadScore}</span>
-        {timeAgo && <><span>·</span><span>⏱ {timeAgo}</span></>}
-        {isHotLead && <span className="text-yellow-400 font-semibold">🔥 Quente</span>}
-      </div>
-
-      {/* Name */}
-      <div>
-        <h2 className="text-2xl font-black text-white flex items-center gap-2 leading-tight">
-          <User className="h-5 w-5 shrink-0" style={{ color: "#60A5FA" }} /> {lead.nome}
-        </h2>
-        <div className="flex items-center gap-2 mt-0.5" style={{ fontSize: "13px", color: "#94A3B8" }}>
-          <Building2 className="h-3.5 w-3.5" /> {lead.empreendimento}
-          {lead.campanha && <span>· {lead.campanha}</span>}
+      {/* Lead card with presence */}
+      <div className="rounded-xl p-5 space-y-4" style={{ background: "#1C2128", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+        {/* Badge row */}
+        <div className="flex items-center gap-2 text-xs flex-wrap" style={{ color: "#6B7280" }}>
+          <span className={freshness.color}>{freshness.emoji} {freshness.label}</span>
+          <span>·</span>
+          <span className={isHotLead ? "text-yellow-400 font-semibold" : ""}>🎯 Score: {leadScore}</span>
+          {timeAgo && <><span>·</span><span>⏱ {timeAgo}</span></>}
+          {isHotLead && <span className="text-yellow-400 font-semibold">🔥 Quente</span>}
         </div>
-      </div>
 
-      {/* Contact — compact single lines */}
-      <div className="space-y-1">
-        {lead.telefone && (
-          <div
-            className="flex items-center justify-between py-1.5 px-2 rounded cursor-pointer transition-colors hover:bg-white/5 active:scale-[0.98]"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-            onClick={() => copyToClipboard(lead.telefone!, "Telefone")}
-          >
-            <span className="flex items-center gap-2">
-              <Phone className="h-3.5 w-3.5" style={{ color: "#6B7280" }} />
-              <span className="font-mono font-bold text-white" style={{ fontSize: "16px" }}>{formatPhone(lead.telefone)}</span>
-            </span>
-            <Copy className="h-3 w-3" style={{ color: "#4B5563" }} />
-          </div>
-        )}
-        {lead.telefone2 && (
-          <div
-            className="flex items-center justify-between py-1 px-2 rounded cursor-pointer transition-colors hover:bg-white/5"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
-            onClick={() => copyToClipboard(lead.telefone2!, "Telefone 2")}
-          >
-            <span className="flex items-center gap-2">
-              <Phone className="h-3 w-3" style={{ color: "#4B5563" }} />
-              <span className="font-mono text-neutral-400" style={{ fontSize: "13px" }}>{formatPhone(lead.telefone2)}</span>
-            </span>
-            <Copy className="h-3 w-3" style={{ color: "#374151" }} />
-          </div>
-        )}
-        {lead.email && (
-          <div
-            className="flex items-center justify-between py-1 px-2 rounded cursor-pointer transition-colors hover:bg-white/5"
-            onClick={() => copyToClipboard(lead.email!, "E-mail")}
-          >
-            <span className="flex items-center gap-2">
-              <Mail className="h-3 w-3" style={{ color: "#4B5563" }} />
-              <span className="text-neutral-400 truncate" style={{ fontSize: "13px", maxWidth: 180 }}>{lead.email}</span>
-            </span>
-            <Copy className="h-3 w-3" style={{ color: "#374151" }} />
-          </div>
-        )}
-      </div>
-
-      {/* Call Timer inline */}
-      {callActive && (
-        <div className="flex items-center justify-between py-2 px-3 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-            </span>
-            <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Em ligação</span>
-            <span className="text-xl font-mono font-bold text-red-400">{formatTimer(callTimer)}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Button size="sm" variant="ghost" className="h-7 text-[11px] text-green-400 hover:bg-green-500/10" onClick={handleWhatsAppDuringCall}>
-              <MessageCircle className="h-3 w-3 mr-0.5" /> WhatsApp
-            </Button>
-            <Button size="sm" className="h-7 text-[11px] bg-red-600 hover:bg-red-700 text-white gap-1" onClick={handleFinalizarLigacao}>
-              <Phone className="h-3 w-3 rotate-[135deg]" /> Finalizar
-            </Button>
+        {/* Name — PROTAGONIST */}
+        <div>
+          <h2 className="text-3xl font-bold text-white leading-tight">{lead.nome}</h2>
+          <div className="flex items-center gap-2 mt-1" style={{ fontSize: "15px", color: "#94A3B8" }}>
+            <Building2 className="h-4 w-4" /> {lead.empreendimento}
+            {lead.campanha && <span>· {lead.campanha}</span>}
           </div>
         </div>
-      )}
 
-      {/* Action buttons */}
-      {!callActive && (
-        <div className="space-y-2">
+        {/* Contact — compact lines */}
+        <div className="space-y-1">
+          {lead.telefone && (
+            <div
+              className="flex items-center justify-between py-2 px-2 rounded-lg cursor-pointer transition-colors hover:bg-white/5 active:scale-[0.98]"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+              onClick={() => copyToClipboard(lead.telefone!, "Telefone")}
+            >
+              <span className="flex items-center gap-2">
+                <Phone className="h-4 w-4" style={{ color: "#6B7280" }} />
+                <span className="font-mono font-bold text-white text-lg">{formatPhone(lead.telefone)}</span>
+              </span>
+              <Copy className="h-3.5 w-3.5" style={{ color: "#4B5563" }} />
+            </div>
+          )}
+          {lead.telefone2 && (
+            <div
+              className="flex items-center justify-between py-1.5 px-2 rounded cursor-pointer transition-colors hover:bg-white/5"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+              onClick={() => copyToClipboard(lead.telefone2!, "Telefone 2")}
+            >
+              <span className="flex items-center gap-2">
+                <Phone className="h-3 w-3" style={{ color: "#4B5563" }} />
+                <span className="font-mono text-neutral-400" style={{ fontSize: "14px" }}>{formatPhone(lead.telefone2)}</span>
+              </span>
+              <Copy className="h-3 w-3" style={{ color: "#374151" }} />
+            </div>
+          )}
+          {lead.email && (
+            <div
+              className="flex items-center justify-between py-1.5 px-2 rounded cursor-pointer transition-colors hover:bg-white/5"
+              onClick={() => copyToClipboard(lead.email!, "E-mail")}
+            >
+              <span className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5" style={{ color: "#4B5563" }} />
+                <span className="text-neutral-400 truncate text-sm">{lead.email}</span>
+              </span>
+              <Copy className="h-3 w-3" style={{ color: "#374151" }} />
+            </div>
+          )}
+        </div>
+
+        {/* Call Timer inline */}
+        {callActive && (
+          <div className="flex items-center justify-between py-2 px-3 rounded-lg" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)" }}>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+              </span>
+              <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Em ligação</span>
+              <span className="text-xl font-mono font-bold text-red-400">{formatTimer(callTimer)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" variant="ghost" className="h-7 text-[11px] text-green-400 hover:bg-green-500/10" onClick={handleWhatsAppDuringCall}>
+                <MessageCircle className="h-3 w-3 mr-0.5" /> WhatsApp
+              </Button>
+              <Button size="sm" className="h-7 text-[11px] bg-red-600 hover:bg-red-700 text-white gap-1" onClick={handleOpenResultPopup}>
+                <Phone className="h-3 w-3 rotate-[135deg]" /> Finalizar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        {!callActive && (
+          <div className="space-y-2">
+            <button
+              className="arena-btn-call w-full gap-2 rounded-xl flex items-center justify-center"
+              style={{ height: "48px", fontSize: "16px", fontWeight: 700 }}
+              onClick={() => handleAction("ligacao")}
+              disabled={showModal || showResultPopup}
+            >
+              <Phone className="h-5 w-5" /> LIGAR AGORA
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                size="sm"
+                className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                style={{ height: "36px", fontSize: "13px" }}
+                onClick={() => setComunicacaoOpen(true)}
+                disabled={showModal || showResultPopup}
+              >
+                <MessageCircle className="h-3.5 w-3.5" /> Mensagem
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 text-neutral-400 hover:text-white hover:bg-white/5"
+                style={{ height: "36px", fontSize: "13px", border: "1px solid rgba(255,255,255,0.1)" }}
+                onClick={() => handleAction("email")}
+                disabled={!lead.email || showModal || showResultPopup}
+              >
+                <Mail className="h-3.5 w-3.5" /> E-mail
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Recent calls — collapsed, outside card */}
+      <Collapsible>
+        <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors w-full px-1">
+          <History className="h-3 w-3" />
+          <span>Últimas Ligações ({lead.tentativas_count})</span>
+          <ChevronDown className="h-3 w-3 ml-auto" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">
+          <RecentCallsHistory />
+          {lead.tentativas_count > 0 && <AttemptHistory leadId={lead.id} />}
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+
+  // ─── TOOLS COLUMN (right 45%): Scripts in tabs + Objections ───
+  const ToolsColumn = (
+    <div className="min-w-0 h-full flex flex-col gap-3">
+      {/* Script Tabs */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex gap-1 p-1 rounded-lg shrink-0" style={{ background: "#161B22" }}>
           <button
-            className="arena-btn-call w-full gap-2 rounded-xl flex items-center justify-center"
-            style={{ height: "48px", fontSize: "16px", fontWeight: 700 }}
-            onClick={() => handleAction("ligacao")}
-            disabled={showModal}
+            onClick={() => setScriptTab("ligacao")}
+            className="flex-1 py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+            style={{
+              background: scriptTab === "ligacao" ? "rgba(34,197,94,0.15)" : "transparent",
+              color: scriptTab === "ligacao" ? "#86EFAC" : "#6B7280",
+              border: scriptTab === "ligacao" ? "1px solid rgba(34,197,94,0.3)" : "1px solid transparent",
+            }}
           >
-            <Phone className="h-5 w-5" /> LIGAR AGORA
+            📋 Script Ligação
           </button>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              size="sm"
-              className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
-              style={{ height: "40px", fontSize: "13px" }}
-              onClick={() => setComunicacaoOpen(true)}
-              disabled={showModal}
-            >
-              <MessageCircle className="h-3.5 w-3.5" /> Mensagem
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="gap-1.5 text-neutral-400 hover:text-white hover:bg-white/5"
-              style={{ height: "40px", fontSize: "13px", border: "1px solid rgba(255,255,255,0.1)" }}
-              onClick={() => handleAction("email")}
-              disabled={!lead.email || showModal}
-            >
-              <Mail className="h-3.5 w-3.5" /> E-mail
-            </Button>
-          </div>
+          <button
+            onClick={() => setScriptTab("whatsapp")}
+            className="flex-1 py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+            style={{
+              background: scriptTab === "whatsapp" ? "rgba(34,197,94,0.15)" : "transparent",
+              color: scriptTab === "whatsapp" ? "#86EFAC" : "#6B7280",
+              border: scriptTab === "whatsapp" ? "1px solid rgba(34,197,94,0.3)" : "1px solid transparent",
+            }}
+          >
+            💬 Script WhatsApp
+          </button>
         </div>
-      )}
 
-      {/* ⚡ OBJEÇÕES RÁPIDAS */}
-      <div className="space-y-2 pt-1">
+        {/* Active script */}
+        <div
+          className="flex-1 min-h-0 rounded-xl overflow-y-auto mt-2"
+          style={{
+            background: scriptTab === "ligacao" ? "#1a2332" : "#0d1f0d",
+            borderLeft: scriptTab === "ligacao" ? "3px solid rgba(34,197,94,0.3)" : "3px solid rgba(34,197,94,0.5)",
+            scrollbarWidth: "thin",
+          }}
+        >
+          <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode scriptFilter={scriptTab} />
+        </div>
+
+        {/* Objection insert block */}
+        <AnimatePresence>
+          {objectionInsert && expandedObj !== null && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="mt-2 p-3 rounded-lg text-sm leading-relaxed shrink-0"
+              style={{ background: "rgba(245,158,11,0.08)", border: "2px solid rgba(245,158,11,0.25)", color: "#E5E7EB" }}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <Sparkles className="h-3.5 w-3.5" style={{ color: "#FBBF24" }} />
+                <span className="text-xs font-bold" style={{ color: "#FBBF24" }}>RESPOSTA P/ OBJEÇÃO: {objections[expandedObj].label}</span>
+              </div>
+              <p style={{ fontSize: "14px", lineHeight: 1.6 }}>{objectionInsert}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ⚡ OBJEÇÕES RÁPIDAS — always visible */}
+      <div className="shrink-0 space-y-2">
         <span style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>⚡ Objeções Rápidas</span>
         <div className="grid grid-cols-2 gap-1.5">
           {objections.map((obj, i) => (
@@ -596,159 +674,60 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 background: expandedObj === i ? "rgba(245,158,11,0.12)" : "#1C2128",
                 border: expandedObj === i ? "1px solid rgba(245,158,11,0.4)" : "1px dashed rgba(255,255,255,0.1)",
                 borderRadius: 10,
-                padding: "8px 10px",
+                padding: "10px 12px",
                 fontSize: 12,
                 fontWeight: 600,
                 color: expandedObj === i ? "#FCD34D" : "#D1D5DB",
+                height: 36,
+                display: "flex",
+                alignItems: "center",
               }}
             >
               {obj.emoji} {obj.label}
             </button>
           ))}
         </div>
-        <AnimatePresence>
-          {expandedObj !== null && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="p-2.5 rounded-lg text-xs leading-relaxed"
-              style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", color: "#E5E7EB" }}
+      </div>
+    </div>
+  );
+
+  // ─── RESULT POPUP ───
+  const ResultPopup = showResultPopup && (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md mx-4 rounded-xl p-6 space-y-5"
+        style={{ background: "#1C2128", border: "1px solid rgba(255,255,255,0.1)" }}
+      >
+        <div className="text-center space-y-1">
+          <h3 className="text-lg font-bold text-white">📊 Resultado da Ligação</h3>
+          <p className="text-sm" style={{ color: "#94A3B8" }}>Lead: {lead.nome} · {lead.empreendimento}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { key: "com_interesse", label: "✅ Aproveitado", bg: "rgba(34,197,94,0.15)", border: "rgba(34,197,94,0.4)", color: "#86EFAC", hoverBg: "rgba(34,197,94,0.3)" },
+            { key: "agendar", label: "📅 Agendar Visita", bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", color: "#FCD34D", hoverBg: "rgba(245,158,11,0.3)" },
+            { key: "nao_atendeu", label: "🔴 Não Atendeu", bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)", color: "#FCA5A5", hoverBg: "rgba(239,68,68,0.3)" },
+            { key: "sem_interesse", label: "⏭️ Sem Interesse", bg: "rgba(107,114,128,0.15)", border: "rgba(107,114,128,0.4)", color: "#9CA3AF", hoverBg: "rgba(107,114,128,0.3)" },
+          ].map(r => (
+            <button
+              key={r.key}
+              onClick={() => handlePopupResult(r.key)}
+              className="flex items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                height: 56,
+                background: selectedResult === r.key ? r.hoverBg : r.bg,
+                border: selectedResult === r.key ? `2px solid ${r.border}` : `1px solid ${r.border}`,
+                color: r.color,
+              }}
             >
-              💡 <strong style={{ color: "#FCD34D" }}>Resposta sugerida:</strong> {objections[expandedObj].answer}
-              <div className="flex items-center gap-2 mt-2">
-                <button onClick={() => { navigator.clipboard.writeText(objections[expandedObj].answer); toast.success("Copiada!"); }} className="text-[10px] px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.06)", color: "#9CA3AF" }}>
-                  📋 Copiar
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Recent calls — collapsed */}
-      <Collapsible>
-        <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors w-full">
-          <History className="h-3 w-3" />
-          <span>Últimas Ligações ({lead.tentativas_count})</span>
-          <ChevronDown className="h-3 w-3 ml-auto" />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pt-2">
-          <RecentCallsHistory />
-          {lead.tentativas_count > 0 && <AttemptHistory leadId={lead.id} />}
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
-  );
-
-  // ─── COLUMN: CENTER (Script Ligação ONLY) ───
-  const CenterColumn = (
-    <div className="min-w-0 h-full flex flex-col">
-      <div
-        className="rounded-xl overflow-hidden flex-1 flex flex-col"
-        style={{ background: "#1a2332", borderLeft: "3px solid rgba(34,197,94,0.3)" }}
-      >
-        <div className="flex-1 overflow-y-auto">
-          <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode scriptFilter="ligacao" />
-        </div>
-      </div>
-
-      {/* Objection insert block */}
-      <AnimatePresence>
-        {objectionInsert && expandedObj !== null && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="mt-2 p-3 rounded-lg text-sm leading-relaxed shrink-0"
-            style={{ background: "rgba(245,158,11,0.08)", border: "2px solid rgba(245,158,11,0.25)", color: "#E5E7EB" }}
-          >
-            <div className="flex items-center gap-1.5 mb-1">
-              <Sparkles className="h-3.5 w-3.5" style={{ color: "#FBBF24" }} />
-              <span className="text-xs font-bold" style={{ color: "#FBBF24" }}>RESPOSTA P/ OBJEÇÃO: {objections[expandedObj].label}</span>
-            </div>
-            <p style={{ fontSize: "14px", lineHeight: 1.6 }}>{objectionInsert}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
-  // ─── COLUMN: RIGHT (WhatsApp Script + Result) ───
-  const RightColumn = (
-    <div className="min-w-0 h-full flex flex-col gap-3">
-      {/* WhatsApp Script — compact, ONLY whatsapp */}
-      <div
-        className="rounded-xl overflow-hidden shrink-0"
-        style={{ background: "#0d1f0d", borderLeft: "3px solid rgba(34,197,94,0.5)", maxHeight: "40%" }}
-      >
-        <div className="overflow-y-auto" style={{ maxHeight: "100%" }}>
-          <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode scriptFilter="whatsapp" />
-        </div>
-      </div>
-
-      {/* Separator */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} className="shrink-0" />
-
-      {/* 📊 RESULTADO DA LIGAÇÃO */}
-      <div className="space-y-2 flex-1 min-h-0">
-        <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>📊 Resultado da Ligação</span>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => handleInlineResult("com_interesse")}
-            className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)", color: "#86EFAC" }}
-          >
-            ✅ Aproveitado
-          </button>
-          <button
-            onClick={() => {
-              if (!actionTaken) {
-                setActionTaken("ligacao");
-                setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
-              }
-              setShowModal(true);
-            }}
-            className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.35)", color: "#FCD34D" }}
-          >
-            📅 Agendar Visita
-          </button>
-          <button
-            onClick={async () => {
-              if (lead && user) {
-                setSkipCount(prev => prev + 1);
-                try {
-                  await supabase.from("oa_events" as any).insert({
-                    event_type: "lead_skipped",
-                    user_id: user.id,
-                    lead_id: lead.id,
-                    lista_id: lista.id,
-                    session_id: sessionId,
-                    metadata: { skip_number: skipCount + 1 },
-                  });
-                } catch {}
-                await unlockLead(lead.id);
-              }
-              await fetchNext();
-              toast("Lead pulado — próximo da fila", { duration: 1500 });
-            }}
-            className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ background: "rgba(107,114,128,0.15)", border: "1px solid rgba(107,114,128,0.35)", color: "#9CA3AF" }}
-            disabled={callActive}
-          >
-            ⏭️ Pular
-          </button>
-          <button
-            onClick={() => handleInlineResult("nao_atendeu")}
-            className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)", color: "#FCA5A5" }}
-          >
-            🔴 Não Atendeu
-          </button>
+              {r.label}
+            </button>
+          ))}
         </div>
 
-        {/* Observação inline */}
         <Textarea
           placeholder="📝 Observação (opcional)..."
           value={inlineObs}
@@ -757,7 +736,27 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           className="resize-none text-xs"
           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#E2E8F0", borderRadius: 10 }}
         />
-      </div>
+
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            className="flex-1 text-neutral-400 hover:text-white hover:bg-white/5"
+            style={{ height: 44, border: "1px solid rgba(255,255,255,0.08)" }}
+            onClick={() => { setShowResultPopup(false); setSelectedResult(null); }}
+          >
+            Cancelar
+          </Button>
+          {selectedResult && (
+            <Button
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              style={{ height: 44 }}
+              onClick={handlePopupConfirm}
+            >
+              Confirmar e Próximo →
+            </Button>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 
@@ -803,59 +802,54 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       </AnimatePresence>
 
       {/* Subheader — clean */}
-      <div className="flex items-center justify-between px-1" style={{ fontSize: "13px" }}>
+      <div className="flex items-center justify-between px-1 py-1" style={{ fontSize: "13px" }}>
         <span className="text-neutral-500">
           Lead <strong className="text-white">#{sessionLeadsServed + 1}</strong> · ROUND {sessionLeadsServed + 1} · {lead.empreendimento}
         </span>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-emerald-400/70">🔒 Reservado p/ você</span>
+          <span className="text-[10px] text-emerald-400/70">🔒 Reservado</span>
           <span className="text-[10px] text-neutral-600 flex items-center gap-1"><Clock className="h-3 w-3" />{formatSessionTime(sessionSeconds)}</span>
           {streak >= 2 && (
             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>
               🔥 {streak}x
             </span>
           )}
-          <ScoringLegend />
+          {/* Skip button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 gap-1 text-neutral-500 hover:text-white hover:bg-white/5 text-[11px]"
+            disabled={callActive}
+            onClick={async () => {
+              if (lead && user) {
+                setSkipCount(prev => prev + 1);
+                try {
+                  await supabase.from("oa_events" as any).insert({
+                    event_type: "lead_skipped",
+                    user_id: user.id,
+                    lead_id: lead.id,
+                    lista_id: lista.id,
+                    session_id: sessionId,
+                    metadata: { skip_number: skipCount + 1 },
+                  });
+                } catch {}
+                await unlockLead(lead.id);
+              }
+              await fetchNext();
+              toast("Lead pulado — próximo da fila", { duration: 1500 });
+            }}
+          >
+            <SkipForward className="h-3 w-3" /> Pular
+          </Button>
+          {/* Finalizar — opens result popup */}
           <Button
             size="sm"
             variant="ghost"
             className="h-6 gap-1 text-red-400 hover:bg-red-500/10 text-[11px]"
-            onClick={async () => {
-              if (!user) return;
-              setFinalizando(true);
-              try {
-                const { data, error } = await supabase.rpc("finalizar_trabalho_corretor", { p_user_id: user.id });
-                if (error) throw error;
-                const result = data as any;
-                if (result?.success) {
-                  const atenderam = progress.aproveitados + Math.round(progress.tentativas * 0.25);
-                  const snapshot: SessionMetrics = {
-                    total_tentativas: progress.tentativas,
-                    total_atenderam: Math.min(atenderam, progress.tentativas),
-                    total_aproveitados: progress.aproveitados,
-                    ligacoes: progress.ligacoes,
-                    whatsapps: progress.whatsapps,
-                    emails: progress.emails,
-                    pontos: progress.pontos,
-                    duracao_segundos: sessionSeconds,
-                    empreendimento: lista.empreendimento,
-                    lista_id: lista.id,
-                    session_start: sessionStart,
-                  };
-                  setSessionMetricsSnapshot(snapshot);
-                  setShowCoachingModal(true);
-                } else {
-                  toast.error(result?.message || "Erro ao finalizar.");
-                }
-              } catch (err: any) {
-                toast.error("Erro ao finalizar: " + err.message);
-              } finally {
-                setFinalizando(false);
-              }
-            }}
+            onClick={handleOpenResultPopup}
             disabled={finalizando || progress.tentativas === 0}
           >
-            <LogOut className="h-3 w-3" /> {finalizando ? "..." : "Finalizar"}
+            <LogOut className="h-3 w-3" /> Finalizar
           </Button>
         </div>
       </div>
@@ -900,21 +894,21 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.2 }}
             >
-              {mobileTab === "lead" && LeftColumn}
-              {mobileTab === "script" && CenterColumn}
-              {mobileTab === "whatsapp" && RightColumn}
+              {mobileTab === "lead" && LeadColumn}
+              {mobileTab === "script" && ToolsColumn}
+              {mobileTab === "whatsapp" && ToolsColumn}
             </motion.div>
           </AnimatePresence>
         </div>
       ) : (
-        /* ═══ DESKTOP: 3-column layout (25|42|33) — viewport height ═══ */
+        /* ═══ DESKTOP: 2-column layout (55|45) — viewport height ═══ */
         <div
-          className={`grid grid-cols-[25fr_42fr_33fr] gap-3 ${arenaShake ? "arena-shake" : ""}`}
-          style={{ height: "calc(100vh - 180px)", overflow: "hidden" }}
+          className={`grid grid-cols-[55fr_45fr] gap-4 ${arenaShake ? "arena-shake" : ""}`}
+          style={{ height: "calc(100vh - 200px)", overflow: "hidden" }}
         >
           <AnimatePresence mode="wait">
             <motion.div
-              key={lead.id + "-left"}
+              key={lead.id + "-lead"}
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -40 }}
@@ -922,19 +916,19 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               className="overflow-y-auto h-full"
               style={{ scrollbarWidth: "thin" }}
             >
-              {LeftColumn}
+              {LeadColumn}
             </motion.div>
           </AnimatePresence>
-          <div className="overflow-y-auto h-full" style={{ scrollbarWidth: "thin" }}>
-            {CenterColumn}
-          </div>
-          <div className="overflow-y-auto h-full" style={{ scrollbarWidth: "thin" }}>
-            {RightColumn}
+          <div className="h-full" style={{ scrollbarWidth: "thin" }}>
+            {ToolsColumn}
           </div>
         </div>
       )}
 
-      {/* Attempt Modal */}
+      {/* Result Popup */}
+      {ResultPopup}
+
+      {/* Attempt Modal (for Aproveitado / Agendar Visita details) */}
       {showModal && lead && (
         <AttemptModal
           open={showModal}
