@@ -51,6 +51,26 @@ function useArenaMode() {
   return { isFullscreen, isSession };
 }
 
+/** Auto-collapse sidebar when arena session is active */
+function ArenaAutoCollapse({ isSession }: { isSession: boolean }) {
+  const { setOpen, open } = useSidebar();
+  const prevOpenRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (isSession) {
+      // Store previous state and collapse
+      prevOpenRef.current = open;
+      setOpen(false);
+    } else if (prevOpenRef.current !== null) {
+      // Restore previous state
+      setOpen(prevOpenRef.current);
+      prevOpenRef.current = null;
+    }
+  }, [isSession]); // intentionally not including open/setOpen to avoid loops
+
+  return null;
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const { isAdmin, isGestor } = useUserRole();
