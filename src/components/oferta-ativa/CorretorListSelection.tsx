@@ -158,9 +158,10 @@ function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaSt
       <button
         className={`w-full h-9 rounded-lg text-sm font-semibold transition-colors ${
           hasLeads
-            ? "bg-green-600 hover:bg-green-500 text-white"
-            : "bg-white/5 text-neutral-500 cursor-not-allowed"
+            ? "arena-btn-call"
+            : "text-neutral-500 cursor-not-allowed"
         }`}
+        style={hasLeads ? undefined : { background: "rgba(255,255,255,0.05)" }}
         disabled={!hasLeads}
       >
         <span className="flex items-center justify-center gap-1.5">
