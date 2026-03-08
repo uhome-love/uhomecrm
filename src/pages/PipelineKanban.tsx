@@ -32,7 +32,7 @@ const PRIORIDADES_KEY = "uhome-prioridades-open";
 
 export default function PipelineKanban() {
   const pipeline = usePipeline();
-  const { isGestor, isAdmin } = useUserRole();
+  const { isGestor, isAdmin, isCorretor } = useUserRole();
   const { user: authUser } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
@@ -41,6 +41,7 @@ export default function PipelineKanban() {
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
+  const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [prioridadesOpen, setPrioridadesOpen] = useState(() => {
     try { return localStorage.getItem(PRIORIDADES_KEY) !== "false"; } catch { return true; }
   });
@@ -76,9 +77,17 @@ export default function PipelineKanban() {
 
   const canAdd = isGestor || isAdmin;
 
-  const filteredLeads = useMemo(() =>
-    applyFilters(pipeline.leads, filters, pipeline.stages),
-    [pipeline.leads, filters, pipeline.stages]
+  const filteredLeads = useMemo(() => {
+    let result = applyFilters(pipeline.leads, filters, pipeline.stages);
+    if (filaCeoFilter) {
+      result = result.filter(l => !l.corretor_id);
+    }
+    return result;
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter]);
+
+  const filaCeoCount = useMemo(() =>
+    pipeline.leads.filter(l => !l.corretor_id).length,
+    [pipeline.leads]
   );
 
   const totalVGV = useMemo(() =>
