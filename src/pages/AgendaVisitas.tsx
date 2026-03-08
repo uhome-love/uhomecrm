@@ -7,18 +7,28 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, List, Users, Plus, CalendarIcon, X, ArrowUpDown, Search, AlertTriangle, CheckCircle2, XCircle, Clock, RefreshCw, TrendingUp } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { CalendarDays, List, Users, Plus, CalendarIcon, X, ArrowUpDown, Search, AlertTriangle, CheckCircle2, XCircle, Clock, RefreshCw, TrendingUp, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import { getTeamBadgeStyle } from "@/components/visitas/VisitaRow";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import VisitasList from "@/components/visitas/VisitasList";
 import VisitasByCorretor from "@/components/visitas/VisitasByCorretor";
 import VisitasCalendar from "@/components/visitas/VisitasCalendar";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+
+const FIXED_TEAMS = [
+  { key: "gabrielle", label: "Gabrielle", emoji: "🟢", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { key: "bruno", label: "Bruno", emoji: "🔵", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  { key: "gabriel", label: "Gabriel", emoji: "🟣", className: "bg-purple-50 text-purple-700 border-purple-200" },
+];
 
 
 // ─── Day Summary Card ───
@@ -32,20 +42,29 @@ function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTea
   const total = todayVisitas.length;
   const taxa = total > 0 ? Math.round((realizadas / total) * 100) : 0;
 
-  // Team breakdown
+  // Team breakdown — always show all 3 fixed teams
   const teamStats = useMemo(() => {
     if (!showTeamBreakdown) return [];
     const map = new Map<string, { total: number; realizadas: number }>();
+    // Initialize all fixed teams with 0
+    FIXED_TEAMS.forEach(t => map.set(t.key, { total: 0, realizadas: 0 }));
     for (const v of todayVisitas) {
-      const team = v.equipe || "Sem equipe";
-      if (!map.has(team)) map.set(team, { total: 0, realizadas: 0 });
-      const s = map.get(team)!;
-      s.total++;
-      if (v.status === "realizada") s.realizadas++;
+      const equipe = (v.equipe || "").toLowerCase().replace(/^equipe\s+/i, "").trim();
+      // Match to fixed team
+      const teamKey = FIXED_TEAMS.find(t => equipe.includes(t.key))?.key;
+      if (teamKey) {
+        const s = map.get(teamKey)!;
+        s.total++;
+        if (v.status === "realizada") s.realizadas++;
+      }
     }
-    return Array.from(map.entries())
-      .map(([name, stats]) => ({ name, ...stats }))
-      .sort((a, b) => b.total - a.total);
+    return FIXED_TEAMS.map(t => ({
+      name: t.key,
+      label: t.label,
+      emoji: t.emoji,
+      className: t.className,
+      ...map.get(t.key)!,
+    }));
   }, [todayVisitas, showTeamBreakdown]);
 
   if (total === 0) return null;
@@ -89,26 +108,19 @@ function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTea
       {showTeamBreakdown && teamStats.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
           <span className="text-[11px] font-semibold text-muted-foreground">Por equipe</span>
-          {teamStats.map(t => {
-            const style = getTeamBadgeStyle(t.name);
-            return (
-              <div key={t.name} className="flex items-center gap-2">
-                {style ? (
-                  <span className={cn("text-[11px] px-1.5 py-0 rounded-full border whitespace-nowrap", style.className)}>
-                    {style.emoji} {style.label}
-                  </span>
-                ) : (
-                  <span className="text-[11px] text-muted-foreground">{t.name}</span>
-                )}
-                <span className="text-[11px] text-foreground font-semibold ml-auto">
-                  {t.total} visita{t.total !== 1 ? "s" : ""} hoje
-                </span>
-                <span className="text-[11px] text-green-600 font-semibold">
-                  {t.realizadas} realizada{t.realizadas !== 1 ? "s" : ""}
-                </span>
-              </div>
-            );
-          })}
+          {teamStats.map(t => (
+            <div key={t.name} className="flex items-center gap-2">
+              <span className={cn("text-[11px] px-1.5 py-0 rounded-full border whitespace-nowrap", t.className)}>
+                {t.emoji} {t.label}
+              </span>
+              <span className="text-[11px] text-foreground font-semibold ml-auto">
+                {t.total} visita{t.total !== 1 ? "s" : ""} hoje
+              </span>
+              <span className="text-[11px] text-green-600 font-semibold">
+                {t.realizadas} realizada{t.realizadas !== 1 ? "s" : ""}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -141,6 +153,9 @@ export default function AgendaVisitas() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [resultadoVisita, setResultadoVisita] = useState<Visita | null>(null);
   const [pendingOnly, setPendingOnly] = useState(false);
+  const [showCobranca, setShowCobranca] = useState(false);
+  const [cobrancaMsg, setCobrancaMsg] = useState("");
+  const [sendingCobranca, setSendingCobranca] = useState(false);
 
   const { visitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
 
@@ -175,13 +190,64 @@ export default function AgendaVisitas() {
     };
   }, [visitas]);
 
-  const pendingCount = useMemo(() => {
+  const pendingVisitas = useMemo(() => {
     const today = startOfDay(new Date());
     return visitas.filter(v => {
       const d = new Date(v.data_visita + "T12:00:00");
       return isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
-    }).length;
+    });
   }, [visitas]);
+
+  const pendingCount = pendingVisitas.length;
+
+  // Group pending visitas by corretor for cobrança
+  const pendingByCorretor = useMemo(() => {
+    const map = new Map<string, { nome: string; count: number; telefone?: string }>();
+    for (const v of pendingVisitas) {
+      const id = v.corretor_id || "unknown";
+      if (!map.has(id)) map.set(id, { nome: v.corretor_nome || "Corretor", count: 0 });
+      map.get(id)!.count++;
+    }
+    return Array.from(map.values());
+  }, [pendingVisitas]);
+
+  const openCobranca = useCallback(() => {
+    const defaultMsg = (nome: string, count: number) =>
+      `Oi ${nome.split(" ")[0]}! 👋 Você tem ${count} visita${count > 1 ? "s" : ""} sem status atualizado no UhomeSales. Por favor, acesse o sistema e atualize: Realizada, No Show ou Reagendada. Obrigado! 🏠`;
+    setCobrancaMsg(defaultMsg("[nome]", 0));
+    setShowCobranca(true);
+  }, []);
+
+  const sendCobranca = useCallback(async () => {
+    setSendingCobranca(true);
+    try {
+      const corretorIds = [...new Set(pendingVisitas.map(v => v.corretor_id).filter(Boolean))] as string[];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, nome, telefone")
+        .in("user_id", corretorIds);
+
+      let sent = 0;
+      for (const p of profiles || []) {
+        if (!p.telefone) continue;
+        const count = pendingVisitas.filter(v => v.corretor_id === p.user_id).length;
+        const msg = cobrancaMsg
+          .replace("[nome]", p.nome?.split(" ")[0] || "")
+          .replace("[X]", String(count));
+
+        await supabase.functions.invoke("whatsapp-notificacao", {
+          body: { telefone: p.telefone, mensagem: msg, tipo: "cobranca_visita" },
+        });
+        sent++;
+      }
+      toast.success(`✅ Cobrança enviada para ${sent} corretor${sent !== 1 ? "es" : ""}`);
+      setShowCobranca(false);
+    } catch (e) {
+      toast.error("Erro ao enviar cobranças");
+    } finally {
+      setSendingCobranca(false);
+    }
+  }, [pendingVisitas, cobrancaMsg]);
 
   const filtered = useMemo(() => {
     let list = [...visitas];
@@ -259,13 +325,12 @@ export default function AgendaVisitas() {
 
       {/* ─── PENDING ALERT ─── */}
       {pendingCount > 0 && (
-        <button
-          onClick={() => { setPendingOnly(!pendingOnly); setStatusFilter("all"); }}
+        <div
           className={cn(
             "w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all",
             pendingOnly
               ? "bg-red-100 border-red-400 border-l-4"
-              : "bg-red-50 border-red-300 border-l-4 border-l-red-500 hover:bg-red-100"
+              : "bg-red-50 border-red-300 border-l-4 border-l-red-500"
           )}
         >
           <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
@@ -274,10 +339,23 @@ export default function AgendaVisitas() {
               ⚠️ {pendingCount} visita{pendingCount > 1 ? "s" : ""} sem atualização de status
             </span>
           </div>
-          <span className="text-xs font-semibold text-red-600 underline shrink-0">
-            {pendingOnly ? "Mostrar todas ←" : "Resolver agora →"}
-          </span>
-        </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {isAdmin && (
+              <button
+                onClick={(e) => { e.stopPropagation(); openCobranca(); }}
+                className="text-xs font-semibold text-red-700 bg-red-200 hover:bg-red-300 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1"
+              >
+                <MessageCircle className="h-3.5 w-3.5" /> Cobrar todos
+              </button>
+            )}
+            <button
+              onClick={() => { setPendingOnly(!pendingOnly); setStatusFilter("all"); }}
+              className="text-xs font-semibold text-red-600 underline"
+            >
+              {pendingOnly ? "Mostrar todas ←" : "Resolver agora →"}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ─── DAY SUMMARY ─── */}
@@ -447,6 +525,49 @@ export default function AgendaVisitas() {
           nomeCliente={resultadoVisita.nome_cliente}
         />
       )}
+
+      {/* ─── COBRANÇA DIALOG ─── */}
+      <Dialog open={showCobranca} onOpenChange={setShowCobranca}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-red-600" /> Cobrar atualização de visitas
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Enviar cobrança para <strong>{pendingByCorretor.length}</strong> corretor{pendingByCorretor.length !== 1 ? "es" : ""}:
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {pendingByCorretor.map((c, i) => (
+                  <Badge key={i} variant="outline" className="text-xs">
+                    {c.nome} ({c.count})
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Mensagem (editável)</label>
+              <Textarea
+                value={cobrancaMsg}
+                onChange={e => setCobrancaMsg(e.target.value)}
+                rows={5}
+                className="mt-1 text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Use [nome] para nome do corretor e [X] para qtd de visitas
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCobranca(false)}>Cancelar</Button>
+            <Button onClick={sendCobranca} disabled={sendingCobranca} className="gap-1.5 bg-red-600 hover:bg-red-700 text-white">
+              {sendingCobranca ? "Enviando..." : `📲 Enviar para ${pendingByCorretor.length}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
