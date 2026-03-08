@@ -360,9 +360,9 @@ function RankingTable({ ranking, user, streaks, getMedalIcon, getInitials, darkM
               <td className="py-2.5 px-3 text-center">
                 {streak >= 2 ? <span className="text-orange-500 font-bold">{streak}d</span> : <span style={darkMode ? { color: "#374151" } : undefined} className={!darkMode ? "text-muted-foreground" : ""}>—</span>}
               </td>
-              <td className="py-2.5 px-3 text-center" style={darkMode ? { color: "#4B5563" } : undefined} className={!darkMode ? "py-2.5 px-3 text-center text-muted-foreground" : "py-2.5 px-3 text-center"}>{r.ligacoes}</td>
-              <td className="py-2.5 px-3 text-center" style={darkMode ? { color: "#4B5563" } : undefined} className={!darkMode ? "py-2.5 px-3 text-center text-muted-foreground" : "py-2.5 px-3 text-center"}>{r.whatsapps}</td>
-              <td className="py-2.5 px-3 text-center" style={darkMode ? { color: "#4B5563" } : undefined} className={!darkMode ? "py-2.5 px-3 text-center text-muted-foreground" : "py-2.5 px-3 text-center"}>{r.emails}</td>
+              <td className={`py-2.5 px-3 text-center ${!darkMode ? "text-muted-foreground" : ""}`} style={darkMode ? { color: "#4B5563" } : undefined}>{r.ligacoes}</td>
+              <td className={`py-2.5 px-3 text-center ${!darkMode ? "text-muted-foreground" : ""}`} style={darkMode ? { color: "#4B5563" } : undefined}>{r.whatsapps}</td>
+              <td className={`py-2.5 px-3 text-center ${!darkMode ? "text-muted-foreground" : ""}`} style={darkMode ? { color: "#4B5563" } : undefined}>{r.emails}</td>
             </tr>
           );
         })}
