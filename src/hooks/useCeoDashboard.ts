@@ -237,8 +237,8 @@ export function useCeoDashboard(period: DashPeriod) {
       corrMap.set(n.corretor_id, (corrMap.get(n.corretor_id) || 0) + (n.vgv_estimado || 0));
     }
     const corrIds = [...corrMap.keys()];
-    const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("id, nome").in("id", corrIds) : { data: [] };
-    const profMap = new Map(profs?.map(p => [p.id, p.nome]) || []);
+    const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("id, nome").in("id", corrIds) : { data: [] as { id: string; nome: string }[] };
+    const profMap = new Map((profs || []).map(p => [p.id, p.nome] as [string, string]));
     setTopCorretoresVgv(
       Array.from(corrMap.entries()).map(([id, vgv]) => ({ nome: profMap.get(id) || "Corretor", vgv }))
         .sort((a, b) => b.vgv - a.vgv).slice(0, 5)
