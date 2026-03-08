@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Phone, Lock, Kanban, CalendarDays, Bot, FileEdit, BarChart3, AlertCircle, Zap, LogOut, Clock, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Trophy } from "lucide-react";
 import { differenceInHours } from "date-fns";
+import { getDynamicGreeting, formatStreak } from "@/lib/celebrations";
+import MetaCelebration from "@/components/corretor/MetaCelebration";
+import ConfettiBurst from "@/components/corretor/ConfettiToast";
 
 import {
   AlertDialog,
