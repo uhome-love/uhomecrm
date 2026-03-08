@@ -2609,6 +2609,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pagadoria_config: {
+        Row: {
+          config: Json
+          id: string
+          tipo: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          tipo: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          id?: string
+          tipo?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       pagadoria_credores: {
         Row: {
           created_at: string
