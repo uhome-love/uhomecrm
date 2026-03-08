@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { format, isToday, isTomorrow, isThisWeek, isBefore, startOfDay } from "date-fns";
+import { format, isToday, isTomorrow, isBefore, startOfDay, startOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -7,23 +7,180 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, List, Columns3, Plus, CalendarIcon, X, ArrowUpDown, Search, AlertTriangle } from "lucide-react";
+import { CalendarDays, List, Users, Plus, CalendarIcon, X, ArrowUpDown, Search, AlertTriangle, CheckCircle2, XCircle, Clock, RefreshCw, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import VisitasList from "@/components/visitas/VisitasList";
 import VisitasCalendar from "@/components/visitas/VisitasCalendar";
-import VisitasKanban from "@/components/visitas/VisitasKanban";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
 
+// ─── By-Corretor View ───
+function VisitasByCorretor({
+  visitas,
+  onUpdateStatus,
+}: {
+  visitas: Visita[];
+  onUpdateStatus: (id: string, status: VisitaStatus) => void;
+}) {
+  const today = startOfDay(new Date());
+  const weekEnd = addDays(startOfWeek(today, { weekStartsOn: 1 }), 6);
+
+  const corretorMap = useMemo(() => {
+    const map = new Map<string, { nome: string; visitas: Visita[] }>();
+    for (const v of visitas) {
+      const key = v.corretor_id;
+      if (!map.has(key)) map.set(key, { nome: v.corretor_nome || "Sem corretor", visitas: [] });
+      map.get(key)!.visitas.push(v);
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      const aToday = a.visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00"))).length;
+      const bToday = b.visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00"))).length;
+      return bToday - aToday;
+    });
+  }, [visitas]);
+
+  const getCorretorStatus = (vs: Visita[]) => {
+    const hasToday = vs.some(v => isToday(new Date(v.data_visita + "T12:00:00")));
+    if (hasToday) return { dot: "bg-green-500", label: "Visita hoje" };
+    const hasWeek = vs.some(v => {
+      const d = new Date(v.data_visita + "T12:00:00");
+      return !isBefore(d, today) && !isBefore(weekEnd, d);
+    });
+    if (hasWeek) return { dot: "bg-amber-400", label: "Visitas na semana" };
+    return { dot: "bg-gray-400", label: "Sem visitas agendadas" };
+  };
+
+  const STATUS_EMOJI: Record<string, string> = {
+    marcada: "🟡", confirmada: "🔵", realizada: "✅", no_show: "❌", reagendada: "🔄", cancelada: "⚫",
+  };
+
+  if (corretorMap.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-8">Nenhuma visita encontrada.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {corretorMap.map((c) => {
+        const todayVisitas = c.visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00")));
+        const status = getCorretorStatus(c.visitas);
+        return (
+          <div key={c.nome} className="rounded-xl border bg-card overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b">
+              <div className="flex items-center gap-2">
+                <div className={cn("h-2.5 w-2.5 rounded-full", status.dot)} />
+                <span className="text-sm font-bold text-foreground">{c.nome}</span>
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">
+                {todayVisitas.length > 0 ? `${todayVisitas.length} visita${todayVisitas.length > 1 ? "s" : ""} hoje` : `${c.visitas.length} visita${c.visitas.length > 1 ? "s" : ""}`}
+              </span>
+            </div>
+            <div className="divide-y divide-border/50">
+              {c.visitas.map(v => {
+                const d = new Date(v.data_visita + "T12:00:00");
+                const isPastPending = isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
+                return (
+                  <div key={v.id} className={cn("flex items-center gap-3 px-4 py-2.5 group hover:bg-muted/30 transition-colors", isPastPending && "bg-red-50/50")}>
+                    <span className="text-xs font-mono font-semibold text-muted-foreground w-12 shrink-0">
+                      {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-semibold text-foreground">{v.nome_cliente}</span>
+                      {v.empreendimento && <span className="text-xs text-muted-foreground"> — {v.empreendimento}</span>}
+                      {!isToday(d) && (
+                        <span className="text-[10px] text-muted-foreground ml-2">
+                          {format(d, "dd/MM", { locale: ptBR })}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm shrink-0">{STATUS_EMOJI[v.status] || "🟡"}</span>
+                    {/* Quick inline actions on hover */}
+                    <div className="hidden group-hover:flex items-center gap-1 shrink-0">
+                      {(v.status === "marcada" || v.status === "confirmada") && (
+                        <>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5 text-green-600" onClick={() => onUpdateStatus(v.id, "realizada")}>✅</Button>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5 text-red-600" onClick={() => onUpdateStatus(v.id, "no_show")}>❌</Button>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] px-1.5 text-purple-600" onClick={() => onUpdateStatus(v.id, "reagendada")}>🔄</Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Day Summary Card ───
+function DaySummary({ visitas }: { visitas: Visita[] }) {
+  const today = startOfDay(new Date());
+  const todayVisitas = visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00")));
+  const realizadas = todayVisitas.filter(v => v.status === "realizada").length;
+  const noShows = todayVisitas.filter(v => v.status === "no_show").length;
+  const reagendadas = todayVisitas.filter(v => v.status === "reagendada").length;
+  const pendentes = todayVisitas.filter(v => v.status === "marcada" || v.status === "confirmada").length;
+  const total = todayVisitas.length;
+  const taxa = total > 0 ? Math.round((realizadas / total) * 100) : 0;
+
+  if (total === 0) return null;
+
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <CalendarDays className="h-4 w-4 text-primary" />
+        <span className="text-sm font-bold text-foreground">Placar do Dia</span>
+      </div>
+      <div className="grid grid-cols-5 gap-3 mb-3">
+        <div className="text-center">
+          <p className="text-lg font-black text-foreground">{total}</p>
+          <p className="text-[10px] text-muted-foreground">📅 Hoje</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-black text-green-600">{realizadas}</p>
+          <p className="text-[10px] text-muted-foreground">✅ Realizadas</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-black text-red-600">{noShows}</p>
+          <p className="text-[10px] text-muted-foreground">❌ No Show</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-black text-purple-600">{reagendadas}</p>
+          <p className="text-[10px] text-muted-foreground">🔄 Reagend.</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-black text-amber-600">{pendentes}</p>
+          <p className="text-[10px] text-muted-foreground">⏳ Pendentes</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Progress value={taxa} className="flex-1 h-2" />
+        <span className={cn("text-xs font-bold", taxa >= 70 ? "text-green-600" : taxa >= 40 ? "text-amber-600" : "text-red-600")}>
+          {taxa}% realização
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── STATUS chip colors ───
 const STATUS_CHIP_COLORS: Record<string, string> = {
-  marcada: "bg-blue-500 text-white",
-  confirmada: "bg-emerald-500 text-white",
-  realizada: "bg-muted text-muted-foreground",
-  reagendada: "bg-amber-500 text-white",
-  cancelada: "bg-destructive/80 text-white",
-  no_show: "bg-destructive text-white",
+  marcada: "bg-amber-100 text-amber-700 border-amber-300",
+  confirmada: "bg-blue-100 text-blue-700 border-blue-300",
+  realizada: "bg-green-100 text-green-700 border-green-300",
+  reagendada: "bg-purple-100 text-purple-700 border-purple-300",
+  cancelada: "bg-gray-100 text-gray-600 border-gray-300",
+  no_show: "bg-red-100 text-red-700 border-red-300",
+};
+
+const STATUS_EMOJIS: Record<string, string> = {
+  marcada: "🟡", confirmada: "🔵", realizada: "✅", reagendada: "🔄", cancelada: "⚫", no_show: "❌",
 };
 
 export default function AgendaVisitas() {
@@ -37,6 +194,7 @@ export default function AgendaVisitas() {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [resultadoVisita, setResultadoVisita] = useState<Visita | null>(null);
+  const [pendingOnly, setPendingOnly] = useState(false);
 
   const { visitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
 
@@ -58,7 +216,6 @@ export default function AgendaVisitas() {
     setResultadoVisita(null);
   }, [resultadoVisita, updateVisita]);
 
-  // Unique corretores and empreendimentos for filters
   const { corretores, empreendimentos } = useMemo(() => {
     const cSet = new Map<string, string>();
     const eSet = new Set<string>();
@@ -70,6 +227,14 @@ export default function AgendaVisitas() {
       corretores: Array.from(cSet.entries()).map(([id, nome]) => ({ id, nome })),
       empreendimentos: Array.from(eSet).sort(),
     };
+  }, [visitas]);
+
+  const pendingCount = useMemo(() => {
+    const today = startOfDay(new Date());
+    return visitas.filter(v => {
+      const d = new Date(v.data_visita + "T12:00:00");
+      return isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
+    }).length;
   }, [visitas]);
 
   const filtered = useMemo(() => {
@@ -94,6 +259,13 @@ export default function AgendaVisitas() {
       const toStr = format(dateTo, "yyyy-MM-dd");
       list = list.filter(v => v.data_visita <= toStr);
     }
+    if (pendingOnly) {
+      const today = startOfDay(new Date());
+      list = list.filter(v => {
+        const d = new Date(v.data_visita + "T12:00:00");
+        return isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
+      });
+    }
     list.sort((a, b) => {
       const dateComp = a.data_visita.localeCompare(b.data_visita);
       if (dateComp !== 0) return sortOrder === "asc" ? dateComp : -dateComp;
@@ -102,7 +274,7 @@ export default function AgendaVisitas() {
       return sortOrder === "asc" ? timeA.localeCompare(timeB) : timeB.localeCompare(timeA);
     });
     return list;
-  }, [visitas, statusFilter, corretorFilter, empreendimentoFilter, searchTerm, dateFrom, dateTo, sortOrder]);
+  }, [visitas, statusFilter, corretorFilter, empreendimentoFilter, searchTerm, dateFrom, dateTo, sortOrder, pendingOnly]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -110,17 +282,7 @@ export default function AgendaVisitas() {
     return c;
   }, [visitas]);
 
-  // Count pending (past visits still "marcada" or "confirmada")
-  const pendingCount = useMemo(() => {
-    const today = startOfDay(new Date());
-    return visitas.filter(v => {
-      const d = new Date(v.data_visita + "T12:00:00");
-      return isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
-    }).length;
-  }, [visitas]);
-
-  const totalCount = visitas.length;
-  const hasFilters = statusFilter !== "all" || corretorFilter !== "all" || empreendimentoFilter !== "all" || !!dateFrom || !!dateTo || searchTerm.trim();
+  const hasFilters = statusFilter !== "all" || corretorFilter !== "all" || empreendimentoFilter !== "all" || !!dateFrom || !!dateTo || searchTerm.trim() || pendingOnly;
 
   const clearAll = () => {
     setStatusFilter("all");
@@ -129,95 +291,58 @@ export default function AgendaVisitas() {
     setDateFrom(undefined);
     setDateTo(undefined);
     setSearchTerm("");
-  };
-
-  const filterPending = () => {
-    setStatusFilter("all");
-    setDateTo(new Date(Date.now() - 86400000));
-    // We'll show marcada + confirmada in the past
+    setPendingOnly(false);
   };
 
   return (
-    <div className="space-y-3">
-      {/* Header Line 1 */}
+    <div className="space-y-4">
+      {/* ─── HEADER ─── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-primary" />
-            Agenda de Visitas
+          <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
+            📅 Agenda de Visitas
           </h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {isAdmin ? "Visão consolidada da empresa" : isGestor ? "Visitas da sua equipe" : "Suas visitas agendadas"}
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)} size="sm" className="gap-1.5">
+        <Button onClick={() => setShowForm(true)} className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
           <Plus className="h-4 w-4" /> Nova Visita
         </Button>
       </div>
 
-      {/* Pending alert */}
+      {/* ─── PENDING ALERT ─── */}
       {pendingCount > 0 && (
         <button
-          onClick={filterPending}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors text-left"
+          onClick={() => { setPendingOnly(!pendingOnly); setStatusFilter("all"); }}
+          className={cn(
+            "w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all",
+            pendingOnly
+              ? "bg-red-100 border-red-400 border-l-4"
+              : "bg-red-50 border-red-300 border-l-4 border-l-red-500 hover:bg-red-100"
+          )}
         >
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>{pendingCount} visita{pendingCount > 1 ? "s" : ""} sem atualização de status</span>
-          <span className="ml-auto text-[10px] underline">Resolver agora →</span>
+          <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+          <div className="flex-1">
+            <span className="text-sm font-semibold text-red-700">
+              ⚠️ {pendingCount} visita{pendingCount > 1 ? "s" : ""} sem atualização de status
+            </span>
+          </div>
+          <span className="text-xs font-semibold text-red-600 underline shrink-0">
+            {pendingOnly ? "Mostrar todas ←" : "Resolver agora →"}
+          </span>
         </button>
       )}
 
-      {/* Line 2 — Status chips */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <button
-          onClick={() => setStatusFilter("all")}
-          className={cn(
-            "px-2.5 py-1 rounded-full text-xs font-medium transition-all",
-            statusFilter === "all"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted/60 text-muted-foreground hover:bg-muted"
-          )}
-        >
-          Todas {totalCount}
-        </button>
-        {(["marcada", "confirmada", "realizada", "reagendada", "cancelada", "no_show"] as VisitaStatus[]).map(s => {
-          const count = counts[s] || 0;
-          const isActive = statusFilter === s;
-          return (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-medium transition-all",
-                isActive
-                  ? STATUS_CHIP_COLORS[s] + " shadow-sm"
-                  : count === 0
-                    ? "bg-muted/30 text-muted-foreground/40 cursor-default"
-                    : "bg-muted/60 text-muted-foreground hover:bg-muted"
-              )}
-            >
-              {STATUS_LABELS[s]} {count}
-            </button>
-          );
-        })}
-      </div>
+      {/* ─── DAY SUMMARY ─── */}
+      <DaySummary visitas={visitas} />
 
-      {/* Line 3 — Filters */}
+      {/* ─── FILTERS ROW ─── */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[160px] max-w-[240px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar cliente, corretor..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="text-xs h-8 pl-8"
-          />
-        </div>
-
         {(isAdmin || isGestor) && corretores.length > 1 && (
           <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
-              <SelectValue placeholder="Corretor" />
+            <SelectTrigger className="h-9 w-[160px] text-xs">
+              <SelectValue placeholder="Todos corretores" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos corretores</SelectItem>
@@ -230,8 +355,8 @@ export default function AgendaVisitas() {
 
         {empreendimentos.length > 1 && (
           <Select value={empreendimentoFilter} onValueChange={setEmpreendimentoFilter}>
-            <SelectTrigger className="h-8 w-[140px] text-xs">
-              <SelectValue placeholder="Empreendimento" />
+            <SelectTrigger className="h-9 w-[160px] text-xs">
+              <SelectValue placeholder="Todos empreend." />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos empreend.</SelectItem>
@@ -244,8 +369,8 @@ export default function AgendaVisitas() {
 
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1", dateFrom && "border-primary text-primary")}>
-              <CalendarIcon className="h-3 w-3" />
+            <Button variant="outline" size="sm" className={cn("h-9 text-xs gap-1", dateFrom && "border-primary text-primary")}>
+              <CalendarIcon className="h-3.5 w-3.5" />
               {dateFrom ? format(dateFrom, "dd/MM") : "De"}
             </Button>
           </PopoverTrigger>
@@ -256,8 +381,8 @@ export default function AgendaVisitas() {
 
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1", dateTo && "border-primary text-primary")}>
-              <CalendarIcon className="h-3 w-3" />
+            <Button variant="outline" size="sm" className={cn("h-9 text-xs gap-1", dateTo && "border-primary text-primary")}>
+              <CalendarIcon className="h-3.5 w-3.5" />
               {dateTo ? format(dateTo, "dd/MM") : "Até"}
             </Button>
           </PopoverTrigger>
@@ -266,30 +391,77 @@ export default function AgendaVisitas() {
           </PopoverContent>
         </Popover>
 
-        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => setSortOrder(s => s === "asc" ? "desc" : "asc")}>
-          <ArrowUpDown className="h-3 w-3" />
+        <Button variant="outline" size="sm" className="h-9 text-xs gap-1" onClick={() => setSortOrder(s => s === "asc" ? "desc" : "asc")}>
+          <ArrowUpDown className="h-3.5 w-3.5" />
           {sortOrder === "asc" ? "↑ Próxima" : "↓ Recente"}
         </Button>
 
+        <div className="relative flex-1 min-w-[160px] max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente, corretor..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="text-xs h-9 pl-9"
+          />
+        </div>
+
         {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 text-xs gap-1 text-muted-foreground">
-            <X className="h-3 w-3" /> Limpar
+          <Button variant="ghost" size="sm" onClick={clearAll} className="h-9 text-xs gap-1 text-destructive">
+            <X className="h-3.5 w-3.5" /> Limpar
           </Button>
         )}
       </div>
 
-      {/* Views */}
+      {/* ─── STATUS CHIPS ─── */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          onClick={() => setStatusFilter("all")}
+          className={cn(
+            "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+            statusFilter === "all"
+              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+              : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted"
+          )}
+        >
+          Todas {visitas.length}
+        </button>
+        {(["marcada", "confirmada", "realizada", "reagendada", "no_show", "cancelada"] as VisitaStatus[]).map(s => {
+          const count = counts[s] || 0;
+          const isActive = statusFilter === s;
+          return (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                isActive
+                  ? STATUS_CHIP_COLORS[s] + " shadow-sm"
+                  : count === 0
+                    ? "bg-muted/30 text-muted-foreground/40 border-transparent cursor-default"
+                    : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted"
+              )}
+            >
+              {STATUS_EMOJIS[s]} {STATUS_LABELS[s]} {count}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ─── VIEWS ─── */}
       <Tabs defaultValue="lista">
-        <TabsList className="h-8">
-          <TabsTrigger value="lista" className="gap-1 text-xs h-7 px-3">
-            <List className="h-3 w-3" /> Lista
+        <TabsList className="h-9">
+          <TabsTrigger value="lista" className="gap-1.5 text-xs h-8 px-4">
+            <List className="h-3.5 w-3.5" /> 📋 Lista
           </TabsTrigger>
-          <TabsTrigger value="calendario" className="gap-1 text-xs h-7 px-3">
-            <CalendarDays className="h-3 w-3" /> Calendário
+          <TabsTrigger value="calendario" className="gap-1.5 text-xs h-8 px-4">
+            <CalendarDays className="h-3.5 w-3.5" /> 📅 Calendário
           </TabsTrigger>
-          <TabsTrigger value="kanban" className="gap-1 text-xs h-7 px-3">
-            <Columns3 className="h-3 w-3" /> Kanban
-          </TabsTrigger>
+          {(isAdmin || isGestor) && (
+            <TabsTrigger value="por-corretor" className="gap-1.5 text-xs h-8 px-4">
+              <Users className="h-3.5 w-3.5" /> 👥 Por Corretor
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="lista" className="mt-3">
@@ -309,9 +481,11 @@ export default function AgendaVisitas() {
           <VisitasCalendar visitas={filtered} />
         </TabsContent>
 
-        <TabsContent value="kanban" className="mt-3">
-          <VisitasKanban visitas={filtered} onUpdateStatus={handleUpdateStatus} onDelete={deleteVisita} />
-        </TabsContent>
+        {(isAdmin || isGestor) && (
+          <TabsContent value="por-corretor" className="mt-3">
+            <VisitasByCorretor visitas={filtered} onUpdateStatus={handleUpdateStatus} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {showForm && (
