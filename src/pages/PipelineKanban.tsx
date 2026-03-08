@@ -285,7 +285,7 @@ export default function PipelineKanban() {
                   ? `${filteredLeads.length} de ${pipeline.leads.length} leads`
                   : `${filteredLeads.length} oportunidades`}
                 {(isGestor || isAdmin) && filaCeoCount > 0 && !filaCeoFilter && (
-                  <span className="text-muted-foreground font-normal"> ({filaCeoCount} na fila CEO)</span>
+                  <span className="text-purple-600 dark:text-purple-400 font-normal"> ({filaCeoCount} sem corretor)</span>
                 )}
               </span>
             </div>
