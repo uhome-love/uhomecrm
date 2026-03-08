@@ -79,7 +79,8 @@ export const TIPO_CONFIG: Record<string, { emoji: string; label: string }> = {
   video: { emoji: "▶️", label: "Vídeo" },
   pdf: { emoji: "📄", label: "PDF" },
   texto: { emoji: "📝", label: "Texto" },
-  quiz: { emoji: "❓", label: "Quiz" },
+  quiz: { emoji: "🧠", label: "Quiz" },
+  checklist: { emoji: "☑️", label: "Checklist" },
 };
 
 export function getStudyLevel(totalXp: number) {
