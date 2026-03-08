@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCeoDashboard, type DashPeriod } from "@/hooks/useCeoDashboard";
@@ -12,6 +12,8 @@ import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
+import HomiBriefingCard from "@/components/ceo/HomiBriefingCard";
+import HomiCeoFloating from "@/components/ceo/HomiCeoFloating";
 
 // ─── Greeting ───
 function getGreeting() {
