@@ -386,7 +386,7 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center animate-slide-in-left">
-                <img src="/images/uhomesales-logo.png" alt="UhomeSales — Powered by Homi AI" className="w-full max-h-[55px] object-contain shrink-0" />
+                <img src="/images/uhomesales-logo.png" alt="UhomeSales — Powered by Homi AI" className="w-full max-h-[100px] object-contain shrink-0" />
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
