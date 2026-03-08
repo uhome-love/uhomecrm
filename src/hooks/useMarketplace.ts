@@ -159,6 +159,216 @@ export function useMarketplace(category?: MarketplaceCategory, sortBy: Marketpla
     },
   });
 
+  // Seed marketplace with HOMI starter content
+  const seedMarketplace = useMutation({
+    mutationFn: async () => {
+      const { data: profile } = await supabase.from("profiles").select("nome").eq("user_id", user!.id).maybeSingle();
+      const autorNome = profile?.nome || "HOMI IA";
+
+      const seedItems = [
+        // Scripts de Ligação
+        {
+          titulo: "Primeiro contato — Lead novo",
+          categoria: "script_ligacao",
+          tags: ["primeiro contato", "lead novo", "abertura"],
+          conteudo: `Olá [NOME], tudo bem? Aqui é [SEU NOME] da Uhome! 😊
+
+Vi que você demonstrou interesse no [EMPREENDIMENTO]. Que legal!
+
+Posso te contar rapidinho os diferenciais? São só 2 minutos.
+
+[SE SIM] Perfeito! O [EMPREENDIMENTO] fica em [LOCALIZAÇÃO], com [DIFERENCIAL 1] e [DIFERENCIAL 2]. O que mais te chamou atenção?
+
+[SE NÃO] Sem problemas! Posso te mandar um material pelo WhatsApp pra você ver quando puder?`,
+        },
+        {
+          titulo: "Follow-up após 3 dias sem resposta",
+          categoria: "script_ligacao",
+          tags: ["follow-up", "reengajamento", "sem resposta"],
+          conteudo: `Oi [NOME], aqui é [SEU NOME] da Uhome! 
+
+Te mandei um material do [EMPREENDIMENTO] uns dias atrás, conseguiu dar uma olhada?
+
+[SE SIM] Ótimo! O que achou? Alguma dúvida que eu possa tirar?
+
+[SE NÃO] Tranquilo! Deixa eu te resumir o principal: [BENEFÍCIO-CHAVE]. Vale muito a pena conhecer pessoalmente. Que tal uma visita rápida essa semana?
+
+[RESISTÊNCIA] Entendo perfeitamente. Olha, sem compromisso — a visita leva só 20 minutinhos e você conhece o local. Qual dia fica melhor, [DIA1] ou [DIA2]?`,
+        },
+        {
+          titulo: "Ligação pós-visita — Fechamento",
+          categoria: "script_ligacao",
+          tags: ["pós-visita", "fechamento", "proposta"],
+          conteudo: `[NOME]! Tudo bem? Aqui é [SEU NOME] 😊
+
+Queria saber: o que você achou da visita ao [EMPREENDIMENTO]?
+
+[GOSTOU] Que bom! Qual unidade te agradou mais? A [UNIDADE] está com uma condição especial essa semana.
+
+[INDECISO] Entendo! O que te deixou na dúvida? Às vezes a gente consegue resolver com uma condição diferenciada.
+
+[NÃO GOSTOU] Poxa, sinto muito! O que não atendeu sua expectativa? Tenho outros empreendimentos que podem ser mais a sua cara.
+
+[PROPOSTA] Posso montar uma simulação pra você? Sem compromisso, só pra você ter os números na mão.`,
+        },
+        // WhatsApp
+        {
+          titulo: "Primeira mensagem — Lead de campanha",
+          categoria: "whatsapp",
+          tags: ["primeiro contato", "campanha", "ads"],
+          conteudo: `Oi [NOME], tudo bem? 😊
+
+Vi que você se interessou pelo [EMPREENDIMENTO]! Sou [SEU NOME] da Uhome e vou te ajudar.
+
+Pra eu entender melhor o que você procura: é pra morar ou investir? 🏠`,
+        },
+        {
+          titulo: "Reengajamento — Lead frio (7+ dias)",
+          categoria: "whatsapp",
+          tags: ["reengajamento", "lead frio", "follow-up"],
+          conteudo: `Oi [NOME]! 👋
+
+Sei que a rotina é corrida, mas não queria deixar de te contar: o [EMPREENDIMENTO] teve uma novidade essa semana → [NOVIDADE: condição, lançamento de fase, etc.]
+
+Quer que eu te mande os detalhes? 😊`,
+        },
+        {
+          titulo: "Confirmação de visita — Dia anterior",
+          categoria: "whatsapp",
+          tags: ["visita", "confirmação", "lembrete"],
+          conteudo: `[NOME], tudo certo pra amanhã? 😊
+
+📍 [EMPREENDIMENTO] — [ENDEREÇO]
+🕐 [HORÁRIO]
+
+Vou te receber pessoalmente! Qualquer dúvida é só me chamar.
+
+Confirma pra mim? ✅`,
+        },
+        // Quebra de Objeções
+        {
+          titulo: "Objeção: \"Tá caro demais\"",
+          categoria: "quebra_objecao",
+          tags: ["preço", "objeção", "negociação"],
+          conteudo: `Entendo sua preocupação com o valor, [NOME]. 
+
+Mas deixa eu te mostrar por outro ângulo: o m² do [EMPREENDIMENTO] está em R$ [VALOR/M²], enquanto a média da região é R$ [VALOR REGIÃO]. Ou seja, você está comprando abaixo do mercado.
+
+Além disso, com a valorização prevista de [X]% nos próximos 2 anos, quem compra agora está fazendo um investimento inteligente.
+
+Quer que eu monte uma simulação de parcelas pra você ver como fica no bolso?`,
+        },
+        {
+          titulo: "Objeção: \"Preciso pensar / Vou ver com minha esposa\"",
+          categoria: "quebra_objecao",
+          tags: ["indecisão", "casal", "objeção"],
+          conteudo: `Claro, é uma decisão importante e faz todo sentido conversar!
+
+[NOME], posso sugerir uma coisa? Que tal vocês dois virem juntos pra uma visita? Assim os dois veem pessoalmente e podem decidir juntos, sem pressão.
+
+Eu separo um horário especial só pra vocês. Preferem sábado de manhã ou à tarde?
+
+💡 Dica: Não insista no fechamento. Facilite a decisão do casal oferecendo a visita a dois.`,
+        },
+        {
+          titulo: "Objeção: \"Não é o momento / Vou esperar\"",
+          categoria: "quebra_objecao",
+          tags: ["timing", "urgência", "objeção"],
+          conteudo: `Entendo perfeitamente, [NOME]. 
+
+Mas olha só um dado importante: o [EMPREENDIMENTO] já vendeu [X]% das unidades em [TEMPO]. As melhores unidades — com sol da manhã e vista livre — são as primeiras a ir.
+
+Não estou te pedindo pra fechar agora. Só pra garantir a reserva enquanto avalia. Se mudar de ideia, cancela sem custo.
+
+Faz sentido pra você?`,
+        },
+        // Argumentos por Empreendimento
+        {
+          titulo: "Argumentário — Empreendimento Premium",
+          categoria: "argumento_empreendimento",
+          tags: ["premium", "alto padrão", "diferenciação"],
+          conteudo: `🏠 ARGUMENTÁRIO — EMPREENDIMENTO PREMIUM
+
+ABERTURA:
+"Esse é um dos poucos projetos da cidade com [DIFERENCIAL ÚNICO]. Não é só um apartamento, é um estilo de vida."
+
+3 PILARES DE VENDA:
+1. Localização: [descrever vantagens da localização]
+2. Acabamento: [descrever diferenciais de acabamento]
+3. Valorização: [dados de valorização da região]
+
+OBJEÇÕES COMUNS:
+• "Muito caro" → Comparar com m² da região
+• "Longe do centro" → Destacar infraestrutura do bairro
+• "Não conheço a construtora" → Cases de sucesso anteriores
+
+FECHAMENTO:
+"Posso reservar a unidade [X] pra você? É a que tem a melhor vista e condição especial até [DATA]."`,
+        },
+        // Template de Proposta
+        {
+          titulo: "Template — Proposta comercial completa",
+          categoria: "template_proposta",
+          tags: ["proposta", "template", "comercial"],
+          conteudo: `📊 PROPOSTA COMERCIAL — [EMPREENDIMENTO]
+
+Cliente: [NOME]
+Data: [DATA]
+Corretor: [SEU NOME]
+
+━━━━━━━━━━━━━━━━━━━━━
+UNIDADE SELECIONADA
+━━━━━━━━━━━━━━━━━━━━━
+Unidade: [NÚMERO]
+Andar: [ANDAR]
+Área privativa: [X] m²
+Vagas: [X]
+Posição solar: [ORIENTAÇÃO]
+
+━━━━━━━━━━━━━━━━━━━━━
+CONDIÇÃO COMERCIAL
+━━━━━━━━━━━━━━━━━━━━━
+Valor total: R$ [VALOR]
+Entrada: R$ [VALOR] ([X]%)
+Saldo financiamento: R$ [VALOR]
+Parcelas estimadas: R$ [VALOR]/mês
+
+━━━━━━━━━━━━━━━━━━━━━
+DIFERENCIAIS
+━━━━━━━━━━━━━━━━━━━━━
+✅ [DIFERENCIAL 1]
+✅ [DIFERENCIAL 2]
+✅ [DIFERENCIAL 3]
+
+Validade da proposta: [X] dias
+Próximo passo: [AÇÃO]`,
+        },
+      ];
+
+      for (const item of seedItems) {
+        const { error } = await supabase.from("marketplace_items").insert({
+          titulo: item.titulo,
+          conteudo: item.conteudo,
+          categoria: item.categoria,
+          tags: item.tags,
+          autor_id: user!.id,
+          autor_nome: autorNome,
+          origem: "homi",
+          status: "aprovado",
+          aprovado_por: user!.id,
+          aprovado_em: new Date().toISOString(),
+        });
+        if (error) console.error("Seed error:", error.message);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["marketplace-items"] });
+      queryClient.invalidateQueries({ queryKey: ["marketplace-my-items"] });
+      toast.success("🚀 11 scripts profissionais carregados no Marketplace!");
+    },
+    onError: (e: any) => toast.error("Erro ao carregar scripts: " + e.message),
+  });
+
   // Stats for manager dashboard
   const stats = useMemo(() => {
     const totalItems = items.length;
@@ -183,5 +393,7 @@ export function useMarketplace(category?: MarketplaceCategory, sortBy: Marketpla
     useItem,
     rateItem,
     stats,
+    seedMarketplace,
+    isSeeding: seedMarketplace.isPending,
   };
 }

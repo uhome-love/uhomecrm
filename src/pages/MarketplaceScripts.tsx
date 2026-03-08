@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Copy, Star, Plus, Search, TrendingUp, Award, Clock, CheckCircle, XCircle, Loader2, BarChart3, Users, Sparkles } from "lucide-react";
+import { Copy, Star, Plus, Search, TrendingUp, Award, Clock, CheckCircle, XCircle, Loader2, BarChart3, Users, Sparkles, BookOpen, Rocket, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 const homiMascot = "/images/homi-mascot-opt.png";
@@ -39,12 +39,12 @@ function ItemCard({ item, onUse, onRate }: { item: any; onUse: (id: string) => v
   };
 
   return (
-    <Card className="border-border hover:border-primary/30 transition-colors">
+    <Card className="border-border hover:border-primary/30 transition-all hover:shadow-md group">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm">{CATEGORY_ICONS[item.categoria as MarketplaceCategory] || "📄"}</span>
+              <span className="text-lg">{CATEGORY_ICONS[item.categoria as MarketplaceCategory] || "📄"}</span>
               <h3 className="font-semibold text-sm text-foreground truncate">{item.titulo}</h3>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -52,7 +52,7 @@ function ItemCard({ item, onUse, onRate }: { item: any; onUse: (id: string) => v
                 {CATEGORY_LABELS[item.categoria as MarketplaceCategory]?.replace(/^.\s/, "") || item.categoria}
               </Badge>
               {item.origem === "homi" && (
-                <Badge variant="outline" className="text-[10px] gap-1">
+                <Badge className="text-[10px] gap-1 bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/30">
                   <img src={homiMascot} alt="" className="h-3 w-3" /> HOMI
                 </Badge>
               )}
@@ -64,12 +64,12 @@ function ItemCard({ item, onUse, onRate }: { item: any; onUse: (id: string) => v
         </div>
 
         <div
-          className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap cursor-pointer bg-muted/30 rounded-lg p-3 border border-border"
+          className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap cursor-pointer bg-muted/30 rounded-lg p-3 border border-border hover:border-primary/20 transition-colors"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? item.conteudo : preview}
           {item.conteudo?.length > 200 && (
-            <span className="text-primary text-[10px] ml-1">{expanded ? "ver menos" : "ver mais"}</span>
+            <span className="text-primary text-[10px] ml-1 font-medium">{expanded ? "ver menos ↑" : "ver mais →"}</span>
           )}
         </div>
 
@@ -188,23 +188,96 @@ function SubmitDialog({ onSubmit, submitting }: { onSubmit: (data: any) => void;
   );
 }
 
+function EmptyExploreState({ hasFilter, search, onClearFilters, onOpenPublish }: { hasFilter: boolean; search: string; onClearFilters: () => void; onOpenPublish: () => void }) {
+  if (hasFilter) {
+    return (
+      <Card className="border-dashed border-2 border-muted-foreground/20">
+        <CardContent className="py-12 text-center">
+          <div className="text-4xl mb-3">🔍</div>
+          <p className="text-sm font-semibold text-foreground mb-1">
+            Nenhum resultado para "{search}"
+          </p>
+          <p className="text-xs text-muted-foreground mb-4">
+            Tenta outra categoria ou{" "}
+            <button onClick={onClearFilters} className="text-primary hover:underline font-medium">
+              limpar filtros
+            </button>
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-dashed border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+      <CardContent className="py-14 text-center">
+        <div className="text-5xl mb-4">📚</div>
+        <h3 className="text-lg font-bold text-foreground mb-2">
+          Marketplace ainda vazio!
+        </h3>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
+          Os melhores corretores compartilham o que funciona.
+          <br />
+          Publica o seu primeiro script e ajuda o time. 🚀
+        </p>
+        <Button onClick={onOpenPublish} size="lg" className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Plus className="h-5 w-5" /> Publicar meu primeiro script
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SeedBanner({ onSeed, seeding }: { onSeed: () => void; seeding: boolean }) {
+  return (
+    <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 overflow-hidden relative">
+      <CardContent className="p-4 flex items-center gap-4">
+        <img src={homiMascot} alt="Homi" className="h-14 w-14 object-contain flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="font-bold text-sm text-foreground">HOMI preparou scripts para você!</span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Carrega a base inicial com scripts profissionais de ligação, WhatsApp, quebra de objeções e mais. Tudo editável e avaliável pelo time.
+          </p>
+        </div>
+        <Button onClick={onSeed} disabled={seeding} className="gap-1.5 flex-shrink-0">
+          {seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+          {seeding ? "Carregando..." : "Carregar scripts"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function MarketplacePage() {
   const { isGestor, isAdmin } = useUserRole();
   const [category, setCategory] = useState<MarketplaceCategory | "">("");
   const [sortBy, setSortBy] = useState<MarketplaceSortBy>("mais_usados");
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("explorar");
+  const [publishOpen, setPublishOpen] = useState(false);
 
-  const { items, pendingItems, myItems, isLoading, submitItem, approveItem, rejectItem, useItem, rateItem, stats } = useMarketplace(
+  const { items, pendingItems, myItems, isLoading, submitItem, approveItem, rejectItem, useItem, rateItem, stats, seedMarketplace, isSeeding } = useMarketplace(
     category ? category as MarketplaceCategory : undefined,
     sortBy,
     search || undefined
   );
 
+  const hasActiveFilter = !!(search || category);
+  const showSeedBanner = !isLoading && items.length === 0 && !hasActiveFilter && (isGestor || isAdmin);
+
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center gap-3">
-        <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain" />
+        <div className="relative">
+          <img src={homiMascot} alt="Homi" className="h-12 w-12 object-contain" />
+          <div className="absolute -bottom-0.5 -right-0.5 bg-primary rounded-full p-0.5">
+            <BookOpen className="h-3 w-3 text-primary-foreground" />
+          </div>
+        </div>
         <div className="flex-1">
           <h1 className="font-display text-2xl font-bold text-foreground">
             Marketplace <span className="text-primary">de Scripts</span>
@@ -213,6 +286,28 @@ export default function MarketplacePage() {
         </div>
         <SubmitDialog onSubmit={data => submitItem.mutate(data)} submitting={submitItem.isPending} />
       </div>
+
+      {/* Quick stats bar */}
+      {items.length > 0 && (
+        <div className="flex gap-4 px-1">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <BookOpen className="h-3.5 w-3.5 text-primary" />
+            <span className="font-semibold text-foreground">{stats.totalItems}</span> scripts
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Copy className="h-3.5 w-3.5 text-primary" />
+            <span className="font-semibold text-foreground">{stats.totalUsos}</span> usos
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
+            <span className="font-semibold text-foreground">{stats.avgRating}</span> média
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Users className="h-3.5 w-3.5 text-primary" />
+            <span className="font-semibold text-foreground">{new Set(items.map((i: any) => i.autor_id)).size}</span> autores
+          </div>
+        </div>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -236,6 +331,11 @@ export default function MarketplacePage() {
         </TabsList>
 
         <TabsContent value="explorar" className="mt-4 space-y-4">
+          {/* Seed banner for managers when empty */}
+          {showSeedBanner && (
+            <SeedBanner onSeed={() => seedMarketplace.mutate()} seeding={isSeeding} />
+          )}
+
           {/* Filters */}
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -281,12 +381,12 @@ export default function MarketplacePage() {
               <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Carregando...
             </div>
           ) : items.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Search className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">Nenhum material encontrado. Seja o primeiro a publicar!</p>
-              </CardContent>
-            </Card>
+            <EmptyExploreState
+              hasFilter={hasActiveFilter}
+              search={search || category}
+              onClearFilters={() => { setSearch(""); setCategory(""); }}
+              onOpenPublish={() => setPublishOpen(true)}
+            />
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {items.map(item => (
@@ -303,17 +403,20 @@ export default function MarketplacePage() {
 
         <TabsContent value="meus" className="mt-4">
           {myItems.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Plus className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground mb-3">Você ainda não publicou nenhum material.</p>
+            <Card className="border-dashed border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardContent className="py-14 text-center">
+                <div className="text-5xl mb-4">✍️</div>
+                <h3 className="text-lg font-bold text-foreground mb-2">Nenhum material publicado</h3>
+                <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                  Compartilha aquele script que funciona bem pra ti. O time agradece! 💪
+                </p>
                 <SubmitDialog onSubmit={data => submitItem.mutate(data)} submitting={submitItem.isPending} />
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {myItems.map(item => (
-                <Card key={item.id} className="border-border">
+                <Card key={item.id} className="border-border hover:border-primary/20 transition-colors">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-semibold text-sm">{item.titulo}</h3>
@@ -338,7 +441,7 @@ export default function MarketplacePage() {
             {pendingItems.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center">
-                  <CheckCircle className="h-8 w-8 mx-auto text-success mb-2" />
+                  <CheckCircle className="h-8 w-8 mx-auto text-emerald-500 mb-2" />
                   <p className="text-sm text-muted-foreground">Nenhum material pendente de aprovação. 🎉</p>
                 </CardContent>
               </Card>
