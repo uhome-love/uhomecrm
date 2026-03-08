@@ -6,6 +6,8 @@ import { getLevel } from "@/lib/gamification";
 
 const Avatar3DViewer = lazy(() => import("@/components/avaturn/Avatar3DViewer"));
 
+export type AvatarAnimationState = "idle" | "celebrating" | "calling" | "no-answer" | "levelup" | "overtaken";
+
 export interface CorretorAvatarProps {
   nome: string;
   avatarUrl?: string | null;
@@ -17,6 +19,7 @@ export interface CorretorAvatarProps {
   size?: "sm" | "md" | "lg" | "xl";
   animated?: boolean;
   showBadges?: boolean;
+  animationState?: AvatarAnimationState;
   className?: string;
 }
 
