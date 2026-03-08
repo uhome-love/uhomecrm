@@ -228,8 +228,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         }
       `}</style>
 
-      {/* Mini-map nav pills */}
-      <div className="shrink-0 flex items-center gap-1 mb-2 px-1 overflow-x-auto scrollbar-none">
+      {/* Mini-map nav pills — compact */}
+      <div className="shrink-0 flex items-center gap-0.5 mb-1 px-0.5 overflow-x-auto scrollbar-none">
         {stages.map((stage, idx) => {
           const stageLeads = leadsByStage.get(stage.id) || [];
           const isActive = idx === activeIndex;
@@ -237,17 +237,16 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             <button
               key={stage.id}
               onClick={() => scrollToIndex(idx)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all duration-200 border ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all border ${
                 isActive
-                  ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
-                  : "bg-card text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground"
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-card text-muted-foreground border-border/40 hover:border-primary/30"
               }`}
             >
-              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: isActive ? "white" : stage.cor }} />
-              <span className="hidden sm:inline">{PIPELINE_STAGE_EMOJIS[stage.nome] || ""} {stage.nome}</span>
-              <Badge variant="secondary" className={`text-[9px] px-1 py-0 h-3.5 font-bold ${isActive ? "bg-white/20 text-primary-foreground" : ""}`}>
+              <span>{stage.nome}</span>
+              <span className={`font-bold ${isActive ? "text-primary-foreground" : ""}`}>
                 {stageLeads.length}
-              </Badge>
+              </span>
             </button>
           );
         })}
@@ -307,44 +306,36 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
-                {/* Column header */}
-                <div className="shrink-0 px-3.5 py-3 bg-card border border-border/40 rounded-t-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-3 w-1 rounded-full" style={{ backgroundColor: stage.cor }} />
-                    <span className="text-xs font-bold text-foreground tracking-tight">{stage.nome}</span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-bold gap-1">
-                      {stageLeads.length} <span className="font-normal text-muted-foreground">leads</span>
-                    </Badge>
-                    {totalVGV > 0 && (
-                      <span className="text-[10px] font-semibold text-foreground flex items-center gap-0.5">
-                        <TrendingUp className="h-2.5 w-2.5 text-primary" />
-                        {formatVGV(totalVGV)}
-                      </span>
-                    )}
-                    {avgTime && (
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                        <Clock className="h-2.5 w-2.5" />
-                        {avgTime} média
-                      </span>
-                    )}
-                    {alerts.semCorretor > 0 && (
-                      <span className="text-[10px] font-semibold flex items-center gap-0.5 text-purple-600 dark:text-purple-400">
-                        👤 {alerts.semCorretor}
-                      </span>
-                    )}
-                    {alerts.total > 0 && (
-                      <span className={`text-[10px] font-semibold flex items-center gap-0.5 ${alerts.dangers > 0 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
-                        <AlertTriangle className="h-2.5 w-2.5" />
-                        {alerts.total}
-                      </span>
-                    )}
+                {/* Column header — compact */}
+                <div className="shrink-0 px-2.5 py-2 bg-card border border-border/40 rounded-t-xl">
+                  <div className="flex items-center gap-1.5 justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="h-2.5 w-1 rounded-full shrink-0" style={{ backgroundColor: stage.cor }} />
+                      <span className="text-[11px] font-bold text-foreground truncate">{stage.nome}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground">{stageLeads.length}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {totalVGV > 0 && (
+                        <span className="text-[9px] font-semibold text-foreground">
+                          {formatVGV(totalVGV)}
+                        </span>
+                      )}
+                      {avgTime && (
+                        <span className="text-[9px] text-muted-foreground">
+                          {avgTime}
+                        </span>
+                      )}
+                      {alerts.semCorretor > 0 && (
+                        <span className="text-[9px] font-semibold text-purple-600 dark:text-purple-400">
+                          👤{alerts.semCorretor}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Cards list */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2 scrollbar-thin">
+                <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-1.5 scrollbar-thin">
                   {stageLeads.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">

@@ -291,93 +291,73 @@ const PipelineCard = memo(function PipelineCard({
           semanticBorder
         )}
       >
-        {/* Info section */}
-        <div className="px-3 pt-2.5 pb-2 space-y-1">
+        {/* Info section — compact */}
+        <div className="px-2.5 pt-2 pb-1.5 space-y-0.5">
           {/* Game: Mission badge + days counter */}
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between">
             <span
-              className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+              className="text-[8px] font-bold px-1.5 py-0.5 rounded-full"
               style={{ background: `${missionBadge.color}20`, color: missionBadge.color }}
             >
               {missionBadge.badge}
             </span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={`text-[10px] font-bold ${daysLabel.cls}`}>
-                  {daysLabel.text}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                Lead parado há {daysInStage} dias nesta fase
-              </TooltipContent>
-            </Tooltip>
+            <span className={`text-[9px] font-bold ${daysLabel.cls}`}>
+              {daysLabel.text}
+            </span>
           </div>
 
           {/* Line 1: name + score */}
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[13px] font-bold text-foreground truncate">{lead.nome}</span>
-            <span className={cn("text-[10px] px-1.5 py-0.5 rounded shrink-0", scoreStyle)}>
+            <span className="text-[13px] font-bold text-foreground truncate leading-tight">{lead.nome}</span>
+            <span className={cn("text-[9px] px-1 py-0 rounded shrink-0", scoreStyle)}>
               {leadScore.score}
             </span>
           </div>
 
-          {/* Line 2: empreendimento · origem */}
-          <div className="text-[11px] text-muted-foreground truncate">
+          {/* Line 2: empreendimento · origem · phone */}
+          <div className="text-[10px] text-muted-foreground truncate leading-tight">
             {displayEmpreendimento && <span className="font-medium">{displayEmpreendimento}</span>}
             {displayEmpreendimento && lead.origem && " · "}
             {lead.origem && <span>{lead.origem.replace(/_/g, " ")}</span>}
+            {lead.telefone && <span> · {formatPhone(lead.telefone)}</span>}
           </div>
 
-          {/* Line 3: phone + email */}
-          {(lead.telefone || lead.email) && (
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-              {lead.telefone && <span>{formatPhone(lead.telefone)}</span>}
-              {lead.email && (
-                <span className="truncate flex items-center gap-0.5">
-                  <Mail className="h-2.5 w-2.5" />
-                  {lead.email}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Line 4: Time badge + corretor */}
-          <div className="flex items-center justify-between gap-2">
-            {/* Semantic time badge */}
+          {/* Line 3: Time badge + corretor */}
+          <div className="flex items-center justify-between gap-1">
             <span className={cn(
-              "flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full",
+              "flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0 rounded-full",
               timeBadge.bg,
               timeBadge.cls
             )}>
               {timeBadge.icon === "clock" && <Clock className="h-2.5 w-2.5" />}
-              {timeBadge.icon === "warning" && <Timer className="h-3 w-3" />}
+              {timeBadge.icon === "warning" && <Timer className="h-2.5 w-2.5" />}
               {timeBadge.icon === "alert" && (
-                <AlertCircle className={cn("h-3 w-3", timeBadge.pulse && "animate-pulse")} />
+                <AlertCircle className={cn("h-2.5 w-2.5", timeBadge.pulse && "animate-pulse")} />
               )}
               {timeBadge.label}
             </span>
 
             <div className="flex items-center gap-1">
               {parceiroNome && (
-                <Badge variant="secondary" className="text-[9px] px-1 py-0 gap-0.5 h-4">
-                  <Handshake className="h-2.5 w-2.5" /> Parceria
+                <Badge variant="secondary" className="text-[8px] px-1 py-0 gap-0.5 h-3.5">
+                  <Handshake className="h-2 w-2" /> Parceria
                 </Badge>
               )}
               {!corretorNome && isAdmin ? (
-                <Badge className="text-[9px] px-1.5 py-0 h-4 bg-[#7c3aed]/10 text-[#7c3aed] border-[#7c3aed]/30 border font-semibold hover:bg-[#7c3aed]/20">
-                  📥 Fila CEO
+                <Badge className="text-[8px] px-1 py-0 h-3.5 bg-[#7c3aed]/10 text-[#7c3aed] border-[#7c3aed]/30 border font-semibold">
+                  📥 CEO
                 </Badge>
               ) : !corretorNome ? null : (
-                <span className="text-[10px] text-muted-foreground truncate max-w-[90px]">
+                <span className="text-[9px] text-muted-foreground truncate max-w-[80px]">
                   👤 {corretorNome}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Game: Journey progress dots */}
+          {/* Journey dots */}
           {stageIndexMap && (
-            <div className="flex items-center gap-0.5 pt-1">
+            <div className="flex items-center gap-0.5 pt-0.5">
               {stages.map((s, i) => {
                 const isCurrent = i === currentIdx;
                 const isPast = i < currentIdx;
@@ -386,21 +366,15 @@ const PipelineCard = memo(function PipelineCard({
                     <div
                       className="rounded-full"
                       style={{
-                        width: isCurrent ? 8 : 6,
-                        height: isCurrent ? 8 : 6,
-                        backgroundColor: isPast || isCurrent ? (missionBadge.color) : "hsl(var(--muted))",
+                        width: isCurrent ? 6 : 4,
+                        height: isCurrent ? 6 : 4,
+                        backgroundColor: isPast || isCurrent ? missionBadge.color : "hsl(var(--muted))",
                         opacity: isPast ? 0.5 : 1,
                         animation: isCurrent ? "pulseDot 2s ease-in-out infinite" : undefined,
                       }}
                     />
                     {i < stages.length - 1 && (
-                      <div
-                        className="h-[2px]"
-                        style={{
-                          width: "8px",
-                          backgroundColor: isPast ? `${missionBadge.color}60` : "hsl(var(--muted))",
-                        }}
-                      />
+                      <div className="h-[1.5px]" style={{ width: "6px", backgroundColor: isPast ? `${missionBadge.color}60` : "hsl(var(--muted))" }} />
                     )}
                   </div>
                 );
@@ -412,7 +386,7 @@ const PipelineCard = memo(function PipelineCard({
         <Separator />
 
         {/* ─── Actions section — semantic colors ─── */}
-        <div data-actions-area className="px-2 py-1.5 flex items-center gap-1 flex-wrap">
+        <div data-actions-area className="px-2 py-1 flex items-center gap-0.5 flex-wrap">
           {/* Atribuir (purple) or Ligar (green) */}
           {!corretorNome ? (
             <Button
