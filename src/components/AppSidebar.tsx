@@ -54,7 +54,7 @@ import { getLevel } from "@/lib/gamification";
 import { useNavigate } from "react-router-dom";
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-48.png";
 
 type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }> };
 

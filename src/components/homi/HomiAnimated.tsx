@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
 
-const homiMascot = "/images/homi-mascot-opt.png";
+const homiMascot = "/images/homi-120.png";
 
 export type HomiAnimState = "idle" | "talking" | "thinking" | "alert" | "celebrating";
 
