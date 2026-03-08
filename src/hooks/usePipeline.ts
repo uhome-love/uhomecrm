@@ -116,19 +116,21 @@ export function usePipeline(pipelineTipo: string = "leads") {
     if (!isGestor && !isAdmin) {
       query = query.eq("corretor_id", user.id);
     } else if (isGestor && !isAdmin) {
-      // Gerentes: only see leads assigned to their team members
+      // Gerentes: leads do time + leads ainda sem corretor (fila não distribuída)
       const { data: teamMembers } = await supabase
         .from("team_members")
         .select("user_id")
         .eq("gerente_id", user.id);
-      const teamUserIds = (teamMembers || []).map(m => m.user_id).filter(Boolean) as string[];
+
+      const teamUserIds = (teamMembers || [])
+        .map((m) => m.user_id)
+        .filter(Boolean) as string[];
+
       if (teamUserIds.length > 0) {
-        query = query.in("corretor_id", teamUserIds);
+        const ids = teamUserIds.join(",");
+        query = query.or(`corretor_id.in.(${ids}),corretor_id.is.null`);
       } else {
-        // No team members → no leads to show
-        setLeads([]);
-        setCorretorNomes({});
-        return;
+        query = query.is("corretor_id", null);
       }
     }
 
