@@ -153,6 +153,9 @@ export default function AgendaVisitas() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [resultadoVisita, setResultadoVisita] = useState<Visita | null>(null);
   const [pendingOnly, setPendingOnly] = useState(false);
+  const [showCobranca, setShowCobranca] = useState(false);
+  const [cobrancaMsg, setCobrancaMsg] = useState("");
+  const [sendingCobranca, setSendingCobranca] = useState(false);
 
   const { visitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
 
