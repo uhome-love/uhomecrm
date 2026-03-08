@@ -36,7 +36,8 @@ export default function FichaRapida({ empreendimento }: Props) {
 
   const debouncedNotas = useDebounce(data.notas, 1000);
 
-  // Fetch ficha when empreendimento changes
+  const hasAnyData = FIELDS.some(f => data[f.key].trim() !== "");
+
   useEffect(() => {
     if (!empreendimento) return;
     setLoaded(false);
@@ -63,7 +64,6 @@ export default function FichaRapida({ empreendimento }: Props) {
     })();
   }, [empreendimento]);
 
-  // Auto-save notas
   useEffect(() => {
     if (!loaded || !empreendimento) return;
     saveField("notas", debouncedNotas);
@@ -138,30 +138,50 @@ export default function FichaRapida({ empreendimento }: Props) {
         </button>
       </div>
 
-      {/* Info fields */}
-      <div className="space-y-0.5">
-        {FIELDS.map(f => (
-          <div key={f.key} className="flex items-center gap-1.5 py-0.5">
-            <span style={{ fontSize: 13 }}>{f.icon}</span>
-            <span className="text-xs shrink-0" style={{ color: "#9CA3AF", minWidth: 76 }}>
-              {f.label}:
-            </span>
-            {editing ? (
-              <input
-                value={data[f.key]}
-                onChange={e => updateField(f.key, e.target.value)}
-                className="flex-1 text-sm bg-transparent border-b border-white/10 focus:border-cyan-500/50 outline-none px-0.5 py-0"
-                style={{ color: "#E5E7EB" }}
-                placeholder="—"
-              />
-            ) : (
-              <span className="text-sm" style={{ color: data[f.key] ? "#E5E7EB" : "#4B5563" }}>
-                {data[f.key] || "—"}
+      {/* Empty state */}
+      {!hasAnyData && !editing ? (
+        <div className="py-3 text-center space-y-1">
+          <p className="text-sm italic" style={{ color: "#6B7280" }}>
+            📝 Nenhuma informação cadastrada ainda.
+          </p>
+          <p className="text-xs" style={{ color: "#4B5563" }}>
+            Clique em{" "}
+            <button
+              onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-0.5 font-semibold"
+              style={{ color: "#22D3EE" }}
+            >
+              <Pencil className="h-3 w-3" /> Editar
+            </button>{" "}
+            para adicionar dados do empreendimento como valores, metragens, descontos e dicas.
+          </p>
+        </div>
+      ) : (
+        /* Info fields */
+        <div className="space-y-0.5">
+          {FIELDS.map(f => (
+            <div key={f.key} className="flex items-center gap-1.5 py-0.5">
+              <span style={{ fontSize: 13 }}>{f.icon}</span>
+              <span className="text-xs shrink-0" style={{ color: "#9CA3AF", minWidth: 76 }}>
+                {f.label}:
               </span>
-            )}
-          </div>
-        ))}
-      </div>
+              {editing ? (
+                <input
+                  value={data[f.key]}
+                  onChange={e => updateField(f.key, e.target.value)}
+                  className="flex-1 text-sm bg-transparent border-b border-white/10 focus:border-cyan-500/50 outline-none px-0.5 py-0"
+                  style={{ color: "#E5E7EB" }}
+                  placeholder="—"
+                />
+              ) : (
+                <span className="text-sm" style={{ color: data[f.key] ? "#E5E7EB" : "#4B5563" }}>
+                  {data[f.key] || "—"}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Notas pessoais */}
       <div className="space-y-1">

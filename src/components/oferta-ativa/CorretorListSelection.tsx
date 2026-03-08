@@ -274,10 +274,7 @@ export default function CorretorListSelection() {
 
   if (selectedLista) {
     return (
-      <div className="space-y-3">
-        <Button variant="ghost" size="sm" className="gap-1 text-xs text-neutral-400 hover:text-white hover:bg-white/10" onClick={() => setSelectedLista(null)}>
-          <ArrowLeft className="h-3.5 w-3.5" /> Voltar às listas
-        </Button>
+      <div>
         <DialingModeWithScript lista={selectedLista} onBack={() => setSelectedLista(null)} />
       </div>
     );
