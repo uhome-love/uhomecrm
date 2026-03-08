@@ -57,9 +57,9 @@ export default function CorretorDashboard() {
       const today = new Date().toISOString().slice(0, 10);
 
       // Leads pending contact
-      const { count: pendingLeads } = await supabase
+      const { count: pendingLeads } = await (supabase
         .from("pipeline_leads")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true }) as any)
         .eq("corretor_id", user!.id)
         .is("proxima_acao", null);
 
