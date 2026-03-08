@@ -1,11 +1,12 @@
 import { useState, useMemo, useCallback, useRef } from "react";
-import { useNegocios, NEGOCIOS_FASES, type Negocio } from "@/hooks/useNegocios";
+import { useNegocios, NEGOCIOS_FASES, type Negocio, type CorretorInfo } from "@/hooks/useNegocios";
 import { useLeadProgression } from "@/hooks/useLeadProgression";
 import { useLeadsParados } from "@/hooks/useLeadsParados";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import JornadaLead from "@/components/pipeline/JornadaLead";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, RefreshCw, Briefcase, X, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight, TrendingUp, Clock, MessageCircle } from "lucide-react";
@@ -20,9 +21,23 @@ function formatVGV(value: number) {
   return `R$ ${value}`;
 }
 
-function NegocioCard({ negocio, corretorNome, paradoInfo, onDragStart, onClick }: {
+const TEAM_COLORS: Record<string, string> = {
+  "gabrielle": "bg-pink-500/15 text-pink-600 border-pink-500/30",
+  "bruno": "bg-blue-500/15 text-blue-600 border-blue-500/30",
+  "gabriel": "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+};
+
+function getTeamColorClass(equipe: string | null) {
+  if (!equipe) return "bg-muted text-muted-foreground";
+  const key = equipe.toLowerCase().replace("equipe ", "").trim();
+  return TEAM_COLORS[key] || "bg-muted text-muted-foreground";
+}
+
+function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, paradoInfo, onDragStart, onClick }: {
   negocio: Negocio;
   corretorNome?: string;
+  corretorInfo?: CorretorInfo;
+  showCorretor?: boolean;
   paradoInfo?: { diasParado: number; severity: "warning" | "danger" };
   onDragStart: () => void;
   onClick: () => void;
