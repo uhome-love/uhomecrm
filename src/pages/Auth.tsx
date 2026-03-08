@@ -479,24 +479,24 @@ export default function Auth() {
         {/* SPACER */}
         <div className="flex-1" />
 
-        {/* HOMI MASCOT with animations */}
-        <div className="flex flex-col items-center anim-fade-in-up anim-delay-3">
-          <div className="relative homi-entrance">
-            <HomiSpeechBubble />
-            <div className="homi-wave">
-              <div className="absolute inset-0 -m-4 rounded-full bg-[hsl(229,100%,64%/0.2)] blur-[40px] anim-glow" />
-              <img
-                src={homiHero}
-                alt="Homi AI"
-                className="relative w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(229,100%,64%,0.5)]"
-              />
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* FOOTER */}
-      <div className="relative z-10 pb-6 pt-2">
+      {/* HOMI + FOOTER — outside main column, always at bottom */}
+      <div className="relative z-10 flex flex-col items-center pb-6 pt-2 gap-3">
+        {/* HOMI MASCOT */}
+        <div className="relative homi-entrance">
+          <HomiSpeechBubble />
+          <div className="homi-wave">
+            <div className="absolute inset-0 -m-4 rounded-full bg-[hsl(229,100%,64%/0.2)] blur-[40px] anim-glow" />
+            <img
+              src={homiHero}
+              alt="Homi AI"
+              className="relative object-contain drop-shadow-[0_0_30px_hsl(229,100%,64%,0.5)]"
+              style={{ height: 80 }}
+            />
+          </div>
+        </div>
+        {/* COPYRIGHT */}
         <p className="text-center text-[10px] text-white/20 tracking-wider">
           © {new Date().getFullYear()} Uhome · Impulsione suas vendas · Todos os direitos reservados
         </p>
