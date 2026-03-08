@@ -193,6 +193,7 @@ export function AppSidebar() {
             items: [
               { title: "HOMI CEO", url: "/homi-ceo", icon: Bot },
               { title: "Base HOMI", url: "/homi/base-conhecimento", icon: Brain },
+              { title: "Academia", url: "/academia/gerenciar", icon: Award },
               { title: "Templates", url: "/templates-comunicacao", icon: MessageSquare },
               { title: "Marketplace", url: "/marketplace", icon: BookOpen },
               { title: "Configurações", url: "/configuracoes", icon: Settings },
@@ -243,6 +244,7 @@ export function AppSidebar() {
             items: [
               { title: "HOMI Assistente", url: "/homi-gerente", icon: Bot },
               { title: "Base HOMI", url: "/homi/base-conhecimento", icon: Brain },
+              { title: "Academia", url: "/academia/gerenciar", icon: Award },
               { title: "Templates", url: "/templates-comunicacao", icon: MessageSquare },
               { title: "Marketplace", url: "/marketplace", icon: BookOpen },
             ],
@@ -311,6 +313,7 @@ export function AppSidebar() {
           label: "Ferramentas",
           items: [
             { title: "HOMI Assistente", url: "/homi", icon: Bot },
+            { title: "🎓 Academia", url: "/academia", icon: Award },
             { title: "Meus Scripts", url: "/scripts", icon: FileEdit },
             { title: "Marketplace", url: "/marketplace", icon: BookOpen },
             { title: "Notificações", url: "/notificacoes", icon: Bell },
