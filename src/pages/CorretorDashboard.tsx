@@ -113,30 +113,7 @@ export default function CorretorDashboard() {
     });
   }, [user]);
 
-  if (!roleLoading && (isGestor || isAdmin)) {
-    return <Navigate to="/" replace />;
-  }
-
   const metaSalva = !!goals;
-
-  const handleFinalizarTrabalho = async () => {
-    if (!user) return;
-    setFinalizando(true);
-    try {
-      const { data, error } = await supabase.rpc("finalizar_trabalho_corretor", { p_user_id: user.id });
-      if (error) throw error;
-      const result = data as any;
-      if (result?.success) {
-        toast.success(`🎉 Trabalho finalizado! ${result.tentativas} tentativas e ${result.aproveitados} aproveitados enviados ao gerente.`);
-      } else {
-        toast.error(result?.message || "Erro ao finalizar trabalho.");
-      }
-    } catch (err: any) {
-      toast.error("Erro ao finalizar: " + err.message);
-    } finally {
-      setFinalizando(false);
-    }
-  };
 
   const ligPct = goals ? Math.min(100, Math.round((progress.tentativas / (goals.meta_ligacoes || 30)) * 100)) : 0;
   const aprvPct = goals ? Math.min(100, Math.round((progress.aproveitados / (goals.meta_aproveitados || 5)) * 100)) : 0;
@@ -151,6 +128,10 @@ export default function CorretorDashboard() {
       setConfettiTrigger(prev => prev + 1);
     }
   }, [allMetasComplete, metaCelebrated]);
+
+  if (!roleLoading && (isGestor || isAdmin)) {
+    return <Navigate to="/" replace />;
+  }
 
   const radar = radarData || { pendingLeads: 0, slaExpired: 0, visitas: [], rankingPos: 0, totalBrokers: 1, ptsToNext: 0, priorityLeads: [] };
 
