@@ -18,6 +18,8 @@ interface Props {
   darkMode?: boolean;
   /** Show only "ligacao" or "whatsapp" script. Omit to show both. */
   scriptFilter?: "ligacao" | "whatsapp";
+  /** Hide the CTA Final block (when parent renders it separately) */
+  hideCta?: boolean;
 }
 
 function buildDefaultScript(leadName: string, emp: string) {
@@ -28,7 +30,7 @@ function applyVars(text: string, leadName: string, emp: string) {
   return text.replace(/\{nome\}/g, leadName).replace(/\{empreendimento\}/g, emp);
 }
 
-export default function ScriptPanel({ empreendimento, lead, compact, darkMode, scriptFilter }: Props) {
+export default function ScriptPanel({ empreendimento, lead, compact, darkMode, scriptFilter, hideCta }: Props) {
   const { templates } = useOATemplates(empreendimento);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -214,8 +216,8 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
         );
       })}
 
-      {/* CTA Final — only when showing ligacao or both */}
-      {(!scriptFilter || scriptFilter === "ligacao") && (
+      {/* CTA Final — only when showing ligacao or both, and not hidden */}
+      {!hideCta && (!scriptFilter || scriptFilter === "ligacao") && (
         <div className="rounded-xl p-3" style={{ background: darkMode ? "rgba(59,130,246,0.06)" : undefined, border: darkMode ? "1px solid rgba(59,130,246,0.15)" : undefined }}>
           <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className={`uppercase mb-1.5 ${darkMode ? "text-blue-400" : "text-primary"}`}>🎯 CTA Final</h4>
           <p style={{ fontSize: "15px", fontStyle: "italic", color: darkMode ? "#FDE68A" : undefined }} className={`p-2 rounded-lg ${!darkMode ? "text-muted-foreground" : ""}`} >
