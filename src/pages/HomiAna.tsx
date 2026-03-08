@@ -15,7 +15,7 @@ const homiMascot = "/images/homi-mascot-opt.png";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/homi-chat`;
+// Uses dedicated homi-ana edge function
 
 const SYSTEM_CONTEXT = `Você é o HOMI, assistente especializado de marketing imobiliário e backoffice da Uhome Negócios Imobiliários, Porto Alegre/RS.
 
