@@ -410,31 +410,45 @@ export default function HomeDashboard() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
             <SectionHeader icon={TrendingUp} title="Funil Comercial" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
             <div className="p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                {funnelData.map((f, i) => (
-                  <div key={f.label} className="relative">
-                    <div className={`rounded-xl p-3 ${f.bg} ${f.highlight ? "ring-1 ring-border" : ""}`}>
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-sm">{f.icon}</span>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wide font-medium">{f.label}</p>
-                      </div>
-                      <p className={`text-2xl lg:text-3xl font-black ${f.color}`}>
-                        {f.value}
-                      </p>
-                      {/* Conversion arrow between items */}
-                      {i < funnelData.length - 1 && i < 3 && (
-                        <div className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 items-center">
-                          <span className="text-[9px] text-gray-400 font-medium bg-card px-1 rounded">
+              <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3" style={{ minWidth: 0 }}>
+                {funnelData.map((f, i) => {
+                  const isVgv = !!(f as any).isVgv;
+                  const isPct = typeof f.value === "string" && (f.value as string).endsWith("%");
+                  return (
+                    <div key={f.label} className="relative">
+                      <div className={`rounded-xl p-3 ${f.bg} ${f.highlight ? "ring-1 ring-border" : ""} h-[100px] flex flex-col justify-between min-w-0`}>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm">{f.icon}</span>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium truncate">{f.label}</p>
+                        </div>
+                        <div className="min-w-0">
+                          {isVgv ? (
+                            <p className={`font-black leading-tight ${f.color} whitespace-nowrap`}>
+                              <span className="text-[0.65rem] font-bold align-top mr-0.5">R$</span>
+                              <span className="text-[1.8rem]">{(f.value as string).replace("R$ ", "")}</span>
+                            </p>
+                          ) : isPct ? (
+                            <p className={`text-[2rem] font-black leading-tight ${f.color} whitespace-nowrap`}>
+                              {f.value}
+                            </p>
+                          ) : (
+                            <p className={`text-[2.5rem] font-black leading-tight ${f.color} whitespace-nowrap`}>
+                              {f.value}
+                            </p>
+                          )}
+                        </div>
+                        {/* Conversion rate below the number */}
+                        {i < funnelData.length - 1 && i < 3 && (
+                          <p className="text-[0.7rem] text-muted-foreground leading-none mt-auto">
                             {typeof funnelData[i].value === "number" && typeof funnelData[i+1].value === "number"
                               ? `→ ${conversionRate(funnelData[i].value as number, funnelData[i+1].value as number)}`
-                              : "→"
-                            }
-                          </span>
-                        </div>
-                      )}
+                              : ""}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Atingimento Progress Bar */}
