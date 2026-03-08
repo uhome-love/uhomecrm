@@ -77,4 +77,6 @@ verify_jwt = false
 
 [functions.visita-public]
 verify_jwt = false
+
+[functions.oa-session-coaching]
 verify_jwt = false

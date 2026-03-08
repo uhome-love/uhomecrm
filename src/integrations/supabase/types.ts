@@ -295,6 +295,71 @@ export type Database = {
         }
         Relationships: []
       }
+      coaching_sessions: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          duracao_segundos: number
+          feedback_ia: string | null
+          id: string
+          lista_id: string | null
+          media_corretor_30d: Json | null
+          media_time_hoje: Json | null
+          metricas: Json | null
+          session_end: string
+          session_start: string
+          taxa_aproveitamento: number | null
+          taxa_atendimento: number | null
+          total_aproveitados: number
+          total_atenderam: number
+          total_tentativas: number
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          duracao_segundos?: number
+          feedback_ia?: string | null
+          id?: string
+          lista_id?: string | null
+          media_corretor_30d?: Json | null
+          media_time_hoje?: Json | null
+          metricas?: Json | null
+          session_end?: string
+          session_start: string
+          taxa_aproveitamento?: number | null
+          taxa_atendimento?: number | null
+          total_aproveitados?: number
+          total_atenderam?: number
+          total_tentativas?: number
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          duracao_segundos?: number
+          feedback_ia?: string | null
+          id?: string
+          lista_id?: string | null
+          media_corretor_30d?: Json | null
+          media_time_hoje?: Json | null
+          metricas?: Json | null
+          session_end?: string
+          session_start?: string
+          taxa_aproveitamento?: number | null
+          taxa_atendimento?: number | null
+          total_aproveitados?: number
+          total_atenderam?: number
+          total_tentativas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_sessions_lista_id_fkey"
+            columns: ["lista_id"]
+            isOneToOne: false
+            referencedRelation: "oferta_ativa_listas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       corretor_daily_goals: {
         Row: {
           aprovado_por: string | null
