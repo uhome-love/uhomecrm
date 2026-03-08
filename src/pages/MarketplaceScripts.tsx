@@ -149,9 +149,14 @@ function SubmitDialog({ onSubmit, submitting }: { onSubmit: (data: any) => void;
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-1.5">
+        <Button
+          className="gap-1.5 font-semibold"
+          style={{ background: "#2563EB", color: "#fff" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#1D4ED8"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "#2563EB"; }}
+        >
           <Plus className="h-4 w-4" /> Publicar Material
         </Button>
       </DialogTrigger>
@@ -209,22 +214,40 @@ function EmptyExploreState({ hasFilter, search, onClearFilters, onOpenPublish }:
   }
 
   return (
-    <Card className="border-dashed border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-      <CardContent className="py-14 text-center">
-        <div className="text-5xl mb-4">📚</div>
-        <h3 className="text-lg font-bold text-foreground mb-2">
-          Marketplace ainda vazio!
-        </h3>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
-          Os melhores corretores compartilham o que funciona.
-          <br />
-          Publica o seu primeiro script e ajuda o time. 🚀
-        </p>
-        <Button onClick={onOpenPublish} size="lg" className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
-          <Plus className="h-5 w-5" /> Publicar meu primeiro script
-        </Button>
-      </CardContent>
-    </Card>
+    <div
+      className="text-center"
+      style={{
+        border: "1px dashed #D1D5DB",
+        borderRadius: 16,
+        background: "#FAFAFA",
+        padding: "56px 24px",
+      }}
+    >
+      <div style={{ fontSize: 48 }} className="mb-4">📚</div>
+      <h3 className="font-bold text-gray-700" style={{ fontSize: 20 }}>
+        Marketplace ainda vazio!
+      </h3>
+      <p className="text-gray-400 max-w-md mx-auto mb-6 leading-relaxed" style={{ fontSize: 14 }}>
+        Os melhores corretores compartilham o que funciona.
+        <br />
+        Publica o seu primeiro script e ajuda o time. 🚀
+      </p>
+      <button
+        onClick={onOpenPublish}
+        className="inline-flex items-center gap-2 font-semibold text-white"
+        style={{
+          background: "#2563EB",
+          borderRadius: 10,
+          padding: "10px 24px",
+          fontSize: 15,
+          transition: "background 0.2s",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = "#1D4ED8"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "#2563EB"; }}
+      >
+        <Plus className="h-5 w-5" /> Publicar meu primeiro script
+      </button>
+    </div>
   );
 }
 
@@ -279,10 +302,10 @@ export default function MarketplacePage() {
           </div>
         </div>
         <div className="flex-1">
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            Marketplace <span className="text-primary">de Scripts</span>
+          <h1 className="font-black" style={{ fontSize: 28 }}>
+            Marketplace <span style={{ background: "linear-gradient(135deg, #2563EB, #3B82F6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>de Scripts</span>
           </h1>
-          <p className="text-sm text-muted-foreground">Base de conhecimento coletiva — os melhores scripts e argumentos do time</p>
+          <p className="text-gray-400" style={{ fontSize: 14 }}>Base de conhecimento coletiva — os melhores scripts e argumentos do time</p>
         </div>
         <SubmitDialog onSubmit={data => submitItem.mutate(data)} submitting={submitItem.isPending} />
       </div>
@@ -310,22 +333,38 @@ export default function MarketplacePage() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="explorar" className="gap-1.5 text-xs">
-            <Search className="h-3.5 w-3.5" /> Explorar
+        <TabsList className="bg-transparent p-0 gap-2 h-auto">
+          <TabsTrigger
+            value="explorar"
+            className="gap-1.5 py-2.5 px-4 data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 font-semibold"
+            style={{ borderRadius: 8, fontSize: 14 }}
+          >
+            <Search className="h-4 w-4" /> Explorar
           </TabsTrigger>
-          <TabsTrigger value="meus" className="gap-1.5 text-xs">
-            <Star className="h-3.5 w-3.5" /> Meus Materiais
+          <TabsTrigger
+            value="meus"
+            className="gap-1.5 py-2.5 px-4 data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 font-semibold"
+            style={{ borderRadius: 8, fontSize: 14 }}
+          >
+            <Star className="h-4 w-4" /> Meus Materiais
           </TabsTrigger>
           {(isGestor || isAdmin) && (
-            <TabsTrigger value="moderar" className="gap-1.5 text-xs">
-              <CheckCircle className="h-3.5 w-3.5" /> Moderar
+            <TabsTrigger
+              value="moderar"
+              className="gap-1.5 py-2.5 px-4 data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 font-semibold"
+              style={{ borderRadius: 8, fontSize: 14 }}
+            >
+              <CheckCircle className="h-4 w-4" /> Moderar
               {stats.pendingCount > 0 && <Badge variant="destructive" className="ml-1 text-[10px] h-4 min-w-4 px-1">{stats.pendingCount}</Badge>}
             </TabsTrigger>
           )}
           {(isGestor || isAdmin) && (
-            <TabsTrigger value="dashboard" className="gap-1.5 text-xs">
-              <BarChart3 className="h-3.5 w-3.5" /> Dashboard
+            <TabsTrigger
+              value="dashboard"
+              className="gap-1.5 py-2.5 px-4 data-[state=active]:bg-gray-900 data-[state=active]:text-white data-[state=active]:shadow-none data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 font-semibold"
+              style={{ borderRadius: 8, fontSize: 14 }}
+            >
+              <BarChart3 className="h-4 w-4" /> Dashboard
             </TabsTrigger>
           )}
         </TabsList>
@@ -339,8 +378,8 @@ export default function MarketplacePage() {
           {/* Filters */}
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar scripts..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input placeholder="Buscar scripts..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
             </div>
             <Select value={category || "__all__"} onValueChange={v => setCategory(v === "__all__" ? "" : v as MarketplaceCategory)}>
               <SelectTrigger className="w-52 h-9"><SelectValue placeholder="Todas categorias" /></SelectTrigger>
@@ -363,17 +402,32 @@ export default function MarketplacePage() {
 
           {/* Category chips */}
           <div className="flex flex-wrap gap-2">
-            {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-              <Button
-                key={k}
-                size="sm"
-                variant={category === k ? "default" : "outline"}
-                onClick={() => setCategory(category === k ? "" : k as MarketplaceCategory)}
-                className="text-xs h-7"
-              >
-                {v}
-              </Button>
-            ))}
+            {Object.entries(CATEGORY_LABELS).map(([k, v]) => {
+              const isActive = category === k;
+              const chipColors: Record<string, string> = {
+                script_ligacao: "hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50",
+                whatsapp: "hover:border-green-300 hover:text-green-600 hover:bg-green-50",
+                argumentos: "hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50",
+                objecoes: "hover:border-red-300 hover:text-red-600 hover:bg-red-50",
+                templates: "hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50",
+              };
+              const hoverClass = chipColors[k] || "hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50";
+              return (
+                <button
+                  key={k}
+                  onClick={() => setCategory(category === k ? "" : k as MarketplaceCategory)}
+                  className={`transition-all ${isActive ? "bg-gray-900 text-white border-gray-900" : `text-gray-600 border-gray-200 ${hoverClass}`}`}
+                  style={{
+                    border: "1px solid",
+                    borderRadius: 999,
+                    padding: "6px 14px",
+                    fontSize: 14,
+                  }}
+                >
+                  {v}
+                </button>
+              );
+            })}
           </div>
 
           {isLoading ? (
