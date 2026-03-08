@@ -181,7 +181,6 @@ Seja breve e energético. Comece com "Oi Ana! 👋"`;
       setMessages((prev) => [...prev, { role: "assistant" as const, content: reply }]);
     } catch {
       toast.error("Ops! O HOMI está descansando um segundo. Tente novamente 🤖");
-    }
     } finally {
       setLoading(false);
     }
