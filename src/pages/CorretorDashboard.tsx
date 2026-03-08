@@ -17,6 +17,7 @@ import { getDynamicGreeting, formatStreak } from "@/lib/celebrations";
 import { getLevel, getNextLevel, getLevelProgress } from "@/lib/gamification";
 import MetaCelebration from "@/components/corretor/MetaCelebration";
 import ConfettiBurst from "@/components/corretor/ConfettiToast";
+import PulseFeed from "@/components/pulse/PulseFeed";
 
 import {
   AlertDialog,
@@ -579,6 +580,11 @@ export default function CorretorDashboard() {
                 )}
               </CardContent>
             </Card>
+          </motion.div>
+
+          {/* ⚡ Pulse Feed */}
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+            <PulseFeed />
           </motion.div>
         </div>
       </div>
