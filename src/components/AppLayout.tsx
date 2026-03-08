@@ -77,14 +77,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAdmin, isGestor } = useUserRole();
   const navigate = useNavigate();
   const [nome, setNome] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const cargo = isAdmin ? "CEO" : isGestor ? "Gerente" : "Corretor";
   const { isFullscreen, isSession } = useArenaMode();
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("nome").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("nome, avatar_url, avatar_gamificado_url").eq("user_id", user.id).single().then(({ data }) => {
       if (data?.nome) setNome(data.nome);
+      const url = data?.avatar_url || (data as any)?.avatar_gamificado_url || null;
+      setAvatarUrl(url);
     });
   }, [user]);
 
@@ -137,9 +140,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2.5 h-9 px-3 hover:bg-white/5 rounded-xl">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-                      <User className="h-3.5 w-3.5" style={{ color: "#9CA3AF" }} />
-                    </div>
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={nome || "Avatar"}
+                        className="rounded-full object-cover"
+                        style={{ width: 56, height: 56, border: "2px solid #7C3AED" }}
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center rounded-full font-bold text-white text-sm"
+                        style={{ width: 56, height: 56, background: "#7C3AED", border: "2px solid #7C3AED" }}
+                      >
+                        {nome ? nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : <User className="h-5 w-5" />}
+                      </div>
+                    )}
                     <div className="text-left hidden sm:block">
                       <p className="text-xs font-medium leading-tight" style={{ color: "#fff" }}>
                         {nome || user?.email?.split("@")[0]}
