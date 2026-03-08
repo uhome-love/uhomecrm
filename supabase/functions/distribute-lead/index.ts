@@ -127,6 +127,51 @@ Deno.serve(async (req) => {
       });
     }
 
+    // After successful distribution, send WhatsApp notification to assigned corretor
+    if (data && data.success && data.corretor_id) {
+      try {
+        // Get corretor profile
+        const { data: corretor } = await supabase
+          .from("profiles")
+          .select("telefone, nome")
+          .eq("user_id", data.corretor_id)
+          .maybeSingle();
+
+        // Get lead data
+        const { data: leadData } = await supabase
+          .from("pipeline_leads")
+          .select("nome, telefone, empreendimento")
+          .eq("id", pipeline_lead_id)
+          .maybeSingle();
+
+        if (corretor?.telefone && leadData) {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+          await fetch(`${supabaseUrl}/functions/v1/whatsapp-notificacao`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${serviceKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              telefone: corretor.telefone,
+              tipo: "novo_lead",
+              dados: {
+                nome: leadData.nome || "Lead",
+                empreendimento: leadData.empreendimento || "Não identificado",
+                telefone: leadData.telefone || "",
+              },
+            }),
+          });
+          console.log(`WhatsApp notification sent to corretor ${corretor.nome}`);
+        }
+      } catch (whatsappErr) {
+        // Don't fail the distribution if WhatsApp notification fails
+        console.error("WhatsApp notification error (non-blocking):", whatsappErr);
+      }
+    }
+
     // If no corretor available or outside hours, notify gestores
     if (data && !data.success && (data.reason === "no_corretor_available" || data.reason === "fora_horario")) {
       const { data: gestores } = await supabase
