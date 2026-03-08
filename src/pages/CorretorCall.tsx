@@ -75,11 +75,15 @@ export default function CorretorCall() {
     if (hasInteracted) playWhoosh();
   }, [hasInteracted]);
 
-  // Auto-collapse sidebar on mount, restore previous state on unmount
+  // Fullscreen arena: hide sidebar + remove padding via body class
   useEffect(() => {
     prevOpenRef.current = open;
     setOpen(false);
-    return () => { setOpen(prevOpenRef.current); };
+    document.body.classList.add("arena-mode");
+    return () => {
+      document.body.classList.remove("arena-mode");
+      setOpen(prevOpenRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -442,7 +446,7 @@ export default function CorretorCall() {
   // ── ARENA DE LIGAÇÃO ──
 
   return (
-    <div className="arena-bg flex flex-col h-[calc(100vh-56px)] max-w-full overflow-hidden">
+    <div className="arena-bg flex flex-col h-[calc(100vh-3.5rem)] w-full overflow-hidden">
       {/* Arena layers */}
       <div className="arena-floor" />
       <div className="arena-vignette" />
