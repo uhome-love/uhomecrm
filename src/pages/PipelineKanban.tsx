@@ -25,7 +25,7 @@ import PipelineAdvancedFilters, {
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText, Brain, Rocket } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, BarChart3, FolderOpen, Zap, Radar, FileText, Brain, Rocket } from "lucide-react";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
