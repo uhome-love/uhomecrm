@@ -682,6 +682,60 @@ export type Database = {
           },
         ]
       }
+      executive_reports: {
+        Row: {
+          campanhas: Json | null
+          comparativo: Json | null
+          conteudo_completo: string | null
+          created_at: string
+          diagnostico_ia: string | null
+          funil: Json | null
+          id: string
+          mes: string
+          metricas: Json | null
+          ranking_corretores: Json | null
+          ranking_equipes: Json | null
+          status: string
+          sumario_executivo: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          campanhas?: Json | null
+          comparativo?: Json | null
+          conteudo_completo?: string | null
+          created_at?: string
+          diagnostico_ia?: string | null
+          funil?: Json | null
+          id?: string
+          mes: string
+          metricas?: Json | null
+          ranking_corretores?: Json | null
+          ranking_equipes?: Json | null
+          status?: string
+          sumario_executivo?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          campanhas?: Json | null
+          comparativo?: Json | null
+          conteudo_completo?: string | null
+          created_at?: string
+          diagnostico_ia?: string | null
+          funil?: Json | null
+          id?: string
+          mes?: string
+          metricas?: Json | null
+          ranking_corretores?: Json | null
+          ranking_equipes?: Json | null
+          status?: string
+          sumario_executivo?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       funnel_entries: {
         Row: {
           analise_ia: string | null
