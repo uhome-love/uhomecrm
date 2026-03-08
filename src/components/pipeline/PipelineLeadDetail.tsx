@@ -6,23 +6,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 import { usePipelineLeadData } from "@/hooks/usePipelineLeadData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
   Phone, Mail, MessageSquare, Calendar, MapPin, ArrowRight, Loader2,
-  Clock, User, Building2, Target, Thermometer, DollarSign,
+  Clock, User, Building2, Target, DollarSign,
   Plus, Pin, PinOff, CheckCircle2, Circle, AlertTriangle,
-  FileText, Send, PhoneCall, Video, ChevronRight,
+  FileText, Send, PhoneCall, Video, ChevronRight, ChevronDown,
   Flame, Snowflake, Sun, Zap, ClipboardList, StickyNote,
   History, Brain, TrendingUp, AlertCircle, Timer,
-  Trash2, Ban, PhoneOff, Handshake, Shield, UserPlus, UserMinus, HelpCircle
+  Trash2, Ban, PhoneOff, Handshake, MoreHorizontal, Bot
 } from "lucide-react";
 import PartnershipDialog from "./PartnershipDialog";
 import GerenteManagementSection from "./GerenteManagementSection";
@@ -30,7 +31,7 @@ import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
 import HomiLeadAssistant from "./HomiLeadAssistant";
 import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
-import { format, formatDistanceToNow, differenceInHours, differenceInDays, parseISO } from "date-fns";
+import { format, formatDistanceToNow, differenceInHours, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Props {
@@ -72,9 +73,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
-  const [activeTab, setActiveTab] = useState("resumo");
+  const [activeTab, setActiveTab] = useState("inteligencia");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [homiOpen, setHomiOpen] = useState(false);
 
   // Edit states
   const [editingCommercial, setEditingCommercial] = useState(false);
@@ -104,7 +106,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [newNota, setNewNota] = useState("");
 
   // Move stage
-  const [moveStageId, setMoveStageId] = useState("");
   const [moveObs, setMoveObs] = useState("");
 
   // Partnership
@@ -122,6 +123,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const temperatureInfo = TEMPERATURA_MAP[(lead as any).temperatura || "morno"] || TEMPERATURA_MAP.morno;
   const TempIcon = temperatureInfo.icon;
+
+  const whatsappUrl = lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : null;
 
   const handleSaveCommercial = async () => {
     setSaving(true);
@@ -156,240 +159,266 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     setNewNota("");
   };
 
-  const handleMoveStage = async () => {
-    if (!moveStageId) return;
-    await onMove(lead.id, moveStageId, moveObs || undefined);
-    setMoveStageId("");
+  const handleMoveStage = async (stageId: string) => {
+    await onMove(lead.id, stageId, moveObs || undefined);
     setMoveObs("");
   };
-
-  const whatsappUrl = lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden border-l border-border/50">
-        {/* ========== HEADER ========== */}
-        <div className="shrink-0 bg-gradient-to-br from-card via-card to-accent/30 border-b border-border/50">
-          <div className="px-5 pt-5 pb-3">
-            {/* Name + Stage */}
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-foreground truncate">{lead.nome}</h2>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge className="text-[10px] font-semibold" style={{ backgroundColor: currentStage?.cor + "22", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
-                    <div className="h-1.5 w-1.5 rounded-full mr-1" style={{ backgroundColor: currentStage?.cor }} />
-                    {currentStage?.nome}
-                  </Badge>
-                  {segmento && (
-                    <Badge variant="outline" className="text-[10px]" style={{ borderColor: segmento.cor, color: segmento.cor }}>
-                      {segmento.nome}
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className={`text-[10px] gap-1 ${temperatureInfo.color}`}>
-                    <TempIcon className="h-3 w-3" />
-                    {temperatureInfo.label}
-                  </Badge>
-                </div>
+
+        {/* ════════════ ZONA 1 — HEADER FIXO ════════════ */}
+        <div className="shrink-0 border-b border-border/50 bg-card">
+          <div className="px-4 pt-4 pb-2 space-y-2">
+            {/* Row 1: Name + Stage badge (clickable) + Days */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <TempIcon className={`h-4 w-4 shrink-0 ${temperatureInfo.color}`} />
+                <h2 className="text-base font-bold text-foreground truncate">{lead.nome}</h2>
+
+                {/* Stage badge — click to change */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
+                      <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
+                      {currentStage?.nome}
+                      <ChevronDown className="h-2.5 w-2.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="start">
+                    <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
+                    <div className="space-y-0.5">
+                      {stages.filter(s => s.id !== lead.stage_id).map(s => (
+                        <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
+                          <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
+                          {s.nome}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
-              <div className="text-right shrink-0">
-                <span className="text-[10px] text-muted-foreground">No funil há</span>
-                <p className="text-sm font-bold text-foreground">{daysSinceCreation}d</p>
-              </div>
+
+              <span className="text-[11px] text-muted-foreground shrink-0 font-medium">{daysSinceCreation}d</span>
             </div>
 
-            {/* Meta row */}
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
-              {lead.origem && (
-                <span className="flex items-center gap-1">
-                  <Target className="h-3 w-3" />
-                  {lead.origem}
-                </span>
-              )}
+            {/* Row 2: Empreendimento + Temp + Score */}
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
               {lead.empreendimento && (
                 <span className="flex items-center gap-1">
                   <Building2 className="h-3 w-3" />
                   {lead.empreendimento}
                 </span>
               )}
+              <span className={`font-medium ${temperatureInfo.color}`}>{temperatureInfo.label}</span>
+              {lead.oportunidade_score != null && (
+                <span className="flex items-center gap-0.5 font-semibold text-primary">
+                  <Target className="h-3 w-3" /> Score {lead.oportunidade_score}
+                </span>
+              )}
               {lead.valor_estimado ? (
-                <span className="flex items-center gap-1 text-primary font-semibold">
+                <span className="flex items-center gap-0.5 font-semibold text-primary">
                   <DollarSign className="h-3 w-3" />
                   R$ {lead.valor_estimado.toLocaleString("pt-BR")}
                 </span>
               ) : null}
             </div>
+
+            {/* Row 3: Contact info */}
+            <div className="flex items-center gap-3 text-[11px] flex-wrap">
+              {lead.telefone && (
+                <a href={`tel:${lead.telefone}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <Phone className="h-3 w-3" /> {lead.telefone}
+                </a>
+              )}
+              {lead.email && (
+                <a href={`mailto:${lead.email}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1 truncate">
+                  <Mail className="h-3 w-3" /> {lead.email}
+                </a>
+              )}
+            </div>
+
+            {/* Row 4: Action buttons */}
+            <div className="flex items-center gap-1.5">
+              {lead.telefone && (
+                <a href={`tel:${lead.telefone}`}>
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-border/60 hover:border-primary hover:text-primary">
+                    <Phone className="h-3 w-3" /> Ligar
+                  </Button>
+                </a>
+              )}
+              {whatsappUrl && (
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-green-300 text-green-600 hover:bg-green-50">
+                    <MessageSquare className="h-3 w-3" /> WhatsApp
+                  </Button>
+                </a>
+              )}
+              {lead.email && (
+                <a href={`mailto:${lead.email}`}>
+                  <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-border/60 hover:border-primary hover:text-primary">
+                    <Mail className="h-3 w-3" /> Email
+                  </Button>
+                </a>
+              )}
+              <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full" onClick={() => { setActiveTab("historico"); setShowNewAtividade(true); }}>
+                <Plus className="h-3 w-3" /> Ação
+              </Button>
+
+              {/* ⋯ More menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full">
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => { setActiveTab("tarefas"); setShowNewTarefa(true); }}>
+                    <ClipboardList className="h-3.5 w-3.5 mr-2" /> Nova Tarefa
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setActiveTab("historico"); setShowNewAtividade(true); }}>
+                    <Calendar className="h-3.5 w-3.5 mr-2" /> Nova Atividade
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPartnerOpen(true)}>
+                    <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {(() => {
+                    const descarteStage = stages.find(s => s.tipo === "descarte");
+                    if (!descarteStage || lead.stage_id === descarteStage.id) return null;
+                    return (
+                      <DropdownMenuItem className="text-amber-600" onClick={() => { onMove(lead.id, descarteStage.id, "Descartado pelo usuário"); onOpenChange(false); }}>
+                        <Ban className="h-3.5 w-3.5 mr-2" /> Descartar
+                      </DropdownMenuItem>
+                    );
+                  })()}
+                  {onDelete && (
+                    <DropdownMenuItem className="text-destructive" onClick={() => { /* handled by alert dialog below */ }}>
+                      <PhoneOff className="h-3.5 w-3.5 mr-2" /> Contato errado
+                    </DropdownMenuItem>
+                  )}
+                  {isAdmin && onDelete && (
+                    <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
+                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar (CEO)
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
+        {/* ════════════ ZONA 2 — PRÓXIMA AÇÃO (fixo) ════════════ */}
+        <div className="shrink-0 border-b border-border/50 bg-accent/20 px-4 py-3 space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">Próxima Ação</span>
+            {lead.proxima_acao && lead.data_proxima_acao && (
+              <span className="text-[10px] text-muted-foreground ml-auto">
+                {format(new Date(lead.data_proxima_acao + "T00:00:00"), "dd/MM", { locale: ptBR })}
+              </span>
+            )}
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-1.5 px-5 pb-3 overflow-x-auto scrollbar-none">
-            {lead.telefone && (
-              <a href={`tel:${lead.telefone}`}>
-                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary">
-                  <Phone className="h-3 w-3" /> Ligar
-                </Button>
-              </a>
-            )}
-            {whatsappUrl && (
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 rounded-full border-green-300 text-green-600 hover:bg-green-50">
-                  <MessageSquare className="h-3 w-3" /> WhatsApp
-                </Button>
-              </a>
-            )}
-            {lead.email && (
-              <a href={`mailto:${lead.email}`}>
-                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary">
-                  <Mail className="h-3 w-3" /> Email
-                </Button>
-              </a>
-            )}
-            <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 rounded-full" onClick={() => { setActiveTab("tarefas"); setShowNewTarefa(true); }}>
-              <ClipboardList className="h-3 w-3" /> Tarefa
-            </Button>
-            <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 rounded-full" onClick={() => { setActiveTab("atividades"); setShowNewAtividade(true); }}>
-              <Calendar className="h-3 w-3" /> Atividade
-            </Button>
-            <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1.5 rounded-full border-purple-300 text-purple-600 hover:bg-purple-50" onClick={() => setPartnerOpen(true)}>
-              <Handshake className="h-3 w-3" /> Parceria
+          {/* Quick action chips */}
+          <div className="flex flex-wrap gap-1">
+            {[
+              { label: "Ligar", icon: "📞" },
+              { label: "Enviar material", icon: "📄" },
+              { label: "Marcar visita", icon: "🏠" },
+              { label: "Enviar proposta", icon: "💰" },
+              { label: "Follow-up WhatsApp", icon: "💬" },
+              { label: "Confirmar visita", icon: "✅" },
+              { label: "Retornar cliente", icon: "🔄" },
+              { label: "Enviar localização", icon: "📍" },
+            ].map(action => (
+              <button
+                key={action.label}
+                onClick={() => setProximaAcao(action.label)}
+                className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors ${
+                  proximaAcao === action.label
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:bg-accent"
+                }`}
+              >
+                {action.icon} {action.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Input + date + save */}
+          <div className="flex gap-1.5 items-center">
+            <Input className="h-7 text-xs flex-1" value={proximaAcao} onChange={e => setProximaAcao(e.target.value)} placeholder="Ou digite ação personalizada..." />
+            <Input type="date" className="h-7 text-xs w-28" value={dataProximaAcao} onChange={e => setDataProximaAcao(e.target.value)} />
+            <Button size="sm" className="h-7 text-[11px] px-3" onClick={handleSaveProximaAcao} disabled={saving || !proximaAcao}>
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
             </Button>
           </div>
         </div>
 
-        {/* ========== TABS ========== */}
+        {/* ════════════ ZONA 3 — CONTEÚDO (4 Abas) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="shrink-0 mx-5 mt-3 bg-muted/50 h-8 flex-wrap">
-            <TabsTrigger value="resumo" className="text-[11px] h-6 data-[state=active]:shadow-sm">Resumo</TabsTrigger>
-            <TabsTrigger value="atividades" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-              Atividades
+          <TabsList className="shrink-0 mx-4 mt-2 bg-muted/50 h-8">
+            <TabsTrigger value="inteligencia" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+              <Brain className="h-3 w-3 mr-1" /> Inteligência
+            </TabsTrigger>
+            <TabsTrigger value="historico" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+              <History className="h-3 w-3 mr-1" /> Histórico
               {leadData.atividades.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{leadData.atividades.length}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="visitas-propostas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
+              <MapPin className="h-3 w-3 mr-1" /> Visitas
+            </TabsTrigger>
             <TabsTrigger value="tarefas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-              Tarefas
+              <ClipboardList className="h-3 w-3 mr-1" /> Tarefas
               {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="notas" className="text-[11px] h-6 data-[state=active]:shadow-sm">Notas</TabsTrigger>
-            <TabsTrigger value="visitas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-              <MapPin className="h-3 w-3 mr-1" />Visitas
-            </TabsTrigger>
-            <TabsTrigger value="propostas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-              <DollarSign className="h-3 w-3 mr-1" />Proposta
-            </TabsTrigger>
-            <TabsTrigger value="historico" className="text-[11px] h-6 data-[state=active]:shadow-sm">Timeline</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0">
-            {/* ===== TAB: RESUMO ===== */}
-            <TabsContent value="resumo" className="px-5 pb-6 space-y-5 mt-0">
-              {/* Insights Card */}
+            {/* ===== TAB: INTELIGÊNCIA ===== */}
+            <TabsContent value="inteligencia" className="px-4 pb-6 space-y-4 mt-0">
+              {/* Lead intelligence card */}
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
                 <h4 className="text-[11px] font-bold text-primary flex items-center gap-1.5">
                   <Brain className="h-3.5 w-3.5" /> Inteligência do Lead
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
-                  <InsightItem
-                    icon={Timer}
-                    label="Tempo sem contato"
-                    value={lastActivity ? formatDistanceToNow(new Date(lastActivity.created_at), { locale: ptBR }) : "Nenhum contato"}
-                    alert={!lastActivity || differenceInHours(new Date(), new Date(lastActivity.created_at)) > 48}
-                  />
-                  <InsightItem
-                    icon={PhoneCall}
-                    label="Tentativas"
-                    value={`${leadData.atividades.length} atividades`}
-                  />
-                  <InsightItem
-                    icon={Clock}
-                    label="Nesta etapa há"
-                    value={hoursInStage < 24 ? `${hoursInStage}h` : `${Math.round(hoursInStage / 24)}d`}
-                    alert={hoursInStage > 72}
-                  />
-                  <InsightItem
-                    icon={AlertTriangle}
-                    label="Tarefas atrasadas"
-                    value={overdueTasks > 0 ? `${overdueTasks} atrasada${overdueTasks > 1 ? "s" : ""}` : "Nenhuma"}
-                    alert={overdueTasks > 0}
-                  />
+                  <InsightItem icon={Timer} label="Sem contato" value={lastActivity ? formatDistanceToNow(new Date(lastActivity.created_at), { locale: ptBR }) : "Nenhum"} alert={!lastActivity || differenceInHours(new Date(), new Date(lastActivity.created_at)) > 48} />
+                  <InsightItem icon={PhoneCall} label="Tentativas" value={`${leadData.atividades.length}`} />
+                  <InsightItem icon={Clock} label="Nesta etapa" value={hoursInStage < 24 ? `${hoursInStage}h` : `${Math.round(hoursInStage / 24)}d`} alert={hoursInStage > 72} />
+                  <InsightItem icon={AlertTriangle} label="Atrasadas" value={overdueTasks > 0 ? `${overdueTasks}` : "0"} alert={overdueTasks > 0} />
                 </div>
                 {hoursInStage > 48 && !lastActivity && (
                   <p className="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded flex items-center gap-1">
-                    <Zap className="h-3 w-3" />
-                    Sugestão: Faça contato imediato — lead sem interação há muito tempo.
+                    <Zap className="h-3 w-3" /> Faça contato imediato — lead sem interação.
                   </p>
                 )}
               </div>
 
-              {/* ===== RESPONSABILIDADE FLEXÍVEL ===== */}
-              <GerenteManagementSection lead={lead} onUpdate={onUpdate} />
-
-              {/* ===== SUGESTÃO DE SEQUÊNCIA ===== */}
+              {/* Sequence Suggestion (compact) */}
               {currentStage && (
-                <LeadSequenceSuggestion
-                  leadId={lead.id}
-                  leadNome={lead.nome}
-                  stageType={currentStage.tipo}
-                  empreendimento={lead.empreendimento}
-                />
+                <LeadSequenceSuggestion leadId={lead.id} leadNome={lead.nome} stageType={currentStage.tipo} empreendimento={lead.empreendimento} />
               )}
 
-              {/* ===== HOMI AI ASSISTANT v2 ===== */}
-              <HomiLeadAssistant
-                leadId={lead.id}
-                leadNome={lead.nome}
-                leadTelefone={lead.telefone}
-                leadEmail={lead.email}
-                empreendimento={lead.empreendimento}
-                etapa={currentStage?.nome || ""}
-                temperatura={(lead as any).temperatura}
-                observacoes={lead.observacoes}
-                origem={lead.origem}
-                origemDetalhe={lead.origem_detalhe}
-                createdAt={lead.created_at}
-                updatedAt={lead.updated_at}
-                proximaAcao={lead.proxima_acao}
-                valorEstimado={lead.valor_estimado}
-                oportunidadeScore={lead.oportunidade_score}
-              />
-
-              {/* Contact */}
-              <Section title="Contato" icon={User}>
-                <div className="space-y-1.5">
-                  {lead.telefone && (
-                    <ContactRow icon={Phone} label="Telefone" value={lead.telefone} href={`tel:${lead.telefone}`} />
-                  )}
-                  {lead.telefone2 && (
-                    <ContactRow icon={Phone} label="Telefone 2" value={lead.telefone2} href={`tel:${lead.telefone2}`} />
-                  )}
-                  {whatsappUrl && (
-                    <ContactRow icon={MessageSquare} label="WhatsApp" value={lead.telefone!} href={whatsappUrl} external />
-                  )}
-                  {lead.email && (
-                    <ContactRow icon={Mail} label="Email" value={lead.email} href={`mailto:${lead.email}`} />
-                  )}
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-1">
-                    <Calendar className="h-3 w-3" />
-                    Criado em {format(new Date(lead.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                  </div>
-                  {lead.observacoes && (
-                    <p className="text-[11px] text-muted-foreground bg-muted/50 rounded p-2 mt-2">
-                      {lead.observacoes}
-                    </p>
-                  )}
+              {/* Commercial Data (compact grid) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5" /> Dados Comerciais
+                  </h4>
+                  <Button variant="ghost" size="sm" className="h-5 text-[10px] text-primary" onClick={() => setEditingCommercial(!editingCommercial)}>
+                    {editingCommercial ? "Cancelar" : "Editar"}
+                  </Button>
                 </div>
-              </Section>
-
-              {/* Commercial Data */}
-              <Section title="Dados Comerciais" icon={TrendingUp} action={
-                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-primary" onClick={() => setEditingCommercial(!editingCommercial)}>
-                  {editingCommercial ? "Cancelar" : "Editar"}
-                </Button>
-              }>
                 {editingCommercial ? (
-                  <div className="space-y-2.5">
+                  <div className="space-y-2 border rounded-lg p-3 bg-card">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-[10px]">Objetivo</Label>
                         <Select value={commercialData.objetivo_cliente} onValueChange={v => setCommercialData(p => ({ ...p, objetivo_cliente: v }))}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="morar">Morar</SelectItem>
                             <SelectItem value="investir">Investir</SelectItem>
@@ -400,7 +429,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                       <div>
                         <Label className="text-[10px]">Temperatura</Label>
                         <Select value={commercialData.temperatura} onValueChange={v => setCommercialData(p => ({ ...p, temperatura: v }))}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="quente">🔥 Quente</SelectItem>
                             <SelectItem value="morno">☀️ Morno</SelectItem>
@@ -408,342 +437,163 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                    <div>
-                      <Label className="text-[10px]">Bairro / Região</Label>
-                      <Input className="h-8 text-xs" value={commercialData.bairro_regiao} onChange={e => setCommercialData(p => ({ ...p, bairro_regiao: e.target.value }))} placeholder="Ex: Moinhos de Vento" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-[10px]">Forma de pagamento</Label>
+                        <Label className="text-[10px]">Pagamento</Label>
                         <Select value={commercialData.forma_pagamento} onValueChange={v => setCommercialData(p => ({ ...p, forma_pagamento: v }))}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="financiamento">Financiamento</SelectItem>
                             <SelectItem value="avista">À vista</SelectItem>
-                            <SelectItem value="parcelado">Parcelado direto</SelectItem>
+                            <SelectItem value="parcelado">Parcelado</SelectItem>
                             <SelectItem value="fgts">FGTS</SelectItem>
                             <SelectItem value="consorcio">Consórcio</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-[10px]">Nível de interesse</Label>
-                        <Select value={commercialData.nivel_interesse} onValueChange={v => setCommercialData(p => ({ ...p, nivel_interesse: v }))}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="alto">Alto</SelectItem>
-                            <SelectItem value="medio">Médio</SelectItem>
-                            <SelectItem value="baixo">Baixo</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-[10px]">Valor (R$)</Label>
+                        <Input type="number" className="h-7 text-xs" value={commercialData.valor_estimado || ""} onChange={e => setCommercialData(p => ({ ...p, valor_estimado: Number(e.target.value) }))} />
                       </div>
                     </div>
                     <div>
-                      <Label className="text-[10px]">Valor estimado (R$)</Label>
-                      <Input type="number" className="h-8 text-xs" value={commercialData.valor_estimado || ""} onChange={e => setCommercialData(p => ({ ...p, valor_estimado: Number(e.target.value) }))} />
+                      <Label className="text-[10px]">Bairro / Região</Label>
+                      <Input className="h-7 text-xs" value={commercialData.bairro_regiao} onChange={e => setCommercialData(p => ({ ...p, bairro_regiao: e.target.value }))} />
                     </div>
                     <div className="flex items-center gap-2">
                       <Checkbox checked={commercialData.imovel_troca} onCheckedChange={v => setCommercialData(p => ({ ...p, imovel_troca: !!v }))} />
-                      <Label className="text-[11px]">Possui imóvel na troca</Label>
+                      <Label className="text-[10px]">Imóvel na troca</Label>
                     </div>
-                    <Button size="sm" className="w-full h-8 text-xs" onClick={handleSaveCommercial} disabled={saving}>
-                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar Dados Comerciais"}
+                    <Button size="sm" className="w-full h-7 text-xs" onClick={handleSaveCommercial} disabled={saving}>
+                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
                     <DataField label="Empreendimento" value={lead.empreendimento} />
                     <DataField label="Objetivo" value={(lead as any).objetivo_cliente ? ((lead as any).objetivo_cliente === "morar" ? "Morar" : (lead as any).objetivo_cliente === "investir" ? "Investir" : "Ambos") : null} />
-                    <DataField label="Valor estimado" value={lead.valor_estimado ? `R$ ${lead.valor_estimado.toLocaleString("pt-BR")}` : null} />
-                    <DataField label="Bairro/Região" value={(lead as any).bairro_regiao} />
+                    <DataField label="Valor" value={lead.valor_estimado ? `R$ ${lead.valor_estimado.toLocaleString("pt-BR")}` : null} />
+                    <DataField label="Bairro" value={(lead as any).bairro_regiao} />
                     <DataField label="Pagamento" value={(lead as any).forma_pagamento} />
-                    <DataField label="Nível interesse" value={(lead as any).nivel_interesse} />
-                    <DataField label="Imóvel troca" value={(lead as any).imovel_troca ? "Sim" : "Não"} />
                     <DataField label="Origem" value={lead.origem} />
                   </div>
                 )}
-              </Section>
-
-              {/* Próxima Ação */}
-              <Section title="Próxima Ação" icon={Zap}>
-                <div className="space-y-3">
-                  {/* Current action display */}
-                  {lead.proxima_acao && (
-                    <div className="flex items-center gap-2 bg-primary/10 rounded-lg p-2.5 border border-primary/20">
-                      <Zap className="h-4 w-4 text-primary shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground">{lead.proxima_acao}</p>
-                        {lead.data_proxima_acao && (
-                          <p className="text-[10px] text-muted-foreground">
-                            {format(new Date(lead.data_proxima_acao + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {!lead.proxima_acao && (
-                    <div className="flex items-center gap-2 bg-destructive/10 rounded-lg p-2.5 border border-destructive/20">
-                      <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
-                      <p className="text-xs font-bold text-destructive">Sem próxima ação definida!</p>
-                    </div>
-                  )}
-
-                  {/* Quick action buttons */}
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-medium mb-1.5">Ação rápida:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { label: "Ligar", icon: "📞" },
-                        { label: "Enviar material", icon: "📄" },
-                        { label: "Marcar visita", icon: "🏠" },
-                        { label: "Enviar proposta", icon: "💰" },
-                        { label: "Retornar cliente", icon: "🔄" },
-                        { label: "Enviar localização", icon: "📍" },
-                        { label: "Confirmar visita", icon: "✅" },
-                        { label: "Follow-up WhatsApp", icon: "💬" },
-                      ].map(action => (
-                        <button
-                          key={action.label}
-                          onClick={() => setProximaAcao(action.label)}
-                          className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${
-                            proximaAcao === action.label
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-muted/50 text-foreground border-border hover:bg-accent"
-                          }`}
-                        >
-                          {action.icon} {action.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Custom input + date */}
-                  <Input className="h-8 text-xs" value={proximaAcao} onChange={e => setProximaAcao(e.target.value)} placeholder="Ou digite uma ação personalizada..." />
-                  <div className="flex gap-2">
-                    <Input type="date" className="h-8 text-xs flex-1" value={dataProximaAcao} onChange={e => setDataProximaAcao(e.target.value)} />
-                    <Button size="sm" className="h-8 text-xs gap-1" onClick={handleSaveProximaAcao} disabled={saving || !proximaAcao}>
-                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Zap className="h-3 w-3" /> Salvar</>}
-                    </Button>
-                  </div>
-                </div>
-              </Section>
-
-              {/* Mover Etapa */}
-              <Section title="Mover Etapa" icon={ArrowRight}>
-                <div className="space-y-2">
-                  <Select value={moveStageId} onValueChange={setMoveStageId}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione a etapa" /></SelectTrigger>
-                    <SelectContent>
-                      {stages.filter(s => s.id !== lead.stage_id).map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.cor }} />
-                            {s.nome}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {moveStageId && (
-                    <>
-                      <Textarea className="text-xs min-h-[60px]" placeholder="Observação da movimentação..." value={moveObs} onChange={e => setMoveObs(e.target.value)} />
-                      <Button size="sm" className="w-full h-8 text-xs" onClick={handleMoveStage}>
-                        <ArrowRight className="h-3 w-3 mr-1.5" />
-                        Mover para {stages.find(s => s.id === moveStageId)?.nome}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </Section>
-
-              {/* Ações do Lead */}
-              <Section title="Ações" icon={Ban}>
-                <div className="space-y-2">
-                  {/* Descartar → Oferta Ativa */}
-                  {(() => {
-                    const descarteStage = stages.find(s => s.tipo === "descarte");
-                    if (!descarteStage || lead.stage_id === descarteStage.id) return null;
-                    return (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5 border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20">
-                            <Ban className="h-3 w-3" /> Descartar (enviar para Oferta Ativa)
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="text-sm">Descartar lead?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-xs">
-                              O lead <strong>{lead.nome}</strong> será movido para Descarte e enviado automaticamente para a Oferta Ativa.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="text-xs h-8">Cancelar</AlertDialogCancel>
-                            <AlertDialogAction className="text-xs h-8 bg-amber-600 hover:bg-amber-700" onClick={() => {
-                              onMove(lead.id, descarteStage.id, "Descartado pelo usuário");
-                              onOpenChange(false);
-                            }}>
-                              Confirmar Descarte
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    );
-                  })()}
-
-                  {/* Contato Errado → Lixo */}
-                  {onDelete && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/5">
-                          <PhoneOff className="h-3 w-3" /> Contato errado (remover)
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-sm">Remover lead por contato errado?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-xs">
-                            O lead <strong>{lead.nome}</strong> será removido permanentemente do pipeline. Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="text-xs h-8">Cancelar</AlertDialogCancel>
-                          <AlertDialogAction className="text-xs h-8 bg-destructive hover:bg-destructive/90" onClick={async () => {
-                            setDeleting(true);
-                            await onDelete(lead.id);
-                            setDeleting(false);
-                            onOpenChange(false);
-                          }}>
-                            Remover permanentemente
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-
-                  {/* CEO: Apagar oportunidade */}
-                  {isAdmin && onDelete && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="w-full h-8 text-xs gap-1.5">
-                          <Trash2 className="h-3 w-3" /> Apagar oportunidade (CEO)
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-sm">Apagar oportunidade?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-xs">
-                            O lead <strong>{lead.nome}</strong> será excluído permanentemente do pipeline, incluindo todo histórico, atividades, tarefas e anotações. <strong>Ação exclusiva do CEO.</strong>
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="text-xs h-8">Cancelar</AlertDialogCancel>
-                          <AlertDialogAction className="text-xs h-8 bg-destructive hover:bg-destructive/90" onClick={async () => {
-                            setDeleting(true);
-                            await onDelete(lead.id);
-                            setDeleting(false);
-                            onOpenChange(false);
-                          }}>
-                            Apagar definitivamente
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </Section>
-            </TabsContent>
-
-            {/* ===== TAB: ATIVIDADES ===== */}
-            <TabsContent value="atividades" className="px-5 pb-6 space-y-4 mt-0">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-foreground">Atividades</h4>
-                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => setShowNewAtividade(!showNewAtividade)}>
-                  <Plus className="h-3 w-3" /> Nova
-                </Button>
               </div>
 
-              {showNewAtividade && (
-                <div className="border border-primary/30 rounded-lg p-3 space-y-2 bg-primary/5">
-                  <div className="grid grid-cols-2 gap-2">
+              {/* Responsabilidade (compact) */}
+              <GerenteManagementSection lead={lead} onUpdate={onUpdate} />
+
+              {/* Observações */}
+              {lead.observacoes && (
+                <p className="text-[11px] text-muted-foreground bg-muted/50 rounded p-2">
+                  {lead.observacoes}
+                </p>
+              )}
+            </TabsContent>
+
+            {/* ===== TAB: HISTÓRICO (Atividades + Notas + Timeline) ===== */}
+            <TabsContent value="historico" className="px-4 pb-6 space-y-4 mt-0">
+              {/* Timeline visual */}
+              <div className="relative">
+                <div className="absolute left-3 top-0 bottom-0 w-px bg-border" />
+                <div className="space-y-0">
+                  {buildTimeline(leadData.historico, leadData.atividades, leadData.tarefas, stages, lead).slice(0, 10).map((item, i) => (
+                    <div key={i} className="relative flex gap-3 pb-3">
+                      <div className={`relative z-10 h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
+                        <item.icon className="h-2.5 w-2.5" />
+                      </div>
+                      <div className="pt-0">
+                        <p className="text-[11px] font-medium text-foreground">{item.title}</p>
+                        {item.description && <p className="text-[10px] text-muted-foreground">{item.description}</p>}
+                        <p className="text-[9px] text-muted-foreground/60">{format(new Date(item.date), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="relative flex gap-3 pb-3">
+                    <div className="relative z-10 h-5 w-5 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
+                      <Plus className="h-2.5 w-2.5" />
+                    </div>
                     <div>
-                      <Label className="text-[10px]">Tipo</Label>
+                      <p className="text-[11px] font-medium text-foreground">Lead entrou no pipeline</p>
+                      <p className="text-[9px] text-muted-foreground/60">{format(new Date(lead.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* + Registrar inline */}
+              <div className="border-t border-border/50 pt-3">
+                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 w-full" onClick={() => setShowNewAtividade(!showNewAtividade)}>
+                  <Plus className="h-3 w-3" /> Registrar atividade
+                </Button>
+
+                {showNewAtividade && (
+                  <div className="border border-primary/30 rounded-lg p-3 space-y-2 bg-primary/5 mt-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <Select value={newAtividade.tipo} onValueChange={v => setNewAtividade(p => ({ ...p, tipo: v }))}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {ATIVIDADE_TIPOS.map(t => (
                             <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      <Input className="h-7 text-xs" value={newAtividade.titulo} onChange={e => setNewAtividade(p => ({ ...p, titulo: e.target.value }))} placeholder="Título" />
                     </div>
-                    <div>
-                      <Label className="text-[10px]">Prioridade</Label>
-                      <Select value={newAtividade.prioridade} onValueChange={v => setNewAtividade(p => ({ ...p, prioridade: v }))}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="alta">Alta</SelectItem>
-                          <SelectItem value="media">Média</SelectItem>
-                          <SelectItem value="baixa">Baixa</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex gap-2">
+                      <Input type="date" className="h-7 text-xs flex-1" value={newAtividade.data} onChange={e => setNewAtividade(p => ({ ...p, data: e.target.value }))} />
+                      <Input type="time" className="h-7 text-xs w-24" value={newAtividade.hora} onChange={e => setNewAtividade(p => ({ ...p, hora: e.target.value }))} />
                     </div>
+                    <Button size="sm" className="w-full h-7 text-xs" onClick={handleAddAtividade} disabled={!newAtividade.titulo}>Salvar</Button>
                   </div>
-                  <Input className="h-8 text-xs" placeholder="Título da atividade" value={newAtividade.titulo} onChange={e => setNewAtividade(p => ({ ...p, titulo: e.target.value }))} />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input type="date" className="h-8 text-xs" value={newAtividade.data} onChange={e => setNewAtividade(p => ({ ...p, data: e.target.value }))} />
-                    <Input type="time" className="h-8 text-xs" value={newAtividade.hora} onChange={e => setNewAtividade(p => ({ ...p, hora: e.target.value }))} />
-                  </div>
-                  <Textarea className="text-xs min-h-[50px]" placeholder="Descrição..." value={newAtividade.descricao} onChange={e => setNewAtividade(p => ({ ...p, descricao: e.target.value }))} />
-                  <Button size="sm" className="w-full h-8 text-xs" onClick={handleAddAtividade} disabled={!newAtividade.titulo}>
-                    Registrar Atividade
+                )}
+              </div>
+
+              {/* Notas (sticky notes) */}
+              <div className="border-t border-border/50 pt-3 space-y-2">
+                <h5 className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
+                  <StickyNote className="h-3 w-3" /> Notas
+                </h5>
+                <div className="flex gap-1.5">
+                  <Input className="h-7 text-xs flex-1" placeholder="Adicionar nota..." value={newNota} onChange={e => setNewNota(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAddNota()} />
+                  <Button size="sm" className="h-7 w-7 p-0" onClick={handleAddNota} disabled={!newNota.trim()}>
+                    <Send className="h-3 w-3" />
                   </Button>
                 </div>
-              )}
-
-              {leadData.atividades.length === 0 ? (
-                <EmptyState text="Nenhuma atividade registrada" />
-              ) : (
-                <div className="space-y-2">
-                  {leadData.atividades.map(at => {
-                    const tipoInfo = ATIVIDADE_TIPOS.find(t => t.value === at.tipo);
-                    const Icon = tipoInfo?.icon || PhoneCall;
-                    const prioInfo = PRIORIDADE_MAP[at.prioridade] || PRIORIDADE_MAP.media;
-                    return (
-                      <div key={at.id} className="flex items-start gap-3 p-2.5 rounded-lg border border-border/50 bg-card hover:bg-accent/20 transition-colors">
-                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${at.status === "concluida" ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"}`}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-foreground truncate">{at.titulo}</span>
-                            <Badge variant="outline" className={`text-[9px] h-4 ${prioInfo.color}`}>{prioInfo.label}</Badge>
-                          </div>
-                          {at.descricao && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{at.descricao}</p>}
-                          <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                            <span>{format(new Date(at.data), "dd/MM", { locale: ptBR })}</span>
-                            {at.hora && <span>{at.hora.slice(0, 5)}</span>}
-                            <span>• {tipoInfo?.label}</span>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 shrink-0"
-                          onClick={() => leadData.updateAtividade(at.id, { status: at.status === "concluida" ? "pendente" : "concluida" })}
-                        >
-                          {at.status === "concluida" ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
+                {leadData.anotacoes.map(nota => (
+                  <div key={nota.id} className={`p-2 rounded-lg border text-xs ${nota.fixada ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20" : "border-border/50 bg-card"}`}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[10px] font-semibold">{nota.autor_nome || "Usuário"}</span>
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-[9px] text-muted-foreground">{format(new Date(nota.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                        <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => leadData.toggleFixarAnotacao(nota.id, nota.fixada)}>
+                          {nota.fixada ? <PinOff className="h-2.5 w-2.5 text-amber-500" /> : <Pin className="h-2.5 w-2.5 text-muted-foreground" />}
                         </Button>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    </div>
+                    <p className="text-[11px] whitespace-pre-wrap">{nota.conteudo}</p>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* ===== TAB: VISITAS & PROPOSTAS ===== */}
+            <TabsContent value="visitas-propostas" className="px-4 pb-6 space-y-5 mt-0">
+              <div>
+                <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" /> Visitas
+                </h4>
+                <OpportunityVisitasTab pipelineLeadId={lead.id} />
+              </div>
+              <div className="border-t border-border/50 pt-4">
+                <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" /> Propostas
+                </h4>
+                <OpportunityPropostasTab pipelineLeadId={lead.id} valorEstimado={lead.valor_estimado} corretorNomes={corretorNomes} />
+              </div>
             </TabsContent>
 
             {/* ===== TAB: TAREFAS ===== */}
-            <TabsContent value="tarefas" className="px-5 pb-6 space-y-4 mt-0">
+            <TabsContent value="tarefas" className="px-4 pb-6 space-y-3 mt-0">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-foreground">Tarefas</h4>
                 <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => setShowNewTarefa(!showNewTarefa)}>
@@ -753,202 +603,135 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
               {showNewTarefa && (
                 <div className="border border-primary/30 rounded-lg p-3 space-y-2 bg-primary/5">
-                  <Input className="h-8 text-xs" placeholder="Ex: Enviar tabela de preços" value={newTarefa.titulo} onChange={e => setNewTarefa(p => ({ ...p, titulo: e.target.value }))} />
+                  <Input className="h-7 text-xs" placeholder="Ex: Enviar tabela de preços" value={newTarefa.titulo} onChange={e => setNewTarefa(p => ({ ...p, titulo: e.target.value }))} />
                   <div className="grid grid-cols-2 gap-2">
                     <Select value={newTarefa.prioridade} onValueChange={v => setNewTarefa(p => ({ ...p, prioridade: v }))}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="alta">Alta</SelectItem>
                         <SelectItem value="media">Média</SelectItem>
                         <SelectItem value="baixa">Baixa</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Input type="date" className="h-8 text-xs" value={newTarefa.vence_em} onChange={e => setNewTarefa(p => ({ ...p, vence_em: e.target.value }))} placeholder="Vencimento" />
+                    <Input type="date" className="h-7 text-xs" value={newTarefa.vence_em} onChange={e => setNewTarefa(p => ({ ...p, vence_em: e.target.value }))} />
                   </div>
                   <Textarea className="text-xs min-h-[40px]" placeholder="Descrição..." value={newTarefa.descricao} onChange={e => setNewTarefa(p => ({ ...p, descricao: e.target.value }))} />
-                  <Button size="sm" className="w-full h-8 text-xs" onClick={handleAddTarefa} disabled={!newTarefa.titulo}>
-                    Criar Tarefa
-                  </Button>
+                  <Button size="sm" className="w-full h-7 text-xs" onClick={handleAddTarefa} disabled={!newTarefa.titulo}>Criar Tarefa</Button>
                 </div>
               )}
 
+              {/* Overdue tasks first */}
               {leadData.tarefas.length === 0 ? (
                 <EmptyState text="Nenhuma tarefa criada" />
               ) : (
-                <div className="space-y-1.5">
-                  {leadData.tarefas.map(tarefa => {
-                    const isOverdue = tarefa.status === "pendente" && tarefa.vence_em && new Date(tarefa.vence_em) < new Date();
-                    return (
-                      <div
-                        key={tarefa.id}
-                        className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors cursor-pointer ${
-                          tarefa.status === "concluida"
-                            ? "bg-green-50/50 dark:bg-green-950/20 border-green-200/50"
-                            : isOverdue
-                            ? "bg-red-50/50 dark:bg-red-950/20 border-red-200/50"
-                            : "border-border/50 bg-card hover:bg-accent/20"
-                        }`}
-                        onClick={() => leadData.toggleTarefa(tarefa.id, tarefa.status)}
-                      >
-                        {tarefa.status === "concluida" ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                        ) : (
-                          <Circle className={`h-4 w-4 shrink-0 ${isOverdue ? "text-red-400" : "text-muted-foreground"}`} />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <span className={`text-xs font-medium ${tarefa.status === "concluida" ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                            {tarefa.titulo}
-                          </span>
-                          {tarefa.vence_em && (
-                            <span className={`text-[10px] ml-2 ${isOverdue ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
-                              {isOverdue && "⚠️ "}{format(new Date(tarefa.vence_em), "dd/MM", { locale: ptBR })}
-                            </span>
+                <div className="space-y-1">
+                  {[...leadData.tarefas]
+                    .sort((a, b) => {
+                      // Overdue first, then pending, then done
+                      const aOverdue = a.status === "pendente" && a.vence_em && new Date(a.vence_em) < new Date();
+                      const bOverdue = b.status === "pendente" && b.vence_em && new Date(b.vence_em) < new Date();
+                      if (aOverdue && !bOverdue) return -1;
+                      if (!aOverdue && bOverdue) return 1;
+                      if (a.status === "pendente" && b.status !== "pendente") return -1;
+                      if (a.status !== "pendente" && b.status === "pendente") return 1;
+                      return 0;
+                    })
+                    .map(tarefa => {
+                      const isOverdue = tarefa.status === "pendente" && tarefa.vence_em && new Date(tarefa.vence_em) < new Date();
+                      return (
+                        <div
+                          key={tarefa.id}
+                          className={`flex items-center gap-2.5 p-2 rounded-lg border transition-colors cursor-pointer ${
+                            tarefa.status === "concluida"
+                              ? "bg-green-50/50 dark:bg-green-950/20 border-green-200/50"
+                              : isOverdue
+                              ? "bg-red-50/50 dark:bg-red-950/20 border-red-200/50"
+                              : "border-border/50 bg-card hover:bg-accent/20"
+                          }`}
+                          onClick={() => leadData.toggleTarefa(tarefa.id, tarefa.status)}
+                        >
+                          {tarefa.status === "concluida" ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                          ) : (
+                            <Circle className={`h-3.5 w-3.5 shrink-0 ${isOverdue ? "text-red-400" : "text-muted-foreground"}`} />
                           )}
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-[11px] font-medium ${tarefa.status === "concluida" ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                              {tarefa.titulo}
+                            </span>
+                            {tarefa.vence_em && (
+                              <span className={`text-[9px] ml-1.5 ${isOverdue ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
+                                {isOverdue && "⚠️ "}{format(new Date(tarefa.vence_em), "dd/MM", { locale: ptBR })}
+                              </span>
+                            )}
+                          </div>
+                          <Badge variant="outline" className={`text-[8px] h-3.5 ${PRIORIDADE_MAP[tarefa.prioridade]?.color || ""}`}>
+                            {PRIORIDADE_MAP[tarefa.prioridade]?.label || tarefa.prioridade}
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className={`text-[9px] h-4 ${PRIORIDADE_MAP[tarefa.prioridade]?.color || ""}`}>
-                          {PRIORIDADE_MAP[tarefa.prioridade]?.label || tarefa.prioridade}
-                        </Badge>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               )}
-            </TabsContent>
-
-            {/* ===== TAB: NOTAS ===== */}
-            <TabsContent value="notas" className="px-5 pb-6 space-y-4 mt-0">
-              <div className="flex gap-2">
-                <Textarea className="text-xs min-h-[60px] flex-1" placeholder="Adicionar anotação..." value={newNota} onChange={e => setNewNota(e.target.value)} />
-                <Button size="sm" className="h-auto" onClick={handleAddNota} disabled={!newNota.trim()}>
-                  <Send className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-
-              {leadData.anotacoes.length === 0 ? (
-                <EmptyState text="Nenhuma anotação" />
-              ) : (
-                <div className="space-y-2">
-                  {leadData.anotacoes.map(nota => (
-                    <div key={nota.id} className={`p-3 rounded-lg border ${nota.fixada ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20" : "border-border/50 bg-card"}`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-semibold text-foreground">{nota.autor_nome || "Usuário"}</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground">
-                            {format(new Date(nota.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                          </span>
-                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => leadData.toggleFixarAnotacao(nota.id, nota.fixada)}>
-                            {nota.fixada ? <PinOff className="h-3 w-3 text-amber-500" /> : <Pin className="h-3 w-3 text-muted-foreground" />}
-                          </Button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-foreground whitespace-pre-wrap">{nota.conteudo}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* ===== TAB: VISITAS ===== */}
-            <TabsContent value="visitas" className="px-5 pb-6 mt-0">
-              <OpportunityVisitasTab pipelineLeadId={lead.id} />
-            </TabsContent>
-
-            {/* ===== TAB: PROPOSTAS ===== */}
-            <TabsContent value="propostas" className="px-5 pb-6 mt-0">
-              <OpportunityPropostasTab
-                pipelineLeadId={lead.id}
-                valorEstimado={lead.valor_estimado}
-                corretorNomes={corretorNomes}
-              />
-            </TabsContent>
-
-            {/* ===== TAB: TIMELINE ===== */}
-            <TabsContent value="historico" className="px-5 pb-6 mt-0">
-              <div className="relative">
-                <div className="absolute left-3 top-0 bottom-0 w-px bg-border" />
-                <div className="space-y-0">
-                  {/* Combine historico + atividades into timeline */}
-                  {buildTimeline(leadData.historico, leadData.atividades, leadData.tarefas, stages, lead).map((item, i) => (
-                    <div key={i} className="relative flex gap-3 pb-4">
-                      <div className={`relative z-10 h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
-                        <item.icon className="h-3 w-3" />
-                      </div>
-                      <div className="pt-0.5">
-                        <p className="text-xs font-medium text-foreground">{item.title}</p>
-                        {item.description && <p className="text-[10px] text-muted-foreground">{item.description}</p>}
-                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                          {format(new Date(item.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  {/* Entry event */}
-                  <div className="relative flex gap-3 pb-4">
-                    <div className="relative z-10 h-6 w-6 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
-                      <Plus className="h-3 w-3" />
-                    </div>
-                    <div className="pt-0.5">
-                      <p className="text-xs font-medium text-foreground">Lead entrou no pipeline</p>
-                      <p className="text-[10px] text-muted-foreground">Origem: {lead.origem || "Desconhecida"}</p>
-                      <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                        {format(new Date(lead.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </TabsContent>
           </ScrollArea>
         </Tabs>
+
+        {/* ════════════ HOMI — BOTÃO FLUTUANTE ════════════ */}
+        <button
+          onClick={() => setHomiOpen(!homiOpen)}
+          className="absolute bottom-4 right-4 z-50 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
+          title="HOMI Assistente"
+        >
+          <Bot className="h-5 w-5" />
+        </button>
+
+        {/* HOMI Side Panel */}
+        {homiOpen && (
+          <div className="absolute inset-y-0 right-0 w-full sm:w-[45%] z-40 bg-card border-l border-border shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-primary/5">
+              <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                <Bot className="h-3.5 w-3.5" /> HOMI Assistente
+              </span>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setHomiOpen(false)}>✕</Button>
+            </div>
+            <ScrollArea className="flex-1">
+              <div className="p-3">
+                <HomiLeadAssistant
+                  leadId={lead.id}
+                  leadNome={lead.nome}
+                  leadTelefone={lead.telefone}
+                  leadEmail={lead.email}
+                  empreendimento={lead.empreendimento}
+                  etapa={currentStage?.nome || ""}
+                  temperatura={(lead as any).temperatura}
+                  observacoes={lead.observacoes}
+                  origem={lead.origem}
+                  origemDetalhe={lead.origem_detalhe}
+                  createdAt={lead.created_at}
+                  updatedAt={lead.updated_at}
+                  proximaAcao={lead.proxima_acao}
+                  valorEstimado={lead.valor_estimado}
+                  oportunidadeScore={lead.oportunidade_score}
+                />
+              </div>
+            </ScrollArea>
+          </div>
+        )}
       </SheetContent>
 
-      <PartnershipDialog
-        open={partnerOpen}
-        onOpenChange={setPartnerOpen}
-        leadId={lead.id}
-        leadNome={lead.nome}
-        corretorPrincipalId={lead.corretor_id}
-      />
+      <PartnershipDialog open={partnerOpen} onOpenChange={setPartnerOpen} leadId={lead.id} leadNome={lead.nome} corretorPrincipalId={lead.corretor_id} />
     </Sheet>
   );
 }
 
 // ===== Sub-components =====
 
-function Section({ title, icon: Icon, children, action }: { title: string; icon: any; children: React.ReactNode; action?: React.ReactNode }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-          <Icon className="h-3.5 w-3.5" />
-          {title}
-        </h4>
-        {action}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function ContactRow({ icon: Icon, label, value, href, external }: { icon: any; label: string; value: string; href: string; external?: boolean }) {
-  return (
-    <a href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="flex items-center gap-2.5 text-xs text-foreground hover:text-primary transition-colors group">
-      <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
-      </div>
-      <div>
-        <span className="text-[10px] text-muted-foreground">{label}</span>
-        <p className="text-xs font-medium">{value}</p>
-      </div>
-    </a>
-  );
-}
-
 function DataField({ label, value }: { label: string; value: string | null | undefined }) {
   return (
-    <div className="py-1">
-      <span className="text-[10px] text-muted-foreground">{label}</span>
-      <p className="text-xs font-medium text-foreground">{value || "—"}</p>
+    <div className="py-0.5">
+      <span className="text-[9px] text-muted-foreground">{label}</span>
+      <p className="text-[11px] font-medium text-foreground">{value || "—"}</p>
     </div>
   );
 }
@@ -958,7 +741,7 @@ function InsightItem({ icon: Icon, label, value, alert }: { icon: any; label: st
     <div className={`flex items-center gap-2 p-1.5 rounded ${alert ? "bg-amber-100/50 dark:bg-amber-950/30" : ""}`}>
       <Icon className={`h-3.5 w-3.5 shrink-0 ${alert ? "text-amber-500" : "text-primary/60"}`} />
       <div>
-        <span className="text-[10px] text-muted-foreground">{label}</span>
+        <span className="text-[9px] text-muted-foreground">{label}</span>
         <p className={`text-[11px] font-semibold ${alert ? "text-amber-600" : "text-foreground"}`}>{value}</p>
       </div>
     </div>
@@ -967,11 +750,11 @@ function InsightItem({ icon: Icon, label, value, alert }: { icon: any; label: st
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="flex flex-col items-center py-8 text-center">
-      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-2">
-        <FileText className="h-4 w-4 text-muted-foreground/40" />
+    <div className="flex flex-col items-center py-6 text-center">
+      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-1.5">
+        <FileText className="h-3.5 w-3.5 text-muted-foreground/40" />
       </div>
-      <span className="text-xs text-muted-foreground">{text}</span>
+      <span className="text-[11px] text-muted-foreground">{text}</span>
     </div>
   );
 }
@@ -984,16 +767,9 @@ interface TimelineItem {
   color: string;
 }
 
-function buildTimeline(
-  historico: any[],
-  atividades: any[],
-  tarefas: any[],
-  stages: PipelineStage[],
-  lead: PipelineLead
-): TimelineItem[] {
+function buildTimeline(historico: any[], atividades: any[], tarefas: any[], stages: PipelineStage[], lead: PipelineLead): TimelineItem[] {
   const items: TimelineItem[] = [];
 
-  // Stage changes
   for (const h of historico) {
     const from = stages.find(s => s.id === h.stage_anterior_id);
     const to = stages.find(s => s.id === h.stage_novo_id);
@@ -1006,58 +782,34 @@ function buildTimeline(
     });
   }
 
-  // Activities (calls, whatsapp, visits, etc.)
+  const tipoLabels: Record<string, string> = {
+    ligacao: "📞 Ligação", whatsapp: "💬 WhatsApp", followup: "📨 Follow-up",
+    reuniao: "🤝 Reunião", visita: "🏠 Visita", proposta: "📄 Proposta",
+    retorno: "🔁 Retorno", pendencia_doc: "📋 Pendência doc",
+  };
+
   for (const a of atividades) {
     const tipoInfo = ATIVIDADE_TIPOS.find(t => t.value === a.tipo);
-    const tipoLabels: Record<string, string> = {
-      ligacao: "📞 Ligação realizada",
-      whatsapp: "💬 WhatsApp enviado",
-      followup: "📨 Follow-up enviado",
-      reuniao: "🤝 Reunião realizada",
-      visita: "🏠 Visita agendada/realizada",
-      proposta: "📄 Proposta enviada",
-      retorno: "🔁 Retorno agendado",
-      pendencia_doc: "📋 Pendência documental",
-    };
     items.push({
       title: tipoLabels[a.tipo] || a.titulo,
-      description: `${a.titulo} • ${a.status === "concluida" ? "✅ Concluída" : "⏳ Pendente"}`,
+      description: `${a.titulo} • ${a.status === "concluida" ? "✅" : "⏳"}`,
       date: a.created_at,
       icon: tipoInfo?.icon || PhoneCall,
       color: a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600",
     });
   }
 
-  // Completed tasks
   for (const t of tarefas) {
     if (t.status === "concluida" && t.concluida_em) {
-      items.push({
-        title: `✅ Tarefa concluída: ${t.titulo}`,
-        date: t.concluida_em,
-        icon: CheckCircle2,
-        color: "bg-green-100 text-green-600",
-      });
+      items.push({ title: `✅ ${t.titulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600" });
     }
   }
 
-  // Lead acceptance
   if (lead.aceito_em) {
-    items.push({
-      title: "✅ Lead aceito pelo corretor",
-      date: lead.aceito_em,
-      icon: CheckCircle2,
-      color: "bg-emerald-100 text-emerald-600",
-    });
+    items.push({ title: "✅ Lead aceito", date: lead.aceito_em, icon: CheckCircle2, color: "bg-emerald-100 text-emerald-600" });
   }
-
-  // Distribution
   if (lead.distribuido_em) {
-    items.push({
-      title: "🔄 Lead distribuído para corretor",
-      date: lead.distribuido_em,
-      icon: ArrowRight,
-      color: "bg-blue-100 text-blue-600",
-    });
+    items.push({ title: "🔄 Lead distribuído", date: lead.distribuido_em, icon: ArrowRight, color: "bg-blue-100 text-blue-600" });
   }
 
   items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
