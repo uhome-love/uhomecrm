@@ -30,9 +30,9 @@ const HomiAvatar = lazy(() => import("@/components/homi/HomiAvatar"));
 const HomiProactiveAlert = lazy(() => import("@/components/homi/HomiProactiveAlert"));
 const HomiGreeting = lazy(() => import("@/components/HomiGreeting"));
 
-// Detect arena-mode class on body reactively
+// Detect arena-mode or arena-session class on body reactively
 function useArenaMode() {
-  return useSyncExternalStore(
+  const isFullscreen = useSyncExternalStore(
     (cb) => {
       const observer = new MutationObserver(cb);
       observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
@@ -40,6 +40,15 @@ function useArenaMode() {
     },
     () => document.body.classList.contains("arena-mode")
   );
+  const isSession = useSyncExternalStore(
+    (cb) => {
+      const observer = new MutationObserver(cb);
+      observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      return () => observer.disconnect();
+    },
+    () => document.body.classList.contains("arena-session")
+  );
+  return { isFullscreen, isSession };
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -49,7 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [nome, setNome] = useState("");
   const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const cargo = isAdmin ? "CEO" : isGestor ? "Gerente" : "Corretor";
-  const isArenaMode = useArenaMode();
+  const { isFullscreen, isSession } = useArenaMode();
 
   useEffect(() => {
     if (!user) return;
@@ -71,7 +80,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <img src={homiMascot} alt="Homi" className="h-7 w-7 object-contain" />
                   <span className="font-display font-extrabold text-foreground/80 text-sm">Uhome<span className="text-primary">Sales</span></span>
                 </div>
-                {isArenaMode && (
+                {(isFullscreen || isSession) && (
                   <span className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)" }}>
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
                     ⚡ Modo Arena

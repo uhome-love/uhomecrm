@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useOAListas, type OALista } from "@/hooks/useOfertaAtiva";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Phone, ArrowLeft, Loader2, Users, Search, Zap, Sparkles, Trash2, RotateCcw } from "lucide-react";
@@ -226,6 +227,21 @@ export default function CorretorListSelection() {
   const [search, setSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
   const { lists: savedLists, isLoading: savedLoading, markUsed, deleteList } = useCustomLists();
+  const { setOpen, open } = useSidebar();
+  const prevOpenRef = useRef(open);
+
+  // Toggle fullscreen arena-mode only when dialing a specific list
+  useEffect(() => {
+    if (selectedLista) {
+      prevOpenRef.current = open;
+      document.body.classList.add("arena-mode");
+      setOpen(false);
+    } else {
+      document.body.classList.remove("arena-mode");
+      setOpen(prevOpenRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLista]);
 
   const liberadas = listas.filter(l => l.status === "liberada");
   const listaIds = useMemo(() => liberadas.map(l => l.id), [liberadas]);

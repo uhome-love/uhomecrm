@@ -14,7 +14,6 @@ import CorretorListSelection from "@/components/oferta-ativa/CorretorListSelecti
 import AproveitadosPanel from "@/components/oferta-ativa/AproveitadosPanel";
 import RankingPanel from "@/components/oferta-ativa/RankingPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSidebar } from "@/components/ui/sidebar";
 import { getLevel, getNextLevel, getLevelProgress } from "@/lib/gamification";
 import { toast } from "sonner";
 
@@ -59,9 +58,7 @@ export default function CorretorCall() {
   const [nome, setNome] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("call");
-  const { setOpen, open } = useSidebar();
   const [hasInteracted, setHasInteracted] = useState(false);
-  const prevOpenRef = useRef(open);
 
   // Track user interaction for sound
   useEffect(() => {
@@ -75,16 +72,14 @@ export default function CorretorCall() {
     if (hasInteracted) playWhoosh();
   }, [hasInteracted]);
 
-  // Fullscreen arena: hide sidebar + remove padding via body class
+  // Arena-mode class: managed by CorretorListSelection when dialing starts
+  // Keep badge visible via a lighter class
   useEffect(() => {
-    prevOpenRef.current = open;
-    setOpen(false);
-    document.body.classList.add("arena-mode");
+    document.body.classList.add("arena-session");
     return () => {
+      document.body.classList.remove("arena-session");
       document.body.classList.remove("arena-mode");
-      setOpen(prevOpenRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Check meta exists
