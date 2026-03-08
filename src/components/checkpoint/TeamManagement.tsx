@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Trash2, Link2, Unlink, Check, Users, Filter, Info, RefreshCw } from "lucide-react";
+import { Trash2, Link2, Unlink, Check, Users, Filter, Info, RefreshCw, GraduationCap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useTeamOnboarding, ONBOARDING_STEPS } from "@/hooks/useOnboarding";
 import {
   Select,
   SelectContent,
@@ -128,6 +130,10 @@ export default function TeamManagement() {
   // Detect unlinked system corretores that could be added to this team
   const linkedUserIds = members.filter((m) => m.user_id).map((m) => m.user_id!);
   const availableUsers = systemUsers.filter((u) => !linkedUserIds.includes(u.user_id));
+  
+  // Onboarding status for team members
+  const { data: onboardingMap = {} } = useTeamOnboarding(linkedUserIds);
+  const totalOnboardingSteps = ONBOARDING_STEPS.length;
 
   // Auto-add: find corretores created in Admin for this manager but not yet in team_members
   const syncFromAdmin = async () => {
@@ -332,6 +338,12 @@ export default function TeamManagement() {
                             className="text-[10px] h-5 text-muted-foreground"
                           >
                             Não vinculado
+                          </Badge>
+                        )}
+                        {m.user_id && onboardingMap[m.user_id] !== undefined && (onboardingMap[m.user_id] || 0) < totalOnboardingSteps && (
+                          <Badge variant="outline" className="text-[10px] h-5 gap-1 border-amber-400/40 text-amber-600">
+                            <GraduationCap className="h-3 w-3" />
+                            Onboarding {Math.round(((onboardingMap[m.user_id] || 0) / totalOnboardingSteps) * 100)}%
                           </Badge>
                         )}
                         {editingEquipe === m.id ? (

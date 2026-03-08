@@ -19,6 +19,7 @@ import MiniFunilPessoal from "./MiniFunilPessoal";
 import EvolucaoSemanal from "./EvolucaoSemanal";
 import LevelProgressBar from "./LevelProgressBar";
 import CelebrationOverlay from "./CelebrationOverlay";
+import OnboardingWidget from "./OnboardingWidget";
 import { ACHIEVEMENTS } from "@/lib/gamification";
 import { useNavigate } from "react-router-dom";
 
@@ -38,6 +39,10 @@ export default function CorretorHome() {
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
       <CelebrationOverlay achievement={newlyUnlocked} onDismiss={dismissCelebration} />
+
+      {/* Onboarding Widget */}
+      <OnboardingWidget />
+
       {/* Header */}
       <div>
         <h1 className="font-display text-2xl font-extrabold text-foreground flex items-center gap-2">
