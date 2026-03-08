@@ -37,8 +37,17 @@ export default function Conquistas() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center pt-4"
         >
-          <ImmersiveLabel>SUAS CONQUISTAS</ImmersiveLabel>
-          <p className="text-sm text-neutral-400 mt-2">
+          <h1
+            style={{
+              fontSize: 32,
+              letterSpacing: "0.2em",
+              textShadow: "0 0 30px rgba(255,255,255,0.3)",
+            }}
+            className="font-black text-white uppercase"
+          >
+            ✦ SUAS CONQUISTAS ✦
+          </h1>
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.7)" }} className="mt-2">
             {totalUnlocked} de {ACHIEVEMENTS.length} desbloqueadas
           </p>
         </motion.div>
@@ -69,10 +78,13 @@ export default function Conquistas() {
                 className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden"
               >
                 <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <h3 style={{ fontSize: 18 }} className="font-bold text-white flex items-center gap-2">
                     <span>{catInfo.emoji}</span> {catInfo.label}
                   </h3>
-                  <span className="text-[10px] text-neutral-500 font-medium">
+                  <span
+                    style={{ fontSize: 13 }}
+                    className="font-mono text-white/70 bg-white/10 px-2 py-0.5 rounded-full"
+                  >
                     {catUnlocked}/{catAchievements.length}
                   </span>
                 </div>
@@ -92,17 +104,23 @@ export default function Conquistas() {
                               className={`
                                 relative flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-default
                                 ${achieved
-                                  ? "bg-[#60A5FA]/10 border-[#60A5FA]/25 shadow-[0_0_20px_rgba(96,165,250,0.15)]"
-                                  : "bg-white/3 border-white/8 opacity-40 grayscale"
+                                 ? "bg-[#60A5FA]/10 border-[#60A5FA]/25 shadow-[0_0_20px_rgba(96,165,250,0.15)]"
+                                   : "opacity-50 grayscale"
                                 }
                               `}
                             >
                               <span className="text-2xl mb-1">{achieved ? ach.emoji : "???"}</span>
-                              <p className={`text-[11px] font-bold leading-tight ${achieved ? "text-white" : "text-neutral-500"}`}>
+                              <p
+                                style={{
+                                  fontSize: 11,
+                                  color: achieved ? "#fff" : "rgba(255,255,255,0.5)",
+                                }}
+                                className="font-bold leading-tight"
+                              >
                                 {achieved ? ach.label : "???"}
                               </p>
                               {!achieved && (
-                                <Lock className="absolute top-1.5 right-1.5 h-3 w-3 text-neutral-600" />
+                                <Lock className="absolute top-1.5 right-1.5 h-3 w-3" style={{ color: "rgba(255,255,255,0.4)" }} />
                               )}
                               {ach.special && achieved && (
                                 <Badge className="absolute -top-1.5 -right-1.5 text-[8px] px-1 py-0 h-4 bg-purple-500 text-white border-0">

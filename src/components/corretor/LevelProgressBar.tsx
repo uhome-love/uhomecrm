@@ -23,6 +23,8 @@ export default function LevelProgressBar({ points, compact = false }: Props) {
     );
   }
 
+  const isImmersive = !compact;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -32,26 +34,48 @@ export default function LevelProgressBar({ points, compact = false }: Props) {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-lg font-display font-extrabold text-foreground">{points} pts</span>
-              <Badge variant="outline" className={`text-[10px] font-bold ${level.color}`}>
+              <span
+                style={isImmersive ? { fontSize: 22, color: "#fff" } : undefined}
+                className={isImmersive ? "font-black" : "text-lg font-display font-extrabold text-foreground"}
+              >
+                {points} pts
+              </span>
+              <Badge
+                variant="outline"
+                className={`font-semibold ${level.color}`}
+                style={isImmersive ? {
+                  fontSize: 12,
+                  background: "rgba(34,197,94,0.15)",
+                  color: "#86efac",
+                  border: "1px solid rgba(34,197,94,0.4)",
+                } : { fontSize: 10 }}
+              >
                 {level.emoji} {level.label}
               </Badge>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p style={isImmersive ? { fontSize: 14, color: "rgba(255,255,255,0.8)" } : { fontSize: 10 }} className={isImmersive ? "" : "text-muted-foreground"}>
               {next ? `${pointsToNext} pts para ${next.emoji} ${next.label}` : "Nível máximo alcançado!"}
             </p>
           </div>
         </div>
       </div>
       <div className="relative">
-        <Progress value={progress} className="h-2" />
-        <motion.div
-          className="absolute top-0 left-0 h-2 rounded-full bg-gradient-to-r from-primary/80 to-primary"
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          style={{ maxWidth: "100%" }}
-        />
+        <div
+          className="h-2.5 w-full rounded-full overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.1)" }}
+        >
+          <motion.div
+            className="h-full rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            style={{
+              background: "linear-gradient(90deg, #60a5fa, #4ade80)",
+              boxShadow: "0 0 10px rgba(59,130,246,0.5)",
+              maxWidth: "100%",
+            }}
+          />
+        </div>
       </div>
     </div>
   );
