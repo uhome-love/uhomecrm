@@ -172,9 +172,9 @@ export default function CeoDashboard() {
       <div className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Avatar className="h-14 w-14 border-2 border-white/20">
-              {profile?.avatar_gamificado_url ? (
-                <AvatarImage src={profile.avatar_gamificado_url} />
+            <Avatar className="h-16 w-16 border-2 border-white/20">
+              {(profile?.avatar_gamificado_url || profile?.avatar_url) ? (
+                <AvatarImage src={(profile.avatar_gamificado_url || profile.avatar_url)!} className="object-cover" />
               ) : null}
               <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                 {(profile?.nome || "C").substring(0, 2).toUpperCase()}

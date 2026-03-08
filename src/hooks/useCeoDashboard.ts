@@ -59,7 +59,7 @@ export function useCeoDashboard(period: DashPeriod) {
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
   // Profile
-  const [profile, setProfile] = useState<{ nome: string; avatar_gamificado_url: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ nome: string; avatar_gamificado_url: string | null; avatar_url: string | null } | null>(null);
 
   // Roleta
   const [roletaPendentes, setRoletaPendentes] = useState<any[]>([]);
@@ -94,7 +94,7 @@ export function useCeoDashboard(period: DashPeriod) {
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase.from("profiles").select("nome, avatar_gamificado_url").eq("user_id", user.id).single();
+    const { data } = await supabase.from("profiles").select("nome, avatar_gamificado_url, avatar_url").eq("user_id", user.id).single();
     if (data) setProfile(data);
   }, [user]);
 
