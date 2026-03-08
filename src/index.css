@@ -622,19 +622,20 @@ body.arena-mode main {
 /* Arena card */
 .arena-card {
   background: #1C2128;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(34,197,94,0.25);
   border-radius: 12px;
+  box-shadow: 0 0 20px rgba(34,197,94,0.08);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .arena-card:hover {
-  border-color: rgba(34,197,94,0.4);
-  box-shadow: 0 0 16px rgba(34,197,94,0.15);
+  border-color: rgba(34,197,94,0.6);
+  box-shadow: 0 0 30px rgba(34,197,94,0.2);
 }
 
 /* Arena CTA button pulse */
 @keyframes arenaBtnPulse {
-  0%, 100% { box-shadow: 0 0 12px rgba(34,197,94,0.3); }
-  50% { box-shadow: 0 0 24px rgba(34,197,94,0.6); }
+  0%, 100% { box-shadow: 0 0 20px rgba(34,197,94,0.35); }
+  50% { box-shadow: 0 0 40px rgba(34,197,94,0.7); }
 }
 .arena-btn-call {
   background: #22C55E;
@@ -643,6 +644,15 @@ body.arena-mode main {
   animation: arenaBtnPulse 2s ease-in-out infinite;
 }
 .arena-btn-call:hover { background: #16A34A; }
+
+/* Sparkle icon pulse */
+@keyframes sparkleGlow {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(99,102,241,0.4)); opacity: 1; }
+  50% { filter: drop-shadow(0 0 10px rgba(99,102,241,0.9)); opacity: 0.7; }
+}
+.arena-sparkle-pulse {
+  animation: sparkleGlow 2s ease-in-out infinite;
+}
 
 /* Result button hover glows */
 .arena-result-btn {

@@ -574,7 +574,7 @@ export default function CorretorCall() {
       </div>
 
       {/* ═══ SESSION CONTENT ═══ */}
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-4 relative z-10">
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-4 relative z-10" style={{ background: "#0A0F1E" }}>
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 h-auto mb-4 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.05)" }}>
@@ -589,13 +589,13 @@ export default function CorretorCall() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="call" className="mt-0">
+            <TabsContent value="call" className="mt-0" style={{ background: "#0A0F1E" }}>
               <CorretorListSelection />
             </TabsContent>
-            <TabsContent value="aproveitados" className="mt-0">
+            <TabsContent value="aproveitados" className="mt-0" style={{ background: "#0A0F1E" }}>
               <AproveitadosPanel />
             </TabsContent>
-            <TabsContent value="ranking" className="mt-0">
+            <TabsContent value="ranking" className="mt-0" style={{ background: "#0A0F1E" }}>
               <RankingPanel />
             </TabsContent>
           </Tabs>
