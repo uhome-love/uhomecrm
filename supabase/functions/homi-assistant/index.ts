@@ -362,8 +362,10 @@ MÁXIMO 5-6 trocas. Cada fala do corretor em NO MÁXIMO 2 linhas.)
 ## 🎯 Próxima Ação
 (3-4 bullet points curtos com ações concretas. Use • para cada item.)`;
 
-    let userPrompt = "";
+    // Inject lead_context (v2 full history) into all prompts
+    const leadCtx = lead_context ? `\n\n═══ CONTEXTO COMPLETO DO LEAD ═══\n${lead_context}\n═══════════════════════════════` : "";
 
+    let userPrompt = "";
     const contextoCliente = mensagem_cliente ? `\n\nO CLIENTE DISSE/ESCREVEU: "${mensagem_cliente}"\n\nIMPORTANTE: Analise a frase do cliente, identifique o sentimento/objeção real por trás dela, e responda de forma estratégica.` : "";
 
     switch (acao) {
