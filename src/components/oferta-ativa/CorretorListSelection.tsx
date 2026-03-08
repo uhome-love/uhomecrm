@@ -89,10 +89,10 @@ function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaSt
     >
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "white" }} className="group-hover:text-blue-400 transition-colors">
             {lista.empreendimento}
           </h3>
-          {lista.campanha && <p className="text-xs text-neutral-500">{lista.campanha}</p>}
+          {lista.campanha && <p className="text-xs text-neutral-500 mt-0.5">{lista.campanha}</p>}
         </div>
         {isCustom ? (
           <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{
@@ -117,36 +117,40 @@ function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaSt
         <>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <p className="text-2xl font-bold text-blue-400">{stats.naFila}</p>
-              <p className="text-[10px] text-neutral-500">na fila</p>
+              <p style={{ fontSize: 28, fontWeight: 900, color: "#60A5FA" }}>{stats.naFila}</p>
+              <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>na fila</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-green-400">{stats.aproveitados}</p>
-              <p className="text-[10px] text-neutral-500">aproveitados</p>
+              <p style={{ fontSize: 28, fontWeight: 900, color: "#4ADE80" }}>{stats.aproveitados}</p>
+              <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>aproveitados</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-300">{stats.total}</p>
-              <p className="text-[10px] text-neutral-500">total</p>
+              <p style={{ fontSize: 28, fontWeight: 900, color: "white" }}>{stats.total}</p>
+              <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>total</p>
             </div>
           </div>
 
           <div>
-            <div className="flex justify-between text-[10px] text-neutral-500 mb-1">
+            <div className="flex justify-between mb-1" style={{ fontSize: 10, color: "#6B7280" }}>
               <span>Progresso da lista</span>
-              <span className="font-semibold text-neutral-400">{stats.pct}%</span>
+              <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#4ADE80" }}>{stats.pct}%</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
               <div
-                className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                style={{ width: `${stats.pct}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${stats.pct}%`,
+                  background: "linear-gradient(90deg, #3B82F6, #22C55E)",
+                  boxShadow: "0 0 6px rgba(34,197,94,0.4)",
+                }}
               />
             </div>
           </div>
 
           {stats.meusTentativas > 0 && (
-            <div className="flex items-center gap-1.5 text-[10px] text-neutral-500">
-              <Zap className="h-3 w-3 text-blue-400" />
-              <span>Você fez <strong className="text-neutral-300">{stats.meusTentativas}</strong> tentativas hoje nesta lista</span>
+            <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: "#FBBF24" }}>
+              <span>⚡</span>
+              <span>Você fez <strong>{stats.meusTentativas}</strong> tentativas hoje nesta lista</span>
             </div>
           )}
         </>
@@ -274,24 +278,27 @@ export default function CorretorListSelection() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" style={{ background: "#0A0F1E" }}>
       {/* Create custom list CTA */}
       <button
         onClick={() => setWizardOpen(true)}
         className="w-full p-4 rounded-xl text-left flex items-center gap-3 group transition-all duration-150"
         style={{
           background: "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15))",
-          border: "1px dashed rgba(99,102,241,0.5)",
+          border: "1px solid rgba(99,102,241,0.35)",
+          boxShadow: "0 0 20px rgba(99,102,241,0.1)",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = "rgba(99,102,241,0.8)";
+          e.currentTarget.style.boxShadow = "0 0 30px rgba(99,102,241,0.2)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)";
+          e.currentTarget.style.borderColor = "rgba(99,102,241,0.35)";
+          e.currentTarget.style.boxShadow = "0 0 20px rgba(99,102,241,0.1)";
         }}
       >
         <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.2)" }}>
-          <Sparkles className="h-5 w-5 text-indigo-400" />
+          <Sparkles className="h-5 w-5 text-indigo-400 arena-sparkle-pulse" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-white">Criar lista personalizada</p>
@@ -329,7 +336,7 @@ export default function CorretorListSelection() {
       ) : (
         <>
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-neutral-400 flex items-center gap-2">
+            <h3 style={{ fontSize: 13, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.1em" }} className="flex items-center gap-2 font-semibold">
               <Users className="h-4 w-4 text-neutral-500" /> Listas liberadas ({liberadas.length})
             </h3>
           </div>
