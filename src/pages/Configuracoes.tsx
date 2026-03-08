@@ -269,18 +269,25 @@ export default function Configuracoes() {
               {/* 3D Avatar preview */}
               {has3DAvatar && avatarUrl && (
                 <div className="rounded-xl overflow-hidden ring-2 ring-indigo-500/40 shadow-lg bg-muted/30"
-                     style={{ width: 200, height: 280 }}>
-                  {/* @ts-ignore */}
-                  <model-viewer
-                    src={avatarUrl}
-                    camera-orbit="0deg 80deg 2.2m"
-                    camera-target="0m 0.9m 0m"
-                    auto-rotate
-                    rotation-per-second="18deg"
-                    interaction-prompt="none"
-                    shadow-intensity="0"
-                    style={{ width: "100%", height: "100%", background: "transparent" } as React.CSSProperties}
-                  />
+                     style={{ width: 200, height: 320 }}>
+                  {/* @ts-ignore - model-viewer custom element */}
+                  {(() => {
+                    const props: any = {
+                      src: avatarUrl,
+                      "camera-orbit": "0deg 90deg 2.8m",
+                      "camera-target": "0m 0.85m 0m",
+                      "field-of-view": "25deg",
+                      "min-camera-orbit": "0deg 90deg auto",
+                      "max-camera-orbit": "0deg 90deg auto",
+                      bounds: "tight",
+                      "auto-rotate": true,
+                      "rotation-per-second": "18deg",
+                      "interaction-prompt": "none",
+                      "shadow-intensity": "0",
+                      style: { width: "100%", height: "100%", background: "transparent" },
+                    };
+                    return <model-viewer {...props} />;
+                  })()}
                 </div>
               )}
 
@@ -482,15 +489,18 @@ export default function Configuracoes() {
 
       {/* Hidden model-viewer for generating preview PNGs */}
       <div style={{ position: "absolute", left: -9999, top: -9999, width: 512, height: 512 }}>
-        {/* @ts-ignore */}
-        <model-viewer
-          ref={modelViewerRef}
-          camera-orbit="0deg 80deg 2.2m"
-          camera-target="0m 0.9m 0m"
-          interaction-prompt="none"
-          shadow-intensity="0"
-          style={{ width: 512, height: 512, background: "transparent" } as React.CSSProperties}
-        />
+        {(() => {
+          const props: any = {
+            ref: modelViewerRef,
+            "camera-orbit": "0deg 90deg 2.8m",
+            "camera-target": "0m 0.85m 0m",
+            "field-of-view": "25deg",
+            "interaction-prompt": "none",
+            "shadow-intensity": "0",
+            style: { width: 512, height: 512, background: "transparent" },
+          };
+          return <model-viewer {...props} />;
+        })()}
       </div>
     </div>
   );

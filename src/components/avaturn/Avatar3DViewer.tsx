@@ -1,27 +1,5 @@
-import { useEffect, useRef, memo } from "react";
+import { memo } from "react";
 import "@google/model-viewer";
-
-// Type declaration for model-viewer custom element
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "model-viewer": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          src?: string;
-          alt?: string;
-          "camera-orbit"?: string;
-          "camera-target"?: string;
-          "auto-rotate"?: boolean;
-          "rotation-per-second"?: string;
-          "interaction-prompt"?: string;
-          "shadow-intensity"?: string;
-          loading?: string;
-        },
-        HTMLElement
-      >;
-    }
-  }
-}
 
 interface Avatar3DViewerProps {
   src: string;
@@ -30,29 +8,31 @@ interface Avatar3DViewerProps {
 }
 
 function Avatar3DViewerInner({ src, size, className }: Avatar3DViewerProps) {
-  const cameraOrbit = size === "xl" ? "0deg 75deg 2.2m" : "0deg 75deg 1.8m";
+  const cameraOrbit = size === "xl" ? "0deg 90deg 2.8m" : "0deg 90deg 2.2m";
   const autoRotate = size === "xl";
+
+  const props: any = {
+    src,
+    alt: "Avatar 3D",
+    "camera-orbit": cameraOrbit,
+    "camera-target": "0m 0.85m 0m",
+    "field-of-view": "25deg",
+    "auto-rotate": autoRotate || undefined,
+    "rotation-per-second": "20deg",
+    "interaction-prompt": "none",
+    "shadow-intensity": "0",
+    loading: "lazy",
+    style: {
+      width: "100%",
+      height: "100%",
+      background: "transparent",
+      "--poster-color": "transparent",
+    },
+  };
 
   return (
     <div className={className} style={{ width: "100%", height: "100%", overflow: "hidden", borderRadius: "50%" }}>
-      <model-viewer
-        src={src}
-        alt="Avatar 3D"
-        camera-orbit={cameraOrbit}
-        camera-target="0m 0.8m 0m"
-        auto-rotate={autoRotate}
-        rotation-per-second="20deg"
-        interaction-prompt="none"
-        shadow-intensity="0"
-        loading="lazy"
-        style={{
-          width: "100%",
-          height: "100%",
-          background: "transparent",
-          // Disable interaction hints
-          "--poster-color": "transparent",
-        } as React.CSSProperties}
-      />
+      <model-viewer {...props} />
     </div>
   );
 }
