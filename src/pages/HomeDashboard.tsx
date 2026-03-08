@@ -344,25 +344,44 @@ export default function HomeDashboard() {
     return `Período: ${periodLabels[period]}\n${funil}\n${pdnCtx}\nMarketing: ${mkt}\nTimes: ${teams}\nTop OA: ${oaTop}`;
   }, [oaPeriodStats, channelStats, sortedTimes, period, pdnStats, topCorretoresOA]);
 
-  const card = "rounded-xl border border-border bg-card shadow-card";
+  const atingimentoPct = pct(pdnStats.vgv_assinado, companyTotals.meta_vgv_assinado);
+  const atingimentoColor = atingimentoPct >= 80 ? "text-success" : atingimentoPct >= 50 ? "text-warning" : "text-destructive";
+  const atingimentoBg = atingimentoPct >= 80 ? "bg-success" : atingimentoPct >= 50 ? "bg-warning" : "bg-destructive";
+
+  // Funnel conversion helpers
+  const funnelData = [
+    { icon: "📞", label: "Ligações OA", value: oaPeriodStats.ligacoes, color: "text-blue-600", bg: "bg-blue-50" },
+    { icon: "📅", label: "Visitas Marcadas", value: oaPeriodStats.visitas_marcadas, color: "text-amber-600", bg: "bg-amber-50" },
+    { icon: "✅", label: "Visitas Realizadas", value: pdnStats.total_visitas + pdnStats.total_gerados + pdnStats.total_assinados, color: "text-green-600", bg: "bg-green-50" },
+    { icon: "📋", label: "Propostas PDN", value: pdnStats.total_gerados + pdnStats.total_assinados, color: "text-purple-600", bg: "bg-purple-50" },
+    { icon: "💰", label: "VGV Gerado", value: `R$ ${(pdnStats.vgv_gerado / 1000).toFixed(0)}k`, color: "text-emerald-600", bg: "bg-emerald-50", isVgv: true },
+    { icon: "🏆", label: "VGV Assinado", value: `R$ ${(pdnStats.vgv_assinado / 1000).toFixed(0)}k`, color: "text-blue-700", bg: "bg-blue-50", isVgv: true, highlight: true },
+    { icon: "🎯", label: "Atingimento", value: `${atingimentoPct}%`, color: atingimentoColor, bg: atingimentoPct >= 50 ? "bg-green-50" : "bg-red-50", highlight: true },
+  ];
+
+  const conversionRate = (from: number, to: number) => from > 0 ? `${((to / from) * 100).toFixed(1)}%` : "—";
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 overflow-hidden">
-              <img src={homiMascot} alt="Homi" className="h-7 w-7 object-contain" />
-            </div>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Centro de Comando</span>
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] px-2.5 py-1 rounded-full bg-muted/60 border border-border">🎯 Centro de Comando</span>
           </div>
-          <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">
-            Olá{nome ? `, ${nome}` : ""}! 👋
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isAdmin ? "Visão consolidada da empresa" : "Visão da sua equipe"} • {periodLabels[period]}
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 overflow-hidden shadow-sm">
+              <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h1 className="font-display text-3xl lg:text-4xl font-black text-foreground">
+                Olá{nome ? `, ${nome}` : ""}! 👋
+              </h1>
+              <p className="text-sm text-gray-400 mt-0.5">
+                {isAdmin ? "Visão consolidada da empresa" : "Visão da sua equipe"} • {periodLabels[period]}
+              </p>
+            </div>
+          </div>
         </motion.div>
         <div className="flex items-center gap-2">
           <button
@@ -387,34 +406,88 @@ export default function HomeDashboard() {
         <div className="text-center py-16 text-muted-foreground">Carregando dados...</div>
       ) : (
         <div className="space-y-6">
-          {/* 1. Funil Comercial */}
+          {/* 1. Funil Comercial — Enhanced */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={card}>
             <SectionHeader icon={TrendingUp} title="Funil Comercial" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 p-4">
-              <MetricCard label="Ligações OA" value={oaPeriodStats.ligacoes} />
-              <MetricCard label="Visitas Marcadas" value={oaPeriodStats.visitas_marcadas} />
-              <MetricCard label="Visitas Realizadas" value={pdnStats.total_visitas + pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: visita + gerado + assinado" />
-              <MetricCard label="Propostas (PDN)" value={pdnStats.total_gerados + pdnStats.total_assinados} sub="PDN: gerado + assinado" />
-              <MetricCard label="VGV Gerado" value={`R$ ${(pdnStats.vgv_gerado / 1000).toFixed(0)}k`} />
-              <MetricCard label="VGV Assinado" value={`R$ ${(pdnStats.vgv_assinado / 1000).toFixed(0)}k`} highlight />
-              <MetricCard label="Atingimento" value={`${pct(pdnStats.vgv_assinado, companyTotals.meta_vgv_assinado)}%`} highlight />
+            <div className="p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                {funnelData.map((f, i) => (
+                  <div key={f.label} className="relative">
+                    <div className={`rounded-xl p-3 ${f.bg} ${f.highlight ? "ring-1 ring-border" : ""}`}>
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-sm">{f.icon}</span>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wide font-medium">{f.label}</p>
+                      </div>
+                      <p className={`text-2xl lg:text-3xl font-black ${f.color}`}>
+                        {f.value}
+                      </p>
+                      {/* Conversion arrow between items */}
+                      {i < funnelData.length - 1 && i < 3 && (
+                        <div className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 items-center">
+                          <span className="text-[9px] text-gray-400 font-medium bg-card px-1 rounded">
+                            {typeof funnelData[i].value === "number" && typeof funnelData[i+1].value === "number"
+                              ? `→ ${conversionRate(funnelData[i].value as number, funnelData[i+1].value as number)}`
+                              : "→"
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Atingimento Progress Bar */}
+              <div className="mt-4 p-3 rounded-xl bg-muted/30 border border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-500">Meta do Mês</span>
+                  <span className={`text-sm font-black ${atingimentoColor}`}>
+                    R$ {(pdnStats.vgv_assinado / 1000).toFixed(0)}k / R$ {(companyTotals.meta_vgv_assinado / 1000000).toFixed(1)}M meta
+                  </span>
+                </div>
+                <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                  <div className={`h-full rounded-full ${atingimentoBg} transition-all duration-500`} style={{ width: `${Math.min(atingimentoPct, 100)}%` }} />
+                </div>
+              </div>
             </div>
           </motion.div>
 
+          {/* Smart Alerts — Checkpoint urgency */}
+          {smartAlerts.filter(a => a.title?.toLowerCase().includes("checkpoint")).length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              {smartAlerts.filter(a => a.title?.toLowerCase().includes("checkpoint")).map(a => (
+                <div key={a.id} className="flex items-center gap-3 p-4 rounded-xl" style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderLeft: "4px solid #EF4444" }}>
+                  <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-red-700">⚠️ {a.title}</p>
+                    <p className="text-xs text-red-600/70 mt-0.5">{a.description}</p>
+                  </div>
+                  {a.action && (
+                    <button onClick={() => navigate(a.action!.url)} className="text-xs font-bold text-red-700 hover:text-red-800 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                      Preencher agora →
+                    </button>
+                  )}
+                </div>
+              ))}
+            </motion.div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 2. Performance de Equipe */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className={card}>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <SectionHeader icon={Users} title="Performance de Equipe" action={{ label: "Ver ranking", onClick: () => navigate("/ranking") }} />
               <div className="divide-y divide-border">
                 {sortedTimes.slice(0, 5).map((t, i) => (
                   <div key={t.gerente_id} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="w-6 text-center text-sm">{i < 3 ? medals[i] : `${i + 1}º`}</span>
+                    <span className="w-6 text-center text-base">{i < 3 ? medals[i] : `${i + 1}º`}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">Equipe {t.gerente_nome}</p>
                       <p className="text-[10px] text-muted-foreground">{t.corretores.length} corretores</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-display font-bold">R$ {t.totals.real_vgv_assinado.toLocaleString("pt-BR")}</p>
+                      <p className={`text-sm font-display font-bold ${t.totals.real_vgv_assinado > 0 ? "text-success" : "text-foreground"}`}>
+                        R$ {t.totals.real_vgv_assinado.toLocaleString("pt-BR")}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">{t.totals.real_propostas} propostas</p>
                     </div>
                   </div>
@@ -424,18 +497,20 @@ export default function HomeDashboard() {
             </motion.div>
 
             {/* 3. Top Corretores VGV */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={card}>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <SectionHeader icon={Trophy} title="Top Corretores — VGV" action={{ label: "Ver ranking", onClick: () => navigate("/ranking") }} />
               <div className="divide-y divide-border">
                 {topCorretores.map((c, i) => (
                   <div key={c.corretor_id} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="w-6 text-center text-sm">{i < 3 ? medals[i] : `${i + 1}º`}</span>
+                    <span className="w-6 text-center text-base">{i < 3 ? medals[i] : `${i + 1}º`}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{c.corretor_nome}</p>
                       <p className="text-[10px] text-muted-foreground">Equipe {c.gerente_nome}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-display font-bold">R$ {c.real_vgv_assinado.toLocaleString("pt-BR")}</p>
+                      <p className={`text-sm font-display font-bold ${c.real_vgv_assinado > 0 ? "text-success" : "text-foreground"}`}>
+                        R$ {c.real_vgv_assinado.toLocaleString("pt-BR")}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">Score {c.score}</p>
                     </div>
                   </div>
@@ -444,14 +519,13 @@ export default function HomeDashboard() {
               </div>
             </motion.div>
 
-
             {/* 4. Top Corretores Oferta Ativa */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className={card}>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <SectionHeader icon={Flame} title="Top Corretores — Oferta Ativa" action={{ label: "Ver ranking OA", onClick: () => navigate("/ranking") }} />
               <div className="divide-y divide-border">
                 {topCorretoresOA.map((c, i) => (
                   <div key={`oa-${i}`} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="w-6 text-center text-sm">{i < 3 ? medals[i] : `${i + 1}º`}</span>
+                    <span className="w-6 text-center text-base">{i < 3 ? medals[i] : `${i + 1}º`}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{c.nome}</p>
                       <p className="text-[10px] text-muted-foreground">{c.tentativas} tentativas · {c.aproveitados} aproveitados</p>
@@ -466,7 +540,7 @@ export default function HomeDashboard() {
             </motion.div>
 
             {/* 5. PDN — Negócios */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className={card}>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <SectionHeader icon={Flame} title="PDN — Negócios" action={{ label: "Ver PDN", onClick: () => navigate("/pdn") }} />
               <div className="p-4 space-y-2">
                 <div className="grid grid-cols-3 gap-2 mb-3">
@@ -519,7 +593,7 @@ export default function HomeDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* 6. Marketing */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={card}>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <SectionHeader icon={Megaphone} title="Marketing" action={isAdmin ? { label: "Ver detalhes", onClick: () => navigate("/marketing") } : undefined} />
               <div className="p-4 space-y-3">
                 <div className="grid grid-cols-3 gap-2">
@@ -542,7 +616,7 @@ export default function HomeDashboard() {
             </motion.div>
 
             {/* Checkpoint do Dia */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={card}>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <SectionHeader icon={ClipboardCheck} title="Checkpoint Hoje" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
               <div className="p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-2 mb-2">
@@ -579,12 +653,12 @@ export default function HomeDashboard() {
             </motion.div>
           </div>
 
-          {/* 7. Smart Alerts */}
-          {(smartAlerts.length > 0 || alerts.length > 0) && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={`${card} border-warning/30`}>
-              <SectionHeader icon={Bell} title={`Alertas Importantes (${smartAlerts.length + alerts.length})`} iconColor="text-warning" />
+          {/* 7. Remaining Alerts (non-checkpoint) */}
+          {(smartAlerts.filter(a => !a.title?.toLowerCase().includes("checkpoint")).length > 0 || alerts.length > 0) && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-warning/30 bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              <SectionHeader icon={Bell} title={`Alertas (${smartAlerts.filter(a => !a.title?.toLowerCase().includes("checkpoint")).length + alerts.length})`} iconColor="text-warning" />
               <div className="p-4 space-y-2">
-                {smartAlerts.map(a => (
+                {smartAlerts.filter(a => !a.title?.toLowerCase().includes("checkpoint")).map(a => (
                   <div key={a.id} className={`flex items-start gap-3 p-3 rounded-lg border ${a.severity === "critical" ? "border-destructive/30 bg-destructive/5" : a.severity === "warning" ? "border-warning/30 bg-warning/5" : "border-border bg-muted/30"}`}>
                     {a.severity === "critical" ? <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                       : a.severity === "warning" ? <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
@@ -611,7 +685,7 @@ export default function HomeDashboard() {
           )}
 
           {/* 8. Análise IA do Dia */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={card}>
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
             <div className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <img src={homiMascot} alt="Homi" className="h-6 w-6 object-contain" />
