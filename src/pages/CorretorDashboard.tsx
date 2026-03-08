@@ -321,47 +321,37 @@ export default function CorretorDashboard() {
             </Card>
           </motion.div>
 
-          {/* Ranking Compacto */}
+          {/* Ranking Multi-Categoria */}
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <Card className="border-border/60">
               <CardContent className="p-3">
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-1.5">
                     <span className="text-base">🏆</span>
-                    <span className="text-xs font-semibold text-foreground">Ranking Hoje</span>
+                    <span className="text-xs font-semibold text-foreground">Seu melhor ranking hoje</span>
                   </div>
-                  <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary" onClick={() => navigate("/ranking")}>
-                    Ver completo →
+                  <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary" onClick={() => navigate("/corretor/ranking-equipes")}>
+                    Ver rankings →
                   </Button>
                 </div>
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {[
-                    { pos: 1, name: nome || "Você", pts: progress.pontos, isMe: true, streak: 0, level: currentLevel },
-                    { pos: 2, name: null, pts: null, isMe: false, streak: 0, level: null },
-                    { pos: 3, name: null, pts: null, isMe: false, streak: 0, level: null },
-                  ].map((r) => (
+                    { emoji: "📞", label: "Oferta Ativa", pos: radar.rankingPos || "—", level: currentLevel },
+                    { emoji: "💰", label: "VGV", pos: "—", level: currentLevel },
+                    { emoji: "📋", label: "Gestão Leads", pos: "—", level: currentLevel },
+                  ].map((cat) => (
                     <div
-                      key={r.pos}
-                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs ${
-                        r.isMe ? "bg-primary/5 border-l-2 border-primary" : ""
-                      }`}
+                      key={cat.label}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs hover:bg-accent/30 transition-colors"
                     >
-                      <span className="w-5 text-center shrink-0 text-sm">
-                        {r.pos === 1 ? "👑" : r.pos === 2 ? "🥈" : "🥉"}
+                      <span className="text-sm">{cat.emoji}</span>
+                      <span className="flex-1 text-foreground font-medium">{cat.label}</span>
+                      <span className="font-bold text-foreground tabular-nums">
+                        {typeof cat.pos === "number" ? `#${cat.pos}` : cat.pos}
                       </span>
-                      <span className="w-5 text-center shrink-0 text-muted-foreground font-medium">#{r.pos}</span>
-                      {r.name ? (
-                        <>
-                          <span className="flex-1 truncate text-foreground font-medium">{r.name}</span>
-                          {r.level && (
-                            <span className={`text-[10px] ${r.level.color}`}>{r.level.emoji}</span>
-                          )}
-                          <span className="font-bold text-foreground tabular-nums">{r.pts}pts</span>
-                          {r.isMe && <span className="text-[10px] text-primary font-medium">← você</span>}
-                        </>
-                      ) : (
-                        <span className="flex-1 text-muted-foreground/50 italic">Aguardando...</span>
-                      )}
+                      <span className={`text-[10px] font-semibold ${cat.level.color}`}>
+                        {cat.level.emoji} {cat.level.label}
+                      </span>
                     </div>
                   ))}
                 </div>
