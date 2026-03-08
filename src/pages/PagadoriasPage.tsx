@@ -532,6 +532,19 @@ export default function PagadoriasPage() {
 
       {/* Config Modal */}
       <PagadoriaConfigModal open={configOpen} onOpenChange={setConfigOpen} />
+
+      {/* Contrato Modal */}
+      {contratoData && (
+        <ContratoIntermediacao
+          open={contratoOpen}
+          onOpenChange={setContratoOpen}
+          data={contratoData}
+          onDataChange={setContratoData}
+          onGenerated={async () => {
+            // Mark contrato_gerado_em if pagadoria already saved
+          }}
+        />
+      )}
     </div>
   );
 }
