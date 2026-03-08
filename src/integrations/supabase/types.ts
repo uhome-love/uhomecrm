@@ -139,6 +139,42 @@ export type Database = {
         }
         Relationships: []
       }
+      backoffice_tasks: {
+        Row: {
+          categoria: string
+          concluida_em: string | null
+          created_at: string
+          data: string
+          id: string
+          pontos: number
+          status: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          categoria?: string
+          concluida_em?: string | null
+          created_at?: string
+          data?: string
+          id?: string
+          pontos?: number
+          status?: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          categoria?: string
+          concluida_em?: string | null
+          created_at?: string
+          data?: string
+          id?: string
+          pontos?: number
+          status?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ceo_metas_mensais: {
         Row: {
           created_at: string
@@ -359,6 +395,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      comissao_faixas: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          percentual: number
+          updated_at: string
+          vgv_max: number | null
+          vgv_min: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome?: string
+          percentual?: number
+          updated_at?: string
+          vgv_max?: number | null
+          vgv_min?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          percentual?: number
+          updated_at?: string
+          vgv_max?: number | null
+          vgv_min?: number
+        }
+        Relationships: []
+      }
+      conteudos_marketing: {
+        Row: {
+          aprovado_at: string | null
+          aprovado_por: string | null
+          brief: Json | null
+          created_at: string
+          criado_por: string
+          data_publicacao: string | null
+          descricao: string | null
+          id: string
+          plataforma: string[]
+          status: string
+          tema: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_at?: string | null
+          aprovado_por?: string | null
+          brief?: Json | null
+          created_at?: string
+          criado_por: string
+          data_publicacao?: string | null
+          descricao?: string | null
+          id?: string
+          plataforma?: string[]
+          status?: string
+          tema: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_at?: string | null
+          aprovado_por?: string | null
+          brief?: Json | null
+          created_at?: string
+          criado_por?: string
+          data_publicacao?: string | null
+          descricao?: string | null
+          id?: string
+          plataforma?: string[]
+          status?: string
+          tema?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       corretor_conquistas: {
         Row: {
@@ -1807,6 +1921,113 @@ export type Database = {
           score_performance?: number | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pagadoria_credores: {
+        Row: {
+          created_at: string
+          credor_id: string | null
+          credor_nome: string
+          credor_tipo: string
+          id: string
+          pagadoria_id: string
+          parcelas: Json | null
+          percentual: number
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          credor_id?: string | null
+          credor_nome: string
+          credor_tipo?: string
+          id?: string
+          pagadoria_id: string
+          parcelas?: Json | null
+          percentual?: number
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          credor_id?: string | null
+          credor_nome?: string
+          credor_tipo?: string
+          id?: string
+          pagadoria_id?: string
+          parcelas?: Json | null
+          percentual?: number
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagadoria_credores_pagadoria_id_fkey"
+            columns: ["pagadoria_id"]
+            isOneToOne: false
+            referencedRelation: "pagadorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagadorias: {
+        Row: {
+          cliente_cpf: string | null
+          cliente_email: string | null
+          cliente_endereco: string | null
+          cliente_nome: string
+          cliente_telefone: string | null
+          created_at: string
+          criada_por: string
+          data_venda: string
+          docusign_link: string | null
+          empreendimento: string
+          forma_pagamento: string
+          id: string
+          notas: string | null
+          parcelas_config: Json | null
+          status: string
+          unidade: string | null
+          updated_at: string
+          vgv: number
+        }
+        Insert: {
+          cliente_cpf?: string | null
+          cliente_email?: string | null
+          cliente_endereco?: string | null
+          cliente_nome: string
+          cliente_telefone?: string | null
+          created_at?: string
+          criada_por: string
+          data_venda?: string
+          docusign_link?: string | null
+          empreendimento: string
+          forma_pagamento?: string
+          id?: string
+          notas?: string | null
+          parcelas_config?: Json | null
+          status?: string
+          unidade?: string | null
+          updated_at?: string
+          vgv?: number
+        }
+        Update: {
+          cliente_cpf?: string | null
+          cliente_email?: string | null
+          cliente_endereco?: string | null
+          cliente_nome?: string
+          cliente_telefone?: string | null
+          created_at?: string
+          criada_por?: string
+          data_venda?: string
+          docusign_link?: string | null
+          empreendimento?: string
+          forma_pagamento?: string
+          id?: string
+          notas?: string | null
+          parcelas_config?: Json | null
+          status?: string
+          unidade?: string | null
+          updated_at?: string
+          vgv?: number
         }
         Relationships: []
       }
