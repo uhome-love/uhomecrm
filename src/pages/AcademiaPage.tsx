@@ -1,81 +1,76 @@
 import { useState, useMemo } from "react";
-import { useAcademia, getStudyLevel, type Trilha } from "@/hooks/useAcademia";
+import { useAcademia, CATEGORIAS, NIVEL_CONFIG, type Trilha } from "@/hooks/useAcademia";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Award, BookOpen, ChevronRight, Play, CheckCircle2, Clock, Star } from "lucide-react";
+import { Loader2, BookOpen, Play, Clock, Star, Award, Plus, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { differenceInDays } from "date-fns";
+import { cn } from "@/lib/utils";
 
-const CATEGORY_SECTIONS = [
-  { key: "destaque", label: "🔥 Em Destaque", filter: () => true },
-  { key: "venda", label: "💼 Técnicas de Venda", filter: (t: Trilha) => t.categoria === "vendas" },
-  { key: "produto", label: "🏠 Conhecimento de Produto", filter: (t: Trilha) => t.categoria === "produto" },
-  { key: "mindset", label: "🧠 Mindset e Performance", filter: (t: Trilha) => t.categoria === "mindset" },
-];
-
-const NIVEL_COLORS: Record<string, string> = {
-  iniciante: "bg-emerald-500/20 text-emerald-400",
-  intermediario: "bg-amber-500/20 text-amber-400",
-  avancado: "bg-red-500/20 text-red-400",
-};
-
-function TrilhaCard({ trilha, progress, onClick }: {
+function TrilhaCard({ trilha, progress, duration, onClick }: {
   trilha: Trilha;
   progress: { total: number; completed: number; percent: number; started: boolean };
+  duration: number;
   onClick: () => void;
 }) {
-  const isNew = trilha.created_at && differenceInDays(new Date(), new Date(trilha.created_at)) < 7;
+  const nivel = NIVEL_CONFIG[trilha.nivel || "iniciante"];
+  const cat = CATEGORIAS.find(c => c.key === trilha.categoria);
 
   return (
-    <button
-      onClick={onClick}
-      className="group relative shrink-0 w-[260px] sm:w-[300px] rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 focus:outline-none text-left"
-      style={{ aspectRatio: "16/9" }}
-    >
+    <button onClick={onClick} className="group text-left rounded-xl border border-border/60 bg-card overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-200">
       {/* Thumbnail */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900">
-        {trilha.thumbnail_url && (
-          <img src={trilha.thumbnail_url} alt={trilha.titulo} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
+      <div className="relative h-36 bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
+        {trilha.thumbnail_url ? (
+          <img src={trilha.thumbnail_url} alt={trilha.titulo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <GraduationCap className="h-12 w-12 text-muted-foreground/30" />
+          </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        {/* Badges on thumbnail */}
+        <div className="absolute top-2 left-2 flex items-center gap-1">
+          {cat && <Badge className={cn("text-[9px] px-1.5 py-0 h-4 border", cat.color)}>{cat.label.split(" ")[0]}</Badge>}
+          {nivel && <Badge className={cn("text-[9px] px-1.5 py-0 h-4 border", nivel.color)}>{nivel.label}</Badge>}
+        </div>
+        {progress.percent === 100 && (
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-emerald-500 text-white text-[9px] px-1.5 py-0 h-4 border-0">✅ Concluída</Badge>
+          </div>
+        )}
+        {/* Play overlay */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="h-10 w-10 rounded-full bg-primary/90 flex items-center justify-center shadow-xl">
+            <Play className="h-4 w-4 text-primary-foreground ml-0.5" />
+          </div>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="relative z-10 h-full flex flex-col justify-end p-4">
-        {/* Badges */}
-        <div className="flex items-center gap-1.5 mb-2">
-          {isNew && <Badge className="bg-blue-500 text-white text-[9px] px-1.5 py-0 h-4 border-0">NOVO</Badge>}
-          {progress.percent === 100 && <Badge className="bg-emerald-500 text-white text-[9px] px-1.5 py-0 h-4 border-0">✅ Concluída</Badge>}
-          {trilha.nivel && (
-            <Badge className={`text-[9px] px-1.5 py-0 h-4 border-0 ${NIVEL_COLORS[trilha.nivel] || "bg-slate-500/20 text-slate-400"}`}>
-              {trilha.nivel}
-            </Badge>
-          )}
+      <div className="p-3 space-y-2">
+        <h3 className="text-sm font-bold text-foreground line-clamp-2 leading-tight">{trilha.titulo}</h3>
+        {trilha.descricao && (
+          <p className="text-[11px] text-muted-foreground line-clamp-2">{trilha.descricao}</p>
+        )}
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-0.5"><BookOpen className="h-3 w-3" />{progress.total} aulas</span>
+          {duration > 0 && <span className="flex items-center gap-0.5"><Clock className="h-3 w-3" />{duration}min</span>}
+          {trilha.xp_total ? <span className="flex items-center gap-0.5"><Star className="h-3 w-3" />{trilha.xp_total} XP</span> : null}
         </div>
-
-        {/* Title */}
-        <h3 className="text-white font-bold text-sm leading-tight mb-1 line-clamp-2">{trilha.titulo}</h3>
-
-        {/* Meta */}
-        <div className="flex items-center gap-2 text-[10px] text-gray-400 mb-2">
-          {trilha.xp_total && <span className="flex items-center gap-0.5"><Star className="h-2.5 w-2.5" />{trilha.xp_total} XP</span>}
-          <span>{progress.total} aulas</span>
-        </div>
-
         {/* Progress bar */}
-        {progress.started && progress.percent < 100 && (
-          <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress.percent}%` }} />
+        {progress.started && (
+          <div className="space-y-1">
+            <Progress value={progress.percent} className="h-1.5" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">{progress.completed}/{progress.total} aulas</span>
+              <span className="text-[10px] font-bold text-primary">{progress.percent}%</span>
+            </div>
           </div>
         )}
-      </div>
-
-      {/* Hover play icon */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="h-12 w-12 rounded-full bg-primary/90 flex items-center justify-center shadow-xl">
-          <Play className="h-5 w-5 text-primary-foreground ml-0.5" />
-        </div>
+        <Button size="sm" className="w-full h-8 text-xs gap-1.5 mt-1" variant={progress.started ? "default" : "outline"}>
+          <Play className="h-3 w-3" />
+          {progress.percent === 100 ? "Revisar" : progress.started ? "Continuar" : "Começar"}
+        </Button>
       </div>
     </button>
   );
@@ -83,153 +78,118 @@ function TrilhaCard({ trilha, progress, onClick }: {
 
 export default function AcademiaPage() {
   const navigate = useNavigate();
-  const { trilhas, totalXp, studyLevel, getTrilhaProgress, inProgressTrilhas, certificados, loading } = useAcademia();
+  const {
+    trilhas, totalXp, studyLevel, getTrilhaProgress, getTrilhaDuration,
+    certificados, completedTrilhasCount, completedAulasCount, canManage, loading,
+  } = useAcademia();
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  // Continue watching - first in-progress trilha
-  const continueTrilha = inProgressTrilhas[0];
-  const continueProgress = continueTrilha ? getTrilhaProgress(continueTrilha.id) : null;
+  const filtered = useMemo(() => {
+    if (categoryFilter === "all") return trilhas;
+    return trilhas.filter(t => t.categoria === categoryFilter);
+  }, [trilhas, categoryFilter]);
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3" style={{ background: "#0A0F1E", minHeight: "100vh" }}>
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="text-sm text-gray-400">Carregando Academia...</span>
+        <span className="text-sm text-muted-foreground">Carregando Academia...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen -m-4 sm:-m-6" style={{ background: "#0A0F1E" }}>
-      <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-8">
-
-        {/* HERO — Continue watching */}
-        {continueTrilha && continueProgress && (
-          <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: 200 }}>
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-slate-900">
-              {continueTrilha.thumbnail_url && (
-                <img src={continueTrilha.thumbnail_url} alt="" className="w-full h-full object-cover opacity-30" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-            </div>
-            <div className="relative z-10 p-6 sm:p-8 flex flex-col gap-3">
-              <span className="text-xs text-gray-400 font-medium">▶ Continuar assistindo</span>
-              <h2 className="text-xl sm:text-2xl font-bold text-white">{continueTrilha.titulo}</h2>
-              {continueTrilha.descricao && (
-                <p className="text-sm text-gray-300 max-w-lg line-clamp-2">{continueTrilha.descricao}</p>
-              )}
-              <div className="flex items-center gap-4 mt-1">
-                <div className="flex-1 max-w-xs">
-                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${continueProgress.percent}%` }} />
-                  </div>
-                  <span className="text-[10px] text-gray-400 mt-1">{continueProgress.completed}/{continueProgress.total} aulas · {continueProgress.percent}%</span>
-                </div>
-                <Button
-                  onClick={() => navigate(`/academia/trilha/${continueTrilha.id}`)}
-                  className="gap-1.5"
-                >
-                  <Play className="h-4 w-4" /> Continuar
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* XP Card */}
-        <div className="rounded-xl p-5 sm:p-6" style={{ background: "linear-gradient(135deg, #1a1f35, #0f1525)", border: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-2xl">
-              {studyLevel.emoji}
-            </div>
-            <div className="flex-1 min-w-[200px]">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-white font-bold text-lg">{totalXp} XP</span>
-                <Badge className="bg-primary/20 text-primary border-0 text-xs">{studyLevel.label}</Badge>
-              </div>
-              {studyLevel.nextAt && (
-                <div className="space-y-1">
-                  <Progress value={studyLevel.progress} className="h-1.5 bg-white/10" />
-                  <span className="text-[10px] text-gray-500">{Math.round(studyLevel.progress)}% para {getStudyLevel(studyLevel.nextAt).emoji} {getStudyLevel(studyLevel.nextAt).label}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="text-center px-3">
-                <span className="text-white font-bold text-lg">{certificados.length}</span>
-                <p className="text-[10px] text-gray-500">Certificados</p>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* HEADER */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
+            🎓 Academia Uhome
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Trilhas de conhecimento e desenvolvimento do time</p>
         </div>
-
-        {/* In Progress section */}
-        {inProgressTrilhas.length > 0 && (
-          <Section title="📚 Continuar Assistindo">
-            {inProgressTrilhas.map(t => (
-              <TrilhaCard
-                key={t.id}
-                trilha={t}
-                progress={getTrilhaProgress(t.id)}
-                onClick={() => navigate(`/academia/trilha/${t.id}`)}
-              />
-            ))}
-          </Section>
-        )}
-
-        {/* All trilhas */}
-        {trilhas.length > 0 && (
-          <Section title="🔥 Todas as Trilhas">
-            {trilhas.map(t => (
-              <TrilhaCard
-                key={t.id}
-                trilha={t}
-                progress={getTrilhaProgress(t.id)}
-                onClick={() => navigate(`/academia/trilha/${t.id}`)}
-              />
-            ))}
-          </Section>
-        )}
-
-        {/* By category */}
-        {CATEGORY_SECTIONS.slice(1).map(section => {
-          const filtered = trilhas.filter(section.filter);
-          if (filtered.length === 0) return null;
-          return (
-            <Section key={section.key} title={section.label}>
-              {filtered.map(t => (
-                <TrilhaCard
-                  key={t.id}
-                  trilha={t}
-                  progress={getTrilhaProgress(t.id)}
-                  onClick={() => navigate(`/academia/trilha/${t.id}`)}
-                />
-              ))}
-            </Section>
-          );
-        })}
-
-        {/* Empty state */}
-        {trilhas.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <BookOpen className="h-16 w-16 text-gray-600 mb-4" />
-            <h3 className="text-white font-bold text-lg mb-2">Nenhuma trilha disponível</h3>
-            <p className="text-gray-400 text-sm max-w-md">
-              Em breve, novas trilhas de treinamento estarão disponíveis aqui.
-            </p>
-          </div>
+        {canManage && (
+          <Button onClick={() => navigate("/academia/gerenciar")} className="gap-1.5">
+            <Plus className="h-4 w-4" /> Gerenciar
+          </Button>
         )}
       </div>
-    </div>
-  );
-}
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h3 className="text-white font-bold text-sm mb-3 px-1">{title}</h3>
-      <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
-        {children}
+      {/* PROGRESS CARDS */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-xl border bg-card p-4 text-center">
+          <div className="text-2xl mb-1">{studyLevel.emoji}</div>
+          <p className="text-lg font-black text-foreground">{totalXp}</p>
+          <p className="text-[10px] text-muted-foreground">XP Total</p>
+        </div>
+        <div className="rounded-xl border bg-card p-4 text-center">
+          <div className="text-2xl mb-1">✅</div>
+          <p className="text-lg font-black text-foreground">{completedTrilhasCount}</p>
+          <p className="text-[10px] text-muted-foreground">Trilhas concluídas</p>
+        </div>
+        <div className="rounded-xl border bg-card p-4 text-center">
+          <div className="text-2xl mb-1">📚</div>
+          <p className="text-lg font-black text-foreground">{completedAulasCount}</p>
+          <p className="text-[10px] text-muted-foreground">Aulas assistidas</p>
+        </div>
+        <div className="rounded-xl border bg-card p-4 text-center">
+          <div className="text-2xl mb-1">🏅</div>
+          <p className="text-lg font-black text-foreground">{certificados.length}</p>
+          <p className="text-[10px] text-muted-foreground">Certificados</p>
+        </div>
       </div>
+
+      {/* CATEGORY FILTERS */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          onClick={() => setCategoryFilter("all")}
+          className={cn(
+            "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+            categoryFilter === "all"
+              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+              : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted"
+          )}
+        >
+          Todas
+        </button>
+        {CATEGORIAS.map(cat => (
+          <button
+            key={cat.key}
+            onClick={() => setCategoryFilter(categoryFilter === cat.key ? "all" : cat.key)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+              categoryFilter === cat.key
+                ? cat.color + " shadow-sm"
+                : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted"
+            )}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* TRILHAS GRID */}
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map(t => (
+            <TrilhaCard
+              key={t.id}
+              trilha={t}
+              progress={getTrilhaProgress(t.id)}
+              duration={getTrilhaDuration(t.id)}
+              onClick={() => navigate(`/academia/trilha/${t.id}`)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <BookOpen className="h-12 w-12 text-muted-foreground/30 mb-3" />
+          <h3 className="text-foreground font-bold text-lg mb-1">Nenhuma trilha disponível</h3>
+          <p className="text-muted-foreground text-sm max-w-md">
+            {categoryFilter !== "all" ? "Nenhuma trilha nesta categoria." : "Em breve, novas trilhas estarão disponíveis."}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
