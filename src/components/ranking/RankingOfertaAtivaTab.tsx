@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { useOARanking } from "@/hooks/useOfertaAtiva";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Phone, ThumbsUp, TrendingUp, Flame, Loader2 } from "lucide-react";
 import { getLevel } from "@/lib/gamification";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";
@@ -14,6 +16,26 @@ function getInitials(nome: string) {
 export default function RankingOfertaAtivaTab({ period }: { period: "hoje" | "semana" | "mes" }) {
   const { ranking, totalTentativas, isLoading } = useOARanking(period);
   const { user } = useAuth();
+
+  // Fetch avatar URLs for all corretores in the ranking
+  const corretorIds = useMemo(() => ranking.map(r => r.corretor_id), [ranking]);
+  const { data: avatarMap = {} } = useQuery({
+    queryKey: ["ranking-avatars", corretorIds],
+    queryFn: async () => {
+      if (corretorIds.length === 0) return {};
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_gamificado_url, avatar_url")
+        .in("user_id", corretorIds);
+      const map: Record<string, { gamificado: string | null; avatar: string | null }> = {};
+      (data || []).forEach(p => {
+        map[p.user_id] = { gamificado: p.avatar_gamificado_url, avatar: p.avatar_url };
+      });
+      return map;
+    },
+    enabled: corretorIds.length > 0,
+    staleTime: 60_000,
+  });
 
   const totals = useMemo(() => {
     return ranking.reduce(
@@ -34,9 +56,11 @@ export default function RankingOfertaAtivaTab({ period }: { period: "hoje" | "se
       nome: r.nome,
       value: `${r.pontos}pts`,
       points: r.pontos,
+      avatarGamificadoUrl: avatarMap[r.corretor_id]?.gamificado || null,
+      avatarUrl: avatarMap[r.corretor_id]?.avatar || r.avatar_url || null,
       isMe: r.corretor_id === user?.id,
     }));
-  }, [ranking, user?.id]);
+  }, [ranking, user?.id, avatarMap]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -119,6 +143,8 @@ export default function RankingOfertaAtivaTab({ period }: { period: "hoje" | "se
                 const taxa = r.tentativas > 0 ? Math.round((r.aproveitados / r.tentativas) * 100) : 0;
                 const isMe = r.corretor_id === user?.id;
                 const level = getLevel(r.pontos);
+                const av = avatarMap[r.corretor_id];
+                const imgSrc = av?.gamificado || av?.avatar || r.avatar_url;
 
                 return (
                   <tr
@@ -141,14 +167,17 @@ export default function RankingOfertaAtivaTab({ period }: { period: "hoje" | "se
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2.5">
                         <div
-                          className="flex items-center justify-center rounded-full shrink-0 text-xs font-bold"
+                          className="flex items-center justify-center rounded-full shrink-0 overflow-hidden"
                           style={{
                             width: 32, height: 32,
                             background: "#F3F4F6",
-                            color: "#6B7280",
                           }}
                         >
-                          {getInitials(r.nome)}
+                          {imgSrc ? (
+                            <img src={imgSrc} alt={r.nome} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold text-gray-500">{getInitials(r.nome)}</span>
+                          )}
                         </div>
                         <span className="font-semibold text-gray-800 truncate">{r.nome}</span>
                         {isMe && (

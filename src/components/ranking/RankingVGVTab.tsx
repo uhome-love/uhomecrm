@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import { useCeoData, type CeoPeriod } from "@/hooks/useCeoData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AvatarImage, AvatarFallback, Avatar } from "@/components/ui/avatar";
 import { DollarSign, FileText, ShoppingBag, Loader2 } from "lucide-react";
 import { getLevel } from "@/lib/gamification";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";
@@ -49,6 +50,26 @@ export default function RankingVGVTab({ period }: { period: "hoje" | "semana" | 
     return [...allCorretores].sort((a, b) => b.real_vgv_assinado - a.real_vgv_assinado);
   }, [allCorretores]);
 
+  // Fetch avatars
+  const corretorIds = useMemo(() => sorted.map(c => c.corretor_id), [sorted]);
+  const { data: avatarMap = {} } = useQuery({
+    queryKey: ["ranking-avatars-vgv", corretorIds],
+    queryFn: async () => {
+      if (corretorIds.length === 0) return {};
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_gamificado_url, avatar_url")
+        .in("user_id", corretorIds);
+      const map: Record<string, { gamificado: string | null; avatar: string | null }> = {};
+      (data || []).forEach(p => {
+        map[p.user_id] = { gamificado: p.avatar_gamificado_url, avatar: p.avatar_url };
+      });
+      return map;
+    },
+    enabled: corretorIds.length > 0,
+    staleTime: 60_000,
+  });
+
   const totals = useMemo(() => {
     return sorted.reduce((acc, c) => ({
       propostas: acc.propostas + c.real_propostas,
@@ -64,9 +85,11 @@ export default function RankingVGVTab({ period }: { period: "hoje" | "semana" | 
       nome: c.corretor_nome,
       value: fmtBRL(c.real_vgv_assinado),
       points: c.score,
+      avatarGamificadoUrl: avatarMap[c.corretor_id]?.gamificado || null,
+      avatarUrl: avatarMap[c.corretor_id]?.avatar || null,
       isMe: c.corretor_id === user?.id,
     }));
-  }, [sorted, user?.id]);
+  }, [sorted, user?.id, avatarMap]);
 
   if (loading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -131,6 +154,8 @@ export default function RankingVGVTab({ period }: { period: "hoje" | "semana" | 
                   const isMe = c.corretor_id === user?.id;
                   const level = getLevel(c.score);
                   const hasVenda = c.real_vgv_assinado > 0;
+                  const av = avatarMap[c.corretor_id];
+                  const imgSrc = av?.gamificado || av?.avatar;
                   return (
                     <tr
                       key={c.corretor_id}
@@ -141,9 +166,13 @@ export default function RankingVGVTab({ period }: { period: "hoje" | "semana" | 
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="flex items-center gap-2">
-                          <Avatar className="h-7 w-7">
-                            <AvatarFallback className="text-[10px]">{getInitials(c.corretor_nome)}</AvatarFallback>
-                          </Avatar>
+                          <div className="h-8 w-8 rounded-full shrink-0 overflow-hidden flex items-center justify-center" style={{ background: "#F3F4F6" }}>
+                            {imgSrc ? (
+                              <img src={imgSrc} alt={c.corretor_nome} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-gray-500">{getInitials(c.corretor_nome)}</span>
+                            )}
+                          </div>
                           <div className="min-w-0">
                             <span className="font-medium truncate block">{c.corretor_nome}</span>
                             <span className={`text-[10px] font-semibold ${level.color}`}>{level.emoji} {level.label}</span>

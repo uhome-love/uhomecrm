@@ -7,6 +7,7 @@ export interface PodiumEntry {
   value: string;
   points: number;
   avatarUrl?: string | null;
+  avatarGamificadoUrl?: string | null;
   isMe?: boolean;
 }
 
@@ -37,6 +38,7 @@ export default function RankingPodium({ entries }: Props) {
         const realPos = cfg.pos;
         const level = getLevel(entry.points);
         const isGold = realPos === 0;
+        const imgSrc = entry.avatarGamificadoUrl || entry.avatarUrl;
 
         return (
           <motion.div
@@ -52,17 +54,42 @@ export default function RankingPodium({ entries }: Props) {
 
             {/* Avatar */}
             <div
-              className="flex items-center justify-center rounded-full font-black text-gray-700 shrink-0"
+              className="rounded-full shrink-0 overflow-hidden"
               style={{
                 width: cfg.avatarSize,
                 height: cfg.avatarSize,
                 border: cfg.avatarBorder,
                 boxShadow: cfg.avatarShadow,
                 background: "#F3F4F6",
-                fontSize: cfg.fontSize,
               }}
             >
-              {getInitials(entry.nome)}
+              {imgSrc ? (
+                <img
+                  src={imgSrc}
+                  alt={entry.nome}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Hide broken image, show fallback
+                    (e.target as HTMLImageElement).style.display = "none";
+                    const parent = (e.target as HTMLImageElement).parentElement;
+                    if (parent) {
+                      parent.classList.add("flex", "items-center", "justify-center");
+                      const span = document.createElement("span");
+                      span.className = "font-black text-gray-700";
+                      span.style.fontSize = `${cfg.fontSize}px`;
+                      span.textContent = getInitials(entry.nome);
+                      parent.appendChild(span);
+                    }
+                  }}
+                />
+              ) : (
+                <div
+                  className="w-full h-full flex items-center justify-center font-black text-gray-700"
+                  style={{ fontSize: cfg.fontSize }}
+                >
+                  {getInitials(entry.nome)}
+                </div>
+              )}
             </div>
 
             <p className="text-sm font-semibold text-gray-800 text-center truncate max-w-[100px]">
