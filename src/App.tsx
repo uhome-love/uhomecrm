@@ -47,6 +47,7 @@ const DisponibilidadePage = lazy(() => import("./pages/DisponibilidadePage"));
 const AutomacoesPage = lazy(() => import("./pages/AutomacoesPage"));
 const Notificacoes = lazy(() => import("./pages/Notificacoes"));
 const VisitaConfirmacao = lazy(() => import("./pages/VisitaConfirmacao"));
+const ReferralPage = lazy(() => import("./pages/ReferralPage"));
 const Conquistas = lazy(() => import("./pages/Conquistas"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 
@@ -91,6 +92,7 @@ const App = () => (
             <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
             <Route path="/welcome" element={<Suspense fallback={<PageLoader />}><Welcome /></Suspense>} />
             <Route path="/visita/:token" element={<Suspense fallback={<PageLoader />}><VisitaConfirmacao /></Suspense>} />
+            <Route path="/indica/:codigo" element={<Suspense fallback={<PageLoader />}><ReferralPage /></Suspense>} />
             {/* Acessível a todos os autenticados */}
             <Route path="/" element={<ProtectedPage><HomeDashboard /></ProtectedPage>} />
 
