@@ -1,0 +1,15 @@
+
+DELETE FROM visitas WHERE id IN (
+  '7e96d25d-a500-496b-9a89-f6ec275aa045',
+  'c972949d-4665-431d-b626-dd2370e71f9c',
+  'e56f419b-2009-49ce-9317-348e04f5c21a',
+  '4756ee29-9afb-4ca3-bb3d-dce4b039b990',
+  'ccc96f5b-9211-4d37-a2c6-ec3d591d8bdc',
+  'a1862b36-2606-4b57-9dec-6956f70342c2',
+  '4ffae286-d11e-4352-b493-0f4ba55e35dc',
+  '0a4205ed-11e5-4e52-987c-3fdf2f39b548',
+  'd2deea67-9d84-4afc-8c75-391c73eedb55',
+  'd69655f8-9309-49bf-bd78-a7e2996afed5',
+  '350f8d77-dcb4-4215-8639-7acb5f146043',
+  '0cf4dbc1-863a-4c85-a100-63075ee9a181'
+);
