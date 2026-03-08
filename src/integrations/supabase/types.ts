@@ -3943,6 +3943,170 @@ export type Database = {
         }
         Relationships: []
       }
+      pulse_desafio_contribuicoes: {
+        Row: {
+          corretor_id: string
+          created_at: string | null
+          desafio_id: string
+          event_id: string | null
+          id: string
+          quantidade: number
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string | null
+          desafio_id: string
+          event_id?: string | null
+          id?: string
+          quantidade?: number
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string | null
+          desafio_id?: string
+          event_id?: string | null
+          id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_desafio_contribuicoes_desafio_id_fkey"
+            columns: ["desafio_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_desafios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pulse_desafio_contribuicoes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pulse_desafios: {
+        Row: {
+          created_at: string | null
+          criado_por: string
+          data_fim: string
+          data_inicio: string
+          descricao: string | null
+          id: string
+          meta: number
+          metrica: string
+          progresso_atual: number | null
+          recompensa_badge: string | null
+          status: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por: string
+          data_fim: string
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          meta: number
+          metrica: string
+          progresso_atual?: number | null
+          recompensa_badge?: string | null
+          status?: string
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          meta?: number
+          metrica?: string
+          progresso_atual?: number | null
+          recompensa_badge?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      pulse_events: {
+        Row: {
+          agrupamento_key: string | null
+          corretor_id: string
+          created_at: string | null
+          desafio_id: string | null
+          descricao: string | null
+          gerente_id: string | null
+          id: string
+          metadata: Json | null
+          prioridade: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          agrupamento_key?: string | null
+          corretor_id: string
+          created_at?: string | null
+          desafio_id?: string | null
+          descricao?: string | null
+          gerente_id?: string | null
+          id?: string
+          metadata?: Json | null
+          prioridade?: string
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          agrupamento_key?: string | null
+          corretor_id?: string
+          created_at?: string | null
+          desafio_id?: string | null
+          descricao?: string | null
+          gerente_id?: string | null
+          id?: string
+          metadata?: Json | null
+          prioridade?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      pulse_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_reactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -4854,6 +5018,17 @@ export type Database = {
           p_tipo: string
           p_titulo: string
           p_user_id: string
+        }
+        Returns: string
+      }
+      criar_pulse_event: {
+        Args: {
+          p_corretor_id: string
+          p_descricao?: string
+          p_metadata?: Json
+          p_prioridade?: string
+          p_tipo: string
+          p_titulo: string
         }
         Returns: string
       }
