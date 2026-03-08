@@ -40,7 +40,51 @@ serve(async (req) => {
       });
     }
 
-    const { messages, quickAction } = await req.json();
+    const { messages, quickAction, action, context: teamContext, periodo } = await req.json();
+
+    // ─── Handle team comparison action ───
+    if (action === "comparar_equipes" && teamContext) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            {
+              role: "system",
+              content: `Você é o HOMI CEO, consultor estratégico da Uhome. Analise os dados comparativos das equipes e forneça:
+1. Qual equipe lidera e por quê
+2. Pontos fortes e fracos de cada equipe
+3. Equipes que precisam de atenção urgente
+4. Recomendações práticas para o CEO
+Seja direto, use dados concretos. Máximo 300 palavras. Período: ${periodo || "semana"}.`,
+            },
+            { role: "user", content: `Dados das equipes:\n${teamContext}` },
+          ],
+        }),
+      });
+
+      if (!aiResp.ok) {
+        const status = aiResp.status;
+        if (status === 429) return new Response(JSON.stringify({ error: "Rate limit excedido, tente novamente." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (status === 402) return new Response(JSON.stringify({ error: "Créditos insuficientes." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Erro na análise IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const aiData = await aiResp.json();
+      const resposta = aiData.choices?.[0]?.message?.content || "Análise indisponível.";
+
+      return new Response(JSON.stringify({ resposta }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const today = new Date().toISOString().slice(0, 10);
     const currentMonth = today.slice(0, 7);
     const weekStart = getWeekStart(today);
