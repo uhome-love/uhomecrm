@@ -32,7 +32,7 @@ const PRIORIDADES_KEY = "uhome-prioridades-open";
 
 export default function PipelineKanban() {
   const pipeline = usePipeline();
-  const { isGestor, isAdmin } = useUserRole();
+  const { isGestor, isAdmin, isCorretor } = useUserRole();
   const { user: authUser } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
@@ -41,6 +41,7 @@ export default function PipelineKanban() {
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
+  const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [prioridadesOpen, setPrioridadesOpen] = useState(() => {
     try { return localStorage.getItem(PRIORIDADES_KEY) !== "false"; } catch { return true; }
   });
@@ -76,9 +77,17 @@ export default function PipelineKanban() {
 
   const canAdd = isGestor || isAdmin;
 
-  const filteredLeads = useMemo(() =>
-    applyFilters(pipeline.leads, filters, pipeline.stages),
-    [pipeline.leads, filters, pipeline.stages]
+  const filteredLeads = useMemo(() => {
+    let result = applyFilters(pipeline.leads, filters, pipeline.stages);
+    if (filaCeoFilter) {
+      result = result.filter(l => !l.corretor_id);
+    }
+    return result;
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter]);
+
+  const filaCeoCount = useMemo(() =>
+    pipeline.leads.filter(l => !l.corretor_id).length,
+    [pipeline.leads]
   );
 
   const totalVGV = useMemo(() =>
@@ -275,8 +284,26 @@ export default function PipelineKanban() {
                 {activeFiltersCount > 0
                   ? `${filteredLeads.length} de ${pipeline.leads.length} leads`
                   : `${filteredLeads.length} oportunidades`}
+                {(isGestor || isAdmin) && filaCeoCount > 0 && !filaCeoFilter && (
+                  <span className="text-muted-foreground font-normal"> ({filaCeoCount} na fila CEO)</span>
+                )}
               </span>
             </div>
+            {(isGestor || isAdmin) && filaCeoCount > 0 && (
+              <button
+                onClick={() => setFilaCeoFilter(f => !f)}
+                className={`flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                  filaCeoFilter
+                    ? "bg-purple-100 text-purple-700 border-purple-300"
+                    : "bg-card text-muted-foreground border-border hover:border-purple-300 hover:text-purple-600"
+                }`}
+              >
+                📥 Fila CEO
+                <Badge className="text-[9px] px-1 py-0 h-3.5 bg-purple-600 text-white border-none">
+                  {filaCeoCount}
+                </Badge>
+              </button>
+            )}
             {totalVGV > 0 && (
               <span className="text-sm text-muted-foreground font-medium">
                 • {formatVGV(totalVGV)} em VGV

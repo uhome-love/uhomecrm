@@ -106,11 +106,18 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   const loadLeads = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase
+    let query = supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, telefone2, email, segmento_id, produto_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, modo_conducao, complexidade_score, oportunidade_score, escalation_level, last_escalation_at, distribuido_em, aceito_em, aceite_expira_em, origem, origem_detalhe, observacoes, proxima_acao, data_proxima_acao, motivo_descarte, valor_estimado, created_at, updated_at, created_by")
       .order("updated_at", { ascending: false })
       .limit(500);
+
+    // Role-based visibility: corretores only see their own leads
+    if (!isGestor && !isAdmin) {
+      query = query.eq("corretor_id", user.id);
+    }
+
+    const { data, error } = await query;
     if (error) {
       console.error("Error loading pipeline leads:", error);
       return;
@@ -138,7 +145,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       profiles?.forEach(p => { if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome; });
       setCorretorNomes(map);
     }
-  }, [user]);
+  }, [user, isGestor, isAdmin]);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }

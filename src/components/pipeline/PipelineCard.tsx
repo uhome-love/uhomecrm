@@ -336,9 +336,15 @@ const PipelineCard = memo(function PipelineCard({
                   <Handshake className="h-2.5 w-2.5" /> Parceria
                 </Badge>
               )}
-              <span className="text-[10px] text-muted-foreground truncate max-w-[90px]">
-                👤 {corretorNome || "Sem corretor"}
-              </span>
+              {!corretorNome ? (
+                <Badge className="text-[9px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-none font-semibold">
+                  📥 Fila CEO
+                </Badge>
+              ) : (
+                <span className="text-[10px] text-muted-foreground truncate max-w-[90px]">
+                  👤 {corretorNome}
+                </span>
+              )}
             </div>
           </div>
 
@@ -380,12 +386,16 @@ const PipelineCard = memo(function PipelineCard({
 
         {/* Actions section */}
         <div data-actions-area className="px-2 py-1.5 flex items-center gap-1 flex-wrap">
-          {/* Ligar */}
-          {lead.telefone && (
+          {/* Ligar ou Atribuir */}
+          {!corretorNome ? (
+            <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-purple-600 hover:text-purple-700 font-semibold" onClick={(e) => { e.stopPropagation(); setTransferOpen(true); }}>
+              <UserPlus className="h-3 w-3" /> 👤 Atribuir Corretor
+            </Button>
+          ) : lead.telefone ? (
             <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1" onClick={handleCall}>
               <Phone className="h-3 w-3" /> Ligar
             </Button>
-          )}
+          ) : null}
 
           {/* Comunicar */}
           <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1 text-blue-500 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); setComunicacaoOpen(true); }}>
