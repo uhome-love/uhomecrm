@@ -53,15 +53,19 @@ serve(async (req) => {
       );
     }
 
-    // Use Lovable AI gateway — no API key needed
-    const gatewayUrl = Deno.env.get("AI_GATEWAY_URL") || "https://ai-gateway.lovable.dev/v1/chat/completions";
-    const gatewayToken = Deno.env.get("AI_GATEWAY_TOKEN") || Deno.env.get("LOVABLE_AI_GATEWAY_TOKEN") || "";
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    const response = await fetch(gatewayUrl, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
-        ...(gatewayToken ? { Authorization: `Bearer ${gatewayToken}` } : {}),
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
