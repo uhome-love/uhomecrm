@@ -25,7 +25,7 @@ import PipelineAdvancedFilters, {
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText, Brain, Rocket } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, BarChart3, FolderOpen, Zap, Radar, FileText, Brain, Rocket } from "lucide-react";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +92,6 @@ export default function PipelineKanban() {
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
   const [parcerias, setParcerias] = useState<Record<string, string>>({});
   const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
@@ -153,33 +152,6 @@ export default function PipelineKanban() {
     setRefreshing(false);
   };
 
-  const handleJetimobSync = useCallback(async () => {
-    if (!authUser) return;
-    setSyncing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("Sessão expirada. Faça login novamente.");
-        return;
-      }
-      const { data, error } = await supabase.functions.invoke("jetimob-sync", {
-        body: {},
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (error) throw error;
-      if (data?.synced > 0) {
-        toast.success(`${data.synced} leads sincronizados do Jetimob para o Pipeline!`);
-        await pipeline.reload();
-      } else {
-        toast.info(`Nenhum lead novo. ${data?.skipped || 0} já existiam no Pipeline.`);
-      }
-    } catch (err) {
-      console.error("Jetimob sync error:", err);
-      toast.error("Erro ao sincronizar leads do Jetimob.");
-    } finally {
-      setSyncing(false);
-    }
-  }, [authUser, pipeline]);
 
   const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
   const [autoView, setAutoView] = useState<"materiais" | "sequencias">("materiais");
@@ -294,25 +266,10 @@ export default function PipelineKanban() {
           </Button>
 
           {canAdd && activeTab === "kanban" && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleJetimobSync}
-                disabled={syncing}
-                className="gap-1 h-8 text-[11px] hidden sm:flex"
-              >
-                {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CloudDownload className="h-3.5 w-3.5" />}
-                {syncing ? "Sync..." : "Jetimob"}
-              </Button>
-              <Button variant="outline" size="icon" onClick={handleJetimobSync} disabled={syncing} className="h-8 w-8 sm:hidden shrink-0">
-                {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CloudDownload className="h-3.5 w-3.5" />}
-              </Button>
-              <Button onClick={() => setAddOpen(true)} size="sm" className="gap-1 h-8 text-[11px]">
-                <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Novo Lead</span>
-              </Button>
-            </>
+            <Button onClick={() => setAddOpen(true)} size="sm" className="gap-1 h-8 text-[11px]">
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Novo Lead</span>
+            </Button>
           )}
         </div>
 
