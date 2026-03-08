@@ -208,41 +208,36 @@ export function AppSidebar() {
     // ── Gestor ──
     if (isGestor) {
       return {
-        topItem: null,
+        topItem: { title: "Dashboard", url: "/gerente/dashboard", icon: Home },
         groups: [
           {
-            label: "Leads",
+            label: "Visão Geral",
+            items: [
+              { title: "Meu Time", url: "/meu-time", icon: Users },
+              { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+            ],
+          },
+          {
+            label: "Operação",
             items: [
               { title: "Pipeline de Leads", url: "/pipeline", icon: Kanban },
               { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
-              { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
-            ],
-          },
-          {
-            label: "Negócios",
-            items: [
               { title: "Pipeline Negócios", url: "/meus-negocios", icon: Kanban },
               { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
-            ],
-          },
-          {
-            label: "Equipe",
-            items: [
-              { title: "Meu Time", url: "/meu-time", icon: Users },
-              { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+              { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
             ],
           },
           {
             label: "Performance",
             items: [
               { title: "Rankings", url: "/ranking", icon: Trophy },
-              { title: "Checkpoint e Metas", url: "/checkpoint", icon: ClipboardCheck },
+              { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
             ],
           },
           {
             label: "Ferramentas",
             items: [
-              { title: "HOMI Assistente", url: "/homi-gerente", icon: Bot },
+              { title: "HOMI Gerente", url: "/homi-gerente", icon: Bot },
               { title: "Base HOMI", url: "/homi/base-conhecimento", icon: Brain },
               { title: "Academia", url: "/academia/gerenciar", icon: Award },
               { title: "Templates", url: "/templates-comunicacao", icon: MessageSquare },

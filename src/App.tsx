@@ -65,6 +65,7 @@ const AcademiaPage = lazy(() => import("./pages/AcademiaPage"));
 const AcademiaTrilhaPage = lazy(() => import("./pages/AcademiaTrilhaPage"));
 const AcademiaAulaPage = lazy(() => import("./pages/AcademiaAulaPage"));
 const AcademiaGerenciarPage = lazy(() => import("./pages/AcademiaGerenciarPage"));
+const GerenteDashboard = lazy(() => import("./pages/GerenteDashboard"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -121,6 +122,7 @@ const App = () => (
             <Route path="/" element={<ProtectedPage><HomeDashboard /></ProtectedPage>} />
 
             {/* Gestão Comercial — gestor + admin */}
+            <Route path="/gerente/dashboard" element={<ProtectedPage roles={["gestor", "admin"]}><GerenteDashboard /></ProtectedPage>} />
             <Route path="/checkpoint" element={<ProtectedPage roles={["gestor", "admin"]}><CheckpointGerente /></ProtectedPage>} />
             <Route path="/pdn" element={<ProtectedPage roles={["gestor", "admin"]}><PdnDashboard /></ProtectedPage>} />
             <Route path="/central-dados" element={<ProtectedPage roles={["gestor", "admin"]}><CentralDados /></ProtectedPage>} />
