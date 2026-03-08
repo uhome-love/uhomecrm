@@ -22,6 +22,8 @@ import {
   Workflow,
   BookOpen,
   Award,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
@@ -38,11 +40,13 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
 import { getLevel } from "@/lib/gamification";
+import { useNavigate } from "react-router-dom";
 
 const homiMascot = "/images/homi-mascot-opt.png";
 
@@ -58,30 +62,38 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
   if (items.length === 0) return null;
   return (
     <SidebarGroup key={label} className="animate-fade-in mt-4 first:mt-0 py-0" style={{ animationDelay: `${index * 60}ms` }}>
-      <SidebarGroupLabel className="text-neutral-500 text-[10px] font-medium tracking-widest uppercase px-3 mb-1">
-        {label}
-      </SidebarGroupLabel>
+      {collapsed ? (
+        /* Collapsed: thin separator line instead of label */
+        index > 0 ? <div className="border-t border-white/10 my-1 mx-2" /> : null
+      ) : (
+        <SidebarGroupLabel className="text-neutral-500 text-[10px] font-medium tracking-widest uppercase px-3 mb-1">
+          {label}
+        </SidebarGroupLabel>
+      )}
       <SidebarGroupContent>
         <SidebarMenu className="gap-0.5">
           {items.map((item) => {
             const badgeCount = badges[item.url] || 0;
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild tooltip={item.title}>
                   <NavLink
                     to={item.url}
                     end
-                    className="group/nav text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 px-3"
-                    activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg"
+                    className={`group/nav text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 ${collapsed ? "px-0 justify-center" : "px-3"}`}
+                    activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg [&_svg]:!text-blue-400"
                   >
-                    <item.icon className="mr-2.5 h-4 w-4 shrink-0 text-neutral-400 group-[.active]/nav:text-blue-400 transition-colors duration-150" />
+                    <item.icon className={`${collapsed ? "" : "mr-2.5"} h-4 w-4 shrink-0 text-neutral-400 group-[.active]/nav:text-blue-400 transition-colors duration-150`} />
                     {!collapsed && (
                       <span className="text-sm">{item.title}</span>
                     )}
-                    {badgeCount > 0 && (
+                    {badgeCount > 0 && !collapsed && (
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white px-1 animate-pulse-soft">
                         {badgeCount}
                       </span>
+                    )}
+                    {badgeCount > 0 && collapsed && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2 rounded-full bg-danger-500 animate-pulse-soft" />
                     )}
                   </NavLink>
                 </SidebarMenuButton>
@@ -95,12 +107,13 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
 }
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const { isGestor, isAdmin } = useUserRole();
   const { alerts, badges } = useSmartAlerts();
   const toastShown = useRef(false);
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<{ nome: string; avatar_url: string | null }>({ nome: "", avatar_url: null });
   const [points, setPoints] = useState(0);
   const [hoverFooter, setHoverFooter] = useState(false);
@@ -221,10 +234,7 @@ export function AppSidebar() {
       ]
     : [];
 
-  const configItems: NavItem[] = [
-    { title: "Configurações", url: "/configuracoes", icon: Settings },
-  ];
-
+  // No "Conta" group — config is only in the avatar dropdown menu
   const groups = [
     { label: "Leads", items: leadsItems },
     { label: "Negócios", items: negociosItems },
@@ -233,7 +243,6 @@ export function AppSidebar() {
     { label: "Ferramentas", items: ferramentasItems },
     ...(inteligenciaItems.length > 0 ? [{ label: "Inteligência", items: inteligenciaItems }] : []),
     ...(sistemaItems.length > 0 ? [{ label: "Sistema", items: sistemaItems }] : []),
-    { label: "Conta", items: configItems },
   ];
 
   // Footer initials
@@ -249,40 +258,65 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="scrollbar-thin flex flex-col">
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 h-14 border-b border-white/10 shrink-0">
+        {/* Logo + Toggle */}
+        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} px-3 h-14 border-b border-white/10 shrink-0`}>
           {collapsed ? (
-            <div className="flex h-9 w-9 items-center justify-center shrink-0">
-              <img src={homiMascot} alt="Homi" className="h-8 w-8 object-contain" />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleSidebar}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <PanelLeftOpen className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="bg-neutral-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg">
+                Expandir sidebar
+              </TooltipContent>
+            </Tooltip>
           ) : (
-            <div className="flex items-center gap-2.5 animate-slide-in-left">
-              <img src={homiMascot} alt="Homi AI" className="h-9 w-9 object-contain shrink-0" />
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-white tracking-tight leading-tight">
-                  Uhome<span className="text-blue-400">Sales</span>
-                </span>
-                <span className="text-[9px] font-medium text-neutral-500 tracking-wider">
-                  Powered by Homi AI
-                </span>
+            <>
+              <div className="flex items-center gap-2.5 animate-slide-in-left">
+                <img src={homiMascot} alt="Homi AI" className="h-9 w-9 object-contain shrink-0" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-white tracking-tight leading-tight">
+                    Uhome<span className="text-blue-400">Sales</span>
+                  </span>
+                  <span className="text-[9px] font-medium text-neutral-500 tracking-wider">
+                    Powered by Homi AI
+                  </span>
+                </div>
               </div>
-            </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleSidebar}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <PanelLeftClose className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="bg-neutral-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg">
+                  Recolher sidebar
+                </TooltipContent>
+              </Tooltip>
+            </>
           )}
         </div>
 
         {/* Minha Rotina — special top item (corretor only) */}
         {topItem && (
-          <div className="border-b border-white/10 pb-3 mb-1">
+          <div className={`border-b border-white/10 pb-3 mb-1 ${collapsed ? "px-1" : ""}`}>
             <SidebarMenu className="px-1 pt-3">
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild tooltip={topItem.title}>
                   <NavLink
                     to={topItem.url}
                     end
-                    className="group/nav text-white hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 px-3 font-medium"
+                    className={`group/nav text-white hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 font-medium ${collapsed ? "px-0 justify-center" : "px-3"}`}
                     activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg"
                   >
-                    <topItem.icon className="mr-2.5 h-4 w-4 shrink-0 text-white/70" />
+                    <topItem.icon className={`${collapsed ? "" : "mr-2.5"} h-4 w-4 shrink-0 text-white/70`} />
                     {!collapsed && <span className="text-sm">{topItem.title}</span>}
                   </NavLink>
                 </SidebarMenuButton>
@@ -307,34 +341,52 @@ export function AppSidebar() {
 
       <SidebarFooter className="!p-0">
         <div
-          className="flex items-center gap-2.5 py-3 px-3 border-t border-white/10 group/footer sticky bottom-0 bg-sidebar"
+          className={`flex items-center ${collapsed ? "justify-center" : "gap-2.5"} py-3 px-3 border-t border-white/10 group/footer sticky bottom-0 bg-sidebar`}
           onMouseEnter={() => setHoverFooter(true)}
           onMouseLeave={() => setHoverFooter(false)}
         >
-          {/* Avatar with initials */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-700 text-white text-sm font-bold shrink-0">
-            {initials}
-          </div>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {profile.nome || user?.email}
-              </p>
-              <p className="text-xs text-neutral-400 font-medium flex items-center gap-1">
-                {roleLabel} · <span>{level.emoji} {level.label}</span>
-              </p>
-            </div>
+          {collapsed ? (
+            /* Collapsed: just the avatar circle with tooltip */
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate("/configuracoes")}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 text-white text-sm font-bold shrink-0 hover:ring-2 hover:ring-blue-400/50 transition-all"
+                >
+                  {initials}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="bg-neutral-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg">
+                <p className="font-medium">{profile.nome || user?.email}</p>
+                <p className="text-xs text-neutral-400">{roleLabel} · {level.emoji} {level.label}</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <>
+              {/* Avatar with initials */}
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-700 text-white text-sm font-bold shrink-0">
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {profile.nome || user?.email}
+                </p>
+                <p className="text-xs text-neutral-400 font-medium flex items-center gap-1">
+                  {roleLabel} · <span>{level.emoji} {level.label}</span>
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={signOut}
+                className={`h-7 w-7 shrink-0 text-neutral-400 hover:text-danger-500 hover:bg-danger-500/10 transition-all duration-150 rounded-lg ${
+                  hoverFooter ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={signOut}
-            className={`h-7 w-7 shrink-0 text-neutral-400 hover:text-danger-500 hover:bg-danger-500/10 transition-all duration-150 rounded-lg ${
-              hoverFooter ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            <LogOut className="h-3.5 w-3.5" />
-          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>
