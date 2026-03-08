@@ -8,6 +8,8 @@ import MaterialsLibrary from "@/components/pipeline/MaterialsLibrary";
 import SequenceBuilder from "@/components/pipeline/SequenceBuilder";
 import SequenceLibrary from "@/components/pipeline/SequenceLibrary";
 import OpportunityRadar from "@/components/pipeline/OpportunityRadar";
+import PipelineCeoIntelligence from "@/components/pipeline/PipelineCeoIntelligence";
+import PipelineManagerActions from "@/components/pipeline/PipelineManagerActions";
 
 import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashboard";
 import type { PipelineStage } from "@/hooks/usePipeline";
