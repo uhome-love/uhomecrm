@@ -13,6 +13,7 @@ import CeoVendasAssinadas from "@/components/ceo/CeoVendasAssinadas";
 import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import CeoCheckpointViewer from "@/components/ceo/CeoCheckpointViewer";
 import PerformanceLivePanel from "@/components/oferta-ativa/PerformanceLivePanel";
+import CeoTeamComparison from "@/components/ceo/CeoTeamComparison";
 
 export default function CeoDashboard() {
   const [searchParams] = useSearchParams();
@@ -39,7 +40,7 @@ export default function CeoDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-9 h-auto">
+        <TabsList className="grid w-full grid-cols-10 h-auto">
           <TabsTrigger value="overview" className="gap-1.5 text-xs py-2">
             <BarChart3 className="h-3.5 w-3.5" /> Visão Geral
           </TabsTrigger>
@@ -54,6 +55,9 @@ export default function CeoDashboard() {
           </TabsTrigger>
           <TabsTrigger value="rankings" className="gap-1.5 text-xs py-2">
             <Trophy className="h-3.5 w-3.5" /> Rankings
+          </TabsTrigger>
+          <TabsTrigger value="comparar" className="gap-1.5 text-xs py-2">
+            <BarChart3 className="h-3.5 w-3.5" /> Comparar
           </TabsTrigger>
           <TabsTrigger value="oferta-ativa" className="gap-1.5 text-xs py-2">
             <Phone className="h-3.5 w-3.5" /> Oferta Ativa
@@ -74,6 +78,7 @@ export default function CeoDashboard() {
         <TabsContent value="vendas" className="mt-4"><CeoVendasAssinadas /></TabsContent>
         <TabsContent value="forecast" className="mt-4"><CeoForecastPanel /></TabsContent>
         <TabsContent value="rankings" className="mt-4"><CeoRankings /></TabsContent>
+        <TabsContent value="comparar" className="mt-4"><CeoTeamComparison /></TabsContent>
         <TabsContent value="oferta-ativa" className="mt-4 space-y-6">
           <PerformanceLivePanel />
           <RankingOfertaAtiva />
