@@ -127,7 +127,7 @@ export function AppSidebar() {
   const [hoverFooter, setHoverFooter] = useState(false);
   const [roletaPendentes, setRoletaPendentes] = useState(0);
 
-  useEffect(() => {
+  const fetchProfile = useCallback(() => {
     if (!user) return;
     supabase
       .from("profiles")
@@ -138,6 +138,14 @@ export function AppSidebar() {
         if (data) setProfile({ nome: data.nome, avatar_url: data.avatar_url, avatar_preview_url: data.avatar_preview_url });
       });
   }, [user]);
+
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+  useEffect(() => {
+    const handler = () => fetchProfile();
+    window.addEventListener("profile-updated", handler);
+    return () => window.removeEventListener("profile-updated", handler);
+  }, [fetchProfile]);
 
   // Fetch roleta pending approvals count for CEO
   const fetchRoletaPendentes = useCallback(async () => {

@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
@@ -82,7 +82,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const { isFullscreen, isSession } = useArenaMode();
 
-  useEffect(() => {
+  const fetchProfile = useCallback(() => {
     if (!user) return;
     supabase.from("profiles").select("nome, avatar_url, avatar_gamificado_url, cargo").eq("user_id", user.id).single().then(({ data }) => {
       if (data?.nome) setNome(data.nome);
@@ -107,6 +107,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
     });
   }, [user, isAdmin, isGestor, isBackoffice]);
+
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+  useEffect(() => {
+    const handler = () => fetchProfile();
+    window.addEventListener("profile-updated", handler);
+    return () => window.removeEventListener("profile-updated", handler);
+  }, [fetchProfile]);
 
   return (
     <SidebarProvider defaultOpen={!isSession}>

@@ -16,6 +16,7 @@ import NotificationPreferences from "@/components/notifications/NotificationPref
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import { useUserRole } from "@/hooks/useUserRole";
 import { getSoundEnabled, setSoundEnabled, getCelebrationEnabled, setCelebrationEnabled } from "@/lib/celebrations";
+import { emitProfileUpdated } from "@/lib/profileEvents";
 
 export default function Configuracoes() {
   const { user } = useAuth();
@@ -115,6 +116,7 @@ export default function Configuracoes() {
 
       setAvatarUrl(urlWithBust);
       setAvatarPreviewUrl(urlWithBust);
+      emitProfileUpdated();
       toast.success("Avatar atualizado! 🎨");
     } catch (err: any) {
       console.error("PNG upload error:", err);
@@ -270,6 +272,7 @@ export default function Configuracoes() {
               onGenerated={(url) => {
                 setAvatarUrl(url);
                 setAvatarPreviewUrl(url);
+                emitProfileUpdated();
               }}
             />
 
