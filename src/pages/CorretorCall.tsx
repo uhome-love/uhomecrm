@@ -521,8 +521,8 @@ export default function CorretorCall() {
             {/* Ligações */}
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-400">🔥 Ligações</span>
-                <span style={{ fontSize: "16px" }} className="font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
+                <span style={{ fontSize: 14 }} className="text-neutral-400">🔥 Ligações</span>
+                <span style={{ fontSize: 18 }} className="font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-orange" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div
@@ -536,8 +536,8 @@ export default function CorretorCall() {
             {/* Aproveitados */}
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-400">✅ Aproveit.</span>
-                <span className="font-mono font-bold" style={{ fontSize: "16px", color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
+                <span style={{ fontSize: 14 }} className="text-neutral-400">✅ Aproveit.</span>
+                <span className="font-mono font-bold" style={{ fontSize: 18, color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-green" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div
@@ -551,8 +551,8 @@ export default function CorretorCall() {
             {/* Visitas */}
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-400">📅 Visitas</span>
-                <span className="font-mono font-bold" style={{ fontSize: "16px", color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
+                <span style={{ fontSize: 14 }} className="text-neutral-400">📅 Visitas</span>
+                <span className="font-mono font-bold" style={{ fontSize: 18, color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-blue" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div
@@ -567,10 +567,10 @@ export default function CorretorCall() {
 
           {nextLevel && ligacoesFaltam > 0 && (
             <div className="flex items-center gap-1.5 mt-2">
-              <span className="text-[10px] font-semibold text-neutral-300">{currentLevel.emoji} {currentLevel.label}</span>
+              <span style={{ fontSize: 13 }} className="font-semibold text-neutral-300">{currentLevel.emoji} {currentLevel.label}</span>
               <ChevronRight className="h-3 w-3 text-neutral-500" />
-              <span className="text-[10px] font-semibold text-neutral-300">{nextLevel.emoji} {nextLevel.label}</span>
-              <span className="text-[10px] text-neutral-500">· faltam {ligacoesFaltam}</span>
+              <span style={{ fontSize: 13 }} className="font-semibold text-neutral-300">{nextLevel.emoji} {nextLevel.label}</span>
+              <span style={{ fontSize: 13 }} className="text-neutral-500">· faltam {ligacoesFaltam}</span>
             </div>
           )}
         </div>
@@ -581,14 +581,14 @@ export default function CorretorCall() {
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 h-auto mb-4 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.05)" }}>
-              <TabsTrigger value="call" className="gap-1 text-xs py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none">
-                <Phone className="h-3.5 w-3.5" /> Arena
+              <TabsTrigger value="call" className="gap-1.5 py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 15, fontWeight: 500 }}>
+                <Phone className="h-4 w-4" /> Arena
               </TabsTrigger>
-              <TabsTrigger value="aproveitados" className="gap-1 text-xs py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none">
-                <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
+              <TabsTrigger value="aproveitados" className="gap-1.5 py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 15, fontWeight: 500 }}>
+                <CheckCircle className="h-4 w-4" /> Aproveitados
               </TabsTrigger>
-              <TabsTrigger value="ranking" className="gap-1 text-xs py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none">
-                <Trophy className="h-3.5 w-3.5" /> Ranking
+              <TabsTrigger value="ranking" className="gap-1.5 py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 15, fontWeight: 500 }}>
+                <Trophy className="h-4 w-4" /> Ranking
               </TabsTrigger>
             </TabsList>
 
