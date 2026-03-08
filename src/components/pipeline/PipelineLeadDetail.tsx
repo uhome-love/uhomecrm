@@ -726,6 +726,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       </SheetContent>
 
       <PartnershipDialog open={partnerOpen} onOpenChange={setPartnerOpen} leadId={lead.id} leadNome={lead.nome} corretorPrincipalId={lead.corretor_id} />
+      <CentralComunicacao open={comunicacaoOpen} onOpenChange={setComunicacaoOpen} leadId={lead.id} leadNome={lead.nome} leadEmpreendimento={lead.empreendimento} />
     </Sheet>
   );
 }
