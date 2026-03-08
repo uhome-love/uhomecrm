@@ -188,7 +188,7 @@ export default function Auth() {
       </div>
     );
   }
-  if (user) return <Navigate to="/welcome" replace />;
+  if (user) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
