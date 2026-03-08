@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       academia_aulas: {
         Row: {
+          conteudo: Json | null
           conteudo_url: string | null
           created_at: string | null
           descricao: string | null
@@ -30,6 +31,7 @@ export type Database = {
           youtube_id: string | null
         }
         Insert: {
+          conteudo?: Json | null
           conteudo_url?: string | null
           created_at?: string | null
           descricao?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           youtube_id?: string | null
         }
         Update: {
+          conteudo?: Json | null
           conteudo_url?: string | null
           created_at?: string | null
           descricao?: string | null
@@ -243,6 +246,7 @@ export type Database = {
           publicada: boolean | null
           thumbnail_url: string | null
           titulo: string
+          visibilidade: string | null
           xp_total: number | null
         }
         Insert: {
@@ -256,6 +260,7 @@ export type Database = {
           publicada?: boolean | null
           thumbnail_url?: string | null
           titulo: string
+          visibilidade?: string | null
           xp_total?: number | null
         }
         Update: {
@@ -269,6 +274,7 @@ export type Database = {
           publicada?: boolean | null
           thumbnail_url?: string | null
           titulo?: string
+          visibilidade?: string | null
           xp_total?: number | null
         }
         Relationships: [
