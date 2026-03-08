@@ -97,6 +97,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   // Script tab (desktop right column)
   const [scriptTab, setScriptTab] = useState<"ligacao" | "whatsapp">("ligacao");
 
+  // Shared empreendimento selection (HOMI helper + FichaRapida)
+  const [selectedEmp, setSelectedEmp] = useState(lead?.empreendimento || "Alfa");
+
   // Arena overlays
   const [showRound, setShowRound] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
