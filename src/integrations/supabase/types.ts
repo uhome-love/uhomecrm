@@ -2903,6 +2903,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_gamificado_url: string | null
           avatar_url: string | null
           cargo: string | null
           created_at: string
@@ -2915,6 +2916,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_gamificado_url?: string | null
           avatar_url?: string | null
           cargo?: string | null
           created_at?: string
@@ -2927,6 +2929,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_gamificado_url?: string | null
           avatar_url?: string | null
           cargo?: string | null
           created_at?: string
