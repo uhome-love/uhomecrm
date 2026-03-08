@@ -1,3 +1,4 @@
+import UhomeLogo from "@/components/UhomeLogo";
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
   LayoutDashboard,
@@ -374,9 +375,9 @@ export function AppSidebar() {
               <TooltipTrigger asChild>
                 <button
                   onClick={toggleSidebar}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
+                  className="flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <img src="/images/uhome-logo-36.png" alt="Uhome" className="h-8 w-8 object-contain" />
+                  <UhomeLogo size="sm" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right" className="bg-neutral-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg">
@@ -386,7 +387,7 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center animate-slide-in-left">
-                <img src="/images/uhomesales-logo.png" alt="UhomeSales — Powered by Homi AI" className="w-full max-h-[100px] object-contain shrink-0" />
+                <UhomeLogo size="md" showTagline />
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
