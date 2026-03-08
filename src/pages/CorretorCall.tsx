@@ -323,11 +323,6 @@ export default function CorretorCall() {
                 transition={{ duration: 1, delay: 0.5 }}
                 className="h-full rounded-full bg-blue-400"
               />
-                initial={{ width: 0 }}
-                animate={{ width: `${levelProg}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="h-full rounded-full bg-[#60A5FA]"
-              />
             </div>
           </div>
         </motion.div>
