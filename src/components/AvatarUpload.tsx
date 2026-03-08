@@ -80,6 +80,11 @@ export default function AvatarUpload({ avatarUrl, nome, size = "md", onUploaded,
       setCurrentUrl(urlWithCacheBust);
       onUploaded?.(urlWithCacheBust);
       toast.success("Foto atualizada!");
+
+      // Auto-generate gamified avatar
+      if (autoGenerateGamified) {
+        generateGamifiedAvatar(urlWithCacheBust);
+      }
     } catch (err: any) {
       console.error("Avatar upload error:", err);
       toast.error("Erro ao enviar foto: " + (err.message || "tente novamente"));
