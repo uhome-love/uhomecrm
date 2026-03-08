@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Phone, ArrowLeft, Loader2, Users, Search, Zap } from "lucide-react";
+import { Phone, ArrowLeft, Loader2, Users, Search, Zap, Sparkles, Trash2, RotateCcw, Pencil } from "lucide-react";
 import DialingModeWithScript from "./DialingModeWithScript";
+import CustomListWizard from "./CustomListWizard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCustomLists, type CustomList } from "@/hooks/useCustomLists";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface ListaStats {
   naFila: number;
@@ -27,7 +31,6 @@ function useBatchListaStats(listaIds: string[]) {
     queryFn: async () => {
       if (!listaIds.length || !user) return {} as Record<string, ListaStats>;
 
-      // 1) All leads for these listas — paginated to bypass 1000-row limit
       const allLeads: Array<{ id: string; lista_id: string; status: string; proxima_tentativa_apos: string | null }> = [];
       const PAGE_SIZE = 1000;
       let page = 0;
@@ -43,7 +46,6 @@ function useBatchListaStats(listaIds: string[]) {
         page++;
       }
 
-      // 2) My attempts today in one query
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const { data: attempts } = await supabase
@@ -59,7 +61,6 @@ function useBatchListaStats(listaIds: string[]) {
       for (const lid of listaIds) {
         const listaLeads = allLeads.filter(l => l.lista_id === lid);
         const total = listaLeads.length;
-        // Include both na_fila AND em_cooldown (eligible leads the server will serve)
         const naFila = listaLeads.filter(l =>
           (l.status === "na_fila" || l.status === "em_cooldown") &&
           (l.proxima_tentativa_apos == null || l.proxima_tentativa_apos < now)
@@ -79,7 +80,7 @@ function useBatchListaStats(listaIds: string[]) {
   });
 }
 
-function ListaCard({ lista, stats }: { lista: OALista; stats?: ListaStats }) {
+function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaStats; isCustom?: boolean }) {
   const hasLeads = (stats?.naFila ?? 0) > 0;
 
   return (
@@ -94,9 +95,15 @@ function ListaCard({ lista, stats }: { lista: OALista; stats?: ListaStats }) {
             </h3>
             {lista.campanha && <p className="text-xs text-muted-foreground">{lista.campanha}</p>}
           </div>
-          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]">
-            Liberada
-          </Badge>
+          {isCustom ? (
+            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30 text-[10px]">
+              ✨ Personalizada
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]">
+              Liberada
+            </Badge>
+          )}
         </div>
 
         {stats ? (
@@ -145,15 +152,47 @@ function ListaCard({ lista, stats }: { lista: OALista; stats?: ListaStats }) {
   );
 }
 
+function SavedListCard({ list, onReuse, onDelete }: { list: CustomList; onReuse: () => void; onDelete: () => void }) {
+  return (
+    <Card className="hover:border-purple-400/40 hover:shadow-sm transition-all">
+      <CardContent className="p-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+            <p className="text-sm font-semibold text-foreground truncate">{list.nome}</p>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {list.ultima_usada_at
+              ? `Usada ${formatDistanceToNow(new Date(list.ultima_usada_at), { addSuffix: true, locale: ptBR })}`
+              : "Nunca usada"
+            }
+            {list.vezes_usada > 0 && ` · ${list.vezes_usada}x`}
+          </p>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onReuse} title="Reusar">
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete} title="Excluir">
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function CorretorListSelection() {
   const { listas, isLoading } = useOAListas();
   const [selectedLista, setSelectedLista] = useState<OALista | null>(null);
   const [search, setSearch] = useState("");
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const { lists: savedLists, isLoading: savedLoading, markUsed, deleteList } = useCustomLists();
 
   const liberadas = listas.filter(l => l.status === "liberada");
   const listaIds = useMemo(() => liberadas.map(l => l.id), [liberadas]);
 
-  const { data: statsMap, isLoading: statsLoading } = useBatchListaStats(listaIds);
+  const { data: statsMap } = useBatchListaStats(listaIds);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return liberadas;
@@ -180,50 +219,96 @@ export default function CorretorListSelection() {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
-  if (liberadas.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center text-muted-foreground">
-          <Phone className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">Nenhuma lista liberada</p>
-          <p className="text-sm mt-1">Aguarde o Admin liberar uma campanha para começar.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Users className="h-4 w-4 text-primary" /> Escolha uma lista ({liberadas.length} liberadas)
-        </h3>
-      </div>
-      {liberadas.length > 3 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por empreendimento ou campanha..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
+    <div className="space-y-5">
+      {/* Create custom list CTA */}
+      <button
+        onClick={() => setWizardOpen(true)}
+        className="w-full p-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition-all text-left flex items-center gap-3 group"
+      >
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+          <Sparkles className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">Criar lista personalizada</p>
+          <p className="text-xs text-muted-foreground">Filtre seus leads e trabalhe do seu jeito</p>
+        </div>
+        <ArrowLeft className="h-4 w-4 text-muted-foreground rotate-180 group-hover:translate-x-1 transition-transform" />
+      </button>
+
+      {/* Saved custom lists */}
+      {savedLists.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Minhas listas salvas</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {savedLists.map(list => (
+              <SavedListCard
+                key={list.id}
+                list={list}
+                onReuse={() => {
+                  markUsed.mutate(list.id);
+                  // TODO: navigate to battle mode with custom list
+                }}
+                onDelete={() => deleteList.mutate(list.id)}
+              />
+            ))}
+          </div>
         </div>
       )}
-      {filtered.length === 0 && search && (
-        <p className="text-sm text-muted-foreground text-center py-4">Nenhuma lista encontrada para "{search}"</p>
-      )}
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map(lista => {
-          const stats = statsMap?.[lista.id];
-          const hasLeads = (stats?.naFila ?? 0) > 0;
-          return (
-            <div key={lista.id} onClick={hasLeads ? () => setSelectedLista(lista) : undefined}>
-              <ListaCard lista={lista} stats={stats} />
+
+      {/* Released lists */}
+      {liberadas.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <Phone className="h-10 w-10 mx-auto mb-3 opacity-40" />
+            <p className="font-medium">Nenhuma lista liberada</p>
+            <p className="text-sm mt-1">Aguarde o Admin liberar uma campanha para começar.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" /> Listas liberadas ({liberadas.length})
+            </h3>
+          </div>
+          {liberadas.length > 3 && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por empreendimento ou campanha..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9"
+              />
             </div>
-          );
-        })}
-      </div>
+          )}
+          {filtered.length === 0 && search && (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma lista encontrada para "{search}"</p>
+          )}
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {filtered.map(lista => {
+              const stats = statsMap?.[lista.id];
+              const hasLeads = (stats?.naFila ?? 0) > 0;
+              return (
+                <div key={lista.id} onClick={hasLeads ? () => setSelectedLista(lista) : undefined}>
+                  <ListaCard lista={lista} stats={stats} />
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Wizard modal */}
+      <CustomListWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onCreated={(listId) => {
+          setWizardOpen(false);
+          // The list is saved, user can now see it in saved lists
+        }}
+      />
     </div>
   );
 }
