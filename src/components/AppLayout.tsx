@@ -20,6 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
 import LeadAcceptanceDialog from "@/components/pipeline/LeadAcceptanceDialog";
 import NewLeadBanner from "@/components/notifications/NewLeadBanner";
+import GlobalSearch from "@/components/GlobalSearch";
+import { Search } from "lucide-react";
 const homiMascot = "/images/homi-mascot-opt.png";
 
 const UhomeIaAssistant = lazy(() => import("@/components/UhomeIaAssistant"));
@@ -55,8 +57,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Right side — notifications + user menu */}
+            {/* Right side — search + notifications + user menu */}
             <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden sm:flex items-center gap-2 h-8 px-2.5 text-muted-foreground hover:text-foreground rounded-lg border border-border/50 bg-muted/30"
+              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span className="text-[11px]">Buscar...</span>
+              <kbd className="pointer-events-none ml-1 inline-flex h-5 items-center gap-0.5 rounded border border-border bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground">
+                ⌘K
+              </kbd>
+            </Button>
             <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -108,6 +122,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onResult={refreshPending}
       />
       <NewLeadBanner />
+      <GlobalSearch />
     </SidebarProvider>
   );
 }
