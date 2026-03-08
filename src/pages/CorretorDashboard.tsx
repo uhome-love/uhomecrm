@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Phone, Lock, Kanban, CalendarDays, Bot, FileEdit, BarChart3, AlertCircle, Zap, LogOut } from "lucide-react";
+import { Phone, Lock, Kanban, CalendarDays, Bot, FileEdit, BarChart3, AlertCircle, Zap, LogOut, Clock, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -12,6 +12,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Trophy } from "lucide-react";
+import { differenceInHours } from "date-fns";
 
 import {
   AlertDialog,
@@ -27,13 +28,6 @@ import {
 import { toast } from "sonner";
 
 const homiMascot = "/images/homi-mascot-opt.png";
-
-function getProgressColor(pct: number) {
-  if (pct >= 100) return "bg-success";
-  if (pct >= 70) return "bg-primary";
-  if (pct >= 40) return "bg-warning";
-  return "bg-danger-500/70";
-}
 
 export default function CorretorDashboard() {
   const { progress, goals, saveGoals } = useCorretorProgress();
@@ -66,18 +60,27 @@ export default function CorretorDashboard() {
 
       const { data: visitas } = await (supabase
         .from("visitas")
-        .select("horario") as any)
+        .select("id, nome_cliente, empreendimento, hora_visita, data_visita, status") as any)
         .eq("corretor_id", user!.id)
-        .eq("data", today)
-        .order("horario");
+        .eq("data_visita", today)
+        .order("hora_visita");
 
       const { data: rankingData } = await supabase
         .from("oferta_ativa_tentativas")
         .select("corretor_id")
         .gte("created_at", today + "T00:00:00");
 
+      // Priority leads: SLA expired or high value, limit 3
+      const { data: priorityLeads } = await (supabase
+        .from("pipeline_leads")
+        .select("id, nome, empreendimento, stage_changed_at, telefone, oportunidade_score, valor_estimado")
+        .eq("corretor_id", user!.id)
+        .not("stage_id", "is", null)
+        .order("stage_changed_at", { ascending: true })
+        .limit(5) as any);
+
       const counts: Record<string, number> = {};
-      rankingData?.forEach(r => { counts[r.corretor_id] = (counts[r.corretor_id] || 0) + 1; });
+      rankingData?.forEach((r: any) => { counts[r.corretor_id] = (counts[r.corretor_id] || 0) + 1; });
       const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
       const myPos = sorted.findIndex(([id]) => id === user!.id) + 1;
       const totalBrokers = sorted.length || 1;
@@ -90,6 +93,7 @@ export default function CorretorDashboard() {
         rankingPos: myPos || totalBrokers,
         totalBrokers,
         ptsToNext: Math.max(0, nextAbove),
+        priorityLeads: (priorityLeads || []).slice(0, 3),
       };
     },
     enabled: !!user,
@@ -132,178 +136,325 @@ export default function CorretorDashboard() {
   const aprvPct = goals ? Math.min(100, Math.round((progress.aproveitados / (goals.meta_aproveitados || 5)) * 100)) : 0;
   const visPct = goals ? Math.min(100, Math.round((progress.visitasMarcadas / (goals.meta_visitas_marcadas || 3)) * 100)) : 0;
 
-  const radar = radarData || { pendingLeads: 0, slaExpired: 0, visitas: [], rankingPos: 0, totalBrokers: 1, ptsToNext: 0 };
+  const radar = radarData || { pendingLeads: 0, slaExpired: 0, visitas: [], rankingPos: 0, totalBrokers: 1, ptsToNext: 0, priorityLeads: [] };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-56px-2rem)] max-w-2xl mx-auto px-4 md:px-6 py-4">
-      <div className="flex flex-col gap-5 pb-4 overflow-auto flex-1">
+    <div className="flex flex-col h-[calc(100vh-56px-2rem)] px-4 md:px-6 lg:px-8 py-4 overflow-auto">
 
-        {/* BLOCO 1 — Saudação */}
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-            <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-semibold text-foreground">
-              Fala, <span className="text-primary">{nome || "Corretor"}</span>! 💪
-            </h1>
-            <p className="text-sm text-muted-foreground truncate">{motivation}</p>
-          </div>
-        </motion.div>
+      {/* HEADER — full width */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-4">
+        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+          <img src={homiMascot} alt="Homi" className="h-10 w-10 object-contain" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-semibold text-foreground">
+            Fala, <span className="text-primary">{nome || "Corretor"}</span>! 💪
+          </h1>
+          <p className="text-sm text-muted-foreground truncate">{motivation}</p>
+        </div>
+      </motion.div>
 
-        {/* BLOCO 2 — Radar do Dia */}
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="cursor-pointer hover:border-orange-300 hover:shadow-card-hover transition-all duration-150" onClick={() => navigate("/pipeline")}>
-              <CardContent className="p-3">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <AlertCircle className="h-3.5 w-3.5 text-danger-500" />
-                  <span className="text-xs font-medium text-muted-foreground">Leads</span>
-                </div>
-                <p className={`text-2xl font-bold leading-none ${radar.pendingLeads > 0 ? "text-orange-500" : "text-foreground"}`}>{radar.pendingLeads}</p>
-                <p className="text-xs text-muted-foreground mt-1">p/ contatar</p>
-                {radar.slaExpired > 0 && (
-                  <p className="text-[11px] text-danger-500 font-medium mt-0.5">{radar.slaExpired} SLA expirado</p>
-                )}
-              </CardContent>
-            </Card>
+      {/* GRID PRINCIPAL — 2 colunas desktop, 1 coluna mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-4 flex-1 min-h-0">
 
-            <Card className="cursor-pointer hover:border-primary/30 hover:shadow-card-hover transition-all duration-150" onClick={() => navigate("/agenda-visitas")}>
-              <CardContent className="p-3">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <CalendarDays className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-medium text-muted-foreground">Agenda</span>
-                </div>
-                <p className={`text-2xl font-bold leading-none ${radar.visitas.length > 0 ? "text-primary" : "text-foreground"}`}>{radar.visitas.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">{radar.visitas.length === 1 ? "visita" : "visitas"}</p>
-                {radar.visitas.length > 0 && (
-                  <p className="text-[11px] text-primary font-medium mt-0.5">
-                    {radar.visitas.map((v: any) => v.horario?.slice(0, 5)).join(" · ")}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+        {/* ===== COLUNA ESQUERDA ===== */}
+        <div className="flex flex-col gap-4">
 
-            <Card className={`cursor-pointer hover:shadow-card-hover transition-all duration-150 ${radar.rankingPos === 1 ? "bg-amber-50/50 border-amber-200 hover:border-amber-300" : "hover:border-primary/30"}`} onClick={() => navigate("/corretor/call")}>
-              <CardContent className="p-3">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Trophy className={`h-3.5 w-3.5 ${radar.rankingPos === 1 ? "text-amber-500" : "text-warning"}`} />
-                  <span className="text-xs font-medium text-muted-foreground">Ranking</span>
-                </div>
-                <p className={`text-2xl font-bold leading-none ${radar.rankingPos === 1 ? "text-[#B45309]" : "text-foreground"}`}>#{radar.rankingPos || "–"}</p>
-                <p className="text-xs text-muted-foreground mt-1">de {radar.totalBrokers}</p>
-                {radar.ptsToNext > 0 && (
-                  <p className="text-[11px] text-[#B45309] font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
+          {/* Radar do Dia — 3 cards */}
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <div className="grid grid-cols-3 gap-3">
+              <Card className="cursor-pointer hover:border-orange-300 hover:shadow-card-hover transition-all duration-150" onClick={() => navigate("/pipeline")}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <AlertCircle className="h-4 w-4 text-danger-500" />
+                    <span className="text-xs font-medium text-muted-foreground">Leads</span>
+                  </div>
+                  <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.pendingLeads > 0 ? "text-orange-500" : "text-foreground"}`}>{radar.pendingLeads}</p>
+                  <p className="text-sm text-muted-foreground mt-1.5">p/ contatar</p>
+                  {radar.slaExpired > 0 && (
+                    <p className="text-xs text-danger-500 font-medium mt-0.5">{radar.slaExpired} SLA expirado</p>
+                  )}
+                </CardContent>
+              </Card>
 
-        {/* BLOCO 3 — Meta do Dia */}
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          {!metaSalva ? (
-            <DailyProgressCard progress={progress} goals={goals} saveGoals={saveGoals} variant="full" />
-          ) : (
-            <Card className="border-primary/20">
+              <Card className="cursor-pointer hover:border-primary/30 hover:shadow-card-hover transition-all duration-150" onClick={() => navigate("/agenda-visitas")}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <CalendarDays className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-medium text-muted-foreground">Agenda</span>
+                  </div>
+                  <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.visitas.length > 0 ? "text-primary" : "text-foreground"}`}>{radar.visitas.length}</p>
+                  <p className="text-sm text-muted-foreground mt-1.5">{radar.visitas.length === 1 ? "visita" : "visitas"}</p>
+                </CardContent>
+              </Card>
+
+              <Card className={`cursor-pointer hover:shadow-card-hover transition-all duration-150 ${radar.rankingPos === 1 ? "bg-amber-50/50 border-amber-200 hover:border-amber-300" : "hover:border-primary/30"}`} onClick={() => navigate("/corretor/call")}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Trophy className={`h-4 w-4 ${radar.rankingPos === 1 ? "text-amber-500" : "text-warning"}`} />
+                    <span className="text-xs font-medium text-muted-foreground">Ranking</span>
+                  </div>
+                  <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.rankingPos === 1 ? "text-[#B45309]" : "text-foreground"}`}>#{radar.rankingPos || "–"}</p>
+                  <p className="text-sm text-muted-foreground mt-1.5">de {radar.totalBrokers}</p>
+                  {radar.ptsToNext > 0 && (
+                    <p className="text-xs text-[#B45309] font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+
+          {/* Botões de Ação */}
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                disabled={!metaSalva}
+                className={`h-20 flex-col gap-1.5 rounded-xl text-base font-bold ${
+                  metaSalva
+                    ? "bg-[#16A34A] hover:bg-[#15803D] text-white shadow-[0_4px_20px_hsl(142_60%_40%/0.3)]"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                }`}
+                onClick={() => metaSalva && navigate("/corretor/call")}
+              >
+                {!metaSalva ? <Lock className="h-6 w-6" /> : <Phone className="h-6 w-6" />}
+                {metaSalva ? "Iniciar Call" : "🔒 Iniciar Call"}
+                <span className="text-xs font-normal opacity-70">Oferta Ativa</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-20 flex-col gap-1.5 rounded-xl text-base font-bold border-2 hover:bg-primary/5 hover:border-primary/30 group"
+                onClick={() => navigate("/pipeline")}
+              >
+                <Kanban className="h-6 w-6 text-primary" />
+                Gestão de Leads
+                <span className="text-xs font-normal text-muted-foreground">Pipeline</span>
+              </Button>
+            </div>
+            {!metaSalva && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Defina sua meta para liberar a discagem.
+              </p>
+            )}
+          </motion.div>
+
+          {/* Finalizar Trabalho — desktop only in left column */}
+          {metaSalva && progress.tentativas > 0 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="hidden lg:block">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" className="w-full h-9 gap-2 text-xs text-muted-foreground hover:text-destructive" disabled={finalizando}>
+                    <LogOut className="h-3.5 w-3.5" /> Finalizar Trabalho do Dia
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Finalizar trabalho do dia?</AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <p>Suas estatísticas serão enviadas ao gerente:</p>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div className="text-center p-2 rounded-lg bg-muted">
+                          <p className="text-lg font-bold text-foreground">{progress.tentativas}</p>
+                          <p className="text-[10px] text-muted-foreground">tentativas</p>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-muted">
+                          <p className="text-lg font-bold text-success">{progress.aproveitados}</p>
+                          <p className="text-[10px] text-muted-foreground">aproveitados</p>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-muted">
+                          <p className="text-lg font-bold text-primary">{progress.pontos}</p>
+                          <p className="text-[10px] text-muted-foreground">pontos</p>
+                        </div>
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Voltar e continuar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleFinalizarTrabalho} className="bg-destructive hover:bg-destructive/90">
+                      {finalizando ? "Enviando..." : "Confirmar e Finalizar"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </motion.div>
+          )}
+        </div>
+
+        {/* ===== COLUNA DIREITA ===== */}
+        <div className="flex flex-col gap-4">
+
+          {/* Meta do Dia */}
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+            {!metaSalva ? (
+              <DailyProgressCard progress={progress} goals={goals} saveGoals={saveGoals} variant="full" />
+            ) : (
+              <Card className="border-primary/20">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">Meta do Dia</span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-6 text-xs text-primary">Editar</Button>
+                  </div>
+                  {[
+                    { emoji: "🔥", label: "Tentativas", value: progress.tentativas, max: goals?.meta_ligacoes || 30, pct: ligPct, barColor: "bg-primary" },
+                    { emoji: "✅", label: "Aproveitados", value: progress.aproveitados, max: goals?.meta_aproveitados || 5, pct: aprvPct, barColor: "bg-[#16A34A]" },
+                    { emoji: "📅", label: "Visitas", value: progress.visitasMarcadas, max: goals?.meta_visitas_marcadas || 3, pct: visPct, barColor: "bg-purple-500" },
+                  ].map((item) => {
+                    const valueColor = item.value === 0
+                      ? "text-muted-foreground"
+                      : item.pct >= 100
+                      ? "text-[#16A34A]"
+                      : "text-primary";
+                    return (
+                      <div key={item.label}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">{item.emoji} {item.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold ${valueColor}`}>{item.value}/{item.max}</span>
+                            <span className="text-[10px] text-muted-foreground w-8 text-right">{item.pct}%</span>
+                          </div>
+                        </div>
+                        <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${item.pct}%` }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className={`h-full rounded-full ${item.pct >= 100 ? "bg-[#16A34A]" : item.barColor}`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+          </motion.div>
+
+          {/* Prioridades Agora */}
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+            <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-foreground">Meta do Dia</span>
+                    <span className="text-sm">🎯</span>
+                    <span className="text-sm font-semibold text-foreground">Prioridades Agora</span>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs text-primary">Editar</Button>
+                  <span className="text-xs text-muted-foreground font-medium">{radar.priorityLeads?.length || 0}</span>
                 </div>
-                {[
-                  { emoji: "🔥", label: "Tentativas", value: progress.tentativas, max: goals?.meta_ligacoes || 30, pct: ligPct, barColor: "bg-primary" },
-                  { emoji: "✅", label: "Aproveitados", value: progress.aproveitados, max: goals?.meta_aproveitados || 5, pct: aprvPct, barColor: "bg-[#16A34A]" },
-                  { emoji: "📅", label: "Visitas", value: progress.visitasMarcadas, max: goals?.meta_visitas_marcadas || 3, pct: visPct, barColor: "bg-purple-500" },
-                ].map((item) => {
-                  const valueColor = item.value === 0
-                    ? "text-muted-foreground"
-                    : item.pct >= 100
-                    ? "text-[#16A34A]"
-                    : "text-primary";
-                  return (
-                    <div key={item.label}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">{item.emoji} {item.label}</span>
-                        <span className={`text-xs font-bold ${valueColor}`}>{item.value}/{item.max}</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${item.pct}%` }}
-                          transition={{ duration: 0.6, ease: "easeOut" }}
-                          className={`h-full rounded-full ${item.pct >= 100 ? "bg-[#16A34A]" : item.barColor}`}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                {(!radar.priorityLeads || radar.priorityLeads.length === 0) ? (
+                  <div className="text-center py-3">
+                    <p className="text-sm text-muted-foreground">✅ Tudo em dia! Bora prospectar.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {radar.priorityLeads.map((lead: any) => {
+                      const hrs = differenceInHours(new Date(), new Date(lead.stage_changed_at));
+                      const isUrgent = hrs >= 24;
+                      return (
+                        <div key={lead.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border/60 hover:bg-accent/30 transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs">{isUrgent ? "🚨" : "⭐"}</span>
+                              <span className="text-xs font-bold text-foreground truncate">{lead.nome}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                              {lead.empreendimento || "Sem empreendimento"}
+                              {isUrgent && <span className="text-danger-500 font-medium"> · SLA {hrs}h</span>}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {lead.telefone && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => window.open(`tel:${lead.telefone}`, "_self")}
+                              >
+                                <Phone className="h-3 w-3 text-[#16A34A]" />
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => navigate("/pipeline")}
+                            >
+                              <ArrowRight className="h-3 w-3 text-primary" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          )}
-        </motion.div>
+          </motion.div>
 
-        {/* BLOCO 4 — Botões de Ação */}
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <div className="grid grid-cols-2 gap-3">
+          {/* Agenda de Hoje */}
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Hoje</span>
+                </div>
+                {radar.visitas.length === 0 ? (
+                  <div className="text-center py-3 space-y-1">
+                    <p className="text-sm text-muted-foreground">😴 Livre hoje. Que tal marcar uma?</p>
+                    <Button variant="link" size="sm" className="text-xs text-primary h-auto p-0" onClick={() => navigate("/agenda-visitas")}>
+                      Abrir agenda →
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {radar.visitas.map((v: any) => (
+                      <div key={v.id} className="flex items-center gap-3 p-2 rounded-lg border border-border/60">
+                        <span className="text-xs font-bold text-primary shrink-0 w-12">
+                          {v.hora_visita?.slice(0, 5) || "–"}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{v.nome_cliente}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{v.empreendimento}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <Button variant="link" size="sm" className="text-xs text-primary h-auto p-0" onClick={() => navigate("/agenda-visitas")}>
+                      Ver agenda completa →
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* RODAPÉ — full width, atalhos */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-4 shrink-0">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: "Agenda", icon: CalendarDays, path: "/agenda-visitas", color: "text-primary" },
+            { label: "HOMI", icon: Bot, path: "/homi", color: "text-purple-500" },
+            { label: "Scripts", icon: FileEdit, path: "/scripts", color: "text-amber-500" },
+            { label: "Desempenho", icon: BarChart3, path: "/corretor/resumo", color: "text-[#16A34A]" },
+          ].map((item) => (
             <Button
-              disabled={!metaSalva}
-              className={`h-20 flex-col gap-1.5 rounded-xl text-base font-bold ${
-                metaSalva
-                  ? "bg-[#16A34A] hover:bg-[#15803D] text-white shadow-[0_4px_20px_hsl(142_60%_40%/0.3)]"
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
-              }`}
-              onClick={() => metaSalva && navigate("/corretor/call")}
+              key={item.label}
+              variant="ghost"
+              className="h-auto flex-col gap-1 py-3 text-muted-foreground hover:text-foreground hover:-translate-y-0.5 transition-all duration-150"
+              onClick={() => navigate(item.path)}
             >
-              {!metaSalva ? <Lock className="h-5 w-5" /> : <Phone className="h-5 w-5" />}
-              {metaSalva ? "Iniciar Call" : "🔒 Iniciar Call"}
-              <span className="text-xs font-normal opacity-70">Oferta Ativa</span>
+              <item.icon className={`h-4 w-4 ${item.color}`} />
+              <span className="text-[11px] font-medium">{item.label}</span>
             </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-1.5 rounded-xl text-base font-bold hover:bg-primary/5 hover:border-primary/30 group"
-              onClick={() => navigate("/pipeline")}
-            >
-              <Kanban className="h-5 w-5 text-primary" />
-              Gestão de Leads
-              <span className="text-xs font-normal text-muted-foreground">Pipeline</span>
-            </Button>
-          </div>
-          {!metaSalva && (
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Defina sua meta acima para liberar a discagem.
-            </p>
-          )}
-        </motion.div>
+          ))}
+        </div>
 
-        {/* Links secundários */}
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { label: "Agenda", icon: CalendarDays, path: "/agenda-visitas", color: "text-primary" },
-              { label: "HOMI", icon: Bot, path: "/homi", color: "text-purple-500" },
-              { label: "Scripts", icon: FileEdit, path: "/scripts", color: "text-amber-500" },
-              { label: "Desempenho", icon: BarChart3, path: "/corretor/resumo", color: "text-[#16A34A]" },
-            ].map((item) => (
-              <Button
-                key={item.label}
-                variant="ghost"
-                className="h-auto flex-col gap-1 py-3 text-muted-foreground hover:text-foreground hover:-translate-y-0.5 transition-all duration-150"
-                onClick={() => navigate(item.path)}
-              >
-                <item.icon className={`h-4 w-4 ${item.color}`} />
-                <span className="text-[11px] font-medium">{item.label}</span>
-              </Button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Finalizar Trabalho */}
+        {/* Finalizar — mobile only */}
         {metaSalva && progress.tentativas > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}>
+          <div className="lg:hidden mt-2">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" className="w-full h-9 gap-2 text-xs text-muted-foreground hover:text-destructive" disabled={finalizando}>
@@ -339,9 +490,9 @@ export default function CorretorDashboard() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </motion.div>
+          </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
