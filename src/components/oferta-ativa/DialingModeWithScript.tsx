@@ -597,7 +597,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       )}
 
       {/* 2-column layout */}
-      <div className={`grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-4 ${arenaShake ? "arena-shake" : ""}`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-4 ${arenaShake ? "arena-shake" : ""}`} style={{ background: "#0A0F1E" }}>
         {/* Left: Lead Card */}
         <AnimatePresence mode="wait">
           <motion.div
