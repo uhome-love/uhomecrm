@@ -476,10 +476,10 @@ export default function CorretorCall() {
           {/* Title row */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <h2 className="text-sm font-black tracking-[0.2em] uppercase arena-title-gradient">
+              <h2 style={{ fontSize: 20 }} className="font-black tracking-[0.2em] uppercase arena-title-gradient">
                 ⚡ ARENA DE LIGAÇÃO
               </h2>
-              <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+              <span className="flex items-center gap-1.5 font-semibold" style={{ fontSize: 13, color: "#4ADE80" }}>
                 <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 live-dot" />
                 AO VIVO
               </span>
@@ -487,7 +487,8 @@ export default function CorretorCall() {
             <div className="flex items-center gap-3">
               <motion.span
                 key={progress.pontos}
-                className="text-sm font-black text-amber-400"
+                className="font-bold text-amber-400"
+                style={{ fontSize: 16 }}
                 initial={{ scale: 1.5 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 300 }}
@@ -497,17 +498,19 @@ export default function CorretorCall() {
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="ghost" size="sm"
-                  className="h-7 text-xs gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
+                  className="h-8 gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
+                  style={{ fontSize: 14 }}
                   onClick={handleExitArena}
                 >
-                  <Pause className="h-3 w-3" /> Pausar
+                  <Pause className="h-3.5 w-3.5" /> Pausar
                 </Button>
                 <Button
                   variant="ghost" size="sm"
-                  className="h-7 text-xs gap-1 text-red-400 hover:bg-red-500/10"
+                  className="h-8 gap-1 text-red-400 hover:bg-red-500/10"
+                  style={{ fontSize: 14 }}
                   onClick={handleExitArena}
                 >
-                  <X className="h-3 w-3" /> Sair
+                  <X className="h-3.5 w-3.5" /> Sair
                 </Button>
               </div>
             </div>
