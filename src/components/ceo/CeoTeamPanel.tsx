@@ -100,7 +100,7 @@ export default function CeoTeamPanel() {
     // 6. Get this month's VGV (from negocios or pdn_entries)
     const { data: negocios } = await supabase
       .from("pdn_entries")
-      .select("corretor, valor, fase")
+      .select("corretor, vgv, situacao")
       .eq("mes", todayStr.slice(0, 7));
 
     // Aggregate stats per corretor
@@ -160,8 +160,8 @@ export default function CeoTeamPanel() {
             c.nome.toLowerCase().includes((n.corretor || "").toLowerCase()) ||
             (n.corretor || "").toLowerCase().includes(c.nome.split(" ")[0]?.toLowerCase() || "___")
           );
-          if (found && n.valor) {
-            team.totals.vgv += Number(n.valor) || 0;
+          if (found && n.vgv) {
+            team.totals.vgv += Number(n.vgv) || 0;
             break;
           }
         }
