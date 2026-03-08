@@ -3932,6 +3932,42 @@ export type Database = {
         }
         Relationships: []
       }
+      relatorios_1_1: {
+        Row: {
+          conteudo_json: Json
+          corretor_id: string
+          created_at: string
+          dados_periodo: Json | null
+          gerado_em: string
+          gerente_id: string
+          id: string
+          periodo_fim: string
+          periodo_inicio: string
+        }
+        Insert: {
+          conteudo_json?: Json
+          corretor_id: string
+          created_at?: string
+          dados_periodo?: Json | null
+          gerado_em?: string
+          gerente_id: string
+          id?: string
+          periodo_fim: string
+          periodo_inicio: string
+        }
+        Update: {
+          conteudo_json?: Json
+          corretor_id?: string
+          created_at?: string
+          dados_periodo?: Json | null
+          gerado_em?: string
+          gerente_id?: string
+          id?: string
+          periodo_fim?: string
+          periodo_inicio?: string
+        }
+        Relationships: []
+      }
       roleta_campanhas: {
         Row: {
           ativo: boolean | null
