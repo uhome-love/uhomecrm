@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { usePipeline } from "@/hooks/usePipeline";
-import PipelineBoard from "@/components/pipeline/PipelineBoard";
+import JourneyMapBoard from "@/components/pipeline/JourneyMapBoard";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import PipelineFlowDashboard from "@/components/pipeline/PipelineFlowDashboard";
@@ -347,7 +347,7 @@ export default function PipelineKanban() {
       <div className="flex-1 min-h-0 overflow-hidden flex">
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
           {activeTab === "kanban" ? (
-            <PipelineBoard
+            <JourneyMapBoard
               stages={pipeline.stages}
               leads={filteredLeads}
               segmentos={pipeline.segmentos}
