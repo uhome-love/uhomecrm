@@ -77,6 +77,16 @@ export default function HomeDashboard() {
     }
   }, [isAdmin, isGestor, isBackoffice, roleLoading, navigate]);
 
+  // Show only a spinner until role is known — prevents flash of wrong dashboard
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
+        <img src="/images/uhome-logo-128.png" alt="Uhome" className="h-16 w-16 animate-pulse" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   const filterGerenteId = isAdmin ? undefined : user?.id;
   const { gerentes, companyTotals, allCorretores, loading, reload } = useCeoData(period as CeoPeriod, undefined, undefined, filterGerenteId);
   const { channelStats, totals: mktTotals } = useMarketing();
