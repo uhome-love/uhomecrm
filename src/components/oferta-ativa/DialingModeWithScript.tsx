@@ -104,6 +104,16 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const prevLeadIdRef = useRef<string | null>(null);
   const objScrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to objection response
+  useEffect(() => {
+    if (objectionInsert && expandedObj !== null && objScrollRef.current) {
+      setTimeout(() => {
+        const el = objScrollRef.current?.querySelector('[data-objection-block]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+  }, [objectionInsert, expandedObj]);
+
   useEffect(() => {
     if (lead && lead.id !== prevLeadIdRef.current) {
       prevLeadIdRef.current = lead.id;
