@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { type Visita, type VisitaStatus } from "@/hooks/useVisitas";
-import VisitaRow from "./VisitaRow";
+import VisitaRow, { getTeamBadgeStyle } from "./VisitaRow";
 
 interface Props {
   visitas: Visita[];
   onUpdateStatus: (id: string, status: VisitaStatus) => void;
   onDelete?: (id: string) => void;
+  showTeam?: boolean;
 }
 
 interface CorretorGroup {
@@ -44,7 +45,7 @@ function getInitials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
-export default function VisitasByCorretor({ visitas, onUpdateStatus, onDelete }: Props) {
+export default function VisitasByCorretor({ visitas, onUpdateStatus, onDelete, showTeam }: Props) {
   const [collapsedCorretores, setCollapsedCorretores] = useState<Set<string>>(new Set());
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
 

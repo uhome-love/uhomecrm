@@ -281,7 +281,7 @@ export default function AgendaVisitas() {
       )}
 
       {/* ─── DAY SUMMARY ─── */}
-      <DaySummary visitas={visitas} />
+      <DaySummary visitas={visitas} showTeamBreakdown={isAdmin} />
 
       {/* ─── FILTERS ROW ─── */}
       <div className="flex flex-wrap items-center gap-2">
@@ -419,6 +419,7 @@ export default function AgendaVisitas() {
               onUpdateStatus={handleUpdateStatus}
               onDelete={deleteVisita}
               showCorretor={isAdmin || isGestor}
+              showTeam={isAdmin}
             />
           )}
         </TabsContent>
@@ -429,7 +430,7 @@ export default function AgendaVisitas() {
 
         {(isAdmin || isGestor) && (
           <TabsContent value="por-corretor" className="mt-3">
-            <VisitasByCorretor visitas={filtered} onUpdateStatus={handleUpdateStatus} onDelete={deleteVisita} />
+            <VisitasByCorretor visitas={filtered} onUpdateStatus={handleUpdateStatus} onDelete={deleteVisita} showTeam={isAdmin} />
           </TabsContent>
         )}
       </Tabs>
