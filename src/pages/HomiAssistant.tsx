@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, PhoneCall, RefreshCw, ShieldQuestion, MapPin, Sparkles, Copy, ArrowLeft, MessageCircle, Clock } from "lucide-react";
+import { MessageSquare, PhoneCall, RefreshCw, ShieldQuestion, MapPin, Sparkles, Copy, ArrowLeft, MessageCircle, Clock, ArrowRight } from "lucide-react";
 import HomiChat from "@/components/homi/HomiChat";
 import HomiHistory from "@/components/homi/HomiHistory";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,12 @@ const homiMascot = "/images/homi-mascot-opt.png";
 
 type Acao = "responder_whatsapp" | "criar_followup" | "script_ligacao" | "quebrar_objecao" | "preparar_visita";
 
-const ACOES: { id: Acao; label: string; icon: typeof MessageSquare; description: string }[] = [
-  { id: "responder_whatsapp", label: "Responder WhatsApp", icon: MessageSquare, description: "Crie a resposta perfeita" },
-  { id: "criar_followup", label: "Criar Follow Up", icon: RefreshCw, description: "Retome a conversa" },
-  { id: "script_ligacao", label: "Script de Ligação", icon: PhoneCall, description: "Roteiro para ligar" },
-  { id: "quebrar_objecao", label: "Quebrar Objeção", icon: ShieldQuestion, description: "Contorne resistências" },
-  { id: "preparar_visita", label: "Preparar Visita", icon: MapPin, description: "Conduza para a visita" },
+const ACOES: { id: Acao; label: string; icon: typeof MessageSquare; description: string; iconBg: string; iconColor: string }[] = [
+  { id: "responder_whatsapp", label: "Responder WhatsApp", icon: MessageSquare, description: "Crie a resposta perfeita", iconBg: "bg-green-50", iconColor: "text-green-500" },
+  { id: "criar_followup", label: "Criar Follow Up", icon: RefreshCw, description: "Retome a conversa", iconBg: "bg-blue-50", iconColor: "text-blue-500" },
+  { id: "script_ligacao", label: "Script de Ligação", icon: PhoneCall, description: "Roteiro para ligar", iconBg: "bg-orange-50", iconColor: "text-orange-500" },
+  { id: "quebrar_objecao", label: "Quebrar Objeção", icon: ShieldQuestion, description: "Contorne resistências", iconBg: "bg-purple-50", iconColor: "text-purple-500" },
+  { id: "preparar_visita", label: "Preparar Visita", icon: MapPin, description: "Conduza para a visita", iconBg: "bg-amber-50", iconColor: "text-amber-500" },
 ];
 
 const EMPREENDIMENTOS = [
@@ -37,6 +37,12 @@ const SITUACOES = [
 const OBJETIVOS = ["Gerar visita", "Retomar conversa", "Qualificar cliente", "Enviar material"];
 
 type Step = "home" | "form" | "result" | "chat" | "history";
+
+const BADGES = [
+  { emoji: "🧠", label: "RAG Ativo" },
+  { emoji: "⚡", label: "Gemini AI" },
+  { emoji: "📚", label: "Base Uhome" },
+];
 
 export default function HomiAssistant() {
   const { user } = useAuth();
@@ -75,7 +81,6 @@ export default function HomiAssistant() {
       const content = data?.content || "Sem resposta.";
       setResultado(content);
 
-      // Save to history
       if (user) {
         const titulo = `${ACOES.find(a => a.id === acao)?.label} · ${empreendimento}`;
         supabase.from("homi_conversations").insert({
@@ -115,59 +120,189 @@ export default function HomiAssistant() {
         {/* HOME */}
         {step === "home" && (
           <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
-            <div className="text-center mb-8">
-              <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 15 }} className="inline-block mb-4">
-                <img src={homiMascot} alt="HOMI" className="h-20 w-20 mx-auto rounded-2xl shadow-lg" />
+            {/* Avatar Section */}
+            <div className="text-center mb-8 pt-4">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="inline-block mb-5"
+              >
+                <div className="relative flex items-center justify-center" style={{ width: 120, height: 120 }}>
+                  {/* Rotating energy ring */}
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      border: "2px solid rgba(59,130,246,0.2)",
+                      background: "conic-gradient(transparent 0deg, rgba(59,130,246,0.4) 90deg, transparent 180deg, rgba(34,197,94,0.4) 270deg, transparent 360deg)",
+                    }}
+                  />
+                  {/* Inner white circle with avatar */}
+                  <motion.div
+                    animate={{ y: [-6, 0, -6] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="relative rounded-full bg-white flex items-center justify-center z-10"
+                    style={{
+                      width: 100,
+                      height: 100,
+                      boxShadow: "0 0 40px rgba(59,130,246,0.2), 0 0 80px rgba(59,130,246,0.1)",
+                    }}
+                  >
+                    <img src={homiMascot} alt="HOMI" className="h-16 w-16 rounded-full object-cover" />
+                  </motion.div>
+                </div>
               </motion.div>
-              <h1 className="font-display text-2xl font-bold text-foreground mb-1">HOMI</h1>
-              <p className="text-sm text-muted-foreground">Como posso te ajudar com esse lead?</p>
+
+              {/* Title */}
+              <h1
+                className="font-black tracking-[0.05em]"
+                style={{
+                  fontSize: 48,
+                  background: "linear-gradient(135deg, #2563EB, #3B82F6, #06B6D4)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                HOMI
+              </h1>
+              <p className="text-gray-400 font-medium mt-1" style={{ fontSize: 16, letterSpacing: "0.1em" }}>
+                Superinteligência Imobiliária
+              </p>
+
+              {/* Capability badges */}
+              <div className="flex items-center justify-center gap-2 mt-4">
+                {BADGES.map((b) => (
+                  <span
+                    key={b.label}
+                    className="text-blue-500 font-medium"
+                    style={{
+                      fontSize: 12,
+                      background: "rgba(59,130,246,0.06)",
+                      border: "1px solid rgba(59,130,246,0.15)",
+                      borderRadius: 999,
+                      padding: "4px 12px",
+                    }}
+                  >
+                    {b.emoji} {b.label}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
+            {/* Module Cards — 2 columns */}
+            <div className="grid grid-cols-2 gap-3">
               {ACOES.map((a, i) => (
-                <motion.div key={a.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07, duration: 0.3 }}>
-                  <button onClick={() => selectAcao(a.id)}
-                    className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-md hover:bg-primary/5 transition-all duration-200 group text-left">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200">
+                <motion.div key={a.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06, duration: 0.3 }}>
+                  <button
+                    onClick={() => selectAcao(a.id)}
+                    className="w-full text-left p-5 group"
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(0,0,0,0.06)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                      transition: "all 0.25s ease",
+                      background: "#fff",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = "0 8px 24px rgba(59,130,246,0.12)";
+                      e.currentTarget.style.borderColor = "rgba(59,130,246,0.2)";
+                      e.currentTarget.style.transform = "translateY(-3px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
+                      e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }}
+                  >
+                    <div
+                      className={`flex items-center justify-center rounded-full mb-3 ${a.iconBg} ${a.iconColor}`}
+                      style={{ width: 44, height: 44 }}
+                    >
                       <a.icon className="h-5 w-5" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground">{a.label}</p>
-                      <p className="text-xs text-muted-foreground">{a.description}</p>
-                    </div>
+                    <p className="font-semibold text-gray-800" style={{ fontSize: 15 }}>{a.label}</p>
+                    <p className="text-gray-400" style={{ fontSize: 13 }}>{a.description}</p>
                   </button>
                 </motion.div>
               ))}
-            </div>
 
-            {/* Chat Livre + Histórico */}
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: ACOES.length * 0.07, duration: 0.3 }}>
-                <button onClick={() => setStep("chat")}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 hover:border-primary/60 hover:shadow-md hover:bg-primary/10 transition-all duration-200 group text-left">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200">
-                    <MessageCircle className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-foreground">Chat Livre</p>
-                    <p className="text-[11px] text-muted-foreground">Converse com o HOMI</p>
-                  </div>
-                </button>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: ACOES.length * 0.07 + 0.05, duration: 0.3 }}>
-                <button onClick={() => setStep("history")}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-md hover:bg-primary/5 transition-all duration-200 group text-left">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all duration-200">
+              {/* Histórico card */}
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: ACOES.length * 0.06, duration: 0.3 }}>
+                <button
+                  onClick={() => setStep("history")}
+                  className="w-full text-left p-5 group"
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                    transition: "all 0.25s ease",
+                    background: "#fff",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(59,130,246,0.12)";
+                    e.currentTarget.style.borderColor = "rgba(59,130,246,0.2)";
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
+                    e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  <div
+                    className="flex items-center justify-center rounded-full mb-3 bg-gray-50 text-gray-500"
+                    style={{ width: 44, height: 44 }}
+                  >
                     <Clock className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-foreground">Histórico</p>
-                    <p className="text-[11px] text-muted-foreground">Consultas anteriores</p>
-                  </div>
+                  <p className="font-semibold text-gray-800" style={{ fontSize: 15 }}>Histórico</p>
+                  <p className="text-gray-400" style={{ fontSize: 13 }}>Consultas anteriores</p>
                 </button>
               </motion.div>
             </div>
+
+            {/* Separator */}
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.05)" }} />
+              <span className="text-gray-300" style={{ fontSize: 12 }}>ou converse livremente</span>
+              <div className="flex-1 h-px" style={{ background: "rgba(0,0,0,0.05)" }} />
+            </div>
+
+            {/* Chat Livre — full width special card */}
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (ACOES.length + 1) * 0.06, duration: 0.3 }}>
+              <button
+                onClick={() => setStep("chat")}
+                className="w-full flex items-center gap-4 p-5 text-left"
+                style={{
+                  borderRadius: 16,
+                  background: "linear-gradient(135deg, #EFF6FF, #F0F9FF)",
+                  border: "1px solid rgba(59,130,246,0.2)",
+                  transition: "all 0.25s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = "0 8px 24px rgba(59,130,246,0.15)";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <div
+                  className="flex items-center justify-center rounded-full bg-blue-500 text-white shrink-0"
+                  style={{ width: 44, height: 44 }}
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-blue-700" style={{ fontSize: 16 }}>💬 Chat Livre com o HOMI</p>
+                  <p className="text-blue-400" style={{ fontSize: 14 }}>Converse sobre qualquer lead ou situação</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-blue-400 shrink-0" />
+              </button>
+            </motion.div>
           </motion.div>
         )}
 
@@ -193,7 +328,7 @@ export default function HomiAssistant() {
             </button>
             <div className="flex items-center gap-3 mb-6">
               {acaoInfo && (
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <div className={`flex items-center justify-center rounded-full ${acaoInfo.iconBg} ${acaoInfo.iconColor}`} style={{ width: 44, height: 44 }}>
                   <acaoInfo.icon className="h-5 w-5" />
                 </div>
               )}
@@ -202,7 +337,7 @@ export default function HomiAssistant() {
                 <p className="text-xs text-muted-foreground">{acaoInfo?.description}</p>
               </div>
             </div>
-            <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-card">
+            <div className="space-y-4" style={{ borderRadius: 16, border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", padding: 20, background: "#fff" }}>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Empreendimento *</Label>
                 <Select value={empreendimento} onValueChange={setEmpreendimento}>
@@ -242,9 +377,9 @@ export default function HomiAssistant() {
               <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao formulário
             </button>
             {generating ? (
-              <div className="rounded-xl border border-border bg-card shadow-card p-12 text-center">
+              <div className="p-12 text-center" style={{ borderRadius: 16, border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", background: "#fff" }}>
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="inline-block mb-4">
-                  <Sparkles className="h-8 w-8 text-primary" />
+                  <Sparkles className="h-8 w-8 text-blue-500" />
                 </motion.div>
                 <p className="text-sm font-medium text-foreground mb-1">HOMI está pensando...</p>
                 <p className="text-xs text-muted-foreground">Gerando a melhor resposta para seu lead</p>
@@ -279,7 +414,9 @@ export default function HomiAssistant() {
                     const borderColor = isWhatsApp ? "border-emerald-500/20" : isAlternative ? "border-blue-500/20" : isScript ? "border-amber-500/20" : isAction ? "border-primary/20" : isAnalysis ? "border-violet-500/20" : "border-border";
                     return (
                       <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                        className={`rounded-xl border ${borderColor} bg-card shadow-card overflow-hidden`}>
+                        className={`overflow-hidden`}
+                        style={{ borderRadius: 16, border: `1px solid`, borderColor: isWhatsApp ? "rgba(16,185,129,0.2)" : isAlternative ? "rgba(59,130,246,0.2)" : isScript ? "rgba(245,158,11,0.2)" : isAction ? "rgba(59,130,246,0.2)" : isAnalysis ? "rgba(139,92,246,0.2)" : "rgba(0,0,0,0.06)", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+                      >
                         {title && (
                           <div className={`flex items-center justify-between px-4 py-2.5 border-b ${headerColor}`}>
                             <span className="text-xs font-bold text-foreground">{title}</span>
