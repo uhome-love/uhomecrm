@@ -41,6 +41,9 @@ export default function CorretorDashboard() {
 
   const [nome, setNome] = useState("");
   const [finalizando, setFinalizando] = useState(false);
+  const [showMetaCelebration, setShowMetaCelebration] = useState(false);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
+  const [metaCelebrated, setMetaCelebrated] = useState(false);
 
   // Radar data
   const { data: radarData } = useQuery({
