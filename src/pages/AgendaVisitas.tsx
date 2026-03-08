@@ -385,7 +385,7 @@ export default function AgendaVisitas() {
 
         {(isAdmin || isGestor) && (
           <TabsContent value="por-corretor" className="mt-3">
-            <VisitasByCorretor visitas={filtered} onUpdateStatus={handleUpdateStatus} />
+            <VisitasByCorretor visitas={filtered} onUpdateStatus={handleUpdateStatus} onDelete={deleteVisita} />
           </TabsContent>
         )}
       </Tabs>
