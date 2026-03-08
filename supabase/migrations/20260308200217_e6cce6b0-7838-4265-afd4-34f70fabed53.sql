@@ -1,0 +1,1 @@
+UPDATE profiles SET cargo = 'gerente' WHERE id = 'da6ea081-3e7f-4b6d-99a0-9315f706415a';
