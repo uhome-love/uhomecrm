@@ -26,18 +26,18 @@ function HomiAvatarInner() {
         <div className="absolute inset-0 rounded-full bg-primary/15 animate-ping opacity-30" style={{ animationDuration: "4s" }} />
       )}
 
-      {/* Avatar */}
+      {/* Avatar — white circle with HOMI mascot */}
       <motion.div
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        className="relative rounded-full bg-card border-2 border-primary/30 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center overflow-hidden"
-        style={{ height: "4.5rem", width: "4.5rem" }}
+        className="relative rounded-full bg-white shadow-xl hover:shadow-2xl transition-shadow flex items-center justify-center overflow-hidden"
+        style={{ height: 56, width: 56 }}
       >
-        <HomiAnimated state={animState} size={64} />
+        <img src="/images/homi-48.png" alt="HOMI" className="h-10 w-10 object-contain" />
 
         {/* Thinking indicator */}
         {isLoading && (
-          <div className="absolute bottom-0.5 right-0.5 flex gap-[2px] bg-card/90 rounded-full px-1.5 py-0.5">
+          <div className="absolute bottom-0.5 right-0.5 flex gap-[2px] bg-white/90 rounded-full px-1.5 py-0.5">
             <span className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
             <span className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
             <span className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
