@@ -147,7 +147,7 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode }:
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <s.icon className={`h-4 w-4 ${s.iconColor}`} />
-                <h4 className={`text-xs font-bold uppercase tracking-wider ${textColor}`}>{s.label}</h4>
+                <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className={`uppercase ${textColor}`}>{s.label}</h4>
               </div>
               <div className="flex items-center gap-1">
                 {editingScript === s.key ? (
@@ -201,8 +201,8 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode }:
               />
             ) : (
               <p
-                className={`text-xs whitespace-pre-line leading-relaxed p-2.5 rounded-lg ${mutedColor}`}
-                style={darkMode ? { background: scriptBg, border: "1px solid rgba(255,255,255,0.06)" } : { background: "hsl(var(--muted) / 0.5)" }}
+                className={`whitespace-pre-line p-2.5 rounded-lg`}
+                style={darkMode ? { background: scriptBg, border: "1px solid rgba(255,255,255,0.06)", fontSize: "15px", lineHeight: 1.7, color: "#E2E8F0" } : { background: "hsl(var(--muted) / 0.5)", fontSize: "15px", lineHeight: 1.7 }}
               >
                 {s.value}
               </p>
@@ -213,8 +213,8 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode }:
 
       {/* CTA Final */}
       <div className="rounded-xl p-3" style={{ background: darkMode ? "rgba(59,130,246,0.06)" : undefined, border: darkMode ? "1px solid rgba(59,130,246,0.15)" : undefined }}>
-        <h4 className={`text-xs font-bold uppercase tracking-wider mb-1.5 ${darkMode ? "text-blue-400" : "text-primary"}`}>🎯 CTA Final</h4>
-        <p className={`text-xs italic p-2 rounded-lg ${darkMode ? "text-neutral-400" : "text-muted-foreground"}`} style={darkMode ? { background: "rgba(59,130,246,0.04)" } : { background: "hsl(var(--primary) / 0.05)" }}>
+        <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className={`uppercase mb-1.5 ${darkMode ? "text-blue-400" : "text-primary"}`}>🎯 CTA Final</h4>
+        <p style={{ fontSize: "15px", fontStyle: "italic", color: darkMode ? "#FDE68A" : undefined }} className={`p-2 rounded-lg ${!darkMode ? "text-muted-foreground" : ""}`} >
           "Que tal agendar uma visita sem compromisso? Posso reservar o melhor horário para você!"
         </p>
       </div>

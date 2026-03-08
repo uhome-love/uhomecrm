@@ -519,7 +519,7 @@ export default function CorretorCall() {
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-neutral-400">🔥 Ligações</span>
-                <span className="text-xs font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
+                <span style={{ fontSize: "16px" }} className="font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-orange" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div
@@ -534,7 +534,7 @@ export default function CorretorCall() {
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-neutral-400">✅ Aproveit.</span>
-                <span className="text-xs font-mono font-bold" style={{ color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
+                <span className="font-mono font-bold" style={{ fontSize: "16px", color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-green" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div
@@ -549,7 +549,7 @@ export default function CorretorCall() {
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-neutral-400">📅 Visitas</span>
-                <span className="text-xs font-mono font-bold" style={{ color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
+                <span className="font-mono font-bold" style={{ fontSize: "16px", color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-blue" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div

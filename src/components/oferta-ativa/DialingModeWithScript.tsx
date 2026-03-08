@@ -489,7 +489,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
       {/* Motivational bar + session info */}
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs font-medium text-neutral-400">{motivationalMsg}</p>
+        <p style={{ fontSize: "15px" }} className="font-medium text-neutral-400">{motivationalMsg}</p>
         <div className="flex items-center gap-2 text-[10px] text-neutral-500">
           <Clock className="h-3 w-3" />
           <span>{formatSessionTime(sessionSeconds)}</span>
@@ -512,7 +512,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 text-xs gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
+            className="h-7 gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
+            style={{ fontSize: "14px", fontWeight: 500 }}
             onClick={async () => {
               if (lead && user) {
                 setSkipCount(prev => prev + 1);
@@ -533,12 +534,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             }}
             disabled={callActive}
           >
-            <SkipForward className="h-3.5 w-3.5" /> Pular
+            <SkipForward className="h-3.5 w-3.5" /> <span style={{ fontSize: "14px", fontWeight: 500 }}>Pular</span>
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            className="gap-1.5 text-xs text-red-400 hover:bg-red-500/10"
+            className="gap-1.5 text-red-400 hover:bg-red-500/10"
+            style={{ fontSize: "14px", fontWeight: 500 }}
             onClick={async () => {
               if (!user) return;
               setFinalizando(true);
@@ -580,8 +582,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       </div>
 
       {/* Lead counter */}
-      <div className="flex items-center justify-between text-xs text-neutral-500">
-        <span>Lead <strong className="text-white">#{sessionLeadsServed + 1}</strong> · ROUND {sessionLeadsServed + 1}</span>
+      <div className="flex items-center justify-between" style={{ fontSize: "15px" }}>
+        <span className="text-neutral-500">Lead <strong className="text-white">#{sessionLeadsServed + 1}</strong> · ROUND {sessionLeadsServed + 1}</span>
         <span className="text-[10px] text-emerald-400/70">🔒 Reservado p/ você</span>
       </div>
 
@@ -625,8 +627,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   <h2 className="text-3xl lg:text-4xl font-black text-white flex items-center gap-2">
                     <User className="h-5 w-5 shrink-0" style={{ color: "#60A5FA" }} /> {lead.nome}
                   </h2>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-neutral-400">
-                    <Building2 className="h-3 w-3" /> {lead.empreendimento}
+                  <div className="flex items-center gap-2 mt-1" style={{ fontSize: "16px", color: "#94A3B8", fontWeight: 500 }}>
+                    <Building2 className="h-4 w-4" /> {lead.empreendimento}
                     {lead.campanha && <span>· {lead.campanha}</span>}
                     {lead.origem && <span>· {lead.origem}</span>}
                   </div>
@@ -679,7 +681,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   >
                     <div>
                       <p className="text-[10px] text-neutral-500">Telefone principal · toque para copiar</p>
-                      <p className="text-base font-mono font-bold text-white">{formatPhone(lead.telefone)}</p>
+                      <p style={{ fontSize: "22px", fontFamily: "monospace", fontWeight: 700, color: "white" }}>{formatPhone(lead.telefone)}</p>
                     </div>
                     <Copy className="h-3.5 w-3.5 text-neutral-500" />
                   </div>
@@ -705,7 +707,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   >
                     <div>
                       <p className="text-[10px] text-neutral-500">E-mail</p>
-                      <p className="text-xs text-neutral-300">{lead.email}</p>
+                      <p style={{ fontSize: "15px", color: "#94A3B8" }}>{lead.email}</p>
                     </div>
                     <Copy className="h-3.5 w-3.5 text-neutral-600" />
                   </div>
@@ -725,7 +727,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               {!callActive ? (
                 <div className="space-y-2 pt-1">
                   <button
-                    className="arena-btn-call w-full gap-2 h-12 text-lg font-bold rounded-xl flex items-center justify-center"
+                    className="arena-btn-call w-full gap-2 rounded-xl flex items-center justify-center"
+                    style={{ height: "56px", fontSize: "18px", fontWeight: 700 }}
                     onClick={() => handleAction("ligacao")}
                     disabled={showModal}
                   >
@@ -734,7 +737,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       size="sm"
-                      className="gap-1.5 bg-green-600 hover:bg-green-700 h-9 text-xs text-white"
+                      className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                      style={{ height: "48px", fontSize: "15px" }}
                       onClick={() => handleAction("whatsapp")}
                       disabled={showModal}
                     >
@@ -743,8 +747,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="gap-1.5 h-9 text-xs text-neutral-400 hover:text-white hover:bg-white/5"
-                      style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                      className="gap-1.5 text-neutral-400 hover:text-white hover:bg-white/5"
+                      style={{ height: "48px", fontSize: "15px", border: "1px solid rgba(255,255,255,0.1)" }}
                       onClick={() => handleAction("email")}
                       disabled={!lead.email || showModal}
                     >
