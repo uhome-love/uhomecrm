@@ -475,19 +475,18 @@ export default function CorretorCall() {
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-neutral-500 w-4">🔥</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
                   <motion.div
                     animate={{ width: `${ligPct}%` }}
                     transition={{ duration: 0.5 }}
-                    className="h-full rounded-full"
-                    style={{ background: "linear-gradient(90deg, #22C55E, #3B82F6)" }}
+                    className="h-full rounded-full bg-orange-500"
                   />
                 </div>
                 <span className="text-[10px] text-neutral-400 tabular-nums w-12 text-right">{progress.tentativas}/{progress.metaLigacoes}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-neutral-500 w-4">✅</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
                   <motion.div
                     animate={{ width: `${aprvPct}%` }}
                     transition={{ duration: 0.5 }}
@@ -498,7 +497,7 @@ export default function CorretorCall() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-neutral-500 w-4">📅</span>
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
                   <motion.div
                     animate={{ width: `${Math.min(100, ((progress.visitasMarcadas || 0) / Math.max(1, progress.metaVisitas)) * 100)}%` }}
                     transition={{ duration: 0.5 }}
@@ -525,14 +524,14 @@ export default function CorretorCall() {
       <div className="flex-1 min-h-0 overflow-auto px-4 py-4">
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 h-auto mb-4" style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.08)" }}>
-              <TabsTrigger value="call" className="gap-1 text-xs py-2 text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/10">
+            <TabsList className="grid w-full grid-cols-3 h-auto mb-4 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.05)" }}>
+              <TabsTrigger value="call" className="gap-1 text-xs py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none">
                 <Phone className="h-3.5 w-3.5" /> Call
               </TabsTrigger>
-              <TabsTrigger value="aproveitados" className="gap-1 text-xs py-2 text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/10">
+              <TabsTrigger value="aproveitados" className="gap-1 text-xs py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none">
                 <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
               </TabsTrigger>
-              <TabsTrigger value="ranking" className="gap-1 text-xs py-2 text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/10">
+              <TabsTrigger value="ranking" className="gap-1 text-xs py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none">
                 <Trophy className="h-3.5 w-3.5" /> Ranking
               </TabsTrigger>
             </TabsList>
