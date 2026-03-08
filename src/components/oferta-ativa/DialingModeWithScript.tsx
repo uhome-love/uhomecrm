@@ -714,7 +714,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   );
 
   return (
-    <div className="space-y-2 relative" style={{ background: "#0A0F1E" }}>
+    <div className="relative overflow-hidden" style={{ background: "#0A0F1E" }}>
       {/* ═══ ARENA OVERLAYS ═══ */}
       {showFlash && <div className="round-flash" />}
       {showRound && (
@@ -859,8 +859,11 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           </AnimatePresence>
         </div>
       ) : (
-        /* ═══ DESKTOP: 3-column layout (30|40|30) ═══ */
-        <div className={`grid grid-cols-[3fr_4fr_3fr] gap-4 ${arenaShake ? "arena-shake" : ""}`}>
+        /* ═══ DESKTOP: 3-column layout (25|42|33) — viewport height ═══ */
+        <div
+          className={`grid grid-cols-[25fr_42fr_33fr] gap-3 ${arenaShake ? "arena-shake" : ""}`}
+          style={{ height: "calc(100vh - 180px)", overflow: "hidden" }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={lead.id + "-left"}
@@ -868,12 +871,18 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -40 }}
               transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+              className="overflow-y-auto h-full"
+              style={{ scrollbarWidth: "thin" }}
             >
               {LeftColumn}
             </motion.div>
           </AnimatePresence>
-          {CenterColumn}
-          {RightColumn}
+          <div className="overflow-y-auto h-full" style={{ scrollbarWidth: "thin" }}>
+            {CenterColumn}
+          </div>
+          <div className="overflow-y-auto h-full" style={{ scrollbarWidth: "thin" }}>
+            {RightColumn}
+          </div>
         </div>
       )}
 
