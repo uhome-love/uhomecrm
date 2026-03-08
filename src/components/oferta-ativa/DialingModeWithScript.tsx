@@ -102,6 +102,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [arenaShake, setArenaShake] = useState(false);
   const [arenaConfetti, setArenaConfetti] = useState<string[]>([]);
   const prevLeadIdRef = useRef<string | null>(null);
+  const objScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (lead && lead.id !== prevLeadIdRef.current) {
