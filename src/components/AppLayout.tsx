@@ -92,7 +92,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <HomiProvider>
         <ArenaAutoCollapse isSession={isSession} />
         <div className="min-h-screen flex w-full">
-          <AppSidebar />
+          {!isSession && <AppSidebar />}
           <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
             <header
               className="h-14 flex items-center justify-between sticky top-0 z-50 px-4"
