@@ -2020,12 +2020,14 @@ export type Database = {
           created_at: string | null
           empreendimento: string | null
           fase: string | null
+          fase_changed_at: string | null
           gerente_id: string | null
           id: string
           lead_id: string | null
           nome_cliente: string
           observacoes: string | null
           origem: string | null
+          pipeline_lead_id: string | null
           status: string | null
           telefone: string | null
           updated_at: string | null
@@ -2038,12 +2040,14 @@ export type Database = {
           created_at?: string | null
           empreendimento?: string | null
           fase?: string | null
+          fase_changed_at?: string | null
           gerente_id?: string | null
           id?: string
           lead_id?: string | null
           nome_cliente: string
           observacoes?: string | null
           origem?: string | null
+          pipeline_lead_id?: string | null
           status?: string | null
           telefone?: string | null
           updated_at?: string | null
@@ -2056,12 +2060,14 @@ export type Database = {
           created_at?: string | null
           empreendimento?: string | null
           fase?: string | null
+          fase_changed_at?: string | null
           gerente_id?: string | null
           id?: string
           lead_id?: string | null
           nome_cliente?: string
           observacoes?: string | null
           origem?: string | null
+          pipeline_lead_id?: string | null
           status?: string | null
           telefone?: string | null
           updated_at?: string | null
@@ -3001,8 +3007,10 @@ export type Database = {
           jetimob_lead_id: string | null
           last_escalation_at: string | null
           modo_conducao: string
+          modulo_atual: string
           motivo_descarte: string | null
           motivo_rejeicao: string | null
+          negocio_id: string | null
           nivel_interesse: string | null
           nome: string
           objetivo_cliente: string | null
@@ -3022,6 +3030,7 @@ export type Database = {
           telefone: string | null
           telefone2: string | null
           temperatura: string | null
+          ultima_acao_at: string | null
           updated_at: string
           valor_estimado: number | null
         }
@@ -3047,8 +3056,10 @@ export type Database = {
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
           modo_conducao?: string
+          modulo_atual?: string
           motivo_descarte?: string | null
           motivo_rejeicao?: string | null
+          negocio_id?: string | null
           nivel_interesse?: string | null
           nome: string
           objetivo_cliente?: string | null
@@ -3068,6 +3079,7 @@ export type Database = {
           telefone?: string | null
           telefone2?: string | null
           temperatura?: string | null
+          ultima_acao_at?: string | null
           updated_at?: string
           valor_estimado?: number | null
         }
@@ -3093,8 +3105,10 @@ export type Database = {
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
           modo_conducao?: string
+          modulo_atual?: string
           motivo_descarte?: string | null
           motivo_rejeicao?: string | null
+          negocio_id?: string | null
           nivel_interesse?: string | null
           nome?: string
           objetivo_cliente?: string | null
@@ -3114,10 +3128,18 @@ export type Database = {
           telefone?: string | null
           telefone2?: string | null
           temperatura?: string | null
+          ultima_acao_at?: string | null
           updated_at?: string
           valor_estimado?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pipeline_leads_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pipeline_leads_produto_id_fkey"
             columns: ["produto_id"]

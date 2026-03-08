@@ -1,169 +1,207 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { usePipeline } from "@/hooks/usePipeline";
-import PipelineBoard from "@/components/pipeline/PipelineBoard";
-import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
-import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
-import LossReasonModal from "@/components/pipeline/LossReasonModal";
-import ForecastPonderadoPanel from "@/components/pipeline/ForecastPonderadoPanel";
-import type { PipelineLead } from "@/hooks/usePipeline";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { useNegocios, NEGOCIOS_FASES, type Negocio } from "@/hooks/useNegocios";
+import { useLeadProgression } from "@/hooks/useLeadProgression";
+import { useLeadsParados } from "@/hooks/useLeadsParados";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
+import JornadaLead from "@/components/pipeline/JornadaLead";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, SlidersHorizontal, Briefcase, AlertTriangle } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { Loader2, Search, RefreshCw, Briefcase, X, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight, TrendingUp, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { differenceInDays } from "date-fns";
+import { toast } from "sonner";
+
+function formatVGV(value: number) {
+  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
+  if (value >= 1_000) return `R$ ${value.toLocaleString("pt-BR")}`;
+  return `R$ ${value}`;
+}
+
+function NegocioCard({ negocio, corretorNome, paradoInfo, onDragStart, onClick }: {
+  negocio: Negocio;
+  corretorNome?: string;
+  paradoInfo?: { diasParado: number; severity: "warning" | "danger" };
+  onDragStart: () => void;
+  onClick: () => void;
+}) {
+  const faseInfo = NEGOCIOS_FASES.find(f => f.key === negocio.fase);
+  const daysInFase = differenceInDays(new Date(), new Date(negocio.fase_changed_at || negocio.created_at));
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
+      onClick={onClick}
+      className="group rounded-lg border bg-card cursor-pointer active:cursor-grabbing hover:bg-accent/40 transition-all duration-150 select-none overflow-hidden"
+      style={{ borderLeftWidth: 3, borderLeftColor: faseInfo?.cor || "#6B7280" }}
+    >
+      <div className="px-3 pt-2.5 pb-2 space-y-1.5">
+        {/* Header: JornadaLead + parado badge */}
+        <div className="flex items-center justify-between">
+          <JornadaLead moduloAtual="negocios" size="sm" />
+          <div className="flex items-center gap-1">
+            {paradoInfo && (
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                paradoInfo.severity === "danger"
+                  ? "bg-red-500/10 text-red-600"
+                  : "bg-amber-500/10 text-amber-600"
+              }`}>
+                {paradoInfo.severity === "danger" ? "🔥" : "⚠️"} {paradoInfo.diasParado}d
+              </span>
+            )}
+            <span className={`text-[10px] font-bold ${
+              daysInFase <= 3 ? "text-emerald-600" : daysInFase <= 7 ? "text-amber-600" : "text-red-600"
+            }`}>
+              {daysInFase}d
+            </span>
+          </div>
+        </div>
+
+        {/* Name */}
+        <p className="text-[13px] font-bold text-foreground truncate">{negocio.nome_cliente}</p>
+
+        {/* Empreendimento */}
+        {negocio.empreendimento && (
+          <p className="text-[11px] text-muted-foreground truncate">{negocio.empreendimento}</p>
+        )}
+
+        {/* VGV + Corretor */}
+        <div className="flex items-center justify-between text-[10px]">
+          {negocio.vgv_estimado ? (
+            <span className="font-semibold text-foreground flex items-center gap-0.5">
+              <TrendingUp className="h-2.5 w-2.5 text-primary" />
+              {formatVGV(negocio.vgv_estimado)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground italic">Sem VGV</span>
+          )}
+          {corretorNome && (
+            <span className="text-muted-foreground truncate max-w-[100px]">👤 {corretorNome}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function MeusNegocios() {
-  const pipeline = usePipeline("negocios");
+  const { negocios, corretorNomes, loading, moveFase, reload } = useNegocios();
+  const { onNegocioAssinado } = useLeadProgression();
+  const { user } = useAuth();
   const { isGestor, isAdmin } = useUserRole();
-  const [addOpen, setAddOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
-  const [filterCorretor, setFilterCorretor] = useState<string>("all");
-  const [filterCampanha, setFilterCampanha] = useState<string>("all");
-  const [filterTemperatura, setFilterTemperatura] = useState<string>("all");
-  const [filterParados7d, setFilterParados7d] = useState(false);
+  const { paradoMap } = useLeadsParados(negocios.map(n => ({
+    id: n.id,
+    ultima_acao_at: n.fase_changed_at || n.updated_at,
+    modulo_atual: "negocios",
+    corretor_id: n.corretor_id,
+  })), isGestor || isAdmin ? undefined : user?.id);
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [parcerias, setParcerias] = useState<Record<string, string>>({});
+  const [filterCorretor, setFilterCorretor] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const dragNegocioId = useRef<string | null>(null);
+  const [dragOverFase, setDragOverFase] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Loss reason modal state
-  const [lossModalOpen, setLossModalOpen] = useState(false);
-  const pendingMove = useRef<{ leadId: string; stageId: string } | null>(null);
-
-  const lossLeadNome = useMemo(() => {
-    if (!pendingMove.current) return "";
-    return pipeline.leads.find(l => l.id === pendingMove.current!.leadId)?.nome || "";
-  }, [lossModalOpen, pipeline.leads]);
-
-  const handleMoveLead = useCallback((leadId: string, newStageId: string) => {
-    const targetStage = pipeline.stages.find(s => s.id === newStageId);
-    if (targetStage && (targetStage.tipo === "descarte" || targetStage.tipo === "caiu")) {
-      pendingMove.current = { leadId, stageId: newStageId };
-      setLossModalOpen(true);
-      return;
-    }
-    pipeline.moveLead(leadId, newStageId);
-  }, [pipeline]);
-
-  const handleLossConfirm = useCallback(async (motivo: string, obs: string) => {
-    if (!pendingMove.current) return;
-    const { leadId, stageId } = pendingMove.current;
-    // Save motivo_descarte with the move
-    await pipeline.moveLead(leadId, stageId, motivo);
-    // Also save obs in observacoes if provided
-    if (obs.trim()) {
-      await pipeline.updateLead(leadId, { observacoes: obs.trim() } as any);
-    }
-    pendingMove.current = null;
-    setLossModalOpen(false);
-  }, [pipeline]);
-
-  const handleLossCancel = useCallback(() => {
-    pendingMove.current = null;
-    setLossModalOpen(false);
-  }, []);
-
-  const canAdd = isGestor || isAdmin;
-
-  // Load partnerships
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("pipeline_parcerias")
-        .select("pipeline_lead_id, corretor_parceiro_id")
-        .eq("status", "ativa");
-      if (!data || data.length === 0) return;
-      const parceiroIds = [...new Set(data.map(p => p.corretor_parceiro_id))];
-      const { data: members } = await supabase
-        .from("team_members")
-        .select("user_id, nome")
-        .in("user_id", parceiroIds);
-      const nameMap: Record<string, string> = {};
-      members?.forEach(m => { if (m.user_id) nameMap[m.user_id] = m.nome; });
-      const result: Record<string, string> = {};
-      data.forEach(p => { result[p.pipeline_lead_id] = nameMap[p.corretor_parceiro_id] || "Parceiro"; });
-      setParcerias(result);
-    })();
-  }, [pipeline.leads]);
-
-  const campanhas = useMemo(() => {
-    const set = new Set<string>();
-    pipeline.leads.forEach(l => { if (l.empreendimento) set.add(l.empreendimento); });
-    return Array.from(set).sort();
-  }, [pipeline.leads]);
-
-  const corretorList = useMemo(() => {
-    return Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [pipeline.corretorNomes]);
-
-  const filteredLeads = useMemo(() => {
-    let result = pipeline.leads;
-    if (filterCorretor !== "all") result = result.filter(l => l.corretor_id === filterCorretor);
-    if (filterCampanha !== "all") result = result.filter(l => l.empreendimento === filterCampanha);
-    if (filterTemperatura !== "all") result = result.filter(l => (l.temperatura || "morno") === filterTemperatura);
-    if (filterParados7d) {
-      result = result.filter(l => differenceInDays(new Date(), new Date(l.stage_changed_at)) >= 7);
-      result.sort((a, b) => new Date(a.stage_changed_at).getTime() - new Date(b.stage_changed_at).getTime());
-    }
+  const filteredNegocios = useMemo(() => {
+    let result = negocios;
+    if (filterCorretor !== "all") result = result.filter(n => n.corretor_id === filterCorretor);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(l =>
-        l.nome.toLowerCase().includes(q) ||
-        l.telefone?.toLowerCase().includes(q) ||
-        l.email?.toLowerCase().includes(q) ||
-        l.empreendimento?.toLowerCase().includes(q)
+      result = result.filter(n =>
+        n.nome_cliente.toLowerCase().includes(q) ||
+        n.empreendimento?.toLowerCase().includes(q) ||
+        n.telefone?.toLowerCase().includes(q)
       );
     }
     return result;
-  }, [pipeline.leads, filterCorretor, filterCampanha, filterTemperatura, filterParados7d, searchQuery]);
+  }, [negocios, filterCorretor, searchQuery]);
+
+  const corretorList = useMemo(() => {
+    return Object.entries(corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [corretorNomes]);
 
   const totalVGV = useMemo(() =>
-    filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
-    [filteredLeads]
+    filteredNegocios.reduce((sum, n) => sum + (n.vgv_estimado || 0), 0),
+    [filteredNegocios]
   );
 
-  const activeFiltersCount = (filterCorretor !== "all" ? 1 : 0) + (filterCampanha !== "all" ? 1 : 0) + (filterTemperatura !== "all" ? 1 : 0) + (searchQuery ? 1 : 0) + (filterParados7d ? 1 : 0);
+  const negociosByFase = useMemo(() => {
+    const map = new Map<string, Negocio[]>();
+    NEGOCIOS_FASES.forEach(f => map.set(f.key, []));
+    for (const n of filteredNegocios) {
+      const arr = map.get(n.fase);
+      if (arr) arr.push(n);
+    }
+    return map;
+  }, [filteredNegocios]);
 
-  const stalledCount7d = useMemo(() =>
-    pipeline.leads.filter(l => differenceInDays(new Date(), new Date(l.stage_changed_at)) >= 7).length,
-    [pipeline.leads]
-  );
+  const handleMoveFase = useCallback(async (negocioId: string, novaFase: string) => {
+    const negocio = negocios.find(n => n.id === negocioId);
+    if (!negocio) return;
 
-  const formatVGV = (value: number) => {
-    if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
-    if (value >= 1_000) return `R$ ${value.toLocaleString("pt-BR")}`;
-    return `R$ ${value}`;
+    await moveFase(negocioId, novaFase);
+
+    // GATILHO 5: If moved to "assinado", trigger pos-vendas
+    if (novaFase === "assinado") {
+      await onNegocioAssinado({
+        negocioId,
+        pipelineLeadId: negocio.pipeline_lead_id || negocio.lead_id || undefined,
+        nomeCliente: negocio.nome_cliente,
+        empreendimento: negocio.empreendimento || undefined,
+        corretorId: negocio.corretor_id || user?.id || "",
+        vgvFinal: negocio.vgv_estimado || undefined,
+      });
+      // Confetti
+      spawnConfetti();
+    }
+  }, [negocios, moveFase, onNegocioAssinado, user]);
+
+  const handleDrop = (e: React.DragEvent, fase: string) => {
+    e.preventDefault();
+    setDragOverFase(null);
+    if (!dragNegocioId.current) return;
+    const id = dragNegocioId.current;
+    dragNegocioId.current = null;
+    handleMoveFase(id, fase);
+  };
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  }, []);
+
+  const scrollTo = (dir: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -312 : 312, behavior: "smooth" });
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await pipeline.reload();
+    await reload();
     setRefreshing(false);
   };
 
-  const clearFilters = () => {
-    setFilterCorretor("all");
-    setFilterCampanha("all");
-    setFilterTemperatura("all");
-    setFilterParados7d(false);
-    setSearchQuery("");
-  };
-
-  if (pipeline.loading) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="text-sm text-muted-foreground">Carregando pipeline negócios...</span>
+        <span className="text-sm text-muted-foreground">Carregando negócios...</span>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
-      {/* Controls */}
+      {/* Header */}
       <div className="shrink-0 space-y-3 pb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2 mr-auto">
@@ -194,31 +232,13 @@ export default function MeusNegocios() {
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Filtros</span>
-            {activeFiltersCount > 0 && (
-              <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
-                {activeFiltersCount}
-              </Badge>
-            )}
           </Button>
 
           <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
-
-          {canAdd && (
-            <>
-              <Button onClick={() => setAddOpen(true)} size="icon" className="h-9 w-9 sm:hidden shrink-0">
-                <Plus className="h-4 w-4" />
-              </Button>
-              <Button onClick={() => setAddOpen(true)} className="gap-1.5 h-9 hidden sm:flex">
-                <Plus className="h-4 w-4" />
-                Novo Negócio
-              </Button>
-            </>
-          )}
         </div>
 
-        {/* Expandable filters */}
         {showFilters && (
           <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border bg-card animate-fade-in">
             <Select value={filterCorretor} onValueChange={setFilterCorretor}>
@@ -232,51 +252,6 @@ export default function MeusNegocios() {
                 ))}
               </SelectContent>
             </Select>
-
-            <Select value={filterCampanha} onValueChange={setFilterCampanha}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Empreendimento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos empreendimentos</SelectItem>
-                {campanhas.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterTemperatura} onValueChange={setFilterTemperatura}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
-                <SelectValue placeholder="Temperatura" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas temperaturas</SelectItem>
-                <SelectItem value="quente">🔥 Quente</SelectItem>
-                <SelectItem value="morno">🌡️ Morno</SelectItem>
-                <SelectItem value="frio">❄️ Frio</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant={filterParados7d ? "destructive" : "outline"}
-              size="sm"
-              onClick={() => setFilterParados7d(!filterParados7d)}
-              className="h-8 text-xs gap-1"
-            >
-              <AlertTriangle className="h-3 w-3" />
-              Parados 7d+
-              {stalledCount7d > 0 && !filterParados7d && (
-                <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full bg-destructive text-destructive-foreground">
-                  {stalledCount7d}
-                </Badge>
-              )}
-            </Button>
-
-            {activeFiltersCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-8 text-primary">
-                Limpar filtros
-              </Button>
-            )}
           </div>
         )}
 
@@ -285,7 +260,7 @@ export default function MeusNegocios() {
           <div className="flex items-center gap-1.5">
             <LayoutGrid className="h-3.5 w-3.5 text-primary" />
             <span className="text-xs sm:text-sm font-bold text-foreground">
-              {filteredLeads.length} negócios
+              {filteredNegocios.length} negócios
             </span>
           </div>
           {totalVGV > 0 && (
@@ -293,85 +268,118 @@ export default function MeusNegocios() {
               • {formatVGV(totalVGV)} em VGV
             </span>
           )}
-          {stalledCount7d > 0 && (
-            <button
-              onClick={() => setFilterParados7d(true)}
-              className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
-            >
-              ⚠️ {stalledCount7d} negócios parados há mais de 7 dias
-            </button>
-          )}
-          {activeFiltersCount > 0 && (
-            <div className="flex items-center gap-1.5 ml-auto flex-wrap">
-              {filterCorretor !== "all" && (
-                <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterCorretor("all")}>
-                  {pipeline.corretorNomes[filterCorretor] || "Corretor"} ×
-                </Badge>
-              )}
-              {filterCampanha !== "all" && (
-                <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterCampanha("all")}>
-                  {filterCampanha} ×
-                </Badge>
-              )}
-              {filterTemperatura !== "all" && (
-                <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setFilterTemperatura("all")}>
-                  {filterTemperatura === "quente" ? "🔥 Quente" : filterTemperatura === "morno" ? "🌡️ Morno" : "❄️ Frio"} ×
-                </Badge>
-              )}
-            </div>
-          )}
         </div>
-
-        {/* Forecast Ponderado */}
-        <ForecastPonderadoPanel leads={filteredLeads} stages={pipeline.stages} />
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <PipelineBoard
-          stages={pipeline.stages}
-          leads={filteredLeads}
-          segmentos={pipeline.segmentos}
-          corretorNomes={pipeline.corretorNomes}
-          parcerias={parcerias}
-          onMoveLead={handleMoveLead}
-          onSelectLead={setSelectedLead}
-          onTransferred={() => { pipeline.reload(); }}
-        />
+      {/* Kanban */}
+      <div className="relative flex-1 min-h-0">
+        {canScrollLeft && (
+          <button
+            onClick={() => scrollTo("left")}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground transition-all"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
+        {canScrollRight && (
+          <button
+            onClick={() => scrollTo("right")}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground transition-all"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        )}
+
+        <div
+          ref={scrollRef}
+          onScroll={updateScrollState}
+          className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-none"
+          style={{ scrollSnapType: "x proximity" }}
+        >
+          {NEGOCIOS_FASES.map((fase) => {
+            const faseNegocios = negociosByFase.get(fase.key) || [];
+            const isDragOver = dragOverFase === fase.key;
+            const totalFaseVGV = faseNegocios.reduce((sum, n) => sum + (n.vgv_estimado || 0), 0);
+
+            return (
+              <div
+                key={fase.key}
+                className={`flex flex-col shrink-0 h-full rounded-xl transition-all duration-200 ${
+                  isDragOver ? "ring-2 ring-primary/50 bg-primary/5 scale-[1.01]" : "bg-muted/20"
+                }`}
+                style={{ width: 300, scrollSnapAlign: "start" }}
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverFase(fase.key); }}
+                onDragLeave={() => setDragOverFase(null)}
+                onDrop={(e) => handleDrop(e, fase.key)}
+              >
+                {/* Column header */}
+                <div className="shrink-0 px-3.5 py-3 bg-card border border-border/40 rounded-t-xl">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="h-3 w-1 rounded-full" style={{ backgroundColor: fase.cor }} />
+                    <span className="text-xs font-bold text-foreground">{fase.icon} {fase.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-bold">
+                      {faseNegocios.length}
+                    </Badge>
+                    {totalFaseVGV > 0 && (
+                      <span className="text-[10px] font-semibold text-foreground flex items-center gap-0.5">
+                        <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                        {formatVGV(totalFaseVGV)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cards */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2 scrollbar-thin">
+                  {faseNegocios.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <span className="text-muted-foreground/40 text-sm">+</span>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground/50">Arraste negócios aqui</span>
+                    </div>
+                  )}
+                  {faseNegocios.map(negocio => (
+                    <NegocioCard
+                      key={negocio.id}
+                      negocio={negocio}
+                      corretorNome={negocio.corretor_id ? corretorNomes[negocio.corretor_id] : undefined}
+                      paradoInfo={paradoMap.get(negocio.id)}
+                      onDragStart={() => { dragNegocioId.current = negocio.id; }}
+                      onClick={() => {
+                        toast.info(`${negocio.nome_cliente} — ${fase.label}`);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-
-      {/* Loss Reason Modal */}
-      <LossReasonModal
-        open={lossModalOpen}
-        leadNome={lossLeadNome}
-        onConfirm={handleLossConfirm}
-        onCancel={handleLossCancel}
-      />
-
-      {/* Dialogs */}
-      {canAdd && (
-        <PipelineAddLeadDialog
-          open={addOpen}
-          onOpenChange={setAddOpen}
-          stages={pipeline.stages}
-          segmentos={pipeline.segmentos}
-          onAdd={pipeline.addLead}
-        />
-      )}
-
-      {selectedLead && (
-        <PipelineLeadDetail
-          lead={selectedLead}
-          stages={pipeline.stages}
-          segmentos={pipeline.segmentos}
-          corretorNomes={pipeline.corretorNomes}
-          open={!!selectedLead}
-          onOpenChange={(open) => !open && setSelectedLead(null)}
-          onUpdate={pipeline.updateLead}
-          onMove={pipeline.moveLead}
-          onDelete={pipeline.deleteLead}
-        />
-      )}
     </div>
   );
+}
+
+// Confetti helper
+function spawnConfetti() {
+  const colors = ["#22C55E", "#F59E0B", "#3B82F6", "#8B5CF6", "#FFFFFF"];
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden";
+  document.body.appendChild(container);
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement("div");
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const left = Math.random() * 100;
+    const delay = Math.random() * 0.5;
+    const size = 6 + Math.random() * 8;
+    p.style.cssText = `position:absolute;top:-10px;left:${left}%;width:${size}px;height:${size}px;background:${color};border-radius:${Math.random() > 0.5 ? "50%" : "2px"};opacity:0.9;animation:confettiNeg ${2 + Math.random()}s ease-in ${delay}s forwards`;
+    container.appendChild(p);
+  }
+  const style = document.createElement("style");
+  style.textContent = `@keyframes confettiNeg { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }`;
+  container.appendChild(style);
+  setTimeout(() => container.remove(), 4000);
 }

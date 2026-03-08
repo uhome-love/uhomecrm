@@ -173,8 +173,28 @@ export function useVisitas(filters?: {
       return null;
     }
 
+    // GATILHO 1: Auto-advance pipeline lead to "agenda" module
+    if (data?.pipeline_lead_id) {
+      try {
+        await supabase.from("pipeline_leads").update({
+          modulo_atual: "agenda",
+        } as any).eq("id", data.pipeline_lead_id);
+
+        await supabase.from("lead_progressao").insert({
+          lead_id: data.pipeline_lead_id,
+          modulo_origem: "pipeline",
+          modulo_destino: "agenda",
+          fase_destino: "visita_marcada",
+          triggered_by: "agendar_visita",
+          corretor_id: data.corretor_id,
+          visita_id: data.id,
+        });
+      } catch (err) {
+        console.error("Lead progression error:", err);
+      }
+    }
+
     queryClient.invalidateQueries({ queryKey: ["visitas"] });
-    toast.success("📅 Visita registrada com sucesso!");
 
     // Send WhatsApp confirmation (fire-and-forget)
     if (data?.telefone) {
@@ -220,8 +240,77 @@ export function useVisitas(filters?: {
   }, [queryClient]);
 
   const updateStatus = useCallback(async (id: string, newStatus: VisitaStatus) => {
-    return updateVisita(id, { status: newStatus } as any);
-  }, [updateVisita]);
+    const result = await updateVisita(id, { status: newStatus } as any);
+    
+    // Auto-progression triggers based on visita status changes
+    if (result) {
+      const visita = visitas.find(v => v.id === id);
+      if (visita?.pipeline_lead_id) {
+        try {
+          if (newStatus === "realizada") {
+            // GATILHO 2: Create negocio + advance to negocios module
+            const { data: negocio } = await supabase
+              .from("negocios")
+              .insert({
+                lead_id: visita.pipeline_lead_id,
+                visita_id: visita.id,
+                corretor_id: visita.corretor_id,
+                gerente_id: visita.gerente_id,
+                nome_cliente: visita.nome_cliente,
+                empreendimento: visita.empreendimento || null,
+                telefone: visita.telefone || null,
+                fase: "proposta",
+                origem: "visita_realizada",
+                pipeline_lead_id: visita.pipeline_lead_id,
+              } as any)
+              .select()
+              .single();
+
+            if (negocio) {
+              await supabase.from("pipeline_leads").update({
+                modulo_atual: "negocios",
+                negocio_id: negocio.id,
+              } as any).eq("id", visita.pipeline_lead_id);
+
+              await supabase.from("lead_progressao").insert({
+                lead_id: visita.pipeline_lead_id,
+                modulo_origem: "agenda",
+                modulo_destino: "negocios",
+                fase_destino: "proposta",
+                triggered_by: "visita_realizada",
+                corretor_id: visita.corretor_id,
+                visita_id: visita.id,
+                negocio_id: negocio.id,
+              });
+
+              toast("🎉 Negócio criado automaticamente!", {
+                description: "🎯 Envie a proposta em até 24h!",
+                duration: 5000,
+              });
+            }
+          } else if (newStatus === "no_show" || newStatus === "cancelada") {
+            // GATILHO 4: Return to pipeline
+            await supabase.from("pipeline_leads").update({
+              modulo_atual: "pipeline",
+            } as any).eq("id", visita.pipeline_lead_id);
+
+            await supabase.from("lead_progressao").insert({
+              lead_id: visita.pipeline_lead_id,
+              modulo_origem: "agenda",
+              modulo_destino: "pipeline",
+              fase_destino: "qualificacao",
+              triggered_by: newStatus,
+              corretor_id: visita.corretor_id,
+            });
+          }
+        } catch (err) {
+          console.error("Lead progression error:", err);
+        }
+      }
+    }
+    
+    return result;
+  }, [updateVisita, visitas]);
 
   const deleteVisita = useCallback(async (id: string) => {
     const { error } = await supabase
