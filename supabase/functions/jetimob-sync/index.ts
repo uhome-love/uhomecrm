@@ -14,6 +14,22 @@ function extractCampanha(message: string | null | undefined): string | null {
   return match?.[1]?.trim() || null;
 }
 
+/** Normalize empreendimento from any text (origem, campanha, message) */
+function normalizeEmpreendimento(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  if (lower.includes("casa tua")) return "Casa Tua";
+  if (lower.includes("orygem")) return "Orygem";
+  if (lower.includes("lake eyre")) return "Lake Eyre";
+  if (lower.includes("open bosque") || lower.includes("open")) return "Open Bosque";
+  if (lower.includes("casa bastian")) return "Casa Bastian";
+  if (lower.includes("shift")) return "Shift";
+  if (lower.includes("las casas") || lower.includes("vértice") || lower.includes("vertice")) return "Las Casas";
+  if (lower.includes("alto lindóia") || lower.includes("alto lindoia")) return "Alto Lindóia";
+  if (lower.includes("melnick")) return "Melnick Day";
+  return null;
+}
+
 /** Build a unique ID for deduplication (API has no id field) */
 function buildJetimobId(lead: any): string {
   const phone = lead.phones?.[0] || lead.phone || "";
@@ -213,10 +229,17 @@ serve(async (req) => {
         const msg = lead.message || "";
         const campanhaNome = extractCampanha(msg);
 
+        // Resolve empreendimento: campanha name → normalize from origem/message/source
+        const origemText = campanhaNome || msg || lead.source || lead.origin || "";
+        let empreendimento = campanhaNome ? normalizeEmpreendimento(campanhaNome) || campanhaNome : null;
+        if (!empreendimento) {
+          empreendimento = normalizeEmpreendimento(origemText) || normalizeEmpreendimento(lead.source) || normalizeEmpreendimento(lead.origin) || null;
+        }
+
         // Determine lead priority based on content
         let prioridadeLead = "media";
         if (msg && msg.length > 10) {
-          prioridadeLead = "alta"; // Lead sent a message → high priority
+          prioridadeLead = "alta";
         }
 
         const { error: insertError } = await adminClient
@@ -226,9 +249,17 @@ serve(async (req) => {
             telefone,
             telefone2,
             email,
-            empreendimento: campanhaNome,
+            empreendimento,
             stage_id: novoLeadStageId,
             origem: campanhaNome || msg || "API Jetimob",
+            origem_detalhe: lead.source || lead.origin || null,
+            jetimob_lead_id: jetimobId,
+            observacoes: msg || null,
+            corretor_id: null,
+            created_by: userId,
+            prioridade_lead: prioridadeLead,
+            aceite_status: "pendente_distribuicao",
+          });
             origem_detalhe: lead.source || lead.origin || null,
             jetimob_lead_id: jetimobId,
             observacoes: msg || null,
