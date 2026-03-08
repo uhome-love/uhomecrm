@@ -447,6 +447,12 @@
 .homi-particle-4 { animation: homiParticleExplode4 0.8s ease-out 0.4s forwards; }
 .homi-particle-5 { animation: homiParticleExplode5 0.8s ease-out 0.5s forwards; }
 
+/* ═══ ARENA SESSION — dark background always ═══ */
+
+body.arena-session main {
+  background: #0A0F1E !important;
+}
+
 /* ═══ ARENA FULLSCREEN MODE ═══ */
 
 body.arena-mode aside,
