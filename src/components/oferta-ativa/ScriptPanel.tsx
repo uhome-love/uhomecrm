@@ -147,7 +147,7 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode }:
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <s.icon className={`h-4 w-4 ${s.iconColor}`} />
-                <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className={`uppercase ${textColor}`}>{s.label}</h4>
+                <h4 style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", whiteSpace: "nowrap" }} className={`uppercase ${textColor}`}>{s.label}</h4>
               </div>
               <div className="flex items-center gap-1">
                 {editingScript === s.key ? (
