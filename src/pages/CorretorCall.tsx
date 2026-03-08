@@ -511,11 +511,12 @@ export default function CorretorCall() {
                 <span className="text-xs text-neutral-400">🔥 Ligações</span>
                 <span className="text-xs font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden bg-white/10 arena-bar-glow-green">
+              <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-orange" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div
                   animate={{ width: `${ligPct}%` }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-full rounded-full bg-gradient-to-r from-orange-500 to-orange-400"
+                  className="h-full rounded-full"
+                  style={{ background: "#F97316", boxShadow: "0 0 8px rgba(249,115,22,0.6)" }}
                 />
               </div>
             </div>
@@ -523,13 +524,14 @@ export default function CorretorCall() {
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-neutral-400">✅ Aproveit.</span>
-                <span className="text-xs font-mono font-bold text-emerald-400">{progress.aproveitados}/{progress.metaAproveitados}</span>
+                <span className="text-xs font-mono font-bold" style={{ color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden bg-white/10 arena-bar-glow-green">
+              <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-green" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div
                   animate={{ width: `${aprvPct}%` }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                  className="h-full rounded-full"
+                  style={{ background: "#22C55E", boxShadow: "0 0 8px rgba(34,197,94,0.6)" }}
                 />
               </div>
             </div>
@@ -537,13 +539,14 @@ export default function CorretorCall() {
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-neutral-400">📅 Visitas</span>
-                <span className="text-xs font-mono font-bold text-blue-400">{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
+                <span className="text-xs font-mono font-bold" style={{ color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden bg-white/10 arena-bar-glow-blue">
+              <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-blue" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <motion.div
                   animate={{ width: `${visitPct}%` }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400"
+                  className="h-full rounded-full"
+                  style={{ background: "#3B82F6", boxShadow: "0 0 8px rgba(59,130,246,0.6)" }}
                 />
               </div>
             </div>
