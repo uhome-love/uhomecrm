@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { emitProfileUpdated } from "@/lib/profileEvents";
 
 interface AvatarUploadProps {
   avatarUrl: string | null;
@@ -83,6 +84,7 @@ export default function AvatarUpload({ avatarUrl, nome, size = "md", onUploaded 
 
       setCurrentUrl(urlWithCacheBust);
       onUploaded?.(urlWithCacheBust);
+      emitProfileUpdated();
       toast.success("Foto atualizada!");
     } catch (err: any) {
       console.error("Avatar upload error:", err);

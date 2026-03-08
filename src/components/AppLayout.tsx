@@ -82,7 +82,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const { isFullscreen, isSession } = useArenaMode();
 
-  useEffect(() => {
+  const fetchProfile = useCallback(() => {
     if (!user) return;
     supabase.from("profiles").select("nome, avatar_url, avatar_gamificado_url, cargo").eq("user_id", user.id).single().then(({ data }) => {
       if (data?.nome) setNome(data.nome);
