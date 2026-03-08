@@ -21,9 +21,9 @@ import {
   Heart,
   Workflow,
   BookOpen,
+  Award,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import AvatarUpload from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -42,6 +42,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
+import { getLevel } from "@/lib/gamification";
 
 const homiMascot = "/images/homi-mascot-opt.png";
 
@@ -56,12 +57,12 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
 }) {
   if (items.length === 0) return null;
   return (
-    <SidebarGroup key={label} className="animate-fade-in" style={{ animationDelay: `${index * 60}ms` }}>
-      <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] font-medium tracking-wider uppercase px-3 mb-0.5">
+    <SidebarGroup key={label} className="animate-fade-in mt-4 first:mt-0" style={{ animationDelay: `${index * 60}ms` }}>
+      <SidebarGroupLabel className="text-sidebar-foreground/40 text-[10px] font-medium tracking-wider uppercase px-3 mb-1">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
-        <SidebarMenu className="space-y-px">
+        <SidebarMenu className="space-y-0.5">
           {items.map((item) => {
             const badgeCount = badges[item.url] || 0;
             return (
@@ -70,8 +71,8 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
                   <NavLink
                     to={item.url}
                     end
-                    className="group/nav text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-all duration-150 rounded-lg relative py-2 px-3"
-                    activeClassName="!text-sidebar-primary-foreground !bg-primary rounded-lg font-medium"
+                    className="group/nav text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5 transition-all duration-150 rounded-r-lg relative py-2 px-3"
+                    activeClassName="!text-sidebar-foreground font-medium !bg-sidebar-foreground/[0.08] border-l-2 !border-l-primary rounded-l-none"
                   >
                     <item.icon className="mr-2.5 h-4 w-4 shrink-0 transition-transform duration-150 group-hover/nav:translate-x-0.5" />
                     {!collapsed && (
@@ -101,6 +102,8 @@ export function AppSidebar() {
   const { alerts, badges } = useSmartAlerts();
   const toastShown = useRef(false);
   const [profile, setProfile] = useState<{ nome: string; avatar_url: string | null }>({ nome: "", avatar_url: null });
+  const [points, setPoints] = useState(0);
+  const [hoverFooter, setHoverFooter] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -126,6 +129,14 @@ export function AppSidebar() {
       }, 1500);
     }
   }, [alerts]);
+
+  const level = getLevel(points);
+  const isCorretor = !isAdmin && !isGestor;
+
+  // "Minha Rotina" special item (corretor only, above groups)
+  const topItem: NavItem | null = isCorretor
+    ? { title: "Minha Rotina", url: "/corretor", icon: Home }
+    : null;
 
   // ── Navigation structure by role ──
 
@@ -160,10 +171,9 @@ export function AppSidebar() {
         { title: "Rankings", url: "/ranking", icon: Trophy },
       ]
     : [
-        { title: "Minha Rotina", url: "/corretor", icon: Phone },
         { title: "Meu Desempenho", url: "/corretor/resumo", icon: BarChart3 },
         { title: "Rankings", url: "/ranking", icon: Trophy },
-        { title: "Conquistas", url: "/conquistas", icon: Trophy },
+        { title: "Conquistas", url: "/conquistas", icon: Award },
       ];
 
   const ferramentasItems: NavItem[] = isAdmin
@@ -226,6 +236,16 @@ export function AppSidebar() {
     { label: "Conta", items: configItems },
   ];
 
+  // Footer initials
+  const initials = (profile.nome || user?.email || "U")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase())
+    .join("");
+
+  const roleLabel = isAdmin ? "Admin" : isGestor ? "Gestor" : "Corretor";
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="scrollbar-thin">
@@ -250,6 +270,25 @@ export function AppSidebar() {
           )}
         </div>
 
+        {/* Minha Rotina — special top item (corretor only) */}
+        {topItem && (
+          <SidebarMenu className="px-1 pt-3 pb-0">
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to={topItem.url}
+                  end
+                  className="group/nav text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-foreground/5 transition-all duration-150 rounded-r-lg relative py-2.5 px-3 font-medium"
+                  activeClassName="!text-sidebar-foreground font-semibold !bg-sidebar-foreground/[0.08] border-l-2 !border-l-primary rounded-l-none"
+                >
+                  <topItem.icon className="mr-2.5 h-4 w-4 shrink-0" />
+                  {!collapsed && <span className="text-sm">{topItem.title}</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
+
         {groups.map((g, i) => (
           <SidebarNavGroup
             key={g.label}
@@ -263,20 +302,22 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center gap-2.5 p-3 border-t border-sidebar-border/40">
-          <AvatarUpload
-            avatarUrl={profile.avatar_url}
-            nome={profile.nome || user?.email || ""}
-            size="sm"
-            onUploaded={(url) => setProfile(p => ({ ...p, avatar_url: url }))}
-          />
+        <div
+          className="flex items-center gap-2.5 p-3 border-t border-sidebar-border/40 group/footer"
+          onMouseEnter={() => setHoverFooter(true)}
+          onMouseLeave={() => setHoverFooter(false)}
+        >
+          {/* Avatar with initials */}
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/80 text-primary-foreground text-xs font-bold shrink-0">
+            {initials}
+          </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-sidebar-accent-foreground truncate">
                 {profile.nome || user?.email}
               </p>
-              <p className="text-[10px] text-sidebar-foreground/50 font-medium">
-                {isAdmin ? "Admin" : isGestor ? "Gestor" : "Corretor"}
+              <p className="text-[10px] text-sidebar-foreground/50 font-medium flex items-center gap-1">
+                {roleLabel} · <span>{level.emoji} {level.label}</span>
               </p>
             </div>
           )}
@@ -284,7 +325,9 @@ export function AppSidebar() {
             variant="ghost"
             size="icon"
             onClick={signOut}
-            className="h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-danger-500 hover:bg-danger-500/10 transition-all duration-150 rounded-lg"
+            className={`h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-danger-500 hover:bg-danger-500/10 transition-all duration-150 rounded-lg ${
+              hoverFooter ? "opacity-100" : "opacity-0"
+            }`}
           >
             <LogOut className="h-3.5 w-3.5" />
           </Button>
