@@ -122,6 +122,7 @@ export function AppSidebar() {
   const [profile, setProfile] = useState<{ nome: string; avatar_url: string | null; avatar_preview_url: string | null }>({ nome: "", avatar_url: null, avatar_preview_url: null });
   const [points, setPoints] = useState(0);
   const [hoverFooter, setHoverFooter] = useState(false);
+  const [roletaPendentes, setRoletaPendentes] = useState(0);
 
   useEffect(() => {
     if (!user) return;
