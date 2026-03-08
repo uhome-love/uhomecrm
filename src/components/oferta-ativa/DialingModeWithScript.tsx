@@ -330,6 +330,47 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   };
 
+  // Open result popup
+  const handleOpenResultPopup = () => {
+    if (!actionTaken) {
+      setActionTaken("ligacao");
+      setCurrentIdempotencyKey(`${user?.id}_${lead?.id}_${Date.now()}`);
+    }
+    stopTimer();
+    setShowResultPopup(true);
+  };
+
+  // Quick result from popup
+  const handlePopupResult = (resultado: string) => {
+    if (!lead) return;
+    setSelectedResult(resultado);
+    if (resultado === "com_interesse" || resultado === "agendar") {
+      setShowResultPopup(false);
+      if (!actionTaken) {
+        setActionTaken("ligacao");
+        setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+      }
+      setShowModal(true);
+      return;
+    }
+  };
+
+  const handlePopupConfirm = () => {
+    if (!lead || !selectedResult) return;
+    if (!actionTaken) {
+      setActionTaken("ligacao");
+      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+    }
+    const feedbackMap: Record<string, string> = {
+      nao_atendeu: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Não atendeu a ligação",
+      sem_interesse: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Sem interesse no momento",
+      numero_errado: inlineObs.trim().length >= 10 ? inlineObs.trim() : "Número errado/inválido",
+    };
+    setShowResultPopup(false);
+    setSelectedResult(null);
+    handleResultSubmit(selectedResult, feedbackMap[selectedResult] || inlineObs.trim() || selectedResult);
+  };
+
   // Inline result (quick buttons in right column)
   const handleInlineResult = (resultado: string) => {
     if (!lead) return;
