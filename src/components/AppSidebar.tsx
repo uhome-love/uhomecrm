@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   LayoutDashboard,
   ClipboardCheck,
@@ -25,6 +25,9 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
   MessageSquare,
+  Building2,
+  Cog,
+  GraduationCap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
@@ -119,6 +122,7 @@ export function AppSidebar() {
   const [profile, setProfile] = useState<{ nome: string; avatar_url: string | null; avatar_preview_url: string | null }>({ nome: "", avatar_url: null, avatar_preview_url: null });
   const [points, setPoints] = useState(0);
   const [hoverFooter, setHoverFooter] = useState(false);
+  const [roletaPendentes, setRoletaPendentes] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -131,6 +135,25 @@ export function AppSidebar() {
         if (data) setProfile({ nome: data.nome, avatar_url: data.avatar_url, avatar_preview_url: data.avatar_preview_url });
       });
   }, [user]);
+
+  // Fetch roleta pending approvals count for CEO
+  const fetchRoletaPendentes = useCallback(async () => {
+    if (!isAdmin) return;
+    const hoje = new Date().toISOString().slice(0, 10);
+    const { count } = await supabase
+      .from("roleta_credenciamentos")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pendente")
+      .eq("data", hoje);
+    setRoletaPendentes(count ?? 0);
+  }, [isAdmin]);
+
+  useEffect(() => {
+    fetchRoletaPendentes();
+    if (!isAdmin) return;
+    const interval = setInterval(fetchRoletaPendentes, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchRoletaPendentes, isAdmin]);
 
   useEffect(() => {
     if (toastShown.current || alerts.length === 0) return;
@@ -148,32 +171,43 @@ export function AppSidebar() {
   const level = getLevel(points);
 
   // ── Build navigation groups by role ──
-  function getGroupsByRole(): { topItem: NavItem | null; groups: { label: string; items: NavItem[] }[]; roleLabel: string } {
+  function getGroupsByRole(): { topItem: NavItem | null; groups: { label: string; items: NavItem[] }[]; roleLabel: string; extraBadges?: Record<string, number> } {
     // ── CEO / Admin ──
     if (isAdmin) {
+      const roletaBadges: Record<string, number> = roletaPendentes > 0 ? { "/roleta": roletaPendentes } : {};
       return {
-        topItem: null,
+        topItem: { title: "Dashboard CEO", url: "/ceo", icon: Home },
         groups: [
           {
             label: "Visão Geral",
             items: [
-              { title: "Dashboard CEO", url: "/ceo", icon: Home },
               { title: "Painel da Equipe", url: "/meu-time", icon: Users },
+              { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
             ],
           },
           {
             label: "Leads & Vendas",
             items: [
+              { title: "Roleta de Leads", url: "/roleta", icon: Cog },
               { title: "Pipeline de Leads", url: "/pipeline", icon: Kanban },
+              { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
               { title: "Pipeline Negócios", url: "/meus-negocios", icon: Kanban },
+              { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
               { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
-              { title: "Roleta de Leads", url: "/disponibilidade", icon: LayoutDashboard },
             ],
           },
           {
             label: "Performance",
             items: [
               { title: "Rankings", url: "/ranking", icon: Trophy },
+              { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+            ],
+          },
+          {
+            label: "Marketing",
+            items: [
+              { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
+              { title: "Empreendimentos", url: "/empreendimentos", icon: Building2 },
             ],
           },
           {
@@ -183,25 +217,16 @@ export function AppSidebar() {
             ],
           },
           {
-            label: "Marketing",
-            items: [
-              { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
-            ],
-          },
-          {
             label: "Ferramentas",
             items: [
               { title: "HOMI CEO", url: "/homi-ceo", icon: Bot },
               { title: "Base HOMI", url: "/homi/base-conhecimento", icon: Brain },
-              { title: "Academia", url: "/academia/gerenciar", icon: Award },
-              { title: "Templates", url: "/templates-comunicacao", icon: MessageSquare },
-              { title: "Marketplace", url: "/marketplace", icon: BookOpen },
-              { title: "Configurações", url: "/configuracoes", icon: Settings },
-              { title: "Gerenciar Usuários", url: "/admin", icon: Shield },
+              { title: "Academia", url: "/academia/gerenciar", icon: GraduationCap },
             ],
           },
         ],
         roleLabel: "Admin · 👑 CEO",
+        extraBadges: roletaBadges,
       };
     }
 
@@ -319,7 +344,8 @@ export function AppSidebar() {
     };
   }
 
-  const { topItem, groups, roleLabel } = getGroupsByRole();
+  const { topItem, groups, roleLabel, extraBadges } = getGroupsByRole();
+  const mergedBadges = { ...badges, ...extraBadges };
 
   // Footer initials
   const initials = (profile.nome || user?.email || "U")
@@ -407,7 +433,7 @@ export function AppSidebar() {
               key={g.label}
               label={g.label}
               items={g.items}
-              badges={badges}
+              badges={mergedBadges}
               collapsed={collapsed}
               index={i}
             />
