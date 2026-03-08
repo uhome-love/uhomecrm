@@ -66,6 +66,7 @@ const AcademiaTrilhaPage = lazy(() => import("./pages/AcademiaTrilhaPage"));
 const AcademiaAulaPage = lazy(() => import("./pages/AcademiaAulaPage"));
 const AcademiaGerenciarPage = lazy(() => import("./pages/AcademiaGerenciarPage"));
 const GerenteDashboard = lazy(() => import("./pages/GerenteDashboard"));
+const RoletaLeads = lazy(() => import("./pages/RoletaLeads"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
