@@ -91,8 +91,7 @@ export default function CheckpointGerente() {
   // ─── AUTH GUARD ───
   useEffect(() => {
     if (roleLoading) return;
-    if (isAdmin) { navigate("/ceo?tab=checkpoints", { replace: true }); return; }
-    if (!isGestor) navigate("/corretor", { replace: true });
+    if (!isGestor && !isAdmin) navigate("/corretor", { replace: true });
   }, [isGestor, isAdmin, roleLoading, navigate]);
 
   // ─── LOAD TEAM ───
