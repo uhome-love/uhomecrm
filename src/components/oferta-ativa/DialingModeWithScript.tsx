@@ -20,6 +20,7 @@ import AttemptHistory from "./AttemptHistory";
 import ScoringLegend from "./ScoringLegend";
 import RecentCallsHistory from "./RecentCallsHistory";
 import PendingAttemptsBar from "./PendingAttemptsBar";
+import SessionCoachingModal, { type SessionMetrics } from "./SessionCoachingModal";
 import { motion, AnimatePresence } from "framer-motion";
 
 /** Format Brazilian phone */
