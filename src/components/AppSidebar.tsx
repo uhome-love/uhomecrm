@@ -180,6 +180,7 @@ export function AppSidebar() {
         { title: "Meu Desempenho", url: "/corretor/resumo", icon: BarChart3 },
         { title: "Ranking OA", url: "/corretor/ranking-equipes", icon: Trophy },
         { title: "Ranking Comercial", url: "/ranking", icon: BarChart3 },
+        { title: "Conquistas", url: "/conquistas", icon: Trophy },
       ]
     : [];
 

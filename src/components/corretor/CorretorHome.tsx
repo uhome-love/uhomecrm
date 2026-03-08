@@ -8,6 +8,7 @@ import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import { useMissoesLeads } from "@/hooks/useMissoesLeads";
 import { useCorretorHomeData } from "@/hooks/useCorretorHomeData";
+import { useConquistas } from "@/hooks/useConquistas";
 import DailyProgressCard from "./DailyProgressCard";
 import MissoesDeHoje from "./MissoesDeHoje";
 import RadarLeadsPendentes from "./RadarLeadsPendentes";
@@ -16,7 +17,14 @@ import FollowUpsDoDia from "./FollowUpsDoDia";
 import VisitasHojeCard from "./VisitasHojeCard";
 import MiniFunilPessoal from "./MiniFunilPessoal";
 import EvolucaoSemanal from "./EvolucaoSemanal";
+import LevelProgressBar from "./LevelProgressBar";
+import CelebrationOverlay from "./CelebrationOverlay";
+import { ACHIEVEMENTS } from "@/lib/gamification";
 import { useNavigate } from "react-router-dom";
+
+const ACHIEVEMENTS_MAP: Record<string, { emoji: string; label: string }> = Object.fromEntries(
+  ACHIEVEMENTS.map(a => [a.id, { emoji: a.emoji, label: a.label }])
+);
 const homiMascot = "/images/homi-mascot-opt.png";
 
 export default function CorretorHome() {
@@ -24,10 +32,12 @@ export default function CorretorHome() {
   const motivation = useDailyMotivation();
   const { missoes, missaoGeral, radarLeads, radarLoading, ranking, rankingLoading, userId } = useMissoesLeads();
   const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading } = useCorretorHomeData();
+  const { newlyUnlocked, dismissCelebration, unlocked } = useConquistas();
   const navigate = useNavigate();
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
+      <CelebrationOverlay achievement={newlyUnlocked} onDismiss={dismissCelebration} />
       {/* Header */}
       <div>
         <h1 className="font-display text-2xl font-extrabold text-foreground flex items-center gap-2">
@@ -148,28 +158,25 @@ export default function CorretorHome() {
         />
       </motion.div>
 
-      {/* Gamification — Points & Level */}
+      {/* Gamification — Level Progress + Recent Achievements */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <Card className="border-primary/10 overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                  <Trophy className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-display font-extrabold text-foreground">{progress.pontos} pts</p>
-                  <p className="text-[10px] text-muted-foreground">Pontuação de hoje</p>
-                </div>
+          <CardContent className="p-4 space-y-3">
+            <LevelProgressBar points={progress.pontos} />
+            {unlocked.length > 0 && (
+              <div className="flex items-center gap-1.5 pt-1">
+                <p className="text-[10px] text-muted-foreground font-medium shrink-0">Recentes:</p>
+                {unlocked.slice(0, 5).map(u => {
+                  const def = ACHIEVEMENTS_MAP[u.conquista_id];
+                  return def ? (
+                    <span key={u.conquista_id} className="text-sm" title={def.label}>{def.emoji}</span>
+                  ) : null;
+                })}
+                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-primary ml-auto" onClick={() => navigate("/conquistas")}>
+                  Ver todas →
+                </Button>
               </div>
-              <div className="text-right">
-                <Badge variant="outline" className={`gap-1 text-xs font-bold ${progress.levelColor}`}>
-                  {progress.level}
-                </Badge>
-                <p className="text-[9px] text-muted-foreground mt-0.5">{progress.pontos}/{progress.nextLevelTarget} pts</p>
-              </div>
-            </div>
-            <Progress value={progress.levelProgress} className="h-1.5" />
+            )}
           </CardContent>
         </Card>
       </motion.div>

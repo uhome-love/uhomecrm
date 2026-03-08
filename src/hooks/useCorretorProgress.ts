@@ -11,6 +11,7 @@
  */
 
 import { useCorretorDailyStats, useCorretorDailyGoals } from "@/hooks/useCorretorDailyStats";
+import { getLevel, getNextLevel, getLevelProgress as getLevelProgressValue } from "@/lib/gamification";
 
 export interface CorretorProgress {
   // === Goals (targets) ===
@@ -64,12 +65,14 @@ export function useCorretorProgress() {
   const missaoVisitas = stats.visitas_marcadas >= metaVisitas;
   const todasMissoesCumpridas = missaoCumprida && missaoAproveitados && missaoVisitas;
 
-  // === Level / Badge ===
+  // === Level / Badge (new gamification engine) ===
   const totalPontos = stats.pontos;
-  const level = totalPontos >= 50 ? "👑 Lenda" : totalPontos >= 30 ? "⭐ Mestre" : totalPontos >= 15 ? "🔥 Veterano" : totalPontos >= 5 ? "💪 Ativo" : "🌱 Iniciante";
-  const levelColor = totalPontos >= 50 ? "text-amber-500" : totalPontos >= 30 ? "text-purple-500" : totalPontos >= 15 ? "text-orange-500" : totalPontos >= 5 ? "text-emerald-500" : "text-muted-foreground";
-  const nextLevelTarget = totalPontos >= 50 ? 50 : totalPontos >= 30 ? 50 : totalPontos >= 15 ? 30 : totalPontos >= 5 ? 15 : 5;
-  const levelProgress = Math.min(100, Math.round((totalPontos / nextLevelTarget) * 100));
+  const levelInfo = getLevel(totalPontos);
+  const nextLevelInfo = getNextLevel(totalPontos);
+  const level = `${levelInfo.emoji} ${levelInfo.label}`;
+  const levelColor = levelInfo.color;
+  const nextLevelTarget = nextLevelInfo ? nextLevelInfo.minPoints : totalPontos;
+  const levelProgress = getLevelProgressValue(totalPontos);
 
   const progress: CorretorProgress = {
     metaLigacoes,

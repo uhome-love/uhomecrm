@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Medal, TrendingUp, Users, Target, BarChart3, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import IaCoreAction from "@/components/IaCoreAction";
+import { getLevel } from "@/lib/gamification";
 
 type RankMetric = "score" | "vgv_assinado" | "vgv_gerado" | "visitas_realizadas" | "propostas";
 type PeriodOption = "dia" | "semana" | "mes";
@@ -285,7 +286,10 @@ function RankingCorretoresView({ corretores, getValue, metric, getScoreColor, sh
                 {i < 3 ? medals[i] : <span className="text-sm text-muted-foreground font-display font-bold">{i + 1}º</span>}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{c.corretor_nome}</p>
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {c.corretor_nome}
+                  <span className="ml-1.5 text-[10px]" title={getLevel(c.score).label}>{getLevel(c.score).emoji}</span>
+                </p>
                 {showEquipe && (
                   <p className="text-[10px] text-muted-foreground">Equipe {c.gerente_nome}</p>
                 )}
