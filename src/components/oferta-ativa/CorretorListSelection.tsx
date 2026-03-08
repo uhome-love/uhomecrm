@@ -240,6 +240,11 @@ export default function CorretorListSelection() {
 
   const { data: statsMap } = useBatchListaStats(listaIds);
 
+  // Pagination: show 20 initially, load more on scroll
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return liberadas;
     const q = search.toLowerCase();
@@ -249,22 +254,6 @@ export default function CorretorListSelection() {
       l.nome.toLowerCase().includes(q)
     );
   }, [liberadas, search]);
-
-  if (selectedLista) {
-    return (
-      <div className="space-y-3">
-        <Button variant="ghost" size="sm" className="gap-1 text-xs text-neutral-400 hover:text-white hover:bg-white/10" onClick={() => setSelectedLista(null)}>
-          <ArrowLeft className="h-3.5 w-3.5" /> Voltar às listas
-        </Button>
-        <DialingModeWithScript lista={selectedLista} onBack={() => setSelectedLista(null)} />
-      </div>
-    );
-  }
-
-  // Pagination: show 20 initially, load more on scroll
-  const PAGE_SIZE = 20;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const paginatedFiltered = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = visibleCount < filtered.length;
@@ -282,6 +271,17 @@ export default function CorretorListSelection() {
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, [hasMore, paginatedFiltered.length]);
+
+  if (selectedLista) {
+    return (
+      <div className="space-y-3">
+        <Button variant="ghost" size="sm" className="gap-1 text-xs text-neutral-400 hover:text-white hover:bg-white/10" onClick={() => setSelectedLista(null)}>
+          <ArrowLeft className="h-3.5 w-3.5" /> Voltar às listas
+        </Button>
+        <DialingModeWithScript lista={selectedLista} onBack={() => setSelectedLista(null)} />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
