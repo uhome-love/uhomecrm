@@ -86,17 +86,17 @@ export default function BackofficeDashboard() {
   // Fetch operational stats
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
-    Promise.all([
-      supabase.from("team_members").select("id", { count: "exact", head: true }).eq("ativo", true),
-      supabase.from("visitas").select("id", { count: "exact", head: true }).eq("data_visita", today),
-      supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).is("corretor_id", null),
-    ]).then(([corretores, visitas, fila]) => {
+    const fetchOp = async () => {
+      const corretores = await supabase.from("team_members").select("id", { count: "exact", head: true }).eq("ativo", true);
+      const visitas = await supabase.from("visitas").select("id", { count: "exact", head: true }).eq("data_visita", today);
+      const fila = await supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).is("corretor_id", null);
       setOpStats({
         corretoresAtivos: corretores.count ?? 0,
         visitasHoje: visitas.count ?? 0,
         leadsFila: fila.count ?? 0,
       });
-    });
+    };
+    fetchOp();
   }, []);
 
   const todayFormatted = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
