@@ -68,10 +68,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={!isSession}>
       <HomiProvider>
         <div className="min-h-screen flex w-full">
-          <AppSidebar />
+          <AppSidebar arenaMode={isSession} />
           <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
             <header
               className="h-14 flex items-center justify-between sticky top-0 z-50 px-4"
