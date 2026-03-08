@@ -142,10 +142,31 @@ export default function CorretorDashboard() {
   const aprvPct = goals ? Math.min(100, Math.round((progress.aproveitados / (goals.meta_aproveitados || 5)) * 100)) : 0;
   const visPct = goals ? Math.min(100, Math.round((progress.visitasMarcadas / (goals.meta_visitas_marcadas || 3)) * 100)) : 0;
 
+  // Check all 3 metas complete for celebration
+  const allMetasComplete = goals && ligPct >= 100 && aprvPct >= 100 && visPct >= 100;
+  useEffect(() => {
+    if (allMetasComplete && !metaCelebrated) {
+      setMetaCelebrated(true);
+      setShowMetaCelebration(true);
+      setConfettiTrigger(prev => prev + 1);
+    }
+  }, [allMetasComplete, metaCelebrated]);
+
   const radar = radarData || { pendingLeads: 0, slaExpired: 0, visitas: [], rankingPos: 0, totalBrokers: 1, ptsToNext: 0, priorityLeads: [] };
+
+  // Dynamic greeting
+  const greetingData = getDynamicGreeting({
+    nome: nome || "Corretor",
+    rankingPos: radar.rankingPos,
+    slaExpired: radar.slaExpired,
+    streak: 0,
+  });
+  const streak = formatStreak(0); // TODO: compute from DB
 
   return (
     <div className="flex flex-col h-[calc(100vh-56px-2rem)] px-4 md:px-6 lg:px-8 py-4 overflow-auto">
+      <ConfettiBurst trigger={confettiTrigger} intensity="moderate" />
+      <MetaCelebration show={showMetaCelebration} nome={nome || "Corretor"} onDismiss={() => setShowMetaCelebration(false)} />
 
       {/* HEADER — full width */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-4">
@@ -154,9 +175,14 @@ export default function CorretorDashboard() {
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-semibold text-foreground">
-            Fala, <span className="text-primary">{nome || "Corretor"}</span>! 💪
+            {greetingData.greeting}
           </h1>
-          <p className="text-sm text-muted-foreground truncate">{motivation}</p>
+          <p className="text-sm text-muted-foreground truncate">{greetingData.subtitle}</p>
+          {streak.emoji && (
+            <p className={`text-xs font-semibold mt-0.5 ${streak.color}`}>
+              {streak.emoji} {streak.label}
+            </p>
+          )}
         </div>
       </motion.div>
 
