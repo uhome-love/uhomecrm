@@ -360,6 +360,30 @@ export type Database = {
           },
         ]
       }
+      corretor_conquistas: {
+        Row: {
+          conquista_id: string
+          desbloqueada_em: string
+          id: string
+          notificado: boolean
+          user_id: string
+        }
+        Insert: {
+          conquista_id: string
+          desbloqueada_em?: string
+          id?: string
+          notificado?: boolean
+          user_id: string
+        }
+        Update: {
+          conquista_id?: string
+          desbloqueada_em?: string
+          id?: string
+          notificado?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       corretor_daily_goals: {
         Row: {
           aprovado_por: string | null
