@@ -141,7 +141,7 @@ export default function UhomeLogo({ size = "md", showTagline = false, className 
       {/* Text block */}
       <div className={cn(isVertical ? "text-center" : "flex flex-col")}>
         <span className={cn(c.textClass, "font-extrabold tracking-tight leading-tight")}>
-          <span style={{ color: "#1E3A8A" }} className="dark:text-white">Uhome</span>
+          <span style={{ color: "#2563EB" }} className="dark:text-white">Uhome</span>
           <span style={{ color: "#93A3B8" }}>Sales</span>
         </span>
         {showTagline && (
