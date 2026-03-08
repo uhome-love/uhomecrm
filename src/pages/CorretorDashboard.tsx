@@ -133,6 +133,25 @@ export default function CorretorDashboard() {
     return <Navigate to="/" replace />;
   }
 
+  const handleFinalizarTrabalho = async () => {
+    if (!user) return;
+    setFinalizando(true);
+    try {
+      const { data, error } = await supabase.rpc("finalizar_trabalho_corretor", { p_user_id: user.id });
+      if (error) throw error;
+      const result = data as any;
+      if (result?.success) {
+        toast.success(`🎉 Trabalho finalizado! ${result.tentativas} tentativas e ${result.aproveitados} aproveitados enviados ao gerente.`);
+      } else {
+        toast.error(result?.message || "Erro ao finalizar trabalho.");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao finalizar: " + err.message);
+    } finally {
+      setFinalizando(false);
+    }
+  };
+
   const radar = radarData || { pendingLeads: 0, slaExpired: 0, visitas: [], rankingPos: 0, totalBrokers: 1, ptsToNext: 0, priorityLeads: [] };
 
   // Dynamic greeting
