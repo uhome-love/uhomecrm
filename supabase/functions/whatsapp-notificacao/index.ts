@@ -50,6 +50,10 @@ serve(async (req) => {
       mensagem = `📋 *Lead repassado por inatividade*\n\nCorretor: ${dados.corretor}\nLead: ${dados.nome} — ${dados.empreendimento}\n\nLead devolvido para a fila automaticamente.`;
     }
 
+    if (tipo === "cobranca") {
+      mensagem = dados.mensagem_personalizada || dados.mensagem || "";
+    }
+
     if (!mensagem) {
       return new Response(
         JSON.stringify({ error: `Tipo de mensagem desconhecido: ${tipo}` }),
