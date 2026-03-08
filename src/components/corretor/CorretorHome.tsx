@@ -8,6 +8,7 @@ import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import { useMissoesLeads } from "@/hooks/useMissoesLeads";
 import { useCorretorHomeData } from "@/hooks/useCorretorHomeData";
+import { useConquistas } from "@/hooks/useConquistas";
 import DailyProgressCard from "./DailyProgressCard";
 import MissoesDeHoje from "./MissoesDeHoje";
 import RadarLeadsPendentes from "./RadarLeadsPendentes";
@@ -16,6 +17,8 @@ import FollowUpsDoDia from "./FollowUpsDoDia";
 import VisitasHojeCard from "./VisitasHojeCard";
 import MiniFunilPessoal from "./MiniFunilPessoal";
 import EvolucaoSemanal from "./EvolucaoSemanal";
+import LevelProgressBar from "./LevelProgressBar";
+import CelebrationOverlay from "./CelebrationOverlay";
 import { useNavigate } from "react-router-dom";
 const homiMascot = "/images/homi-mascot-opt.png";
 
@@ -24,6 +27,7 @@ export default function CorretorHome() {
   const motivation = useDailyMotivation();
   const { missoes, missaoGeral, radarLeads, radarLoading, ranking, rankingLoading, userId } = useMissoesLeads();
   const { followUps, followUpsLoading, visitasHoje, visitasLoading, funil, funilLoading, totalLeads, evolucao, evolucaoLoading } = useCorretorHomeData();
+  const { newlyUnlocked, dismissCelebration, unlocked } = useConquistas();
   const navigate = useNavigate();
 
   return (
