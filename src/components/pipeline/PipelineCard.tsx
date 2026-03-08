@@ -1,6 +1,7 @@
 import { memo, useState, useMemo } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
 import { Phone, Mail, Clock, MessageCircle, Calendar, AlertCircle, Timer, ChevronDown, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
 import { differenceInHours, differenceInMinutes, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -152,6 +153,7 @@ const PipelineCard = memo(function PipelineCard({
   onDragStart, onClick, onMoveLead, onTransferred, stageIndexMap,
 }: PipelineCardProps) {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<Date>();
   const [scheduleTime, setScheduleTime] = useState("10:00");
@@ -361,11 +363,11 @@ const PipelineCard = memo(function PipelineCard({
                   <Handshake className="h-2.5 w-2.5" /> Parceria
                 </Badge>
               )}
-              {!corretorNome ? (
+              {!corretorNome && isAdmin ? (
                 <Badge className="text-[9px] px-1.5 py-0 h-4 bg-[#7c3aed]/10 text-[#7c3aed] border-[#7c3aed]/30 border font-semibold hover:bg-[#7c3aed]/20">
                   📥 Fila CEO
                 </Badge>
-              ) : (
+              ) : !corretorNome ? null : (
                 <span className="text-[10px] text-muted-foreground truncate max-w-[90px]">
                   👤 {corretorNome}
                 </span>
