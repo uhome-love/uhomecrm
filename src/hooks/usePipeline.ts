@@ -109,13 +109,13 @@ export function usePipeline(pipelineTipo: string = "leads") {
     let query = supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, telefone2, email, segmento_id, produto_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, modo_conducao, complexidade_score, oportunidade_score, escalation_level, last_escalation_at, distribuido_em, aceito_em, aceite_expira_em, origem, origem_detalhe, observacoes, proxima_acao, data_proxima_acao, motivo_descarte, valor_estimado, created_at, updated_at, created_by")
-      .order("updated_at", { ascending: false })
-      .limit(500);
+      .order("updated_at", { ascending: false });
 
-    // Role-based visibility: corretores only see their own leads
-    if (!isGestor && !isAdmin) {
-      query = query.eq("corretor_id", user.id);
-    } else if (isGestor && !isAdmin) {
+    // Role-based visibility
+    if (isAdmin) {
+      // CEO/Admin: sees ALL leads (all corretores + unassigned)
+      // No filter applied — fetch everything
+    } else if (isGestor) {
       // Gerentes: leads do time + leads ainda sem corretor (fila não distribuída)
       const { data: teamMembers } = await supabase
         .from("team_members")
@@ -132,6 +132,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
       } else {
         query = query.is("corretor_id", null);
       }
+    } else {
+      // Corretores: only their own leads
+      query = query.eq("corretor_id", user.id);
     }
 
     const { data, error } = await query;
