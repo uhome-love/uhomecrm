@@ -275,7 +275,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </a>
               )}
               <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
-                <MessageSquare className="h-3 w-3" /> 💬 Comunicar
+                <MessageSquare className="h-3 w-3" /> 💬 Mensagem
               </Button>
               <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full" onClick={() => { setActiveTab("historico"); setShowNewAtividade(true); }}>
                 <Plus className="h-3 w-3" /> Ação
