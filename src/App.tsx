@@ -47,6 +47,7 @@ const DisponibilidadePage = lazy(() => import("./pages/DisponibilidadePage"));
 const AutomacoesPage = lazy(() => import("./pages/AutomacoesPage"));
 const Notificacoes = lazy(() => import("./pages/Notificacoes"));
 const VisitaConfirmacao = lazy(() => import("./pages/VisitaConfirmacao"));
+const Conquistas = lazy(() => import("./pages/Conquistas"));
 
 const queryClient = new QueryClient();
 
@@ -112,6 +113,7 @@ const App = () => (
             <Route path="/agenda-visitas" element={<ProtectedPage><AgendaVisitas /></ProtectedPage>} />
             <Route path="/corretor/resumo" element={<ProtectedPage><CorretorResumo /></ProtectedPage>} />
             <Route path="/corretor/ranking-equipes" element={<ProtectedPage><RankingEquipe /></ProtectedPage>} />
+            <Route path="/conquistas" element={<ProtectedPage><Conquistas /></ProtectedPage>} />
             <Route path="/homi" element={<ProtectedPage><HomiAssistant /></ProtectedPage>} />
             <Route path="/homi-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><HomiGerencial /></ProtectedPage>} />
             <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><HomiCeo /></ProtectedPage>} />
