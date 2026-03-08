@@ -316,12 +316,18 @@ export default function Configuracoes() {
                 <Label htmlFor="cargo" className="flex items-center gap-1.5 text-xs">
                   Cargo
                 </Label>
-                <Input
-                  id="cargo"
-                  value={cargo}
-                  disabled
-                  className="opacity-60"
-                />
+                <div className="flex items-center h-10">
+                  <span className={cn(
+                    "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize",
+                    cargo === "gerente" && "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+                    cargo === "corretor" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+                    cargo === "admin" && "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+                    cargo === "backoffice" && "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+                    !["gerente","corretor","admin","backoffice"].includes(cargo) && "bg-muted text-muted-foreground"
+                  )}>
+                    {cargo || "—"}
+                  </span>
+                </div>
               </div>
             </div>
 

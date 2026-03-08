@@ -28,19 +28,32 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    const { photo_url } = await req.json();
-    if (!photo_url) throw new Error("photo_url is required");
+    const body = await req.json();
+    // Support both: prompt-based (new) and photo_url-based (legacy)
+    const prompt = body.prompt;
+    const photo_url = body.photo_url;
+
+    if (!prompt && !photo_url) throw new Error("prompt or photo_url is required");
 
     console.log("Generating chibi avatar for user:", user.id);
 
-    // Call Gemini image model to create chibi avatar from photo
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    let aiBody: any;
+
+    if (prompt) {
+      // New prompt-based generation (no photo needed)
+      aiBody = {
+        model: "google/gemini-3-pro-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        modalities: ["image", "text"],
+      };
+    } else {
+      // Legacy photo-based generation
+      aiBody = {
         model: "google/gemini-3-pro-image-preview",
         messages: [
           {
@@ -73,7 +86,16 @@ Output a square image on a solid white background.`,
           },
         ],
         modalities: ["image", "text"],
-      }),
+      };
+    }
+
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(aiBody),
     });
 
     if (!aiResponse.ok) {
@@ -129,7 +151,7 @@ Output a square image on a solid white background.`,
 
     const avatarUrl = `${publicUrl}?t=${Date.now()}`;
 
-    // Update profile with both avatar_url and preview
+    // Update profile
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({
