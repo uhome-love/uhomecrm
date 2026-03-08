@@ -129,12 +129,13 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
       const visitasRealizadas = visitas.filter(v => v.status === "realizada").length;
       const vgvAndamento = negocios.reduce((sum, n) => sum + (Number(n.vgv_estimado) || 0), 0);
 
-      // Leads ativos (pipeline_leads where corretor_id = user)
-      const { count: leadsAtivos } = await supabase
+      // Leads ativos
+      let leadsAtivosQuery = supabase
         .from("pipeline_leads")
         .select("id", { count: "exact", head: true })
-        .eq("corretor_id", corretorUserId!)
-        .neq("status" as any, "arquivado");
+        .eq("corretor_id", corretorUserId!);
+      leadsAtivosQuery = leadsAtivosQuery.neq("status" as any, "arquivado");
+      const { count: leadsAtivos } = await leadsAtivosQuery;
 
       return {
         ligacoes,
