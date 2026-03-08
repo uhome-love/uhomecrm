@@ -217,14 +217,14 @@ export default function CeoDashboard() {
       {!loading && <HomiBriefingCard dashboardData={dashboardData} />}
 
       {/* ─── SEÇÃO 1: ROLETA PENDENTES ─── */}
-      <Card className={`${roletaPendentes.length > 0 ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.2)] animate-pulse-border" : "border-emerald-500/30"}`}>
+      <Card className={`${localPendentes.length > 0 ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.2)] animate-pulse-border" : "border-emerald-500/30"}`}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm flex items-center gap-2">
               🎯 Roleta — Aprovações Pendentes
-              {roletaPendentes.length > 0 && <Badge variant="destructive" className="text-xs">{roletaPendentes.length}</Badge>}
+              {localPendentes.length > 0 && <Badge variant="destructive" className="text-xs">{localPendentes.length}</Badge>}
             </CardTitle>
-            {roletaPendentes.length > 1 && (
+            {localPendentes.length > 1 && (
               <Button size="sm" onClick={aprovarTodos} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar todos
               </Button>
@@ -232,11 +232,11 @@ export default function CeoDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          {roletaPendentes.length === 0 ? (
+          {localPendentes.length === 0 ? (
             <p className="text-sm text-emerald-600 flex items-center gap-2 py-2">✅ Nenhuma aprovação pendente</p>
           ) : (
             <div className="space-y-2">
-              {roletaPendentes.map((c: any) => (
+              {localPendentes.map((c: any) => (
                 <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg border bg-card">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
