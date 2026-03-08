@@ -4,6 +4,7 @@ import { useAcademia, NIVEL_CONFIG, TIPO_CONFIG, type Aula, type QuizQuestion } 
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowLeft, Play, CheckCircle2, Lock, Star, Award, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -180,9 +181,31 @@ function QuizPlayer({ aula, status, onComplete }: {
   const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
+    // Try academia_quiz first, fallback to academia_quiz_perguntas
     supabase.from("academia_quiz").select("*").eq("aula_id", aula.id).order("ordem").then(({ data }) => {
-      setQuizQuestions((data || []) as QuizQuestion[]);
-      setCurrentQ(0); setAnswers({}); setShowResult(false); setSelectedAnswer(null); setConfirmed(false);
+      if (data && data.length > 0) {
+        setQuizQuestions((data || []) as QuizQuestion[]);
+        setCurrentQ(0); setAnswers({}); setShowResult(false); setSelectedAnswer(null); setConfirmed(false);
+      } else {
+        // Fallback: academia_quiz_perguntas (opcao_a/b/c/d format)
+        supabase.from("academia_quiz_perguntas").select("*").eq("aula_id", aula.id).order("ordem").then(({ data: pergData }) => {
+          const mapped: QuizQuestion[] = (pergData || []).map((p: any) => ({
+            id: p.id,
+            aula_id: p.aula_id,
+            pergunta: p.pergunta,
+            explicacao: p.explicacao,
+            ordem: p.ordem,
+            opcoes: [
+              { texto: p.opcao_a, correta: p.resposta_correta === "a" },
+              { texto: p.opcao_b, correta: p.resposta_correta === "b" },
+              { texto: p.opcao_c, correta: p.resposta_correta === "c" },
+              { texto: p.opcao_d, correta: p.resposta_correta === "d" },
+            ],
+          }));
+          setQuizQuestions(mapped);
+          setCurrentQ(0); setAnswers({}); setShowResult(false); setSelectedAnswer(null); setConfirmed(false);
+        });
+      }
     });
   }, [aula.id]);
 
@@ -487,6 +510,13 @@ function MediaPlayer({ aula, status, onComplete }: {
       )}
       {aula.tipo === "texto" && conteudo?.html && (
         <div className="prose prose-sm max-w-none dark:prose-invert rounded-xl border border-border p-6 bg-card" dangerouslySetInnerHTML={{ __html: conteudo.html }} />
+      )}
+
+      {/* Markdown content from conteudo.markdown */}
+      {conteudo?.markdown && (
+        <div className="prose prose-sm max-w-none dark:prose-invert rounded-xl border border-border p-6 bg-card">
+          <ReactMarkdown>{conteudo.markdown}</ReactMarkdown>
+        </div>
       )}
 
       {status !== "concluida" && (
