@@ -26,6 +26,7 @@ interface ContractData {
   cliente_telefone: string;
   cliente_email: string;
   cliente_endereco: string;
+  cliente_estado_civil?: string;
   empreendimento: string;
   unidade: string;
   vgv: number;
@@ -69,12 +70,30 @@ function fmtDateShort(dateStr: string) {
   return d.toLocaleDateString("pt-BR");
 }
 
+// Common inline styles
+const S = {
+  p: { textAlign: "justify" as const, marginBottom: "12px", textIndent: "0" },
+  pSmall: { textAlign: "justify" as const, marginBottom: "6px" },
+  th: { border: "1px solid #000", padding: "4px 6px", textAlign: "center" as const, fontWeight: "bold" as const, fontSize: "9px", background: "#f5f5f5" },
+  thLeft: { border: "1px solid #000", padding: "4px 6px", textAlign: "left" as const, fontWeight: "bold" as const, fontSize: "9px", background: "#f5f5f5" },
+  td: { border: "1px solid #000", padding: "4px 6px", textAlign: "center" as const, fontSize: "9px" },
+  tdLeft: { border: "1px solid #000", padding: "4px 6px", textAlign: "left" as const, fontSize: "9px" },
+  tdBold: { border: "1px solid #000", padding: "4px 6px", textAlign: "center" as const, fontSize: "9px", fontWeight: "bold" as const },
+};
+
 export default function ContratoIntermediacao({ open, onOpenChange, data, onDataChange, onGenerated }: Props) {
   const [editing, setEditing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const contractRef = useRef<HTMLDivElement>(null);
 
   const parcelas = data.parcelas.length > 0 ? data.parcelas : [{ numero: 1, data: data.data_venda, valor: data.comissao_total }];
+
+  // Separate credores: UHome vs Agilitas (everyone else)
+  const credoresAtivos = data.credores.filter(c => c.percentual > 0);
+  const uhomeCredor = credoresAtivos.find(c => c.credor_tipo === "imobiliaria" || c.credor_nome?.toLowerCase().includes("uhome"));
+  const agilitasCredores = credoresAtivos.filter(c => c !== uhomeCredor);
+  const agilitasTotal = agilitasCredores.reduce((s, c) => s + c.valor, 0);
+  const uhomeTotal = uhomeCredor?.valor || 0;
 
   const handleDownload = async () => {
     if (!contractRef.current) return;
@@ -83,12 +102,12 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
       const element = contractRef.current;
       await html2pdf()
         .set({
-          margin: [20, 25, 20, 25],
+          margin: [25, 25, 20, 25],
           filename: `Intermediacao_${data.cliente_nome.replace(/\s+/g, "_")}_${data.empreendimento.replace(/\s+/g, "_")}_${data.unidade || "SN"}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+          pagebreak: { mode: ["css", "legacy"] },
         })
         .from(element)
         .save();
@@ -119,14 +138,18 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs">Nome do cliente</Label><Input value={data.cliente_nome} onChange={e => onDataChange({ ...data, cliente_nome: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">CPF do cliente</Label><Input value={data.cliente_cpf} onChange={e => onDataChange({ ...data, cliente_cpf: e.target.value })} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Estado civil</Label><Input value={data.cliente_estado_civil || ""} onChange={e => onDataChange({ ...data, cliente_estado_civil: e.target.value })} className="h-8 text-sm" placeholder="solteiro(a), casado(a)..." /></div>
               <div><Label className="text-xs">Endereço do cliente</Label><Input value={data.cliente_endereco} onChange={e => onDataChange({ ...data, cliente_endereco: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Telefone do cliente</Label><Input value={data.cliente_telefone} onChange={e => onDataChange({ ...data, cliente_telefone: e.target.value })} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">E-mail do cliente</Label><Input value={data.cliente_email} onChange={e => onDataChange({ ...data, cliente_email: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Corretor - Nome</Label><Input value={data.corretor_nome} onChange={e => onDataChange({ ...data, corretor_nome: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Corretor - CPF</Label><Input value={data.corretor_cpf} onChange={e => onDataChange({ ...data, corretor_cpf: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Corretor - CRECI</Label><Input value={data.corretor_creci} onChange={e => onDataChange({ ...data, corretor_creci: e.target.value })} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Corretor - E-mail</Label><Input value={data.corretor_email} onChange={e => onDataChange({ ...data, corretor_email: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Gerente - Nome</Label><Input value={data.gerente_nome} onChange={e => onDataChange({ ...data, gerente_nome: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Gerente - CPF</Label><Input value={data.gerente_cpf} onChange={e => onDataChange({ ...data, gerente_cpf: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Gerente - CRECI</Label><Input value={data.gerente_creci} onChange={e => onDataChange({ ...data, gerente_creci: e.target.value })} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Gerente - E-mail</Label><Input value={data.gerente_email} onChange={e => onDataChange({ ...data, gerente_email: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Data de assinatura</Label><Input type="date" value={data.data_assinatura} onChange={e => onDataChange({ ...data, data_assinatura: e.target.value })} className="h-8 text-sm" /></div>
             </div>
             <Button size="sm" onClick={() => setEditing(false)}>Aplicar alterações</Button>
@@ -134,229 +157,246 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
         )}
 
         {/* Contract preview */}
-        <div ref={contractRef} style={{ fontFamily: "'Times New Roman', Times, serif", fontSize: "11px", lineHeight: "1.6", color: "#000", background: "#fff", padding: "10px" }}>
+        <div
+          ref={contractRef}
+          style={{
+            fontFamily: "Calibri, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+            fontSize: "11px",
+            lineHeight: "1.5",
+            color: "#000",
+            background: "#fff",
+            padding: "10px",
+          }}
+        >
           {/* LOGO */}
-          <div style={{ textAlign: "center", marginBottom: "20px" }}>
-            <img src="/images/uhomesales-logo.png" alt="UHome" style={{ height: "50px" }} crossOrigin="anonymous" />
+          <div style={{ textAlign: "center", marginBottom: "24px" }}>
+            <img src="/logo-uhome.svg" alt="UHome Negócios Imobiliários" style={{ height: "55px" }} crossOrigin="anonymous" />
           </div>
 
           {/* TITLE */}
-          <h1 style={{ textAlign: "center", fontSize: "14px", fontWeight: "bold", marginBottom: "20px", textTransform: "uppercase" }}>
-            Instrumento Particular de Intermediação Imobiliária
-          </h1>
+          <p style={{ textAlign: "center", fontSize: "13px", fontWeight: "bold", marginBottom: "24px", textDecoration: "underline" }}>
+            INSTRUMENTO PARTICULAR DE INTERMEDIAÇÃO IMOBILIÁRIA
+          </p>
 
           {/* CONTRATANTE */}
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            Pelo presente instrumento particular, de um lado, como <b>CONTRATANTE</b>:{" "}
-            <b>{data.cliente_nome || "_______________"}</b>, CPF nº <b>{data.cliente_cpf || "___.___.___-__"}</b>,
-            telefone {data.cliente_telefone || "(__) _____-____"}, e-mail {data.cliente_email || "________________"},
-            residente em {data.cliente_endereco || "________________________________"}.
+          <p style={S.p}>
+            Pelo presente instrumento particular de intermediação imobiliária, de um lado, como <b>CONTRATANTE(S)</b>:
+          </p>
+          <p style={S.p}>
+            <b>{data.cliente_nome || "_______________"}</b>, {data.cliente_estado_civil || "___________"}, inscrito no CPF/MF sob o nº {data.cliente_cpf || "___.___.___-__"}, telefone: {data.cliente_telefone || "(__) _____-____"}, e-mail: {data.cliente_email || "________________"}, residente e domiciliado na {data.cliente_endereco || "________________________________"}.
           </p>
 
           {/* CONTRATADOS */}
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            E, de outro lado, como <b>CONTRATADOS</b>:
+          <p style={S.p}>
+            De outro lado, como <b>CONTRATADOS</b>:{" "}
+            {contratados.map((c, i) => (
+              <span key={i}>
+                <b>{c.nome}</b>, inscrito no CPF sob o nº {c.cpf || "___.___.___-__"}, CRECI nº {c.creci || "______"}, endereço eletrônico: {c.email || "________________"}{i < contratados.length - 1 ? "; " : "; e "}
+              </span>
+            ))}
+            <b>UHOME NEGÓCIOS IMOBILIÁRIOS</b>, pessoa jurídica inscrita no CNPJ sob o nº 37.900.790/0001-71, CRECI nº 25.682-J, com sede na Avenida João Wallig, nº 573, Loja 01, Bairro Passo d'Areia, Porto Alegre/RS, CEP 91340-000, neste ato representada por seu procurador <b>LUCAS SOUTO DE MORAES SARMENTO</b>, inscrito no CPF sob o nº 863.851.860-91, RG nº 9098653034, CRECI nº 58.516, endereço eletrônico: lucas@uhome.imb.br, doravante denominados, em conjunto, simplesmente CONTRATADOS.
           </p>
-          {contratados.map((c, i) => (
-            <p key={i} style={{ textAlign: "justify", marginBottom: "6px", marginLeft: "20px" }}>
-              {i + 1}. <b>{c.nome}</b>, {c.tipo}, CPF nº {c.cpf || "___.___.___-__"}, CRECI nº {c.creci || "______"},
-              e-mail {c.email || "________________"};
-            </p>
-          ))}
-          <p style={{ textAlign: "justify", marginBottom: "12px", marginLeft: "20px" }}>
-            {contratados.length + 1}. <b>UHOME NEGÓCIOS IMOBILIÁRIOS</b>, CNPJ 37.900.790/0001-71, CRECI 25.682-J,
-            com sede na Avenida João Wallig, nº 573, Loja 01, Bairro Passo d'Areia, Porto Alegre/RS, CEP 91340-000,
-            representada por <b>LUCAS SOUTO DE MORAES SARMENTO</b>, CPF 863.851.860-91, CRECI 58.516, lucas@uhome.imb.br.
+
+          <p style={S.p}>
+            Isoladamente denominadas <b>"Parte"</b> e, em conjunto, <b>"Partes"</b>, têm entre si justo e contratado o que segue:
           </p>
 
           {/* CLAUSULA 1 */}
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>CLÁUSULA 1ª – DO OBJETO</b>
+          <p style={S.p}>
+            <b>1.</b> O(s) CONTRATANTE(S), por meio do presente instrumento, contrata(m) os CONTRATADOS para a prestação de serviços de intermediação imobiliária, com a finalidade de aquisição do imóvel descrito abaixo, assumindo o(s) CONTRATANTE(S) o compromisso de pagar aos CONTRATADOS os valores estabelecidos neste instrumento.
           </p>
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            O presente contrato tem por objeto a prestação de serviços de intermediação imobiliária pelos CONTRATADOS ao CONTRATANTE,
-            referente à aquisição da unidade autônoma abaixo descrita:
-          </p>
-          <p style={{ textAlign: "justify", marginBottom: "6px", marginLeft: "20px" }}>
+
+          <p style={{ ...S.pSmall, marginLeft: "20px" }}>
             <b>EMPREENDIMENTO:</b> {data.empreendimento || "_______________"}
           </p>
-          <p style={{ textAlign: "justify", marginBottom: "12px", marginLeft: "20px" }}>
+          <p style={{ ...S.p, marginLeft: "20px" }}>
             <b>UNIDADE:</b> {data.unidade || "___"}
           </p>
 
           {/* CLAUSULA 2 */}
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>CLÁUSULA 2ª – DA REMUNERAÇÃO</b>
-          </p>
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            A título de remuneração pelos serviços prestados, o CONTRATANTE pagará aos CONTRATADOS o valor total de{" "}
-            <b>{fmtR(data.comissao_total)}</b> ({data.comissao_pct}% sobre o VGV de {fmtR(data.vgv)}), conforme distribuição abaixo:
+          <p style={S.p}>
+            <b>2.</b> O valor total devido pelo(a,s) CONTRATANTE(S) a título de comissão de corretagem é de <b>{fmtR(data.comissao_total)}</b> a serem pagos da forma descrita nos respectivos vencimentos, que segue em no quadro abaixo:
           </p>
 
           {/* TABLE CREDORES */}
-          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "12px", fontSize: "10px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
             <thead>
               <tr>
-                <th style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "left", background: "#f0f0f0" }}>Credor</th>
-                <th style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center", background: "#f0f0f0" }}>Valor Total</th>
+                <th style={S.thLeft}>Credor</th>
+                <th style={S.th}>Valor</th>
                 {parcelas.map((p, i) => (
-                  <th key={i} style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center", background: "#f0f0f0" }}>
-                    Parcela {p.numero} ({fmtDateShort(p.data)})
-                  </th>
+                  <th key={i} style={S.th}>{fmtDateShort(p.data)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {data.credores.filter(c => c.percentual > 0).map((c, i) => (
+              {credoresAtivos.map((c, i) => (
                 <tr key={i}>
-                  <td style={{ border: "1px solid #333", padding: "4px 6px" }}>{c.credor_nome || c.credor_tipo}</td>
-                  <td style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center" }}>{fmtR(c.valor)}</td>
-                  {parcelas.map((p, j) => (
-                    <td key={j} style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center" }}>
-                      {fmtR(c.valor / parcelas.length)}
-                    </td>
-                  ))}
+                  <td style={S.tdLeft}>{c.credor_nome || c.credor_tipo}</td>
+                  <td style={S.td}>{fmtR(c.valor)}</td>
+                  {parcelas.map((p, j) => {
+                    const parcelaVal = (c.valor / data.comissao_total) * p.valor;
+                    return <td key={j} style={S.td}>{fmtR(parcelaVal)}</td>;
+                  })}
                 </tr>
               ))}
-              <tr style={{ fontWeight: "bold" }}>
-                <td style={{ border: "1px solid #333", padding: "4px 6px" }}>TOTAL</td>
-                <td style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center" }}>{fmtR(data.comissao_total)}</td>
-                {parcelas.map((_, j) => (
-                  <td key={j} style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center" }}>
-                    {fmtR(data.comissao_total / parcelas.length)}
-                  </td>
+              <tr>
+                <td style={{ ...S.tdLeft, fontWeight: "bold" }}>Total</td>
+                <td style={S.tdBold}>{fmtR(data.comissao_total)}</td>
+                {parcelas.map((p, j) => (
+                  <td key={j} style={S.tdBold}>{fmtR(p.valor)}</td>
                 ))}
               </tr>
             </tbody>
           </table>
 
-          {/* 2.1 */}
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>2.1.</b> O pagamento será realizado da seguinte forma:
+          {/* 2.1 - Divisão de pagamento */}
+          <p style={S.pSmall}>
+            <b>2.1</b> - Divisão de pagamento:
           </p>
-          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "12px", fontSize: "10px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
             <thead>
               <tr>
-                <th style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "left", background: "#f0f0f0" }}>Forma</th>
-                <th style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center", background: "#f0f0f0" }}>Destinatário</th>
+                <th style={S.thLeft}>Credor</th>
+                <th style={S.th}>Pagamento</th>
+                <th style={S.th}>Valor total</th>
                 {parcelas.map((p, i) => (
-                  <th key={i} style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center", background: "#f0f0f0" }}>
-                    {fmtDateShort(p.data)}
-                  </th>
+                  <th key={i} style={S.th}>{fmtDateShort(p.data)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style={{ border: "1px solid #333", padding: "4px 6px" }}>Agilitas / Boleto</td>
-                <td style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center" }}>Corretores</td>
-                {parcelas.map((_, j) => {
-                  const corretoresVal = data.credores
-                    .filter(c => c.credor_tipo === "corretor" || c.credor_tipo === "gerente")
-                    .reduce((s, c) => s + c.valor, 0);
-                  return <td key={j} style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center" }}>{fmtR(corretoresVal / parcelas.length)}</td>;
+                <td style={S.tdLeft}>Agilitas</td>
+                <td style={S.td}>Boleto</td>
+                <td style={S.td}>{fmtR(agilitasTotal)}</td>
+                {parcelas.map((p, j) => {
+                  const parcelaVal = data.comissao_total > 0 ? (agilitasTotal / data.comissao_total) * p.valor : 0;
+                  return <td key={j} style={S.td}>{fmtR(parcelaVal)}</td>;
                 })}
               </tr>
               <tr>
-                <td style={{ border: "1px solid #333", padding: "4px 6px" }}>UHome / Pix ou Boleto</td>
-                <td style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center" }}>UHome + Outros</td>
-                {parcelas.map((_, j) => {
-                  const uhomeVal = data.credores
-                    .filter(c => c.credor_tipo !== "corretor" && c.credor_tipo !== "gerente")
-                    .reduce((s, c) => s + c.valor, 0);
-                  return <td key={j} style={{ border: "1px solid #333", padding: "4px 6px", textAlign: "center" }}>{fmtR(uhomeVal / parcelas.length)}</td>;
+                <td style={S.tdLeft}>UHome</td>
+                <td style={S.td}>Pix ou Boleto</td>
+                <td style={S.td}>{fmtR(uhomeTotal)}</td>
+                {parcelas.map((p, j) => {
+                  const parcelaVal = data.comissao_total > 0 ? (uhomeTotal / data.comissao_total) * p.valor : 0;
+                  return <td key={j} style={S.td}>{fmtR(parcelaVal)}</td>;
                 })}
               </tr>
             </tbody>
           </table>
 
-          {/* CLAUSULAS 2.2-7 */}
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>2.2.</b> Em caso de distrato do negócio imobiliário por qualquer motivo, o CONTRATANTE fica obrigado a pagar aos CONTRATADOS
-            o valor proporcional aos serviços já prestados, não inferior a 50% (cinquenta por cento) do valor total da remuneração pactuada.
+          {/* 2.2 */}
+          <p style={S.p}>
+            <b>2.2.</b> O(a,s) CONTRATANTE(S) tem ciência, desde já, que os pagamentos devem, obrigatoriamente, ser realizados exclusivamente na forma prevista no item 2. supra e, caso venham a ser realizados de outra maneira, serão considerados não efetivados, ficando os CONTRATADOS assim como os demais prestadores de serviço autônomos (corretores), autorizados a cobrar os valores não quitados com todos os acréscimos moratórios cabíveis, dispostos no item 3 infra.
           </p>
 
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>CLÁUSULA 3ª – DA VIGÊNCIA</b>
-          </p>
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            O presente contrato vigorará até a conclusão definitiva do negócio imobiliário intermediado, incluindo a lavratura da escritura
-            pública ou o registro do contrato de promessa de compra e venda junto ao Cartório de Registro de Imóveis competente.
+          {/* 3 */}
+          <p style={S.p}>
+            <b>3.</b> Sobre qualquer parcela não paga, será aplicada correção monetária utilizando-se a variação positiva do Índice de Preços ao Consumidor Amplo - IPCA, publicado pelo Instituto Brasileiro de Geografia e Estatística (IBGE), além de juros de mora de 1% (um por cento) ao mês e multa de 2% (dois por cento), a partir do inadimplemento da obrigação até o dia do seu efetivo pagamento.
           </p>
 
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>CLÁUSULA 4ª – DAS OBRIGAÇÕES DO CONTRATANTE</b>
-          </p>
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            4.1. Fornecer aos CONTRATADOS todas as informações e documentos necessários para a intermediação do negócio.<br />
-            4.2. Não contratar, direta ou indiretamente, outros intermediários para o mesmo negócio durante a vigência deste contrato.<br />
-            4.3. Comunicar imediatamente aos CONTRATADOS qualquer alteração nas condições do negócio.
+          {/* 4 */}
+          <p style={S.p}>
+            <b>4.</b> Eventual inadimplemento por parte do(a,s) CONTRATANTE(S) quanto ao pagamento de qualquer uma das parcelas da comissão de corretagem informadas na cláusula 2 supra, acarretará o vencimento integral e antecipado de todas as demais previstas em tal cláusula, considerando-se o presente instrumento, desde logo, como título executivo extrajudicial, nos termos do artigo 784, III do Código de Processo Civil, sujeitando o(a,s) CONTRATANTE(S) inadimplente a ser inscrito nos Órgãos de Proteção ao Crédito.
           </p>
 
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>CLÁUSULA 5ª – DAS OBRIGAÇÕES DOS CONTRATADOS</b>
-          </p>
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            5.1. Prestar os serviços de intermediação com zelo, diligência e boa-fé.<br />
-            5.2. Manter sigilo sobre as informações do CONTRATANTE e do negócio intermediado.<br />
-            5.3. Fornecer ao CONTRATANTE todas as informações relevantes sobre o imóvel e a negociação.
+          {/* 5 */}
+          <p style={S.p}>
+            <b>5.</b> Os serviços prestados pelos CONTRATADOS, em conformidade com o presente instrumento serão objeto da emissão dos respectivos Recibos de Pagamento a Autônomo e/ou das Notas Fiscais de Serviços de forma individual por cada um dos prestadores de serviço e credores da comissão referidos no item 2. do presente instrumento.
           </p>
 
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>CLÁUSULA 6ª – DA RESCISÃO</b>
-          </p>
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            O presente contrato poderá ser rescindido por qualquer das partes, mediante notificação por escrito com antecedência mínima de
-            30 (trinta) dias, ficando assegurado aos CONTRATADOS o recebimento da remuneração proporcional aos serviços já prestados.
+          {/* 6 */}
+          <p style={S.p}>
+            <b>6.</b> O(a,s) CONTRATANTE(S) reconhece(m) que uma vez ocorrida a efetiva intermediação imobiliária, o montante relativo à comissão de corretagem é de responsabilidade dele(a,s), CONTRATANTE(S), e ainda que o imóvel aqui identificado não venha a ser efetivamente adquirido por ele, a comissão de corretagem é devida e não será, em qualquer hipótese, devolvida pelo(s) CONTRATADO(S) e/ou prestadores de serviço autônomos (corretores) que co-participaram do serviço de intermediação em conformidade com o artigo 725 e seguintes do Código Civil, nem tampouco poderá ser a qualquer momento questionada pelo(a,s) CONTRATANTE(S).
           </p>
 
-          <p style={{ textAlign: "justify", marginBottom: "6px" }}>
-            <b>CLÁUSULA 7ª – DO FORO</b>
+          {/* 7 - LGPD */}
+          <p style={S.p}>
+            <b>7.</b> O(a,s) CONTRATANTE(S) declara(m) ter ciência e concordar com o tratamento de seus dados pessoais pelos CONTRATADOS, nos termos da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais - LGPD), conforme as disposições abaixo:
           </p>
-          <p style={{ textAlign: "justify", marginBottom: "12px" }}>
-            As partes elegem o foro da Comarca de Porto Alegre/RS para dirimir quaisquer dúvidas ou controvérsias decorrentes
-            do presente contrato, renunciando a qualquer outro, por mais privilegiado que seja.
+          <p style={S.p}>
+            <b>7.1.</b> Os dados pessoais coletados serão utilizados exclusivamente para as seguintes finalidades:
+          </p>
+          <p style={{ ...S.pSmall, marginLeft: "20px" }}>
+            <b>7.1.1.</b> Prestação dos serviços de intermediação imobiliária objeto deste contrato, incluindo a comunicação com incorporadoras, construtoras, instituições financeiras e cartórios.
+          </p>
+          <p style={S.p}>
+            <b>7.2.</b> Os dados pessoais poderão ser compartilhados com terceiros estritamente necessários à execução dos serviços, tais como incorporadoras, construtoras, correspondentes bancários, cartórios de registro de imóveis e instituições financeiras, sempre observada a finalidade contratual.
+          </p>
+          <p style={S.p}>
+            <b>7.3.</b> Os CONTRATADOS se comprometem a adotar medidas de segurança técnicas e administrativas aptas a proteger os dados pessoais de acessos não autorizados e de situações acidentais ou ilícitas de destruição, perda, alteração, comunicação ou difusão.
+          </p>
+          <p style={S.p}>
+            <b>7.4.</b> Os dados pessoais serão armazenados pelo período necessário ao cumprimento das finalidades para as quais foram coletados, inclusive para fins de cumprimento de obrigações legais, contratuais, prestação de contas ou requisição de autoridades competentes.
+          </p>
+          <p style={S.p}>
+            <b>7.5.</b> O(a,s) CONTRATANTE(S) poderá(ão), a qualquer tempo, exercer os direitos previstos no artigo 18 da LGPD, mediante solicitação por escrito aos CONTRATADOS, incluindo confirmação da existência de tratamento, acesso aos dados, correção de dados incompletos, inexatos ou desatualizados, e eliminação dos dados pessoais tratados com consentimento, quando aplicável.
+          </p>
+          <p style={S.p}>
+            <b>7.6.</b> O consentimento para o tratamento dos dados pessoais poderá ser revogado a qualquer momento, mediante manifestação expressa do(a,s) CONTRATANTE(S), por meio de comunicação escrita, sem prejuízo da legalidade do tratamento realizado anteriormente.
+          </p>
+          <p style={S.p}>
+            <b>7.7.</b> Para fins de contato e exercício dos direitos relacionados à proteção de dados pessoais, o(a,s) CONTRATANTE(S) poderá(ão) entrar em contato através do endereço eletrônico: lucas@uhome.imb.br.
+          </p>
+          <p style={S.p}>
+            <b>7.8.</b> O(a,s) CONTRATANTE(S) declara(m) ter lido e compreendido integralmente as disposições desta cláusula, manifestando seu livre, informado e inequívoco consentimento para o tratamento de seus dados pessoais nos termos aqui estabelecidos.
+          </p>
+
+          {/* 8 */}
+          <p style={S.p}>
+            <b>8.</b> As partes elegem, com renúncia a qualquer outro, o foro Central da Comarca de Porto Alegre para conhecer e dirimir quaisquer questões relacionadas com o presente instrumento, renunciando a qualquer outro, por mais privilegiado que seja ou se torne.
+          </p>
+
+          {/* Assinatura digital */}
+          <p style={S.p}>
+            As Partes concordam em assinar o presente instrumento, por: (i) meio de plataformas de assinatura digital, sendo certo que as assinaturas eletrônicas produzirão os mesmos efeitos das assinaturas manuscritas, nos termos do artigo 10, §2º, da Medida Provisória 2.200-2/2001, da Lei 14.063/2020 e demais legislação aplicável, incluindo eventual regulação vigente à época; ou (ii) de forma manuscrita, hipótese em que este instrumento será impresso e assinado em tantas vias quantas forem necessárias.
           </p>
 
           {/* PAGE BREAK before signatures */}
-          <div style={{ pageBreakBefore: "always" }}></div>
+          <div style={{ pageBreakBefore: "always" }} />
 
           {/* DATE & SIGNATURES */}
-          <p style={{ textAlign: "center", marginTop: "30px", marginBottom: "40px" }}>
+          <p style={{ textAlign: "center", marginTop: "30px", marginBottom: "50px" }}>
             Porto Alegre, {formatDate(data.data_assinatura)}.
           </p>
 
-          <div style={{ marginTop: "40px" }}>
-            <div style={{ borderTop: "1px solid #000", width: "60%", margin: "40px auto 5px auto" }}></div>
-            <p style={{ textAlign: "center", marginBottom: "5px" }}><b>CONTRATANTE:</b> {data.cliente_nome}</p>
-            <p style={{ textAlign: "center", marginBottom: "30px", fontSize: "10px" }}>CPF: {data.cliente_cpf || "___.___.___-__"}</p>
+          <div style={{ marginTop: "30px" }}>
+            {/* CONTRATANTE */}
+            <div style={{ borderTop: "1px solid #000", width: "70%", margin: "50px auto 5px auto" }} />
+            <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
+              <b>CONTRATANTE:</b> {data.cliente_nome || "_______________"} / CPF: {data.cliente_cpf || "___.___.___-__"}
+            </p>
 
+            {/* CONTRATADOS */}
             {contratados.map((c, i) => (
               <div key={i}>
-                <div style={{ borderTop: "1px solid #000", width: "60%", margin: "30px auto 5px auto" }}></div>
-                <p style={{ textAlign: "center", marginBottom: "5px" }}><b>CONTRATADO {c.tipo.toUpperCase()}:</b> {c.nome}</p>
-                <p style={{ textAlign: "center", marginBottom: "30px", fontSize: "10px" }}>CPF: {c.cpf || "___.___.___-__"} · CRECI: {c.creci || "______"}</p>
+                <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
+                <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
+                  <b>CONTRATADO {c.tipo.toUpperCase()}:</b> {c.nome} / CPF: {c.cpf || "___.___.___-__"} · CRECI: {c.creci || "______"}
+                </p>
               </div>
             ))}
 
-            <div style={{ borderTop: "1px solid #000", width: "60%", margin: "30px auto 5px auto" }}></div>
-            <p style={{ textAlign: "center", marginBottom: "5px" }}><b>CONTRATADO IMOBILIÁRIA:</b> UHOME NEGÓCIOS IMOBILIÁRIOS</p>
-            <p style={{ textAlign: "center", marginBottom: "30px", fontSize: "10px" }}>CNPJ: 37.900.790/0001-71 · CRECI: 25.682-J</p>
+            {/* UHOME */}
+            <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
+            <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
+              <b>CONTRATADO IMOBILIÁRIA:</b> UHOME NEGÓCIOS IMOBILIÁRIOS / CNPJ: 37.900.790/0001-71 · CRECI: 25.682-J
+            </p>
           </div>
 
           {/* TESTEMUNHAS */}
-          <div style={{ marginTop: "40px" }}>
-            <p style={{ marginBottom: "10px" }}><b>TESTEMUNHAS:</b></p>
+          <div style={{ marginTop: "50px" }}>
+            <p style={{ marginBottom: "8px", fontWeight: "bold" }}>TESTEMUNHAS:</p>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div style={{ width: "45%" }}>
-                <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }}></div>
-                <p style={{ fontSize: "10px" }}>01. Ana Paula Silveira</p>
-                <p style={{ fontSize: "9px" }}>anapsilveiram@gmail.com</p>
+                <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
+                <p style={{ fontSize: "10px" }}>01. Ana Paula Silveira — anapsilveiram@gmail.com</p>
               </div>
               <div style={{ width: "45%" }}>
-                <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }}></div>
-                <p style={{ fontSize: "10px" }}>02. Bruno Schuler</p>
-                <p style={{ fontSize: "9px" }}>bruno@uhome.imb.br</p>
+                <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
+                <p style={{ fontSize: "10px" }}>02. Bruno Schuler — bruno@uhome.imb.br</p>
               </div>
             </div>
           </div>
