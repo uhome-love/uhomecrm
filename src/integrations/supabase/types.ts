@@ -1330,6 +1330,53 @@ export type Database = {
           },
         ]
       }
+      empreendimento_fichas: {
+        Row: {
+          atualizado_por: string | null
+          desconto: string | null
+          empreendimento: string
+          entrada: string | null
+          entrega: string | null
+          id: string
+          localizacao: string | null
+          metragens: string | null
+          notas: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          atualizado_por?: string | null
+          desconto?: string | null
+          empreendimento: string
+          entrada?: string | null
+          entrega?: string | null
+          id?: string
+          localizacao?: string | null
+          metragens?: string | null
+          notas?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          atualizado_por?: string | null
+          desconto?: string | null
+          empreendimento?: string
+          entrada?: string | null
+          entrega?: string | null
+          id?: string
+          localizacao?: string | null
+          metragens?: string | null
+          notas?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empreendimento_fichas_atualizado_por_fkey"
+            columns: ["atualizado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_reports: {
         Row: {
           campanhas: Json | null
