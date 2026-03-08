@@ -94,6 +94,26 @@ export default function AvatarUpload({ avatarUrl, nome, size = "md", onUploaded,
     }
   };
 
+  const generateGamifiedAvatar = async (photoUrl: string) => {
+    const genToast = toast.loading("✨ Gerando avatar gamificado...");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-avatar", {
+        body: { photo_url: photoUrl },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.url) {
+        onGamifiedGenerated?.(data.url);
+        toast.success("🎮 Avatar gamificado criado!", { id: genToast });
+      }
+    } catch (err: any) {
+      console.error("Gamified avatar error:", err);
+      toast.error("Não foi possível gerar o avatar gamificado", { id: genToast });
+    }
+  };
+
   return (
     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
       <Avatar className={`${sizeMap[size]} ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all`}>
