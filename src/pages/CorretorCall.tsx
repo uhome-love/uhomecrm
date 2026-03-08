@@ -203,6 +203,15 @@ export default function CorretorCall() {
     }, 600);
   };
 
+  const handleExitArena = () => {
+    // If no attempts were made, go directly to dashboard
+    if (progress.tentativas === 0) {
+      navigate("/corretor");
+      return;
+    }
+    setShowSummary(true);
+  };
+
   if (!metaSalva) return null;
 
   // ── WARMUP: IMMERSIVE BATTLE ENTRY ──
