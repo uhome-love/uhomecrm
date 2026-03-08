@@ -312,11 +312,11 @@ const PipelineCard = memo(function PipelineCard({
           {/* Line 4: SLA + corretor + parceria badge */}
           <div className="flex items-center justify-between gap-2">
             {sla && sla.status !== "ok" ? (
-              <span className={`flex items-center gap-1 text-[10px] font-bold ${
-                sla.status === "breach" ? "text-red-600" : "text-amber-600"
+              <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                sla.status === "breach" ? "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400" : "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
               }`}>
                 {sla.status === "breach" ? <AlertCircle className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
-                {sla.status === "breach" ? `🚨 SLA ${formatSlaTime(sla.minutesRemaining)}` : `⏱ ${formatSlaTime(sla.minutesRemaining)}`}
+                {sla.status === "breach" ? `⏰ ${formatSlaTime(sla.minutesRemaining)} sem contato` : `⏱ ${formatSlaTime(sla.minutesRemaining)}`}
               </span>
             ) : (
               <span className="flex items-center gap-1 text-[10px] text-muted-foreground">

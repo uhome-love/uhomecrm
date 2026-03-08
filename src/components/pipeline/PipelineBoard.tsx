@@ -30,12 +30,14 @@ function getColumnWidth() {
 function getStageAlerts(leads: PipelineLead[]) {
   let warnings = 0;
   let dangers = 0;
+  let semCorretor = 0;
   for (const l of leads) {
+    if (!l.corretor_id) { semCorretor++; continue; }
     const mins = differenceInMinutes(new Date(), new Date(l.stage_changed_at));
     if (mins >= 120) dangers++;
     else if (mins >= 30) warnings++;
   }
-  return { warnings, dangers, total: warnings + dangers };
+  return { warnings, dangers, total: warnings + dangers, semCorretor };
 }
 
 function getAvgTimeLabel(leads: PipelineLead[]) {
@@ -325,6 +327,11 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                       <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                         <Clock className="h-2.5 w-2.5" />
                         {avgTime} média
+                      </span>
+                    )}
+                    {alerts.semCorretor > 0 && (
+                      <span className="text-[10px] font-semibold flex items-center gap-0.5 text-purple-600 dark:text-purple-400">
+                        👤 {alerts.semCorretor}
                       </span>
                     )}
                     {alerts.total > 0 && (
