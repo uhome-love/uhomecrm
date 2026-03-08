@@ -149,20 +149,32 @@ function HomiSpeechBubble() {
 
   return (
     <div
-      className="absolute -top-14 left-1/2 -translate-x-1/2 whitespace-nowrap transition-opacity duration-300"
-      style={{
-        opacity: fade ? 1 : 0,
-        background: "rgba(30,41,59,0.95)",
-        border: "1px solid rgba(99,179,237,0.3)",
-        borderRadius: "12px 12px 12px 4px",
-        padding: "8px 14px",
-        fontSize: "13px",
-        color: "#E2E8F0",
-        boxShadow: "0 0 20px rgba(59,130,246,0.2)",
-        animation: "fade-in 0.4s ease-out both",
-      }}
+      className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap transition-opacity duration-400 z-20"
+      style={{ opacity: fade ? 1 : 0 }}
     >
-      {HOMI_PHRASES[idx]}
+      <div
+        style={{
+          background: "rgba(30,41,59,0.95)",
+          border: "1px solid rgba(99,179,237,0.3)",
+          borderRadius: "12px",
+          padding: "8px 14px",
+          fontSize: "13px",
+          color: "#E2E8F0",
+          boxShadow: "0 0 20px rgba(59,130,246,0.2)",
+        }}
+      >
+        {HOMI_PHRASES[idx]}
+      </div>
+      {/* Arrow pointing down */}
+      <div
+        className="mx-auto"
+        style={{
+          width: 0, height: 0,
+          borderLeft: "6px solid transparent",
+          borderRight: "6px solid transparent",
+          borderTop: "6px solid rgba(30,41,59,0.95)",
+        }}
+      />
     </div>
   );
 }
@@ -479,24 +491,24 @@ export default function Auth() {
         {/* SPACER */}
         <div className="flex-1" />
 
-        {/* HOMI MASCOT with animations */}
-        <div className="flex flex-col items-center anim-fade-in-up anim-delay-3">
-          <div className="relative homi-entrance">
-            <HomiSpeechBubble />
-            <div className="homi-wave">
-              <div className="absolute inset-0 -m-4 rounded-full bg-[hsl(229,100%,64%/0.2)] blur-[40px] anim-glow" />
-              <img
-                src={homiHero}
-                alt="Homi AI"
-                className="relative w-32 h-32 object-contain drop-shadow-[0_0_30px_hsl(229,100%,64%,0.5)]"
-              />
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* FOOTER */}
-      <div className="relative z-10 pb-6 pt-2">
+      {/* HOMI + FOOTER — outside main column, always at bottom */}
+      <div className="relative z-10 flex flex-col items-center pb-6 pt-2 gap-3">
+        {/* HOMI MASCOT */}
+        <div className="relative homi-entrance">
+          <HomiSpeechBubble />
+          <div className="homi-wave">
+            <div className="absolute inset-0 -m-4 rounded-full bg-[hsl(229,100%,64%/0.2)] blur-[40px] anim-glow" />
+            <img
+              src={homiHero}
+              alt="Homi AI"
+              className="relative object-contain drop-shadow-[0_0_30px_hsl(229,100%,64%,0.5)]"
+              style={{ height: 80 }}
+            />
+          </div>
+        </div>
+        {/* COPYRIGHT */}
         <p className="text-center text-[10px] text-white/20 tracking-wider">
           © {new Date().getFullYear()} Uhome · Impulsione suas vendas · Todos os direitos reservados
         </p>
