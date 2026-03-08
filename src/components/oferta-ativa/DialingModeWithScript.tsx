@@ -102,6 +102,17 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [arenaShake, setArenaShake] = useState(false);
   const [arenaConfetti, setArenaConfetti] = useState<string[]>([]);
   const prevLeadIdRef = useRef<string | null>(null);
+  const objScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to objection response
+  useEffect(() => {
+    if (objectionInsert && expandedObj !== null && objScrollRef.current) {
+      setTimeout(() => {
+        const el = objScrollRef.current?.querySelector('[data-objection-block]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+  }, [objectionInsert, expandedObj]);
 
   useEffect(() => {
     if (lead && lead.id !== prevLeadIdRef.current) {
@@ -630,68 +641,74 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     </div>
   );
 
-  // ─── TOOLS COLUMN (right 45%): Scripts in tabs + Objections ───
+  // ─── TOOLS COLUMN (right 45%): Scripts in tabs ───
   const ToolsColumn = (
     <div className="min-w-0 h-full flex flex-col gap-3">
-      {/* Script Tabs */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        <div className="flex gap-1 p-1 rounded-lg shrink-0" style={{ background: "#161B22" }}>
-          <button
-            onClick={() => setScriptTab("ligacao")}
-            className="flex-1 py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
-            style={{
-              background: scriptTab === "ligacao" ? "rgba(34,197,94,0.15)" : "transparent",
-              color: scriptTab === "ligacao" ? "#86EFAC" : "#6B7280",
-              border: scriptTab === "ligacao" ? "1px solid rgba(34,197,94,0.3)" : "1px solid transparent",
-            }}
-          >
-            📋 Script Ligação
-          </button>
-          <button
-            onClick={() => setScriptTab("whatsapp")}
-            className="flex-1 py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
-            style={{
-              background: scriptTab === "whatsapp" ? "rgba(34,197,94,0.15)" : "transparent",
-              color: scriptTab === "whatsapp" ? "#86EFAC" : "#6B7280",
-              border: scriptTab === "whatsapp" ? "1px solid rgba(34,197,94,0.3)" : "1px solid transparent",
-            }}
-          >
-            💬 Script WhatsApp
-          </button>
-        </div>
-
-        {/* Active script */}
-        <div
-          className="flex-1 min-h-0 rounded-xl overflow-y-auto mt-2"
+      {/* Script Tabs — fixed header */}
+      <div className="flex gap-1 p-1 rounded-lg shrink-0" style={{ background: "#161B22" }}>
+        <button
+          onClick={() => setScriptTab("ligacao")}
+          className="flex-1 py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
           style={{
-            background: scriptTab === "ligacao" ? "#1a2332" : "#0d1f0d",
-            borderLeft: scriptTab === "ligacao" ? "3px solid rgba(34,197,94,0.3)" : "3px solid rgba(34,197,94,0.5)",
-            scrollbarWidth: "thin",
+            background: scriptTab === "ligacao" ? "rgba(34,197,94,0.15)" : "transparent",
+            color: scriptTab === "ligacao" ? "#86EFAC" : "#6B7280",
+            border: scriptTab === "ligacao" ? "1px solid rgba(34,197,94,0.3)" : "1px solid transparent",
           }}
         >
-          <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode scriptFilter={scriptTab} />
-        </div>
+          📋 Script Ligação
+        </button>
+        <button
+          onClick={() => setScriptTab("whatsapp")}
+          className="flex-1 py-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+          style={{
+            background: scriptTab === "whatsapp" ? "rgba(34,197,94,0.15)" : "transparent",
+            color: scriptTab === "whatsapp" ? "#86EFAC" : "#6B7280",
+            border: scriptTab === "whatsapp" ? "1px solid rgba(34,197,94,0.3)" : "1px solid transparent",
+          }}
+        >
+          💬 Script WhatsApp
+        </button>
+      </div>
 
-        {/* Objection insert block */}
+      {/* Scrollable content area: Script + Objection Response + CTA */}
+      <div
+        ref={objScrollRef}
+        className="flex-1 min-h-0 rounded-xl overflow-y-auto"
+        style={{
+          background: scriptTab === "ligacao" ? "#1a2332" : "#0d1f0d",
+          borderLeft: scriptTab === "ligacao" ? "3px solid rgba(34,197,94,0.3)" : "3px solid rgba(34,197,94,0.5)",
+          scrollbarWidth: "thin",
+        }}
+      >
+        <ScriptPanel empreendimento={lista.empreendimento} lead={lead} compact darkMode scriptFilter={scriptTab} />
+
+        {/* Objection response block — inside scroll area */}
         <AnimatePresence>
           {objectionInsert && expandedObj !== null && (
             <motion.div
+              data-objection-block
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="mt-2 p-3 rounded-lg text-sm leading-relaxed shrink-0"
-              style={{ background: "rgba(245,158,11,0.08)", border: "2px solid rgba(245,158,11,0.25)", color: "#E5E7EB" }}
+              className="mx-3 mb-3 p-3 rounded-lg text-sm leading-relaxed relative"
+              style={{ background: "rgba(245,158,11,0.1)", borderLeft: "3px solid #F59E0B", color: "#E5E7EB" }}
             >
-              <div className="flex items-center gap-1.5 mb-1">
-                <Sparkles className="h-3.5 w-3.5" style={{ color: "#FBBF24" }} />
-                <span className="text-xs font-bold" style={{ color: "#FBBF24" }}>RESPOSTA P/ OBJEÇÃO: {objections[expandedObj].label}</span>
+              <button
+                onClick={() => { setExpandedObj(null); setObjectionInsert(null); }}
+                className="absolute top-2 right-2 text-neutral-500 hover:text-white transition-colors"
+                style={{ fontSize: 14, lineHeight: 1 }}
+              >
+                ✕
+              </button>
+              <div className="flex items-center gap-1.5 mb-1.5 pr-5">
+                <Sparkles className="h-3.5 w-3.5 shrink-0" style={{ color: "#FBBF24" }} />
+                <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "#FBBF24" }}>Resposta p/ objeção: {objections[expandedObj].label}</span>
               </div>
               <p style={{ fontSize: "14px", lineHeight: 1.6 }}>{objectionInsert}</p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
     </div>
   );
 
