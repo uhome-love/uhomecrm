@@ -324,6 +324,12 @@ export default function RoletaStatusBar() {
             </DialogTitle>
           </DialogHeader>
 
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
+            <span className="text-xs font-medium text-primary">
+              Credenciamento para: {getJanelaLabel(currentJanela)}
+            </span>
+          </div>
+
           <p className="text-sm text-muted-foreground">
             Selecione até <strong>2 segmentos</strong> para receber leads automaticamente:
           </p>
