@@ -9,7 +9,25 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Users, Phone, CalendarDays, RefreshCw, TrendingUp, Eye } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+interface AdminStaff {
+  user_id: string;
+  nome: string;
+  avatar_url: string | null;
+  avatar_gamificado_url: string | null;
+  cargo: string | null;
+}
+
 interface CorretorInfo {
+  user_id: string;
+  nome: string;
+  avatar_url: string | null;
+  avatar_gamificado_url: string | null;
+  cargo: string | null;
+  ligacoes_hoje: number;
+  aproveitados_hoje: number;
+  visitas_semana: number;
+  ativo_hoje: boolean;
+}
   user_id: string;
   nome: string;
   avatar_url: string | null;
