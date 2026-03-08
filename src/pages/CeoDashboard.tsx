@@ -139,29 +139,7 @@ export default function CeoDashboard() {
     reload();
   }, [user, roletaPendentes, reload]);
 
-  // CEO Advisor
-  const gerarBriefing = useCallback(async () => {
-    setAdvisorLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("homi-ceo", {
-        body: {
-          mensagem: `Gere um briefing executivo do período ${period === "hoje" ? "de hoje" : period === "semana" ? "desta semana" : "deste mês"}. 
-            Dados: Ligações: ${kpis.ligacoes}, Aproveitados: ${kpis.aproveitados}, Visitas marcadas: ${kpis.visitasMarcadas}, 
-            Visitas realizadas: ${kpis.visitasRealizadas}, VGV Gerado: ${formatCurrency(kpis.vgvGerado)}, 
-            VGV Assinado: ${formatCurrency(kpis.vgvAssinado)}, Propostas: ${kpis.propostas}.
-            Times: ${teams.map(t => `${t.gerente_nome}: ${t.ligacoes} lig, ${t.aproveitados} aprov, ${t.visitasMarcadas} VM`).join("; ")}.
-            Alertas: ${alertas.map(a => a.mensagem).join("; ")}.
-            Gere: 1) Resumo do período, 2) 3 pontos de atenção críticos, 3) 3 oportunidades, 4) Recomendação de ação para hoje.`,
-        },
-      });
-      if (error) throw error;
-      setAdvisorContent(data?.resposta || data?.response || "Sem resposta");
-    } catch {
-      toast.error("Erro ao gerar briefing");
-    } finally {
-      setAdvisorLoading(false);
-    }
-  }, [period, kpis, teams, alertas]);
+
 
   if (loading && !profile) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -613,36 +591,15 @@ export default function CeoDashboard() {
         </div>
       </div>
 
-      {/* ─── SEÇÃO 8: CEO ADVISOR ─── */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <CardTitle className="text-sm flex items-center gap-2"><Brain className="h-4 w-4 text-primary" /> CEO Advisor — HOMI</CardTitle>
-            <Button size="sm" onClick={gerarBriefing} disabled={advisorLoading} className="w-full sm:w-auto">
-              {advisorLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Brain className="h-3.5 w-3.5 mr-1" />}
-              🧠 Gerar Briefing
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {advisorContent ? (
-            <div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap bg-muted/20 p-4 rounded-lg">
-              {advisorContent}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              Clique em "Gerar Briefing Executivo" para receber uma análise estratégica consolidada do período.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Fila CEO Dispatch Modal */}
       <FilaCeoDispatchModal
         open={dispatchOpen}
         onOpenChange={setDispatchOpen}
         onDispatched={() => { reload(); loadFilaCeo(); }}
       />
+
+      {/* HOMI CEO Floating */}
+      <HomiCeoFloating dashboardData={dashboardData} />
     </div>
   );
 }
