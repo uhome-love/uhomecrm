@@ -9,7 +9,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-f
 import { ptBR } from "date-fns/locale";
 import {
   Phone, CheckCircle, CalendarDays, Building2, Flame,
-  Trophy, ArrowRight, Clock, Loader2, Send,
+  Trophy, ArrowRight, Clock, Loader2, Send, RefreshCw,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,7 +85,8 @@ export default function GerenteDashboard() {
   const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>("dia");
-  const [profile, setProfile] = useState<{ nome?: string; avatar_url?: string } | null>(null);
+  const [profile, setProfile] = useState<{ nome?: string; avatar_url?: string; avatar_gamificado_url?: string } | null>(null);
+  const [lastUpdate] = useState(() => format(new Date(), "HH:mm"));
   const [drawerCorretor, setDrawerCorretor] = useState<CorretorDrawerData | null>(null);
 
   useEffect(() => {
@@ -95,7 +96,7 @@ export default function GerenteDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("nome, avatar_url").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+    supabase.from("profiles").select("nome, avatar_url, avatar_gamificado_url").eq("user_id", user.id).maybeSingle().then(({ data }) => {
       if (data) setProfile(data);
     });
   }, [user]);
@@ -251,41 +252,62 @@ export default function GerenteDashboard() {
   }
 
   const greeting = new Date().getHours() < 12 ? "Bom dia" : new Date().getHours() < 18 ? "Boa tarde" : "Boa noite";
-
   const ligPct = k.metaLigacoes > 0 ? Math.min(100, Math.round((k.ligacoes / k.metaLigacoes) * 100)) : 0;
   const totalPipeCount = Object.values(pipe.fases).reduce((s, f) => s + f.count, 0);
-
   const visitas3 = (todayVisitas || []).slice(0, 3);
   const visitasExtra = (todayVisitas || []).length - 3;
 
+  const GERENTE_FRASES = [
+    "Seu time é reflexo da sua liderança.",
+    "Quem desenvolve pessoas, multiplica resultados.",
+    "Gestão é arte. Execução é disciplina.",
+    "O gerente que acompanha, o time que entrega.",
+    "Liderar é servir com propósito.",
+  ];
+  const fraseIdx = Math.floor(Date.now() / 86_400_000) % GERENTE_FRASES.length;
+  const avatarSrc = profile?.avatar_gamificado_url || profile?.avatar_url;
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-      {/* ─── 1. HEADER ─── */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt={nome} className="h-14 w-14 rounded-full object-cover" style={{ border: "2px solid #60a5fa" }} />
-          ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-black text-xl" style={{ border: "2px solid #60a5fa" }}>
-              {getInitials(profile?.nome || "G")}
+      {/* ─── 1. HEADER DARK (CEO-STYLE) ─── */}
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl p-5 md:p-6"
+        style={{ background: "#0f172a" }}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {avatarSrc ? (
+              <img src={avatarSrc} alt={nome} className="h-14 w-14 rounded-full object-cover border-2 border-white shrink-0" />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-white shrink-0 font-black text-xl text-white" style={{ background: "#3b82f6" }}>
+                {getInitials(profile?.nome || "G")}
+              </div>
+            )}
+            <div>
+              <h1 className="text-[22px] font-bold text-white">{greeting}, {nome}! 👋</h1>
+              <p className="text-xs italic text-slate-400 mt-0.5">{GERENTE_FRASES[fraseIdx]}</p>
+              <p className="text-[11px] text-slate-500 mt-1">
+                {format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })} · Semana {weekNum} do mês
+              </p>
             </div>
-          )}
-          <div>
-            <h1 className="text-3xl font-black text-foreground">{greeting}, {nome}! 👋</h1>
-            <p className="text-sm text-gray-400">
-              {format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })} · Semana {weekNum}
-            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 shrink-0 mt-1">
+            <RefreshCw className="h-3 w-3" />
+            <span>Atualizado {lastUpdate}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Period pills */}
+        <div className="flex items-center gap-2 mt-4">
           {(["dia", "semana", "mes"] as Period[]).map(p => (
             <button
               key={p}
-              className="text-sm px-4 py-1.5 rounded-lg font-medium transition-all duration-200"
+              className="text-sm px-4 py-1.5 rounded-full font-medium transition-all duration-200"
               style={{
-                background: period === p ? "#2563EB" : "transparent",
-                color: period === p ? "#fff" : "#4B5563",
-                border: period === p ? "1px solid #2563EB" : "1px solid #D1D5DB",
+                background: period === p ? "#ffffff" : "rgba(255,255,255,0.1)",
+                color: period === p ? "#0f172a" : "#ffffff",
               }}
               onClick={() => setPeriod(p)}
             >
