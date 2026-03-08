@@ -1,14 +1,15 @@
 import { memo, useState, useMemo, useCallback } from "react";
 import { type PdnEntry, type PdnSituacao } from "@/hooks/usePdn";
-import { calcProbabilidade, calcRisco, OBJECAO_OPTIONS, PROXIMA_ACAO_OPTIONS, type RiscoNivel } from "@/lib/pdnScoring";
+import { calcSmartProbabilidade, calcRisco, OBJECAO_OPTIONS, PROXIMA_ACAO_OPTIONS, type RiscoNivel, type SmartProbResult } from "@/lib/pdnScoring";
 import { differenceInDays } from "date-fns";
 import {
   Flame, Thermometer, Snowflake, Building2, User, AlertTriangle,
   Calendar, Target, FileText, Clock, CheckCircle, Edit3, GripVertical,
-  Phone, MessageCircle, ArrowRightLeft,
+  Phone, MessageCircle, ArrowRightLeft, TrendingUp, TrendingDown, Minus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,8 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
 
   const computed = useMemo(() => {
     const now = getNow();
-    const prob = calcProbabilidade(entry);
+    const smartProb = calcSmartProbabilidade(entry);
+    const prob = smartProb.total;
     const risco = calcRisco(entry);
     const diasParado = differenceInDays(now, new Date(entry.updated_at));
     const isCaiu = entry.situacao === "caiu";
@@ -82,10 +84,10 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
       : isAssinado ? BORDER_MAP.assinado
       : BORDER_MAP[risco.nivel];
 
-    return { prob, risco, diasParado, isCaiu, isAssinado, isActive, borderColor };
+    return { prob, smartProb, risco, diasParado, isCaiu, isAssinado, isActive, borderColor };
   }, [entry]);
 
-  const { prob, risco, diasParado, isCaiu, isAssinado, isActive, borderColor } = computed;
+  const { prob, smartProb, risco, diasParado, isCaiu, isAssinado, isActive, borderColor } = computed;
   const riscoConf = RISCO_STYLES[risco.nivel];
   const tempKey = (entry.temperatura in TEMP_STYLES ? entry.temperatura : "morno") as keyof typeof TEMP_STYLES;
   const temp = TEMP_STYLES[tempKey];
@@ -195,18 +197,52 @@ const PdnCard = memo(function PdnCard({ entry, readOnly, onUpdate, onDragStart, 
 
         {/* Row 4: Probability bar (active only) */}
         {isActive && (
-          <div className="flex items-center gap-1.5">
-            <Target className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  prob >= 70 ? "bg-emerald-500" : prob >= 40 ? "bg-amber-500" : "bg-red-500"
-                }`}
-                style={{ width: `${prob}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-bold text-muted-foreground w-7 text-right">{prob}%</span>
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="w-full flex items-center gap-1.5 group/prob cursor-pointer hover:opacity-80 transition-opacity">
+                <Target className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+                <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      prob >= 70 ? "bg-emerald-500" : prob >= 40 ? "bg-amber-500" : "bg-red-500"
+                    }`}
+                    style={{ width: `${prob}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-muted-foreground w-10 text-right flex items-center gap-0.5">
+                  {prob}%
+                  {smartProb.trend === "up" && <TrendingUp className="h-2.5 w-2.5 text-emerald-500" />}
+                  {smartProb.trend === "down" && <TrendingDown className="h-2.5 w-2.5 text-red-500" />}
+                  {smartProb.trend === "stable" && <Minus className="h-2.5 w-2.5 text-muted-foreground/40" />}
+                </span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3" side="right" align="start">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-foreground">Por que {prob}%?</p>
+                <div className="space-y-1">
+                  {smartProb.factors.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between text-[11px]">
+                      <span className="flex items-center gap-1.5">
+                        {f.icon === "check" && <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />}
+                        {f.icon === "warning" && <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />}
+                        {f.icon === "info" && <Target className="h-3 w-3 text-primary shrink-0" />}
+                        <span className="text-muted-foreground">{f.label}</span>
+                      </span>
+                      <span className={`font-semibold tabular-nums ${f.value > 0 ? "text-emerald-600" : f.value < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                        {f.value > 0 ? `+${f.value}%` : `${f.value}%`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-border pt-1.5 flex justify-between text-[11px]">
+                  <span className="font-semibold text-foreground">Total</span>
+                  <span className="font-bold text-foreground">{prob}%</span>
+                </div>
+                <p className="text-[9px] text-muted-foreground">Cap por etapa: máx {entry.situacao === "gerado" ? "85" : "50"}%</p>
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
 
         {/* Row 5: Docs status — only if not doc_completa to reduce noise */}
