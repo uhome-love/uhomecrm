@@ -417,6 +417,32 @@ export default function PipelineKanban() {
             )}
           </div>
         )}
+
+        {/* Role-based action panels */}
+        {isKanbanOrIntel && activeTab === "kanban" && isAdmin && (
+          <PipelineCeoIntelligence
+            leads={pipeline.leads}
+            stages={pipeline.stages}
+            corretorNomes={pipeline.corretorNomes}
+            onFilterLeads={(filterFn, label) => {
+              // Apply a custom filter by setting stage filters or search
+              toast.info(`Filtro aplicado: ${label}`);
+              // Use the filter via the existing system
+              const matchingStageIds = pipeline.stages
+                .filter(s => pipeline.leads.some(l => filterFn(l) && l.stage_id === s.id))
+                .map(s => s.id);
+              setFilters(f => ({ ...f, stages: matchingStageIds }));
+            }}
+            onDispatch={() => setDispatchOpen(true)}
+            onReload={() => pipeline.reload()}
+          />
+        )}
+        {isKanbanOrIntel && activeTab === "kanban" && isGestor && !isAdmin && (
+          <PipelineManagerActions
+            leads={pipeline.leads}
+            corretorNomes={pipeline.corretorNomes}
+          />
+        )}
       </div>
 
       {/* Content area — kanban + side panel */}
