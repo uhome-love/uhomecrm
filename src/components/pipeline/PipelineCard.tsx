@@ -1,6 +1,6 @@
 import { memo, useState, useMemo } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, Mail, Clock, MessageCircle, Calendar, AlertCircle, Timer, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft } from "lucide-react";
+import { Phone, Mail, Clock, MessageCircle, Calendar, AlertCircle, Timer, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft, Zap, PhoneCall, MapPin, FileText, Send, CheckCircle } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { differenceInHours, differenceInMinutes, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -427,6 +427,92 @@ const PipelineCard = memo(function PipelineCard({
             >
               <MessageCircle className="h-3 w-3 text-[#22c55e]" /> WhatsApp
             </Button>
+
+            {/* Quick Action dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#dbeafe] text-[#1e40af] hover:bg-[#bfdbfe]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Zap className="h-3 w-3" /> Ação
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[200px]" onClick={(e) => e.stopPropagation()}>
+                <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Registrar ação rápida</div>
+                <DropdownMenuItem
+                  className="text-xs gap-2"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!user) return;
+                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "ligacao", titulo: "Ligação realizada", created_by: user.id });
+                    toast.success("📞 Ligação registrada");
+                  }}
+                >
+                  <PhoneCall className="h-3.5 w-3.5 text-[#22c55e]" /> Ligação realizada
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-xs gap-2"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!user) return;
+                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "whatsapp", titulo: "WhatsApp enviado", created_by: user.id });
+                    toast.success("💬 WhatsApp registrado");
+                  }}
+                >
+                  <Send className="h-3.5 w-3.5 text-[#22c55e]" /> WhatsApp enviado
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-xs gap-2"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!user) return;
+                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "email", titulo: "E-mail enviado", created_by: user.id });
+                    toast.success("✉️ E-mail registrado");
+                  }}
+                >
+                  <Mail className="h-3.5 w-3.5 text-[#3b82f6]" /> E-mail enviado
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-xs gap-2"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!user) return;
+                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "visita", titulo: "Visita realizada", created_by: user.id });
+                    toast.success("🏠 Visita registrada");
+                  }}
+                >
+                  <MapPin className="h-3.5 w-3.5 text-[#f59e0b]" /> Visita realizada
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-xs gap-2"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!user) return;
+                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "proposta", titulo: "Proposta enviada", created_by: user.id });
+                    toast.success("📄 Proposta registrada");
+                  }}
+                >
+                  <FileText className="h-3.5 w-3.5 text-[#8b5cf6]" /> Proposta enviada
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-xs gap-2"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!user) return;
+                    const obs = prompt("Observação:");
+                    if (!obs) return;
+                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "nota", titulo: obs, created_by: user.id });
+                    toast.success("📝 Observação registrada");
+                  }}
+                >
+                  <StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> Adicionar observação
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <DropdownMenu>
