@@ -156,12 +156,17 @@ export default function RoletaStatusBar() {
       .eq("corretor_id", user.id)
       .eq("data", today);
 
+    // Determine current window
+    const hour = new Date().getHours();
+    const janela = hour < 6 ? "madrugada" : hour < 12 ? "manha" : hour < 18 ? "tarde" : "noturna";
+
     // Insert new
     const { error } = await supabase
       .from("roleta_credenciamentos")
       .insert({
         corretor_id: user.id,
         data: today,
+        janela,
         segmento_1_id: selectedIds[0] || null,
         segmento_2_id: selectedIds[1] || null,
         status: "pendente",
