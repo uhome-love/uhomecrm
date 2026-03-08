@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Clock, RefreshCw, CheckCircle2, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown } from "lucide-react";
+import { Loader2, Clock, RefreshCw, CheckCircle2, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown, Rocket, Inbox } from "lucide-react";
 import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 
 // ─── Greeting ───
 function getGreeting() {
@@ -85,6 +86,9 @@ export default function CeoDashboard() {
   const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
   const [advisorLoading, setAdvisorLoading] = useState(false);
   const [advisorContent, setAdvisorContent] = useState("");
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [filaCeoCount, setFilaCeoCount] = useState(0);
+  const [lastDispatch, setLastDispatch] = useState<{ at: string; count: number } | null>(null);
 
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
@@ -95,6 +99,21 @@ export default function CeoDashboard() {
 
   const now = new Date();
   const weekNum = Math.ceil(now.getDate() / 7);
+
+  // Load Fila CEO count + last dispatch
+  const loadFilaCeo = useCallback(async () => {
+    const [countRes, logRes] = await Promise.all([
+      supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).is("corretor_id", null),
+      supabase.from("audit_log").select("created_at, depois").eq("acao", "dispatch_fila_ceo").order("created_at", { ascending: false }).limit(1),
+    ]);
+    setFilaCeoCount(countRes.count || 0);
+    if (logRes.data?.[0]) {
+      const d = logRes.data[0].depois as any;
+      setLastDispatch({ at: logRes.data[0].created_at, count: d?.dispatched || 0 });
+    }
+  }, []);
+
+  useEffect(() => { loadFilaCeo(); }, [loadFilaCeo]);
 
   // Approve credenciamento
   const aprovar = useCallback(async (id: string) => {
@@ -236,6 +255,40 @@ export default function CeoDashboard() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* ─── FILA CEO ─── */}
+      <Card className={filaCeoCount > 0 ? "border-purple-500/40 shadow-[0_0_0_1px_rgba(124,58,237,0.15)]" : ""}>
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <Inbox className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">📥 Fila CEO</span>
+                  {filaCeoCount > 0 && <Badge className="bg-purple-600 text-white border-none text-xs">{filaCeoCount}</Badge>}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {filaCeoCount > 0 ? `${filaCeoCount} leads aguardando distribuição` : "Nenhum lead na fila"}
+                  {lastDispatch && (
+                    <span className="ml-2">• Último disparo: {format(new Date(lastDispatch.at), "dd/MM HH:mm")} ({lastDispatch.count} leads)</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setDispatchOpen(true)}
+              disabled={filaCeoCount === 0}
+              className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Rocket className="h-3.5 w-3.5" />
+              Disparar para Roleta
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -576,6 +629,13 @@ export default function CeoDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Fila CEO Dispatch Modal */}
+      <FilaCeoDispatchModal
+        open={dispatchOpen}
+        onOpenChange={setDispatchOpen}
+        onDispatched={() => { reload(); loadFilaCeo(); }}
+      />
     </div>
   );
 }

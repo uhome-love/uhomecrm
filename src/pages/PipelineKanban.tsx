@@ -20,7 +20,8 @@ import PipelineAdvancedFilters, {
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText, Brain } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText, Brain, Rocket } from "lucide-react";
+import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,6 +43,7 @@ export default function PipelineKanban() {
   const [syncing, setSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
+  const [dispatchOpen, setDispatchOpen] = useState(false);
 
   // Load partnerships
   useEffect(() => {
@@ -279,19 +281,29 @@ export default function PipelineKanban() {
               </span>
             </div>
             {isAdmin && filaCeoCount > 0 && (
-              <button
-                onClick={() => setFilaCeoFilter(f => !f)}
-                className={`flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
-                  filaCeoFilter
-                    ? "bg-purple-100 text-purple-700 border-purple-300"
-                    : "bg-card text-muted-foreground border-border hover:border-purple-300 hover:text-purple-600"
-                }`}
-              >
-                📥 Fila CEO
-                <Badge className="text-[9px] px-1 py-0 h-3.5 bg-purple-600 text-white border-none">
-                  {filaCeoCount}
-                </Badge>
-              </button>
+              <>
+                <button
+                  onClick={() => setFilaCeoFilter(f => !f)}
+                  className={`flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                    filaCeoFilter
+                      ? "bg-purple-100 text-purple-700 border-purple-300"
+                      : "bg-card text-muted-foreground border-border hover:border-purple-300 hover:text-purple-600"
+                  }`}
+                >
+                  📥 Fila CEO
+                  <Badge className="text-[9px] px-1 py-0 h-3.5 bg-purple-600 text-white border-none">
+                    {filaCeoCount}
+                  </Badge>
+                </button>
+                <Button
+                  size="sm"
+                  onClick={() => setDispatchOpen(true)}
+                  className="gap-1.5 h-7 text-[11px] bg-purple-600 hover:bg-purple-700 text-white border-none"
+                >
+                  <Rocket className="h-3.5 w-3.5" />
+                  Disparar Fila CEO
+                </Button>
+              </>
             )}
             {totalVGV > 0 && (
               <span className="text-sm text-muted-foreground font-medium">
@@ -434,6 +446,13 @@ export default function PipelineKanban() {
           onDelete={pipeline.deleteLead}
         />
       )}
+
+      {/* Fila CEO Dispatch Modal */}
+      <FilaCeoDispatchModal
+        open={dispatchOpen}
+        onOpenChange={setDispatchOpen}
+        onDispatched={() => pipeline.reload()}
+      />
     </div>
   );
 }
