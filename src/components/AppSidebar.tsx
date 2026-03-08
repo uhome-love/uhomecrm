@@ -115,7 +115,7 @@ export function AppSidebar() {
   const { alerts, badges } = useSmartAlerts();
   const toastShown = useRef(false);
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ nome: string; avatar_url: string | null }>({ nome: "", avatar_url: null });
+  const [profile, setProfile] = useState<{ nome: string; avatar_url: string | null; avatar_preview_url: string | null }>({ nome: "", avatar_url: null, avatar_preview_url: null });
   const [points, setPoints] = useState(0);
   const [hoverFooter, setHoverFooter] = useState(false);
 
@@ -123,11 +123,11 @@ export function AppSidebar() {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("nome, avatar_url")
+      .select("nome, avatar_url, avatar_preview_url")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) setProfile({ nome: data.nome, avatar_url: data.avatar_url });
+        if (data) setProfile({ nome: data.nome, avatar_url: data.avatar_url, avatar_preview_url: data.avatar_preview_url });
       });
   }, [user]);
 
@@ -234,7 +234,7 @@ export function AppSidebar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button onClick={() => navigate("/configuracoes")} className="shrink-0">
-                    <CorretorAvatar nome={profile.nome || user?.email || "U"} avatarUrl={profile.avatar_url} points={points} size="sm" showBadges={false} />
+                    <CorretorAvatar nome={profile.nome || user?.email || "U"} avatarUrl={profile.avatar_url} avatarPreviewUrl={profile.avatar_preview_url} points={points} size="sm" showBadges={false} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="bg-neutral-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg">
@@ -244,7 +244,7 @@ export function AppSidebar() {
               </Tooltip>
             ) : (
               <>
-                <CorretorAvatar nome={profile.nome || user?.email || "U"} avatarUrl={profile.avatar_url} points={points} size="sm" showBadges={false} />
+                <CorretorAvatar nome={profile.nome || user?.email || "U"} avatarUrl={profile.avatar_url} avatarPreviewUrl={profile.avatar_preview_url} points={points} size="sm" showBadges={false} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{profile.nome || user?.email}</p>
                   <p className="text-xs text-neutral-400 font-medium">Backoffice</p>
@@ -467,6 +467,7 @@ export function AppSidebar() {
                   <CorretorAvatar
                     nome={profile.nome || user?.email || "U"}
                     avatarUrl={profile.avatar_url}
+                    avatarPreviewUrl={profile.avatar_preview_url}
                     points={points}
                     size="sm"
                     showBadges={false}
@@ -483,6 +484,7 @@ export function AppSidebar() {
               <CorretorAvatar
                 nome={profile.nome || user?.email || "U"}
                 avatarUrl={profile.avatar_url}
+                avatarPreviewUrl={profile.avatar_preview_url}
                 points={points}
                 size="sm"
                 showBadges={false}

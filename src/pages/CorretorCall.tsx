@@ -57,6 +57,7 @@ export default function CorretorCall() {
   const { isGestor, isAdmin } = useUserRole();
   const [phase, setPhase] = useState<CallPhase>("warmup");
   const [nome, setNome] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("call");
   const { setOpen, open } = useSidebar();
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -94,8 +95,9 @@ export default function CorretorCall() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("nome").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("nome, avatar_url").eq("user_id", user.id).single().then(({ data }) => {
       if (data?.nome) setNome(data.nome.split(" ")[0]);
+      if (data?.avatar_url) setAvatarUrl(data.avatar_url);
     });
   }, [user]);
 
@@ -219,6 +221,7 @@ export default function CorretorCall() {
           {/* Corretor avatar with level effects */}
           <CorretorAvatar
             nome={nome || "Corretor"}
+            avatarUrl={avatarUrl}
             points={progress.pontos}
             ranking={w.rankingPos}
             streak={streakDays}
