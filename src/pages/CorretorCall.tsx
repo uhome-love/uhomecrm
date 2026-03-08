@@ -601,6 +601,28 @@ export default function CorretorCall() {
           </Tabs>
         </div>
       </div>
+
+      {/* SESSION SUMMARY OVERLAY */}
+      {showSummary && (
+        <ArenaSessionSummary
+          data={{
+            tentativas: progress.tentativas,
+            aproveitados: progress.aproveitados,
+            visitasMarcadas: progress.visitasMarcadas || 0,
+            pontos: progress.pontos,
+            metaLigacoes: progress.metaLigacoes,
+            metaAproveitados: progress.metaAproveitados,
+            metaVisitas: progress.metaVisitas,
+            empreendimento: w.queueLeads > 0 ? "Arena de Ligação" : "Arena de Ligação",
+            streak: streakDays,
+          }}
+          onNewSession={() => {
+            setShowSummary(false);
+            setPhase("warmup");
+          }}
+          onDashboard={() => navigate("/corretor")}
+        />
+      )}
     </div>
   );
 }
