@@ -28,6 +28,7 @@ import {
   Building2,
   Cog,
   GraduationCap,
+  Handshake,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
@@ -186,14 +187,20 @@ export function AppSidebar() {
             ],
           },
           {
-            label: "Leads & Vendas",
+            label: "Gestão de Leads",
             items: [
               { title: "Roleta de Leads", url: "/roleta", icon: Cog },
               { title: "Pipeline de Leads", url: "/pipeline", icon: Kanban },
               { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
-              { title: "Pipeline Negócios", url: "/meus-negocios", icon: Kanban },
               { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
               { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
+            ],
+          },
+          {
+            label: "Gestão de Vendas",
+            items: [
+              { title: "Pipeline Negócios", url: "/meus-negocios", icon: Kanban },
+              { title: "Pós-Venda", url: "/pos-venda", icon: Handshake },
             ],
           },
           {
