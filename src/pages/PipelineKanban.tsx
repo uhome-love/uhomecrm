@@ -20,7 +20,7 @@ import PipelineAdvancedFilters, {
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, CloudDownload, BarChart3, FolderOpen, Zap, Radar, FileText, Brain } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -128,6 +128,9 @@ export default function PipelineKanban() {
     }
   }, [authUser, pipeline]);
 
+  const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
+  const [autoView, setAutoView] = useState<"materiais" | "sequencias">("materiais");
+
   const clearFilters = () => setFilters({ ...EMPTY_FILTERS });
 
   if (pipeline.loading) {
@@ -139,7 +142,7 @@ export default function PipelineKanban() {
     );
   }
 
-  const isKanbanOrFlow = activeTab === "kanban" || activeTab === "flow";
+  const isKanbanOrIntel = activeTab === "kanban" || activeTab === "inteligencia";
 
   return (
     <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
@@ -153,26 +156,16 @@ export default function PipelineKanban() {
                 <LayoutGrid className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Kanban</span>
               </TabsTrigger>
-              <TabsTrigger value="flow" className="text-xs gap-1.5 px-2 sm:px-3">
-                <BarChart3 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Fluxo</span>
+              <TabsTrigger value="inteligencia" className="text-xs gap-1.5 px-2 sm:px-3">
+                <Brain className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Inteligência</span>
               </TabsTrigger>
               {canAdd && (
-                <>
-                  <TabsTrigger value="materiais" className="text-xs gap-1.5 px-2 sm:px-3">
-                    <FolderOpen className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Materiais</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="sequencias" className="text-xs gap-1.5 px-2 sm:px-3">
-                    <Zap className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Sequências</span>
-                  </TabsTrigger>
-                </>
+                <TabsTrigger value="automacoes" className="text-xs gap-1.5 px-2 sm:px-3">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Automações</span>
+                </TabsTrigger>
               )}
-              <TabsTrigger value="radar" className="text-xs gap-1.5 px-2 sm:px-3">
-                <Radar className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Radar</span>
-              </TabsTrigger>
               <TabsTrigger value="relatorios" className="text-xs gap-1.5 px-2 sm:px-3">
                 <FileText className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Relatórios</span>
@@ -180,8 +173,25 @@ export default function PipelineKanban() {
             </TabsList>
           </Tabs>
 
-          {isKanbanOrFlow && (
+          {isKanbanOrIntel && (
             <>
+              {activeTab === "inteligencia" && (
+                <div className="flex items-center bg-muted rounded-md p-0.5 shrink-0">
+                  <button
+                    onClick={() => setIntelView("funil")}
+                    className={`text-xs px-2.5 py-1 rounded transition-colors ${intelView === "funil" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <BarChart3 className="h-3 w-3 inline mr-1" />Funil
+                  </button>
+                  <button
+                    onClick={() => setIntelView("radar")}
+                    className={`text-xs px-2.5 py-1 rounded transition-colors ${intelView === "radar" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Radar className="h-3 w-3 inline mr-1" />Radar
+                  </button>
+                </div>
+              )}
+
               <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -207,6 +217,23 @@ export default function PipelineKanban() {
                 isManager={isGestor || isAdmin}
               />
             </>
+          )}
+
+          {activeTab === "automacoes" && (
+            <div className="flex items-center bg-muted rounded-md p-0.5 shrink-0">
+              <button
+                onClick={() => setAutoView("materiais")}
+                className={`text-xs px-2.5 py-1 rounded transition-colors ${autoView === "materiais" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <FolderOpen className="h-3 w-3 inline mr-1" />Materiais
+              </button>
+              <button
+                onClick={() => setAutoView("sequencias")}
+                className={`text-xs px-2.5 py-1 rounded transition-colors ${autoView === "sequencias" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Zap className="h-3 w-3 inline mr-1" />Sequências
+              </button>
+            </div>
           )}
 
           <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleRefresh} disabled={refreshing}>
@@ -240,7 +267,7 @@ export default function PipelineKanban() {
         </div>
 
         {/* Active filter chips + summary */}
-        {isKanbanOrFlow && (
+        {isKanbanOrIntel && (
           <div className="flex items-center gap-2 flex-wrap px-1">
             <div className="flex items-center gap-1.5">
               <LayoutGrid className="h-3.5 w-3.5 text-primary" />
@@ -330,28 +357,32 @@ export default function PipelineKanban() {
               onSelectLead={setSelectedLead}
               onTransferred={() => pipeline.reload()}
             />
-          ) : activeTab === "flow" ? (
-            <PipelineFlowDashboard
-              stages={pipeline.stages}
-              leads={filteredLeads}
-              corretorNomes={pipeline.corretorNomes}
-            />
-          ) : activeTab === "materiais" ? (
-            <div className="h-full overflow-auto p-1">
-              <MaterialsLibrary />
-            </div>
-          ) : activeTab === "sequencias" ? (
-            <div className="h-full overflow-auto p-1 space-y-6">
-              <SequenceLibrary onSequenceCreated={() => pipeline.reload()} />
-              <SequenceBuilder />
-            </div>
-          ) : activeTab === "radar" ? (
-            <OpportunityRadar
-              leads={pipeline.leads}
-              stages={pipeline.stages}
-              corretorNomes={pipeline.corretorNomes}
-              onSelectLead={setSelectedLead}
-            />
+          ) : activeTab === "inteligencia" ? (
+            intelView === "funil" ? (
+              <PipelineFlowDashboard
+                stages={pipeline.stages}
+                leads={filteredLeads}
+                corretorNomes={pipeline.corretorNomes}
+              />
+            ) : (
+              <OpportunityRadar
+                leads={pipeline.leads}
+                stages={pipeline.stages}
+                corretorNomes={pipeline.corretorNomes}
+                onSelectLead={setSelectedLead}
+              />
+            )
+          ) : activeTab === "automacoes" ? (
+            autoView === "materiais" ? (
+              <div className="h-full overflow-auto p-1">
+                <MaterialsLibrary />
+              </div>
+            ) : (
+              <div className="h-full overflow-auto p-1 space-y-6">
+                <SequenceLibrary onSequenceCreated={() => pipeline.reload()} />
+                <SequenceBuilder />
+              </div>
+            )
           ) : activeTab === "relatorios" ? (
             <PipelineReportsDashboard
               stages={pipeline.stages}
