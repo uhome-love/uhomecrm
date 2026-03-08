@@ -117,23 +117,23 @@ function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaSt
         <>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <p style={{ fontSize: 28, fontWeight: 900, color: "#60A5FA" }}>{stats.naFila}</p>
-              <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>na fila</p>
+              <p style={{ fontSize: 32, fontWeight: 900, color: "#60A5FA" }}>{stats.naFila}</p>
+              <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>na fila</p>
             </div>
             <div>
-              <p style={{ fontSize: 28, fontWeight: 900, color: "#4ADE80" }}>{stats.aproveitados}</p>
-              <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>aproveitados</p>
+              <p style={{ fontSize: 32, fontWeight: 900, color: "#4ADE80" }}>{stats.aproveitados}</p>
+              <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>aproveitados</p>
             </div>
             <div>
-              <p style={{ fontSize: 28, fontWeight: 900, color: "white" }}>{stats.total}</p>
-              <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>total</p>
+              <p style={{ fontSize: 32, fontWeight: 900, color: "white" }}>{stats.total}</p>
+              <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>total</p>
             </div>
           </div>
 
           <div>
-            <div className="flex justify-between mb-1" style={{ fontSize: 10, color: "#6B7280" }}>
+            <div className="flex justify-between mb-1" style={{ fontSize: 12, color: "#6B7280" }}>
               <span>Progresso da lista</span>
-              <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#4ADE80" }}>{stats.pct}%</span>
+              <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 13, color: "#4ADE80" }}>{stats.pct}%</span>
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
               <div
@@ -148,7 +148,7 @@ function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaSt
           </div>
 
           {stats.meusTentativas > 0 && (
-            <div className="flex items-center gap-1.5" style={{ fontSize: 12, color: "#FBBF24" }}>
+            <div className="flex items-center gap-1.5" style={{ fontSize: 13, color: "#FBBF24" }}>
               <span>⚡</span>
               <span>Você fez <strong>{stats.meusTentativas}</strong> tentativas hoje nesta lista</span>
             </div>
@@ -161,16 +161,16 @@ function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaSt
       )}
 
       <button
-        className={`w-full h-9 rounded-lg text-sm font-semibold transition-colors ${
+        className={`w-full h-10 rounded-lg font-bold transition-colors ${
           hasLeads
             ? "arena-btn-call"
             : "text-neutral-500 cursor-not-allowed"
         }`}
-        style={hasLeads ? undefined : { background: "rgba(255,255,255,0.05)" }}
+        style={hasLeads ? { fontSize: 16 } : { background: "rgba(255,255,255,0.05)", fontSize: 16 }}
         disabled={!hasLeads}
       >
         <span className="flex items-center justify-center gap-1.5">
-          <Phone className="h-3.5 w-3.5" /> {hasLeads ? "Iniciar o Call" : "Lista Esgotada"}
+          <Phone className="h-4 w-4" /> {hasLeads ? "Iniciar o Call" : "Lista Esgotada"}
         </span>
       </button>
     </div>
@@ -301,8 +301,8 @@ export default function CorretorListSelection() {
           <Sparkles className="h-5 w-5 text-indigo-400 arena-sparkle-pulse" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white">Criar lista personalizada</p>
-          <p className="text-xs text-neutral-400">Filtre seus leads e trabalhe do seu jeito</p>
+          <p style={{ fontSize: 17 }} className="font-semibold text-white">Criar lista personalizada</p>
+          <p style={{ fontSize: 13 }} className="text-neutral-400">Filtre seus leads e trabalhe do seu jeito</p>
         </div>
         <ArrowLeft className="h-4 w-4 text-blue-400 rotate-180 group-hover:translate-x-1 transition-transform" />
       </button>
@@ -336,7 +336,7 @@ export default function CorretorListSelection() {
       ) : (
         <>
           <div className="flex items-center justify-between gap-3">
-            <h3 style={{ fontSize: 13, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.1em" }} className="flex items-center gap-2 font-semibold">
+            <h3 style={{ fontSize: 14, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.1em" }} className="flex items-center gap-2 font-semibold">
               <Users className="h-4 w-4 text-neutral-500" /> Listas liberadas ({liberadas.length})
             </h3>
           </div>
