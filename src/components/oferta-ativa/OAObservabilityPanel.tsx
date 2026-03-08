@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, AlertTriangle, Clock, TrendingUp, Users } from "lucide-react";
+import { Activity, AlertTriangle, Clock, TrendingUp, Users, AlertCircle, ShieldAlert } from "lucide-react";
 
 export default function OAObservabilityPanel() {
   const [period, setPeriod] = useState<"hoje" | "semana">("hoje");
@@ -38,7 +37,7 @@ export default function OAObservabilityPanel() {
   const expired = events.filter(e => e.event_type === "lock_expired").length;
   const skipped = events.filter(e => e.event_type === "lead_skipped").length;
 
-  // Repetition: count how many times same lead was served to same user
+  // Repetition
   const servedPairs = events
     .filter(e => e.event_type === "lead_served")
     .map(e => `${e.user_id}_${(e as any).lead_id}`);
@@ -57,8 +56,12 @@ export default function OAObservabilityPanel() {
       return acc;
     }, {} as Record<string, number>);
 
-  // Unique corretores
   const uniqueCorretores = new Set(events.filter(e => e.event_type === "lead_served").map(e => e.user_id)).size;
+
+  // Critical thresholds
+  const isRepeatCritical = repeatRate > 70;
+  const isRepeatWarning = repeatRate > 15;
+  const isLocksCritical = expired > 5;
 
   return (
     <div className="space-y-4">
@@ -85,6 +88,53 @@ export default function OAObservabilityPanel() {
         </div>
       </div>
 
+      {/* Critical Alerts */}
+      {(isRepeatCritical || isLocksCritical) && (
+        <div className="space-y-3">
+          {isRepeatCritical && (
+            <Card className="border-red-500/40 bg-red-500/10 shadow-lg shadow-red-500/5">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center h-10 w-10 rounded-full bg-red-500/20 shrink-0 mt-0.5">
+                    <ShieldAlert className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-red-400 flex items-center gap-2">
+                      🔴 Taxa de Repetição Crítica — {repeatRate}%
+                    </h3>
+                    <p className="text-xs text-red-300/80 mt-1 leading-relaxed">
+                      Taxa de repetição alta indica que os mesmos leads estão sendo chamados várias vezes sem evolução. 
+                      Revisar a lista de leads e considerar importar novos contatos ou ajustar filtros de cooldown.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {isLocksCritical && (
+            <Card className="border-red-500/40 bg-red-500/10 shadow-lg shadow-red-500/5">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center h-10 w-10 rounded-full bg-red-500/20 shrink-0 mt-0.5">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-red-400 flex items-center gap-2">
+                      🔴 {expired} Locks Expirados
+                    </h3>
+                    <p className="text-xs text-red-300/80 mt-1 leading-relaxed">
+                      Corretores saíram da tela de chamada sem finalizar o atendimento. Leads ficaram travados até o lock expirar. 
+                      Verificar na aba Live quais corretores estão com comportamento irregular.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         <Card>
@@ -105,15 +155,15 @@ export default function OAObservabilityPanel() {
             <p className="text-[10px] text-muted-foreground">Taxa Conclusão</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isRepeatCritical ? "border-red-500/30" : isRepeatWarning ? "border-amber-500/30" : ""}>
           <CardContent className="p-3 text-center">
-            <p className={`text-2xl font-bold ${repeatRate > 10 ? "text-red-500" : "text-emerald-600"}`}>{repeatRate}%</p>
+            <p className={`text-2xl font-bold ${isRepeatCritical ? "text-red-500" : isRepeatWarning ? "text-amber-500" : "text-emerald-600"}`}>{repeatRate}%</p>
             <p className="text-[10px] text-muted-foreground">Repetição</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={isLocksCritical ? "border-red-500/30" : ""}>
           <CardContent className="p-3 text-center">
-            <p className={`text-2xl font-bold ${expired > 5 ? "text-amber-500" : "text-foreground"}`}>{expired}</p>
+            <p className={`text-2xl font-bold ${isLocksCritical ? "text-red-500" : expired > 0 ? "text-amber-500" : "text-foreground"}`}>{expired}</p>
             <p className="text-[10px] text-muted-foreground">Locks Expirados</p>
           </CardContent>
         </Card>
@@ -147,16 +197,16 @@ export default function OAObservabilityPanel() {
         </CardContent>
       </Card>
 
-      {/* Warnings */}
-      {(expired > 5 || repeatRate > 15 || skipped > 50) && (
+      {/* Non-critical warnings */}
+      {(!isRepeatCritical && !isLocksCritical) && (expired > 0 || isRepeatWarning || skipped > 50) && (
         <Card className="border-amber-500/30 bg-amber-500/5">
           <CardContent className="p-4">
             <h3 className="text-sm font-bold text-amber-700 flex items-center gap-2 mb-2">
               <AlertTriangle className="h-4 w-4" /> Alertas
             </h3>
             <div className="space-y-1 text-xs text-amber-800">
-              {expired > 5 && <p>⚠️ {expired} locks expiraram — corretores podem estar travando/saindo sem finalizar.</p>}
-              {repeatRate > 15 && <p>⚠️ Taxa de repetição em {repeatRate}% — verificar distribuição de leads.</p>}
+              {expired > 0 && !isLocksCritical && <p>⚠️ {expired} locks expiraram — corretores podem estar travando/saindo sem finalizar.</p>}
+              {isRepeatWarning && <p>⚠️ Taxa de repetição em {repeatRate}% — verificar distribuição de leads.</p>}
               {skipped > 50 && <p>⚠️ {skipped} leads pulados — verificar se corretores estão selecionando demais.</p>}
             </div>
           </CardContent>
