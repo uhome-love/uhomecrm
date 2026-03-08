@@ -116,6 +116,7 @@ const App = () => (
 
             {/* Corretor — todos autenticados */}
             <Route path="/corretor" element={<ProtectedPage><CorretorDashboard /></ProtectedPage>} />
+            <Route path="/corretor/call" element={<ProtectedPage><CorretorCall /></ProtectedPage>} />
             <Route path="/agenda-visitas" element={<ProtectedPage><AgendaVisitas /></ProtectedPage>} />
             <Route path="/corretor/resumo" element={<ProtectedPage><CorretorResumo /></ProtectedPage>} />
             <Route path="/corretor/ranking-equipes" element={<ProtectedPage><RankingEquipe /></ProtectedPage>} />
