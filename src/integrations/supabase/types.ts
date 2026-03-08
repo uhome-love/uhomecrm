@@ -3950,6 +3950,8 @@ export type Database = {
           id: string
           jetimob_user_id: string | null
           nome: string
+          status_online: string | null
+          status_updated_at: string | null
           telefone: string | null
           updated_at: string
           user_id: string
@@ -3967,6 +3969,8 @@ export type Database = {
           id?: string
           jetimob_user_id?: string | null
           nome?: string
+          status_online?: string | null
+          status_updated_at?: string | null
           telefone?: string | null
           updated_at?: string
           user_id: string
@@ -3984,6 +3988,8 @@ export type Database = {
           id?: string
           jetimob_user_id?: string | null
           nome?: string
+          status_online?: string | null
+          status_updated_at?: string | null
           telefone?: string | null
           updated_at?: string
           user_id?: string
