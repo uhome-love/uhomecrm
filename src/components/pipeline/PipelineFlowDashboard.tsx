@@ -32,6 +32,7 @@ interface StageMetric {
   slaBreaches: number;
   slaWarnings: number;
   avgScore: number;
+  semCorretor: number;
 }
 
 interface CorretorMetric {
@@ -105,6 +106,9 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
     loadHistory();
   }, [stages]);
 
+  // Count leads without corretor
+  const semCorretorCount = useMemo(() => leads.filter(l => !l.corretor_id).length, [leads]);
+
   // Stage metrics
   const stageMetrics: StageMetric[] = useMemo(() => {
     return stages.map(stage => {
@@ -118,13 +122,20 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
       let slaBreaches = 0;
       let slaWarnings = 0;
       let totalScore = 0;
+      let semCorretor = 0;
 
       for (const lead of stageLeads) {
+        if (!lead.corretor_id) {
+          semCorretor++;
+          continue; // Don't count unassigned leads as SLA breaches
+        }
         const sla = getSlaStatus(stage.tipo, lead.stage_changed_at);
         if (sla.status === "breach") slaBreaches++;
         else if (sla.status === "warning") slaWarnings++;
         totalScore += calculateLeadScore(lead as any).score;
       }
+
+      const assignedCount = stageLeads.length - semCorretor;
 
       return {
         stage,
@@ -133,7 +144,8 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
         avgHours,
         slaBreaches,
         slaWarnings,
-        avgScore: stageLeads.length > 0 ? Math.round(totalScore / stageLeads.length) : 0,
+        avgScore: assignedCount > 0 ? Math.round(totalScore / assignedCount) : 0,
+        semCorretor,
       };
     });
   }, [stages, leads]);
@@ -231,16 +243,16 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
               <Card className="border-border/50">
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                    <span className="text-xs text-muted-foreground">Prazos Estourados</span>
+                    <Users className="h-4 w-4 text-purple-600" />
+                    <span className="text-xs text-muted-foreground">Sem Corretor</span>
                   </div>
-                  <p className="text-2xl font-bold text-destructive">
-                    {stageMetrics.reduce((s, m) => s + m.slaBreaches, 0)}
+                  <p className="text-2xl font-bold text-purple-600">
+                    {semCorretorCount}
                   </p>
                 </CardContent>
               </Card>
             </TooltipTrigger>
-            <TooltipContent>Leads que ultrapassaram o SLA da etapa atual</TooltipContent>
+            <TooltipContent>Leads aguardando atribuição</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -317,6 +329,11 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                           <Clock className="h-2.5 w-2.5" />
                           {formatTime(metric.avgHours)} média
                         </span>
+                        {metric.semCorretor > 0 && (
+                          <span className="text-[10px] text-purple-600 font-semibold flex items-center gap-0.5 bg-purple-50 dark:bg-purple-950/30 rounded px-1 py-0.5">
+                            👤 {metric.semCorretor} sem corretor
+                          </span>
+                        )}
                         {metric.slaBreaches > 0 && (
                           <span className="text-[10px] text-red-600 font-semibold flex items-center gap-0.5">
                             <AlertTriangle className="h-2.5 w-2.5" />
@@ -336,15 +353,19 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                         </span>
                       )}
 
-                      <Badge
-                        className={`text-[9px] mt-1 ${
-                          metric.avgScore >= 70 ? "bg-emerald-500/15 text-emerald-600" :
-                          metric.avgScore >= 50 ? "bg-blue-500/15 text-blue-600" :
-                          "bg-amber-500/15 text-amber-600"
-                        }`}
-                      >
-                        Score {metric.avgScore}
-                      </Badge>
+                      {metric.count > 0 ? (
+                        <Badge
+                          className={`text-[9px] mt-1 ${
+                            metric.avgScore >= 70 ? "bg-emerald-500/15 text-emerald-600" :
+                            metric.avgScore >= 50 ? "bg-blue-500/15 text-blue-600" :
+                            "bg-amber-500/15 text-amber-600"
+                          }`}
+                        >
+                          Score {metric.avgScore}
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] text-gray-300 mt-1">Sem leads nesta etapa</span>
+                      )}
                     </div>
 
                     {/* Conversion arrow between stages */}
@@ -395,19 +416,25 @@ export default function PipelineFlowDashboard({ stages, leads, corretorNomes }: 
                 const fromIdx = stages.findIndex(s => s.id === t.from);
                 const toIdx = stages.findIndex(s => s.id === t.to);
                 const isRegressive = fromIdx !== -1 && toIdx !== -1 && toIdx < fromIdx;
-                return (
-                  <div key={i} className={`flex items-center gap-3 text-sm ${isRegressive ? "bg-destructive/5 rounded-md px-2 py-1" : ""}`}>
-                    <span className="text-xs font-medium text-foreground min-w-[100px] truncate">{t.fromName}</span>
-                    {isRegressive ? (
-                      <span className="flex items-center gap-0.5 shrink-0">
-                        <AlertTriangle className="h-3 w-3 text-destructive" />
-                        <ArrowLeft className="h-3 w-3 text-destructive" />
-                      </span>
-                    ) : (
-                      <ArrowRight className="h-3 w-3 text-emerald-600 shrink-0" />
-                    )}
-                    <span className={`text-xs font-medium min-w-[100px] truncate ${isRegressive ? "text-destructive" : "text-foreground"}`}>{t.toName}</span>
-                    <Badge variant="secondary" className="text-[10px] ml-auto">{t.count}x</Badge>
+                  return (
+                    <div key={i} className={`flex items-center gap-3 text-sm ${isRegressive ? "bg-red-50 dark:bg-red-950/20 rounded-md px-2 py-1.5" : ""}`}>
+                      {isRegressive ? (
+                        <>
+                          <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                          <span className="text-xs font-semibold text-red-500">Regressão:</span>
+                          <span className="text-xs font-medium text-red-500 truncate">{t.fromName}</span>
+                          <ArrowRight className="h-3 w-3 text-red-500 shrink-0" />
+                          <span className="text-xs font-medium text-red-500 truncate">{t.toName}</span>
+                          <Badge variant="secondary" className="text-[10px] ml-auto bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400">{t.count}x</Badge>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-xs font-medium text-foreground min-w-[100px] truncate">{t.fromName}</span>
+                          <ArrowRight className="h-3 w-3 text-emerald-600 shrink-0" />
+                          <span className="text-xs font-medium text-foreground min-w-[100px] truncate">{t.toName}</span>
+                          <Badge variant="secondary" className="text-[10px] ml-auto">{t.count}x</Badge>
+                        </>
+                      )}
                   </div>
                 );
               })}
