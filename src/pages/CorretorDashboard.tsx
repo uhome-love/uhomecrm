@@ -596,7 +596,7 @@ export default function CorretorDashboard() {
       </div>
 
       {/* RODAPÉ — full width, atalhos */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-4 shrink-0">
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-4 shrink-0 relative z-10">
         <div className="grid grid-cols-4 gap-2">
           {[
             { label: "Agenda", icon: CalendarDays, path: "/agenda-visitas", color: "text-primary" },

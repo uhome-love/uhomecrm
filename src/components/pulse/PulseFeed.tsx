@@ -26,7 +26,7 @@ export default function PulseFeed() {
   };
 
   return (
-    <Card className="border-border/60 h-full">
+    <Card className="border-border/60 overflow-hidden relative z-10">
       <CardContent className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
