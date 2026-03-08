@@ -440,19 +440,6 @@ export default function CorretorCall() {
   }
 
   // ── ARENA DE LIGAÇÃO ──
-  const visitPct = Math.min(100, Math.round(((progress.visitasMarcadas || 0) / Math.max(1, progress.metaVisitas)) * 100));
-
-  // Arena particles
-  const arenaParticles = useMemo(() =>
-    Array.from({ length: 10 }, (_, i) => ({
-      left: `${5 + Math.random() * 90}%`,
-      top: `${10 + Math.random() * 70}%`,
-      duration: `${3 + Math.random() * 4}s`,
-      delay: `${Math.random() * 3}s`,
-      size: `${2 + Math.random() * 2}px`,
-      opacity: 0.2 + Math.random() * 0.4,
-    })), []
-  );
 
   return (
     <div className="arena-bg flex flex-col h-[calc(100vh-56px)] max-w-full overflow-hidden">
