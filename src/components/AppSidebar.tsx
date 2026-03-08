@@ -386,7 +386,7 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center gap-2.5 animate-slide-in-left">
-                <img src="/images/homi-48.png" alt="Homi AI" className="h-8 w-8 object-contain shrink-0" />
+                <img src="/images/uhome-logo-36.png" alt="UhomeSales" className="h-9 w-9 rounded-lg object-contain shrink-0" />
                 <div className="flex flex-col">
                   <span className="text-sm font-bold tracking-tight leading-tight">
                     <span style={{ color: "#FFFFFF", fontWeight: 700 }}>Uhome</span><span style={{ color: "#3B82F6", fontWeight: 700 }}>Sales</span>
