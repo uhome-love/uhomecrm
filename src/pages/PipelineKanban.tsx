@@ -129,7 +129,7 @@ export default function PipelineKanban() {
   }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter]);
 
   const filaCeoCount = useMemo(() =>
-    pipeline.leads.filter(l => !l.corretor_id).length,
+    pipeline.leads.filter(l => !l.corretor_id || l.corretor_id === "").length,
     [pipeline.leads]
   );
 
