@@ -2414,7 +2414,7 @@ export type Database = {
           gerente_id: string | null
           id: string
           lead_id: string | null
-          nome_cliente: string
+          nome_cliente: string | null
           observacoes: string | null
           origem: string | null
           pipeline_lead_id: string | null
@@ -2434,7 +2434,7 @@ export type Database = {
           gerente_id?: string | null
           id?: string
           lead_id?: string | null
-          nome_cliente: string
+          nome_cliente?: string | null
           observacoes?: string | null
           origem?: string | null
           pipeline_lead_id?: string | null
@@ -2454,7 +2454,7 @@ export type Database = {
           gerente_id?: string | null
           id?: string
           lead_id?: string | null
-          nome_cliente?: string
+          nome_cliente?: string | null
           observacoes?: string | null
           origem?: string | null
           pipeline_lead_id?: string | null
