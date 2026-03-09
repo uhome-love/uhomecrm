@@ -165,7 +165,7 @@ function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaSt
   );
 }
 
-function SavedListCard({ list, onReuse, onDelete }: { list: CustomList; onReuse: () => void; onDelete: () => void }) {
+function SavedListCard({ list, onStart, onDelete }: { list: CustomList; onStart: () => void; onDelete: () => void }) {
   return (
     <div
       className="rounded-xl p-4 flex items-center justify-between gap-3 transition-all duration-150"
@@ -193,18 +193,18 @@ function SavedListCard({ list, onReuse, onDelete }: { list: CustomList; onReuse:
           {list.vezes_usada > 0 && ` · ${list.vezes_usada}x`}
         </p>
       </div>
-      <div className="flex gap-1 shrink-0">
+      <div className="flex gap-1.5 shrink-0">
         <button
-          onClick={onReuse}
-          title="Reusar"
-          className="h-7 w-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+          onClick={onStart}
+          className="h-8 px-3 rounded-lg flex items-center justify-center gap-1.5 text-xs font-bold text-white transition-colors"
+          style={{ background: "linear-gradient(135deg, #16A34A, #15803D)" }}
         >
-          <RotateCcw className="h-3.5 w-3.5" />
+          <Phone className="h-3.5 w-3.5" /> Iniciar
         </button>
         <button
           onClick={onDelete}
           title="Excluir"
-          className="h-7 w-7 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+          className="h-8 w-8 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
