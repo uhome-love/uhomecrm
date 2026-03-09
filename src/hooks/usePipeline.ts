@@ -251,25 +251,36 @@ export function usePipeline(pipelineTipo: string = "leads") {
         : l
     ));
 
-    const { data: updatedRow, error } = await supabase
-      .from("pipeline_leads")
-      .update({
-        stage_id: newStageId,
-        stage_changed_at: new Date().toISOString(),
-        motivo_descarte: observacao && stages.find(s => s.id === newStageId)?.tipo === "descarte" ? observacao : undefined,
-      })
-      .eq("id", leadId)
-      .select("negocio_id")
-      .single();
+    // STEP 1: Change stage — this MUST always succeed independently
+    const updatePayload: Record<string, any> = {
+      stage_id: newStageId,
+      stage_changed_at: new Date().toISOString(),
+    };
+    if (observacao && stages.find(s => s.id === newStageId)?.tipo === "descarte") {
+      updatePayload.motivo_descarte = observacao;
+    }
 
-    if (error) {
-      console.error("Error moving lead:", error);
-      toast.error("Erro ao mover lead");
+    const { error: stageError } = await supabase
+      .from("pipeline_leads")
+      .update(updatePayload)
+      .eq("id", leadId);
+
+    if (stageError) {
+      console.error("Error moving lead (stage update):", stageError, { leadId, newStageId, userId: user.id });
+      toast.error("Erro ao mover lead: " + (stageError.message || stageError.code));
       setLeads(prev => prev.map(l =>
         l.id === leadId ? { ...l, stage_id: oldStageId } : l
       ));
       return;
     }
+
+    // Read current negocio_id for later use (non-blocking)
+    const { data: currentLead } = await supabase
+      .from("pipeline_leads")
+      .select("negocio_id")
+      .eq("id", leadId)
+      .maybeSingle();
+    const updatedRow = currentLead;
 
     // Insert history record
     await supabase.from("pipeline_historico").insert({

@@ -144,21 +144,29 @@ export function useVisitas(filters?: {
   const createVisita = useCallback(async (visita: Partial<Visita>) => {
     if (!user) return null;
 
+    // Always ensure corretor_id is the current user for corretores (RLS requirement)
+    const corretorId = visita.corretor_id || user.id;
+
     // Resolve gerente_id from team_members
     let gerenteId = visita.gerente_id;
     if (!gerenteId) {
-      const { data: tm } = await supabase
-        .from("team_members")
-        .select("gerente_id")
-        .eq("user_id", visita.corretor_id || user.id)
-        .eq("status", "ativo")
-        .limit(1)
-        .maybeSingle();
-      gerenteId = tm?.gerente_id || user.id;
+      try {
+        const { data: tm } = await supabase
+          .from("team_members")
+          .select("gerente_id")
+          .eq("user_id", corretorId)
+          .eq("status", "ativo")
+          .limit(1)
+          .maybeSingle();
+        gerenteId = tm?.gerente_id || user.id;
+      } catch (e) {
+        console.warn("[createVisita] Failed to resolve gerente_id, using self:", e);
+        gerenteId = user.id;
+      }
     }
 
     const payload = {
-      corretor_id: visita.corretor_id || user.id,
+      corretor_id: corretorId,
       gerente_id: gerenteId,
       lead_id: visita.lead_id || null,
       pipeline_lead_id: visita.pipeline_lead_id || null,
@@ -185,7 +193,7 @@ export function useVisitas(filters?: {
       .single();
 
     if (error) {
-      console.error("Erro ao criar visita:", error);
+      console.error("[createVisita] Erro:", error, "Payload:", payload);
       toast.error("Erro ao criar visita: " + (error.message || error.code || "Erro desconhecido"));
       return null;
     }
