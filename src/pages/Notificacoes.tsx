@@ -36,7 +36,10 @@ export default function Notificacoes() {
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
   const filtered = notifications.filter((n) => {
-    if (activeFilter !== "todas" && n.tipo !== activeFilter) return false;
+    if (activeFilter !== "todas") {
+      const tipos = CATEGORY_MAP[activeFilter];
+      if (tipos && !tipos.includes(n.tipo)) return false;
+    }
     if (showUnreadOnly && n.lida) return false;
     return true;
   });
