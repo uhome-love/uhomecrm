@@ -177,15 +177,21 @@ export function useCorretorDailyGoals() {
       status: "ativo",
     };
 
+    let error;
     if (goals) {
-      await supabase
+      ({ error } = await supabase
         .from("corretor_daily_goals")
         .update(payload)
-        .eq("id", goals.id);
+        .eq("id", goals.id));
     } else {
-      await supabase
+      // Try upsert to handle race conditions (duplicate key)
+      ({ error } = await supabase
         .from("corretor_daily_goals")
-        .insert(payload);
+        .upsert(payload, { onConflict: "corretor_id,data" }));
+    }
+    if (error) {
+      console.error("Erro ao salvar metas:", error);
+      throw error;
     }
     refetch();
   };
