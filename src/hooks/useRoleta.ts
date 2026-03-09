@@ -244,29 +244,60 @@ export function useRoleta() {
     })));
   }, [hoje]);
 
-  // Load fila for today
+  // Load fila for today — enriched with REAL lead counts from pipeline_leads
   const loadFila = useCallback(async () => {
     const { data: filaData } = await supabase
       .from("roleta_fila")
       .select("*")
       .eq("data", hoje)
-      .eq("ativo", true)
-      .order("posicao");
+      .eq("ativo", true);
 
     if (!filaData?.length) { setFila([]); return; }
 
-    const userIds = [...new Set(filaData.map(f => f.corretor_id).filter(Boolean))] as string[];
+    const profileIds = [...new Set(filaData.map(f => f.corretor_id).filter(Boolean))] as string[];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, nome, avatar_url")
-      .in("id", userIds);
+      .select("id, nome, avatar_url, user_id")
+      .in("id", profileIds);
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-    setFila(filaData.map(f => ({
+    // Get auth user IDs to count real leads from pipeline_leads
+    const authUserIds = (profiles || []).map(p => p.user_id).filter(Boolean) as string[];
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    // Count leads received TODAY per auth user (only aceito + pendente = actually assigned)
+    const { data: todayLeads } = authUserIds.length > 0
+      ? await supabase
+          .from("pipeline_leads")
+          .select("corretor_id")
+          .in("corretor_id", authUserIds)
+          .gte("distribuido_em", todayStart.toISOString())
+          .in("aceite_status", ["aceito", "pendente"])
+      : { data: [] };
+
+    // Build count map: auth_user_id → count
+    const authLeadCount = new Map<string, number>();
+    for (const l of todayLeads || []) {
+      authLeadCount.set(l.corretor_id, (authLeadCount.get(l.corretor_id) || 0) + 1);
+    }
+    // Map profile_id → real lead count
+    const profileLeadCount = new Map<string, number>();
+    for (const p of profiles || []) {
+      profileLeadCount.set(p.id, p.user_id ? (authLeadCount.get(p.user_id) || 0) : 0);
+    }
+
+    const enriched = filaData.map(f => ({
       ...f,
+      leads_recebidos: f.corretor_id ? profileLeadCount.get(f.corretor_id) ?? (f.leads_recebidos || 0) : 0,
       corretor_nome: f.corretor_id ? profileMap.get(f.corretor_id)?.nome || "Corretor" : "Corretor",
       corretor_avatar: f.corretor_id ? profileMap.get(f.corretor_id)?.avatar_url || null : null,
-    })));
+    }));
+
+    // Sort by leads_recebidos ascending (fewer leads = higher priority = top of list)
+    enriched.sort((a, b) => (a.leads_recebidos || 0) - (b.leads_recebidos || 0));
+
+    setFila(enriched);
   }, [hoje]);
 
   // Load recent distributions

@@ -152,8 +152,9 @@ function CeoView() {
               <Target className="h-5 w-5" /> Roleta Ativa por Segmento
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {segmentos.map(seg => {
-                const segFila = fila.filter(f => f.segmento_id === seg.id).sort((a, b) => a.posicao - b.posicao);
+            {segmentos.map(seg => {
+                // Already sorted by leads_recebidos ascending from the hook
+                const segFila = fila.filter(f => f.segmento_id === seg.id);
                 return (
                   <Card key={seg.id}>
                     <CardHeader className="pb-2">
@@ -180,7 +181,7 @@ function CeoView() {
                             >
                               <div className="flex items-center gap-2">
                                 <span className={`font-bold text-xs w-5 text-center ${idx === 0 ? "text-[hsl(var(--primary))]" : "text-muted-foreground"}`}>
-                                  {f.posicao}
+                                  {idx + 1}
                                 </span>
                                 <Avatar className="h-6 w-6">
                                   <AvatarFallback className="text-[10px]">
