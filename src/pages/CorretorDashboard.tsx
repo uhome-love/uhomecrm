@@ -80,14 +80,90 @@ export default function CorretorDashboard() {
         .select("corretor_id")
         .gte("created_at", today + "T00:00:00");
 
-      // Priority leads: SLA expired or high value, limit 3
-      const { data: priorityLeads } = await (supabase
+      // Priority leads with proper filtering and scoring
+      const { data: allLeads } = await (supabase
         .from("pipeline_leads")
-        .select("id, nome, empreendimento, stage_changed_at, telefone, oportunidade_score, valor_estimado")
+        .select("id, nome, empreendimento, stage_changed_at, telefone, oportunidade_score, valor_estimado, interesse, pipeline_fase, dias_parado, prioridade, temperatura, updated_at, stage_id, pipeline_stages!inner(nome, tipo)")
         .eq("corretor_id", user!.id)
         .not("stage_id", "is", null)
-        .order("stage_changed_at", { ascending: true })
-        .limit(5) as any);
+        .limit(200) as any);
+
+      // Filter: must have interesse, not descarte
+      const validLeads = (allLeads || []).filter((l: any) => {
+        const interesse = l.interesse || l.empreendimento;
+        if (!interesse || interesse.trim() === "") return false;
+        const tipo = l.pipeline_stages?.tipo;
+        if (tipo === "descarte") return false;
+        return true;
+      });
+
+      // Score each lead
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+      
+      // Get today's visitas for this corretor
+      const { data: visitasHoje } = await (supabase
+        .from("visitas")
+        .select("pipeline_lead_id")
+        .eq("corretor_id", user!.id)
+        .eq("data_visita", todayStr)
+        .in("status", ["confirmada", "pendente"]) as any);
+      const visitaLeadIds = new Set((visitasHoje || []).map((v: any) => v.pipeline_lead_id).filter(Boolean));
+
+      const scored = validLeads.map((lead: any) => {
+        const hrs = differenceInHours(today, new Date(lead.stage_changed_at || lead.updated_at));
+        const diasParado = lead.dias_parado || Math.floor(hrs / 24);
+        const stageTipo = lead.pipeline_stages?.tipo || "";
+        const stageNome = lead.pipeline_stages?.nome || "—";
+        const prioridade = lead.prioridade || "";
+        const hasVisitaHoje = visitaLeadIds.has(lead.id);
+        
+        let peso = 0;
+        let motivo = "";
+        let cor = "blue";
+
+        // Peso 5 — URGENTE (vermelho)
+        if (hasVisitaHoje) {
+          peso = 5; motivo = "Visita hoje"; cor = "red";
+        } else if (prioridade === "urgente") {
+          peso = 5; motivo = "Lead urgente"; cor = "red";
+        }
+        // Peso 4 — QUENTE (laranja)
+        else if (stageTipo === "visita_realizada" && hrs >= 24) {
+          peso = 4; motivo = "Pós-visita sem retorno"; cor = "orange";
+        } else if (prioridade === "alta") {
+          peso = 4; motivo = "Lead alta prioridade"; cor = "orange";
+        }
+        // Peso 3 — ATENÇÃO (amarelo)
+        else if (diasParado >= 3) {
+          peso = 3; motivo = `Sem contato há ${diasParado} dias`; cor = "yellow";
+        }
+        // Peso 2 — NORMAL (azul)
+        else if (hrs < 24 && !lead.ultimo_contato) {
+          peso = 2; motivo = "Novo lead — fazer primeiro contato"; cor = "blue";
+        }
+        
+        if (peso === 0) return null;
+
+        const ultimoContato = lead.stage_changed_at || lead.updated_at;
+        const dataStr = ultimoContato ? new Date(ultimoContato).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "—";
+
+        return {
+          id: lead.id,
+          nome: lead.nome,
+          interesse: lead.interesse || lead.empreendimento || "—",
+          telefone: lead.telefone,
+          stageNome,
+          ultimoContatoStr: dataStr,
+          peso,
+          motivo,
+          cor,
+        };
+      }).filter(Boolean);
+
+      // Sort by peso desc, limit 5
+      scored.sort((a: any, b: any) => b.peso - a.peso);
+      const priorityLeads = scored.slice(0, 5);
 
       const counts: Record<string, number> = {};
       rankingData?.forEach((r: any) => { counts[r.corretor_id] = (counts[r.corretor_id] || 0) + 1; });
@@ -104,7 +180,7 @@ export default function CorretorDashboard() {
         rankingPos: myPos || totalBrokers,
         totalBrokers,
         ptsToNext: Math.max(0, nextAbove),
-        priorityLeads: (priorityLeads || []).slice(0, 3),
+        priorityLeads: priorityLeads || [],
         myPts,
         totalWithPoints: sorted.length,
       };
