@@ -542,7 +542,12 @@ export default function CorretorDashboard() {
         <div className="flex flex-col gap-4">
 
           {/* Meta do Dia */}
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className={!metaSalva ? "ring-2 ring-amber-400/60 ring-offset-2 ring-offset-background rounded-xl" : ""}
+          >
             {!metaSalva ? (
               <DailyProgressCard progress={progress} goals={goals} saveGoals={saveGoals} variant="full" />
             ) : (
