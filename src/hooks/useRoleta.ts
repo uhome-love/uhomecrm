@@ -454,19 +454,20 @@ export function useRoleta() {
 
         if (alreadyActive && alreadyActive.length > 0) continue;
 
-        // Check if there's an INACTIVE entry we can reactivate
+        // Check if there's an INACTIVE entry we can reactivate (same janela)
         const { data: inactiveEntry } = await supabase.from("roleta_fila")
           .select("id")
           .eq("data", hoje)
           .eq("segmento_id", segId)
           .eq("corretor_id", cred.corretor_id)
+          .eq("janela", cred.janela)
           .eq("ativo", false)
           .limit(1);
 
         if (inactiveEntry && inactiveEntry.length > 0) {
           // Reactivate existing entry
           await supabase.from("roleta_fila")
-            .update({ ativo: true, credenciamento_id: credId })
+            .update({ ativo: true, credenciamento_id: credId, janela: cred.janela })
             .eq("id", inactiveEntry[0].id);
           continue;
         }
