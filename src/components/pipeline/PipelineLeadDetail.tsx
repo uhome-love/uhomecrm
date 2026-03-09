@@ -704,19 +704,32 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </div>
             </TabsContent>
 
-            {/* ===== TAB: TAREFAS ===== */}
             <TabsContent value="tarefas" className="px-6 pb-8 space-y-4 mt-0">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-foreground">Tarefas</h4>
+                <h4 className="text-sm font-bold text-foreground">📋 Tarefas ({leadData.tarefas.filter(t => t.status === "pendente").length} pendentes)</h4>
                 <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={() => setShowNewTarefa(!showNewTarefa)}>
-                  <Plus className="h-4 w-4" /> Nova
+                  <Plus className="h-4 w-4" /> Nova Tarefa
                 </Button>
               </div>
 
               {showNewTarefa && (
                 <div className="border border-primary/30 rounded-xl p-4 space-y-3 bg-primary/5">
-                  <Input className="h-9 text-sm" placeholder="Ex: Enviar tabela de preços" value={newTarefa.titulo} onChange={e => setNewTarefa(p => ({ ...p, titulo: e.target.value }))} />
-                  <div className="grid grid-cols-2 gap-3">
+                  <Select value={newTarefa.tipo} onValueChange={v => setNewTarefa(p => ({ ...p, tipo: v }))}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="follow_up">Follow-up</SelectItem>
+                      <SelectItem value="ligar">Ligar</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="enviar_proposta">Enviar proposta</SelectItem>
+                      <SelectItem value="enviar_material">Enviar material</SelectItem>
+                      <SelectItem value="marcar_visita">Marcar visita</SelectItem>
+                      <SelectItem value="outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input className="h-9 text-sm" placeholder="Observação / descrição" value={newTarefa.descricao} onChange={e => setNewTarefa(p => ({ ...p, descricao: e.target.value, titulo: e.target.value }))} />
+                  <div className="grid grid-cols-3 gap-3">
+                    <Input type="date" className="h-9 text-sm" value={newTarefa.vence_em} onChange={e => setNewTarefa(p => ({ ...p, vence_em: e.target.value }))} />
+                    <Input type="time" className="h-9 text-sm" value={newTarefa.hora_vencimento} onChange={e => setNewTarefa(p => ({ ...p, hora_vencimento: e.target.value }))} placeholder="Hora" />
                     <Select value={newTarefa.prioridade} onValueChange={v => setNewTarefa(p => ({ ...p, prioridade: v }))}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -725,10 +738,11 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                         <SelectItem value="baixa">Baixa</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Input type="date" className="h-9 text-sm" value={newTarefa.vence_em} onChange={e => setNewTarefa(p => ({ ...p, vence_em: e.target.value }))} />
                   </div>
-                  <Textarea className="text-sm min-h-[50px]" placeholder="Descrição..." value={newTarefa.descricao} onChange={e => setNewTarefa(p => ({ ...p, descricao: e.target.value }))} />
-                  <Button size="sm" className="w-full h-9 text-sm" onClick={handleAddTarefa} disabled={!newTarefa.titulo}>Criar Tarefa</Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-9 text-sm" onClick={() => setShowNewTarefa(false)}>Cancelar</Button>
+                    <Button size="sm" className="flex-1 h-9 text-sm" onClick={handleAddTarefa} disabled={!newTarefa.descricao && !newTarefa.titulo}>✅ Criar</Button>
+                  </div>
                 </div>
               )}
 
@@ -748,36 +762,54 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     })
                     .map(tarefa => {
                       const isOverdue = tarefa.status === "pendente" && tarefa.vence_em && new Date(tarefa.vence_em) < new Date();
+                      const tipoLabels: Record<string, string> = { follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp", enviar_proposta: "Enviar proposta", enviar_material: "Enviar material", marcar_visita: "Marcar visita", outro: "Outro" };
                       return (
                         <div
                           key={tarefa.id}
-                          className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                          className={`p-3 rounded-xl border transition-colors ${
                             tarefa.status === "concluida"
                               ? "bg-green-50/50 dark:bg-green-950/20 border-green-200/50"
                               : isOverdue
                               ? "bg-red-50/50 dark:bg-red-950/20 border-red-200/50"
                               : "border-border/50 bg-card hover:bg-accent/20"
                           }`}
-                          onClick={() => leadData.toggleTarefa(tarefa.id, tarefa.status)}
                         >
-                          {tarefa.status === "concluida" ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                          ) : (
-                            <Circle className={`h-4 w-4 shrink-0 ${isOverdue ? "text-red-400" : "text-muted-foreground"}`} />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <span className={`text-sm font-medium ${tarefa.status === "concluida" ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                              {tarefa.titulo}
-                            </span>
-                            {tarefa.vence_em && (
-                              <span className={`text-xs ml-2 ${isOverdue ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
-                                {isOverdue && "⚠️ "}{format(new Date(tarefa.vence_em), "dd/MM", { locale: ptBR })}
+                          <div className="flex items-start gap-3">
+                            <button onClick={() => leadData.toggleTarefa(tarefa.id, tarefa.status)} className="mt-0.5 shrink-0">
+                              {tarefa.status === "concluida" ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <Circle className={`h-4 w-4 ${isOverdue ? "text-red-400" : "text-muted-foreground"}`} />
+                              )}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-medium text-primary/70">{tipoLabels[(tarefa as any).tipo] || "Tarefa"}</span>
+                                {tarefa.vence_em && (
+                                  <span className={`text-xs ${isOverdue ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
+                                    {isOverdue && "🔴 "}{format(new Date(tarefa.vence_em), "dd/MM", { locale: ptBR })}
+                                    {(tarefa as any).hora_vencimento && ` às ${(tarefa as any).hora_vencimento.slice(0, 5)}`}
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`text-sm ${tarefa.status === "concluida" ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                                {tarefa.descricao || tarefa.titulo}
                               </span>
-                            )}
+                              {tarefa.status === "concluida" && tarefa.concluida_em && (
+                                <span className="text-xs text-green-600 block">✅ {format(new Date(tarefa.concluida_em), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Badge variant="outline" className={`text-xs ${PRIORIDADE_MAP[tarefa.prioridade]?.color || ""}`}>
+                                {PRIORIDADE_MAP[tarefa.prioridade]?.label || tarefa.prioridade}
+                              </Badge>
+                              {tarefa.status === "pendente" && (
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-500" onClick={() => leadData.deleteTarefa(tarefa.id)}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                          <Badge variant="outline" className={`text-xs ${PRIORIDADE_MAP[tarefa.prioridade]?.color || ""}`}>
-                            {PRIORIDADE_MAP[tarefa.prioridade]?.label || tarefa.prioridade}
-                          </Badge>
                         </div>
                       );
                     })}
