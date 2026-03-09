@@ -2467,13 +2467,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "negocios_corretor_id_fkey"
-            columns: ["corretor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "negocios_gerente_id_fkey"
             columns: ["gerente_id"]
             isOneToOne: false
