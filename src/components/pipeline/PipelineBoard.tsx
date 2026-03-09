@@ -217,14 +217,15 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   const leadsByStage = useMemo(() => {
+    // Dedup leads by ID before distributing to columns
+    const uniqueLeads = Array.from(new Map(leads.map(l => [l.id, l])).values());
     const map = new Map<string, PipelineLead[]>();
     for (const stage of stages) map.set(stage.id, []);
-    for (const lead of leads) {
+    for (const lead of uniqueLeads) {
       const arr = map.get(lead.stage_id);
       if (arr) arr.push(lead);
     }
     for (const [, arr] of map) {
-      // Most recently created lead on top of each column
       arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
     return map;
