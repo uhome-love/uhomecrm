@@ -164,7 +164,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const handleAddTarefa = async () => {
     await leadData.addTarefa(newTarefa);
-    setNewTarefa({ titulo: "", descricao: "", prioridade: "media", vence_em: "" });
+    setNewTarefa({ titulo: "", descricao: "", prioridade: "media", vence_em: "", tipo: "follow_up", hora_vencimento: "" });
     setShowNewTarefa(false);
   };
 
