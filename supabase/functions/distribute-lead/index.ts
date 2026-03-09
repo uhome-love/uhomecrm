@@ -35,36 +35,9 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { pipeline_lead_id, segmento_id: providedSegmentoId, action } = body;
+    const { pipeline_lead_id, segmento_id, action } = body;
 
-    // If no segmento_id provided, try to map from empreendimento
-    let segmento_id = providedSegmentoId || null;
-    if (!segmento_id && pipeline_lead_id && action !== "aceitar" && action !== "rejeitar" && action !== "redistribuir_pendentes") {
-      const { data: lead } = await supabase
-        .from("pipeline_leads")
-        .select("empreendimento")
-        .eq("id", pipeline_lead_id)
-        .maybeSingle();
-
-      if (lead?.empreendimento) {
-        const { data: segmentos } = await supabase
-          .from("pipeline_segmentos")
-          .select("id, empreendimentos")
-          .eq("ativo", true);
-
-        if (segmentos) {
-          const matched = segmentos.find((s: any) =>
-            (s.empreendimentos || []).some((e: string) =>
-              lead.empreendimento!.toLowerCase().includes(e.toLowerCase()) ||
-              e.toLowerCase().includes(lead.empreendimento!.toLowerCase())
-            )
-          );
-          if (matched) segmento_id = matched.id;
-        }
-      }
-    }
-
-    // Handle special actions
+    // ─── Handle accept / reject ───
     if (action === "aceitar" || action === "rejeitar") {
       const rpcName = action === "aceitar" ? "aceitar_lead" : "rejeitar_lead";
       const params: any = {
@@ -90,7 +63,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Handle redistribution
+    // ─── Handle redistribution ───
     if (action === "redistribuir_pendentes") {
       const { data, error } = await supabase.rpc("redistribuir_leads_pendentes", {
         p_segmento_id: segmento_id || null,
@@ -106,6 +79,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ─── Distribute single lead (dispatch_fila_ceo or direct) ───
     if (!pipeline_lead_id) {
       return new Response(JSON.stringify({ error: "pipeline_lead_id required" }), {
         status: 400,
@@ -113,10 +87,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Call the distribution function
+    // Resolve segmento from roleta_campanhas if not provided
+    let resolvedSegmentoId = segmento_id || null;
+    if (!resolvedSegmentoId) {
+      const { data: lead } = await supabase
+        .from("pipeline_leads")
+        .select("empreendimento")
+        .eq("id", pipeline_lead_id)
+        .maybeSingle();
+
+      if (lead?.empreendimento) {
+        const { data: camp } = await supabase
+          .from("roleta_campanhas")
+          .select("segmento_id")
+          .ilike("empreendimento", lead.empreendimento)
+          .eq("ativo", true)
+          .maybeSingle();
+        if (camp) resolvedSegmentoId = camp.segmento_id;
+      }
+    }
+
+    // Call the distribution RPC
     const { data, error } = await supabase.rpc("distribuir_lead_roleta", {
       p_pipeline_lead_id: pipeline_lead_id,
-      p_segmento_id: segmento_id || null,
+      p_segmento_id: resolvedSegmentoId,
     });
 
     if (error) {
@@ -127,17 +121,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // After successful distribution, send WhatsApp notification to assigned corretor
+    // After successful distribution, send WhatsApp notification
     if (data && data.success && data.corretor_id) {
       try {
-        // Get corretor profile
         const { data: corretor } = await supabase
           .from("profiles")
           .select("telefone, nome")
           .eq("user_id", data.corretor_id)
           .maybeSingle();
 
-        // Get lead data
         const { data: leadData } = await supabase
           .from("pipeline_leads")
           .select("nome, telefone, empreendimento")
@@ -145,9 +137,6 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (corretor?.telefone && leadData) {
-          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
           await fetch(`${supabaseUrl}/functions/v1/whatsapp-notificacao`, {
             method: "POST",
             headers: {
@@ -167,46 +156,36 @@ Deno.serve(async (req) => {
           console.log(`WhatsApp notification sent to corretor ${corretor.nome}`);
         }
       } catch (whatsappErr) {
-        // Don't fail the distribution if WhatsApp notification fails
         console.error("WhatsApp notification error (non-blocking):", whatsappErr);
       }
     }
 
-    // If no corretor available or outside hours, notify gestores
+    // If no corretor available, notify gestores
     if (data && !data.success && (data.reason === "no_corretor_available" || data.reason === "fora_horario")) {
-      const { data: gestores } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("role", ["gestor", "admin"]);
+      try {
+        const { data: gestores } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["gestor", "admin"]);
 
-      // Get segment name for better notification
-      let segmentoNome = "";
-      if (segmento_id) {
-        const { data: seg } = await supabase
-          .from("pipeline_segmentos")
-          .select("nome")
-          .eq("id", segmento_id)
-          .maybeSingle();
-        segmentoNome = seg?.nome || "";
-      }
-      
-      if (gestores) {
-        const msg = data.reason === "fora_horario" 
-          ? "Lead recebido fora do horário da roleta. Aguardando redistribuição."
-          : segmentoNome
-          ? `⚠️ Sem corretor para ${segmentoNome}. Lead aguardando distribuição.`
-          : "Nenhum corretor disponível para o segmento. Lead aguardando distribuição.";
-        for (const g of gestores) {
-          await supabase.rpc("criar_notificacao", {
-            p_user_id: g.user_id,
-            p_tipo: "alertas",
-            p_categoria: "lead_sem_atendimento",
-            p_titulo: "⚠️ Lead aguardando distribuição",
-            p_mensagem: msg,
-            p_dados: { pipeline_lead_id, segmento_id: data.segmento_id, reason: data.reason },
-            p_agrupamento_key: "lead_sem_atendimento",
-          });
+        if (gestores) {
+          const msg = data.reason === "fora_horario"
+            ? "Lead recebido fora do horário da roleta. Aguardando redistribuição."
+            : "Nenhum corretor disponível para o segmento. Lead aguardando distribuição.";
+          for (const g of gestores) {
+            await supabase.rpc("criar_notificacao", {
+              p_user_id: g.user_id,
+              p_tipo: "alertas",
+              p_categoria: "lead_sem_atendimento",
+              p_titulo: "⚠️ Lead aguardando distribuição",
+              p_mensagem: msg,
+              p_dados: { pipeline_lead_id, segmento_id: data.segmento_id, reason: data.reason },
+              p_agrupamento_key: "lead_sem_atendimento",
+            });
+          }
         }
+      } catch (notifErr) {
+        console.error("Notification error (non-blocking):", notifErr);
       }
     }
 
