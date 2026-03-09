@@ -24,7 +24,7 @@ const CeoDashboard = lazy(() => import("./pages/CeoDashboard"));
 const ScriptsGenerator = lazy(() => import("./pages/ScriptsGenerator"));
 const RelatorioCorretor = lazy(() => import("./pages/RelatorioCorretor"));
 const CentralDados = lazy(() => import("./pages/CentralDados"));
-const PdnDashboard = lazy(() => import("./pages/PdnDashboard"));
+
 const MarketingDashboard = lazy(() => import("./pages/MarketingDashboard"));
 const RankingComercial = lazy(() => import("./pages/RankingComercial"));
 const AuditDashboard = lazy(() => import("./pages/AuditDashboard"));
