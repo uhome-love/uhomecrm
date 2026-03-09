@@ -167,14 +167,15 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Count leads received TODAY per corretor (auth user_id)
+      // Count leads received TODAY per corretor — only ASSIGNED leads (aceito or pendente)
+      // NEVER count pendente_distribuicao (those are unassigned in the CEO queue)
       const authUserIds = [...profileToAuth.values()];
       const { data: todayLeads } = await supabase
         .from("pipeline_leads")
         .select("corretor_id, distribuido_em")
         .in("corretor_id", authUserIds)
         .gte("distribuido_em", todayStart)
-        .in("aceite_status", ["aceito", "pendente", "pendente_distribuicao"]);
+        .in("aceite_status", ["aceito", "pendente"]);
 
       // Count per auth user
       const leadsCount = new Map<string, number>();
