@@ -156,7 +156,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
             const { error } = await supabase.functions.invoke("distribute-lead", {
               body: {
                 action: "dispatch_fila_ceo",
-                lead_id: lead.id,
+                pipeline_lead_id: lead.id,
                 segmento_id: seg?.id || null,
                 janela: selectedDestino,
               },
