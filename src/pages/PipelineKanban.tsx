@@ -15,7 +15,7 @@ import PipelineReportsDashboard from "@/components/pipeline/PipelineReportsDashb
 import type { PipelineStage } from "@/hooks/usePipeline";
 import { useMemo as useMemoReact } from "react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckSquare, Square, Send, X } from "lucide-react";
 import PipelineAdvancedFilters, {
   EMPTY_FILTERS,
   applyFilters,
@@ -25,8 +25,9 @@ import PipelineAdvancedFilters, {
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, X, BarChart3, FolderOpen, Zap, Radar, FileText, Brain, Rocket } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, BarChart3, FolderOpen, Zap, Radar, FileText, Brain, Rocket } from "lucide-react";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
+import BulkActionModal from "@/components/pipeline/BulkActionModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -96,6 +97,25 @@ export default function PipelineKanban() {
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [forecastExpanded, setForecastExpanded] = useState(false);
+  
+  // Bulk selection state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [bulkActionOpen, setBulkActionOpen] = useState(false);
+
+  const toggleLeadSelection = useCallback((leadId: string) => {
+    setSelectedLeads(prev => {
+      const next = new Set(prev);
+      if (next.has(leadId)) next.delete(leadId);
+      else next.add(leadId);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedLeads(new Set());
+    setSelectionMode(false);
+  }, []);
 
   // Load partnerships
   useEffect(() => {
@@ -271,6 +291,20 @@ export default function PipelineKanban() {
               <span className="hidden sm:inline">Novo Lead</span>
             </Button>
           )}
+
+          {isAdmin && activeTab === "kanban" && (
+            <Button
+              variant={selectionMode ? "default" : "outline"}
+              size="sm"
+              className={`gap-1 h-8 text-[11px] ${selectionMode ? "bg-primary" : ""}`}
+              onClick={() => {
+                if (selectionMode) { clearSelection(); } else { setSelectionMode(true); }
+              }}
+            >
+              {selectionMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{selectionMode ? "Selecionando..." : "Selecionar"}</span>
+            </Button>
+          )}
         </div>
 
         {/* Summary line + Forecast inline */}
@@ -413,8 +447,11 @@ export default function PipelineKanban() {
               corretorNomes={pipeline.corretorNomes}
               parcerias={parcerias}
               onMoveLead={pipeline.moveLead}
-              onSelectLead={setSelectedLead}
+              onSelectLead={selectionMode ? (lead) => toggleLeadSelection(lead.id) : setSelectedLead}
               onTransferred={() => pipeline.reload()}
+              selectionMode={selectionMode}
+              selectedLeads={selectedLeads}
+              onToggleSelect={toggleLeadSelection}
             />
           ) : activeTab === "inteligencia" ? (
             intelView === "funil" ? (
@@ -484,6 +521,43 @@ export default function PipelineKanban() {
         onOpenChange={setDispatchOpen}
         onDispatched={() => pipeline.reload()}
       />
+
+      {/* Bulk Action Modal */}
+      <BulkActionModal
+        open={bulkActionOpen}
+        onOpenChange={setBulkActionOpen}
+        selectedLeadIds={[...selectedLeads]}
+        onComplete={() => {
+          clearSelection();
+          pipeline.reload();
+        }}
+      />
+
+      {/* Floating selection toolbar */}
+      {selectionMode && selectedLeads.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border shadow-2xl">
+          <span className="text-sm font-bold text-foreground">
+            {selectedLeads.size} selecionado{selectedLeads.size !== 1 ? "s" : ""}
+          </span>
+          <Button
+            size="sm"
+            className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+            onClick={() => setBulkActionOpen(true)}
+          >
+            <Send className="h-3.5 w-3.5" />
+            Disparar
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1 text-destructive hover:text-destructive"
+            onClick={clearSelection}
+          >
+            <X className="h-3.5 w-3.5" />
+            Cancelar
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
