@@ -327,11 +327,11 @@ export function useRoleta() {
   // ─── Corretor Actions ───
 
   const credenciar = useCallback(async (janela: string, segmento1Id: string, segmento2Id: string | null) => {
-    if (!user) return;
+    if (!user || !profileId) return;
     setSubmitting(true);
     try {
       const { error } = await supabase.from("roleta_credenciamentos").insert({
-        corretor_id: user.id,
+        corretor_id: profileId,
         janela,
         segmento_1_id: segmento1Id,
         segmento_2_id: segmento2Id || null,
@@ -347,7 +347,7 @@ export function useRoleta() {
     } finally {
       setSubmitting(false);
     }
-  }, [user, hoje, loadCredenciamentos]);
+  }, [user, profileId, hoje, loadCredenciamentos]);
 
   const sairDaRoleta = useCallback(async (credenciamentoId: string) => {
     if (!user) return;
