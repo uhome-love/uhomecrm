@@ -60,6 +60,12 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   const [adiarId, setAdiarId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
   const [adiarHora, setAdiarHora] = useState("");
+  // Edit task state
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editTipo, setEditTipo] = useState("follow_up");
+  const [editData, setEditData] = useState("");
+  const [editHora, setEditHora] = useState("");
+  const [editObs, setEditObs] = useState("");
 
   // Completion prompt
   const [completingId, setCompletingId] = useState<string | null>(null);
