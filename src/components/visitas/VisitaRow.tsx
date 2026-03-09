@@ -60,9 +60,7 @@ interface Props {
 }
 
 export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCorretor, showTeam, isPastPending }: Props) {
-  const { convertToPdn } = useVisitaToPdn();
   const [hovered, setHovered] = useState(false);
-  const hasPdn = !!(v as any).linked_pdn_id;
 
   return (
     <div
