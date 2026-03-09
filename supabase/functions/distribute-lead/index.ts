@@ -307,7 +307,7 @@ Deno.serve(async (req) => {
           acao: "dispatch_fila_ceo",
           descricao: `Disparou ${dispatched} leads (${failed} falharam) via janela ${targetJanela}`,
           depois: { dispatched, failed, janela: targetJanela, distribution: distributionLog.slice(0, 20) },
-        }).catch(() => {});
+        }).then(r => { if (r.error) console.warn("audit_log insert:", r.error.message); });
       }
 
       console.log(`Dispatch complete: ${dispatched} distributed, ${failed} failed`);
