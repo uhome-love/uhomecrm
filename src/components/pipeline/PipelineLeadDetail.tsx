@@ -168,21 +168,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden border-l border-border/50">
+      <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
 
         {/* ════════════ ZONA 1 — HEADER FIXO ════════════ */}
         <div className="shrink-0 border-b border-border/50 bg-card">
-          <div className="px-4 pt-4 pb-2 space-y-2">
-            {/* Row 1: Name + Stage badge (clickable) + Days */}
+          <div className="px-6 pt-5 pb-3 space-y-3">
+            {/* Row 1: Name + Stage badge + Temp + Days */}
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <TempIcon className={`h-4 w-4 shrink-0 ${temperatureInfo.color}`} />
-                <h2 className="text-base font-bold text-foreground truncate">{lead.nome}</h2>
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                <h2 className="text-xl font-bold text-foreground truncate">{lead.nome}</h2>
 
                 {/* Stage badge — click to change */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
+                    <button className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
                       <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
                       {currentStage?.nome}
                       <ChevronDown className="h-2.5 w-2.5" />
@@ -200,92 +199,80 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     </div>
                   </PopoverContent>
                 </Popover>
+
+                {/* Temperatura — discreto ao lado do badge */}
+                <span className={`flex items-center gap-0.5 text-xs font-medium ${temperatureInfo.color}`}>
+                  <TempIcon className="h-3.5 w-3.5" />
+                  {temperatureInfo.label}
+                </span>
+
+                {lead.oportunidade_score != null && (() => {
+                  const s = lead.oportunidade_score!;
+                  const scoreStyle = s >= 81
+                    ? { emoji: "💎", label: `${s}`, cls: "text-red-500 font-black" }
+                    : s >= 61
+                    ? { emoji: "⚡", label: `${s}`, cls: "text-orange-500 font-bold" }
+                    : s >= 31
+                    ? { emoji: "🔥", label: `${s}`, cls: "text-amber-500 font-semibold" }
+                    : { emoji: "🧊", label: `${s}`, cls: "text-blue-500 font-semibold" };
+                  return (
+                    <span className={`text-xs ${scoreStyle.cls}`}>{scoreStyle.emoji} {scoreStyle.label}</span>
+                  );
+                })()}
               </div>
 
-              <span className="text-[11px] text-muted-foreground shrink-0 font-medium">{daysSinceCreation}d</span>
+              <span className="text-xs text-muted-foreground shrink-0 font-medium">{daysSinceCreation}d</span>
             </div>
 
-            {/* Row 2: Empreendimento + Temp + Score */}
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-              {lead.empreendimento && (
-                <span className="flex items-center gap-1">
-                  <Building2 className="h-3 w-3" />
-                  {lead.empreendimento}
-                </span>
-              )}
-              <span className={`font-medium ${temperatureInfo.color}`}>{temperatureInfo.label}</span>
-              {lead.oportunidade_score != null && (() => {
-                const s = lead.oportunidade_score!;
-                const scoreStyle = s >= 81
-                  ? { emoji: "💎", label: "Hot", cls: "text-red-500 font-black", glow: "0 0 12px rgba(239,68,68,0.4)" }
-                  : s >= 61
-                  ? { emoji: "⚡", label: "Quente", cls: "text-orange-500 font-bold", glow: undefined }
-                  : s >= 31
-                  ? { emoji: "🔥", label: "Morno", cls: "text-amber-500 font-semibold", glow: undefined }
-                  : { emoji: "🧊", label: "Frio", cls: "text-blue-500 font-semibold", glow: undefined };
-                return (
-                  <span className={`flex items-center gap-0.5 ${scoreStyle.cls}`} style={scoreStyle.glow ? { textShadow: scoreStyle.glow } : undefined}>
-                    <Target className="h-3 w-3" /> {scoreStyle.emoji} {s} {scoreStyle.label}
-                  </span>
-                );
-              })()}
-              {lead.valor_estimado ? (
-                <span className="flex items-center gap-0.5 font-semibold text-primary">
-                  <DollarSign className="h-3 w-3" />
-                  R$ {lead.valor_estimado.toLocaleString("pt-BR")}
-                </span>
-              ) : null}
-            </div>
-
-            {/* Row 3: Contact info */}
-            <div className="flex items-center gap-3 text-[11px] flex-wrap">
+            {/* Row 2: Contact info — larger */}
+            <div className="flex items-center gap-4 flex-wrap">
               {lead.telefone && (
-                <a href={`tel:${lead.telefone}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> {lead.telefone}
+                <a href={`tel:${lead.telefone}`} className="text-base text-foreground hover:text-primary transition-colors flex items-center gap-1.5">
+                  <Phone className="h-4 w-4" /> {lead.telefone}
                 </a>
               )}
               {lead.email && (
-                <a href={`mailto:${lead.email}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1 truncate">
-                  <Mail className="h-3 w-3" /> {lead.email}
+                <a href={`mailto:${lead.email}`} className="text-base text-foreground hover:text-primary transition-colors flex items-center gap-1.5 truncate">
+                  <Mail className="h-4 w-4" /> {lead.email}
                 </a>
               )}
             </div>
 
-            {/* Row 4: Action buttons */}
-            <div className="flex items-center gap-1.5">
+            {/* Row 3: Action buttons — larger tap targets */}
+            <div className="flex items-center gap-2 flex-wrap">
               {lead.telefone && (
                 <a href={`tel:${lead.telefone}`}>
-                  <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-border/60 hover:border-primary hover:text-primary">
-                    <Phone className="h-3 w-3" /> Ligar
+                  <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary">
+                    <Phone className="h-3.5 w-3.5" /> Ligar
                   </Button>
                 </a>
               )}
               {whatsappUrl && (
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-green-300 text-green-600 hover:bg-green-50">
-                    <MessageSquare className="h-3 w-3" /> WhatsApp
+                  <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-green-300 text-green-600 hover:bg-green-50">
+                    <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
                   </Button>
                 </a>
               )}
               {lead.email && (
                 <a href={`mailto:${lead.email}`}>
-                  <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-border/60 hover:border-primary hover:text-primary">
-                    <Mail className="h-3 w-3" /> Email
+                  <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary">
+                    <Mail className="h-3.5 w-3.5" /> Email
                   </Button>
                 </a>
               )}
-              <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
-                <MessageSquare className="h-3 w-3" /> 💬 Mensagem
+              <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
+                <MessageSquare className="h-3.5 w-3.5" /> 💬 Mensagem
               </Button>
-              <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 rounded-full" onClick={() => { setActiveTab("historico"); setShowNewAtividade(true); }}>
-                <Plus className="h-3 w-3" /> Ação
+              <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full" onClick={() => { setActiveTab("historico"); setShowNewAtividade(true); }}>
+                <Plus className="h-3.5 w-3.5" /> Ação
               </Button>
 
               {/* ⋯ More menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 w-7 p-0 rounded-full">
-                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full">
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -309,7 +296,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     );
                   })()}
                   {onDelete && (
-                    <DropdownMenuItem className="text-destructive" onClick={() => { /* handled by alert dialog below */ }}>
+                    <DropdownMenuItem className="text-destructive">
                       <PhoneOff className="h-3.5 w-3.5 mr-2" /> Contato errado
                     </DropdownMenuItem>
                   )}
