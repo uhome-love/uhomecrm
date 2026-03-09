@@ -491,59 +491,59 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </TabsContent>
 
             {/* ===== TAB: HISTÓRICO (Atividades + Notas + Timeline) ===== */}
-            <TabsContent value="historico" className="px-4 pb-6 space-y-4 mt-0">
+            <TabsContent value="historico" className="px-6 pb-8 space-y-5 mt-0">
               {/* Timeline visual */}
               <div className="relative">
-                <div className="absolute left-3 top-0 bottom-0 w-px bg-border" />
+                <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
                 <div className="space-y-0">
                   {buildTimeline(leadData.historico, leadData.atividades, leadData.tarefas, stages, lead).slice(0, 10).map((item, i) => (
-                    <div key={i} className="relative flex gap-3 pb-3">
-                      <div className={`relative z-10 h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
-                        <item.icon className="h-2.5 w-2.5" />
+                    <div key={i} className="relative flex gap-4 pb-4">
+                      <div className={`relative z-10 h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
+                        <item.icon className="h-3.5 w-3.5" />
                       </div>
-                      <div className="pt-0">
-                        <p className="text-[11px] font-medium text-foreground">{item.title}</p>
-                        {item.description && <p className="text-[10px] text-muted-foreground">{item.description}</p>}
-                        <p className="text-[9px] text-muted-foreground/60">{format(new Date(item.date), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
+                      <div className="pt-0.5">
+                        <p className="text-sm font-medium text-foreground">{item.title}</p>
+                        {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                        <p className="text-xs text-muted-foreground/60">{format(new Date(item.date), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
                       </div>
                     </div>
                   ))}
-                  <div className="relative flex gap-3 pb-3">
-                    <div className="relative z-10 h-5 w-5 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
-                      <Plus className="h-2.5 w-2.5" />
+                  <div className="relative flex gap-4 pb-4">
+                    <div className="relative z-10 h-7 w-7 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
+                      <Plus className="h-3.5 w-3.5" />
                     </div>
-                    <div>
-                      <p className="text-[11px] font-medium text-foreground">Lead entrou no pipeline</p>
-                      <p className="text-[9px] text-muted-foreground/60">{format(new Date(lead.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
+                    <div className="pt-0.5">
+                      <p className="text-sm font-medium text-foreground">Lead entrou no pipeline</p>
+                      <p className="text-xs text-muted-foreground/60">{format(new Date(lead.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* + Registrar inline */}
-              <div className="border-t border-border/50 pt-3">
-                <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 w-full" onClick={() => setShowNewAtividade(!showNewAtividade)}>
-                  <Plus className="h-3 w-3" /> Registrar atividade
+              <div className="border-t border-border/50 pt-4">
+                <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5 w-full" onClick={() => setShowNewAtividade(!showNewAtividade)}>
+                  <Plus className="h-4 w-4" /> Registrar atividade
                 </Button>
 
                 {showNewAtividade && (
-                  <div className="border border-primary/30 rounded-lg p-3 space-y-2 bg-primary/5 mt-2">
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="border border-primary/30 rounded-xl p-4 space-y-3 bg-primary/5 mt-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <Select value={newAtividade.tipo} onValueChange={v => setNewAtividade(p => ({ ...p, tipo: v }))}>
-                        <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {ATIVIDADE_TIPOS.map(t => (
                             <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Input className="h-7 text-xs" value={newAtividade.titulo} onChange={e => setNewAtividade(p => ({ ...p, titulo: e.target.value }))} placeholder="Título" />
+                      <Input className="h-9 text-sm" value={newAtividade.titulo} onChange={e => setNewAtividade(p => ({ ...p, titulo: e.target.value }))} placeholder="Título" />
                     </div>
-                    <div className="flex gap-2">
-                      <Input type="date" className="h-7 text-xs flex-1" value={newAtividade.data} onChange={e => setNewAtividade(p => ({ ...p, data: e.target.value }))} />
-                      <Input type="time" className="h-7 text-xs w-24" value={newAtividade.hora} onChange={e => setNewAtividade(p => ({ ...p, hora: e.target.value }))} />
+                    <div className="flex gap-3">
+                      <Input type="date" className="h-9 text-sm flex-1" value={newAtividade.data} onChange={e => setNewAtividade(p => ({ ...p, data: e.target.value }))} />
+                      <Input type="time" className="h-9 text-sm w-28" value={newAtividade.hora} onChange={e => setNewAtividade(p => ({ ...p, hora: e.target.value }))} />
                     </div>
-                    <Button size="sm" className="w-full h-7 text-xs" onClick={handleAddAtividade} disabled={!newAtividade.titulo}>Salvar</Button>
+                    <Button size="sm" className="w-full h-9 text-sm" onClick={handleAddAtividade} disabled={!newAtividade.titulo}>Salvar</Button>
                   </div>
                 )}
               </div>
