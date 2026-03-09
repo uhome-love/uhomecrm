@@ -562,7 +562,7 @@ export default function CorretorDashboard() {
                       <Zap className="h-4 w-4 text-primary" />
                       <span className="text-sm font-semibold text-foreground">Meta do Dia</span>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-6 text-xs text-primary">Editar</Button>
+                    <Button variant="ghost" size="sm" className="h-6 text-xs text-primary" onClick={() => saveGoals(null)}>Editar</Button>
                   </div>
                   {[
                     { emoji: "🔥", label: "Tentativas", value: progress.tentativas, max: goals?.meta_ligacoes || 30, pct: ligPct, barColor: "bg-primary" },

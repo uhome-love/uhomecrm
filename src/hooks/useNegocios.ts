@@ -43,7 +43,7 @@ export const NEGOCIOS_FASES = [
 
 export function useNegocios() {
   const { user } = useAuth();
-  const { isAdmin, isGestor } = useUserRole();
+  const { isAdmin, isGestor, loading: roleLoading } = useUserRole();
   const [negocios, setNegocios] = useState<Negocio[]>([]);
   const [corretorNomes, setCorretorNomes] = useState<Record<string, string>>({});
   const [corretorInfoMap, setCorretorInfoMap] = useState<Record<string, CorretorInfo>>({});
