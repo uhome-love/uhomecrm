@@ -330,13 +330,15 @@ export function useRoleta() {
     if (!user || !profileId) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("roleta_credenciamentos").insert({
+      const { error } = await supabase.from("roleta_credenciamentos").upsert({
         corretor_id: profileId,
         janela,
         segmento_1_id: segmento1Id,
         segmento_2_id: segmento2Id || null,
         data: hoje,
         status: "pendente",
+      } as any, {
+        onConflict: "corretor_id,data,janela",
       });
       if (error) throw error;
       toast.success("Credenciamento enviado! Aguardando aprovação.");
