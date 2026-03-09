@@ -97,6 +97,12 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             )}
           </div>
 
+          {/* Data de criação */}
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            <span>Criado em {new Date(negocio.created_at).toLocaleDateString("pt-BR")}</span>
+          </div>
+
           {/* Corretor info for CEO/Gerente */}
           {showCorretor && corretorInfo && (
             <div className="flex items-center gap-1.5 pt-0.5">
