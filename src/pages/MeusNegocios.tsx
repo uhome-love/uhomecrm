@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, RefreshCw, Briefcase, X, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight, TrendingUp, Clock, MessageCircle } from "lucide-react";
+import { Loader2, Search, RefreshCw, Briefcase, X, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight, TrendingUp, Clock, MessageCircle, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
+import AddNegocioDialog from "@/components/pipeline/AddNegocioDialog";
 
 function formatVGV(value: number) {
   if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
@@ -160,6 +161,7 @@ export default function MeusNegocios() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCorretor, setFilterCorretor] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [addNegocioOpen, setAddNegocioOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
@@ -266,6 +268,9 @@ export default function MeusNegocios() {
           <div className="flex items-center gap-2 mr-auto">
             <Briefcase className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-bold">Pipeline Negócios</h1>
+            <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => setAddNegocioOpen(true)}>
+              <Plus className="h-3.5 w-3.5" /> Novo
+            </Button>
           </div>
 
           <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-md">
@@ -420,6 +425,12 @@ export default function MeusNegocios() {
           })}
         </div>
       </div>
+
+      <AddNegocioDialog
+        open={addNegocioOpen}
+        onOpenChange={setAddNegocioOpen}
+        onCreated={() => reload()}
+      />
     </div>
   );
 }
