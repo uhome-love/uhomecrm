@@ -273,124 +273,34 @@ export function useVisitas(filters?: {
     
     if (result) {
       toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`);
-      
-      const visita = visitas.find(v => v.id === id);
-      if (visita?.pipeline_lead_id) {
-        try {
-          if (newStatus === "realizada") {
-            // Anti-duplication: check if negócio already exists
-            const { data: existingNegocio } = await supabase
+
+      // Negócio creation + pipeline stage moves are handled by DB triggers:
+      // - trg_auto_criar_negocio_visita (creates negócio on "realizada")
+      // - trg_visita_status_pipeline (moves pipeline lead stage)
+      if (newStatus === "realizada") {
+        const visita = visitas.find(v => v.id === id);
+        if (visita?.pipeline_lead_id) {
+          // Check if negócio was auto-created by trigger
+          setTimeout(async () => {
+            const { data: neg } = await supabase
               .from("negocios")
               .select("id")
-              .eq("pipeline_lead_id", visita.pipeline_lead_id)
+              .eq("pipeline_lead_id", visita.pipeline_lead_id!)
               .limit(1)
               .maybeSingle();
-
-            if (!existingNegocio) {
-              // Resolve profiles.id from auth user_id for FK compatibility
-              const corretorUserId = visita.corretor_id;
-              const gerenteUserId = visita.gerente_id;
-
-              const userIds = [corretorUserId, gerenteUserId].filter(Boolean) as string[];
-              const { data: profileRows } = await supabase
-                .from("profiles")
-                .select("id, user_id")
-                .in("user_id", userIds);
-
-              const profileMap = new Map((profileRows || []).map(p => [p.user_id, p.id]));
-              const corretorProfileId = profileMap.get(corretorUserId) || null;
-              const gerenteProfileId = profileMap.get(gerenteUserId) || null;
-
-              const { data: negocio, error: negError } = await supabase
-                .from("negocios")
-                .insert({
-                  pipeline_lead_id: visita.pipeline_lead_id,
-                  visita_id: visita.id,
-                  corretor_id: corretorProfileId,
-                  gerente_id: gerenteProfileId,
-                  nome_cliente: visita.nome_cliente,
-                  empreendimento: visita.empreendimento || null,
-                  telefone: visita.telefone || null,
-                  fase: "novo_negocio",
-                  origem: "visita_realizada",
-                } as any)
-                .select("id")
-                .single();
-
-              if (negocio && !negError) {
-                // Update pipeline lead with negocio link
-                await supabase.from("pipeline_leads").update({
-                  negocio_id: negocio.id,
-                } as any).eq("id", visita.pipeline_lead_id);
-
-                toast("🎉 Negócio criado automaticamente!", {
-                  description: "🎯 Envie a proposta em até 24h!",
-                  duration: 5000,
-                });
-              } else if (negError) {
-                console.error("Erro ao criar negócio:", negError);
-                toast.error("Erro ao criar negócio automático");
-              }
-            }
-
-            // Move pipeline lead to "Visita Realizada" stage
-            const { data: visitaRealizadaStage } = await supabase
-              .from("pipeline_stages")
-              .select("id")
-              .eq("pipeline_tipo", "leads")
-              .ilike("nome", "%visita realizada%")
-              .eq("ativo", true)
-              .limit(1)
-              .maybeSingle();
-
-            if (visitaRealizadaStage) {
-              await supabase.from("pipeline_leads").update({
-                stage_id: visitaRealizadaStage.id,
-                stage_changed_at: new Date().toISOString(),
-              }).eq("id", visita.pipeline_lead_id);
-
-              // Insert history
-              await supabase.from("pipeline_historico").insert({
-                pipeline_lead_id: visita.pipeline_lead_id,
-                stage_novo_id: visitaRealizadaStage.id,
-                movido_por: user!.id,
-                observacao: "Movido automaticamente: visita realizada",
+            if (neg) {
+              toast("🎉 Negócio criado automaticamente!", {
+                description: "🎯 Envie a proposta em até 24h!",
+                duration: 5000,
               });
             }
-
-          } else if (newStatus === "no_show" || newStatus === "cancelada") {
-            // Move lead back to pipeline qualification stage
-            const { data: qualStage } = await supabase
-              .from("pipeline_stages")
-              .select("id")
-              .eq("pipeline_tipo", "leads")
-              .ilike("nome", "%qualifica%")
-              .eq("ativo", true)
-              .limit(1)
-              .maybeSingle();
-
-            if (qualStage) {
-              await supabase.from("pipeline_leads").update({
-                stage_id: qualStage.id,
-                stage_changed_at: new Date().toISOString(),
-              }).eq("id", visita.pipeline_lead_id);
-            }
-
-            await supabase.from("pipeline_historico").insert({
-              pipeline_lead_id: visita.pipeline_lead_id,
-              stage_novo_id: qualStage?.id || "",
-              movido_por: user!.id,
-              observacao: `Movido automaticamente: visita ${newStatus === "no_show" ? "no show" : "cancelada"}`,
-            });
-          }
-        } catch (err) {
-          console.error("Lead progression error:", err);
+          }, 500);
         }
       }
     }
     
     return result;
-  }, [updateVisita, visitas, user]);
+  }, [updateVisita, visitas]);
 
   const deleteVisita = useCallback(async (id: string) => {
     const { error } = await supabase
