@@ -625,7 +625,7 @@ export default function GerenteDashboard() {
                     );
                   })}
                   {visitasExtra > 0 && (
-                    <button className="text-sm text-blue-500 hover:underline font-medium w-full text-center" onClick={() => navigate("/agenda-visitas")}>
+                    <button className="text-sm text-primary hover:underline font-medium w-full text-center" onClick={() => navigate("/agenda-visitas")}>
                       Ver mais {visitasExtra} visitas →
                     </button>
                   )}
