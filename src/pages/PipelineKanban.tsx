@@ -149,8 +149,20 @@ export default function PipelineKanban() {
     if (filaCeoFilter) {
       result = result.filter(l => l.aceite_status === "pendente_distribuicao");
     }
+    if (corretorFilter && corretorFilter !== "all") {
+      if (corretorFilter === "sem_corretor") {
+        result = result.filter(l => !l.corretor_id);
+      } else {
+        result = result.filter(l => l.corretor_id === corretorFilter);
+      }
+    }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter]);
+
+  const corretorOptions = useMemo(() => {
+    const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
+    return entries;
+  }, [pipeline.corretorNomes]);
 
   const filaCeoCount = useMemo(() =>
     pipeline.leads.filter(l => l.aceite_status === "pendente_distribuicao").length,
