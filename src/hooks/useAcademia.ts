@@ -204,8 +204,9 @@ export function useAcademia() {
       toast(`🏆 TRILHA CONCLUÍDA! ${trilha?.titulo || ""}`, { description: `+100 XP bônus · Certificado emitido!`, duration: 6000 });
     }
 
-    queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });
-    queryClient.invalidateQueries({ queryKey: ["academia-certificados"] });
+    await queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });
+    await queryClient.invalidateQueries({ queryKey: ["academia-certificados"] });
+    await queryClient.refetchQueries({ queryKey: ["academia-progresso", user.id] });
   }, [user, aulas, progresso, trilhas, queryClient]);
 
   const startAula = useCallback(async (aulaId: string, trilhaId: string) => {

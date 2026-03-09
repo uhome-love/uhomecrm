@@ -242,8 +242,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   const handleFinalizarLigacao = () => {
     stopTimer();
-    setShowResultPopup(false); // ensure only one popup
-    setShowModal(true);
+    setShowModal(false); // ensure only one popup
+    handleOpenResultPopup();
   };
 
   const handleWhatsAppDuringCall = () => {

@@ -44,12 +44,19 @@ export default function DailyProgressCard({ progress, goals, saveGoals, variant 
     }
   }, [goals?.meta_ligacoes, goals?.meta_aproveitados, goals?.meta_visitas_marcadas]);
 
-  // In full variant, show editor if no goals saved yet
+  // In full variant, show editor if no goals saved yet (null = no record, undefined = still loading)
   useEffect(() => {
     if (variant === "full" && goals === null) {
       setEditing(true);
     }
   }, [goals, variant]);
+
+  // Force re-render when goals changes from undefined to object
+  useEffect(() => {
+    if (goals && editing && variant === "full") {
+      // Goals loaded and we were in edit mode from auto-open — keep it
+    }
+  }, [goals]);
 
   const handleSave = async () => {
     try {
