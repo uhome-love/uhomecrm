@@ -448,7 +448,7 @@ async function distributeSingleLead(
   }
 
   // Log, notify
-  await supabase.from("roleta_distribuicoes").insert({
+  const distRes = await supabase.from("roleta_distribuicoes").insert({
     lead_id: leadId,
     corretor_id: chosen.corretorId,
     segmento_id: segmentoId,
@@ -457,9 +457,10 @@ async function distributeSingleLead(
     enviado_em: now.toISOString(),
     expira_em: expireAt.toISOString(),
     avisos_enviados: 0,
-  }).catch(() => {});
+  });
+  if (distRes.error) console.warn("roleta_distribuicoes insert:", distRes.error.message);
 
-  await supabase.from("notifications").insert({
+  const notifRes = await supabase.from("notifications").insert({
     user_id: chosen.authUserId,
     tipo: "lead",
     categoria: "lead_novo",
@@ -467,9 +468,10 @@ async function distributeSingleLead(
     mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` (${lead.empreendimento})` : ""}. Aceite em 10 minutos!`,
     dados: { pipeline_lead_id: leadId, empreendimento: lead.empreendimento },
     agrupamento_key: `lead_novo_${leadId}`,
-  }).catch(() => {});
+  });
+  if (notifRes.error) console.warn("notification insert:", notifRes.error.message);
 
-  sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead).catch(() => {});
+  try { await sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead); } catch (e) { console.warn("WhatsApp error:", e); }
 
   return { success: true, corretor_id: chosen.authUserId, segmento_id: segmentoId };
 }
