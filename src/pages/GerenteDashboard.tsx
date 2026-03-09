@@ -99,7 +99,7 @@ export default function GerenteDashboard() {
 
   const nome = profile?.nome?.split(" ")[0] || "";
   const { start, end, startTs, endTs } = getPeriodRange(period);
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = todayBRT();
   const weekNum = Math.ceil((new Date().getDate()) / 7);
 
   // ── Team members ──
