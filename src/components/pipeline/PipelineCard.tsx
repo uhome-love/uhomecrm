@@ -351,21 +351,21 @@ const PipelineCard = memo(function PipelineCard({
             </span>
           </div>
 
-          {/* Line 2: origem · empreendimento/formulário · phone */}
+          {/* Line 2: origem · empreendimento · phone */}
           <div className="text-[10px] text-muted-foreground truncate leading-tight">
             {(() => {
+              // Extract source (Facebook, TikTok, etc.)
               const source = extractOrigemSource(lead.origem);
-              const campanha = extractCampanha(lead.origem);
-              const origemLabel = source || (lead.origem ? cleanOrigem(lead.origem) : "");
-              // Empreendimento or campaign extracted from origem
-              const formulario = displayEmpreendimento 
-                ? (campanha ? `${displayEmpreendimento} (${campanha})` : displayEmpreendimento)
-                : campanha || "";
+              const origemLabel = source || "";
+              
+              // Clean empreendimento (deduplicated)
+              const empreendimentoClean = displayEmpreendimento || "";
+              
               return (
                 <>
                   {origemLabel && <span>{origemLabel}</span>}
-                  {origemLabel && formulario && " · "}
-                  {formulario && <span className="font-medium text-foreground/80">{formulario}</span>}
+                  {origemLabel && empreendimentoClean && " · "}
+                  {empreendimentoClean && <span className="font-medium text-foreground/80">{empreendimentoClean}</span>}
                 </>
               );
             })()}
