@@ -55,9 +55,9 @@ interface JanelaConfig {
   temRequisitos: boolean;
 }
 
-// TODO: TEMPORÁRIO - dia de teste 09/03. Manhã estendida até 10h.
+// Manhã: credenciamento aberto 24h (sem restrição de horário)
 const JANELAS_CONFIG: JanelaConfig[] = [
-  { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 0, fim: 10 }, recebimento: "10h — 12h", temRequisitos: false },
+  { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 0, fim: 24 }, recebimento: "10h — 12h", temRequisitos: false },
   { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 13.5 }, recebimento: "13h30 — 18h", temRequisitos: false },
   { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 24 }, recebimento: "18h — 23h59", temRequisitos: true },
 ];
