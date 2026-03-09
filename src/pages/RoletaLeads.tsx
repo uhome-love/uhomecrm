@@ -266,6 +266,7 @@ function CorretorView() {
       }
 
       // Check 2: No stalled leads (not updated in 3h, excluding terminal stages)
+      const threeHoursAgo = subHours(new Date(), 3).toISOString();
       const { count: stalledCount } = await supabase
         .from("pipeline_leads")
         .select("id", { count: "exact", head: true })
