@@ -12,7 +12,7 @@ import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
-import HomiBriefingCard from "@/components/ceo/HomiBriefingCard";
+// HomiBriefingCard removed — was causing bugs
 import HomiCeoFloating from "@/components/ceo/HomiCeoFloating";
 
 // ─── Greeting ───
@@ -270,8 +270,6 @@ export default function CeoDashboard() {
         </div>
       </div>
 
-      {/* ─── HOMI BRIEFING ─── */}
-      {!loading && <HomiBriefingCard dashboardData={dashboardData} />}
 
       {/* ─── SEÇÃO 1: ROLETA PENDENTES ─── */}
       <Card className={`${localPendentes.length > 0 ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.2)] animate-pulse-border" : "border-emerald-500/30"}`}>

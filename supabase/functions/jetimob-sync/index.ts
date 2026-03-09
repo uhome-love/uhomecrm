@@ -18,15 +18,37 @@ function extractCampanha(message: string | null | undefined): string | null {
 function normalizeEmpreendimento(text: string | null | undefined): string | null {
   if (!text) return null;
   const lower = text.toLowerCase();
+  // Order matters: more specific patterns first
   if (lower.includes("casa tua")) return "Casa Tua";
   if (lower.includes("orygem")) return "Orygem";
   if (lower.includes("lake eyre")) return "Lake Eyre";
-  if (lower.includes("open bosque") || lower.includes("open")) return "Open Bosque";
+  if (lower.includes("open bosque") || lower.includes("vídeo open") || lower.includes("video open")) return "Open Bosque";
   if (lower.includes("casa bastian")) return "Casa Bastian";
   if (lower.includes("shift")) return "Shift";
-  if (lower.includes("las casas") || lower.includes("vértice") || lower.includes("vertice")) return "Las Casas";
-  if (lower.includes("alto lindóia") || lower.includes("alto lindoia")) return "Alto Lindóia";
+  if (lower.includes("seen") && lower.includes("menino")) return "Seen Menino Deus";
+  if (lower.includes("botanique")) return "Botanique";
+  if (lower.includes("me day")) return "Me Day";
+  if (lower.includes("melnick") && lower.includes("day")) return "Melnick Day";
   if (lower.includes("melnick")) return "Melnick Day";
+  if (lower.includes("go carlos") && lower.includes("bosque")) return "Go Carlos Bosque";
+  if (lower.includes("go carlos")) return "Go Carlos Gomes";
+  if (lower.includes("vista menino")) return "Vista Menino Deus";
+  if (lower.includes("nilo square") || lower.includes("nilo")) return "Nilo Square";
+  if (lower.includes("high garden") && lower.includes("iguatemi")) return "High Garden Iguatemi";
+  if (lower.includes("high garden") && lower.includes("rio branco")) return "High Garden Rio Branco";
+  if (lower.includes("high garden")) return "High Garden Iguatemi";
+  if (lower.includes("vértice") || lower.includes("vertice") || lower.includes("las casas")) return "Las Casas";
+  if (lower.includes("essenza")) return "Essenza Club";
+  if (lower.includes("prime wish")) return "Prime Wish";
+  if (lower.includes("alto lindóia") || lower.includes("alto lindoia")) return "Alto Lindóia";
+  if (lower.includes("san andreas")) return "San Andreas";
+  if (lower.includes("supreme")) return "Supreme";
+  if (lower.includes("boa vista")) return "Boa Vista Country Club";
+  if (lower.includes("pontal")) return "Pontal";
+  if (lower.includes("alfa")) return "Alfa";
+  if (lower.includes("canoas")) return "Avulso Canoas";
+  // Website leads (código de imóvel)
+  if (lower.includes("código") || lower.includes("codigo") || lower.includes("imóvel") || lower.includes("imovel")) return "Avulso";
   return null;
 }
 
@@ -234,6 +256,10 @@ serve(async (req) => {
         let empreendimento = campanhaNome ? normalizeEmpreendimento(campanhaNome) || campanhaNome : null;
         if (!empreendimento) {
           empreendimento = normalizeEmpreendimento(origemText) || normalizeEmpreendimento(lead.source) || normalizeEmpreendimento(lead.origin) || null;
+        }
+        // Fallback: leads without empreendimento go to "Avulso" so distribution doesn't fail
+        if (!empreendimento) {
+          empreendimento = "Avulso";
         }
 
         // Determine lead priority based on content
