@@ -20,7 +20,7 @@ function todayISO(): string {
 function addDays(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 export function generateTasksForLeads(leads: Lead[]): LeadTask[] {

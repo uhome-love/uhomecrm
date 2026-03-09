@@ -171,12 +171,12 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   };
 
   const renderTarefa = (tarefa: PipelineTarefa) => {
-    const isOverdue = tarefa.status === "pendente" && tarefa.vence_em && isBefore(new Date(tarefa.vence_em), today);
+    const isOverdue = tarefa.status === "pendente" && tarefa.vence_em && isBefore(parseDateBRT(tarefa.vence_em), today);
     const isConcluida = tarefa.status === "concluida";
     const dateLabel = tarefa.vence_em
-      ? isToday(new Date(tarefa.vence_em)) ? "Hoje"
-      : isTomorrow(new Date(tarefa.vence_em)) ? "Amanhã"
-      : format(new Date(tarefa.vence_em), "dd/MM", { locale: ptBR })
+      ? isToday(parseDateBRT(tarefa.vence_em)) ? "Hoje"
+      : isTomorrow(parseDateBRT(tarefa.vence_em)) ? "Amanhã"
+      : format(parseDateBRT(tarefa.vence_em), "dd/MM", { locale: ptBR })
       : "Sem data";
     const timeLabel = (tarefa as any).hora_vencimento ? ` ${(tarefa as any).hora_vencimento.slice(0, 5)}` : "";
 

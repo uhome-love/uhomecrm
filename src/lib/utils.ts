@@ -19,3 +19,15 @@ export function todayBRT(): string {
 export function dateToBRT(date: Date): string {
   return date.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
+
+/**
+ * Safely parses a "YYYY-MM-DD" date string as noon local time,
+ * avoiding the UTC midnight pitfall where isToday/isTomorrow would be off by 1 day in BRT.
+ * For full ISO strings (with T), returns normal Date parse.
+ */
+export function parseDateBRT(dateStr: string): Date {
+  if (!dateStr) return new Date();
+  if (dateStr.includes("T")) return new Date(dateStr);
+  // "YYYY-MM-DD" → treat as noon to avoid timezone day shift
+  return new Date(dateStr + "T12:00:00");
+}

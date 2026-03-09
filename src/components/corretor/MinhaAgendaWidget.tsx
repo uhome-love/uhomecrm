@@ -91,7 +91,7 @@ export default function MinhaAgendaWidget() {
 
   const atrasadas = useMemo(() => tarefas.filter(t => {
     if (!t.vence_em) return false;
-    const d = new Date(t.vence_em);
+    const d = parseDateBRT(t.vence_em);
     if (isBefore(d, todayStart)) return true;
     if (isToday(d) && t.hora_vencimento) {
       const [h, m] = t.hora_vencimento.split(":").map(Number);
@@ -104,7 +104,7 @@ export default function MinhaAgendaWidget() {
 
   const proximas = useMemo(() => tarefas.filter(t => {
     if (!t.vence_em) return false;
-    const d = new Date(t.vence_em);
+    const d = parseDateBRT(t.vence_em);
     if (!isToday(d)) return false;
     if (!t.hora_vencimento) return true;
     const [h, m] = t.hora_vencimento.split(":").map(Number);
@@ -113,7 +113,7 @@ export default function MinhaAgendaWidget() {
     return !isBefore(taskTime, now);
   }), [tarefas, now]);
 
-  const amanha = useMemo(() => tarefas.filter(t => t.vence_em && isTomorrow(new Date(t.vence_em))), [tarefas]);
+  const amanha = useMemo(() => tarefas.filter(t => t.vence_em && isTomorrow(parseDateBRT(t.vence_em))), [tarefas]);
 
   const totalHoje = atrasadas.length + proximas.length;
 

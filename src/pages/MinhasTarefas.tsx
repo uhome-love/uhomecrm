@@ -120,12 +120,12 @@ export default function MinhasTarefas() {
 
   const pendentes = useMemo(() => tarefas.filter(t => t.status === "pendente"), [tarefas]);
   const concluidas = useMemo(() => tarefas.filter(t => t.status === "concluida").slice(0, 20), [tarefas]);
-  const atrasadas = useMemo(() => pendentes.filter(t => t.vence_em && isBefore(new Date(t.vence_em), todayStart)), [pendentes]);
-  const hoje = useMemo(() => pendentes.filter(t => t.vence_em && isToday(new Date(t.vence_em))), [pendentes]);
-  const amanha = useMemo(() => pendentes.filter(t => t.vence_em && isTomorrow(new Date(t.vence_em))), [pendentes]);
+  const atrasadas = useMemo(() => pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart)), [pendentes]);
+  const hoje = useMemo(() => pendentes.filter(t => t.vence_em && isToday(parseDateBRT(t.vence_em))), [pendentes]);
+  const amanha = useMemo(() => pendentes.filter(t => t.vence_em && isTomorrow(parseDateBRT(t.vence_em))), [pendentes]);
   const semana = useMemo(() => pendentes.filter(t => {
     if (!t.vence_em) return false;
-    const d = new Date(t.vence_em);
+    const d = parseDateBRT(t.vence_em);
     return d >= todayStart && d <= weekEnd;
   }), [pendentes]);
 
