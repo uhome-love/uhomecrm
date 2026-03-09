@@ -320,11 +320,21 @@ const PipelineCard = memo(function PipelineCard({
         draggable
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", lead.id);
+          // Create a semi-transparent drag image
+          const el = e.currentTarget;
+          if (el) {
+            e.dataTransfer.setDragImage(el, el.offsetWidth / 2, 20);
+          }
           onDragStart();
+        }}
+        onDragEnd={(e) => {
+          // Ensure cleanup even if drop doesn't fire (e.g. ESC or invalid target)
+          e.preventDefault();
         }}
         onClick={handleCardClick}
         className={cn(
-          "group relative rounded-lg border-l-[3px] border border-[#e5e7eb] bg-white dark:bg-card cursor-pointer active:cursor-grabbing hover:shadow-md transition-all duration-150 select-none overflow-hidden",
+          "group relative rounded-lg border-l-[3px] border border-[#e5e7eb] bg-white dark:bg-card cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150 select-none overflow-hidden",
           semanticBorder
         )}
       >
