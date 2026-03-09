@@ -398,23 +398,23 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </Button>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: "calc(85vh - 280px)" }}>
             {/* ===== TAB: INTELIGÊNCIA ===== */}
-            <TabsContent value="inteligencia" className="px-4 pb-6 space-y-4 mt-0">
+            <TabsContent value="inteligencia" className="px-6 pb-8 space-y-5 mt-0">
               {/* Lead intelligence card */}
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
-                <h4 className="text-[11px] font-bold text-primary flex items-center gap-1.5">
-                  <Brain className="h-3.5 w-3.5" /> Inteligência do Lead
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                <h4 className="text-xs font-bold text-primary flex items-center gap-1.5">
+                  <Brain className="h-4 w-4" /> Inteligência do Lead
                 </h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <InsightItem icon={Timer} label="Sem contato" value={lastActivity ? formatDistanceToNow(new Date(lastActivity.created_at), { locale: ptBR }) : "Nenhum"} alert={!lastActivity || differenceInHours(new Date(), new Date(lastActivity.created_at)) > 48} />
                   <InsightItem icon={PhoneCall} label="Tentativas" value={`${leadData.atividades.length}`} />
                   <InsightItem icon={Clock} label="Nesta etapa" value={hoursInStage < 24 ? `${hoursInStage}h` : `${Math.round(hoursInStage / 24)}d`} alert={hoursInStage > 72} />
                   <InsightItem icon={AlertTriangle} label="Atrasadas" value={overdueTasks > 0 ? `${overdueTasks}` : "0"} alert={overdueTasks > 0} />
                 </div>
                 {hoursInStage > 48 && !lastActivity && (
-                  <p className="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded flex items-center gap-1">
-                    <Zap className="h-3 w-3" /> Faça contato imediato — lead sem interação.
+                  <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                    <Zap className="h-4 w-4" /> Faça contato imediato — lead sem interação.
                   </p>
                 )}
               </div>
@@ -424,34 +424,23 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 <LeadSequenceSuggestion leadId={lead.id} leadNome={lead.nome} stageType={currentStage.tipo} empreendimento={lead.empreendimento} />
               )}
 
-              {/* Commercial Data (compact grid) */}
-              <div className="space-y-1.5">
+              {/* Commercial Data — simplified horizontal layout */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <TrendingUp className="h-3.5 w-3.5" /> Dados Comerciais
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <TrendingUp className="h-4 w-4" /> Dados Comerciais
                   </h4>
-                  <Button variant="ghost" size="sm" className="h-5 text-[10px] text-primary" onClick={() => setEditingCommercial(!editingCommercial)}>
+                  <Button variant="ghost" size="sm" className="h-6 text-xs text-primary" onClick={() => setEditingCommercial(!editingCommercial)}>
                     {editingCommercial ? "Cancelar" : "Editar"}
                   </Button>
                 </div>
                 {editingCommercial ? (
-                  <div className="space-y-2 border rounded-lg p-3 bg-card">
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-3 border rounded-xl p-4 bg-card">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-[10px]">Objetivo</Label>
-                        <Select value={commercialData.objetivo_cliente} onValueChange={v => setCommercialData(p => ({ ...p, objetivo_cliente: v }))}>
-                          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="morar">Morar</SelectItem>
-                            <SelectItem value="investir">Investir</SelectItem>
-                            <SelectItem value="ambos">Ambos</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-[10px]">Temperatura</Label>
+                        <Label className="text-xs text-muted-foreground">Temperatura</Label>
                         <Select value={commercialData.temperatura} onValueChange={v => setCommercialData(p => ({ ...p, temperatura: v }))}>
-                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="quente">🔥 Quente</SelectItem>
                             <SelectItem value="morno">☀️ Morno</SelectItem>
@@ -460,53 +449,42 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-[10px]">Pagamento</Label>
-                        <Select value={commercialData.forma_pagamento} onValueChange={v => setCommercialData(p => ({ ...p, forma_pagamento: v }))}>
-                          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="financiamento">Financiamento</SelectItem>
-                            <SelectItem value="avista">À vista</SelectItem>
-                            <SelectItem value="parcelado">Parcelado</SelectItem>
-                            <SelectItem value="fgts">FGTS</SelectItem>
-                            <SelectItem value="consorcio">Consórcio</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
+                        <Input type="number" className="h-9 text-sm" value={commercialData.valor_estimado || ""} onChange={e => setCommercialData(p => ({ ...p, valor_estimado: Number(e.target.value) }))} />
                       </div>
-                      <div>
-                        <Label className="text-[10px]">Valor (R$)</Label>
-                        <Input type="number" className="h-7 text-xs" value={commercialData.valor_estimado || ""} onChange={e => setCommercialData(p => ({ ...p, valor_estimado: Number(e.target.value) }))} />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-[10px]">Bairro / Região</Label>
-                      <Input className="h-7 text-xs" value={commercialData.bairro_regiao} onChange={e => setCommercialData(p => ({ ...p, bairro_regiao: e.target.value }))} />
                     </div>
                     <div className="flex items-center gap-2">
                       <Checkbox checked={commercialData.imovel_troca} onCheckedChange={v => setCommercialData(p => ({ ...p, imovel_troca: !!v }))} />
-                      <Label className="text-[10px]">Imóvel na troca</Label>
+                      <Label className="text-xs">Imóvel na troca</Label>
                     </div>
-                    <Button size="sm" className="w-full h-7 text-xs" onClick={handleSaveCommercial} disabled={saving}>
-                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+                    <Button size="sm" className="w-full h-9 text-sm" onClick={handleSaveCommercial} disabled={saving}>
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
-                    <DataField label="Empreendimento" value={lead.empreendimento} />
-                    <DataField label="Objetivo" value={(lead as any).objetivo_cliente ? ((lead as any).objetivo_cliente === "morar" ? "Morar" : (lead as any).objetivo_cliente === "investir" ? "Investir" : "Ambos") : null} />
-                    <DataField label="Valor" value={lead.valor_estimado ? `R$ ${lead.valor_estimado.toLocaleString("pt-BR")}` : null} />
-                    <DataField label="Bairro" value={(lead as any).bairro_regiao} />
-                    <DataField label="Pagamento" value={(lead as any).forma_pagamento} />
-                    <DataField label="Origem" value={lead.origem} />
+                  /* Horizontal layout: Empreendimento | Valor | Origem */
+                  <div className="flex items-center gap-6 flex-wrap text-sm py-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Empreendimento</span>
+                      <p className="font-medium text-foreground">{lead.empreendimento || <span className="text-muted-foreground/60">Não definido</span>}</p>
+                    </div>
+                    <div className="h-8 w-px bg-border" />
+                    <div>
+                      <span className="text-xs text-muted-foreground">Valor</span>
+                      <p className="font-medium text-foreground">{lead.valor_estimado ? `R$ ${lead.valor_estimado.toLocaleString("pt-BR")}` : <span className="text-muted-foreground/60">—</span>}</p>
+                    </div>
+                    <div className="h-8 w-px bg-border" />
+                    <div>
+                      <span className="text-xs text-muted-foreground">Origem</span>
+                      <p className="font-medium text-foreground">{lead.origem || <span className="text-muted-foreground/60">—</span>}</p>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Responsabilidade (compact) */}
-              <GerenteManagementSection lead={lead} onUpdate={onUpdate} />
-
               {/* Observações */}
               {lead.observacoes && (
-                <p className="text-[11px] text-muted-foreground bg-muted/50 rounded p-2">
+                <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
                   {lead.observacoes}
                 </p>
               )}
