@@ -129,19 +129,13 @@ Deno.serve(async (req) => {
       // Get today's start
       const todayStart = getTodayStartUTC();
 
-      // Get all approved credenciamentos for today+janela (or "qualquer" = any)
-      const credQuery = supabase
+      // Get ALL approved credenciamentos for today (ignore janela — balancing is global)
+      const { data: creds } = await supabase
         .from("roleta_credenciamentos")
         .select("corretor_id, segmento_1_id, segmento_2_id, janela")
         .eq("data", getTodayDateStr())
         .eq("status", "aprovado")
         .is("saiu_em", null);
-
-      if (targetJanela !== "qualquer") {
-        credQuery.eq("janela", targetJanela);
-      }
-
-      const { data: creds } = await credQuery;
       if (!creds || creds.length === 0) {
         return jsonResponse({ success: false, reason: "no_credenciados", dispatched: 0 });
       }
@@ -173,14 +167,15 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Count leads received TODAY per corretor (auth user_id)
+      // Count leads received TODAY per corretor — only ASSIGNED leads (aceito or pendente)
+      // NEVER count pendente_distribuicao (those are unassigned in the CEO queue)
       const authUserIds = [...profileToAuth.values()];
       const { data: todayLeads } = await supabase
         .from("pipeline_leads")
         .select("corretor_id, distribuido_em")
         .in("corretor_id", authUserIds)
         .gte("distribuido_em", todayStart)
-        .in("aceite_status", ["aceito", "pendente", "pendente_distribuicao"]);
+        .in("aceite_status", ["aceito", "pendente"]);
 
       // Count per auth user
       const leadsCount = new Map<string, number>();
@@ -332,7 +327,7 @@ Deno.serve(async (req) => {
 // ─── Distribute a single lead ───
 async function distributeSingleLead(
   supabase: any, supabaseUrl: string, serviceKey: string,
-  leadId: string, forceJanela?: string
+  leadId: string, forceJanela?: string, excludeAuthUserId?: string
 ) {
   const { data: lead } = await supabase
     .from("pipeline_leads")
@@ -350,19 +345,13 @@ async function distributeSingleLead(
   const todayStart = getTodayStartUTC();
   const todayStr = getTodayDateStr();
 
-  // Get credenciados
-  const credQuery = supabase
+  // Get ALL approved credenciados for today (global balancing, no janela filter)
+  const { data: creds } = await supabase
     .from("roleta_credenciamentos")
     .select("corretor_id, segmento_1_id, segmento_2_id")
     .eq("data", todayStr)
     .eq("status", "aprovado")
     .is("saiu_em", null);
-
-  if (targetJanela !== "qualquer") {
-    credQuery.eq("janela", targetJanela);
-  }
-
-  const { data: creds } = await credQuery;
   if (!creds || creds.length === 0) {
     return { success: false, reason: "no_credenciados" };
   }
@@ -401,13 +390,13 @@ async function distributeSingleLead(
 
   const authIds = [...profileToAuth.values()];
 
-  // Count today's leads
+  // Count today's leads — only actually assigned (aceito/pendente), NOT pendente_distribuicao
   const { data: todayLeads } = await supabase
     .from("pipeline_leads")
     .select("corretor_id, distribuido_em")
     .in("corretor_id", authIds)
     .gte("distribuido_em", todayStart)
-    .in("aceite_status", ["aceito", "pendente", "pendente_distribuicao"]);
+    .in("aceite_status", ["aceito", "pendente"]);
 
   const leadsCount = new Map<string, number>();
   const lastReceived = new Map<string, string>();
@@ -418,9 +407,10 @@ async function distributeSingleLead(
     if (!prev || l.distribuido_em > prev) lastReceived.set(l.corretor_id, l.distribuido_em);
   }
 
-  // Build candidates and sort
+  // Build candidates and sort — exclude rejected broker if specified
   const candidates: CorretorCandidate[] = [];
   for (const [profileId, authId] of profileToAuth.entries()) {
+    if (excludeAuthUserId && authId === excludeAuthUserId) continue; // skip rejected broker
     candidates.push({
       corretorId: profileId,
       authUserId: authId,
@@ -558,9 +548,9 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
       .eq("status", "pendente")
       .catch(() => {});
 
-    // Try to redistribute immediately
-    const result = await distributeSingleLead(supabase, supabaseUrl, serviceKey, pipeline_lead_id);
-    console.log(`Redistribution after reject:`, JSON.stringify(result));
+    // Try to redistribute immediately, excluding the broker who just rejected
+    const result = await distributeSingleLead(supabase, supabaseUrl, serviceKey, pipeline_lead_id, undefined, userId);
+    console.log(`Redistribution after reject (excluded ${userId}):`, JSON.stringify(result));
 
     return jsonResponse({ success: true, redistributed: result.success });
   }
