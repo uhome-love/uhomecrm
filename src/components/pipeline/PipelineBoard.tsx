@@ -220,6 +220,38 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
+  // Fetch next pending task per lead for all visible leads
+  const leadIds = useMemo(() => leads.map(l => l.id), [leads]);
+  const { data: tarefasMap = {} } = useQuery({
+    queryKey: ["pipeline-tarefas-map", leadIds.length],
+    queryFn: async () => {
+      if (leadIds.length === 0) return {};
+      // Batch fetch in chunks of 200
+      const map: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }> = {};
+      for (let i = 0; i < leadIds.length; i += 200) {
+        const chunk = leadIds.slice(i, i + 200);
+        const { data } = await supabase
+          .from("pipeline_tarefas")
+          .select("pipeline_lead_id, tipo, vence_em, hora_vencimento")
+          .in("pipeline_lead_id", chunk)
+          .eq("status", "pendente")
+          .order("vence_em", { ascending: true })
+          .order("hora_vencimento", { ascending: true });
+        if (data) {
+          for (const t of data) {
+            // Keep only the earliest task per lead
+            if (!map[t.pipeline_lead_id]) {
+              map[t.pipeline_lead_id] = { tipo: t.tipo || "follow_up", vence_em: t.vence_em, hora_vencimento: t.hora_vencimento };
+            }
+          }
+        }
+      }
+      return map;
+    },
+    enabled: leadIds.length > 0,
+    staleTime: 60_000,
+  });
+
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
     const seen = new Set<string>();
