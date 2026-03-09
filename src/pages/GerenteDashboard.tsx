@@ -605,7 +605,7 @@ export default function GerenteDashboard() {
               {(todayVisitas || []).length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-lg">😴 Nenhuma visita hoje</p>
-                  <button className="text-sm text-blue-500 hover:underline font-medium mt-2 inline-flex items-center gap-1" onClick={() => navigate("/agenda-visitas")}>
+                  <button className="text-sm text-primary hover:underline font-medium mt-2 inline-flex items-center gap-1" onClick={() => navigate("/agenda-visitas")}>
                     Que tal agendar algumas? <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
