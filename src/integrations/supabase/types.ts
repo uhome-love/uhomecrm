@@ -5342,6 +5342,7 @@ export type Database = {
         }
         Returns: Json
       }
+      reset_roleta_turno: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "gestor" | "corretor" | "backoffice"
