@@ -188,7 +188,7 @@ export function usePipelineLeadData(leadId: string | null) {
     atividades, anotacoes, tarefas, historico, loading,
     addAtividade, updateAtividade,
     addAnotacao, toggleFixarAnotacao,
-    addTarefa, toggleTarefa,
+    addTarefa, toggleTarefa, deleteTarefa,
     reload: loadAll,
   };
 }
