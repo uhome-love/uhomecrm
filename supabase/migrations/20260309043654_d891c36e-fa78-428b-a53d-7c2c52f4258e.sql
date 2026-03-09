@@ -1,0 +1,1 @@
+DELETE FROM roleta_credenciamentos WHERE id = '358a2f58-454a-43f9-8a94-c71f5b8c0b23';
