@@ -546,9 +546,9 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
 
     // Update roleta_distribuicoes
     const rejUpd = await supabase.from("roleta_distribuicoes")
-      .update({ status: "rejeitado" })
+      .update({ status: "recusado" })
       .eq("lead_id", pipeline_lead_id)
-      .eq("status", "pendente");
+      .eq("status", "aguardando");
     if (rejUpd.error) console.warn("roleta_distribuicoes reject update:", rejUpd.error.message);
 
     // Try to redistribute immediately, excluding the broker who just rejected
