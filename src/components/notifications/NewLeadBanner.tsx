@@ -130,7 +130,7 @@ export default function NewLeadBanner() {
             index={idx}
             onDismiss={() => dismissBanner(lead.id)}
             onNavigate={() => {
-              navigate(`/meus-negocios?lead=${lead.id}`);
+              navigate(`/pipeline?lead=${lead.id}`);
               dismissBanner(lead.id);
             }}
           />
