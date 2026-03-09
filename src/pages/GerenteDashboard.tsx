@@ -575,11 +575,11 @@ export default function GerenteDashboard() {
                   <div className="flex items-center gap-4">
                     <div className="text-center">
                       <p className="text-2xl font-bold text-primary">{academiaStats?.pctCompleted}%</p>
-                      <p className="text-[10px] text-gray-400">do time estudou</p>
+                      <p className="text-[10px] text-muted-foreground">do time estudou</p>
                     </div>
                     <div className="flex-1">
                       <Progress value={academiaStats?.pctCompleted || 0} className="h-2" />
-                      <p className="text-[10px] text-gray-400 mt-1">{academiaStats?.withProgress || 0} de {academiaStats?.total || 0} corretores</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{academiaStats?.withProgress || 0} de {academiaStats?.total || 0} corretores</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="w-full text-xs gap-1" onClick={() => navigate("/academia/gerenciar")}>
