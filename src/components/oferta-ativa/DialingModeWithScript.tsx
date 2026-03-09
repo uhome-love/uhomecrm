@@ -242,6 +242,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   const handleFinalizarLigacao = () => {
     stopTimer();
+    setShowResultPopup(false); // ensure only one popup
     setShowModal(true);
   };
 
@@ -344,13 +345,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   };
 
-  // Open result popup
+  // Open result popup (ensure AttemptModal is closed)
   const handleOpenResultPopup = () => {
     if (!actionTaken) {
       setActionTaken("ligacao");
       setCurrentIdempotencyKey(`${user?.id}_${lead?.id}_${Date.now()}`);
     }
     stopTimer();
+    setShowModal(false); // ensure only one popup
     setShowResultPopup(true);
   };
 
@@ -393,6 +395,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
     }
     if (resultado === "com_interesse" || resultado === "agendar") {
+      setShowResultPopup(false); // ensure only one popup
       setShowModal(true);
       return;
     }

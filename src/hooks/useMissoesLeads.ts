@@ -116,6 +116,7 @@ export function useMissoesLeads() {
     enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   // Ranking

@@ -45,19 +45,23 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
     if (!form.nome.trim()) return;
     setLoading(true);
     try {
-      await onAdd({
+      const result = await onAdd({
         nome: form.nome.trim(),
         telefone: form.telefone || null,
         email: form.email || null,
         segmento_id: form.segmento_id || null,
         empreendimento: form.empreendimento || null,
-        origem: form.origem || null,
+        origem: form.origem || "Manual",
         origem_detalhe: form.origem_detalhe || null,
         observacoes: form.observacoes || null,
         valor_estimado: form.valor_estimado ? parseFloat(form.valor_estimado) : null,
       });
-      setForm({ nome: "", telefone: "", email: "", segmento_id: "", empreendimento: "", origem: "", origem_detalhe: "", observacoes: "", valor_estimado: "" });
-      onOpenChange(false);
+      if (result) {
+        setForm({ nome: "", telefone: "", email: "", segmento_id: "", empreendimento: "", origem: "", origem_detalhe: "", observacoes: "", valor_estimado: "" });
+        onOpenChange(false);
+      }
+    } catch (err) {
+      console.error("Erro ao adicionar lead:", err);
     } finally {
       setLoading(false);
     }

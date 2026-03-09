@@ -1775,15 +1775,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["message_status"]
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "lead_messages_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_legado"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       lead_progressao: {
         Row: {
@@ -1831,13 +1823,6 @@ export type Database = {
             columns: ["corretor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_progressao_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
           {
@@ -1896,15 +1881,7 @@ export type Database = {
           user_id?: string
           vence_em?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "lead_tasks_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_legado"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       leads_backup: {
         Row: {
@@ -2501,13 +2478,6 @@ export type Database = {
             columns: ["gerente_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "negocios_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
           {
@@ -4032,13 +4002,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "pos_vendas_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_legado"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "pos_vendas_negocio_id_fkey"
             columns: ["negocio_id"]
             isOneToOne: false
@@ -4668,13 +4631,6 @@ export type Database = {
             columns: ["corretor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "roleta_distribuicoes_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
           {
