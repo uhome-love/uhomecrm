@@ -240,6 +240,7 @@ export function AppSidebar() {
               { title: "HOMI CEO", url: "/homi-ceo", icon: Bot },
               { title: "Base HOMI", url: "/homi/base-conhecimento", icon: Brain },
               { title: "Academia", url: "/academia/gerenciar", icon: GraduationCap },
+              { title: "🧪 Teste WhatsApp", url: "/teste-whatsapp", icon: MessageSquare },
             ],
           },
         ],

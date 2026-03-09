@@ -69,6 +69,7 @@ const AcademiaAulaPage = lazy(() => import("./pages/AcademiaAulaPage"));
 const AcademiaGerenciarPage = lazy(() => import("./pages/AcademiaGerenciarPage"));
 const GerenteDashboard = lazy(() => import("./pages/GerenteDashboard"));
 const RoletaLeads = lazy(() => import("./pages/RoletaLeads"));
+const TesteWhatsApp = lazy(() => import("./pages/TesteWhatsApp"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -181,6 +182,7 @@ const App = () => (
             <Route path="/backoffice/marketing" element={<ProtectedPage roles={["backoffice", "admin"]}><MarketingCentral /></ProtectedPage>} />
             <Route path="/backoffice/homi-ana" element={<ProtectedPage roles={["backoffice", "admin"]}><HomiAna /></ProtectedPage>} />
             <Route path="/backoffice/tarefas" element={<ProtectedPage roles={["backoffice", "admin"]}><TarefasPage /></ProtectedPage>} />
+            <Route path="/teste-whatsapp" element={<ProtectedPage roles={["admin"]}><TesteWhatsApp /></ProtectedPage>} />
 
             <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
           </Routes>
