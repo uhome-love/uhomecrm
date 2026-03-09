@@ -465,7 +465,7 @@ export default function GerenteDashboard() {
                           {i === 0 ? <span className="text-amber-500">👑</span> :
                            i === 1 ? <span>🥈</span> :
                            i === 2 ? <span>🥉</span> :
-                           <span className="text-gray-400">{i + 1}</span>}
+                           <span className="text-muted-foreground">{i + 1}</span>}
                         </td>
                     <td className="py-3 px-2">
                           <div className="flex items-center gap-2.5">
