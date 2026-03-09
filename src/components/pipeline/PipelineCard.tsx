@@ -194,7 +194,7 @@ interface PipelineCardProps {
 
 const PipelineCard = memo(function PipelineCard({
   lead, stage, stages, segmentos, corretorNome, gerenteNome, parceiroNome,
-  onDragStart, onClick, onMoveLead, onTransferred, stageIndexMap,
+  onDragStart, onClick, onMoveLead, onTransferred, stageIndexMap, proximaTarefa,
 }: PipelineCardProps) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
