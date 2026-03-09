@@ -497,11 +497,11 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
     }
 
     // Update roleta_distribuicoes
-    await supabase.from("roleta_distribuicoes")
+    const distUpd = await supabase.from("roleta_distribuicoes")
       .update({ status: "aceito", aceito_em: new Date().toISOString() })
       .eq("lead_id", pipeline_lead_id)
-      .eq("status", "pendente")
-      .catch(() => {});
+      .eq("status", "pendente");
+    if (distUpd.error) console.warn("roleta_distribuicoes update:", distUpd.error.message);
 
     // Notification
     const { data: leadData } = await supabase
