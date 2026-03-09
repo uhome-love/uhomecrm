@@ -112,10 +112,6 @@ export default function PipelineKanban() {
     });
   }, []);
 
-  const selectAllVisible = useCallback(() => {
-    setSelectedLeads(new Set(filteredLeads.map(l => l.id)));
-  }, []);
-
   const clearSelection = useCallback(() => {
     setSelectedLeads(new Set());
     setSelectionMode(false);
