@@ -348,31 +348,54 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                       <span className="text-[11px] text-muted-foreground/50">Arraste leads aqui</span>
                     </div>
                   )}
-                  {stageLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      style={{
-                        animation: arrivedLeadId === lead.id ? "cardArrived 0.4s cubic-bezier(0.34,1.56,0.64,1)" : undefined,
-                      }}
-                    >
-                      <PipelineCardHover lead={lead} onOpenLead={() => onSelectLead(lead)}>
-                        <PipelineCard
-                          lead={lead}
-                          stage={stage}
-                          stages={stages}
-                          segmentos={segmentos}
-                          corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
-                          gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
-                          parceiroNome={parcerias[lead.id]}
-                          onDragStart={() => handleDragStart(lead.id)}
-                          onClick={() => onSelectLead(lead)}
-                          onMoveLead={onMoveLead}
-                          onTransferred={onTransferred}
-                          stageIndexMap={stageIndexMap}
-                        />
-                      </PipelineCardHover>
-                    </div>
-                  ))}
+                  {stageLeads.map((lead) => {
+                    const isSelected = selectionMode && selectedLeads?.has(lead.id);
+                    return (
+                      <div
+                        key={lead.id}
+                        className={`relative ${selectionMode ? "cursor-pointer" : ""} ${isSelected ? "ring-2 ring-primary rounded-lg" : ""}`}
+                        style={{
+                          animation: arrivedLeadId === lead.id ? "cardArrived 0.4s cubic-bezier(0.34,1.56,0.64,1)" : undefined,
+                        }}
+                        onClick={selectionMode ? (e) => {
+                          e.stopPropagation();
+                          onToggleSelect?.(lead.id);
+                        } : undefined}
+                      >
+                        {selectionMode && (
+                          <div className="absolute top-1.5 right-1.5 z-10 pointer-events-none">
+                            <div className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-colors ${
+                              isSelected
+                                ? "bg-primary border-primary"
+                                : "bg-white border-muted-foreground/40"
+                            }`}>
+                              {isSelected && (
+                                <svg className="h-2.5 w-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        <PipelineCardHover lead={lead} onOpenLead={() => !selectionMode && onSelectLead(lead)}>
+                          <PipelineCard
+                            lead={lead}
+                            stage={stage}
+                            stages={stages}
+                            segmentos={segmentos}
+                            corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                            gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
+                            parceiroNome={parcerias[lead.id]}
+                            onDragStart={() => !selectionMode && handleDragStart(lead.id)}
+                            onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
+                            onMoveLead={selectionMode ? undefined : onMoveLead}
+                            onTransferred={onTransferred}
+                            stageIndexMap={stageIndexMap}
+                          />
+                        </PipelineCardHover>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
