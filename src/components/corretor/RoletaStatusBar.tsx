@@ -59,10 +59,12 @@ export default function RoletaStatusBar() {
     const h = new Date().getHours();
     const m = new Date().getMinutes();
     const decimal = h + m / 60;
+    // Credenciamento windows:
+    // Manhã: 00:00-09:30, Tarde: 12:00-13:30, Noturna: 18:00-18:30
     if (decimal < 9.5) return "manha";
     if (decimal < 13.5) return "tarde";
-    if (decimal < 23.5) return "noturna";
-    return "manha"; // after 23:30 → next morning
+    if (decimal < 18.5) return "noturna";
+    return "manha"; // after 18:30 or during noturna active, next morning
   }, []);
 
   const getJanelaLabel = (j: string) => {
