@@ -29,7 +29,7 @@ import {
   Building2,
   Cog,
   GraduationCap,
-  Handshake,
+  
   ListChecks,
   Inbox,
 } from "lucide-react";
