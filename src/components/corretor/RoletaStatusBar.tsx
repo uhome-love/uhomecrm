@@ -64,7 +64,14 @@ export default function RoletaStatusBar() {
     if (decimal < 9.5) return "manha";
     if (decimal < 13.5) return "tarde";
     if (decimal < 18.5) return "noturna";
-    return "manha"; // after 18:30 or during noturna active, next morning
+    return "manha";
+  }, []);
+
+  // TODO: TEMPORÁRIO - dia de teste 09/03. Reverter depois.
+  // Credenciamento permitido até 10h da manhã no dia de teste
+  const isCredenciamentoAberto = useCallback(() => {
+    const h = new Date().getHours();
+    return h < 10;
   }, []);
 
   const getJanelaLabel = (j: string) => {

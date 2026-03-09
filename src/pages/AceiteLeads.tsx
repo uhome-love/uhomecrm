@@ -32,7 +32,8 @@ const REJECTION_REASONS = [
 
 function CountdownRing({ expiresAt }: { expiresAt: string }) {
   const [remaining, setRemaining] = useState(0);
-  const TOTAL = 300; // 5 min
+  // TODO: TEMPORÁRIO - dia de teste 09/03. Reverter para 300 depois.
+  const TOTAL = 600; // 10 min
 
   useEffect(() => {
     const update = () => {

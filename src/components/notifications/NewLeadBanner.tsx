@@ -16,8 +16,9 @@ interface BannerLead {
 }
 
 const MAX_BANNERS = 3;
-const AUTO_CLOSE_MS = 300_000; // 5 minutes
-const SLA_TOTAL_SEC = 300;
+// TODO: TEMPORÁRIO - dia de teste 09/03. Reverter para 300_000 / 300 depois.
+const AUTO_CLOSE_MS = 600_000; // 10 minutes
+const SLA_TOTAL_SEC = 600;
 
 export default function NewLeadBanner() {
   const { user } = useAuth();
