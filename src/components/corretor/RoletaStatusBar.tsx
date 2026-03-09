@@ -111,7 +111,7 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
 
       const realizadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
         .in("corretor_id", idsToCheck)
-        .eq("status", "Realizada")
+        .eq("status", "realizada")
         .gte("data_visita", hoje);
 
       // pipeline_leads.corretor_id stores auth user.id
