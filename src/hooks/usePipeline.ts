@@ -255,6 +255,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
     if (newStage?.tipo === "descarte") {
       toast.info("Lead movido para Descarte. Será enviado para Oferta Ativa.");
     }
+
+    if (newStage?.tipo === "visita_realizada" && !prevNegocioId && updatedRow?.negocio_id) {
+      toast.success(`🎉 Novo negócio criado para ${lead.nome}!`);
+    }
+
     if (newStage?.tipo === "venda") {
       toast.success("🎉 Venda registrada! Parabéns!");
     }
