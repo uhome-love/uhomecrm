@@ -168,6 +168,25 @@ export function AppSidebar() {
     return () => clearInterval(interval);
   }, [fetchRoletaPendentes, isAdmin]);
 
+  // Fetch tarefas pendentes count for corretor badge
+  const fetchTarefasPendentes = useCallback(async () => {
+    if (!user) return;
+    const hoje = new Date().toISOString().slice(0, 10);
+    const { count } = await supabase
+      .from("pipeline_tarefas")
+      .select("id", { count: "exact", head: true })
+      .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
+      .eq("status", "pendente")
+      .lte("vence_em", hoje);
+    setTarefasPendentes(count ?? 0);
+  }, [user]);
+
+  useEffect(() => {
+    fetchTarefasPendentes();
+    const interval = setInterval(fetchTarefasPendentes, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchTarefasPendentes]);
+
   useEffect(() => {
     if (toastShown.current || alerts.length === 0) return;
     toastShown.current = true;
