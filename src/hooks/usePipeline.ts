@@ -47,6 +47,7 @@ export interface PipelineLead {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  negocio_id: string | null;
 }
 
 export interface PipelineSegmento {
