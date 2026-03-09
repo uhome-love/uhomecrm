@@ -487,10 +487,10 @@ export default function GerenteDashboard() {
                         <td className="py-3 px-2 text-center">
                           <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
                             r.status === "online"
-                              ? "bg-green-50 text-green-700"
+                              ? "bg-green-500/10 text-green-600"
                               : r.status === "paused"
-                              ? "bg-yellow-50 text-yellow-700"
-                              : "bg-red-50 text-red-600"
+                              ? "bg-yellow-500/10 text-yellow-600"
+                              : "bg-red-500/10 text-red-600"
                           }`}>
                             <span className={`inline-block h-1.5 w-1.5 rounded-full ${
                               r.status === "online" ? "bg-green-500" :
