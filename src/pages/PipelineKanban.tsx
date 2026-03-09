@@ -117,14 +117,16 @@ export default function PipelineKanban() {
     setSelectionMode(false);
   }, []);
 
-  // Load partnerships
+  // Load partnerships — only once on mount, not on every leads change
+  const [parceriasLoaded, setParceriasLoaded] = useState(false);
   useEffect(() => {
+    if (parceriasLoaded || pipeline.loading) return;
     (async () => {
       const { data } = await supabase
         .from("pipeline_parcerias")
         .select("pipeline_lead_id, corretor_parceiro_id")
         .eq("status", "ativa");
-      if (!data || data.length === 0) return;
+      if (!data || data.length === 0) { setParceriasLoaded(true); return; }
       const parceiroIds = [...new Set(data.map(p => p.corretor_parceiro_id))];
       const { data: members } = await supabase
         .from("team_members")
@@ -135,8 +137,9 @@ export default function PipelineKanban() {
       const result: Record<string, string> = {};
       data.forEach(p => { result[p.pipeline_lead_id] = nameMap[p.corretor_parceiro_id] || "Parceiro"; });
       setParcerias(result);
+      setParceriasLoaded(true);
     })();
-  }, [pipeline.leads]);
+  }, [pipeline.loading, parceriasLoaded]);
 
   const canAdd = isGestor || isAdmin;
 

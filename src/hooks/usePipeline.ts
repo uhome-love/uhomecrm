@@ -173,16 +173,21 @@ export function usePipeline(pipelineTipo: string = "leads") {
       .finally(() => setLoading(false));
   }, [user, loadStages, loadSegmentos, loadLeads]);
 
-  // Realtime subscription
+  // Realtime subscription — debounced to avoid rapid reloads
   useEffect(() => {
     if (!user) return;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel("pipeline-leads-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "pipeline_leads" }, () => {
-        loadLeads();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => loadLeads(), 2000);
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
   }, [user, loadLeads]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
