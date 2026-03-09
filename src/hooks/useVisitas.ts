@@ -262,62 +262,113 @@ export function useVisitas(filters?: {
     if (result) {
       toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`);
       
-      // Auto-progression triggers based on visita status changes
       const visita = visitas.find(v => v.id === id);
       if (visita?.pipeline_lead_id) {
         try {
           if (newStatus === "realizada") {
-            const { data: negocio } = await supabase
+            // Anti-duplication: check if negócio already exists
+            const { data: existingNegocio } = await supabase
               .from("negocios")
-              .insert({
-                lead_id: visita.pipeline_lead_id,
-                visita_id: visita.id,
-                corretor_id: visita.corretor_id,
-                gerente_id: visita.gerente_id,
-                nome_cliente: visita.nome_cliente,
-                empreendimento: visita.empreendimento || null,
-                telefone: visita.telefone || null,
-                fase: "proposta",
-                origem: "visita_realizada",
-                pipeline_lead_id: visita.pipeline_lead_id,
-              } as any)
-              .select()
-              .single();
+              .select("id")
+              .eq("pipeline_lead_id", visita.pipeline_lead_id)
+              .limit(1)
+              .maybeSingle();
 
-            if (negocio) {
+            if (!existingNegocio) {
+              // Resolve profiles.id from auth user_id for FK compatibility
+              const corretorUserId = visita.corretor_id;
+              const gerenteUserId = visita.gerente_id;
+
+              const userIds = [corretorUserId, gerenteUserId].filter(Boolean) as string[];
+              const { data: profileRows } = await supabase
+                .from("profiles")
+                .select("id, user_id")
+                .in("user_id", userIds);
+
+              const profileMap = new Map((profileRows || []).map(p => [p.user_id, p.id]));
+              const corretorProfileId = profileMap.get(corretorUserId) || null;
+              const gerenteProfileId = profileMap.get(gerenteUserId) || null;
+
+              const { data: negocio, error: negError } = await supabase
+                .from("negocios")
+                .insert({
+                  pipeline_lead_id: visita.pipeline_lead_id,
+                  visita_id: visita.id,
+                  corretor_id: corretorProfileId,
+                  gerente_id: gerenteProfileId,
+                  nome_cliente: visita.nome_cliente,
+                  empreendimento: visita.empreendimento || null,
+                  telefone: visita.telefone || null,
+                  fase: "proposta",
+                  origem: "visita_realizada",
+                } as any)
+                .select("id")
+                .single();
+
+              if (negocio && !negError) {
+                // Update pipeline lead with negocio link
+                await supabase.from("pipeline_leads").update({
+                  negocio_id: negocio.id,
+                } as any).eq("id", visita.pipeline_lead_id);
+
+                toast("🎉 Negócio criado automaticamente!", {
+                  description: "🎯 Envie a proposta em até 24h!",
+                  duration: 5000,
+                });
+              } else if (negError) {
+                console.error("Erro ao criar negócio:", negError);
+                toast.error("Erro ao criar negócio automático");
+              }
+            }
+
+            // Move pipeline lead to "Visita Realizada" stage
+            const { data: visitaRealizadaStage } = await supabase
+              .from("pipeline_stages")
+              .select("id")
+              .eq("pipeline_tipo", "leads")
+              .or("tipo.eq.visita_realizada,nome.ilike.%visita realizada%")
+              .eq("ativo", true)
+              .limit(1)
+              .maybeSingle();
+
+            if (visitaRealizadaStage) {
               await supabase.from("pipeline_leads").update({
-                modulo_atual: "negocios",
-                negocio_id: negocio.id,
-              } as any).eq("id", visita.pipeline_lead_id);
+                stage_id: visitaRealizadaStage.id,
+                stage_changed_at: new Date().toISOString(),
+              }).eq("id", visita.pipeline_lead_id);
 
-              await supabase.from("lead_progressao").insert({
-                lead_id: visita.pipeline_lead_id,
-                modulo_origem: "agenda",
-                modulo_destino: "negocios",
-                fase_destino: "proposta",
-                triggered_by: "visita_realizada",
-                corretor_id: visita.corretor_id,
-                visita_id: visita.id,
-                negocio_id: negocio.id,
-              });
-
-              toast("🎉 Negócio criado automaticamente!", {
-                description: "🎯 Envie a proposta em até 24h!",
-                duration: 5000,
+              // Insert history
+              await supabase.from("pipeline_historico").insert({
+                pipeline_lead_id: visita.pipeline_lead_id,
+                stage_novo_id: visitaRealizadaStage.id,
+                movido_por: user!.id,
+                observacao: "Movido automaticamente: visita realizada",
               });
             }
-          } else if (newStatus === "no_show" || newStatus === "cancelada") {
-            await supabase.from("pipeline_leads").update({
-              modulo_atual: "pipeline",
-            } as any).eq("id", visita.pipeline_lead_id);
 
-            await supabase.from("lead_progressao").insert({
-              lead_id: visita.pipeline_lead_id,
-              modulo_origem: "agenda",
-              modulo_destino: "pipeline",
-              fase_destino: "qualificacao",
-              triggered_by: newStatus,
-              corretor_id: visita.corretor_id,
+          } else if (newStatus === "no_show" || newStatus === "cancelada") {
+            // Move lead back to pipeline qualification stage
+            const { data: qualStage } = await supabase
+              .from("pipeline_stages")
+              .select("id")
+              .eq("pipeline_tipo", "leads")
+              .or("tipo.eq.qualificacao,nome.ilike.%qualifica%")
+              .eq("ativo", true)
+              .limit(1)
+              .maybeSingle();
+
+            if (qualStage) {
+              await supabase.from("pipeline_leads").update({
+                stage_id: qualStage.id,
+                stage_changed_at: new Date().toISOString(),
+              }).eq("id", visita.pipeline_lead_id);
+            }
+
+            await supabase.from("pipeline_historico").insert({
+              pipeline_lead_id: visita.pipeline_lead_id,
+              stage_novo_id: qualStage?.id || "",
+              movido_por: user!.id,
+              observacao: `Movido automaticamente: visita ${newStatus === "no_show" ? "no show" : "cancelada"}`,
             });
           }
         } catch (err) {
@@ -327,7 +378,7 @@ export function useVisitas(filters?: {
     }
     
     return result;
-  }, [updateVisita, visitas]);
+  }, [updateVisita, visitas, user]);
 
   const deleteVisita = useCallback(async (id: string) => {
     const { error } = await supabase

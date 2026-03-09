@@ -251,8 +251,6 @@ export function usePipeline(pipelineTipo: string = "leads") {
         : l
     ));
 
-    const prevNegocioId = lead.negocio_id;
-
     const { data: updatedRow, error } = await supabase
       .from("pipeline_leads")
       .update({
@@ -267,18 +265,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
     if (error) {
       console.error("Error moving lead:", error);
       toast.error("Erro ao mover lead");
-      // Rollback
       setLeads(prev => prev.map(l =>
         l.id === leadId ? { ...l, stage_id: oldStageId } : l
       ));
       return;
-    }
-
-    // Sync negocio_id (pode ser preenchido via trigger no backend)
-    if (updatedRow?.negocio_id && updatedRow.negocio_id !== prevNegocioId) {
-      setLeads(prev => prev.map(l =>
-        l.id === leadId ? { ...l, negocio_id: updatedRow.negocio_id } : l
-      ));
     }
 
     // Insert history record
@@ -290,14 +280,76 @@ export function usePipeline(pipelineTipo: string = "leads") {
       observacao: observacao || null,
     });
 
-    // If moved to "descarte", auto-send to Oferta Ativa in the future
     const newStage = stages.find(s => s.id === newStageId);
-    if (newStage?.tipo === "descarte") {
-      toast.info("Lead movido para Descarte. Será enviado para Oferta Ativa.");
+
+    // ═══ AUTO-CREATE NEGÓCIO when moving to "Visita Realizada" ═══
+    if (newStage && (newStage.tipo === "visita_realizada" || newStage.nome.toLowerCase().includes("visita realizada"))) {
+      // Check if negócio already exists for this lead
+      const { data: existingNegocio } = await supabase
+        .from("negocios")
+        .select("id")
+        .eq("pipeline_lead_id", leadId)
+        .limit(1)
+        .maybeSingle();
+
+      if (!existingNegocio) {
+        // Resolve profiles.id from user_id for FK compatibility
+        const corretorUserId = lead.corretor_id;
+        const gerenteUserId = lead.gerente_id || user.id;
+
+        const { data: profileRows } = await supabase
+          .from("profiles")
+          .select("id, user_id")
+          .in("user_id", [corretorUserId, gerenteUserId].filter(Boolean) as string[]);
+
+        const profileMap = new Map((profileRows || []).map(p => [p.user_id, p.id]));
+        const corretorProfileId = corretorUserId ? profileMap.get(corretorUserId) || null : null;
+        const gerenteProfileId = profileMap.get(gerenteUserId) || null;
+
+        const { data: negocio, error: negError } = await supabase
+          .from("negocios")
+          .insert({
+            nome_cliente: lead.nome,
+            pipeline_lead_id: leadId,
+            corretor_id: corretorProfileId,
+            gerente_id: gerenteProfileId,
+            empreendimento: lead.empreendimento || null,
+            telefone: lead.telefone || null,
+            fase: "proposta",
+            origem: "visita_realizada",
+            vgv_estimado: lead.valor_estimado || null,
+          })
+          .select("id")
+          .single();
+
+        if (negocio && !negError) {
+          await supabase.from("pipeline_leads").update({
+            negocio_id: negocio.id,
+          } as any).eq("id", leadId);
+
+          setLeads(prev => prev.map(l =>
+            l.id === leadId ? { ...l, negocio_id: negocio.id } : l
+          ));
+
+          toast.success(`🎉 Negócio criado para ${lead.nome}!`, {
+            description: "🎯 Envie a proposta em até 24h!",
+            duration: 5000,
+          });
+        } else if (negError) {
+          console.error("Erro ao criar negócio:", negError);
+        }
+      } else {
+        // Already has negócio, just link it
+        if (!updatedRow?.negocio_id) {
+          await supabase.from("pipeline_leads").update({
+            negocio_id: existingNegocio.id,
+          } as any).eq("id", leadId);
+        }
+      }
     }
 
-    if (newStage?.tipo === "visita_realizada" && !prevNegocioId && updatedRow?.negocio_id) {
-      toast.success(`🎉 Novo negócio criado para ${lead.nome}!`);
+    if (newStage?.tipo === "descarte") {
+      toast.info("Lead movido para Descarte.");
     }
 
     if (newStage?.tipo === "venda") {
