@@ -342,7 +342,7 @@ export default function CheckpointGerente() {
               return (
                 <div key={label}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-500">{label}</span>
+                    <span className="text-xs text-muted-foreground">{label}</span>
                     <span className={`text-xs font-bold ${textColor} flex items-center gap-1`}>
                       {icon && <span>{icon}</span>} ↗ {p}%
                     </span>
