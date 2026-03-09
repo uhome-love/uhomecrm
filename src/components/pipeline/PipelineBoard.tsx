@@ -1,9 +1,9 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
 import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/usePipeline";
 import PipelineCard from "./PipelineCard";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, AlertTriangle, Clock, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
 import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
 import { toast } from "sonner";
@@ -30,23 +30,30 @@ function getColumnWidth() {
   return typeof window !== "undefined" && window.innerWidth < 640 ? COLUMN_WIDTH_MOBILE : COLUMN_WIDTH_DESKTOP;
 }
 
+// Memoized stage alert calculation
+const stageAlertCache = new WeakMap<PipelineLead[], { warnings: number; dangers: number; total: number; semCorretor: number }>();
+
 function getStageAlerts(leads: PipelineLead[]) {
-  let warnings = 0;
-  let dangers = 0;
-  let semCorretor = 0;
+  const cached = stageAlertCache.get(leads);
+  if (cached) return cached;
+  let warnings = 0, dangers = 0, semCorretor = 0;
+  const now = Date.now();
   for (const l of leads) {
     if (!l.corretor_id) { semCorretor++; continue; }
-    const mins = differenceInMinutes(new Date(), new Date(l.stage_changed_at));
+    const mins = (now - new Date(l.stage_changed_at).getTime()) / 60000;
     if (mins >= 120) dangers++;
     else if (mins >= 30) warnings++;
   }
-  return { warnings, dangers, total: warnings + dangers, semCorretor };
+  const result = { warnings, dangers, total: warnings + dangers, semCorretor };
+  stageAlertCache.set(leads, result);
+  return result;
 }
 
 function getAvgTimeLabel(leads: PipelineLead[]) {
   if (leads.length === 0) return null;
+  const now = Date.now();
   const totalHours = leads.reduce((sum, l) =>
-    sum + differenceInHours(new Date(), new Date(l.stage_changed_at)), 0
+    sum + (now - new Date(l.stage_changed_at).getTime()) / 3600000, 0
   );
   const avg = totalHours / leads.length;
   if (avg < 1) return "<1h";
