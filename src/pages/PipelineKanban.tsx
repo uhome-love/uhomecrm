@@ -318,7 +318,7 @@ export default function PipelineKanban() {
                 ? `${filteredLeads.length}/${pipeline.leads.length}`
                 : `${filteredLeads.length}`} oportunidades
               {isAdmin && filaCeoCount > 0 && !filaCeoFilter && (
-                <span className="text-purple-600 dark:text-purple-400 font-normal"> ({filaCeoCount} sem corretor)</span>
+                <span className="text-purple-600 dark:text-purple-400 font-normal"> ({filaCeoCount} na Fila CEO)</span>
               )}
             </span>
 
