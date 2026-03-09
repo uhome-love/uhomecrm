@@ -154,7 +154,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
           if (!seg && !includeUnidentified) continue;
 
           try {
-            const { error } = await supabase.functions.invoke("distribute-lead", {
+            const { data: result, error } = await supabase.functions.invoke("distribute-lead", {
               body: {
                 action: "dispatch_fila_ceo",
                 pipeline_lead_id: lead.id,
@@ -162,9 +162,19 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
                 janela: selectedDestino,
               },
             });
-            if (error) { failed++; continue; }
+            if (error) { 
+              console.error("Dispatch error:", error);
+              failed++; 
+              continue; 
+            }
+            if (result && result.success === false) {
+              console.warn("Distribution failed for lead:", lead.id, result.reason);
+              failed++;
+              continue;
+            }
             dispatched++;
-          } catch {
+          } catch (e) {
+            console.error("Dispatch exception:", e);
             failed++;
           }
         }
