@@ -2472,6 +2472,7 @@ export type Database = {
         Row: {
           agrupamento_count: number
           agrupamento_key: string | null
+          cargo_destino: string[] | null
           categoria: string
           created_at: string
           dados: Json | null
@@ -2486,6 +2487,7 @@ export type Database = {
         Insert: {
           agrupamento_count?: number
           agrupamento_key?: string | null
+          cargo_destino?: string[] | null
           categoria: string
           created_at?: string
           dados?: Json | null
@@ -2500,6 +2502,7 @@ export type Database = {
         Update: {
           agrupamento_count?: number
           agrupamento_key?: string | null
+          cargo_destino?: string[] | null
           categoria?: string
           created_at?: string
           dados?: Json | null

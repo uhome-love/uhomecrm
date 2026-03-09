@@ -4,13 +4,30 @@ import NotificationList from "@/components/notifications/NotificationList";
 import { Badge } from "@/components/ui/badge";
 import { CheckCheck, Loader2 } from "lucide-react";
 
+const LEAD_TIPOS = ["leads", "lead_roleta", "lead_timeout", "lead_sem_contato", "lead_parado", "lead_alto_valor", "fila_ceo"];
+const VISITA_TIPOS = ["visitas", "visita_agendada", "visita_confirmada", "visita_noshow"];
+const NEGOCIO_TIPOS = ["propostas", "proposta_assinada", "vendas", "negocio_fechado"];
+const PERF_TIPOS = ["meta_atingida", "xp_conquista", "relatorio_semanal"];
+const ALERTA_TIPOS = ["alertas", "corretor_inativo", "gerente_sem_visita", "zero_ligacoes", "corretor_ajuda"];
+const MSG_TIPOS = ["mensagem_gerente"];
+
+const CATEGORY_MAP: Record<string, string[]> = {
+  leads: LEAD_TIPOS,
+  visitas: VISITA_TIPOS,
+  negocios: NEGOCIO_TIPOS,
+  performance: PERF_TIPOS,
+  alertas: ALERTA_TIPOS,
+  mensagens: MSG_TIPOS,
+};
+
 const FILTER_TABS = [
   { key: "todas", label: "Todas", activeColor: "#2563EB" },
-  { key: "leads", label: "Leads", activeColor: "#2563EB" },
-  { key: "visitas", label: "Visitas", activeColor: "#059669" },
-  { key: "propostas", label: "Propostas", activeColor: "#9333EA" },
-  { key: "vendas", label: "Vendas", activeColor: "#D97706" },
-  { key: "alertas", label: "Alertas", activeColor: "#DC2626" },
+  { key: "leads", label: "⚡ Leads", activeColor: "#2563EB" },
+  { key: "visitas", label: "📅 Visitas", activeColor: "#059669" },
+  { key: "negocios", label: "💼 Negócios", activeColor: "#9333EA" },
+  { key: "performance", label: "🏆 Performance", activeColor: "#D97706" },
+  { key: "alertas", label: "⚠️ Alertas", activeColor: "#DC2626" },
+  { key: "mensagens", label: "💬 Mensagens", activeColor: "#3B82F6" },
 ];
 
 export default function Notificacoes() {
@@ -19,7 +36,10 @@ export default function Notificacoes() {
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
   const filtered = notifications.filter((n) => {
-    if (activeFilter !== "todas" && n.tipo !== activeFilter) return false;
+    if (activeFilter !== "todas") {
+      const tipos = CATEGORY_MAP[activeFilter];
+      if (tipos && !tipos.includes(n.tipo)) return false;
+    }
     if (showUnreadOnly && n.lida) return false;
     return true;
   });
@@ -86,7 +106,8 @@ export default function Notificacoes() {
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
         {FILTER_TABS.map((tab) => {
-          const count = notifications.filter((n) => tab.key === "todas" || n.tipo === tab.key).length;
+          const tipos = CATEGORY_MAP[tab.key];
+          const count = notifications.filter((n) => tab.key === "todas" || (tipos && tipos.includes(n.tipo))).length;
           const isActive = activeFilter === tab.key;
           return (
             <button

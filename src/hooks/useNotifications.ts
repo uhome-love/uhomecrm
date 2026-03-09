@@ -2,6 +2,7 @@ import { useEffect, useCallback } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 
 export interface Notification {
@@ -16,20 +17,32 @@ export interface Notification {
   lida_em: string | null;
   agrupamento_key: string | null;
   agrupamento_count: number;
+  cargo_destino: string[] | null;
   created_at: string;
+}
+
+/** Map app roles to the cargo_destino values used in DB */
+function roleToCargo(roles: string[]): string {
+  if (roles.includes("admin")) return "admin";
+  if (roles.includes("gestor")) return "gestor";
+  if (roles.includes("backoffice")) return "backoffice";
+  return "corretor";
 }
 
 export function useNotifications() {
   const { user } = useAuth();
+  const { roles } = useUserRole();
   const queryClient = useQueryClient();
+  const cargo = roleToCargo(roles);
 
   const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ["notifications", user?.id],
+    queryKey: ["notifications", user?.id, cargo],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
         .eq("user_id", user!.id)
+        .contains("cargo_destino", [cargo])
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
