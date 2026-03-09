@@ -1,32 +1,22 @@
 import { memo, useState, useMemo } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, Mail, Clock, MessageCircle, Calendar, AlertCircle, Timer, MoreHorizontal, Eye, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft, Zap, PhoneCall, MapPin, FileText, Send, CheckCircle } from "lucide-react";
+import { Phone, MessageCircle, Zap, Calendar, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft, Eye, MapPin, PhoneCall, Send, FileText, Mail } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
-import { differenceInHours, differenceInMinutes, differenceInDays } from "date-fns";
+import { differenceInHours } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
-import { format } from "date-fns";
+import { format, isToday as isTodayFn, isTomorrow as isTomorrowFn, isYesterday as isYesterdayFn, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-
-function formatSlaTime(mins: number): string {
-  const abs = Math.abs(mins);
-  if (abs < 60) return `${abs}m`;
-  if (abs < 1440) return `${Math.floor(abs / 60)}h`;
-  return `${Math.floor(abs / 1440)}d`;
-}
 
 function formatPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -57,7 +47,6 @@ function deduplicateEmpreendimento(raw: string): string {
   return [...seen.values()].join(" · ");
 }
 
-// Mission badges by stage type/name
 function cleanName(name: string) {
   if (!name) return "";
   const half = Math.floor(name.length / 2);
@@ -67,107 +56,111 @@ function cleanName(name: string) {
   return name;
 }
 
-function cleanOrigem(origem: string | null): string {
-  if (!origem) return "";
-  const lower = origem.toLowerCase();
-  if (lower.includes("não informado") || lower.includes("nao informado")) return "Não informada";
-  return origem.replace(/_/g, " ");
-}
-
-function extractOrigemSource(origem: string | null): string {
-  if (!origem) return "";
-  const lower = origem.toLowerCase();
-  if (lower.includes("tik tok") || lower.includes("tiktok")) return "TikTok";
-  if (lower.includes("facebook") || lower.includes("fb")) return "Facebook";
-  if (lower.includes("instagram") || lower.includes("ig")) return "Instagram";
-  if (lower.includes("google")) return "Google";
-  return "";
-}
-
-function extractCampanha(origem: string | null): string {
-  if (!origem) return "";
-  // Extract content in parentheses like "Open Bosque (Video Lucas)" → "Video Lucas"
-  const match = origem.match(/\(([^)]+)\)/);
-  if (match) return match[1].trim();
-  // For format like "Leads Gerado do Tik Tok: Vídeo Open Gabrielle" → extract after ":"
-  const colonMatch = origem.match(/:\s*(.+)/);
-  if (colonMatch) return colonMatch[1].trim();
-  return "";
-}
-
-// Mission badges by stage type/name
-const MISSION_BADGES: Record<string, { badge: string; color: string }> = {
-  "Novo Lead":          { badge: "🗺️ EXPLORAR",    color: "#6B7280" },
-  "Contato Iniciado":   { badge: "⚡ ENGAJAR",      color: "#3B82F6" },
-  "Qualificação":       { badge: "🎯 QUALIFICAR",   color: "#8B5CF6" },
-  "Possível Visita":    { badge: "🏃 AVANÇAR",      color: "#F59E0B" },
-  "Visita Marcada":     { badge: "🔑 CONFIRMAR",    color: "#10B981" },
-  "Visita Realizada":   { badge: "👑 FECHAR",       color: "#F97316" },
-  "Descarte":           { badge: "💀 DESCARTE",     color: "#EF4444" },
+const TIPO_LABELS: Record<string, string> = {
+  follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp",
+  enviar_proposta: "Proposta", enviar_material: "Material",
+  marcar_visita: "Visita", confirmar_visita: "Confirmar visita",
+  retornar_cliente: "Retornar", outro: "Tarefa",
 };
 
-function getMissionBadge(stageName: string) {
-  return MISSION_BADGES[stageName] || { badge: "📍 MISSÃO", color: "#6B7280" };
-}
+// Status indicator + task status line
+function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_em: string | null; hora_vencimento: string | null } | null) {
+  const now = new Date();
+  const todayStart = startOfDay(now);
 
-/* ─── Semantic border: blue=recent, amber=warning, red=urgent, green=visita ─── */
-function getSemanticBorder(lead: PipelineLead, stageName?: string): string {
-  // Visita marcada or realizada → green
-  const sn = (stageName || "").toLowerCase();
-  if (sn.includes("visita marcada") || sn.includes("visita realizada")) return "border-l-[#22c55e]";
-  // Time-based
-  const refDate = lead.updated_at || lead.created_at;
-  const hours = differenceInHours(new Date(), new Date(refDate));
-  if (hours < 3) return "border-l-[#3b82f6]";   // recent → blue
-  if (hours < 6) return "border-l-[#f59e0b]";   // warning → amber
-  return "border-l-[#ef4444]";                    // urgent → red
-}
+  // Check task status
+  if (proximaTarefa?.vence_em) {
+    const d = new Date(proximaTarefa.vence_em + "T12:00:00");
+    const hora = proximaTarefa.hora_vencimento?.slice(0, 5) || "";
+    const label = TIPO_LABELS[proximaTarefa.tipo] || proximaTarefa.tipo;
 
-/* ─── Time badge: <3h gray, 3-6h amber, >6h red, >24h red+pulse ─── */
-function getTimeBadge(lead: PipelineLead) {
-  const refDate = lead.stage_changed_at || lead.updated_at || lead.created_at;
-  const mins = differenceInMinutes(new Date(), new Date(refDate));
-  const hours = mins / 60;
-
-  if (hours < 3) {
-    // Discrete gray
-    const label = mins < 60 ? `${mins}m nesta etapa` : `${Math.floor(hours)}h nesta etapa`;
+    if (d < todayStart) {
+      // Overdue
+      const dateLabel = isYesterdayFn(d) ? "ontem" : format(d, "dd/MM");
+      return {
+        indicator: "🔴",
+        indicatorCls: "text-destructive",
+        text: `🔴 Atrasado: ${label} ${dateLabel} ${hora}`,
+        textCls: "text-destructive font-semibold",
+        borderCls: "border-l-destructive",
+      };
+    }
+    if (isTodayFn(d)) {
+      return {
+        indicator: "🟡",
+        indicatorCls: "text-amber-500",
+        text: `🟡 Hoje ${hora}: ${label}`,
+        textCls: "text-amber-600 dark:text-amber-400 font-semibold",
+        borderCls: "border-l-amber-400",
+      };
+    }
+    // Future
+    const dateLabel = isTomorrowFn(d) ? "amanhã" : format(d, "dd/MM");
     return {
-      cls: "text-muted-foreground",
-      bg: "",
-      icon: "clock" as const,
-      label,
-      pulse: false,
+      indicator: "✅",
+      indicatorCls: "text-green-500",
+      text: `✅ Próximo: ${label} ${dateLabel} ${hora}`,
+      textCls: "text-muted-foreground",
+      borderCls: "border-l-green-400",
     };
   }
-  if (hours < 6) {
+
+  // No task — check contact status
+  const lastContact = lead.ultima_acao_at;
+  if (!lastContact) {
+    // Check if new lead (< 2h in stage)
+    const hoursInStage = differenceInHours(now, new Date(lead.stage_changed_at));
+    if (hoursInStage < 2) {
+      return {
+        indicator: null,
+        indicatorCls: "",
+        text: "",
+        textCls: "",
+        borderCls: "border-l-blue-400",
+      };
+    }
     return {
-      cls: "text-[#92400e]",
-      bg: "bg-[#fef3c7]",
-      icon: "warning" as const,
-      label: `⏰ ${Math.floor(hours)}h sem contato`,
-      pulse: false,
+      indicator: "🟡",
+      indicatorCls: "text-amber-500",
+      text: "🟡 Sem contato · Aguardando ação",
+      textCls: "text-amber-600 dark:text-amber-400 font-semibold",
+      borderCls: "border-l-amber-400",
     };
   }
-  // >6h → red
-  const pulse = hours >= 24;
-  const label = hours >= 24
-    ? `🚨 ${Math.floor(hours / 24)}d sem contato`
-    : `🚨 ${Math.floor(hours)}h sem contato`;
+
+  const hoursSinceContact = differenceInHours(now, new Date(lastContact));
+  if (hoursSinceContact > 48) {
+    return {
+      indicator: "🔴",
+      indicatorCls: "text-destructive",
+      text: "🔴 Sem contato · Aguardando ação",
+      textCls: "text-destructive font-semibold",
+      borderCls: "border-l-destructive",
+    };
+  }
+  if (hoursSinceContact > 24) {
+    return {
+      indicator: "🟡",
+      indicatorCls: "text-amber-500",
+      text: "🟡 Sem contato · Aguardando ação",
+      textCls: "text-amber-600 dark:text-amber-400 font-semibold",
+      borderCls: "border-l-amber-400",
+    };
+  }
+
+  // Recent contact, no task
+  const contactLabel = isTodayFn(new Date(lastContact))
+    ? `hoje ${format(new Date(lastContact), "HH:mm")}`
+    : isYesterdayFn(new Date(lastContact))
+    ? "ontem"
+    : format(new Date(lastContact), "dd/MM");
   return {
-    cls: "text-[#991b1b]",
-    bg: hours >= 24 ? "bg-[#fecaca]" : "bg-[#fee2e2]",
-    icon: "alert" as const,
-    label,
-    pulse,
+    indicator: null,
+    indicatorCls: "",
+    text: `Último contato: ${contactLabel}`,
+    textCls: "text-muted-foreground",
+    borderCls: "border-l-muted-foreground/30",
   };
-}
-
-/* ─── Score colors: >70 green, 40-70 amber, <40 red — text only ─── */
-function getScoreStyle(score: number) {
-  if (score > 70) return "text-[#22c55e] font-bold";
-  if (score >= 40) return "text-[#f59e0b] font-bold";
-  return "text-[#ef4444] font-bold";
 }
 
 interface ProximaTarefa {
@@ -205,20 +198,8 @@ const PipelineCard = memo(function PipelineCard({
   const [transferOpen, setTransferOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
 
-  const semanticBorder = getSemanticBorder(lead, stage?.nome);
-  const leadScore = calculateLeadScore(lead as any);
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || "");
-  const missionBadge = stage ? getMissionBadge(stage.nome) : getMissionBadge("");
-  const daysInStage = differenceInDays(new Date(), new Date(lead.stage_changed_at));
-  const currentIdx = stageIndexMap?.get(lead.stage_id) ?? 0;
-  const timeBadge = useMemo(() => getTimeBadge(lead), [lead.stage_changed_at, lead.updated_at, lead.created_at]);
-  const scoreStyle = getScoreStyle(leadScore.score);
-
-  const daysLabel = useMemo(() => {
-    if (daysInStage <= 2) return { text: `✅ ${daysInStage}d`, cls: "text-emerald-600 dark:text-emerald-400" };
-    if (daysInStage <= 5) return { text: `⚠️ ${daysInStage}d`, cls: "text-amber-600 dark:text-amber-400" };
-    return { text: `🔥 ${daysInStage}d`, cls: "text-red-600 dark:text-red-400" };
-  }, [daysInStage]);
+  const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [lead.ultima_acao_at, lead.stage_changed_at, proximaTarefa]);
 
   const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -231,6 +212,11 @@ const PipelineCard = memo(function PipelineCard({
         titulo: "Ligação realizada",
         created_by: user.id,
       }).then(() => {});
+      // Update ultima_acao_at
+      supabase.from("pipeline_leads").update({
+        ultima_acao_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", lead.id).then(() => {});
       if (stage?.tipo === "novo_lead" && onMoveLead) {
         const contatoStage = stages.find(s => s.tipo === "atendimento" || s.nome.toLowerCase().includes("contato"));
         if (contatoStage) onMoveLead(lead.id, contatoStage.id);
@@ -250,6 +236,11 @@ const PipelineCard = memo(function PipelineCard({
         titulo: "WhatsApp enviado",
         created_by: user.id,
       }).then(() => {});
+      // Update ultima_acao_at
+      supabase.from("pipeline_leads").update({
+        ultima_acao_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", lead.id).then(() => {});
     }
     toast.success("💬 WhatsApp registrado");
   };
@@ -290,18 +281,6 @@ const PipelineCard = memo(function PipelineCard({
     toast.success(`Lead movido para ${targetStage?.nome}`);
   };
 
-  const handleAddNote = async () => {
-    const note = prompt("Observação:");
-    if (!note || !user) return;
-    await supabase.from("pipeline_anotacoes").insert({
-      pipeline_lead_id: lead.id,
-      conteudo: note,
-      autor_id: user.id,
-      autor_nome: corretorNome || "Gerente",
-    });
-    toast.success("📝 Observação registrada");
-  };
-
   const handleMarkLost = async () => {
     if (!user || !onMoveLead) return;
     const motivo = prompt("Motivo do descarte:");
@@ -322,399 +301,150 @@ const PipelineCard = memo(function PipelineCard({
   };
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <div
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", lead.id);
-          // Create a semi-transparent drag image
-          const el = e.currentTarget;
-          if (el) {
-            e.dataTransfer.setDragImage(el, el.offsetWidth / 2, 20);
-          }
-          onDragStart();
-        }}
-        onDragEnd={(e) => {
-          // Ensure cleanup even if drop doesn't fire (e.g. ESC or invalid target)
-          e.preventDefault();
-        }}
-        onClick={handleCardClick}
-        className={cn(
-          "group relative rounded-lg border-l-[3px] border border-[#e5e7eb] bg-white dark:bg-card cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150 select-none overflow-hidden",
-          semanticBorder
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", lead.id);
+        const el = e.currentTarget;
+        if (el) e.dataTransfer.setDragImage(el, el.offsetWidth / 2, 20);
+        onDragStart();
+      }}
+      onDragEnd={(e) => e.preventDefault()}
+      onClick={handleCardClick}
+      className={cn(
+        "group relative rounded-lg border-l-[3px] border border-border/60 bg-card cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150 select-none overflow-hidden",
+        status.borderCls
+      )}
+    >
+      {/* Content */}
+      <div className="px-3 pt-2.5 pb-2 space-y-1">
+        {/* Line 1: Name + status indicator */}
+        <div className="flex items-center justify-between gap-1">
+          <span className="text-sm font-semibold text-foreground truncate leading-tight">
+            {cleanName(lead.nome)}
+          </span>
+          {status.indicator && (
+            <span className={cn("text-sm shrink-0", status.indicatorCls)}>
+              {status.indicator}
+            </span>
+          )}
+        </div>
+
+        {/* Line 2: Empreendimento · Phone */}
+        <div className="text-xs text-muted-foreground truncate leading-tight">
+          {displayEmpreendimento ? (
+            <span className="font-medium text-foreground/70">{displayEmpreendimento}</span>
+          ) : (
+            <span className="text-amber-500/80 font-medium">🏠 Sem empreend.</span>
+          )}
+          {lead.telefone && <span> · {formatPhone(lead.telefone)}</span>}
+        </div>
+
+        {/* Line 3: Task status */}
+        {status.text && (
+          <p className={cn("text-[11px] truncate pt-0.5", status.textCls)}>
+            {status.text}
+          </p>
         )}
-      >
-        {/* Info section — compact */}
-        <div className="px-2.5 pt-2 pb-1.5 space-y-0.5">
-          {/* Game: Mission badge + days counter */}
-          <div className="flex items-center justify-between">
-            <span
-              className="text-[8px] font-bold px-1.5 py-0.5 rounded-full"
-              style={{ background: `${missionBadge.color}20`, color: missionBadge.color }}
-            >
-              {missionBadge.badge}
-            </span>
-            <span className={`text-[9px] font-bold ${daysLabel.cls}`}>
-              {daysLabel.text}
-            </span>
-          </div>
-
-          {/* Line 1: name + score */}
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[13px] font-bold text-foreground truncate leading-tight">{cleanName(lead.nome)}</span>
-            <span className={cn("text-[9px] px-1 py-0 rounded shrink-0", scoreStyle)}>
-              {leadScore.score}
-            </span>
-          </div>
-
-          {/* Line 2: origem · empreendimento · phone */}
-          <div className="text-[10px] text-muted-foreground truncate leading-tight">
-            {(() => {
-              // Extract source (Facebook, TikTok, etc.)
-              const source = extractOrigemSource(lead.origem);
-              const origemLabel = source || "";
-              
-              // Clean empreendimento (deduplicated)
-              const empreendimentoClean = displayEmpreendimento || "";
-              
-              return (
-                <>
-                  {origemLabel && <span>{origemLabel}</span>}
-                  {origemLabel && empreendimentoClean && " · "}
-                  {empreendimentoClean ? (
-                    <span className="font-medium text-foreground/80">{empreendimentoClean}</span>
-                  ) : (
-                    <span className="text-amber-500/70 font-medium">🏠 Sem empreend.</span>
-                  )}
-                </>
-              );
-            })()}
-            {lead.telefone && <span> · {formatPhone(lead.telefone)}</span>}
-          </div>
-
-          {/* Line 3: Time badge + corretor */}
-          <div className="flex items-center justify-between gap-1">
-            <span className={cn(
-              "flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0 rounded-full",
-              timeBadge.bg,
-              timeBadge.cls
-            )}>
-              {timeBadge.icon === "clock" && <Clock className="h-2.5 w-2.5" />}
-              {timeBadge.icon === "warning" && <Timer className="h-2.5 w-2.5" />}
-              {timeBadge.icon === "alert" && (
-                <AlertCircle className={cn("h-2.5 w-2.5", timeBadge.pulse && "animate-pulse")} />
-              )}
-              {timeBadge.label}
-            </span>
-
-            <div className="flex items-center gap-1">
-              {parceiroNome && (
-                <Badge variant="secondary" className="text-[8px] px-1 py-0 gap-0.5 h-3.5">
-                  <Handshake className="h-2 w-2" /> Parceria
-                </Badge>
-              )}
-              {!corretorNome && isAdmin ? (
-                <Badge className="text-[8px] px-1 py-0 h-3.5 bg-[#7c3aed]/10 text-[#7c3aed] border-[#7c3aed]/30 border font-semibold">
-                  📥 CEO
-                </Badge>
-              ) : !corretorNome ? null : (
-                <span className="text-[9px] text-muted-foreground truncate max-w-[80px]">
-                  👤 {corretorNome}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Journey dots */}
-          {stageIndexMap && (
-            <div className="flex items-center gap-0.5 pt-0.5">
-              {stages.map((s, i) => {
-                const isCurrent = i === currentIdx;
-                const isPast = i < currentIdx;
-                return (
-                  <div key={s.id} className="flex items-center">
-                    <div
-                      className="rounded-full"
-                      style={{
-                        width: isCurrent ? 6 : 4,
-                        height: isCurrent ? 6 : 4,
-                        backgroundColor: isPast || isCurrent ? missionBadge.color : "hsl(var(--muted))",
-                        opacity: isPast ? 0.5 : 1,
-                        animation: isCurrent ? "pulseDot 2s ease-in-out infinite" : undefined,
-                      }}
-                    />
-                    {i < stages.length - 1 && (
-                      <div className="h-[1.5px]" style={{ width: "6px", backgroundColor: isPast ? `${missionBadge.color}60` : "hsl(var(--muted))" }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Next task line */}
-          {proximaTarefa && proximaTarefa.vence_em && (() => {
-            const TIPO_L: Record<string, string> = { follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp", enviar_proposta: "Proposta", marcar_visita: "Visita", outro: "Tarefa" };
-            const d = new Date(proximaTarefa.vence_em + "T12:00:00");
-            const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-            const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-            const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-            const hora = proximaTarefa.hora_vencimento?.slice(0, 5) || "";
-            const label = TIPO_L[proximaTarefa.tipo] || proximaTarefa.tipo;
-            const isOverdue = d < todayStart;
-            const isToday = d >= todayStart && d < tomorrowStart;
-            const isYesterday = d >= yesterdayStart && d < todayStart;
-
-            if (isOverdue) {
-              return (
-                <p className="text-[9px] font-semibold text-destructive truncate px-0.5">
-                  🔴 Atrasado: {isYesterday ? "ontem" : format(d, "dd/MM")} {hora} · {label}
-                </p>
-              );
-            }
-            if (isToday) {
-              return (
-                <p className="text-[9px] font-semibold text-amber-600 dark:text-amber-400 truncate px-0.5">
-                  🟡 Hoje {hora} · {label}
-                </p>
-              );
-            }
-            return (
-              <p className="text-[9px] text-muted-foreground truncate px-0.5">
-                📋 {format(d, "dd/MM")} {hora} · {label}
-              </p>
-            );
-          })()}
-        </div>
-
-        <div className="h-px bg-border/50" />
-
-        {/* ─── Actions section — semantic colors ─── */}
-        <div data-actions-area className="px-2 py-1.5 flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-1">
-            {lead.telefone && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#ede9fe] text-[#5b21b6] hover:bg-[#ddd6fe]"
-                onClick={handleCall}
-              >
-                <Phone className="h-3 w-3 text-[#7c3aed]" /> Ligar
-              </Button>
-            )}
-
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#dcfce7] text-[#166534] hover:bg-[#bbf7d0]"
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); setComunicacaoOpen(true); }}
-            >
-              <MessageCircle className="h-3 w-3 text-[#22c55e]" /> WhatsApp
-            </Button>
-
-            {/* Quick Action dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 text-[10px] px-2 gap-1 font-semibold bg-[#dbeafe] text-[#1e40af] hover:bg-[#bfdbfe]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Zap className="h-3 w-3" /> Ação
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-[200px]" onClick={(e) => e.stopPropagation()}>
-                <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Registrar ação rápida</div>
-                <DropdownMenuItem
-                  className="text-xs gap-2"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!user) return;
-                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "ligacao", titulo: "Ligação realizada", created_by: user.id });
-                    toast.success("📞 Ligação registrada");
-                  }}
-                >
-                  <PhoneCall className="h-3.5 w-3.5 text-[#22c55e]" /> Ligação realizada
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-xs gap-2"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!user) return;
-                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "whatsapp", titulo: "WhatsApp enviado", created_by: user.id });
-                    toast.success("💬 WhatsApp registrado");
-                  }}
-                >
-                  <Send className="h-3.5 w-3.5 text-[#22c55e]" /> WhatsApp enviado
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-xs gap-2"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!user) return;
-                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "email", titulo: "E-mail enviado", created_by: user.id });
-                    toast.success("✉️ E-mail registrado");
-                  }}
-                >
-                  <Mail className="h-3.5 w-3.5 text-[#3b82f6]" /> E-mail enviado
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-xs gap-2"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!user) return;
-                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "visita", titulo: "Visita realizada", created_by: user.id });
-                    toast.success("🏠 Visita registrada");
-                  }}
-                >
-                  <MapPin className="h-3.5 w-3.5 text-[#f59e0b]" /> Visita realizada
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-xs gap-2"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!user) return;
-                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "proposta", titulo: "Proposta enviada", created_by: user.id });
-                    toast.success("📄 Proposta registrada");
-                  }}
-                >
-                  <FileText className="h-3.5 w-3.5 text-[#8b5cf6]" /> Proposta enviada
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-xs gap-2"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!user) return;
-                    const obs = prompt("Observação:");
-                    if (!obs) return;
-                    await supabase.from("pipeline_atividades").insert({ pipeline_lead_id: lead.id, tipo: "nota", titulo: obs, created_by: user.id });
-                    toast.success("📝 Observação registrada");
-                  }}
-                >
-                  <StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> Adicionar observação
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:bg-muted" onClick={(e) => e.stopPropagation()}>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[180px]" onClick={(e) => e.stopPropagation()}>
-              {!corretorNome && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setTransferOpen(true); }} className="text-xs gap-2 font-medium text-[#1e40af]">
-                  <UserPlus className="h-3.5 w-3.5" /> Atribuir Corretor
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setScheduleOpen(true); }} className="text-xs gap-2">
-                <Calendar className="h-3.5 w-3.5" /> Agendar Visita
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator />
-              <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground">Mover para:</div>
-              {stages.filter(s => s.id !== lead.stage_id).map(s => (
-                <DropdownMenuItem key={s.id} onClick={(e) => handleMoveStage(e as any, s.id)} className="text-xs gap-2">
-                  <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
-                  {s.nome}
-                </DropdownMenuItem>
-              ))}
-
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setPartnerOpen(true); }} className="text-xs gap-2">
-                <Handshake className="h-3.5 w-3.5" /> Fazer parceria
-              </DropdownMenuItem>
-              {corretorNome && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setTransferOpen(true); }} className="text-xs gap-2">
-                  <ArrowRightLeft className="h-3.5 w-3.5" /> Repassar lead
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={onClick} className="text-xs gap-2">
-                <Eye className="h-3.5 w-3.5" /> Ver lead completo
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAddNote(); }} className="text-xs gap-2">
-                <StickyNote className="h-3.5 w-3.5" /> Registrar observação
-              </DropdownMenuItem>
-              {isAdmin && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkLost(); }} className="text-xs gap-2 text-destructive">
-                    <XCircle className="h-3.5 w-3.5" /> Marcar sem interesse (CEO)
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Dialogs */}
-        <div data-no-card-click onClick={(e) => e.stopPropagation()}>
-          <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
-            <DialogContent className="max-w-[320px] p-4 gap-3">
-              <DialogHeader className="p-0 mb-1">
-                <DialogTitle className="text-sm font-semibold">Agendar visita</DialogTitle>
-              </DialogHeader>
-              <CalendarPicker
-                mode="single"
-                selected={scheduleDate}
-                onSelect={setScheduleDate}
-                className={cn("p-0 mx-auto pointer-events-auto border rounded-md")}
-                locale={ptBR}
-              />
-              <div className="space-y-1.5 mt-2">
-                <Input
-                  type="time"
-                  value={scheduleTime}
-                  onChange={(e) => setScheduleTime(e.target.value)}
-                  className="h-8 text-xs w-full"
-                />
-                <div className="text-[10px] text-muted-foreground truncate">
-                  {lead.empreendimento || "Sem empreendimento"}
-                </div>
-                <Button size="sm" className="w-full h-8 text-xs mt-1" disabled={!scheduleDate} onClick={handleScheduleVisit}>
-                  Confirmar visita
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          {partnerOpen && (
-            <PartnershipDialog
-              open={partnerOpen}
-              onOpenChange={setPartnerOpen}
-              leadId={lead.id}
-              leadNome={lead.nome}
-              corretorPrincipalId={lead.corretor_id}
-            />
-          )}
-          {transferOpen && (
-            <PipelineTransferDialog
-              open={transferOpen}
-              onOpenChange={setTransferOpen}
-              leadId={lead.id}
-              leadNome={lead.nome}
-              currentCorretorId={lead.corretor_id}
-              stages={stages}
-              onTransferred={(corretorId, nome) => onTransferred?.(lead.id, corretorId, nome)}
-            />
-          )}
-          {comunicacaoOpen && (
-            <CentralComunicacao
-              open={comunicacaoOpen}
-              onOpenChange={setComunicacaoOpen}
-              leadId={lead.id}
-              leadNome={lead.nome}
-              leadTelefone={lead.telefone}
-              leadEmpreendimento={lead.empreendimento}
-            />
-          )}
-        </div>
       </div>
-    </TooltipProvider>
+
+      <div className="h-px bg-border/40" />
+
+      {/* Line 4: Action buttons — clean */}
+      <div data-actions-area className="px-2.5 py-1.5 flex items-center gap-1">
+        {lead.telefone && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-[11px] px-2.5 gap-1 font-medium hover:bg-accent"
+            onClick={handleCall}
+          >
+            <Phone className="h-3 w-3" /> 📞 Ligar
+          </Button>
+        )}
+
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-[11px] px-2.5 gap-1 font-medium text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30"
+          onClick={handleWhatsApp}
+        >
+          <MessageCircle className="h-3 w-3" /> 💬 WhatsApp
+        </Button>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-[11px] px-2.5 gap-1 font-medium text-primary hover:bg-primary/10"
+          onClick={(e) => { e.stopPropagation(); onClick(); }}
+        >
+          <Zap className="h-3 w-3" /> ⚡ Ação
+        </Button>
+      </div>
+
+      {/* Dialogs */}
+      <div data-no-card-click onClick={(e) => e.stopPropagation()}>
+        <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+          <DialogContent className="max-w-[320px] p-4 gap-3">
+            <DialogHeader className="p-0 mb-1">
+              <DialogTitle className="text-sm font-semibold">Agendar visita</DialogTitle>
+            </DialogHeader>
+            <CalendarPicker
+              mode="single"
+              selected={scheduleDate}
+              onSelect={setScheduleDate}
+              className={cn("p-0 mx-auto pointer-events-auto border rounded-md")}
+              locale={ptBR}
+            />
+            <div className="space-y-1.5 mt-2">
+              <Input
+                type="time"
+                value={scheduleTime}
+                onChange={(e) => setScheduleTime(e.target.value)}
+                className="h-8 text-xs w-full"
+              />
+              <div className="text-[10px] text-muted-foreground truncate">
+                {lead.empreendimento || "Sem empreendimento"}
+              </div>
+              <Button size="sm" className="w-full h-8 text-xs mt-1" disabled={!scheduleDate} onClick={handleScheduleVisit}>
+                Confirmar visita
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {partnerOpen && (
+          <PartnershipDialog
+            open={partnerOpen}
+            onOpenChange={setPartnerOpen}
+            leadId={lead.id}
+            leadNome={lead.nome}
+            corretorPrincipalId={lead.corretor_id}
+          />
+        )}
+        {transferOpen && (
+          <PipelineTransferDialog
+            open={transferOpen}
+            onOpenChange={setTransferOpen}
+            leadId={lead.id}
+            leadNome={lead.nome}
+            currentCorretorId={lead.corretor_id}
+            stages={stages}
+            onTransferred={(corretorId, nome) => onTransferred?.(lead.id, corretorId, nome)}
+          />
+        )}
+        {comunicacaoOpen && (
+          <CentralComunicacao
+            open={comunicacaoOpen}
+            onOpenChange={setComunicacaoOpen}
+            leadId={lead.id}
+            leadNome={lead.nome}
+            leadTelefone={lead.telefone}
+            leadEmpreendimento={lead.empreendimento}
+          />
+        )}
+      </div>
+    </div>
   );
 });
 
