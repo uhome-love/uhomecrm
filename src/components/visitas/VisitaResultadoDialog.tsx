@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +37,15 @@ export default function VisitaResultadoDialog({ open, onClose, onSubmit, nomeCli
   const [selected, setSelected] = useState<ResultadoVisita | null>(null);
   const [obs, setObs] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelected(null);
+      setObs("");
+      setSubmitting(false);
+    }
+  }, [open]);
 
   const handleSubmit = async () => {
     if (!selected) return;

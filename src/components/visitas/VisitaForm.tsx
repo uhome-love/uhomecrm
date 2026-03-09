@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, CalendarPlus, Link2, Search } from "lucide-react";
+import { Loader2, CalendarPlus, Search } from "lucide-react";
 import { ORIGEM_LABELS, type Visita } from "@/hooks/useVisitas";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,9 +33,8 @@ interface Props {
 
 const QUICK_TIMES = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"];
 
-export default function VisitaForm({ open, onClose, onSubmit, initialData, mode = "create" }: Props) {
-  const { user } = useAuth();
-  const [form, setForm] = useState({
+function getDefaultForm(initialData?: Props["initialData"]) {
+  return {
     nome_cliente: initialData?.nome_cliente || "",
     telefone: initialData?.telefone || "",
     empreendimento: initialData?.empreendimento || "",
@@ -45,7 +44,12 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
     hora_visita: initialData?.hora_visita || "",
     observacoes: initialData?.observacoes || "",
     pipeline_lead_id: (initialData as any)?.pipeline_lead_id || "",
-  });
+  };
+}
+
+export default function VisitaForm({ open, onClose, onSubmit, initialData, mode = "create" }: Props) {
+  const { user } = useAuth();
+  const [form, setForm] = useState(() => getDefaultForm(initialData));
   const [submitting, setSubmitting] = useState(false);
   const [pipelineLeads, setPipelineLeads] = useState<PipelineLeadOption[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
@@ -53,9 +57,18 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [empreendimentos, setEmpreendimentos] = useState<string[]>([]);
 
+  // Reset form state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setForm(getDefaultForm(initialData));
+      setSearchPipeline("");
+      setSubmitting(false);
+    }
+  }, [open, initialData]);
+
   // Load pipeline leads + team members + empreendimentos
   useEffect(() => {
-    if (!user) return;
+    if (!user || !open) return;
     const load = async () => {
       setLoadingLeads(true);
       const [leadsRes, teamRes] = await Promise.all([
@@ -66,14 +79,13 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
       setPipelineLeads(leads);
       setTeamMembers((teamRes.data || []).filter(m => m.user_id) as TeamMemberOption[]);
 
-      // Extract unique empreendimentos
       const empSet = new Set<string>();
       leads.forEach(l => { if (l.empreendimento) empSet.add(l.empreendimento); });
       setEmpreendimentos(Array.from(empSet).sort());
       setLoadingLeads(false);
     };
     load();
-  }, [user]);
+  }, [user, open]);
 
   const filteredLeads = useMemo(() => {
     if (!searchPipeline.trim()) return pipelineLeads.slice(0, 20);
