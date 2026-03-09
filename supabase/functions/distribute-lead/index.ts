@@ -345,19 +345,13 @@ async function distributeSingleLead(
   const todayStart = getTodayStartUTC();
   const todayStr = getTodayDateStr();
 
-  // Get credenciados
-  const credQuery = supabase
+  // Get ALL approved credenciados for today (global balancing, no janela filter)
+  const { data: creds } = await supabase
     .from("roleta_credenciamentos")
     .select("corretor_id, segmento_1_id, segmento_2_id")
     .eq("data", todayStr)
     .eq("status", "aprovado")
     .is("saiu_em", null);
-
-  if (targetJanela !== "qualquer") {
-    credQuery.eq("janela", targetJanela);
-  }
-
-  const { data: creds } = await credQuery;
   if (!creds || creds.length === 0) {
     return { success: false, reason: "no_credenciados" };
   }
