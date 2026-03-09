@@ -35,7 +35,7 @@ self.addEventListener("push", (e) => {
       body: data.body || "Nova notificação UhomeSales",
       icon: "/icons/icon-192x192.png",
       badge: "/icons/icon-192x192.png",
-      vibrate: [200, 100, 200],
+      vibrate: [300, 100, 300, 100, 300],
       data: { url: data.url || "/" },
       actions: data.actions || [
         { action: "open", title: "Abrir" },
@@ -43,7 +43,8 @@ self.addEventListener("push", (e) => {
       ],
       tag: data.data?.tag || "uhome-notification",
       renotify: true,
-      requireInteraction: data.requireInteraction || false,
+      requireInteraction: true,
+      silent: false,
     };
     e.waitUntil(self.registration.showNotification(data.title || "UhomeSales", options));
   } catch (err) {

@@ -64,6 +64,7 @@ serve(async (req) => {
       icon: "/icons/icon-192x192.png",
       badge: "/icons/icon-192x192.png",
       data: { url: url || "/notificacoes", ...data },
+      requireInteraction: true,
     });
 
     let sent = 0;

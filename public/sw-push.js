@@ -10,7 +10,7 @@ self.addEventListener("push", (event) => {
       body: data.body || "",
       icon: data.icon || "/icons/icon-192x192.png",
       badge: data.badge || "/icons/icon-192x192.png",
-      vibrate: [200, 100, 200],
+      vibrate: [300, 100, 300, 100, 300],
       data: data.data || {},
       actions: [
         { action: "open", title: "Abrir" },
@@ -18,6 +18,8 @@ self.addEventListener("push", (event) => {
       ],
       tag: data.data?.tag || "uhome-notification",
       renotify: true,
+      requireInteraction: true,
+      silent: false,
     };
 
     event.waitUntil(self.registration.showNotification(data.title, options));

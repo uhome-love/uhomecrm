@@ -2465,22 +2465,7 @@ export type Database = {
           vgv_final?: number | null
           visita_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "negocios_gerente_id_fkey"
-            columns: ["gerente_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "negocios_visita_id_fkey"
-            columns: ["visita_id"]
-            isOneToOne: false
-            referencedRelation: "visitas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       notification_preferences: {
         Row: {
