@@ -596,25 +596,29 @@ export default function CorretorDashboard() {
       </div>
 
       {/* RODAPÉ — full width, atalhos */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-4 shrink-0 relative z-10">
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { label: "Agenda", icon: CalendarDays, path: "/agenda-visitas", color: "text-primary" },
-            { label: "HOMI", icon: Bot, path: "/homi", color: "text-purple-500" },
-            { label: "Scripts", icon: FileEdit, path: "/scripts", color: "text-amber-500" },
-            { label: "Desempenho", icon: BarChart3, path: "/corretor/resumo", color: "text-[#16A34A]" },
-          ].map((item) => (
-            <Button
-              key={item.label}
-              variant="ghost"
-              className="h-auto flex-col gap-1 py-3 text-muted-foreground hover:text-foreground hover:-translate-y-0.5 transition-all duration-150"
-              onClick={() => navigate(item.path)}
-            >
-              <item.icon className={`h-4 w-4 ${item.color}`} />
-              <span className="text-[11px] font-medium">{item.label}</span>
-            </Button>
-          ))}
-        </div>
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-4 shrink-0">
+        <Card className="border-border/60">
+          <CardContent className="p-3">
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: "Agenda", icon: CalendarDays, path: "/agenda-visitas", color: "text-primary" },
+                { label: "HOMI", icon: Bot, path: "/homi", color: "text-purple-500" },
+                { label: "Scripts", icon: FileEdit, path: "/scripts", color: "text-amber-500" },
+                { label: "Desempenho", icon: BarChart3, path: "/corretor/resumo", color: "text-[#16A34A]" },
+              ].map((item) => (
+                <Button
+                  key={item.label}
+                  variant="ghost"
+                  className="h-auto flex-col gap-1 py-2.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-150"
+                  onClick={() => navigate(item.path)}
+                >
+                  <item.icon className={`h-5 w-5 ${item.color}`} />
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Finalizar — mobile only */}
         {metaSalva && progress.tentativas > 0 && (
