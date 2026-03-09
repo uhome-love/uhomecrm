@@ -85,6 +85,125 @@ const formatVGV = (value: number) => {
   return `R$ ${value.toLocaleString("pt-BR")}`;
 };
 
+// Virtualized card list — only renders visible cards + small buffer
+const INITIAL_RENDER = 15;
+const LOAD_MORE_BATCH = 20;
+
+const VirtualizedCardList = memo(function VirtualizedCardList({
+  stageLeads, stage, stages, segmentos, corretorNomes, parcerias,
+  selectionMode, selectedLeads, arrivedLeadId,
+  onToggleSelect, onSelectLead, onMoveLead, onTransferred, stageIndexMap, handleDragStart,
+}: {
+  stageLeads: PipelineLead[];
+  stage: PipelineStage;
+  stages: PipelineStage[];
+  segmentos: PipelineSegmento[];
+  corretorNomes: Record<string, string>;
+  parcerias: Record<string, string>;
+  selectionMode?: boolean;
+  selectedLeads?: Set<string>;
+  arrivedLeadId: string | null;
+  onToggleSelect?: (id: string) => void;
+  onSelectLead: (lead: PipelineLead) => void;
+  onMoveLead: (leadId: string, stageId: string) => void;
+  onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
+  stageIndexMap: Map<string, number>;
+  handleDragStart: (leadId: string) => void;
+}) {
+  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Reset visible count when leads change significantly
+  useEffect(() => {
+    setVisibleCount(INITIAL_RENDER);
+  }, [stageLeads.length]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // Load more when scrolled to within 200px of bottom
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+      setVisibleCount(prev => Math.min(prev + LOAD_MORE_BATCH, stageLeads.length));
+    }
+  }, [stageLeads.length]);
+
+  const visibleLeads = stageLeads.slice(0, visibleCount);
+  const hasMore = visibleCount < stageLeads.length;
+
+  return (
+    <div
+      ref={scrollRef}
+      onScroll={handleScroll}
+      className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-1.5 scrollbar-thin"
+    >
+      {stageLeads.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
+            <span className="text-muted-foreground/40 text-sm">+</span>
+          </div>
+          <span className="text-[11px] text-muted-foreground/50">Arraste leads aqui</span>
+        </div>
+      )}
+      {visibleLeads.map((lead) => {
+        const isSelected = selectionMode && selectedLeads?.has(lead.id);
+        return (
+          <div
+            key={lead.id}
+            className={`relative ${selectionMode ? "cursor-pointer" : ""} ${isSelected ? "ring-2 ring-primary rounded-lg" : ""}`}
+            style={{
+              animation: arrivedLeadId === lead.id ? "cardArrived 0.4s cubic-bezier(0.34,1.56,0.64,1)" : undefined,
+            }}
+            onClick={selectionMode ? (e) => {
+              e.stopPropagation();
+              onToggleSelect?.(lead.id);
+            } : undefined}
+          >
+            {selectionMode && (
+              <div className="absolute top-1.5 right-1.5 z-10 pointer-events-none">
+                <div className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-colors ${
+                  isSelected
+                    ? "bg-primary border-primary"
+                    : "bg-white border-muted-foreground/40"
+                }`}>
+                  {isSelected && (
+                    <svg className="h-2.5 w-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            )}
+            <PipelineCardHover lead={lead} onOpenLead={() => !selectionMode && onSelectLead(lead)}>
+              <PipelineCard
+                lead={lead}
+                stage={stage}
+                stages={stages}
+                segmentos={segmentos}
+                corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
+                parceiroNome={parcerias[lead.id]}
+                onDragStart={() => !selectionMode && handleDragStart(lead.id)}
+                onClick={() => selectionMode ? onToggleSelect?.(lead.id) : onSelectLead(lead)}
+                onMoveLead={selectionMode ? undefined : onMoveLead}
+                onTransferred={onTransferred}
+                stageIndexMap={stageIndexMap}
+              />
+            </PipelineCardHover>
+          </div>
+        );
+      })}
+      {hasMore && (
+        <button
+          onClick={() => setVisibleCount(prev => Math.min(prev + LOAD_MORE_BATCH, stageLeads.length))}
+          className="w-full py-2 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Mostrar mais ({stageLeads.length - visibleCount} restantes)
+        </button>
+      )}
+    </div>
+  );
+});
+
 export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect }: PipelineBoardProps) {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
