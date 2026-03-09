@@ -407,11 +407,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     if (error) {
       console.error("Error adding lead:", error);
-      toast.error("Erro ao adicionar lead");
+      toast.error("Erro ao adicionar lead: " + (error.message || error.code || "Erro desconhecido"));
       return null;
     }
 
-    toast.success("Lead adicionado ao pipeline!");
+    toast.success("Lead adicionado ao pipeline! ✅");
     await loadLeads();
     return data;
   }, [user, stages, loadLeads, isGestor, isAdmin]);

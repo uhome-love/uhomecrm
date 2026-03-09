@@ -125,6 +125,13 @@ export function usePipelineLeadData(leadId: string | null) {
       autor_nome: profile.data?.nome || "Usuário",
     });
     if (error) { toast.error("Erro ao criar anotação"); return; }
+
+    // Update ultima_acao_at
+    await supabase.from("pipeline_leads").update({
+      ultima_acao_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", leadId);
+
     loadAll();
   }, [user, leadId, loadAll]);
 

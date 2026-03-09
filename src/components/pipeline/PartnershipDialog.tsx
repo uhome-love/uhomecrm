@@ -39,33 +39,32 @@ export default function PartnershipDialog({ open, onOpenChange, leadId, leadNome
     if (!open) return;
 
     (async () => {
-      const [membersRes, partnershipsRes] = await Promise.all([
-        // Sem filtro de status: estava deixando o select vazio em alguns cenários
+      const [membersRes, profilesRes, partnershipsRes] = await Promise.all([
         supabase.from("team_members").select("user_id, nome").order("nome", { ascending: true }),
+        supabase.from("profiles").select("user_id, nome").order("nome", { ascending: true }),
         supabase.from("pipeline_parcerias").select("*").eq("pipeline_lead_id", leadId),
       ]);
 
       if (partnershipsRes.error) console.error("Erro ao carregar parcerias:", partnershipsRes.error);
       setExistingPartnerships(partnershipsRes.data || []);
 
-      let members = (membersRes.data || []) as TeamMember[];
-      if (membersRes.error) console.error("Erro ao carregar corretores (team_members):", membersRes.error);
-
-      // Fallback: tenta profiles caso não retorne ninguém
-      if (!membersRes.error && members.length === 0) {
-        const profilesRes = await supabase.from("profiles").select("user_id, nome").order("nome", { ascending: true });
-        if (profilesRes.error) console.error("Erro ao carregar corretores (profiles):", profilesRes.error);
-        else members = (profilesRes.data || []) as TeamMember[];
-      }
-
-      const filtered = (members || []).filter((m) => {
-        if (!m?.user_id) return false;
-        if (excludedUserId && m.user_id === excludedUserId) return false;
-        return true;
+      // Merge team_members + profiles, dedup by user_id, prefer team_members name
+      const memberMap = new Map<string, string>();
+      (profilesRes.data || []).forEach((p: any) => {
+        if (p.user_id && p.nome) memberMap.set(p.user_id, p.nome);
+      });
+      (membersRes.data || []).forEach((m: any) => {
+        if (m.user_id && m.nome) memberMap.set(m.user_id, m.nome);
       });
 
-      setCorretores(filtered);
-      if (filtered.length === 0) toast.error("Nenhum corretor disponível para parceria");
+      const allMembers: TeamMember[] = Array.from(memberMap.entries())
+        .map(([user_id, nome]) => ({ user_id, nome }))
+        .filter(m => !excludedUserId || m.user_id !== excludedUserId)
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+      console.log("Corretores para parceria:", allMembers.length, allMembers);
+      setCorretores(allMembers);
+      if (allMembers.length === 0) toast.error("Nenhum corretor disponível para parceria");
     })();
   }, [open, leadId, excludedUserId]);
 
