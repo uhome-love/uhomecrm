@@ -188,8 +188,16 @@ export function useRoleta() {
   const [distribuicoes, setDistribuicoes] = useState<RoletaDistribuicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
 
   const hoje = format(new Date(), "yyyy-MM-dd");
+
+  // Load profile ID (profiles.id != auth user.id)
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("id").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data) setProfileId(data.id); });
+  }, [user]);
 
   // Load segmentos + campanhas
   const loadSegmentos = useCallback(async () => {
