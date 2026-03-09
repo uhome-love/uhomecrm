@@ -112,15 +112,20 @@ export default function CheckpointGerente() {
   const loadCheckpoint = useCallback(async () => {
     if (teamUserIds.length === 0) { setRows([]); return; }
 
-    const [{ data: saved }, { data: tentativas }, { data: visitasMarcadas }, { data: visitasRealizadas }] = await Promise.all([
+    const [{ data: saved }, { data: tentativas }, { data: visitasMarcadas }, { data: visitasRealizadas }, { data: corretorGoals }] = await Promise.all([
       supabase.from("checkpoint_diario").select("*").eq("data", dateStr).in("corretor_id", teamUserIds),
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`),
       supabase.from("visitas").select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr),
       supabase.from("visitas").select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr).eq("status", "realizada"),
+      supabase.from("corretor_daily_goals").select("corretor_id, meta_ligacoes, meta_aproveitados, meta_visitas_marcadas, status").in("corretor_id", teamUserIds).eq("data", dateStr),
     ]);
 
     const savedMap: Record<string, any> = {};
     saved?.forEach((s: any) => { savedMap[s.corretor_id] = s; });
+
+    // Corretor self-set goals map
+    const goalsMap: Record<string, any> = {};
+    corretorGoals?.forEach((g: any) => { goalsMap[g.corretor_id] = g; });
 
     const oaLig: Record<string, number> = {};
     const oaAprov: Record<string, number> = {};
@@ -140,6 +145,7 @@ export default function CheckpointGerente() {
 
     const newRows: CheckpointRow[] = teamUserIds.map(uid => {
       const s = savedMap[uid];
+      const g = goalsMap[uid];
       const hadActivity = (oaLig[uid] || 0) > 0;
       // Auto-detect presence: if has activity → presente, otherwise keep saved or nao_informado
       let presenca: CheckpointRow["presenca"] = s?.presenca ?? "nao_informado";
@@ -147,13 +153,18 @@ export default function CheckpointGerente() {
       // Map legacy values
       if ((presenca as string) === "home_office") presenca = "presente";
 
+      // Auto-fill metas: use saved checkpoint value, fallback to corretor daily goals
+      const metaLig = (s?.meta_ligacoes > 0) ? s.meta_ligacoes : (g?.meta_ligacoes ?? 0);
+      const metaAprov = (s?.meta_aproveitados > 0) ? s.meta_aproveitados : (g?.meta_aproveitados ?? 0);
+      const metaVm = (s?.meta_visitas_marcar > 0) ? s.meta_visitas_marcar : (g?.meta_visitas_marcadas ?? 0);
+
       const row: CheckpointRow = {
         corretor_id: uid,
         nome: teamNameMap[uid] || "Corretor",
         presenca,
-        meta_ligacoes: s?.meta_ligacoes ?? 0,
-        meta_aproveitados: s?.meta_aproveitados ?? 0,
-        meta_visitas_marcar: s?.meta_visitas_marcar ?? 0,
+        meta_ligacoes: metaLig,
+        meta_aproveitados: metaAprov,
+        meta_visitas_marcar: metaVm,
         obs_gerente: s?.obs_gerente ?? "",
         res_ligacoes: oaLig[uid] ?? s?.res_ligacoes ?? 0,
         res_aproveitados: oaAprov[uid] ?? s?.res_aproveitados ?? 0,
