@@ -42,7 +42,7 @@ const MeusNegocios = lazy(() => import("./pages/MeusNegocios"));
 const PipelineKanban = lazy(() => import("./pages/PipelineKanban"));
 const EscalaDiaria = lazy(() => import("./pages/EscalaDiaria"));
 const Welcome = lazy(() => import("./pages/Welcome"));
-const PosVendas = lazy(() => import("./pages/PosVendas"));
+
 const DisponibilidadePage = lazy(() => import("./pages/DisponibilidadePage"));
 const AutomacoesPage = lazy(() => import("./pages/AutomacoesPage"));
 const Notificacoes = lazy(() => import("./pages/Notificacoes"));
