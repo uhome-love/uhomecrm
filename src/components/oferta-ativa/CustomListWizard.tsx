@@ -13,7 +13,7 @@ import HomiInlineSuggestion from "@/components/homi/HomiInlineSuggestion";
 
 const FONTES = [
   { id: "meus_leads", label: "Meus leads", sub: "Pipeline Leads", icon: ClipboardList, color: "text-blue-500" },
-  { id: "meus_negocios", label: "Meus negócios", sub: "Pipeline PDN", icon: Briefcase, color: "text-amber-500" },
+  { id: "meus_negocios", label: "Meus negócios", sub: "Pipeline Negócios", icon: Briefcase, color: "text-amber-500" },
   { id: "pos_venda", label: "Pós-venda", sub: "Clientes ativos", icon: Trophy, color: "text-emerald-500" },
   { id: "perdidos", label: "Perdidos", sub: "Reengajar", icon: HeartCrack, color: "text-red-400" },
 ] as const;

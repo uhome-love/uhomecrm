@@ -76,7 +76,7 @@ export default function SaudeOperacao() {
       { id: "sla", label: "Velocidade de Atendimento", valor: `SLA médio: ${slaMin}min`, nivel: slaNivel, icon: Clock, rota: "/pipeline" },
       { id: "aprov", label: "Aproveitamento de Leads", valor: `${taxaAprov}% dos leads`, nivel: aprovNivel, icon: TrendingUp, rota: "/pipeline" },
       { id: "conv", label: "Lead → Visita", valor: `${convVisita}% conversão`, nivel: convNivel, icon: MapPin, rota: "/agenda-visitas" },
-      { id: "pdn", label: "Negócios Parados (PDN)", valor: `${parados} negócios > 10 dias`, nivel: paradosNivel, icon: Activity, rota: "/pdn" },
+      { id: "pdn", label: "Negócios Parados", valor: `${parados} negócios > 10 dias`, nivel: paradosNivel, icon: Activity, rota: "/meus-negocios" },
       { id: "presenca", label: "Presença da Equipe", valor: `${pctPresenca}% presente (${presentes || 0}/${totalCorretores || 0})`, nivel: presNivel, icon: Users, rota: "/disponibilidade" },
       { id: "fila", label: "Leads sem Corretor", valor: `${naFila || 0} na fila`, nivel: filaNivel, icon: UserX, rota: "/pipeline" },
     ]);

@@ -32,7 +32,7 @@ const roleTips: Record<string, string[]> = {
   ],
   gestor: [
     "Dica: faça o checkpoint do time agora!",
-    "Dica: acompanhe os negócios quentes no PDN.",
+    "Dica: acompanhe os negócios quentes no Pipeline.",
     "Dica: gere os relatórios 1:1 da semana.",
   ],
   corretor: [
