@@ -1,0 +1,1 @@
+ALTER TABLE leads RENAME TO leads_legado;

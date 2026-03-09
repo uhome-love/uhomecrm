@@ -1780,7 +1780,7 @@ export type Database = {
             foreignKeyName: "lead_messages_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
         ]
@@ -1837,7 +1837,7 @@ export type Database = {
             foreignKeyName: "lead_progressao_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
           {
@@ -1901,12 +1901,108 @@ export type Database = {
             foreignKeyName: "lead_tasks_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
         ]
       }
-      leads: {
+      leads_backup: {
+        Row: {
+          atualizado_em: string | null
+          corretor_responsavel: string | null
+          dias_parado: number | null
+          email: string | null
+          id: string | null
+          imovel_codigo: string | null
+          imovel_data: Json | null
+          importado_em: string | null
+          interesse: string | null
+          mensagem_gerada: string | null
+          modulo_atual: string | null
+          negocio_id: string | null
+          nome: string | null
+          observacoes: string | null
+          origem: string | null
+          pipeline_fase: string | null
+          prioridade: Database["public"]["Enums"]["lead_priority"] | null
+          recovery_score: number | null
+          roleta_distribuido_em: string | null
+          roleta_expira_em: string | null
+          roleta_respondido_em: string | null
+          roleta_status: string | null
+          status: string | null
+          status_recuperacao: string | null
+          telefone: string | null
+          tipo_situacao: string | null
+          ultima_acao_at: string | null
+          ultimo_contato: string | null
+          user_id: string | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          corretor_responsavel?: string | null
+          dias_parado?: number | null
+          email?: string | null
+          id?: string | null
+          imovel_codigo?: string | null
+          imovel_data?: Json | null
+          importado_em?: string | null
+          interesse?: string | null
+          mensagem_gerada?: string | null
+          modulo_atual?: string | null
+          negocio_id?: string | null
+          nome?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          pipeline_fase?: string | null
+          prioridade?: Database["public"]["Enums"]["lead_priority"] | null
+          recovery_score?: number | null
+          roleta_distribuido_em?: string | null
+          roleta_expira_em?: string | null
+          roleta_respondido_em?: string | null
+          roleta_status?: string | null
+          status?: string | null
+          status_recuperacao?: string | null
+          telefone?: string | null
+          tipo_situacao?: string | null
+          ultima_acao_at?: string | null
+          ultimo_contato?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          corretor_responsavel?: string | null
+          dias_parado?: number | null
+          email?: string | null
+          id?: string | null
+          imovel_codigo?: string | null
+          imovel_data?: Json | null
+          importado_em?: string | null
+          interesse?: string | null
+          mensagem_gerada?: string | null
+          modulo_atual?: string | null
+          negocio_id?: string | null
+          nome?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          pipeline_fase?: string | null
+          prioridade?: Database["public"]["Enums"]["lead_priority"] | null
+          recovery_score?: number | null
+          roleta_distribuido_em?: string | null
+          roleta_expira_em?: string | null
+          roleta_respondido_em?: string | null
+          roleta_status?: string | null
+          status?: string | null
+          status_recuperacao?: string | null
+          telefone?: string | null
+          tipo_situacao?: string | null
+          ultima_acao_at?: string | null
+          ultimo_contato?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      leads_legado: {
         Row: {
           atualizado_em: string
           corretor_responsavel: string | null
@@ -2411,7 +2507,7 @@ export type Database = {
             foreignKeyName: "negocios_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
           {
@@ -3939,7 +4035,7 @@ export type Database = {
             foreignKeyName: "pos_vendas_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
           {
@@ -4578,7 +4674,7 @@ export type Database = {
             foreignKeyName: "roleta_distribuicoes_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "leads_legado"
             referencedColumns: ["id"]
           },
           {
