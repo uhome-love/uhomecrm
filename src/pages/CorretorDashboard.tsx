@@ -396,12 +396,36 @@ export default function CorretorDashboard() {
             </Card>
           </motion.div>
 
-          {/* Finalizar Trabalho — desktop only in left column */}
+          {/* Atalhos Rápidos — Grid 2x2 */}
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Agenda", emoji: "📅", path: "/agenda-visitas", subtitle: radar.visitas.length > 0 ? `${radar.visitas.length} visita${radar.visitas.length > 1 ? "s" : ""} hoje` : "Livre hoje" },
+                { label: "HOMI", emoji: "🤖", path: "/homi", subtitle: "Assistente IA" },
+                { label: "Scripts", emoji: "📝", path: "/scripts", subtitle: "Roteiros de venda" },
+                { label: "Desempenho", emoji: "📊", path: "/corretor/resumo", subtitle: "Resumo semanal" },
+              ].map((item) => (
+                <Card
+                  key={item.label}
+                  className="cursor-pointer border-border/60 hover:shadow-card-hover hover:border-primary/30 transition-all duration-150"
+                  onClick={() => navigate(item.path)}
+                >
+                  <CardContent className="p-0 h-24 flex flex-col items-center justify-center gap-1.5">
+                    <span className="text-2xl">{item.emoji}</span>
+                    <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{item.subtitle}</span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Finalizar Trabalho do Dia */}
           {metaSalva && progress.tentativas > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="hidden lg:block">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }}>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" className="w-full h-9 gap-2 text-xs text-muted-foreground hover:text-destructive" disabled={finalizando}>
+                  <Button variant="outline" className="w-full h-9 gap-2 text-xs text-muted-foreground hover:text-destructive border-border/60" disabled={finalizando}>
                     <LogOut className="h-3.5 w-3.5" /> Finalizar Trabalho do Dia
                   </Button>
                 </AlertDialogTrigger>
