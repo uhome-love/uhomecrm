@@ -776,7 +776,7 @@ function CorretorAgendaTab({ userId }: { userId: string }) {
   const { data } = useQuery({
     queryKey: ["corretor-agenda-drawer", userId],
     queryFn: async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
+      const today = todayBRT();
       const { data } = await supabase.from("visitas").select("id, nome_cliente, empreendimento, data_visita, hora_visita, status").eq("corretor_id", userId).gte("data_visita", today).order("data_visita").order("hora_visita").limit(10);
       return data || [];
     },

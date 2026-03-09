@@ -38,7 +38,7 @@ const APPROVAL_BADGE: Record<string, { label: string; className: string; icon: R
 };
 
 export default function EscalaDiariaPage() {
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
   const { isGestor, isAdmin } = useUserRole();
   const escala = useEscalaDiaria(selectedDate);
   const canValidate = escala.canValidate;

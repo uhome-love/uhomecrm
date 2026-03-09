@@ -27,7 +27,7 @@ export default function ManagerChecklist() {
   const { user } = useAuth();
   const [items, setItems] = useState<CheckItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = todayBRT();
 
   const load = useCallback(async () => {
     if (!user) return;

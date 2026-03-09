@@ -34,7 +34,7 @@ export function useSmartAlerts() {
       setLoading(true);
       const result: SmartAlert[] = [];
       const badgeCounts: Record<string, number> = {};
-      const today = format(new Date(), "yyyy-MM-dd");
+      const today = todayBRT();
       const now = new Date();
       const monthStart = format(startOfMonth(now), "yyyy-MM-dd");
       const monthEnd = format(endOfMonth(now), "yyyy-MM-dd");
