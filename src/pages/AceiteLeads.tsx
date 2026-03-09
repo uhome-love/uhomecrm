@@ -274,19 +274,47 @@ export default function AceiteLeads() {
 
   useEffect(() => { fetchPending(); }, [fetchPending]);
 
-  // Realtime
+  // Realtime — listen to ALL pipeline_leads changes (FULL replica identity enables filtered delivery)
   useEffect(() => {
     if (!user) return;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
       .channel("aceite-leads-rt")
       .on("postgres_changes", {
         event: "*",
         schema: "public",
         table: "pipeline_leads",
-        filter: `corretor_id=eq.${user.id}`,
-      }, () => fetchPending())
+      }, (payload) => {
+        // Only refetch if the change is relevant to this user
+        const newRow = payload.new as any;
+        const oldRow = payload.old as any;
+        if (newRow?.corretor_id === user.id || oldRow?.corretor_id === user.id) {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => fetchPending(), 800);
+        }
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchPending]);
+
+  // Auto-refresh when tab becomes visible
+  useEffect(() => {
+    if (!user) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") fetchPending();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [user, fetchPending]);
+
+  // Poll every 30s as backup for realtime
+  useEffect(() => {
+    if (!user) return;
+    const iv = setInterval(fetchPending, 30_000);
+    return () => clearInterval(iv);
   }, [user, fetchPending]);
 
   const currentLead = leads[currentIndex] || null;

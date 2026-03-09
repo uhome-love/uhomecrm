@@ -216,13 +216,25 @@ export function usePipeline(pipelineTipo: string = "leads") {
       .channel("pipeline-leads-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "pipeline_leads" }, () => {
         if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => loadLeads(), 2000);
+        debounceTimer = setTimeout(() => loadLeads(), 1500);
       })
       .subscribe();
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
+  }, [user, loadLeads]);
+
+  // Auto-refresh when tab becomes visible (replaces manual cache clear)
+  useEffect(() => {
+    if (!user) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadLeads();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [user, loadLeads]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
