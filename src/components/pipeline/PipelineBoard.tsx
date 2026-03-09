@@ -190,6 +190,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 onMoveLead={selectionMode ? undefined : onMoveLead}
                 onTransferred={onTransferred}
                 stageIndexMap={stageIndexMap}
+                proximaTarefa={tarefasMap[lead.id] || null}
               />
             </PipelineCardHover>
           </div>
