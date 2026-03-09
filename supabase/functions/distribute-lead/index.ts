@@ -15,9 +15,8 @@ const INVESTIMENTO = "dd96ad01-7e76-40e9-8324-211166168b26";
 const EMPREENDIMENTO_SEGMENTO: Record<string, string> = {
   // MCMV / Até 500k
   "open bosque": MCMV,
-  // Investimento
-  "melnick day": INVESTIMENTO,
-  "melnick day compactos": INVESTIMENTO,
+  "melnick day": MCMV,
+  "melnick day compactos": MCMV,
   // Médio-Alto Padrão
   "casa tua": MEDIO_ALTO,
   "las casas": MEDIO_ALTO,
