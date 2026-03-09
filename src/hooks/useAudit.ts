@@ -188,7 +188,7 @@ export function useAudit() {
     setProgress(55);
 
     // 4) Leads duplicates by phone/email
-    const { data: leads } = await supabase.from("leads").select("id, nome, telefone, email, interesse");
+    const { data: leads } = await supabase.from("pipeline_leads").select("id, nome, telefone, email, empreendimento");
     if (leads) {
       const phoneSeen = new Map<string, string[]>();
       const emailSeen = new Map<string, string[]>();

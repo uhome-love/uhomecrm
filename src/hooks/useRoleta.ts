@@ -277,7 +277,7 @@ export function useRoleta() {
     const segIds = [...new Set(dists.map(d => d.segmento_id).filter(Boolean))] as string[];
 
     const [leadsRes, profilesRes, segsRes] = await Promise.all([
-      leadIds.length > 0 ? supabase.from("leads").select("id, nome").in("id", leadIds) : { data: [] },
+      leadIds.length > 0 ? supabase.from("pipeline_leads").select("id, nome").in("id", leadIds) : { data: [] },
       corretorIds.length > 0 ? supabase.from("profiles").select("id, nome").in("id", corretorIds) : { data: [] },
       segIds.length > 0 ? supabase.from("roleta_segmentos").select("id, nome").in("id", segIds) : { data: [] },
     ]);
