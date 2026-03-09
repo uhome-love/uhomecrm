@@ -42,7 +42,9 @@ export default function Configuracoes() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  
+  // Experience preferences (local state to force re-render)
+  const [soundOn, setSoundOn] = useState(() => getSoundEnabled());
+  const [celebrationOn, setCelebrationOn] = useState(() => getCelebrationEnabled());
 
   useEffect(() => {
     if (!user) return;
@@ -366,8 +368,8 @@ export default function Configuracoes() {
               <p className="text-xs text-muted-foreground">Toques sonoros ao registrar ações</p>
             </div>
             <Switch
-              checked={getSoundEnabled()}
-              onCheckedChange={(v) => { setSoundEnabled(v); toast.success(v ? "🔔 Sons ativados!" : "🔇 Sons desativados."); }}
+              checked={soundOn}
+              onCheckedChange={(v) => { setSoundEnabled(v); setSoundOn(v); toast.success(v ? "🔔 Sons ativados!" : "🔇 Sons desativados."); }}
             />
           </div>
           <Separator />
@@ -379,8 +381,8 @@ export default function Configuracoes() {
               <p className="text-xs text-muted-foreground">Confete e animações ao bater metas</p>
             </div>
             <Switch
-              checked={getCelebrationEnabled()}
-              onCheckedChange={(v) => { setCelebrationEnabled(v); toast.success(v ? "🎉 Celebrações ativadas!" : "Celebrações desativadas."); }}
+              checked={celebrationOn}
+              onCheckedChange={(v) => { setCelebrationEnabled(v); setCelebrationOn(v); toast.success(v ? "🎉 Celebrações ativadas!" : "Celebrações desativadas."); }}
             />
           </div>
         </CardContent>

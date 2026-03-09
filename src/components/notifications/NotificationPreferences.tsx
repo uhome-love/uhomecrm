@@ -35,6 +35,7 @@ export default function NotificationPreferences() {
     permission: pushPermission,
     subscribe: subscribePush, 
     unsubscribe: unsubscribePush,
+    checkSubscription,
     sendTestPush 
   } = usePushSubscription();
   const [saving, setSaving] = useState(false);
@@ -49,6 +50,7 @@ export default function NotificationPreferences() {
   const [silencioFim, setSilencioFim] = useState("");
   const [silenciadas, setSilenciadas] = useState<string[]>([]);
 
+  // Load preferences from DB
   useEffect(() => {
     if (preferences) {
       setPopup(preferences.popup_enabled);
@@ -63,13 +65,25 @@ export default function NotificationPreferences() {
     }
   }, [preferences]);
 
+  // Check existing push subscription on mount
+  useEffect(() => {
+    checkSubscription().then((subscribed) => {
+      if (subscribed) setPush(true);
+    });
+  }, [checkSubscription]);
+
   const handlePushToggle = async (enabled: boolean) => {
     if (enabled && !pushSubscribed) {
       const success = await subscribePush();
-      if (success) setPush(true);
+      if (success) {
+        setPush(true);
+        // Auto-save push_enabled to DB
+        updatePreferences({ push_enabled: true });
+      }
     } else if (!enabled && pushSubscribed) {
       await unsubscribePush();
       setPush(false);
+      updatePreferences({ push_enabled: false });
     } else {
       setPush(enabled);
     }
