@@ -26,9 +26,9 @@ import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visita
 import VisitasEquipe from "@/components/visitas/VisitasEquipe";
 
 const FIXED_TEAMS = [
-  { key: "gabrielle", label: "Gabrielle", emoji: "🟢", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  { key: "bruno", label: "Bruno", emoji: "🔵", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  { key: "gabriel", label: "Gabriel", emoji: "🟣", className: "bg-purple-50 text-purple-700 border-purple-200" },
+  { key: "gabrielle", label: "Gabrielle", emoji: "🟢", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
+  { key: "bruno", label: "Bruno", emoji: "🔵", className: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
+  { key: "gabriel", label: "Gabriel", emoji: "🟣", className: "bg-purple-500/10 text-purple-600 border-purple-500/30" },
 ];
 
 

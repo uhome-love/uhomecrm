@@ -334,7 +334,7 @@ export default function CorretorDashboard() {
                   <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.rankingPos === 1 ? "text-amber-600" : "text-foreground"}`}>#{radar.rankingPos || "–"}</p>
                   <p className="text-sm text-muted-foreground mt-1.5">de {radar.totalBrokers}</p>
                   {radar.ptsToNext > 0 && (
-                    <p className="text-xs text-[#B45309] font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
+                    <p className="text-xs text-amber-600 font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
                   )}
                 </CardContent>
               </Card>
