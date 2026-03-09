@@ -129,19 +129,13 @@ Deno.serve(async (req) => {
       // Get today's start
       const todayStart = getTodayStartUTC();
 
-      // Get all approved credenciamentos for today+janela (or "qualquer" = any)
-      const credQuery = supabase
+      // Get ALL approved credenciamentos for today (ignore janela — balancing is global)
+      const { data: creds } = await supabase
         .from("roleta_credenciamentos")
         .select("corretor_id, segmento_1_id, segmento_2_id, janela")
         .eq("data", getTodayDateStr())
         .eq("status", "aprovado")
         .is("saiu_em", null);
-
-      if (targetJanela !== "qualquer") {
-        credQuery.eq("janela", targetJanela);
-      }
-
-      const { data: creds } = await credQuery;
       if (!creds || creds.length === 0) {
         return jsonResponse({ success: false, reason: "no_credenciados", dispatched: 0 });
       }
