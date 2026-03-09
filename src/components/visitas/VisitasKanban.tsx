@@ -25,7 +25,6 @@ interface Props {
 }
 
 export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Props) {
-  const { convertToPdn } = useVisitaToPdn();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<VisitaStatus | null>(null);
 
