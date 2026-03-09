@@ -254,12 +254,17 @@ export function useRoleta() {
   }, [hoje]);
 
   // Load fila for today — enriched with REAL lead counts from pipeline_leads
+  // Only shows entries for the CURRENT janela (shift window)
   const loadFila = useCallback(async () => {
+    const windowInfo = getCurrentWindowInfo();
+    const currentJanela = windowInfo.janela;
+
     const { data: filaData } = await supabase
       .from("roleta_fila")
       .select("*")
       .eq("data", hoje)
-      .eq("ativo", true);
+      .eq("ativo", true)
+      .eq("janela", currentJanela);
 
     if (!filaData?.length) { setFila([]); return; }
 
