@@ -6,33 +6,39 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── Empreendimento → Segmento mapping ───
+// ─── Empreendimento → Segmento mapping (pipeline_segmentos IDs) ───
+const MCMV = "21180d72-f202-4d29-96cb-6ab88d37d5e1";
+const MEDIO_ALTO = "c8b24415-3dc1-4f65-aae1-f308ef02cb7a";
+const ALTISSIMO = "5e930c09-634d-40e1-9ccc-981b0a4eae74";
+const INVESTIMENTO = "dd96ad01-7e76-40e9-8324-211166168b26";
+
 const EMPREENDIMENTO_SEGMENTO: Record<string, string> = {
   // MCMV / Até 500k
-  "open bosque": "9948f523-29f4-46a7-bc1b-81ff8bb8dd50",
-  "melnick day": "9948f523-29f4-46a7-bc1b-81ff8bb8dd50",
-  "melnick day compactos": "9948f523-29f4-46a7-bc1b-81ff8bb8dd50",
+  "open bosque": MCMV,
+  "melnick day": MCMV,
+  "melnick day compactos": MCMV,
   // Médio-Alto Padrão
-  "casa tua": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "las casas": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "vértice - las casas": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "orygem": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "me day": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "alto lindóia": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "alto lindoia": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "terrace": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "alfa": "d364f084-a63b-4be3-892e-15d66e367b43",
-  "duetto - morana": "d364f084-a63b-4be3-892e-15d66e367b43",
+  "casa tua": MEDIO_ALTO,
+  "las casas": MEDIO_ALTO,
+  "vértice - las casas": MEDIO_ALTO,
+  "orygem": MEDIO_ALTO,
+  "me day": MEDIO_ALTO,
+  "alto lindóia": MEDIO_ALTO,
+  "alto lindoia": MEDIO_ALTO,
+  "terrace": MEDIO_ALTO,
+  "alfa": MEDIO_ALTO,
+  "duetto - morana": MEDIO_ALTO,
+  "salzburg": MEDIO_ALTO,
   // Altíssimo Padrão
-  "lake eyre": "93ca556c-9a32-4fb8-b1af-148100ea47f0",
-  "seen": "93ca556c-9a32-4fb8-b1af-148100ea47f0",
-  "seen menino deus": "93ca556c-9a32-4fb8-b1af-148100ea47f0",
-  "boa vista country club": "93ca556c-9a32-4fb8-b1af-148100ea47f0",
-  "boa vista": "93ca556c-9a32-4fb8-b1af-148100ea47f0",
+  "lake eyre": ALTISSIMO,
+  "seen": ALTISSIMO,
+  "seen menino deus": ALTISSIMO,
+  "boa vista country club": ALTISSIMO,
+  "boa vista": ALTISSIMO,
   // Investimento
-  "shift": "409aeddf-077f-473a-97cc-dfc0692ed35e",
-  "shift - vanguard": "409aeddf-077f-473a-97cc-dfc0692ed35e",
-  "casa bastian": "409aeddf-077f-473a-97cc-dfc0692ed35e",
+  "shift": INVESTIMENTO,
+  "shift - vanguard": INVESTIMENTO,
+  "casa bastian": INVESTIMENTO,
 };
 
 function resolveSegmento(empreendimento: string | null): string | null {
