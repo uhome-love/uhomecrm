@@ -21,6 +21,7 @@ export interface Visita {
   local_visita: string | null;
   status: string;
   observacoes: string | null;
+  resultado_visita: string | null;
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -100,30 +101,21 @@ export function useVisitas(filters?: {
       // Fetch corretor names for all unique corretor_ids
       const corretorIds = [...new Set(rows.map(r => r.corretor_id).filter(Boolean))];
       if (corretorIds.length > 0) {
-        // Try profiles first
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, nome")
-          .in("user_id", corretorIds);
-        
-        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.nome]));
+        const [profilesRes, membersRes] = await Promise.all([
+          supabase.from("profiles").select("user_id, nome").in("user_id", corretorIds),
+          supabase.from("team_members").select("user_id, nome, equipe").in("user_id", corretorIds).eq("status", "ativo"),
+        ]);
 
-        // Fetch team_members for missing names + equipe
-        const { data: members } = await supabase
-          .from("team_members")
-          .select("user_id, nome, equipe")
-          .in("user_id", corretorIds)
-          .eq("status", "ativo");
-
+        const nameMap = new Map((profilesRes.data || []).map(p => [p.user_id, p.nome]));
         const equipeMap = new Map<string, string>();
-        (members || []).forEach(m => {
+        (membersRes.data || []).forEach(m => {
           if (m.user_id) {
             if (!nameMap.get(m.user_id)) nameMap.set(m.user_id, m.nome);
             if (m.equipe) equipeMap.set(m.user_id, m.equipe);
           }
         });
 
-        // Fetch gerente names from gerente_id to derive team when equipe is missing
+        // Fetch gerente names to derive team when equipe is missing
         const gerenteIds = [...new Set(rows.map(r => r.gerente_id).filter(Boolean))];
         const gerenteNameMap = new Map<string, string>();
         if (gerenteIds.length > 0) {
@@ -140,7 +132,6 @@ export function useVisitas(filters?: {
 
         rows.forEach(r => {
           r.corretor_nome = nameMap.get(r.corretor_id) || undefined;
-          // Prefer equipe from team_members, fallback to gerente first name
           r.equipe = equipeMap.get(r.corretor_id) || (r.gerente_id ? gerenteNameMap.get(r.gerente_id) : undefined) || undefined;
         });
       }
@@ -195,6 +186,8 @@ export function useVisitas(filters?: {
       return null;
     }
 
+    toast.success("📅 Visita agendada com sucesso!");
+
     // GATILHO 1: Auto-advance pipeline lead to "agenda" module
     if (data?.pipeline_lead_id) {
       try {
@@ -245,32 +238,35 @@ export function useVisitas(filters?: {
     return data;
   }, [user, queryClient]);
 
-  const updateVisita = useCallback(async (id: string, updates: Partial<Visita>) => {
+  const updateVisita = useCallback(async (id: string, updates: Partial<Visita>, silent = false) => {
     const { error } = await supabase
       .from("visitas")
       .update(updates as any)
       .eq("id", id);
 
     if (error) {
+      console.error("Erro ao atualizar visita:", error);
       toast.error("Erro ao atualizar visita");
       return false;
     }
 
     queryClient.invalidateQueries({ queryKey: ["visitas"] });
-    toast.success("Visita atualizada!");
+    if (!silent) toast.success("Visita atualizada!");
     return true;
   }, [queryClient]);
 
   const updateStatus = useCallback(async (id: string, newStatus: VisitaStatus) => {
-    const result = await updateVisita(id, { status: newStatus } as any);
+    // Use silent=true to avoid double toast
+    const result = await updateVisita(id, { status: newStatus } as any, true);
     
-    // Auto-progression triggers based on visita status changes
     if (result) {
+      toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`);
+      
+      // Auto-progression triggers based on visita status changes
       const visita = visitas.find(v => v.id === id);
       if (visita?.pipeline_lead_id) {
         try {
           if (newStatus === "realizada") {
-            // GATILHO 2: Create negocio + advance to negocios module
             const { data: negocio } = await supabase
               .from("negocios")
               .insert({
@@ -311,7 +307,6 @@ export function useVisitas(filters?: {
               });
             }
           } else if (newStatus === "no_show" || newStatus === "cancelada") {
-            // GATILHO 4: Return to pipeline
             await supabase.from("pipeline_leads").update({
               modulo_atual: "pipeline",
             } as any).eq("id", visita.pipeline_lead_id);
@@ -341,6 +336,7 @@ export function useVisitas(filters?: {
       .eq("id", id);
 
     if (error) {
+      console.error("Erro ao excluir visita:", error);
       toast.error("Erro ao excluir visita");
       return false;
     }
@@ -363,7 +359,6 @@ export async function createVisitaFromOA(params: {
   attemptId?: string;
   observacoes?: string;
 }) {
-  // Resolve gerente_id
   const { data: tm } = await supabase
     .from("team_members")
     .select("gerente_id")
