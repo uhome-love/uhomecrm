@@ -344,8 +344,8 @@ function CorretorView() {
             <p className="text-sm text-muted-foreground">O credenciamento abre nos seguintes horários:</p>
             <div className="space-y-1 text-sm text-left max-w-xs mx-auto">
               <p>🌅 <strong>Manhã</strong>: 00:00 – 09:30</p>
-              <p>☀️ <strong>Tarde</strong>: 09:30 – 13:30</p>
-              <p>🌞 <strong>Noturna</strong>: 13:30 – 18:00</p>
+              <p>☀️ <strong>Tarde</strong>: 12:00 – 13:30</p>
+              <p>🌙 <strong>Noturna</strong>: 18:00 – 18:30</p>
             </div>
             <div className="flex items-center justify-center gap-2 pt-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
