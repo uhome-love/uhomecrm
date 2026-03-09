@@ -108,45 +108,72 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   const loadLeads = useCallback(async () => {
     if (!user) return;
-    let query = supabase
-      .from("pipeline_leads")
-      .select("id, nome, telefone, telefone2, email, segmento_id, produto_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, modo_conducao, complexidade_score, oportunidade_score, escalation_level, last_escalation_at, distribuido_em, aceito_em, aceite_expira_em, aceite_status, origem, origem_detalhe, observacoes, proxima_acao, data_proxima_acao, motivo_descarte, valor_estimado, created_at, updated_at, created_by, negocio_id")
-      .order("updated_at", { ascending: false })
-      .limit(1000);
+
+    const selectFields = "id, nome, telefone, telefone2, email, segmento_id, produto_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, modo_conducao, complexidade_score, oportunidade_score, escalation_level, last_escalation_at, distribuido_em, aceito_em, aceite_expira_em, aceite_status, origem, origem_detalhe, observacoes, proxima_acao, data_proxima_acao, motivo_descarte, valor_estimado, created_at, updated_at, created_by, negocio_id";
+    const pageSize = 1000;
+
+    let teamUserIds: string[] = [];
 
     // Role-based visibility
     if (isAdmin) {
       // CEO/Admin: vê TODOS os leads sem filtro
     } else if (isGestor) {
-      // Gerentes: leads do time + leads ainda sem corretor (fila não distribuída)
-      const { data: teamMembers } = await supabase
+      // Gerentes: leads do time
+      const { data: teamMembers, error: teamError } = await supabase
         .from("team_members")
         .select("user_id")
         .eq("gerente_id", user.id);
 
-      const teamUserIds = (teamMembers || [])
+      if (teamError) {
+        console.error("Error loading team members:", teamError);
+        return;
+      }
+
+      teamUserIds = (teamMembers || [])
         .map((m) => m.user_id)
         .filter(Boolean) as string[];
 
-      if (teamUserIds.length > 0) {
-        query = query.in("corretor_id", teamUserIds);
-      } else {
-        // Gerente sem time vinculado: retorna vazio
-        query = query.eq("id", "00000000-0000-0000-0000-000000000000");
+      if (teamUserIds.length === 0) {
+        setLeads([]);
+        return;
       }
-    } else {
-      // Corretores: only their own leads
-      query = query.eq("corretor_id", user.id);
     }
 
-    const { data, error } = await query.throwOnError();
-    if (error) {
-      console.error("Error loading pipeline leads:", error);
-      return;
+    const allRows: PipelineLead[] = [];
+    let from = 0;
+
+    while (true) {
+      let query = supabase
+        .from("pipeline_leads")
+        .select(selectFields)
+        .order("updated_at", { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (isAdmin) {
+        // sem filtro
+      } else if (isGestor) {
+        query = query.in("corretor_id", teamUserIds);
+      } else {
+        // Corretores: only their own leads
+        query = query.eq("corretor_id", user.id);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error("Error loading pipeline leads:", error);
+        return;
+      }
+
+      const batch = ((data || []) as PipelineLead[]);
+      allRows.push(...batch);
+
+      if (batch.length < pageSize) break;
+      from += pageSize;
     }
+
     // Deduplicate leads by id (in case of duplicate rows)
     const seenIds = new Set<string>();
-    const leadsData = ((data || []) as PipelineLead[]).filter(l => {
+    const leadsData = allRows.filter(l => {
       if (seenIds.has(l.id)) return false;
       seenIds.add(l.id);
       return true;
