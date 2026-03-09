@@ -597,7 +597,7 @@ export default function GerenteDashboard() {
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-bold text-foreground">📅 Agenda de Hoje</h2>
-                <button className="text-sm text-blue-500 hover:underline font-medium flex items-center gap-1" onClick={() => navigate("/agenda-visitas")}>
+                <button className="text-sm text-primary hover:underline font-medium flex items-center gap-1" onClick={() => navigate("/agenda-visitas")}>
                   Ver completa <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
