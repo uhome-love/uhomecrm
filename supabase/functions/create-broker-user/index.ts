@@ -204,7 +204,7 @@ serve(async (req) => {
       const deletions = [
         supabase.from("lead_messages").delete().eq("user_id", target_user_id),
         supabase.from("lead_tasks").delete().eq("user_id", target_user_id),
-        supabase.from("leads").delete().eq("user_id", target_user_id),
+        supabase.from("pipeline_leads").delete().eq("corretor_id", target_user_id),
         supabase.from("saved_scripts").delete().eq("user_id", target_user_id),
         supabase.from("corretor_daily_goals").delete().eq("corretor_id", target_user_id),
         supabase.from("oferta_ativa_tentativas").delete().eq("corretor_id", target_user_id),

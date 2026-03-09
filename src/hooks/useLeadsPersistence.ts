@@ -11,22 +11,22 @@ function dbRowToLead(row: any): Lead {
     nome: row.nome,
     email: row.email || "",
     telefone: row.telefone || "",
-    interesse: row.interesse || "",
+    interesse: row.empreendimento || "",
     origem: row.origem || "",
-    ultimoContato: row.ultimo_contato
-      ? new Date(row.ultimo_contato).toLocaleDateString("pt-BR")
+    ultimoContato: row.updated_at
+      ? new Date(row.updated_at).toLocaleDateString("pt-BR")
       : "",
-    status: row.status || "",
-    prioridade: row.prioridade as Lead["prioridade"],
-    mensagemGerada: row.mensagem_gerada || undefined,
-    recoveryScore: row.recovery_score ?? undefined,
-    imovel: row.imovel_data ? (row.imovel_data as Lead["imovel"]) : undefined,
+    status: row.temperatura || "",
+    prioridade: mapTemperaturaToPrority(row.temperatura),
+    mensagemGerada: undefined,
+    recoveryScore: undefined,
+    imovel: undefined,
     corretor: undefined,
     etapa: undefined,
-    dataCriacao: row.importado_em || "",
-    statusRecuperacao: row.status_recuperacao || "pendente",
-    tipoSituacao: row.tipo_situacao || undefined,
-    corretorResponsavel: row.corretor_responsavel || undefined,
+    dataCriacao: row.created_at || "",
+    statusRecuperacao: "pendente",
+    tipoSituacao: undefined,
+    corretorResponsavel: row.corretor_id || undefined,
     observacoes: row.observacoes || undefined,
   };
   if (!lead.recoveryScore) {
@@ -35,15 +35,23 @@ function dbRowToLead(row: any): Lead {
   return lead;
 }
 
+function mapTemperaturaToPrority(temp: string | null): Lead["prioridade"] {
+  if (!temp) return "morno";
+  const map: Record<string, Lead["prioridade"]> = {
+    quente: "muito_quente",
+    morno: "morno",
+    frio: "frio",
+  };
+  return map[temp] || "morno";
+}
+
 function parseDate(str: string): string | null {
   if (!str) return null;
-  // Try dd/mm/yyyy
   const parts = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (parts) {
     const [, d, m, y] = parts;
     return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
-  // Try yyyy-mm-dd or ISO
   const iso = new Date(str);
   if (!isNaN(iso.getTime())) return iso.toISOString().split("T")[0];
   return null;
@@ -55,7 +63,6 @@ export function useLeadsPersistence() {
   const [loading, setLoading] = useState(true);
   const [hasLeads, setHasLeads] = useState(false);
 
-  // Load leads from DB on mount
   useEffect(() => {
     if (!user) { setLoading(false); return; }
     loadLeads();
@@ -66,10 +73,10 @@ export function useLeadsPersistence() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("leads")
+        .from("pipeline_leads")
         .select("*")
-        .eq("user_id", user.id)
-        .order("importado_em", { ascending: false });
+        .eq("corretor_id", user.id)
+        .order("updated_at", { ascending: false });
       if (error) throw error;
       const mapped = (data || []).map(dbRowToLead);
       setLeads(mapped);
@@ -81,31 +88,36 @@ export function useLeadsPersistence() {
     }
   }, [user]);
 
-  // Save leads to DB (batch upsert)
   const saveLeads = useCallback(async (newLeads: Lead[]): Promise<Lead[]> => {
     if (!user) return newLeads;
     try {
+      // Get first stage for new leads
+      const { data: stageData } = await supabase
+        .from("pipeline_stages")
+        .select("id")
+        .eq("tipo", "novo_lead")
+        .limit(1)
+        .single();
+      const stageId = stageData?.id || "d3843b2f-2fa1-4c31-9129-4eb0ed21f019";
+
       const rows = newLeads.map((l) => ({
-        user_id: user.id,
         nome: l.nome,
         email: l.email || null,
         telefone: l.telefone || null,
-        interesse: l.interesse || null,
+        empreendimento: l.interesse || null,
         origem: l.origem || null,
-        ultimo_contato: parseDate(l.ultimoContato),
-        status: l.status || null,
-        recovery_score: l.recoveryScore ?? null,
-        imovel_codigo: l.imovel?.codigo || null,
-        imovel_data: l.imovel ? (l.imovel as any) : null,
-        mensagem_gerada: l.mensagemGerada || null,
+        temperatura: "frio" as const,
+        stage_id: stageId,
+        corretor_id: user.id,
+        observacoes: l.observacoes || null,
+        created_by: user.id,
       }));
 
-      // Insert in batches of 100
       const saved: any[] = [];
       for (let i = 0; i < rows.length; i += 100) {
         const batch = rows.slice(i, i + 100);
         const { data, error } = await supabase
-          .from("leads")
+          .from("pipeline_leads")
           .insert(batch)
           .select();
         if (error) throw error;
@@ -123,27 +135,20 @@ export function useLeadsPersistence() {
     }
   }, [user]);
 
-  // Update a single lead in DB
   const updateLead = useCallback(async (leadId: string, updates: Partial<Lead>) => {
     if (!user) return;
     const dbUpdates: any = {};
-    if (updates.mensagemGerada !== undefined) dbUpdates.mensagem_gerada = updates.mensagemGerada;
-    if (updates.prioridade !== undefined) {
-      // Map frontend priority to DB enum
-      const prioMap: Record<string, string> = {
-        muito_quente: "alta", quente: "alta", morno: "media", frio: "frio", perdido: "perdido",
-      };
-      dbUpdates.prioridade = prioMap[updates.prioridade] || "media";
-    }
-    if (updates.recoveryScore !== undefined) dbUpdates.recovery_score = updates.recoveryScore;
-    if (updates.statusRecuperacao !== undefined) dbUpdates.status_recuperacao = updates.statusRecuperacao;
-    if (updates.tipoSituacao !== undefined) dbUpdates.tipo_situacao = updates.tipoSituacao;
-    if (updates.corretorResponsavel !== undefined) dbUpdates.corretor_responsavel = updates.corretorResponsavel;
     if (updates.observacoes !== undefined) dbUpdates.observacoes = updates.observacoes;
+    if (updates.prioridade !== undefined) {
+      const tempMap: Record<string, string> = {
+        muito_quente: "quente", quente: "quente", morno: "morno", frio: "frio", perdido: "frio",
+      };
+      dbUpdates.temperatura = tempMap[updates.prioridade] || "morno";
+    }
 
     if (Object.keys(dbUpdates).length > 0) {
-      dbUpdates.atualizado_em = new Date().toISOString();
-      await supabase.from("leads").update(dbUpdates).eq("id", leadId).eq("user_id", user.id);
+      dbUpdates.updated_at = new Date().toISOString();
+      await supabase.from("pipeline_leads").update(dbUpdates).eq("id", leadId);
     }
 
     setLeads((prev) =>
@@ -151,11 +156,10 @@ export function useLeadsPersistence() {
     );
   }, [user]);
 
-  // Delete all leads
   const deleteAllLeads = useCallback(async () => {
     if (!user) return;
     try {
-      const { error } = await supabase.from("leads").delete().eq("user_id", user.id);
+      const { error } = await supabase.from("pipeline_leads").delete().eq("corretor_id", user.id);
       if (error) throw error;
       setLeads([]);
       setHasLeads(false);
