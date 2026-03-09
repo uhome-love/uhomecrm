@@ -332,6 +332,7 @@ export function AppSidebar() {
           items: [
             { title: "Aceite de Leads", url: "/aceite", icon: Inbox },
             { title: "Pipeline de Leads", url: "/pipeline", icon: Kanban },
+            { title: "📋 Minhas Tarefas", url: "/minhas-tarefas", icon: ListChecks },
             { title: "Oferta Ativa", url: "/corretor/call", icon: Phone },
             { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
           ],
