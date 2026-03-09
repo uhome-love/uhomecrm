@@ -70,12 +70,29 @@ function cleanName(name: string) {
 function cleanOrigem(origem: string | null): string {
   if (!origem) return "";
   const lower = origem.toLowerCase();
-  if (lower.includes("tik tok") || lower.includes("tiktok")) return "TikTok Ads";
-  if (lower.includes("facebook") || lower.includes("fb")) return "Facebook Ads";
-  if (lower.includes("instagram") || lower.includes("ig")) return "Instagram Ads";
-  if (lower.includes("google")) return "Google Ads";
   if (lower.includes("não informado") || lower.includes("nao informado")) return "Não informada";
   return origem.replace(/_/g, " ");
+}
+
+function extractOrigemSource(origem: string | null): string {
+  if (!origem) return "";
+  const lower = origem.toLowerCase();
+  if (lower.includes("tik tok") || lower.includes("tiktok")) return "TikTok";
+  if (lower.includes("facebook") || lower.includes("fb")) return "Facebook";
+  if (lower.includes("instagram") || lower.includes("ig")) return "Instagram";
+  if (lower.includes("google")) return "Google";
+  return "";
+}
+
+function extractCampanha(origem: string | null): string {
+  if (!origem) return "";
+  // Extract content in parentheses like "Open Bosque (Video Lucas)" → "Video Lucas"
+  const match = origem.match(/\(([^)]+)\)/);
+  if (match) return match[1].trim();
+  // For format like "Leads Gerado do Tik Tok: Vídeo Open Gabrielle" → extract after ":"
+  const colonMatch = origem.match(/:\s*(.+)/);
+  if (colonMatch) return colonMatch[1].trim();
+  return "";
 }
 
 // Mission badges by stage type/name
