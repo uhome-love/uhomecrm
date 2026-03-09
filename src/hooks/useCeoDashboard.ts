@@ -8,9 +8,9 @@ export type DashPeriod = "hoje" | "semana" | "mes";
 
 function getRange(period: DashPeriod) {
   const now = new Date();
-  if (period === "hoje") return { start: format(now, "yyyy-MM-dd"), end: format(now, "yyyy-MM-dd") };
-  if (period === "semana") return { start: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"), end: format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd") };
-  return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd") };
+  if (period === "hoje") { const t = todayBRT(); return { start: t, end: t }; }
+  if (period === "semana") return { start: dateToBRT(startOfWeek(now, { weekStartsOn: 1 })), end: dateToBRT(endOfWeek(now, { weekStartsOn: 1 })) };
+  return { start: dateToBRT(startOfMonth(now)), end: dateToBRT(endOfMonth(now)) };
 }
 
 function getPrevRange(period: DashPeriod) {
