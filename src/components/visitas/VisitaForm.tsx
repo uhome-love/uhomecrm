@@ -215,8 +215,8 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
             />
           </div>
 
-          {/* Corretor */}
-          {teamMembers.length > 0 && (
+          {/* Corretor — only show for gestores/admins who manage a team */}
+          {teamMembers.length > 1 && (
             <div>
               <Label className="text-xs font-semibold mb-1 block">Corretor</Label>
               <Select value={form.corretor_id} onValueChange={v => set("corretor_id", v)}>
