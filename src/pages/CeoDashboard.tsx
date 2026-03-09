@@ -12,8 +12,6 @@ import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
-// HomiBriefingCard removed — was causing bugs
-import HomiCeoFloating from "@/components/ceo/HomiCeoFloating";
 
 // ─── Greeting ───
 function getGreeting() {
@@ -669,9 +667,6 @@ export default function CeoDashboard() {
         onOpenChange={setDispatchOpen}
         onDispatched={() => { reload(); loadFilaCeo(); }}
       />
-
-      {/* HOMI CEO Floating */}
-      <HomiCeoFloating dashboardData={dashboardData} />
     </div>
   );
 }
