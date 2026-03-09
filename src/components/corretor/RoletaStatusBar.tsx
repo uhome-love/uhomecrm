@@ -94,20 +94,22 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
   const [state, setState] = useState<NightRequirements>({ visitaMarcada: false, visitaRealizada: false, sistemaAtualizado: true, loading: true });
 
   useEffect(() => {
-    if (!userId || !profileId) { setState(s => ({ ...s, loading: false })); return; }
+    if (!userId) { setState(s => ({ ...s, loading: false })); return; }
 
     const check = async () => {
       const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
       const amanha = new Date(Date.now() + 86400000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
-      const marcadasQ = supabase.from("visitas").select("id", { count: "exact", head: true });
-      const marcadasRes = await marcadasQ.eq("corretor_id", profileId).gte("data", hoje).lt("data", amanha);
+      // visitas.corretor_id stores auth user.id, and column is data_visita (not data)
+      const marcadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
+        .eq("corretor_id", userId).gte("data_visita", hoje).lt("data_visita", amanha);
 
-      const realizadasQ = supabase.from("visitas").select("id", { count: "exact", head: true });
-      const realizadasRes = await realizadasQ.eq("corretor_id", profileId).eq("status", "Realizada").gte("data", hoje).lt("data", amanha);
+      const realizadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
+        .eq("corretor_id", userId).eq("status", "Realizada").gte("data_visita", hoje).lt("data_visita", amanha);
 
-      const paradosQ = supabase.from("pipeline_leads").select("id", { count: "exact", head: true });
-      const paradosRes = await (paradosQ.eq("corretor_id", profileId) as any).neq("pipeline_fase", "Descarte").gt("dias_parado", 1);
+      // pipeline_leads.corretor_id also stores auth user.id
+      const paradosRes = await (supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
+        .eq("corretor_id", userId) as any).neq("pipeline_fase", "Descarte").gt("dias_parado", 1);
 
       setState({
         visitaMarcada: (marcadasRes.count || 0) > 0,
@@ -117,7 +119,7 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
       });
     };
     check();
-  }, [userId, profileId]);
+  }, [userId]);
 
   return state;
 }
