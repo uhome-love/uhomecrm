@@ -234,6 +234,15 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
               <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => handleConcluir(tarefa)}>
                 <CheckCircle2 className="h-3 w-3" /> Feito
               </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => {
+                setEditId(tarefa.id);
+                setEditTipo((tarefa as any).tipo || "follow_up");
+                setEditData(tarefa.vence_em || "");
+                setEditHora((tarefa as any).hora_vencimento?.slice(0, 5) || "");
+                setEditObs(tarefa.descricao || "");
+              }}>
+                <Pencil className="h-3 w-3" /> Editar
+              </Button>
               <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => { setAdiarId(tarefa.id); setAdiarData(""); setAdiarHora(""); }}>
                 <Calendar className="h-3 w-3" /> Adiar
               </Button>
