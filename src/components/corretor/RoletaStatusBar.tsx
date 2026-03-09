@@ -96,14 +96,14 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
       const hoje = new Date().toISOString().split("T")[0];
       const amanha = new Date(Date.now() + 86400000).toISOString().split("T")[0];
 
-      const [marcadasRes, realizadasRes, paradosRes] = await Promise.all([
-        supabase.from("visitas").select("id", { count: "exact", head: true })
-          .eq("corretor_id", profileId).gte("data", hoje).lt("data", amanha),
-        supabase.from("visitas").select("id", { count: "exact", head: true })
-          .eq("corretor_id", profileId).eq("status", "Realizada").gte("data", hoje).lt("data", amanha),
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
-          .eq("corretor_id", profileId).neq("pipeline_fase", "Descarte").gt("dias_parado", 1),
-      ]);
+      const marcadasQ = supabase.from("visitas").select("id", { count: "exact", head: true });
+      const marcadasRes = await marcadasQ.eq("corretor_id", profileId).gte("data", hoje).lt("data", amanha);
+
+      const realizadasQ = supabase.from("visitas").select("id", { count: "exact", head: true });
+      const realizadasRes = await realizadasQ.eq("corretor_id", profileId).eq("status", "Realizada").gte("data", hoje).lt("data", amanha);
+
+      const paradosQ = supabase.from("pipeline_leads").select("id", { count: "exact", head: true });
+      const paradosRes = await (paradosQ.eq("corretor_id", profileId) as any).neq("pipeline_fase", "Descarte").gt("dias_parado", 1);
 
       setState({
         visitaMarcada: (marcadasRes.count || 0) > 0,
