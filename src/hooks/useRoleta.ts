@@ -456,9 +456,9 @@ export function useRoleta() {
 
   // Current corretor's credenciamento
   const meuCredenciamento = useMemo(() => {
-    if (!user) return null;
-    return credenciamentos.find(c => c.corretor_id === user.id && c.data === hoje && c.status !== "recusado" && c.status !== "saiu") || null;
-  }, [user, credenciamentos, hoje]);
+    if (!profileId) return null;
+    return credenciamentos.find(c => c.corretor_id === profileId && c.data === hoje && c.status !== "recusado" && c.status !== "saiu") || null;
+  }, [profileId, credenciamentos, hoje]);
 
   // Pending count
   const pendentesCount = useMemo(() => {
