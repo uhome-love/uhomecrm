@@ -461,7 +461,7 @@ export function AppSidebar() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {groups.map((g, i) => (
             <SidebarNavGroup
               key={g.label}
