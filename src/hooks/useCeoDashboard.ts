@@ -311,6 +311,8 @@ export function useCeoDashboard(period: DashPeriod) {
       setKpis(currentKpis);
       setPrevKpis(previousKpis);
       await Promise.all([loadPipeline(), loadNegocios(), loadTeams(), loadVisitasPorEmp()]);
+    } catch (err) {
+      console.error("Erro ao carregar dashboard CEO:", err);
     } finally {
       setLoading(false);
       setLastUpdate(new Date());
