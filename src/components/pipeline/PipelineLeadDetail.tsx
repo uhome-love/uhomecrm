@@ -158,7 +158,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const handleAddAtividade = async () => {
     await leadData.addAtividade(newAtividade);
-    setNewAtividade({ tipo: "ligacao", titulo: "", descricao: "", data: new Date().toISOString().split("T")[0], hora: "", prioridade: "media" });
+    setNewAtividade({ tipo: "ligacao", titulo: "", descricao: "", data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), hora: "", prioridade: "media" });
     setShowNewAtividade(false);
   };
 

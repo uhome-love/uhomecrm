@@ -442,7 +442,7 @@ export async function createVisitaFromOA(params: {
       telefone: params.telefone || null,
       empreendimento: params.empreendimento || null,
       origem: "oferta_ativa",
-      data_visita: new Date().toISOString().split("T")[0],
+      data_visita: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
       status: "marcada",
       observacoes: params.observacoes || null,
       created_by: params.corretorId,

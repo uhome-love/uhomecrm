@@ -97,7 +97,7 @@ export default function PipelineQuickTransfer({ leadId, leadNome, currentCorreto
 
   const handleRoleta = async () => {
     // Get corretores on today's escala
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const { data: escala } = await supabase
       .from("distribuicao_escala")
       .select("corretor_id")

@@ -183,7 +183,7 @@ export function useLeadProgression() {
       corretor_id: params.corretorId,
       nome_cliente: params.nomeCliente,
       empreendimento: params.empreendimento || null,
-      data_assinatura: new Date().toISOString().split("T")[0],
+      data_assinatura: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
       vgv_final: params.vgvFinal || null,
     } as any);
 

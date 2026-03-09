@@ -14,7 +14,7 @@ export interface LeadTask {
 }
 
 function todayISO(): string {
-  return new Date().toISOString().split("T")[0];
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
 function addDays(days: number): string {

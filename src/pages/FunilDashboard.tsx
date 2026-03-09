@@ -63,7 +63,7 @@ export default function FunilDashboard() {
   const { user } = useAuth();
   const { analyze, loading: iaLoading } = useUhomeIa();
   const [periodoTipo, setPeriodoTipo] = useState<PeriodoTipo>("semanal");
-  const [refDate, setRefDate] = useState(new Date().toISOString().split("T")[0]);
+  const [refDate, setRefDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AggregatedData | null>(null);
   const [prevData, setPrevData] = useState<AggregatedData | null>(null);
