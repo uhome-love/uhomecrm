@@ -327,7 +327,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
               gerente_id: gerenteProfileId,
               empreendimento: lead.empreendimento || null,
               telefone: lead.telefone || null,
-              fase: "proposta",
+              fase: "novo_negocio",
               origem: "visita_realizada",
               vgv_estimado: lead.valor_estimado || null,
             })

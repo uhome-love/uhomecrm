@@ -311,7 +311,7 @@ export function useVisitas(filters?: {
                   nome_cliente: visita.nome_cliente,
                   empreendimento: visita.empreendimento || null,
                   telefone: visita.telefone || null,
-                  fase: "proposta",
+                  fase: "novo_negocio",
                   origem: "visita_realizada",
                 } as any)
                 .select("id")
