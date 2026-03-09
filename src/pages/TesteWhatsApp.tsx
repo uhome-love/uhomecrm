@@ -41,17 +41,12 @@ export default function TesteWhatsApp() {
           template: {
             name: "novo_lead",
             language: "pt_BR",
-            components: [
-              {
-                type: "body",
-                parameters: [
-                  { type: "text", text: "Lucas Teste" },
-                  { type: "text", text: "51992597097" },
-                  { type: "text", text: "lucas@uhome.imb.br" },
-                  { type: "text", text: "Alfa Empreendimento" },
-                ],
-              },
-            ],
+            parameters: {
+              nome: "Lucas Teste",
+              whatsapp_lead: "51992597097",
+              email: "lucas@uhome.imb.br",
+              empreendimento: "Alfa Empreendimento",
+            },
           },
         },
       });
