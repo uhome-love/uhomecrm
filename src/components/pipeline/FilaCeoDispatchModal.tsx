@@ -20,13 +20,14 @@ interface Props {
   onDispatched?: () => void;
 }
 
-type Janela = "manha" | "tarde" | "noturna" | "qualquer";
+type Destino = "manha" | "tarde" | "noturna" | "qualquer" | "oferta_ativa";
 
-const JANELA_OPTIONS: { id: Janela; label: string; emoji: string }[] = [
-  { id: "manha", label: "Roleta da Manhã", emoji: "🌅" },
-  { id: "tarde", label: "Roleta da Tarde", emoji: "☀️" },
-  { id: "noturna", label: "Roleta Noturna", emoji: "🌙" },
-  { id: "qualquer", label: "Distribuir agora para qualquer corretor ativo", emoji: "📋" },
+const DESTINO_OPTIONS: { id: Destino; label: string; emoji: string; group: "roleta" | "oferta" }[] = [
+  { id: "manha", label: "Roleta da Manhã", emoji: "🌅", group: "roleta" },
+  { id: "tarde", label: "Roleta da Tarde", emoji: "☀️", group: "roleta" },
+  { id: "noturna", label: "Roleta Noturna", emoji: "🌙", group: "roleta" },
+  { id: "qualquer", label: "Distribuir agora para qualquer corretor ativo", emoji: "📋", group: "roleta" },
+  { id: "oferta_ativa", label: "Enviar para Oferta Ativa", emoji: "📞", group: "oferta" },
 ];
 
 export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched }: Props) {
@@ -34,7 +35,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
   const [dispatching, setDispatching] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
   const [segmentoMap, setSegmentoMap] = useState<Record<string, { id: string; nome: string }>>({});
-  const [selectedJanela, setSelectedJanela] = useState<Janela>("manha");
+  const [selectedDestino, setSelectedDestino] = useState<Destino>("manha");
   const [includeUnidentified, setIncludeUnidentified] = useState(false);
 
   // Load CEO queue leads and segmento mapping
@@ -92,6 +93,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
 
   const identifiedCount = leads.length - unidentifiedCount;
 
+  const isOfertaAtiva = selectedDestino === "oferta_ativa";
+
   const handleDispatch = async () => {
     setDispatching(true);
     let dispatched = 0;
@@ -105,43 +108,83 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
         return;
       }
 
-      for (const lead of leads) {
-        const emp = (lead.empreendimento || "").toLowerCase().trim();
-        const seg = segmentoMap[emp];
+      if (isOfertaAtiva) {
+        // Send leads to Oferta Ativa by setting etapa to "Oferta Ativa"
+        const leadsToSend = leads.filter(lead => {
+          if (!includeUnidentified) {
+            const emp = (lead.empreendimento || "").toLowerCase().trim();
+            return !!segmentoMap[emp];
+          }
+          return true;
+        });
 
-        if (!seg && !includeUnidentified) continue;
-
-        try {
-          const { error } = await supabase.functions.invoke("distribute-lead", {
-            body: {
-              action: "dispatch_fila_ceo",
-              lead_id: lead.id,
-              segmento_id: seg?.id || null,
-              janela: selectedJanela,
-            },
-          });
-          if (error) { failed++; continue; }
-          dispatched++;
-        } catch {
-          failed++;
+        const leadIds = leadsToSend.map(l => l.id);
+        
+        // Batch update: move leads to Oferta Ativa stage
+        for (const leadId of leadIds) {
+          try {
+            const { error } = await supabase
+              .from("pipeline_leads")
+              .update({ etapa: "Oferta Ativa", updated_at: new Date().toISOString() })
+              .eq("id", leadId);
+            if (error) { failed++; continue; }
+            dispatched++;
+          } catch {
+            failed++;
+          }
         }
+
+        // Log the dispatch
+        await supabase.from("audit_log").insert({
+          user_id: session.user.id,
+          modulo: "roleta",
+          acao: "dispatch_fila_ceo_oferta_ativa",
+          descricao: `Enviou ${dispatched} leads da Fila CEO para Oferta Ativa`,
+          depois: { dispatched, failed, destino: "oferta_ativa", unidentified: unidentifiedCount },
+        });
+
+        toast.success(`✅ ${dispatched} leads enviados para Oferta Ativa!${failed > 0 ? ` ${failed} falharam.` : ""}`);
+      } else {
+        // Original roleta dispatch logic
+        for (const lead of leads) {
+          const emp = (lead.empreendimento || "").toLowerCase().trim();
+          const seg = segmentoMap[emp];
+
+          if (!seg && !includeUnidentified) continue;
+
+          try {
+            const { error } = await supabase.functions.invoke("distribute-lead", {
+              body: {
+                action: "dispatch_fila_ceo",
+                lead_id: lead.id,
+                segmento_id: seg?.id || null,
+                janela: selectedDestino,
+              },
+            });
+            if (error) { failed++; continue; }
+            dispatched++;
+          } catch {
+            failed++;
+          }
+        }
+
+        // Log the dispatch
+        await supabase.from("audit_log").insert({
+          user_id: session.user.id,
+          modulo: "roleta",
+          acao: "dispatch_fila_ceo",
+          descricao: `Disparou ${dispatched} leads da Fila CEO para roleta (janela: ${selectedDestino})`,
+          depois: { dispatched, failed, janela: selectedDestino, unidentified: unidentifiedCount },
+        });
+
+        toast.success(`✅ ${dispatched} leads disparados para a roleta!${unidentifiedCount > 0 && !includeUnidentified ? ` ${unidentifiedCount} leads sem segmento identificado.` : ""}`);
       }
 
-      // Log the dispatch
-      await supabase.from("audit_log").insert({
-        user_id: session.user.id,
-        modulo: "roleta",
-        acao: "dispatch_fila_ceo",
-        descricao: `Disparou ${dispatched} leads da Fila CEO para roleta (janela: ${selectedJanela})`,
-        depois: { dispatched, failed, janela: selectedJanela, unidentified: unidentifiedCount },
-      });
-
-      toast.success(`✅ ${dispatched} leads disparados para a roleta!${unidentifiedCount > 0 && !includeUnidentified ? ` ${unidentifiedCount} leads sem segmento identificado.` : ""}`);
       onOpenChange(false);
       onDispatched?.();
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao disparar leads para a roleta.");
+      toast.error("Erro ao disparar leads.");
     } finally {
       setDispatching(false);
     }
@@ -160,7 +203,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Rocket className="h-5 w-5 text-purple-600" />
-            Disparar Fila CEO para a Roleta
+            Disparar Fila CEO
           </DialogTitle>
           <DialogDescription>
             {leads.length} leads serão distribuídos automaticamente pelos segmentos
@@ -194,18 +237,38 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
               )}
             </div>
 
-            {/* Janela selector */}
+            {/* Destino selector */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Disparar para qual janela?</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Disparar para onde?</p>
+              
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1 mb-1">Roleta</p>
               <div className="grid grid-cols-1 gap-1.5">
-                {JANELA_OPTIONS.map(j => (
+                {DESTINO_OPTIONS.filter(d => d.group === "roleta").map(j => (
                   <button
                     key={j.id}
-                    onClick={() => setSelectedJanela(j.id)}
+                    onClick={() => setSelectedDestino(j.id)}
                     className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm text-left transition-colors ${
-                      selectedJanela === j.id
+                      selectedDestino === j.id
                         ? "border-purple-500 bg-purple-500/10 text-purple-700 font-medium"
                         : "border-border hover:border-purple-300 text-foreground"
+                    }`}
+                  >
+                    <span>{j.emoji}</span>
+                    <span>{j.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-3 mb-1">Oferta Ativa</p>
+              <div className="grid grid-cols-1 gap-1.5">
+                {DESTINO_OPTIONS.filter(d => d.group === "oferta").map(j => (
+                  <button
+                    key={j.id}
+                    onClick={() => setSelectedDestino(j.id)}
+                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm text-left transition-colors ${
+                      selectedDestino === j.id
+                        ? "border-orange-500 bg-orange-500/10 text-orange-700 font-medium"
+                        : "border-border hover:border-orange-300 text-foreground"
                     }`}
                   >
                     <span>{j.emoji}</span>
@@ -237,10 +300,10 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
               <Button
                 onClick={handleDispatch}
                 disabled={dispatching || identifiedCount === 0}
-                className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                className={`gap-2 text-white ${isOfertaAtiva ? "bg-orange-600 hover:bg-orange-700" : "bg-purple-600 hover:bg-purple-700"}`}
               >
                 {dispatching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                Confirmar Disparo
+                {isOfertaAtiva ? "Enviar para Oferta Ativa" : "Confirmar Disparo"}
               </Button>
             </div>
           </div>
