@@ -331,7 +331,7 @@ export default function CorretorDashboard() {
                     <Trophy className={`h-4 w-4 ${radar.rankingPos === 1 ? "text-amber-500" : "text-warning"}`} />
                     <span className="text-xs font-medium text-muted-foreground">Ranking</span>
                   </div>
-                  <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.rankingPos === 1 ? "text-[#B45309]" : "text-foreground"}`}>#{radar.rankingPos || "–"}</p>
+                  <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.rankingPos === 1 ? "text-amber-600" : "text-foreground"}`}>#{radar.rankingPos || "–"}</p>
                   <p className="text-sm text-muted-foreground mt-1.5">de {radar.totalBrokers}</p>
                   {radar.ptsToNext > 0 && (
                     <p className="text-xs text-[#B45309] font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
