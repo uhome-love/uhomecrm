@@ -51,12 +51,6 @@ export default function DailyProgressCard({ progress, goals, saveGoals, variant 
     }
   }, [goals, variant]);
 
-  // Force re-render when goals changes from undefined to object
-  useEffect(() => {
-    if (goals && editing && variant === "full") {
-      // Goals loaded and we were in edit mode from auto-open — keep it
-    }
-  }, [goals]);
 
   const handleSave = async () => {
     try {

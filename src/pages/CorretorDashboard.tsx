@@ -325,16 +325,16 @@ export default function CorretorDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className={`cursor-pointer hover:shadow-card-hover transition-all duration-150 ${radar.rankingPos === 1 ? "bg-amber-50/50 border-amber-200 hover:border-amber-300" : "hover:border-primary/30"}`} onClick={() => navigate("/corretor/call")}>
+              <Card className={`cursor-pointer hover:shadow-card-hover transition-all duration-150 ${radar.rankingPos === 1 ? "bg-amber-500/10 border-amber-500/30 hover:border-amber-500/50" : "hover:border-primary/30"}`} onClick={() => navigate("/corretor/call")}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Trophy className={`h-4 w-4 ${radar.rankingPos === 1 ? "text-amber-500" : "text-warning"}`} />
                     <span className="text-xs font-medium text-muted-foreground">Ranking</span>
                   </div>
-                  <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.rankingPos === 1 ? "text-[#B45309]" : "text-foreground"}`}>#{radar.rankingPos || "–"}</p>
+                  <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.rankingPos === 1 ? "text-amber-600" : "text-foreground"}`}>#{radar.rankingPos || "–"}</p>
                   <p className="text-sm text-muted-foreground mt-1.5">de {radar.totalBrokers}</p>
                   {radar.ptsToNext > 0 && (
-                    <p className="text-xs text-[#B45309] font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
+                    <p className="text-xs text-amber-600 font-medium mt-0.5">{radar.ptsToNext}pts p/ subir</p>
                   )}
                 </CardContent>
               </Card>
