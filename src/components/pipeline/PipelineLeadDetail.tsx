@@ -78,6 +78,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [homiOpen, setHomiOpen] = useState(false);
+  const [showCustomAction, setShowCustomAction] = useState(false);
 
   // Edit states
   const [editingCommercial, setEditingCommercial] = useState(false);
@@ -312,19 +313,19 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         </div>
 
         {/* ════════════ ZONA 2 — PRÓXIMA AÇÃO (fixo) ════════════ */}
-        <div className="shrink-0 border-b border-border/50 bg-accent/20 px-4 py-3 space-y-2">
+        <div className="shrink-0 border-b border-border/50 bg-accent/20 px-6 py-3 space-y-2">
           <div className="flex items-center gap-1.5">
-            <Zap className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">Próxima Ação</span>
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-xs font-bold text-foreground uppercase tracking-wide">Próxima Ação</span>
             {lead.proxima_acao && lead.data_proxima_acao && (
-              <span className="text-[10px] text-muted-foreground ml-auto">
+              <span className="text-xs text-muted-foreground ml-auto">
                 {format(new Date(lead.data_proxima_acao + "T00:00:00"), "dd/MM", { locale: ptBR })}
               </span>
             )}
           </div>
 
           {/* Quick action chips */}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {[
               { label: "Ligar", icon: "📞", borderColor: "border-orange-300", textColor: "text-orange-600", hoverBg: "hover:bg-orange-50" },
               { label: "Enviar material", icon: "📄", borderColor: "border-blue-300", textColor: "text-blue-600", hoverBg: "hover:bg-blue-50" },
@@ -332,13 +333,11 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               { label: "Enviar proposta", icon: "💰", borderColor: "border-purple-300", textColor: "text-purple-600", hoverBg: "hover:bg-purple-50" },
               { label: "Follow-up WhatsApp", icon: "💬", borderColor: "border-emerald-300", textColor: "text-emerald-600", hoverBg: "hover:bg-emerald-50" },
               { label: "Confirmar visita", icon: "✅", borderColor: "border-teal-300", textColor: "text-teal-600", hoverBg: "hover:bg-teal-50" },
-              { label: "Retornar cliente", icon: "🔄", borderColor: "border-border", textColor: "text-foreground", hoverBg: "hover:bg-accent" },
-              { label: "Enviar localização", icon: "📍", borderColor: "border-border", textColor: "text-foreground", hoverBg: "hover:bg-accent" },
             ].map(action => (
               <button
                 key={action.label}
-                onClick={() => setProximaAcao(action.label)}
-                className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors ${
+                onClick={() => { setProximaAcao(action.label); handleSaveProximaAcao(); }}
+                className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
                   proximaAcao === action.label
                     ? "bg-primary text-primary-foreground border-primary"
                     : `bg-background ${action.textColor} ${action.borderColor} ${action.hoverBg}`
@@ -347,40 +346,52 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 {action.icon} {action.label}
               </button>
             ))}
+            {/* + Ação personalizada (collapsed) */}
+            {!showCustomAction && (
+              <button
+                onClick={() => setShowCustomAction(true)}
+                className="text-xs px-2.5 py-1 rounded-md border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+              >
+                + Personalizada
+              </button>
+            )}
           </div>
 
-          {/* Input + date + save */}
-          <div className="flex gap-1.5 items-center">
-            <Input className="h-7 text-xs flex-1" value={proximaAcao} onChange={e => setProximaAcao(e.target.value)} placeholder="Ou digite ação personalizada..." />
-            <Input type="date" className="h-7 text-xs w-28" value={dataProximaAcao} onChange={e => setDataProximaAcao(e.target.value)} />
-            <Button size="sm" className="h-7 text-[11px] px-3" onClick={handleSaveProximaAcao} disabled={saving || !proximaAcao}>
-              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-            </Button>
-          </div>
+          {/* Custom action input — collapsible */}
+          {showCustomAction && (
+            <div className="flex gap-1.5 items-center">
+              <Input className="h-8 text-sm flex-1" value={proximaAcao} onChange={e => setProximaAcao(e.target.value)} placeholder="Descreva a ação..." autoFocus />
+              <Input type="date" className="h-8 text-sm w-32" value={dataProximaAcao} onChange={e => setDataProximaAcao(e.target.value)} />
+              <Button size="sm" className="h-8 text-xs px-3" onClick={() => { handleSaveProximaAcao(); setShowCustomAction(false); }} disabled={saving || !proximaAcao}>
+                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setShowCustomAction(false)}>✕</Button>
+            </div>
+          )}
         </div>
 
         {/* ════════════ ZONA 3 — CONTEÚDO (4 Abas) ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 mx-4 mt-2 flex items-center gap-2">
-            <TabsList className="bg-muted/50 h-8 flex-1">
-              <TabsTrigger value="inteligencia" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-                <Brain className="h-3 w-3 mr-1" /> Inteligência
+          <div className="shrink-0 mx-6 mt-3 mb-4 flex items-center gap-2">
+            <TabsList className="bg-muted/50 h-9 flex-1">
+              <TabsTrigger value="inteligencia" className="text-sm h-7 data-[state=active]:shadow-sm">
+                <Brain className="h-3.5 w-3.5 mr-1" /> Inteligência
               </TabsTrigger>
-              <TabsTrigger value="historico" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-                <History className="h-3 w-3 mr-1" /> Histórico
+              <TabsTrigger value="historico" className="text-sm h-7 data-[state=active]:shadow-sm">
+                <History className="h-3.5 w-3.5 mr-1" /> Histórico
                 {leadData.atividades.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{leadData.atividades.length}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="visitas-propostas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-                <MapPin className="h-3 w-3 mr-1" /> Visitas
+              <TabsTrigger value="visitas-propostas" className="text-sm h-7 data-[state=active]:shadow-sm">
+                <MapPin className="h-3.5 w-3.5 mr-1" /> Visitas
               </TabsTrigger>
-              <TabsTrigger value="tarefas" className="text-[11px] h-6 data-[state=active]:shadow-sm">
-                <ClipboardList className="h-3 w-3 mr-1" /> Tarefas
+              <TabsTrigger value="tarefas" className="text-sm h-7 data-[state=active]:shadow-sm">
+                <ClipboardList className="h-3.5 w-3.5 mr-1" /> Tarefas
                 {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
               </TabsTrigger>
             </TabsList>
             <Button
               size="sm"
-              className="h-8 text-[11px] px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md shrink-0"
+              className="h-9 text-xs px-4 gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md shrink-0"
               onClick={() => setComunicacaoOpen(true)}
             >
               ✨ HOMI
