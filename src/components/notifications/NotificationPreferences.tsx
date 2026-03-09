@@ -54,7 +54,10 @@ export default function NotificationPreferences() {
   useEffect(() => {
     if (preferences) {
       setPopup(preferences.popup_enabled);
-      setPush(preferences.push_enabled);
+      // Don't override push state if already subscribed
+      if (!pushSubscribed) {
+        setPush(preferences.push_enabled);
+      }
       setWhatsapp(preferences.whatsapp_enabled);
       setDashboardAlerts(preferences.dashboard_alerts_enabled);
       setAgrupar(preferences.agrupar_similares);
@@ -63,13 +66,18 @@ export default function NotificationPreferences() {
       setSilencioFim(preferences.horario_silencio_fim || "");
       setSilenciadas(preferences.categorias_silenciadas || []);
     }
-  }, [preferences]);
+  }, [preferences, pushSubscribed]);
 
-  // Check existing push subscription on mount
+  // Sync push toggle with actual subscription state
   useEffect(() => {
-    checkSubscription().then((subscribed) => {
-      if (subscribed) setPush(true);
-    });
+    if (pushSubscribed) {
+      setPush(true);
+    }
+  }, [pushSubscribed]);
+
+  // Check existing push subscription on mount and when vapidKey loads
+  useEffect(() => {
+    checkSubscription();
   }, [checkSubscription]);
 
   const handlePushToggle = async (enabled: boolean) => {
