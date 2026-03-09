@@ -465,21 +465,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                             </button>
                           </PopoverTrigger>
                           <PopoverContent className="w-64 p-2" align="start">
-                            <Input placeholder="Buscar empreendimento..." value={empreendimentoSearch} onChange={e => setEmpreendimentoSearch(e.target.value)} className="h-8 text-xs mb-2" autoFocus />
-                            <div className="max-h-48 overflow-y-auto space-y-0.5">
-                              {EMPREENDIMENTOS_UHOME.filter(e => e.toLowerCase().includes(empreendimentoSearch.toLowerCase())).map(e => (
-                                <button key={e} className={`w-full text-left text-xs px-2 py-1.5 rounded hover:bg-accent transition-colors ${e === lead.empreendimento ? 'bg-primary/10 text-primary font-semibold' : ''}`} onClick={async () => {
-                                  setSavingEmpreendimento(true);
-                                  await onUpdate(lead.id, { empreendimento: e } as any);
-                                  setEmpreendimentoOpen(false);
-                                  setEmpreendimentoSearch("");
-                                  setSavingEmpreendimento(false);
-                                  toast.success("Empreendimento atualizado ✅");
-                                }}>
-                                  {e}
-                                </button>
-                              ))}
-                            </div>
+                            <EmpreendimentoCombobox
+                              value={empreendimentoSearch || lead.empreendimento || ""}
+                              onChange={async (v) => {
+                                setSavingEmpreendimento(true);
+                                await onUpdate(lead.id, { empreendimento: v } as any);
+                                setEmpreendimentoOpen(false);
+                                setEmpreendimentoSearch("");
+                                setSavingEmpreendimento(false);
+                                toast.success("Empreendimento atualizado ✅");
+                              }}
+                              placeholder="Buscar ou digitar empreendimento..."
+                            />
                           </PopoverContent>
                         </Popover>
                       ) : (
