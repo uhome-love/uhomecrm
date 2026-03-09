@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { todayBRT } from "@/lib/utils";
 
 // ─── Time Window Logic ───
 
