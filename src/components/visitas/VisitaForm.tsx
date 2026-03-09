@@ -71,15 +71,18 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
     if (!user || !open) return;
     const load = async () => {
       setLoadingLeads(true);
-      const [leadsRes, teamRes] = await Promise.all([
+      const [leadsRes, teamRes, campanhasRes] = await Promise.all([
         supabase.from("pipeline_leads").select("id, nome, empreendimento, telefone").order("updated_at", { ascending: false }).limit(200),
         supabase.from("team_members").select("user_id, nome").eq("status", "ativo"),
+        supabase.from("roleta_campanhas").select("empreendimento").eq("ativo", true),
       ]);
       const leads = (leadsRes.data || []) as PipelineLeadOption[];
       setPipelineLeads(leads);
       setTeamMembers((teamRes.data || []).filter(m => m.user_id) as TeamMemberOption[]);
 
+      // Merge empreendimentos from campanhas (official) + pipeline_leads
       const empSet = new Set<string>();
+      (campanhasRes.data || []).forEach((c: any) => { if (c.empreendimento) empSet.add(c.empreendimento); });
       leads.forEach(l => { if (l.empreendimento) empSet.add(l.empreendimento); });
       setEmpreendimentos(Array.from(empSet).sort());
       setLoadingLeads(false);
