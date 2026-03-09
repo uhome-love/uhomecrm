@@ -998,6 +998,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           onOpenChange={setComunicacaoOpen}
           leadId={lead.id}
           leadNome={lead.nome}
+          leadTelefone={lead.telefone}
           leadEmpreendimento={lead.empreendimento}
         />
       )}

@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquare, Phone, Smartphone, Copy, Sparkles, RotateCcw, Check, Loader2 } from "lucide-react";
+import { MessageSquare, Phone, Smartphone, Copy, Sparkles, RotateCcw, Check, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import {
   useComunicacaoTemplates,
@@ -23,6 +23,7 @@ interface CentralComunicacaoProps {
   onOpenChange: (open: boolean) => void;
   leadId?: string;
   leadNome?: string;
+  leadTelefone?: string | null;
   leadEmpreendimento?: string;
   leadScore?: number;
   leadFase?: string;
@@ -44,6 +45,7 @@ export default function CentralComunicacao({
   onOpenChange,
   leadId,
   leadNome,
+  leadTelefone,
   leadEmpreendimento,
   leadScore,
   leadFase,
@@ -195,6 +197,36 @@ export default function CentralComunicacao({
                     </Button>
                   )}
                 </div>
+
+                {leadTelefone && (
+                  <Button
+                    onClick={() => {
+                      const digits = leadTelefone.replace(/\D/g, "");
+                      const number = digits.startsWith("55") ? digits : `55${digits}`;
+                      const encoded = encodeURIComponent(previewText);
+                      window.open(`https://wa.me/${number}?text=${encoded}`, "_blank");
+
+                      if (selectedTemplate) {
+                        incrementUsage.mutate({
+                          templateId: selectedTemplate.id,
+                          leadId,
+                          canal,
+                          mensagem: previewText,
+                          personalizado: isHomiVersion,
+                        });
+                      }
+                    }}
+                    className="w-full gap-2 font-semibold"
+                    style={{
+                      background: "#25D366",
+                      color: "white",
+                      borderRadius: 10,
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Enviar no WhatsApp
+                  </Button>
+                )}
               </>
             )}
           </div>

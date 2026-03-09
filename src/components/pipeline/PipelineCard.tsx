@@ -649,6 +649,7 @@ const PipelineCard = memo(function PipelineCard({
               onOpenChange={setComunicacaoOpen}
               leadId={lead.id}
               leadNome={lead.nome}
+              leadTelefone={lead.telefone}
               leadEmpreendimento={lead.empreendimento}
             />
           )}
