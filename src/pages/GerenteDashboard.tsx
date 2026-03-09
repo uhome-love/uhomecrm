@@ -652,12 +652,11 @@ export default function GerenteDashboard() {
           ].map(item => (
             <button
               key={item.label}
-              className="rounded-xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-50 hover:border-blue-200 cursor-pointer"
-              style={{ border: "1px solid #E5E7EB" }}
+              className="rounded-xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent/50 cursor-pointer border border-border/60"
               onClick={() => navigate(item.to)}
             >
               <p className="text-sm font-semibold text-foreground">{item.emoji} {item.label}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
             </button>
           ))}
         </div>
