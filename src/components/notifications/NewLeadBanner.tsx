@@ -113,8 +113,9 @@ export default function NewLeadBanner() {
     };
   }, [user, scheduleAutoClose]);
 
-  // Don't render if offline
-  if (!isOnline || banners.length === 0) return null;
+  // Don't render if offline, no banners, or already on aceite page
+  const isOnAceitePage = location.pathname.includes("/aceite");
+  if (!isOnline || banners.length === 0 || isOnAceitePage) return null;
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[100] flex flex-col items-center gap-2 pt-2 px-4 pointer-events-none">
