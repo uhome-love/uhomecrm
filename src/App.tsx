@@ -24,7 +24,7 @@ const CeoDashboard = lazy(() => import("./pages/CeoDashboard"));
 const ScriptsGenerator = lazy(() => import("./pages/ScriptsGenerator"));
 const RelatorioCorretor = lazy(() => import("./pages/RelatorioCorretor"));
 const CentralDados = lazy(() => import("./pages/CentralDados"));
-const PdnDashboard = lazy(() => import("./pages/PdnDashboard"));
+
 const MarketingDashboard = lazy(() => import("./pages/MarketingDashboard"));
 const RankingComercial = lazy(() => import("./pages/RankingComercial"));
 const AuditDashboard = lazy(() => import("./pages/AuditDashboard"));
@@ -42,7 +42,7 @@ const MeusNegocios = lazy(() => import("./pages/MeusNegocios"));
 const PipelineKanban = lazy(() => import("./pages/PipelineKanban"));
 const EscalaDiaria = lazy(() => import("./pages/EscalaDiaria"));
 const Welcome = lazy(() => import("./pages/Welcome"));
-const PosVendas = lazy(() => import("./pages/PosVendas"));
+
 const DisponibilidadePage = lazy(() => import("./pages/DisponibilidadePage"));
 const AutomacoesPage = lazy(() => import("./pages/AutomacoesPage"));
 const Notificacoes = lazy(() => import("./pages/Notificacoes"));
@@ -129,7 +129,7 @@ const App = () => (
             {/* Gestão Comercial — gestor + admin */}
             <Route path="/gerente/dashboard" element={<ProtectedPage roles={["gestor", "admin"]}><GerenteDashboard /></ProtectedPage>} />
             <Route path="/checkpoint" element={<ProtectedPage roles={["gestor", "admin"]}><CheckpointGerente /></ProtectedPage>} />
-            <Route path="/pdn" element={<ProtectedPage roles={["gestor", "admin"]}><PdnDashboard /></ProtectedPage>} />
+            
             <Route path="/central-dados" element={<ProtectedPage roles={["gestor", "admin"]}><CentralDados /></ProtectedPage>} />
             <Route path="/scripts" element={<ProtectedPage><ScriptsGenerator /></ProtectedPage>} />
             <Route path="/gestao" element={<ProtectedPage roles={["admin"]}><GestorDashboard /></ProtectedPage>} />
@@ -164,7 +164,7 @@ const App = () => (
             <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><HomiCeo /></ProtectedPage>} />
             <Route path="/homi/base-conhecimento" element={<ProtectedPage roles={["admin", "gestor"]}><BaseConhecimento /></ProtectedPage>} />
             <Route path="/meus-negocios" element={<ProtectedPage><MeusNegocios /></ProtectedPage>} />
-            <Route path="/pos-vendas" element={<ProtectedPage roles={["gestor", "admin"]}><PosVendas /></ProtectedPage>} />
+            
 
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><BuscaLeads /></ProtectedPage>} />

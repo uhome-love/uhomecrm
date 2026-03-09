@@ -1,0 +1,1 @@
+ALTER TABLE public.negocios ALTER COLUMN fase SET DEFAULT 'novo_negocio';

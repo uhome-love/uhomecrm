@@ -29,7 +29,7 @@ import {
   Building2,
   Cog,
   GraduationCap,
-  Handshake,
+  
   ListChecks,
   Inbox,
 } from "lucide-react";
@@ -231,7 +231,6 @@ export function AppSidebar() {
             label: "Gestão de Vendas",
             items: [
               { title: "Pipeline Negócios", url: "/meus-negocios", icon: Kanban },
-              { title: "Pós-Venda", url: "/pos-venda", icon: Handshake },
             ],
           },
           {

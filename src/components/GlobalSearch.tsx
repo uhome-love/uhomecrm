@@ -104,22 +104,23 @@ export default function GlobalSearch() {
         });
       });
 
-      // Search PDN entries (negócios)
+      // Search negócios
       const { data: negocios } = await supabase
-        .from("pdn_entries")
-        .select("id, nome, empreendimento, situacao, temperatura, vgv, und")
-        .or(`nome.ilike.%${term}%,empreendimento.ilike.%${term}%,und.ilike.%${term}%`)
+        .from("negocios")
+        .select("id, nome_cliente, empreendimento, fase, vgv_estimado")
+        .eq("status", "ativo")
+        .or(`nome_cliente.ilike.%${term}%,empreendimento.ilike.%${term}%`)
         .limit(6);
 
       (negocios || []).forEach(n => {
-        const vgvStr = n.vgv ? `R$${(n.vgv / 1000).toFixed(0)}k` : "";
+        const vgvStr = n.vgv_estimado ? `R$${(n.vgv_estimado / 1000).toFixed(0)}k` : "";
         all.push({
           id: n.id,
           type: "negocio",
-          title: n.nome,
-          subtitle: [n.empreendimento, n.situacao, vgvStr].filter(Boolean).join(" · "),
-          badge: n.temperatura || "Negócio",
-          url: `/pdn?negocio=${n.id}`,
+          title: n.nome_cliente,
+          subtitle: [n.empreendimento, n.fase, vgvStr].filter(Boolean).join(" · "),
+          badge: "Negócio",
+          url: `/meus-negocios?negocio=${n.id}`,
         });
       });
 
