@@ -407,9 +407,10 @@ async function distributeSingleLead(
     if (!prev || l.distribuido_em > prev) lastReceived.set(l.corretor_id, l.distribuido_em);
   }
 
-  // Build candidates and sort
+  // Build candidates and sort — exclude rejected broker if specified
   const candidates: CorretorCandidate[] = [];
   for (const [profileId, authId] of profileToAuth.entries()) {
+    if (excludeAuthUserId && authId === excludeAuthUserId) continue; // skip rejected broker
     candidates.push({
       corretorId: profileId,
       authUserId: authId,
