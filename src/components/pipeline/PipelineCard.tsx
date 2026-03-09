@@ -106,7 +106,7 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
   }
 
   // No task — check contact status
-  const lastContact = lead.ultima_acao_at;
+  const lastContact = (lead as any).ultima_acao_at;
   if (!lastContact) {
     // Check if new lead (< 2h in stage)
     const hoursInStage = differenceInHours(now, new Date(lead.stage_changed_at));
