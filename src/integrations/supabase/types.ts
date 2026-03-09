@@ -5262,6 +5262,21 @@ export type Database = {
         }[]
       }
       get_team_oa_ranking: { Args: { p_period?: string }; Returns: Json }
+      get_team_visitas: {
+        Args: { p_date_from?: string; p_date_to?: string }
+        Returns: {
+          corretor_id: string
+          corretor_nome: string
+          data_visita: string
+          empreendimento: string
+          hora_visita: string
+          id: string
+          local_visita: string
+          nome_cliente: string
+          observacoes: string
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
