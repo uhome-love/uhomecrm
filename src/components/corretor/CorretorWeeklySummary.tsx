@@ -53,7 +53,7 @@ function useWeeklyData(weekStart: Date) {
       for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
         d.setDate(weekStart.getDate() + i);
-        const dateStr = d.toISOString().split("T")[0];
+        const dateStr = d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
         const dayLabel = WEEKDAYS[d.getDay()];
         const dayNum = d.getDate().toString().padStart(2, "0") + "/" + (d.getMonth() + 1).toString().padStart(2, "0");
 
