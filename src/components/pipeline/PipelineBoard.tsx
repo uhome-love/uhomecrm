@@ -308,14 +308,30 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   }, [isDraggingScroll]);
   const handleMouseUp = () => { setIsDraggingScroll(false); scrollDragActive.current = false; };
 
-  // DnD handlers
-  const handleDragStart = (leadId: string) => { dragLeadId.current = leadId; };
+  // DnD handlers — HTML5 drag for desktop
+  const handleDragStart = (leadId: string) => {
+    dragLeadId.current = leadId;
+    // Cancel any scroll-drag in progress
+    setIsDraggingScroll(false);
+    scrollDragActive.current = false;
+  };
   const handleDragOver = (e: React.DragEvent, stageId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    setDragOverStage(stageId);
+    if (dragOverStage !== stageId) setDragOverStage(stageId);
   };
-  const handleDragLeave = () => setDragOverStage(null);
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if leaving the column, not entering a child
+    const related = e.relatedTarget as HTMLElement | null;
+    const current = e.currentTarget as HTMLElement;
+    if (related && current.contains(related)) return;
+    setDragOverStage(null);
+  };
+  const handleDragEnd = () => {
+    // Clean up if drag was cancelled (e.g. ESC key)
+    dragLeadId.current = null;
+    setDragOverStage(null);
+  };
   const handleDrop = (e: React.DragEvent, stageId: string) => {
     e.preventDefault();
     setDragOverStage(null);
