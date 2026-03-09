@@ -42,6 +42,7 @@ export const NEGOCIOS_FASES = [
 
 export function useNegocios() {
   const { user } = useAuth();
+  const { isAdmin, isGestor } = useUserRole();
   const [negocios, setNegocios] = useState<Negocio[]>([]);
   const [corretorNomes, setCorretorNomes] = useState<Record<string, string>>({});
   const [corretorInfoMap, setCorretorInfoMap] = useState<Record<string, CorretorInfo>>({});
@@ -49,12 +50,35 @@ export function useNegocios() {
 
   const loadNegocios = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase
+
+    // Resolve profile.id for the current user (negocios uses profiles.id as corretor_id)
+    let profileId: string | null = null;
+    if (!isAdmin) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      profileId = profile?.id || null;
+    }
+
+    let query = supabase
       .from("negocios")
       .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at")
       .eq("status", "ativo")
       .order("updated_at", { ascending: false })
       .limit(500);
+
+    // BUG 1 FIX: Corretor sees only their own negocios
+    if (!isAdmin && !isGestor && profileId) {
+      query = query.eq("corretor_id", profileId);
+    } else if (isGestor && profileId) {
+      // Gestor sees negocios where they are gerente
+      query = query.eq("gerente_id", profileId);
+    }
+    // Admin/CEO sees all
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error loading negocios:", error);
