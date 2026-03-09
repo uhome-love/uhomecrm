@@ -76,180 +76,142 @@ function CeoView() {
         </Card>
       )}
 
-      {/* Credenciamentos Pendentes */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              Credenciamentos Pendentes
-              {pendentesCount > 0 && (
-                <Badge variant="destructive" className="text-xs">{pendentesCount}</Badge>
-              )}
-            </CardTitle>
-            {pendentes.length > 1 && (
-              <Button size="sm" variant="default" onClick={aprovarTodos} disabled={submitting}>
-                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
-                Aprovar todos
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {pendentes.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">Nenhum credenciamento pendente</p>
-          ) : (
-            <div className="space-y-2">
-              {pendentes.map(c => {
-                const seg1 = segmentos.find(s => s.id === c.segmento_1_id);
-                const seg2 = segmentos.find(s => s.id === c.segmento_2_id);
-                return (
-                  <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                          {(c.corretor_nome || "C").substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{c.corretor_nome}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Badge variant="outline" className="text-[10px]">{c.janela}</Badge>
-                          {seg1 && <Badge className="text-[10px] bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] border-0">{seg1.nome}</Badge>}
-                          {seg2 && <Badge className="text-[10px] bg-accent text-accent-foreground border-0">{seg2.nome}</Badge>}
+      {/* Tabs */}
+      <Tabs defaultValue="gestao" className="space-y-4">
+        <TabsList className="bg-muted/50">
+          <TabsTrigger value="gestao">Gestão da Roleta</TabsTrigger>
+          <TabsTrigger value="roletagens" className="gap-1.5">
+            Roletagens
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="gestao" className="space-y-6">
+          {/* Credenciamentos Pendentes */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <UserCheck className="h-4 w-4" />
+                  Credenciamentos Pendentes
+                  {pendentesCount > 0 && (
+                    <Badge variant="destructive" className="text-xs">{pendentesCount}</Badge>
+                  )}
+                </CardTitle>
+                {pendentes.length > 1 && (
+                  <Button size="sm" variant="default" onClick={aprovarTodos} disabled={submitting}>
+                    {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1" />}
+                    Aprovar todos
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {pendentes.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Nenhum credenciamento pendente</p>
+              ) : (
+                <div className="space-y-2">
+                  {pendentes.map(c => {
+                    const seg1 = segmentos.find(s => s.id === c.segmento_1_id);
+                    const seg2 = segmentos.find(s => s.id === c.segmento_2_id);
+                    return (
+                      <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {(c.corretor_nome || "C").substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-sm">{c.corretor_nome}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Badge variant="outline" className="text-[10px]">{c.janela}</Badge>
+                              {seg1 && <Badge className="text-[10px] bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] border-0">{seg1.nome}</Badge>}
+                              {seg2 && <Badge className="text-[10px] bg-accent text-accent-foreground border-0">{seg2.nome}</Badge>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="default" onClick={() => aprovarCredenciamento(c.id)} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => recusarCredenciamento(c.id)} disabled={submitting} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                            <XCircle className="h-3.5 w-3.5 mr-1" /> Recusar
+                          </Button>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="default" onClick={() => aprovarCredenciamento(c.id)} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => recusarCredenciamento(c.id)} disabled={submitting} className="text-destructive border-destructive/30 hover:bg-destructive/10">
-                        <XCircle className="h-3.5 w-3.5 mr-1" /> Recusar
-                      </Button>
-                    </div>
-                  </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Roleta Ativa por Segmento */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Target className="h-5 w-5" /> Roleta Ativa por Segmento
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {segmentos.map(seg => {
+                const segFila = fila.filter(f => f.segmento_id === seg.id).sort((a, b) => a.posicao - b.posicao);
+                return (
+                  <Card key={seg.id}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold">{seg.nome}</CardTitle>
+                      {seg.campanhas.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {seg.campanhas.map(c => (
+                            <Badge key={c} variant="outline" className="text-[10px]">{c}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      {segFila.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-3">Nenhum corretor na fila</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {segFila.map((f, idx) => (
+                            <div
+                              key={f.id}
+                              className={`flex items-center justify-between p-2 rounded-md text-sm ${
+                                idx === 0 ? "bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/30" : "bg-muted/40"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={`font-bold text-xs w-5 text-center ${idx === 0 ? "text-[hsl(var(--primary))]" : "text-muted-foreground"}`}>
+                                  {f.posicao}
+                                </span>
+                                <Avatar className="h-6 w-6">
+                                  <AvatarFallback className="text-[10px]">
+                                    {(f.corretor_nome || "C").substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium">{f.corretor_nome}</span>
+                                {idx === 0 && <Badge className="text-[10px] bg-[hsl(var(--primary))] text-primary-foreground">Próximo</Badge>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">{f.leads_recebidos || 0} leads</span>
+                                <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive/60 hover:text-destructive" onClick={() => removerDaFila(f.id)}>
+                                  <UserX className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </TabsContent>
 
-      {/* Roleta Ativa por Segmento */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <Target className="h-5 w-5" /> Roleta Ativa por Segmento
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {segmentos.map(seg => {
-            const segFila = fila.filter(f => f.segmento_id === seg.id).sort((a, b) => a.posicao - b.posicao);
-            return (
-              <Card key={seg.id}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold">{seg.nome}</CardTitle>
-                  {seg.campanhas.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {seg.campanhas.map(c => (
-                        <Badge key={c} variant="outline" className="text-[10px]">{c}</Badge>
-                      ))}
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {segFila.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-3">Nenhum corretor na fila</p>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {segFila.map((f, idx) => (
-                        <div
-                          key={f.id}
-                          className={`flex items-center justify-between p-2 rounded-md text-sm ${
-                            idx === 0 ? "bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/30" : "bg-muted/40"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className={`font-bold text-xs w-5 text-center ${idx === 0 ? "text-[hsl(var(--primary))]" : "text-muted-foreground"}`}>
-                              {f.posicao}
-                            </span>
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="text-[10px]">
-                                {(f.corretor_nome || "C").substring(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{f.corretor_nome}</span>
-                            {idx === 0 && <Badge className="text-[10px] bg-[hsl(var(--primary))] text-primary-foreground">Próximo</Badge>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{f.leads_recebidos || 0} leads</span>
-                            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive/60 hover:text-destructive" onClick={() => removerDaFila(f.id)}>
-                              <UserX className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Distribuições Recentes */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <RotateCw className="h-4 w-4" /> Distribuições Recentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {distribuicoes.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma distribuição registrada</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-2 font-medium">Lead</th>
-                    <th className="pb-2 font-medium">Segmento</th>
-                    <th className="pb-2 font-medium">Corretor</th>
-                    <th className="pb-2 font-medium">Status</th>
-                    <th className="pb-2 font-medium">Tempo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {distribuicoes.slice(0, 20).map(d => {
-                    const status = d.status || "enviado";
-                    const isExpired = status === "expirado" || status === "repassado";
-                    const isAccepted = status === "aceito";
-                    const timeLeft = d.expira_em ? differenceInMinutes(new Date(d.expira_em), new Date()) : null;
-                    return (
-                      <tr key={d.id} className={`border-b last:border-0 ${isExpired ? "text-destructive/80" : isAccepted ? "text-emerald-700" : ""}`}>
-                        <td className="py-2 font-medium">{d.lead_nome}</td>
-                        <td className="py-2">{d.segmento_nome}</td>
-                        <td className="py-2">{d.corretor_nome}</td>
-                        <td className="py-2">
-                          <Badge variant={isExpired ? "destructive" : isAccepted ? "default" : "outline"} className={`text-[10px] ${isAccepted ? "bg-emerald-600" : ""}`}>
-                            {status}
-                          </Badge>
-                        </td>
-                        <td className="py-2 text-xs text-muted-foreground">
-                          {d.enviado_em ? formatDistanceToNow(new Date(d.enviado_em), { addSuffix: true, locale: ptBR }) : "—"}
-                          {timeLeft !== null && timeLeft > 0 && !isAccepted && !isExpired && (
-                            <span className="ml-1 text-amber-600">({timeLeft}min restantes)</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="roletagens">
+          <RoletagensTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
