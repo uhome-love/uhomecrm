@@ -31,6 +31,7 @@ import BulkActionModal from "@/components/pipeline/BulkActionModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -188,6 +189,21 @@ export default function PipelineKanban() {
     setRefreshing(false);
   };
 
+              {/* Filtro rápido por corretor (CEO/Gerente) */}
+              {(isAdmin || isGestor) && (
+                <Select value={corretorFilter} onValueChange={setCorretorFilter}>
+                  <SelectTrigger className="h-8 text-xs w-[160px] sm:w-[200px] bg-card shrink-0">
+                    <SelectValue placeholder="Todos os corretores" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os corretores</SelectItem>
+                    {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
+                    {corretorOptions.map(([id, nome]) => (
+                      <SelectItem key={id} value={id}>{nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
   const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
   const [autoView, setAutoView] = useState<"materiais" | "sequencias">("materiais");
