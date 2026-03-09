@@ -113,10 +113,6 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCor
         </div>
       )}
 
-      {/* PDN badge */}
-      {hasPdn && (
-        <Badge className="text-[9px] h-5 bg-emerald-100 text-emerald-700 border-emerald-300 shrink-0">PDN</Badge>
-      )}
 
       {/* Status badge */}
       <div className="w-24 shrink-0">
