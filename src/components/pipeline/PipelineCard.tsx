@@ -452,6 +452,40 @@ const PipelineCard = memo(function PipelineCard({
               })}
             </div>
           )}
+
+          {/* Next task line */}
+          {proximaTarefa && proximaTarefa.vence_em && (() => {
+            const TIPO_L: Record<string, string> = { follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp", enviar_proposta: "Proposta", marcar_visita: "Visita", outro: "Tarefa" };
+            const d = new Date(proximaTarefa.vence_em + "T12:00:00");
+            const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+            const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+            const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+            const hora = proximaTarefa.hora_vencimento?.slice(0, 5) || "";
+            const label = TIPO_L[proximaTarefa.tipo] || proximaTarefa.tipo;
+            const isOverdue = d < todayStart;
+            const isToday = d >= todayStart && d < tomorrowStart;
+            const isYesterday = d >= yesterdayStart && d < todayStart;
+
+            if (isOverdue) {
+              return (
+                <p className="text-[9px] font-semibold text-destructive truncate px-0.5">
+                  🔴 Atrasado: {isYesterday ? "ontem" : format(d, "dd/MM")} {hora} · {label}
+                </p>
+              );
+            }
+            if (isToday) {
+              return (
+                <p className="text-[9px] font-semibold text-amber-600 dark:text-amber-400 truncate px-0.5">
+                  🟡 Hoje {hora} · {label}
+                </p>
+              );
+            }
+            return (
+              <p className="text-[9px] text-muted-foreground truncate px-0.5">
+                📋 {format(d, "dd/MM")} {hora} · {label}
+              </p>
+            );
+          })()}
         </div>
 
         <div className="h-px bg-border/50" />
