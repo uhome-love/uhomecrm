@@ -10,7 +10,8 @@ import CustomListWizard from "./CustomListWizard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useCustomLists, type CustomList } from "@/hooks/useCustomLists";
+import { useCustomLists, resolveCustomListLeads, type CustomList } from "@/hooks/useCustomLists";
+import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
