@@ -169,13 +169,16 @@ export default function AgendaVisitas() {
 
   const handleResultadoSubmit = useCallback(async (resultado: ResultadoVisita, observacoes?: string) => {
     if (!resultadoVisita) return;
-    const updates: any = { status: "realizada", resultado_visita: resultado };
+    // First update resultado_visita and observacoes
+    const updates: any = { resultado_visita: resultado };
     if (observacoes) {
       updates.observacoes = [resultadoVisita.observacoes, observacoes].filter(Boolean).join(" | ");
     }
-    await updateVisita(resultadoVisita.id, updates);
+    await updateVisita(resultadoVisita.id, updates, true);
+    // Then call updateStatus which triggers negócio creation + pipeline move
+    await updateStatus(resultadoVisita.id, "realizada");
     setResultadoVisita(null);
-  }, [resultadoVisita, updateVisita]);
+  }, [resultadoVisita, updateVisita, updateStatus]);
 
   const { corretores, empreendimentos } = useMemo(() => {
     const cSet = new Map<string, string>();
