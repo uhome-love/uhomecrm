@@ -373,6 +373,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
       }
     }
 
+    // If corretor is adding, auto-assign to themselves and mark as accepted
+    const isCorretorAdding = !isGestor && !isAdmin;
+    const corretorId = isCorretorAdding ? user.id : (lead.corretor_id || null);
+
     const { data, error } = await supabase
       .from("pipeline_leads")
       .insert({
@@ -383,7 +387,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
         produto_id: lead.produto_id || null,
         empreendimento,
         stage_id: firstStage.id,
-        corretor_id: lead.corretor_id || null,
+        corretor_id: corretorId,
+        aceite_status: isCorretorAdding ? "aceito" : undefined,
+        aceito_em: isCorretorAdding ? new Date().toISOString() : undefined,
         origem: origem,
         origem_detalhe: lead.origem_detalhe || null,
         observacoes: lead.observacoes || null,
@@ -402,7 +408,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     toast.success("Lead adicionado ao pipeline!");
     await loadLeads();
     return data;
-  }, [user, stages, loadLeads]);
+  }, [user, stages, loadLeads, isGestor, isAdmin]);
 
   const updateLead = useCallback(async (leadId: string, updates: Partial<PipelineLead>) => {
     if (!user) return;

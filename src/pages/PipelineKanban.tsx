@@ -143,7 +143,7 @@ export default function PipelineKanban() {
     })();
   }, [pipeline.loading, parceriasLoaded]);
 
-  const canAdd = isGestor || isAdmin;
+  const canAdd = isGestor || isAdmin || isCorretor;
 
   const filteredLeads = useMemo(() => {
     let result = applyFilters(pipeline.leads, filters, pipeline.stages);
