@@ -360,64 +360,64 @@ export default function GerenteDashboard() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Ligações */}
-          <div className="rounded-2xl p-4 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div className="rounded-2xl p-4 bg-card border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center gap-1.5 mb-2">
               <Phone className="h-4 w-4 text-blue-600" />
-              <span className="text-xs font-medium text-gray-400">Ligações</span>
+              <span className="text-xs font-medium text-muted-foreground">Ligações</span>
             </div>
             <p className="text-4xl font-black text-blue-600">{k.ligacoes}</p>
             <p className={`text-sm font-semibold ${ligPct > 0 ? "text-blue-600" : "text-red-500"}`}>{ligPct}%</p>
-            <p className="text-xs text-gray-400 mt-0.5">{periodLabels[period]} · meta {k.metaLigacoesPorCorretor}/corretor</p>
-            <p className="text-[10px] text-gray-300 mt-0.5">Time: {k.ligacoes}/{k.metaLigacoesTime}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{periodLabels[period]} · meta {k.metaLigacoesPorCorretor}/corretor</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5">Time: {k.ligacoes}/{k.metaLigacoesTime}</p>
             <Progress value={ligPct} className="h-1 mt-2" />
           </div>
 
           {/* Aproveitados */}
-          <div className="rounded-2xl p-4 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div className="rounded-2xl p-4 bg-card border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center gap-1.5 mb-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span className="text-xs font-medium text-gray-400">Aproveitados</span>
+              <span className="text-xs font-medium text-muted-foreground">Aproveitados</span>
             </div>
             <p className="text-4xl font-black text-green-600">{k.aproveitados}</p>
-            <p className="text-sm text-gray-400">{k.taxa}% conversão</p>
+            <p className="text-sm text-muted-foreground">{k.taxa}% conversão</p>
           </div>
 
           {/* Visitas */}
-          <div className="rounded-2xl p-4 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div className="rounded-2xl p-4 bg-card border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center gap-1.5 mb-2">
               <CalendarDays className="h-4 w-4 text-amber-600" />
-              <span className="text-xs font-medium text-gray-400">Visitas</span>
+              <span className="text-xs font-medium text-muted-foreground">Visitas</span>
             </div>
             <p className="text-4xl font-black text-amber-600">{k.visitasHoje}</p>
-            <p className="text-sm text-gray-400">{k.visitasHoje} hoje · {k.visitasSemana} esta semana</p>
+            <p className="text-sm text-muted-foreground">{k.visitasHoje} hoje · {k.visitasSemana} esta semana</p>
           </div>
 
           {/* Negócios */}
-          <div className="rounded-2xl p-4 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div className="rounded-2xl p-4 bg-card border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center gap-1.5 mb-2">
               <Building2 className="h-4 w-4 text-purple-600" />
-              <span className="text-xs font-medium text-gray-400">Negócios</span>
+              <span className="text-xs font-medium text-muted-foreground">Negócios</span>
             </div>
             <p className="text-4xl font-black text-purple-600">{k.negociosAtivos}</p>
-            <p className="text-sm text-gray-400">{formatCurrency(k.vgvTotal)}</p>
+            <p className="text-sm text-muted-foreground">{formatCurrency(k.vgvTotal)}</p>
           </div>
 
           {/* Melhor Streak */}
-          <div className="rounded-2xl p-4 bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md" style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div className="rounded-2xl p-4 bg-card border border-border/60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center gap-1.5 mb-2">
               <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-xs font-medium text-gray-400">Melhor Streak</span>
+              <span className="text-xs font-medium text-muted-foreground">Melhor Streak</span>
             </div>
             {k.melhorStreak.dias > 0 ? (
               <>
                 <p className="text-4xl font-black text-orange-500">{k.melhorStreak.dias}🔥</p>
-                <p className="text-sm text-gray-400 truncate">{k.melhorStreak.nome}</p>
+                <p className="text-sm text-muted-foreground truncate">{k.melhorStreak.nome}</p>
               </>
             ) : (
               <>
                 <p className="text-4xl font-black text-orange-500">🏆</p>
-                <p className="text-sm text-gray-400">Aguardando atividade</p>
-                <p className="text-[10px] text-gray-300 mt-0.5">Primeiro a ligar ganha destaque!</p>
+                <p className="text-sm text-muted-foreground">Aguardando atividade</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">Primeiro a ligar ganha destaque!</p>
               </>
             )}
           </div>
