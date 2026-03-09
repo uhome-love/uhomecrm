@@ -12,7 +12,7 @@ import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
-import HomiBriefingCard from "@/components/ceo/HomiBriefingCard";
+// HomiBriefingCard removed — was causing bugs
 import HomiCeoFloating from "@/components/ceo/HomiCeoFloating";
 
 // ─── Greeting ───
