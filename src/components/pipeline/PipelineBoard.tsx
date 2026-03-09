@@ -279,24 +279,34 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   };
 
   // Drag to scroll — only activates on empty areas (not on draggable cards)
+  // Uses a distance threshold so short clicks are never hijacked
+  const scrollDragActive = useRef(false);
   const handleMouseDown = (e: React.MouseEvent) => {
     // Skip if clicking on a card, button, or any interactive element
     const target = e.target as HTMLElement;
-    if (target.closest("[draggable]") || target.closest("button") || target.closest("[data-actions-area]") || target.closest("[role='menu']")) return;
+    if (
+      target.closest("[draggable]") ||
+      target.closest("button") ||
+      target.closest("[data-actions-area]") ||
+      target.closest("[role='menu']") ||
+      target.closest("[data-no-scroll-drag]")
+    ) return;
     setIsDraggingScroll(true);
+    scrollDragActive.current = false;
     dragScrollStart.current = { x: e.clientX, scrollLeft: scrollRef.current?.scrollLeft || 0 };
   };
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDraggingScroll || !scrollRef.current) return;
-    // Don't interfere with native HTML5 drag (card being dragged)
-    if (dragLeadId.current) { setIsDraggingScroll(false); return; }
-    // Only prevent default if we actually moved enough (avoids blocking clicks)
-    const dx = Math.abs(e.clientX - dragScrollStart.current.x);
-    if (dx < 5) return;
+    // If a card drag is in progress, stop scroll-drag immediately
+    if (dragLeadId.current) { setIsDraggingScroll(false); scrollDragActive.current = false; return; }
+    const dx = e.clientX - dragScrollStart.current.x;
+    // Only start scrolling after a 8px threshold to avoid blocking card drags
+    if (Math.abs(dx) < 8) return;
+    scrollDragActive.current = true;
     e.preventDefault();
-    scrollRef.current.scrollLeft = dragScrollStart.current.scrollLeft - (e.clientX - dragScrollStart.current.x);
+    scrollRef.current.scrollLeft = dragScrollStart.current.scrollLeft - dx;
   }, [isDraggingScroll]);
-  const handleMouseUp = () => setIsDraggingScroll(false);
+  const handleMouseUp = () => { setIsDraggingScroll(false); scrollDragActive.current = false; };
 
   // DnD handlers
   const handleDragStart = (leadId: string) => { dragLeadId.current = leadId; };
