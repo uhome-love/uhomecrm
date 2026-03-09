@@ -47,7 +47,7 @@ export default function BackofficeDashboard() {
   }, []);
 
   useEffect(() => {
-    const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const weekAgo = new Date(Date.now() - 7 * 86400000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const fetchMkt = async () => {
       const campaigns: any = await supabase.from("marketing_entries").select("id", { count: "exact", head: true }).gte("created_at", weekAgo);
       const posts: any = await supabase.from("conteudos_marketing").select("tema, data_publicacao, status").order("data_publicacao", { ascending: false }).limit(1);
