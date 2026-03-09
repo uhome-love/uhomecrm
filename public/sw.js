@@ -1,8 +1,6 @@
-const CACHE_NAME = "uhomesales-v2";
-const urlsToCache = ["/", "/index.html"];
+const CACHE_NAME = "uhomesales-v" + Date.now();
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
   self.skipWaiting();
 });
 
@@ -15,14 +13,23 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  // Skip non-GET and Supabase/OAuth requests
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
   if (url.pathname.startsWith("/~oauth")) return;
   if (url.hostname.includes("supabase")) return;
 
+  // Network-first: always try fresh, fallback to cache
   e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
+    fetch(e.request)
+      .then((response) => {
+        // Cache successful responses for offline fallback
+        if (response.ok && url.origin === self.location.origin) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
 
@@ -67,4 +74,9 @@ self.addEventListener("notificationclick", (e) => {
       return clients.openWindow(url);
     })
   );
+});
+
+// Listen for skip waiting message from the app
+self.addEventListener("message", (e) => {
+  if (e.data === "skipWaiting") self.skipWaiting();
 });
