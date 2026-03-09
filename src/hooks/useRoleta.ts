@@ -98,11 +98,19 @@ export function getCurrentWindowInfo(): {
     descricao = "Roleta da tarde ativa · Cred manhã aberto";
     nextTransitionMins = t1800;
   } else {
-    // 18:00 — 23:59: Noturna.
+    // 18:00+: Noturna.
+    const t2030 = parseTime("20:30");
     janela = "noturna";
     emoji = "🌙";
-    descricao = "Roleta noturna ativa · Cred manhã e noturna abertos";
-    credenciamentoJanela = "noturna";
+    if (mins < t2030) {
+      descricao = "Roleta noturna ativa · Cred manhã e noturna abertos";
+      credenciamentoJanela = "noturna";
+    } else {
+      // After 20:30 — night credentialing closed
+      descricao = "Roleta noturna ativa · Cred noturno encerrado";
+      credenciamentoJanela = null;
+      // Keep morning credentialing open
+    }
     nextTransitionMins = 24 * 60; // midnight
   }
 
