@@ -291,6 +291,20 @@ export default function PipelineKanban() {
               <span className="hidden sm:inline">Novo Lead</span>
             </Button>
           )}
+
+          {isAdmin && activeTab === "kanban" && (
+            <Button
+              variant={selectionMode ? "default" : "outline"}
+              size="sm"
+              className={`gap-1 h-8 text-[11px] ${selectionMode ? "bg-primary" : ""}`}
+              onClick={() => {
+                if (selectionMode) { clearSelection(); } else { setSelectionMode(true); }
+              }}
+            >
+              {selectionMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{selectionMode ? "Selecionando..." : "Selecionar"}</span>
+            </Button>
+          )}
         </div>
 
         {/* Summary line + Forecast inline */}
@@ -433,8 +447,11 @@ export default function PipelineKanban() {
               corretorNomes={pipeline.corretorNomes}
               parcerias={parcerias}
               onMoveLead={pipeline.moveLead}
-              onSelectLead={setSelectedLead}
+              onSelectLead={selectionMode ? (lead) => toggleLeadSelection(lead.id) : setSelectedLead}
               onTransferred={() => pipeline.reload()}
+              selectionMode={selectionMode}
+              selectedLeads={selectedLeads}
+              onToggleSelect={toggleLeadSelection}
             />
           ) : activeTab === "inteligencia" ? (
             intelView === "funil" ? (
