@@ -23,6 +23,7 @@ import VisitasByCorretor from "@/components/visitas/VisitasByCorretor";
 import VisitasCalendar from "@/components/visitas/VisitasCalendar";
 import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import VisitasEquipe from "@/components/visitas/VisitasEquipe";
 
 const FIXED_TEAMS = [
   { key: "gabrielle", label: "Gabrielle", emoji: "🟢", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
