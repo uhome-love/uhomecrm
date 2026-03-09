@@ -35,8 +35,10 @@ export interface PipelineTarefa {
   descricao: string | null;
   prioridade: string;
   status: string;
+  tipo: string;
   responsavel_id: string | null;
   vence_em: string | null;
+  hora_vencimento: string | null;
   concluida_em: string | null;
   created_by: string;
   created_at: string;
