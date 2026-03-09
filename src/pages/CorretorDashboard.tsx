@@ -372,8 +372,8 @@ export default function CorretorDashboard() {
               </motion.button>
             </div>
             {!metaSalva && (
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Defina sua meta para liberar a discagem.
+              <p className="text-xs text-amber-500 text-center mt-2 flex items-center justify-center gap-1">
+                Defina sua meta ao lado para liberar →
               </p>
             )}
           </motion.div>
@@ -599,48 +599,64 @@ export default function CorretorDashboard() {
                     <span className="text-sm">🎯</span>
                     <span className="text-sm font-semibold text-foreground">Prioridades Agora</span>
                   </div>
-                  <span className="text-xs text-muted-foreground font-medium">{radar.priorityLeads?.length || 0}</span>
+                  {radar.priorityLeads && radar.priorityLeads.length > 0 && (() => {
+                    const topCor = radar.priorityLeads[0]?.cor;
+                    const badgeColor = topCor === "red" ? "bg-red-500" : topCor === "orange" ? "bg-orange-500" : topCor === "yellow" ? "bg-yellow-500" : "bg-blue-500";
+                    return (
+                      <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full text-[10px] font-bold text-white px-1.5 ${badgeColor}`}>
+                        {radar.priorityLeads.length}
+                      </span>
+                    );
+                  })()}
                 </div>
                 {(!radar.priorityLeads || radar.priorityLeads.length === 0) ? (
-                  <div className="text-center py-3">
-                    <p className="text-sm text-muted-foreground">✅ Tudo em dia! Bora prospectar.</p>
+                  <div className="text-center py-6 space-y-1">
+                    <p className="text-2xl">✅</p>
+                    <p className="text-sm font-semibold text-foreground">Tudo em dia!</p>
+                    <p className="text-xs text-muted-foreground">Nenhum lead precisa de atenção urgente agora.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {radar.priorityLeads.map((lead: any) => {
-                      const hrs = differenceInHours(new Date(), new Date(lead.stage_changed_at));
-                      const isUrgent = hrs >= 24;
+                      const borderColor = lead.cor === "red" ? "border-l-red-500" : lead.cor === "orange" ? "border-l-orange-500" : lead.cor === "yellow" ? "border-l-yellow-500" : "border-l-blue-500";
+                      const tagBg = lead.cor === "red" ? "bg-red-500/10 text-red-600" : lead.cor === "orange" ? "bg-orange-500/10 text-orange-600" : lead.cor === "yellow" ? "bg-yellow-500/10 text-yellow-700" : "bg-blue-500/10 text-blue-600";
+                      const tagEmoji = lead.cor === "red" ? "🔴" : lead.cor === "orange" ? "🟠" : lead.cor === "yellow" ? "🟡" : "🔵";
                       return (
-                        <div key={lead.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border/60 hover:bg-accent/30 transition-colors">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs">{isUrgent ? "🚨" : "⭐"}</span>
-                              <span className="text-xs font-bold text-foreground truncate">{lead.nome}</span>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                              {lead.empreendimento || "Sem empreendimento"}
-                              {isUrgent && <span className="text-danger-500 font-medium"> · SLA {hrs}h</span>}
+                        <div key={lead.id} className={`p-3 rounded-lg border border-border/60 border-l-[3px] ${borderColor} hover:bg-accent/30 transition-colors space-y-1.5`}>
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${tagBg}`}>
+                            {tagEmoji} {lead.motivo}
+                          </span>
+                          <p className="text-sm font-bold text-foreground truncate">👤 {lead.nome}</p>
+                          <p className="text-xs text-muted-foreground truncate">🏠 {lead.interesse}</p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-muted-foreground">
+                              📍 {lead.stageNome} · Último contato: {lead.ultimoContatoStr}
                             </p>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {lead.telefone && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 w-6 p-0"
-                                onClick={() => window.open(`tel:${lead.telefone}`, "_self")}
-                              >
-                                <Phone className="h-3 w-3 text-[#16A34A]" />
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0"
-                              onClick={() => navigate("/pipeline")}
-                            >
-                              <ArrowRight className="h-3 w-3 text-primary" />
-                            </Button>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {lead.telefone && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 px-2 gap-1 text-[10px]"
+                                    onClick={() => navigate("/corretor/call")}
+                                  >
+                                    <Phone className="h-3 w-3" /> Ligar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 px-2 gap-1 text-[10px] text-emerald-600"
+                                    onClick={() => {
+                                      const phone = lead.telefone.replace(/\D/g, "");
+                                      window.open(`https://wa.me/55${phone}`, "_blank");
+                                    }}
+                                  >
+                                    💬 WhatsApp
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
