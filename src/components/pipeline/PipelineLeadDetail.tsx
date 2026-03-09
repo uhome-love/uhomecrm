@@ -90,6 +90,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     nivel_interesse: (lead as any).nivel_interesse || "medio",
     temperatura: (lead as any).temperatura || "morno",
     valor_estimado: lead.valor_estimado || 0,
+    empreendimento: lead.empreendimento || "",
   });
 
   // Próxima ação
