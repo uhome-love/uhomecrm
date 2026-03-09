@@ -450,7 +450,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     <div>
                       <Label className="text-xs text-muted-foreground">Empreendimento</Label>
                       <Select
-                        value={["OPEN", "ALTO LINDÓIA", "LAS CASAS", "ORYGEM", "CASA TUA", "LAKE EYRE", "CASA BASTIAN", "SHIFT", "MELNICK DAY COMPACTOS"].includes(commercialData.empreendimento) ? commercialData.empreendimento : "__custom__"}
+                        value={EMPREENDIMENTOS_UHOME.includes(commercialData.empreendimento) ? commercialData.empreendimento : "__custom__"}
                         onValueChange={v => {
                           if (v === "__custom__") {
                             setCommercialData(p => ({ ...p, empreendimento: "" }));
@@ -459,21 +459,15 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                           }
                         }}
                       >
-                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione ou digite" /></SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="OPEN">OPEN</SelectItem>
-                          <SelectItem value="ALTO LINDÓIA">ALTO LINDÓIA</SelectItem>
-                          <SelectItem value="LAS CASAS">LAS CASAS</SelectItem>
-                          <SelectItem value="ORYGEM">ORYGEM</SelectItem>
-                          <SelectItem value="CASA TUA">CASA TUA</SelectItem>
-                          <SelectItem value="LAKE EYRE">LAKE EYRE</SelectItem>
-                          <SelectItem value="CASA BASTIAN">CASA BASTIAN</SelectItem>
-                          <SelectItem value="SHIFT">SHIFT</SelectItem>
-                          <SelectItem value="MELNICK DAY COMPACTOS">MELNICK DAY COMPACTOS</SelectItem>
+                          {EMPREENDIMENTOS_UHOME.map(e => (
+                            <SelectItem key={e} value={e}>{e}</SelectItem>
+                          ))}
                           <SelectItem value="__custom__">✏️ Digitar manualmente</SelectItem>
                         </SelectContent>
                       </Select>
-                      {!["OPEN", "ALTO LINDÓIA", "LAS CASAS", "ORYGEM", "CASA TUA", "LAKE EYRE", "CASA BASTIAN", "SHIFT", "MELNICK DAY COMPACTOS"].includes(commercialData.empreendimento) && (
+                      {!EMPREENDIMENTOS_UHOME.includes(commercialData.empreendimento) && (
                         <Input
                           className="h-9 text-sm mt-2"
                           placeholder="Nome do empreendimento"
