@@ -521,6 +521,43 @@ export default function PipelineKanban() {
         onOpenChange={setDispatchOpen}
         onDispatched={() => pipeline.reload()}
       />
+
+      {/* Bulk Action Modal */}
+      <BulkActionModal
+        open={bulkActionOpen}
+        onOpenChange={setBulkActionOpen}
+        selectedLeadIds={[...selectedLeads]}
+        onComplete={() => {
+          clearSelection();
+          pipeline.reload();
+        }}
+      />
+
+      {/* Floating selection toolbar */}
+      {selectionMode && selectedLeads.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border shadow-2xl">
+          <span className="text-sm font-bold text-foreground">
+            {selectedLeads.size} selecionado{selectedLeads.size !== 1 ? "s" : ""}
+          </span>
+          <Button
+            size="sm"
+            className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+            onClick={() => setBulkActionOpen(true)}
+          >
+            <Send className="h-3.5 w-3.5" />
+            Disparar
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-1 text-destructive hover:text-destructive"
+            onClick={clearSelection}
+          >
+            <X className="h-3.5 w-3.5" />
+            Cancelar
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

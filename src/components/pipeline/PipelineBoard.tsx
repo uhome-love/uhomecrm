@@ -17,6 +17,9 @@ interface PipelineBoardProps {
   onMoveLead: (leadId: string, newStageId: string) => void;
   onSelectLead: (lead: PipelineLead) => void;
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
+  selectionMode?: boolean;
+  selectedLeads?: Set<string>;
+  onToggleSelect?: (leadId: string) => void;
 }
 
 const COLUMN_WIDTH_DESKTOP = 300;
@@ -75,7 +78,7 @@ const formatVGV = (value: number) => {
   return `R$ ${value.toLocaleString("pt-BR")}`;
 };
 
-export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, parcerias, onMoveLead, onSelectLead, onTransferred }: PipelineBoardProps) {
+export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect }: PipelineBoardProps) {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
   const [arrivedLeadId, setArrivedLeadId] = useState<string | null>(null);
