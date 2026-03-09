@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, Clock, UserCheck, UserX, Users, Target, RotateCw, LogOut, Rocket, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Ban } from "lucide-react";
 import { formatDistanceToNow, differenceInMinutes, format, startOfDay, subHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import RoletagensTab from "@/components/roleta/RoletagensTab";
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
   const [now, setNow] = useState(new Date());
