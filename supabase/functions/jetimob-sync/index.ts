@@ -257,6 +257,10 @@ serve(async (req) => {
         if (!empreendimento) {
           empreendimento = normalizeEmpreendimento(origemText) || normalizeEmpreendimento(lead.source) || normalizeEmpreendimento(lead.origin) || null;
         }
+        // Fallback: leads without empreendimento go to "Avulso" so distribution doesn't fail
+        if (!empreendimento) {
+          empreendimento = "Avulso";
+        }
 
         // Determine lead priority based on content
         let prioridadeLead = "media";
