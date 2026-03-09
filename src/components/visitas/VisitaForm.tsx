@@ -106,12 +106,13 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
   const handleSelectPipelineLead = (leadId: string) => {
     const lead = pipelineLeads.find(l => l.id === leadId);
     if (lead) {
+      // BUG 4 FIX: Always use full name from pipeline lead (override any partial typing)
       setForm(f => ({
         ...f,
         pipeline_lead_id: leadId,
-        nome_cliente: f.nome_cliente || lead.nome,
-        telefone: f.telefone || lead.telefone || "",
-        empreendimento: f.empreendimento || lead.empreendimento || "",
+        nome_cliente: lead.nome, // always use complete name
+        telefone: lead.telefone || f.telefone || "",
+        empreendimento: lead.empreendimento || f.empreendimento || "",
       }));
       setSearchPipeline("");
     }

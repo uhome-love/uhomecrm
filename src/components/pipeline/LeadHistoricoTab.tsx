@@ -132,6 +132,12 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
       prioridade: "media",
     } as any);
 
+    // BUG 3 FIX: Ensure ultima_acao_at is updated (addAtividade already does this, but reinforce)
+    await supabase.from("pipeline_leads").update({
+      ultima_acao_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", leadId);
+
     // Create follow-up task if requested
     if (followUp !== "none") {
       const fDate = followUp === "amanha"

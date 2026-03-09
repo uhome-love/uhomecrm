@@ -255,6 +255,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const updatePayload: Record<string, any> = {
       stage_id: newStageId,
       stage_changed_at: new Date().toISOString(),
+      ultima_acao_at: new Date().toISOString(), // BUG 3 FIX: always update ultima_acao_at
     };
     if (observacao && stages.find(s => s.id === newStageId)?.tipo === "descarte") {
       updatePayload.motivo_descarte = observacao;
