@@ -453,7 +453,7 @@ async function distributeSingleLead(
     corretor_id: chosen.corretorId,
     segmento_id: segmentoId,
     janela: targetJanela,
-    status: "pendente",
+    status: "aguardando",
     enviado_em: now.toISOString(),
     expira_em: expireAt.toISOString(),
     avisos_enviados: 0,
