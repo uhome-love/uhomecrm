@@ -381,15 +381,15 @@ export default function CheckpointGerente() {
         </div>
 
         {/* TABS */}
-        <div className="flex border-b border-gray-200 bg-white rounded-t-xl overflow-hidden">
+        <div className="flex border-b border-border bg-card rounded-t-xl overflow-hidden">
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium border-b-2 transition-all ${
                 activeTab === tab.key
-                  ? "border-blue-500 text-blue-600 bg-blue-50"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.icon} {tab.label}
