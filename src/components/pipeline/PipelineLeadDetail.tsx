@@ -70,6 +70,13 @@ const PRIORIDADE_MAP: Record<string, { label: string; color: string }> = {
   baixa: { label: "Baixa", color: "bg-green-500/10 text-green-600 border-green-200" },
 };
 
+const EMPREENDIMENTOS_UHOME = [
+  'Alfa', 'Alto Lindóia', 'Boa Vista Country Club', 'Casa Tua',
+  'Duetto - Morana', 'Lake Eyre', 'Las Casas', 'Me Day',
+  'Melnick Day', 'Melnick Day Compactos', 'Open Bosque',
+  'Orygem', 'Seen', 'Shift - Vanguard', 'Terrace', 'Vértice - Las Casas',
+];
+
 export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -79,6 +86,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [deleting, setDeleting] = useState(false);
   const [homiOpen, setHomiOpen] = useState(false);
   const [showCustomAction, setShowCustomAction] = useState(false);
+  const [empreendimentoSearch, setEmpreendimentoSearch] = useState("");
+  const [empreendimentoOpen, setEmpreendimentoOpen] = useState(false);
+  const [savingEmpreendimento, setSavingEmpreendimento] = useState(false);
 
   // Edit states
   const [editingCommercial, setEditingCommercial] = useState(false);
