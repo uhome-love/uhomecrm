@@ -373,13 +373,22 @@ export function useRoleta() {
 
   // ─── CEO Actions ───
 
+  const getProfileId = useCallback(async (): Promise<string | null> => {
+    if (!user) return null;
+    const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+    return data?.id || null;
+  }, [user]);
+
   const aprovarCredenciamento = useCallback(async (credId: string) => {
     if (!user) return;
     setSubmitting(true);
     try {
+      const profileId = await getProfileId();
+      if (!profileId) throw new Error("Perfil não encontrado");
+
       // Approve
       const { data: cred } = await supabase.from("roleta_credenciamentos")
-        .update({ status: "aprovado", aprovado_por: user.id, aprovado_em: new Date().toISOString() })
+        .update({ status: "aprovado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
         .eq("id", credId)
         .select()
         .single();
@@ -389,7 +398,6 @@ export function useRoleta() {
       // Add to fila for each segmento
       const segmentoIds = [cred.segmento_1_id, cred.segmento_2_id].filter(Boolean) as string[];
       for (const segId of segmentoIds) {
-        // Get next position
         const { data: existing } = await supabase.from("roleta_fila")
           .select("posicao")
           .eq("data", hoje)
@@ -420,14 +428,15 @@ export function useRoleta() {
     } finally {
       setSubmitting(false);
     }
-  }, [user, hoje, loadCredenciamentos, loadFila]);
+  }, [user, hoje, loadCredenciamentos, loadFila, getProfileId]);
 
   const recusarCredenciamento = useCallback(async (credId: string) => {
     if (!user) return;
     setSubmitting(true);
     try {
+      const profileId = await getProfileId();
       await supabase.from("roleta_credenciamentos")
-        .update({ status: "recusado", aprovado_por: user.id, aprovado_em: new Date().toISOString() })
+        .update({ status: "recusado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
         .eq("id", credId);
       toast.success("Credenciamento recusado.");
       await loadCredenciamentos();

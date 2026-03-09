@@ -126,28 +126,42 @@ export default function CeoDashboard() {
   const [localPendentes, setLocalPendentes] = useState<any[]>([]);
   useEffect(() => { setLocalPendentes(roletaPendentes); }, [roletaPendentes]);
 
+  // Get profile.id (FK target) instead of auth user.id
+  const getProfileId = useCallback(async (): Promise<string | null> => {
+    if (!user) return null;
+    const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+    return data?.id || null;
+  }, [user]);
+
   const aprovar = useCallback(async (id: string) => {
     if (!user) return;
+    const profileId = await getProfileId();
+    if (!profileId) { toast.error("Perfil não encontrado"); return; }
     const item = localPendentes.find((c: any) => c.id === id);
     setLocalPendentes(prev => prev.filter((c: any) => c.id !== id));
-    const { error } = await supabase.from("roleta_credenciamentos").update({ status: "aprovado", aprovado_por: user.id, aprovado_em: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase.from("roleta_credenciamentos").update({ status: "aprovado", aprovado_por: profileId, aprovado_em: new Date().toISOString() }).eq("id", id);
     if (error) {
-      toast.error("Erro ao aprovar");
+      console.error("Erro aprovar roleta:", error);
+      toast.error("Erro ao aprovar: " + (error.message || ""));
       setLocalPendentes(prev => [...prev, item].filter(Boolean));
       return;
     }
     toast.success(`✅ ${item?.corretor_nome || "Corretor"} aprovado(a) na Roleta!`);
-  }, [user, localPendentes]);
+  }, [user, localPendentes, getProfileId]);
 
   const aprovarTodos = useCallback(async () => {
     if (!user) return;
+    const profileId = await getProfileId();
+    if (!profileId) { toast.error("Perfil não encontrado"); return; }
     const pending = [...localPendentes];
     setLocalPendentes([]);
+    let ok = 0;
     for (const c of pending) {
-      await supabase.from("roleta_credenciamentos").update({ status: "aprovado", aprovado_por: user.id, aprovado_em: new Date().toISOString() }).eq("id", c.id);
+      const { error } = await supabase.from("roleta_credenciamentos").update({ status: "aprovado", aprovado_por: profileId, aprovado_em: new Date().toISOString() }).eq("id", c.id);
+      if (!error) ok++;
     }
-    toast.success(`✅ ${pending.length} corretor(es) aprovado(s) na Roleta!`);
-  }, [user, localPendentes]);
+    toast.success(`✅ ${ok} corretor(es) aprovado(s) na Roleta!`);
+  }, [user, localPendentes, getProfileId]);
 
 
 
