@@ -133,7 +133,7 @@ export default function CeoDashboard() {
     return data?.id || null;
   }, [user]);
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   const insertFilaForCred = useCallback(async (cred: any) => {
     const segmentoIds = [cred.segmento_1_id, cred.segmento_2_id].filter(Boolean) as string[];

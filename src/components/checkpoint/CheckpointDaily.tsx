@@ -51,7 +51,7 @@ const statusColors: Record<string, string> = {
 
 export default function CheckpointDaily() {
   const { user } = useAuth();
-  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [date, setDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
   const [checkpointId, setCheckpointId] = useState<string | null>(null);
   const [checkpointStatus, setCheckpointStatus] = useState("aberto");
   const [lines, setLines] = useState<CheckpointLine[]>([]);

@@ -7,6 +7,7 @@ import { useMarketing, getCanalLabel } from "@/hooks/useMarketing";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { todayBRT } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
   TrendingUp, Users, Trophy, Target, BarChart3, AlertTriangle,
@@ -205,7 +206,7 @@ export default function HomeDashboard() {
   // Fetch checkpoint daily summary
   const fetchCheckpoint = useCallback(async () => {
     if (!user) return;
-    const today = format(new Date(), "yyyy-MM-dd");
+    const today = todayBRT();
 
     // Explicit BRT (-03:00) day boundaries to match server-side timezone
     const startOfToday = `${today}T00:00:00-03:00`;
@@ -276,7 +277,7 @@ export default function HomeDashboard() {
     const oa_aproveitados = oaTentativas.filter(t => t.resultado === "com_interesse").length;
 
     // Visitas marcadas from visitas table
-    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayStr = todayBRT();
     let vmQuery = supabase
       .from("visitas")
       .select("id")

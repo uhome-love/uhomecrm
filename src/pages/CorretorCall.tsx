@@ -106,7 +106,7 @@ export default function CorretorCall() {
   const { data: warmupData } = useQuery({
     queryKey: ["call-warmup", user?.id],
     queryFn: async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
       // Ranking data
       const { data: rankingData } = await supabase

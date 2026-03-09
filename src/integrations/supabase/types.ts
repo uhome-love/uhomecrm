@@ -3868,7 +3868,7 @@ export type Database = {
           nome: string
           ordem: number
           pipeline_tipo: string
-          tipo: Database["public"]["Enums"]["pipeline_stage_type"]
+          tipo: string
         }
         Insert: {
           ativo?: boolean
@@ -3877,7 +3877,7 @@ export type Database = {
           nome: string
           ordem?: number
           pipeline_tipo?: string
-          tipo: Database["public"]["Enums"]["pipeline_stage_type"]
+          tipo: string
         }
         Update: {
           ativo?: boolean
@@ -3886,7 +3886,7 @@ export type Database = {
           nome?: string
           ordem?: number
           pipeline_tipo?: string
-          tipo?: Database["public"]["Enums"]["pipeline_stage_type"]
+          tipo?: string
         }
         Relationships: []
       }

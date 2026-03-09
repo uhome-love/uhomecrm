@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { todayBRT } from "@/lib/utils";
 
 // ─── Time Window Logic ───
 
@@ -190,7 +191,7 @@ export function useRoleta() {
   const [submitting, setSubmitting] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
 
-  const hoje = format(new Date(), "yyyy-MM-dd");
+  const hoje = todayBRT();
 
   // Load profile ID (profiles.id != auth user.id)
   useEffect(() => {

@@ -52,7 +52,7 @@ export default function PagadoriasPage() {
   // Step 1 form
   const [form, setForm] = useState({
     cliente_nome: "", cliente_cpf: "", cliente_email: "", cliente_telefone: "", cliente_endereco: "",
-    empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toISOString().slice(0, 10),
+    empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
     forma_pagamento: "a_vista", corretor_nome: "", gerente_nome: "",
   });
 
@@ -180,7 +180,7 @@ export default function PagadoriasPage() {
   const resetWizard = () => {
     setWizardOpen(false);
     setStep(1);
-    setForm({ cliente_nome: "", cliente_cpf: "", cliente_email: "", cliente_telefone: "", cliente_endereco: "", empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toISOString().slice(0, 10), forma_pagamento: "a_vista", corretor_nome: "", gerente_nome: "" });
+    setForm({ cliente_nome: "", cliente_cpf: "", cliente_email: "", cliente_telefone: "", cliente_endereco: "", empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), forma_pagamento: "a_vista", corretor_nome: "", gerente_nome: "" });
     setCredores([]);
     setComissaoPct(5);
     setVgvAcumuladoCorretor(0);
@@ -510,7 +510,7 @@ export default function PagadoriasPage() {
                       parcelas: [],
                       corretor_cpf: "", corretor_creci: "", corretor_email: "",
                       gerente_cpf: "", gerente_creci: "", gerente_email: "",
-                      data_assinatura: new Date().toISOString().slice(0, 10),
+                      data_assinatura: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
                     });
                     setContratoOpen(true);
                   }}>

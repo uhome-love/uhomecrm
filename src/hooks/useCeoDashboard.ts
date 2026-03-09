@@ -2,14 +2,15 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from "date-fns";
+import { todayBRT, dateToBRT } from "@/lib/utils";
 
 export type DashPeriod = "hoje" | "semana" | "mes";
 
 function getRange(period: DashPeriod) {
   const now = new Date();
-  if (period === "hoje") return { start: format(now, "yyyy-MM-dd"), end: format(now, "yyyy-MM-dd") };
-  if (period === "semana") return { start: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"), end: format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd") };
-  return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd") };
+  if (period === "hoje") { const t = todayBRT(); return { start: t, end: t }; }
+  if (period === "semana") return { start: dateToBRT(startOfWeek(now, { weekStartsOn: 1 })), end: dateToBRT(endOfWeek(now, { weekStartsOn: 1 })) };
+  return { start: dateToBRT(startOfMonth(now)), end: dateToBRT(endOfMonth(now)) };
 }
 
 function getPrevRange(period: DashPeriod) {
@@ -90,7 +91,7 @@ export function useCeoDashboard(period: DashPeriod) {
 
   const range = useMemo(() => getRange(period), [period]);
   const prevRange = useMemo(() => getPrevRange(period), [period]);
-  const hoje = format(new Date(), "yyyy-MM-dd");
+  const hoje = todayBRT();
 
   const loadProfile = useCallback(async () => {
     if (!user) return;

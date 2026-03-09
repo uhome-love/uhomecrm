@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
+import { todayBRT } from "@/lib/utils";
 import { toast } from "sonner";
 import { CheckSquare } from "lucide-react";
 
@@ -26,7 +27,7 @@ export default function ManagerChecklist() {
   const { user } = useAuth();
   const [items, setItems] = useState<CheckItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = todayBRT();
 
   const load = useCallback(async () => {
     if (!user) return;

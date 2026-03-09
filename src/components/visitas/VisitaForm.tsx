@@ -41,7 +41,7 @@ function getDefaultForm(initialData?: Props["initialData"]) {
     empreendimento: initialData?.empreendimento || "",
     corretor_id: initialData?.corretor_id || "",
     origem: initialData?.origem || "manual",
-    data_visita: initialData?.data_visita || new Date().toISOString().split("T")[0],
+    data_visita: initialData?.data_visita || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
     hora_visita: initialData?.hora_visita || "",
     observacoes: initialData?.observacoes || "",
     pipeline_lead_id: (initialData as any)?.pipeline_lead_id || "",

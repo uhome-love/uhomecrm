@@ -8,6 +8,7 @@ import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import DailyProgressCard from "@/components/corretor/DailyProgressCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { todayBRT } from "@/lib/utils";
 import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -53,7 +54,7 @@ export default function CorretorDashboard() {
   const { data: radarData } = useQuery({
     queryKey: ["corretor-radar", user?.id],
     queryFn: async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayBRT();
 
       const ontem = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: pendingLeads } = await (supabase

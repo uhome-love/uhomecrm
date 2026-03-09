@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, isBefore, startOfDay, addHours } from "date-fns";
+import { dateToBRT } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { Phone, MessageCircle, CheckCircle2, Clock, Calendar, ClipboardList, ArrowRight, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -127,7 +128,7 @@ export default function MinhaAgendaWidget() {
   const handleAdiarRapido = async (id: string, horas: number) => {
     const novaData = addHours(new Date(), horas);
     await supabase.from("pipeline_tarefas").update({
-      vence_em: format(novaData, "yyyy-MM-dd"),
+      vence_em: dateToBRT(novaData),
       hora_vencimento: format(novaData, "HH:mm"),
     } as any).eq("id", id);
     toast.success("Tarefa adiada ✅");

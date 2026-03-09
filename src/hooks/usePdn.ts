@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
+import { todayBRT } from "@/lib/utils";
 import { toast } from "sonner";
 
 export type PdnSituacao = "visita" | "gerado" | "assinado" | "caiu";
@@ -79,7 +80,7 @@ export function usePdn(selectedMes?: string, filterGerenteId?: string) {
       corretor: "",
       equipe: "",
       ultimo_contato: "",
-      data_visita: format(new Date(), "yyyy-MM-dd"),
+      data_visita: todayBRT(),
       tipo_visita: "1a_visita",
       proxima_acao: "",
       observacoes: "",
@@ -123,7 +124,7 @@ export function usePdn(selectedMes?: string, filterGerenteId?: string) {
       corretor: e.corretor,
       equipe: e.equipe,
       ultimo_contato: e.ultimo_contato,
-      data_visita: format(new Date(), "yyyy-MM-dd"),
+      data_visita: todayBRT(),
       tipo_visita: e.tipo_visita,
       proxima_acao: e.proxima_acao,
       observacoes: e.observacoes,

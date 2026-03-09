@@ -110,7 +110,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   // New atividade
   const [showNewAtividade, setShowNewAtividade] = useState(false);
-  const [newAtividade, setNewAtividade] = useState({ tipo: "ligacao", titulo: "", descricao: "", data: new Date().toISOString().split("T")[0], hora: "", prioridade: "media" });
+  const [newAtividade, setNewAtividade] = useState({ tipo: "ligacao", titulo: "", descricao: "", data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), hora: "", prioridade: "media" });
 
   // New tarefa — enhanced with tipo + hora
   const [showNewTarefa, setShowNewTarefa] = useState(false);
@@ -158,7 +158,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const handleAddAtividade = async () => {
     await leadData.addAtividade(newAtividade);
-    setNewAtividade({ tipo: "ligacao", titulo: "", descricao: "", data: new Date().toISOString().split("T")[0], hora: "", prioridade: "media" });
+    setNewAtividade({ tipo: "ligacao", titulo: "", descricao: "", data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), hora: "", prioridade: "media" });
     setShowNewAtividade(false);
   };
 

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow, isBefore, startOfDay, endOfWeek, addDays, addHours } from "date-fns";
+import { dateToBRT } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { Phone, MessageCircle, CheckCircle2, Clock, Calendar, Building2, User, ClipboardList, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -141,7 +142,7 @@ export default function MinhasTarefas() {
 
   const handleAdiarRapido = async (id: string, horas: number) => {
     const novaData = addHours(new Date(), horas);
-    await supabase.from("pipeline_tarefas").update({ vence_em: format(novaData, "yyyy-MM-dd"), hora_vencimento: format(novaData, "HH:mm") } as any).eq("id", id);
+    await supabase.from("pipeline_tarefas").update({ vence_em: dateToBRT(novaData), hora_vencimento: format(novaData, "HH:mm") } as any).eq("id", id);
     toast.success("Tarefa adiada ✅");
     queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
     queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });

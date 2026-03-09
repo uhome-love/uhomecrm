@@ -97,8 +97,8 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
     if (!userId || !profileId) { setState(s => ({ ...s, loading: false })); return; }
 
     const check = async () => {
-      const hoje = new Date().toISOString().split("T")[0];
-      const amanha = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+      const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const amanha = new Date(Date.now() + 86400000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
       const marcadasQ = supabase.from("visitas").select("id", { count: "exact", head: true });
       const marcadasRes = await marcadasQ.eq("corretor_id", profileId).gte("data", hoje).lt("data", amanha);
@@ -157,7 +157,7 @@ export default function RoletaStatusBar() {
     setSegmentos(segList);
 
     // Fetch credenciamentos for today — check all janelas
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     if (profile?.id) {
       const { data: creds } = await supabase
         .from("roleta_credenciamentos")
@@ -206,7 +206,7 @@ export default function RoletaStatusBar() {
   const saveCredenciamento = async (janela: JanelaKey) => {
     if (!user || !profileId || selectedIds.length === 0) return;
     setSaving(true);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const janelaDb = toDbJanela(janela);
 
     const { error } = await supabase.from("roleta_credenciamentos").upsert({

@@ -92,7 +92,7 @@ export function usePipelineLeadData(leadId: string | null) {
       tipo: data.tipo || "ligacao",
       titulo: data.titulo || "",
       descricao: data.descricao || null,
-      data: data.data || new Date().toISOString().split("T")[0],
+      data: data.data || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
       hora: data.hora || null,
       prioridade: data.prioridade || "media",
       responsavel_id: data.responsavel_id || user.id,

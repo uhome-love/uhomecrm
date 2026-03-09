@@ -152,7 +152,7 @@ export function AppSidebar() {
   // Fetch roleta pending approvals count for CEO
   const fetchRoletaPendentes = useCallback(async () => {
     if (!isAdmin) return;
-    const hoje = new Date().toISOString().slice(0, 10);
+    const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const { count } = await supabase
       .from("roleta_credenciamentos")
       .select("id", { count: "exact", head: true })
@@ -171,7 +171,7 @@ export function AppSidebar() {
   // Fetch tarefas pendentes count for corretor badge
   const fetchTarefasPendentes = useCallback(async () => {
     if (!user) return;
-    const hoje = new Date().toISOString().slice(0, 10);
+    const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const { count } = await supabase
       .from("pipeline_tarefas")
       .select("id", { count: "exact", head: true })

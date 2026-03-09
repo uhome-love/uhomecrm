@@ -267,7 +267,7 @@ export default function SequenceLibrary({ onSequenceCreated }: Props) {
             titulo: `📋 ${passo.titulo}`,
             descricao: conteudo,
             prioridade: passo.dias_apos_inicio === 0 ? "alta" : "media",
-            vence_em: dueDate.toISOString().split("T")[0],
+            vence_em: dueDate.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
             status: "pendente",
             created_by: user.id,
           });

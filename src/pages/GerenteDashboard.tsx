@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { todayBRT } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import {
   Phone, CheckCircle, CalendarDays, Building2, Flame,
@@ -98,7 +99,7 @@ export default function GerenteDashboard() {
 
   const nome = profile?.nome?.split(" ")[0] || "";
   const { start, end, startTs, endTs } = getPeriodRange(period);
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = todayBRT();
   const weekNum = Math.ceil((new Date().getDate()) / 7);
 
   // ── Team members ──
@@ -775,7 +776,7 @@ function CorretorAgendaTab({ userId }: { userId: string }) {
   const { data } = useQuery({
     queryKey: ["corretor-agenda-drawer", userId],
     queryFn: async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
+      const today = todayBRT();
       const { data } = await supabase.from("visitas").select("id, nome_cliente, empreendimento, data_visita, hora_visita, status").eq("corretor_id", userId).gte("data_visita", today).order("data_visita").order("hora_visita").limit(10);
       return data || [];
     },

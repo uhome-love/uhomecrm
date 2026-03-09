@@ -50,7 +50,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function CeoCheckpointViewer() {
-  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [date, setDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
   const [gerentesData, setGerentesData] = useState<GerenteCheckpoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeGerente, setActiveGerente] = useState("consolidado");
