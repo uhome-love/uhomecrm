@@ -82,9 +82,10 @@ export function useVisitas(filters?: {
     queryFn: async () => {
       let q = supabase
         .from("visitas")
-        .select("*")
+        .select("id, corretor_id, gerente_id, lead_id, pipeline_lead_id, nome_cliente, telefone, empreendimento, origem, origem_detalhe, data_visita, hora_visita, local_visita, status, observacoes, created_at, updated_at, created_by, linked_attempt_id, linked_pdn_id, converted_to_pdn_at, converted_to_pdn_by, resultado_visita")
         .order("data_visita", { ascending: true })
-        .order("hora_visita", { ascending: true });
+        .order("hora_visita", { ascending: true })
+        .limit(500);
 
       if (filters?.status) q = q.eq("status", filters.status);
       if (filters?.corretorId) q = q.eq("corretor_id", filters.corretorId);

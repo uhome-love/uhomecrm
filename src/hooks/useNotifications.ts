@@ -40,11 +40,11 @@ export function useNotifications() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
-        .select("*")
+        .select("id, user_id, tipo, categoria, titulo, mensagem, dados, lida, lida_em, agrupamento_key, agrupamento_count, cargo_destino, created_at")
         .eq("user_id", user!.id)
         .contains("cargo_destino", [cargo])
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(50);
       if (error) throw error;
       return data as unknown as Notification[];
     },

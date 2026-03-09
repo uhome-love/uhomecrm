@@ -50,7 +50,7 @@ export function useNegocios() {
     if (!user) return;
     const { data, error } = await supabase
       .from("negocios")
-      .select("*")
+      .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at")
       .eq("status", "ativo")
       .order("updated_at", { ascending: false })
       .limit(500);
