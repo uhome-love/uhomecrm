@@ -97,8 +97,8 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
     if (!userId || !profileId) { setState(s => ({ ...s, loading: false })); return; }
 
     const check = async () => {
-      const hoje = new Date().toISOString().split("T")[0];
-      const amanha = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+      const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const amanha = new Date(Date.now() + 86400000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
       const marcadasQ = supabase.from("visitas").select("id", { count: "exact", head: true });
       const marcadasRes = await marcadasQ.eq("corretor_id", profileId).gte("data", hoje).lt("data", amanha);
