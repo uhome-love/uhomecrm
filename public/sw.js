@@ -1,4 +1,4 @@
-const CACHE_NAME = "uhomesales-v1";
+const CACHE_NAME = "uhomesales-v2";
 const urlsToCache = ["/", "/index.html"];
 
 self.addEventListener("install", (e) => {
