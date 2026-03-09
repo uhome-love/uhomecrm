@@ -332,7 +332,7 @@ export default function CheckpointGerente() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {([
               { label: "Ligações", atual: metasMes.ligacoes_realizado, meta: metasMes.ligacoes_meta, cor: "bg-blue-500", money: false },
-              { label: "VGV Assinado", atual: metasMes.vgv_realizado, meta: metasMes.vgv_meta, cor: "bg-green-500", money: true },
+              { label: "VGV Assinado", atual: metasMes.vgv_realizado, meta: metasMes.vgv_meta, cor: "bg-emerald-500", money: true },
               { label: "Visitas Marcadas", atual: metasMes.visitas_marcadas_realizado, meta: metasMes.visitas_marcadas_meta, cor: "bg-amber-500", money: false },
               { label: "Visitas Realizadas", atual: metasMes.visitas_realizadas_realizado, meta: metasMes.visitas_realizadas_meta, cor: "bg-purple-500", money: false },
             ]).map(({ label, atual, meta, cor, money }) => {
