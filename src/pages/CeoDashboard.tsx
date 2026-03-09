@@ -667,9 +667,6 @@ export default function CeoDashboard() {
         onOpenChange={setDispatchOpen}
         onDispatched={() => { reload(); loadFilaCeo(); }}
       />
-
-      {/* HOMI CEO Floating */}
-      <HomiCeoFloating dashboardData={dashboardData} />
     </div>
   );
 }
