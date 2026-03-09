@@ -80,7 +80,7 @@ export function usePdn(selectedMes?: string, filterGerenteId?: string) {
       corretor: "",
       equipe: "",
       ultimo_contato: "",
-      data_visita: format(new Date(), "yyyy-MM-dd"),
+      data_visita: todayBRT(),
       tipo_visita: "1a_visita",
       proxima_acao: "",
       observacoes: "",
