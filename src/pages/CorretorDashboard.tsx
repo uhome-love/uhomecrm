@@ -55,11 +55,14 @@ export default function CorretorDashboard() {
     queryFn: async () => {
       const today = new Date().toISOString().slice(0, 10);
 
+      const ontem = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: pendingLeads } = await (supabase
         .from("pipeline_leads")
         .select("id", { count: "exact", head: true }) as any)
         .eq("corretor_id", user!.id)
-        .is("proxima_acao", null);
+        .eq("aceite_status", "aceito")
+        .neq("stage_id", "1dd66c25-3848-4053-9f66-82e902989b4d")
+        .or(`ultima_acao_at.is.null,ultima_acao_at.lt.${ontem}`);
 
       const slaThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: slaExpired } = await (supabase
