@@ -55,9 +55,9 @@ serve(async (req) => {
         to: cleanPhone,
         type: "template",
         template: {
-          name: template.name || "hello_world",
-          language: { code: template.language || "pt_BR" },
-          components: template.components || [],
+          name: template.name,
+          language: { code: template.language },
+          components: template.components,
         },
       };
     } else if (mensagem) {

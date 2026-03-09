@@ -39,9 +39,19 @@ export default function TesteWhatsApp() {
         body: {
           telefone: "5551992597097",
           template: {
-            name: "hello_world",
-            language: "en_US",
-            components: [],
+            name: "novo_lead",
+            language: "pt_BR",
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  { type: "text", text: "Lucas Teste" },
+                  { type: "text", text: "51992597097" },
+                  { type: "text", text: "lucas@uhome.imb.br" },
+                  { type: "text", text: "Alfa Empreendimento" },
+                ],
+              },
+            ],
           },
         },
       });
