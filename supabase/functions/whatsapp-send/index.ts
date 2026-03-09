@@ -13,18 +13,12 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Não autenticado" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const token = authHeader.replace("Bearer ", "");
-    const isServiceRole = token === supabaseServiceKey;
-    console.log("Auth check - isServiceRole:", isServiceRole);
 
     const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
     const PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
@@ -49,40 +43,36 @@ serve(async (req) => {
     let body;
 
     if (template) {
-      const templateName = typeof template === 'string' ? template : template.name;
-      const templateLang = typeof template === 'string' ? 'pt_BR' : (template.language || 'pt_BR');
-      const templateParams = typeof template === 'object' ? template.parameters : {};
+      const tplName = typeof template === 'string' ? template : template.name;
+      const tplLang = typeof template === 'string' ? 'pt_BR' : (template.language || 'pt_BR');
       
-      const templateBody: any = {
+      body = {
         messaging_product: "whatsapp",
         recipient_type: "individual",
         to: cleanPhone,
         type: "template",
         template: {
-          name: templateName,
-          language: { code: templateLang },
+          name: tplName,
+          language: { code: tplLang },
         }
       };
 
-      // Se tem parameters como objeto nomeado (ex: { nome: "Lucas", email: "x@y.com" })
-      if (templateParams && Object.keys(templateParams).length > 0) {
-        templateBody.template.components = [
+      if (typeof template === 'object' && template.parameters) {
+        body.template.components = [
           {
             type: "body",
-            parameters: Object.values(templateParams).map((val: any) => ({
+            parameters: Object.values(template.parameters).map((val) => ({
               type: "text",
               text: String(val)
             }))
           }
         ];
       }
-      
-      // Se tem components já montados (array)
+
       if (typeof template === 'object' && template.components && template.components.length > 0) {
-        templateBody.template.components = template.components;
+        body.template.components = template.components;
       }
 
-      body = templateBody;
     } else if (mensagem) {
       body = {
         messaging_product: "whatsapp",
@@ -98,7 +88,9 @@ serve(async (req) => {
       );
     }
 
-    const response = await fetch(
+    console.log("Sending WhatsApp to:", cleanPhone, "body:", JSON.stringify(body));
+
+    const waResponse = await fetch(
       `https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`,
       {
         method: "POST",
@@ -110,19 +102,17 @@ serve(async (req) => {
       }
     );
 
-    const result = await response.json();
+    const waResult = await waResponse.json();
 
-    if (!response.ok) {
-      console.error("WhatsApp API error:", JSON.stringify(result));
-
-      const errorCode = result?.error?.code;
-      const errorMsg = result?.error?.message || "Erro desconhecido";
+    if (!waResponse.ok) {
+      console.error("WhatsApp API error:", JSON.stringify(waResult));
+      const errorCode = waResult?.error?.code;
+      const errorMsg = waResult?.error?.message || "Erro desconhecido";
 
       if (errorCode === 131047 || errorCode === 131026) {
         return new Response(
           JSON.stringify({
-            error: "Fora da janela de 24h. É necessário usar um template aprovado para iniciar conversa.",
-            whatsapp_error: errorMsg,
+            error: "Fora da janela de 24h. Use template.",
             requires_template: true,
           }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -130,17 +120,17 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ error: `Erro WhatsApp: ${errorMsg}`, details: result }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Erro WhatsApp: " + errorMsg, details: waResult }),
+        { status: waResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("WhatsApp message sent:", JSON.stringify(result));
+    console.log("WhatsApp sent OK:", JSON.stringify(waResult));
 
     return new Response(
       JSON.stringify({
         success: true,
-        message_id: result.messages?.[0]?.id,
+        message_id: waResult.messages?.[0]?.id,
         phone: cleanPhone,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
