@@ -425,6 +425,12 @@ export default function MeusNegocios() {
           })}
         </div>
       </div>
+
+      <AddNegocioDialog
+        open={addNegocioOpen}
+        onOpenChange={setAddNegocioOpen}
+        onCreated={() => reload()}
+      />
     </div>
   );
 }
