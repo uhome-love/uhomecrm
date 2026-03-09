@@ -429,8 +429,8 @@ export function useRoleta() {
       // Add to fila for each segmento (skip if already in fila for that segmento today)
       const segmentoIds = [cred.segmento_1_id, cred.segmento_2_id].filter(Boolean) as string[];
       for (const segId of segmentoIds) {
-        // Check if corretor already has an active entry for this segmento today
-        const { data: alreadyInFila } = await supabase.from("roleta_fila")
+        // Check if corretor already has an ACTIVE entry for this segmento today
+        const { data: alreadyActive } = await supabase.from("roleta_fila")
           .select("id")
           .eq("data", hoje)
           .eq("segmento_id", segId)
@@ -438,8 +438,26 @@ export function useRoleta() {
           .eq("ativo", true)
           .limit(1);
 
-        if (alreadyInFila && alreadyInFila.length > 0) continue;
+        if (alreadyActive && alreadyActive.length > 0) continue;
 
+        // Check if there's an INACTIVE entry we can reactivate
+        const { data: inactiveEntry } = await supabase.from("roleta_fila")
+          .select("id")
+          .eq("data", hoje)
+          .eq("segmento_id", segId)
+          .eq("corretor_id", cred.corretor_id)
+          .eq("ativo", false)
+          .limit(1);
+
+        if (inactiveEntry && inactiveEntry.length > 0) {
+          // Reactivate existing entry
+          await supabase.from("roleta_fila")
+            .update({ ativo: true, credenciamento_id: credId })
+            .eq("id", inactiveEntry[0].id);
+          continue;
+        }
+
+        // Create new entry
         const { data: existing } = await supabase.from("roleta_fila")
           .select("posicao")
           .eq("data", hoje)
