@@ -67,40 +67,40 @@ export function getCurrentWindowInfo(): {
   let credenciamentoJanela: JanelaId | null = null;
   let nextTransitionMins: number;
 
+  // Credenciamento manhã SEMPRE aberto (qualquer horário)
+  credenciamentoAberto = true;
+  credenciamentoJanela = "manha";
+
   if (mins < t1000) {
-    // 00:00 — 10:00: Madrugada/acúmulo. Cred manhã aberto.
+    // 00:00 — 10:00: Madrugada/acúmulo.
     janela = "madrugada";
     emoji = "🌅";
-    descricao = "Credenciamento manhã aberto até 10:00";
-    credenciamentoAberto = true;
-    credenciamentoJanela = "manha";
+    descricao = "Credenciamento manhã aberto";
     nextTransitionMins = t1000;
   } else if (mins < t1200) {
     // 10:00 — 12:00: Manhã ativa.
     janela = "manha";
     emoji = "☀️";
-    descricao = "Roleta da manhã ativa";
+    descricao = "Roleta da manhã ativa · Cred manhã aberto";
     nextTransitionMins = t1200;
   } else if (mins < t1330) {
     // 12:00 — 13:30: Intervalo, cred tarde aberto.
     janela = "manha";
     emoji = "☀️";
-    descricao = "Cred tarde aberto até 13:30";
-    credenciamentoAberto = true;
+    descricao = "Cred manhã e tarde abertos";
     credenciamentoJanela = "tarde";
     nextTransitionMins = t1330;
   } else if (mins < t1800) {
     // 13:30 — 18:00: Tarde ativa.
     janela = "tarde";
     emoji = "🌞";
-    descricao = "Roleta da tarde ativa";
+    descricao = "Roleta da tarde ativa · Cred manhã aberto";
     nextTransitionMins = t1800;
   } else {
-    // 18:00 — 23:59: Noturna. Cred noturna aberto.
+    // 18:00 — 23:59: Noturna.
     janela = "noturna";
     emoji = "🌙";
-    descricao = "Roleta noturna ativa · Cred noturna aberto";
-    credenciamentoAberto = true;
+    descricao = "Roleta noturna ativa · Cred manhã e noturna abertos";
     credenciamentoJanela = "noturna";
     nextTransitionMins = 24 * 60; // midnight
   }
