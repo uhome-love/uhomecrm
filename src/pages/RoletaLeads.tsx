@@ -244,17 +244,19 @@ function CorretorView() {
 
     try {
       const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-      const amanha = new Date(Date.now() + 86400000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-      const threeHoursAgo = subHours(new Date(), 3).toISOString();
 
-      // Check 1: Has at least 1 visit today (marcada OR realizada)
+      // Get profile ID to check visits created by managers (stored with profile_id)
+      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+      const idsToCheck = [user.id, profile?.id].filter(Boolean) as string[];
+
+      // Check 1: Has at least 1 visit today or future (marcada OR realizada)
+      // visitas.corretor_id stores MIXED ids: auth user_id or profile_id
       const { count: visitasCount } = await supabase
         .from("visitas")
         .select("id", { count: "exact", head: true })
-        .eq("corretor_id", user.id)
+        .in("corretor_id", idsToCheck)
         .gte("data_visita", hoje)
-        .lt("data_visita", amanha)
-        .in("status", ["confirmada", "realizada", "marcada", "pendente"]);
+        .in("status", ["confirmada", "realizada", "marcada", "pendente", "reagendada"]);
 
       if (!visitasCount || visitasCount === 0) {
         setNoturnaEligible(false);
@@ -264,6 +266,7 @@ function CorretorView() {
       }
 
       // Check 2: No stalled leads (not updated in 3h, excluding terminal stages)
+      const threeHoursAgo = subHours(new Date(), 3).toISOString();
       const { count: stalledCount } = await supabase
         .from("pipeline_leads")
         .select("id", { count: "exact", head: true })

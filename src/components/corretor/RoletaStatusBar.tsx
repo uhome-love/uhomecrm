@@ -98,16 +98,23 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
 
     const check = async () => {
       const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-      const amanha = new Date(Date.now() + 86400000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
-      // visitas.corretor_id stores auth user.id, and column is data_visita (not data)
+      // visitas.corretor_id stores MIXED ids: auth user_id (when broker creates)
+      // or profile_id (when manager creates). We must check BOTH.
+      // Also check visits scheduled for today OR future dates (not just today).
+      const idsToCheck = [userId, profileId].filter(Boolean) as string[];
+
       const marcadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
-        .eq("corretor_id", userId).gte("data_visita", hoje).lt("data_visita", amanha);
+        .in("corretor_id", idsToCheck)
+        .gte("data_visita", hoje)
+        .in("status", ["marcada", "confirmada", "reagendada"]);
 
       const realizadasRes = await supabase.from("visitas").select("id", { count: "exact", head: true })
-        .eq("corretor_id", userId).eq("status", "Realizada").gte("data_visita", hoje).lt("data_visita", amanha);
+        .in("corretor_id", idsToCheck)
+        .eq("status", "Realizada")
+        .gte("data_visita", hoje);
 
-      // pipeline_leads.corretor_id also stores auth user.id
+      // pipeline_leads.corretor_id stores auth user.id
       const paradosRes = await (supabase.from("pipeline_leads").select("id", { count: "exact", head: true })
         .eq("corretor_id", userId) as any).neq("pipeline_fase", "Descarte").gt("dias_parado", 1);
 
@@ -119,7 +126,7 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
       });
     };
     check();
-  }, [userId]);
+  }, [userId, profileId]);
 
   return state;
 }
