@@ -98,15 +98,15 @@ export default function CorretorDashboard() {
       });
 
       // Score each lead
-      const today = new Date();
-      const todayStr = today.toISOString().slice(0, 10);
+      const now = new Date();
+      const todayDate = today;
       
       // Get today's visitas for this corretor
       const { data: visitasHoje } = await (supabase
         .from("visitas")
         .select("pipeline_lead_id")
         .eq("corretor_id", user!.id)
-        .eq("data_visita", todayStr)
+        .eq("data_visita", todayDate)
         .in("status", ["confirmada", "pendente"]) as any);
       const visitaLeadIds = new Set((visitasHoje || []).map((v: any) => v.pipeline_lead_id).filter(Boolean));
 
