@@ -28,7 +28,7 @@ export default function SaudeOperacao() {
 
   const load = useCallback(async () => {
     // 1. SLA médio — from distribuicao_historico today
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const { data: dist } = await supabase
       .from("distribuicao_historico")
       .select("tempo_resposta_seg")

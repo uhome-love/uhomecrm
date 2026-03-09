@@ -200,7 +200,7 @@ export function useCorretorDailyGoals() {
 }
 
 export function useDailyMotivation() {
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   const MOTIVATIONS = [
     "Cada ligação é uma chance de mudar a vida de alguém. Faça valer.",

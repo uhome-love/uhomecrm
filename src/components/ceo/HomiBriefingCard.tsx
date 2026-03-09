@@ -40,7 +40,7 @@ export default function HomiBriefingCard({ dashboardData }: Props) {
     try { localStorage.setItem(STORAGE_KEY, open ? "open" : "closed"); } catch {}
   };
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   // Load existing briefing
   const loadBriefing = useCallback(async () => {

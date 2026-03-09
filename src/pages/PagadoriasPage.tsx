@@ -510,7 +510,7 @@ export default function PagadoriasPage() {
                       parcelas: [],
                       corretor_cpf: "", corretor_creci: "", corretor_email: "",
                       gerente_cpf: "", gerente_creci: "", gerente_email: "",
-                      data_assinatura: new Date().toISOString().slice(0, 10),
+                      data_assinatura: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
                     });
                     setContratoOpen(true);
                   }}>

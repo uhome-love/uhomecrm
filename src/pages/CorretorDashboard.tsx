@@ -54,7 +54,7 @@ export default function CorretorDashboard() {
   const { data: radarData } = useQuery({
     queryKey: ["corretor-radar", user?.id],
     queryFn: async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayBRT();
 
       const ontem = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: pendingLeads } = await (supabase

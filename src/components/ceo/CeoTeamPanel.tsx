@@ -76,11 +76,11 @@ export default function CeoTeamPanel() {
     setLoading(true);
 
     const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
+    const todayStr = today.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const dayOfWeek = today.getDay();
     const monday = new Date(today);
     monday.setDate(today.getDate() - ((dayOfWeek === 0 ? 7 : dayOfWeek) - 1));
-    const weekStart = monday.toISOString().slice(0, 10);
+    const weekStart = monday.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const todayStart = todayStr + "T00:00:00-03:00";
 
     // 1. Get all active team members with their gerente

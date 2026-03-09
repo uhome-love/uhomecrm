@@ -153,7 +153,7 @@ export function useBackofficeTasks() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["backoffice-tasks", today],

@@ -142,7 +142,7 @@ export default function MinhasTarefas() {
 
   const handleAdiarRapido = async (id: string, horas: number) => {
     const novaData = addHours(new Date(), horas);
-    await supabase.from("pipeline_tarefas").update({ vence_em: format(novaData, "yyyy-MM-dd"), hora_vencimento: format(novaData, "HH:mm") } as any).eq("id", id);
+    await supabase.from("pipeline_tarefas").update({ vence_em: dateToBRT(novaData), hora_vencimento: format(novaData, "HH:mm") } as any).eq("id", id);
     toast.success("Tarefa adiada ✅");
     queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
     queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });

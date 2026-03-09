@@ -91,7 +91,7 @@ export function useCeoDashboard(period: DashPeriod) {
 
   const range = useMemo(() => getRange(period), [period]);
   const prevRange = useMemo(() => getPrevRange(period), [period]);
-  const hoje = format(new Date(), "yyyy-MM-dd");
+  const hoje = todayBRT();
 
   const loadProfile = useCallback(async () => {
     if (!user) return;

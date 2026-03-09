@@ -206,7 +206,7 @@ export default function RoletaStatusBar() {
   const saveCredenciamento = async (janela: JanelaKey) => {
     if (!user || !profileId || selectedIds.length === 0) return;
     setSaving(true);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const janelaDb = toDbJanela(janela);
 
     const { error } = await supabase.from("roleta_credenciamentos").upsert({

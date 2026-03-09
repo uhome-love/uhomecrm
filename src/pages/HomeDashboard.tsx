@@ -277,7 +277,7 @@ export default function HomeDashboard() {
     const oa_aproveitados = oaTentativas.filter(t => t.resultado === "com_interesse").length;
 
     // Visitas marcadas from visitas table
-    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayStr = todayBRT();
     let vmQuery = supabase
       .from("visitas")
       .select("id")

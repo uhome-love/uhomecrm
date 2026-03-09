@@ -128,7 +128,7 @@ export default function MinhaAgendaWidget() {
   const handleAdiarRapido = async (id: string, horas: number) => {
     const novaData = addHours(new Date(), horas);
     await supabase.from("pipeline_tarefas").update({
-      vence_em: format(novaData, "yyyy-MM-dd"),
+      vence_em: dateToBRT(novaData),
       hora_vencimento: format(novaData, "HH:mm"),
     } as any).eq("id", id);
     toast.success("Tarefa adiada ✅");

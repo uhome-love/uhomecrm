@@ -81,7 +81,7 @@ export default function BackofficeDashboard() {
   }, []);
 
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const fetchOp = async () => {
       const r1: any = await (supabase.from("team_members" as any).select("id", { count: "exact", head: true }) as any);
       const r2: any = await (supabase.from("visitas").select("id", { count: "exact", head: true }).eq("data_visita", today) as any);

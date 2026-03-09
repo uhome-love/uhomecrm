@@ -25,7 +25,7 @@ export default function ReportsContent() {
   const { analyze, loading: iaLoading } = useUhomeIa();
   const [reportType, setReportType] = useState<ReportType>("completo");
   const [periodoTipo, setPeriodoTipo] = useState<"semanal" | "mensal">("mensal");
-  const [refDate, setRefDate] = useState(new Date().toISOString().split("T")[0]);
+  const [refDate, setRefDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
   const [generating, setGenerating] = useState(false);
   const [report, setReport] = useState<string | null>(null);
 
