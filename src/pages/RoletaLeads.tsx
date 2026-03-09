@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useRoleta, getCurrentWindowInfo, type JanelaId, type RoletaSegmento } from "@/hooks/useRoleta";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Clock, UserCheck, UserX, Users, Target, RotateCw, LogOut, Rocket, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { formatDistanceToNow, differenceInMinutes, format } from "date-fns";
+import { Loader2, Clock, UserCheck, UserX, Users, Target, RotateCw, LogOut, Rocket, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Ban } from "lucide-react";
+import { formatDistanceToNow, differenceInMinutes, format, startOfDay, subHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
   const [now, setNow] = useState(new Date());
@@ -263,6 +263,73 @@ function CorretorView() {
   const [selectedJanela, setSelectedJanela] = useState<string>(windowInfo.credenciamentoJanela || windowInfo.janela);
   const [seg1, setSeg1] = useState<string>("");
   const [seg2, setSeg2] = useState<string>("");
+  
+  // Noturna eligibility state
+  const [noturnaEligible, setNoturnaEligible] = useState<boolean | null>(null);
+  const [noturnaReason, setNoturnaReason] = useState<string>("");
+  const [checkingNoturna, setCheckingNoturna] = useState(false);
+
+  // Check noturna eligibility
+  const checkNoturnaEligibility = useCallback(async () => {
+    if (!user?.id) return;
+    
+    setCheckingNoturna(true);
+    setNoturnaEligible(null);
+    setNoturnaReason("");
+
+    try {
+      const today = startOfDay(new Date()).toISOString();
+      const threeHoursAgo = subHours(new Date(), 3).toISOString();
+
+      // Check 1: Has at least 1 visit today (marcada, confirmada, realizada, pendente)
+      const { count: visitasCount } = await supabase
+        .from("visitas")
+        .select("id", { count: "exact", head: true })
+        .eq("corretor_id", user.id)
+        .gte("data", today)
+        .in("status", ["confirmada", "realizada", "marcada", "pendente"]);
+
+      if (!visitasCount || visitasCount === 0) {
+        setNoturnaEligible(false);
+        setNoturnaReason("Pra participar da noturna, marque ou realize pelo menos 1 visita hoje.");
+        setCheckingNoturna(false);
+        return;
+      }
+
+      // Check 2: No stalled leads (not updated in 3h, excluding terminal stages)
+      const { count: stalledCount } = await supabase
+        .from("pipeline_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("corretor_id", user.id)
+        .lt("updated_at", threeHoursAgo)
+        .not("etapa", "in", '("Descartado","Vendido","Distrato")');
+
+      if (stalledCount && stalledCount > 0) {
+        setNoturnaEligible(false);
+        setNoturnaReason(`Você tem ${stalledCount} lead(s) sem atualização há mais de 3h. Atualize seu pipeline antes de se credenciar.`);
+        setCheckingNoturna(false);
+        return;
+      }
+
+      setNoturnaEligible(true);
+      setNoturnaReason("");
+    } catch (error) {
+      console.error("Error checking noturna eligibility:", error);
+      setNoturnaEligible(true); // Fallback to allow if check fails
+    } finally {
+      setCheckingNoturna(false);
+    }
+  }, [user?.id]);
+
+  // Trigger eligibility check when noturna is selected
+  useEffect(() => {
+    if (selectedJanela === "noturna") {
+      checkNoturnaEligibility();
+    } else {
+      setNoturnaEligible(null);
+      setNoturnaReason("");
+    }
+  }, [selectedJanela, checkNoturnaEligibility]);
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -434,20 +501,42 @@ function CorretorView() {
             </Select>
           </div>
 
-          {/* Warning for noturna */}
+          {/* Noturna validation feedback */}
           {selectedJanela === "noturna" && (
-            <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-              <p className="text-xs text-amber-700 dark:text-amber-400">
-                Para a janela noturna, é necessário ter marcado ou realizado pelo menos 1 visita hoje e não possuir leads sem atualização há mais de 3h.
-              </p>
-            </div>
+            <>
+              {checkingNoturna && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-muted border">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Verificando elegibilidade...</p>
+                </div>
+              )}
+              {!checkingNoturna && noturnaEligible === false && (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
+                  <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <p className="text-xs text-destructive">{noturnaReason}</p>
+                </div>
+              )}
+              {!checkingNoturna && noturnaEligible === true && (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400">Você está elegível para a janela noturna!</p>
+                </div>
+              )}
+              {noturnaEligible === null && !checkingNoturna && (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    Para a janela noturna, é necessário ter marcado ou realizado pelo menos 1 visita hoje e não possuir leads sem atualização há mais de 3h.
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           <Button
             className="w-full"
             onClick={handleCredenciar}
-            disabled={!seg1 || submitting}
+            disabled={!seg1 || submitting || (selectedJanela === "noturna" && (checkingNoturna || noturnaEligible === false))}
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Users className="h-4 w-4 mr-1" />}
             📋 Me credenciar
