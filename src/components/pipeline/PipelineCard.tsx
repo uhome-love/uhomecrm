@@ -585,10 +585,14 @@ const PipelineCard = memo(function PipelineCard({
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAddNote(); }} className="text-xs gap-2">
                 <StickyNote className="h-3.5 w-3.5" /> Registrar observação
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkLost(); }} className="text-xs gap-2 text-destructive">
-                <XCircle className="h-3.5 w-3.5" /> Marcar sem interesse
-              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkLost(); }} className="text-xs gap-2 text-destructive">
+                    <XCircle className="h-3.5 w-3.5" /> Marcar sem interesse (CEO)
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

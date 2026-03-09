@@ -297,9 +297,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                       </DropdownMenuItem>
                     );
                   })()}
-                  {onDelete && (
-                    <DropdownMenuItem className="text-destructive">
-                      <PhoneOff className="h-3.5 w-3.5 mr-2" /> Contato errado
+                  {isAdmin && onDelete && (
+                    <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
+                      <PhoneOff className="h-3.5 w-3.5 mr-2" /> Contato errado (CEO)
                     </DropdownMenuItem>
                   )}
                   {isAdmin && onDelete && (

@@ -328,6 +328,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   const deleteLead = useCallback(async (leadId: string) => {
     if (!user) return;
+    if (!isAdmin) {
+      toast.error("Apenas o CEO pode excluir leads.");
+      return;
+    }
     const { error } = await supabase
       .from("pipeline_leads")
       .delete()
@@ -339,7 +343,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     }
     setLeads(prev => prev.filter(l => l.id !== leadId));
     toast.success("Lead removido do pipeline");
-  }, [user]);
+  }, [user, isAdmin]);
 
   const getLeadsByStage = useCallback((stageId: string) => {
     return leads.filter(l => l.stage_id === stageId);

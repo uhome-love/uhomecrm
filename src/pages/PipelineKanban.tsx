@@ -538,17 +538,17 @@ export default function PipelineKanban() {
 
       {/* Floating selection toolbar */}
       {selectionMode && selectedLeads.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card border border-border shadow-2xl">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl bg-card border border-border shadow-2xl">
           <span className="text-sm font-bold text-foreground">
             {selectedLeads.size} selecionado{selectedLeads.size !== 1 ? "s" : ""}
           </span>
           <Button
             size="sm"
-            className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+            className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => setBulkActionOpen(true)}
           >
             <Send className="h-3.5 w-3.5" />
-            Disparar
+            Ações em Massa
           </Button>
           <Button
             size="sm"
