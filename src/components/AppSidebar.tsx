@@ -401,7 +401,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="scrollbar-thin flex flex-col">
+      <SidebarContent className="flex flex-col [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {/* Logo + Toggle */}
         <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} px-3 h-14 border-b border-white/10 shrink-0`}>
           {collapsed ? (
@@ -461,7 +461,7 @@ export function AppSidebar() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {groups.map((g, i) => (
             <SidebarNavGroup
               key={g.label}
