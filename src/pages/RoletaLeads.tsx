@@ -426,7 +426,17 @@ function CorretorView() {
               <SelectContent>
                 <SelectItem value="manha">🌅 Manhã (09:30–13:30)</SelectItem>
                 <SelectItem value="tarde">🌞 Tarde (13:30–18:00)</SelectItem>
-                <SelectItem value="noturna">🌙 Noturna (18:00–23:30)</SelectItem>
+                {/* Noturna only available until 20:30 */}
+                {(() => {
+                  const now = new Date();
+                  const mins = now.getHours() * 60 + now.getMinutes();
+                  const past2030 = mins >= 20 * 60 + 30;
+                  return (
+                    <SelectItem value="noturna" disabled={past2030}>
+                      🌙 Noturna (18:00–20:30) {past2030 ? "— encerrado" : ""}
+                    </SelectItem>
+                  );
+                })()}
               </SelectContent>
             </Select>
           </div>
