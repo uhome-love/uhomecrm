@@ -35,6 +35,7 @@ export default function NotificationPreferences() {
     permission: pushPermission,
     subscribe: subscribePush, 
     unsubscribe: unsubscribePush,
+    checkSubscription,
     sendTestPush 
   } = usePushSubscription();
   const [saving, setSaving] = useState(false);
