@@ -57,15 +57,16 @@ serve(async (req) => {
         }
       };
 
-      if (typeof template === 'object' && template.parameters) {
+      if (typeof template === "object" && template.parameters && typeof template.parameters === "object" && !Array.isArray(template.parameters)) {
         body.template.components = [
           {
             type: "body",
-            parameters: Object.values(template.parameters).map((val) => ({
+            parameters: Object.entries(template.parameters).map(([key, val]) => ({
               type: "text",
-              text: String(val)
-            }))
-          }
+              parameter_name: key,
+              text: String(val),
+            })),
+          },
         ];
       }
 
