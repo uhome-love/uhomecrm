@@ -258,6 +258,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     staleTime: 60_000,
   });
 
+  // Filter stages: hide "Convertido" from corretores (only visible to gerente/CEO)
+  const visibleStages = useMemo(() => {
+    if (isGestor || isAdmin) return stages;
+    return stages.filter(s => s.tipo !== "convertido");
+  }, [stages, isGestor, isAdmin]);
+
   const leadsByStage = useMemo(() => {
     // Dedup leads by ID before distributing to columns (definitivo)
     const seen = new Set<string>();
@@ -268,10 +274,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     });
 
     const map = new Map<string, PipelineLead[]>();
-    for (const stage of stages) map.set(stage.id, []);
+    for (const stage of visibleStages) map.set(stage.id, []);
     for (const lead of uniqueLeads) {
-      // Hide leads that already have a negócio created (they live in the Negócios pipeline now)
-      if (lead.negocio_id) continue;
       const arr = map.get(lead.stage_id);
       if (arr) arr.push(lead);
     }
@@ -279,7 +283,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
     return map;
-  }, [stages, leads]);
+  }, [visibleStages, leads]);
 
   const stageIndexMap = useMemo(() => {
     const m = new Map<string, number>();
