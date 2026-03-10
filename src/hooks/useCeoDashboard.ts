@@ -373,6 +373,7 @@ export function useCeoDashboard(period: DashPeriod) {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
     pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv,
     teams, origens, leadsPorEmpreendimento, visitasPorEmp,
+    totalLeadsPeriodo, presentesHoje, metasDiaTotal,
     reload: loadAll, reloadRoleta: loadRoleta,
   };
 }
