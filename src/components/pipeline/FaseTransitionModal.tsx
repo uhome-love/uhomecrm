@@ -115,7 +115,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
     } else if (targetFase === "negociacao") {
       onConfirm({
         fase: "negociacao",
-        fields: { valor_contra_proposta: rawToNumber(negContraProposta), observacoes: negObs },
+        fields: { valor_proposta_cliente: rawToNumber(negValorProposta), valor_contra_proposta: rawToNumber(negContraProposta), observacoes: negObs },
       });
     } else if (targetFase === "documentacao") {
       const taxa = contTaxa === "custom" ? contTaxaCustom : contTaxa;
