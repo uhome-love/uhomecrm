@@ -152,7 +152,7 @@ function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTea
                 {t.emoji} {t.label}
               </span>
               <span className="text-[11px] text-foreground font-semibold ml-auto">
-                {t.total} visita{t.total !== 1 ? "s" : ""} hoje
+                {t.total} visita{t.total !== 1 ? "s" : ""}
               </span>
               <span className="text-[11px] text-green-600 font-semibold">
                 {t.realizadas} realizada{t.realizadas !== 1 ? "s" : ""}
