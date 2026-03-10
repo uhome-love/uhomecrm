@@ -132,13 +132,14 @@ export function useCeoDashboard(period: DashPeriod) {
     const startTs = `${r.start}T00:00:00`;
     const endTs = `${r.end}T23:59:59`;
 
-    // Ligações e aproveitados
-    const { data: tentativas } = await supabase.from("oferta_ativa_tentativas").select("id, resultado").gte("created_at", startTs).lte("created_at", endTs);
-    const ligacoes = tentativas?.length || 0;
-    const aproveitados = tentativas?.filter(t => t.resultado === "com_interesse").length || 0;
+    // Ligações e aproveitados — use count to avoid 1000-row limit
+    const { count: ligacoes } = await supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs);
+    const { count: aproveitados } = await supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).eq("resultado", "com_interesse");
+    const lig = ligacoes || 0;
+    const aprov = aproveitados || 0;
 
     // Visitas
-    const { data: visitas } = await supabase.from("visitas").select("id, status, resultado_visita, empreendimento").gte("data_visita", r.start).lte("data_visita", r.end);
+    const { data: visitas } = await supabase.from("visitas").select("id, status").gte("data_visita", r.start).lte("data_visita", r.end);
     const visitasMarcadas = visitas?.length || 0;
     const visitasRealizadas = visitas?.filter(v => v.status === "realizada").length || 0;
     const noShows = visitas?.filter(v => v.status === "no_show").length || 0;
@@ -146,12 +147,12 @@ export function useCeoDashboard(period: DashPeriod) {
     // Negocios
     const { data: negocios } = await supabase.from("negocios").select("id, fase, status, vgv_estimado, vgv_final").gte("created_at", startTs).lte("created_at", endTs);
     const vgvGerado = negocios?.reduce((s, n) => s + (n.vgv_estimado || 0), 0) || 0;
-    const vgvAssinado = negocios?.filter(n => n.fase === "assinado").reduce((s, n) => s + (n.vgv_final || n.vgv_estimado || 0), 0) || 0;
+    const vgvAssinado = negocios?.filter(n => n.fase === "assinado" || n.fase === "vendido").reduce((s, n) => s + (n.vgv_final || n.vgv_estimado || 0), 0) || 0;
     const propostas = negocios?.filter(n => n.fase === "proposta" || n.fase === "negociacao").length || 0;
     const negociosPerdidos = negocios?.filter(n => n.status === "perdido" || n.status === "cancelado").length || 0;
 
     return {
-      ligacoes, aproveitados, taxaConversao: ligacoes > 0 ? Math.round((aproveitados / ligacoes) * 100) : 0,
+      ligacoes: lig, aproveitados: aprov, taxaConversao: lig > 0 ? Math.round((aprov / lig) * 100) : 0,
       visitasMarcadas, visitasRealizadas, taxaRealizacao: visitasMarcadas > 0 ? Math.round((visitasRealizadas / visitasMarcadas) * 100) : 0,
       vgvGerado, vgvAssinado, propostas, negociosPerdidos, noShows,
     } as KPIs;
