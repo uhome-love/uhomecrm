@@ -168,7 +168,10 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
               <Pencil className="h-3 w-3 mr-1.5" /> Editar
             </DropdownMenuItem>
           )}
-          {onEdit && <DropdownMenuSeparator />}
+          <DropdownMenuItem onClick={() => addToCalendar(v)} className="text-xs">
+            <CalendarPlus className="h-3 w-3 mr-1.5" /> Adicionar ao Calendário
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {Object.entries(STATUS_LABELS)
             .filter(([k]) => k !== v.status)
             .map(([k, label]) => (
