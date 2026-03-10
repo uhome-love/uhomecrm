@@ -244,7 +244,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </a>
               )}
               <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
-                <MessageSquare className="h-3.5 w-3.5" /> 💬 Mensagem
+                <MessageSquare className="h-3.5 w-3.5" /> 📚 Scripts
               </Button>
               <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")}>
                 <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full">
