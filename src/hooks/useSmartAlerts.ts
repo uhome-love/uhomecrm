@@ -82,9 +82,9 @@ export function useSmartAlerts() {
           teamIds.push(user.id); // inclui o próprio gerente
           negQuery = negQuery.in("corretor_id", teamIds);
         }
-        const { count: negCount } = await negQuery;
+        const { count: negCount, error: negError } = await negQuery;
 
-        if (negCount === 0 || negCount === null) {
+        if (!negError && negCount !== null && negCount === 0) {
           result.push({
             id: "negocios_missing",
             type: "pdn",
