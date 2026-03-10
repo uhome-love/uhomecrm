@@ -481,7 +481,7 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.from("oferta_ativa_listas").select("id, nome, empreendimento").eq("status", "ativa") as any;
+      const { data } = await supabase.from("oferta_ativa_listas").select("id, nome, empreendimento").in("status", ["ativa", "liberada"]) as any;
       setListas(data || []);
       setLoading(false);
     };
