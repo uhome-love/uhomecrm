@@ -102,7 +102,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   const [presentesHoje, setPresentesHoje] = useState(0);
   const [metasDiaTotal, setMetasDiaTotal] = useState({ ligacoes: 0, aproveitados: 0, visitasMarcadas: 0 });
 
-  const range = useMemo(() => getRange(period), [period]);
+  const range = useMemo(() => getRange(period, customRange), [period, customRange]);
   const prevRange = useMemo(() => getPrevRange(period), [period]);
   const hoje = todayBRT();
 
