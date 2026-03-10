@@ -185,6 +185,9 @@ export function useVisitas(filters?: {
       observacoes: visita.observacoes || null,
       created_by: user.id,
       linked_attempt_id: visita.linked_attempt_id || null,
+      tipo: visita.tipo || "lead",
+      negocio_id: visita.negocio_id || null,
+      tipo_reuniao: visita.tipo_reuniao || null,
     };
 
     console.log("[createVisita] payload:", JSON.stringify(payload));
