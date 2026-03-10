@@ -200,6 +200,8 @@ const PipelineCard = memo(function PipelineCard({
   const [transferOpen, setTransferOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
+  const [scheduleLocal, setScheduleLocal] = useState("");
+  const [scheduleObs, setScheduleObs] = useState("");
 
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
   const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa]);
