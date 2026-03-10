@@ -172,6 +172,18 @@ export const PIPELINE_STAGE_COLORS: Record<string, string> = {
   "Descarte": "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500",
 };
 
+// Background colors for pipeline kanban columns (light theme friendly)
+export const PIPELINE_STAGE_BG: Record<string, { bg: string; border: string; headerBg: string }> = {
+  "Novo Lead": { bg: "rgba(139,92,246,0.06)", border: "rgba(139,92,246,0.18)", headerBg: "rgba(139,92,246,0.10)" },
+  "Sem Contato": { bg: "rgba(107,114,128,0.06)", border: "rgba(107,114,128,0.18)", headerBg: "rgba(107,114,128,0.10)" },
+  "Contato Iniciado": { bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.18)", headerBg: "rgba(59,130,246,0.10)" },
+  "Qualificação": { bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.18)", headerBg: "rgba(245,158,11,0.10)" },
+  "Possível Visita": { bg: "rgba(249,115,22,0.06)", border: "rgba(249,115,22,0.18)", headerBg: "rgba(249,115,22,0.10)" },
+  "Visita Marcada": { bg: "rgba(6,182,212,0.06)", border: "rgba(6,182,212,0.18)", headerBg: "rgba(6,182,212,0.10)" },
+  "Visita Realizada": { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.18)", headerBg: "rgba(34,197,94,0.10)" },
+  "Descarte": { bg: "rgba(239,68,68,0.06)", border: "rgba(239,68,68,0.18)", headerBg: "rgba(239,68,68,0.10)" },
+};
+
 export const TEMPERATURA_EMOJIS: Record<string, string> = {
   quente: "🔥",
   morno: "🌤️",
