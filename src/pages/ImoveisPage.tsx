@@ -8,43 +8,78 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath, Maximize, MapPin, Car } from "lucide-react";
 import { toast } from "sonner";
-import { useDebounce } from "@/hooks/useDebounce";
 
-interface Imovel {
-  id: number;
-  codigo: string;
-  endereco?: string;
-  numero?: string;
-  bairro?: string;
-  cidade?: string;
-  uf?: string;
-  tipo?: string;
-  subtipo?: string;
-  contrato?: string;
-  valor_venda?: number;
-  valor_locacao?: number;
-  condominio?: number;
-  iptu?: number;
-  area_total?: number;
-  area_privativa?: number;
-  dormitorios?: number;
-  suites?: number;
-  banheiros?: number;
-  vagas?: number;
-  fotos?: { url: string; descricao?: string }[];
-  foto_principal?: string;
-  imagens?: { url: string }[];
-  status?: string;
-  disponibilidade?: string;
-  descricao?: string;
-  caracteristicas?: string[];
-}
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
+/** Extract image URL from any possible Jetimob field structure */
+function extractImage(item: any): string | null {
+  // Direct string fields
+  for (const key of ["foto_principal", "foto_destaque", "foto_capa", "thumb", "thumbnail", "imagem_principal"]) {
+    if (typeof item[key] === "string" && item[key]) return item[key];
+  }
+  // Array of objects with url field
+  for (const key of ["fotos", "imagens", "galeria", "midias", "photos", "images", "gallery"]) {
+    const arr = item[key];
+    if (Array.isArray(arr) && arr.length > 0) {
+      const first = arr[0];
+      if (typeof first === "string") return first;
+      if (first?.url) return first.url;
+      if (first?.link) return first.link;
+      if (first?.src) return first.src;
+      if (first?.arquivo) return first.arquivo;
+    }
+  }
+  // Nested foto object
+  if (item.foto?.url) return item.foto.url;
+  if (item.foto?.link) return item.foto.link;
+  return null;
+}
+
+/** Extract address/location text from any possible field structure */
+function extractEndereco(item: any): { endereco: string; bairro: string; cidade: string } {
+  const endereco = item.endereco || item.logradouro || item.rua || item.address || item.endereco_completo || "";
+  const numero = item.numero || item.number || "";
+  const bairro = item.bairro || item.neighborhood || item.bairro_nome || "";
+  const cidade = item.cidade || item.city || item.cidade_nome || item.municipio || "";
+  
+  // Some APIs nest inside endereco object
+  if (item.endereco && typeof item.endereco === "object") {
+    return {
+      endereco: `${item.endereco.logradouro || item.endereco.rua || ""}${item.endereco.numero ? `, ${item.endereco.numero}` : ""}`,
+      bairro: item.endereco.bairro || bairro,
+      cidade: item.endereco.cidade || cidade,
+    };
+  }
+  
+  // Nested localizacao object
+  if (item.localizacao && typeof item.localizacao === "object") {
+    return {
+      endereco: `${item.localizacao.logradouro || item.localizacao.endereco || endereco}${item.localizacao.numero ? `, ${item.localizacao.numero}` : (numero ? `, ${numero}` : "")}`,
+      bairro: item.localizacao.bairro || bairro,
+      cidade: item.localizacao.cidade || cidade,
+    };
+  }
+
+  return {
+    endereco: `${endereco}${numero ? `, ${numero}` : ""}`,
+    bairro,
+    cidade,
+  };
+}
+
+function getNum(item: any, ...keys: string[]): number | null {
+  for (const k of keys) {
+    const v = item[k];
+    if (v != null && v !== "" && !isNaN(Number(v))) return Number(v);
+  }
+  return null;
+}
+
 export default function ImoveisPage() {
-  const [imoveis, setImoveis] = useState<Imovel[]>([]);
+  const [imoveis, setImoveis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -80,44 +115,37 @@ export default function ImoveisPage() {
 
       const results = data?.result || data?.imoveis || data?.data || [];
       const items = Array.isArray(results) ? results : [];
-      // Debug: log first item to see field names
+      
+      // Debug: log first item to understand API structure
       if (items.length > 0) {
-        console.log("JETIMOB_IMOVEL_KEYS:", Object.keys(items[0]));
-        console.log("JETIMOB_IMOVEL_SAMPLE:", JSON.stringify(items[0]).substring(0, 2000));
-      } else {
-        console.log("JETIMOB_RESPONSE_KEYS:", Object.keys(data));
-        console.log("JETIMOB_RESPONSE:", JSON.stringify(data).substring(0, 1000));
+        console.log("JETIMOB_KEYS:", Object.keys(items[0]));
+        console.log("JETIMOB_SAMPLE:", JSON.stringify(items[0]).substring(0, 3000));
       }
+      
       setImoveis(items);
       setTotal(data?.total || data?.count || items.length);
       setTotalPages(data?.totalPages || data?.pages || Math.ceil((data?.total || items.length) / 20));
       setPage(pageNum);
     } catch (err) {
       console.error(err);
-      toast.error("Erro de conexão com Jetimob");
+      toast.error("Erro de conexão");
     } finally {
       setLoading(false);
     }
   }, [search, contrato, tipo, cidade, bairro]);
 
-  // Auto-load on mount
   useEffect(() => {
     fetchImoveis(1);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = () => fetchImoveis(1);
 
-  const getImageUrl = (imovel: Imovel): string | null => {
-    if (imovel.foto_principal) return imovel.foto_principal;
-    if (imovel.fotos?.length) return imovel.fotos[0].url;
-    if (imovel.imagens?.length) return imovel.imagens[0].url;
-    return null;
-  };
-
-  const getPreco = (imovel: Imovel): string => {
-    if (contrato === "locacao" && imovel.valor_locacao) return fmtBRL(imovel.valor_locacao);
-    if (imovel.valor_venda) return fmtBRL(imovel.valor_venda);
-    if (imovel.valor_locacao) return fmtBRL(imovel.valor_locacao);
+  const getPreco = (item: any): string => {
+    const venda = getNum(item, "valor_venda", "preco_venda", "valor", "price");
+    const locacao = getNum(item, "valor_locacao", "preco_locacao", "valor_aluguel");
+    if (contrato === "locacao" && locacao) return fmtBRL(locacao);
+    if (venda) return fmtBRL(venda);
+    if (locacao) return fmtBRL(locacao);
     return "Consultar";
   };
 
@@ -148,9 +176,7 @@ export default function ImoveisPage() {
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Contrato</label>
             <Select value={contrato} onValueChange={setContrato}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="venda">Venda</SelectItem>
                 <SelectItem value="locacao">Locação</SelectItem>
@@ -161,9 +187,7 @@ export default function ImoveisPage() {
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Tipo</label>
             <Select value={tipo} onValueChange={setTipo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="apartamento">Apartamento</SelectItem>
@@ -222,61 +246,81 @@ export default function ImoveisPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {imoveis.map((imovel) => {
-              const img = getImageUrl(imovel);
+            {imoveis.map((item, idx) => {
+              const img = extractImage(item);
+              const loc = extractEndereco(item);
+              const codigo = item.codigo || item.code || item.referencia || item.id;
+              const tipoImovel = item.tipo || item.type || item.finalidade || "";
+              const subtipo = item.subtipo || item.subtype || item.categoria || "";
+              const dorms = getNum(item, "dormitorios", "quartos", "bedrooms", "dorms");
+              const suites = getNum(item, "suites", "suite");
+              const banhos = getNum(item, "banheiros", "bathrooms", "wcs");
+              const area = getNum(item, "area_privativa", "area_util", "area_total", "area", "metragem");
+              const vagas = getNum(item, "vagas", "garagem", "parking");
+              const cond = getNum(item, "condominio", "valor_condominio");
+              const disponib = item.disponibilidade || item.status || "";
+
               return (
-                <Card key={imovel.id || imovel.codigo} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <Card key={item.id || codigo || idx} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="flex">
+                    {/* Image */}
                     <div className="w-40 h-40 flex-shrink-0 bg-muted relative">
                       {img ? (
-                        <img src={img} alt={imovel.endereco || ""} className="w-full h-full object-cover" loading="lazy" />
+                        <img src={img} alt={loc.endereco} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Home className="h-8 w-8 text-muted-foreground/40" />
                         </div>
                       )}
-                      <Badge variant="secondary" className="absolute bottom-1 left-1 text-[10px]">
-                        {imovel.codigo}
-                      </Badge>
+                      {codigo && (
+                        <Badge variant="secondary" className="absolute bottom-1 left-1 text-[10px]">
+                          {codigo}
+                        </Badge>
+                      )}
                     </div>
 
+                    {/* Info */}
                     <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
                       <div className="space-y-1">
-                        <p className="text-sm font-semibold text-foreground truncate">
-                          {imovel.endereco}{imovel.numero ? `, ${imovel.numero}` : ""}
-                        </p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">
-                            {[imovel.bairro, imovel.cidade].filter(Boolean).join(" · ")}
-                          </span>
-                        </p>
+                        {loc.endereco && (
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {loc.endereco}
+                          </p>
+                        )}
+                        {(loc.bairro || loc.cidade) && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {[loc.bairro, loc.cidade].filter(Boolean).join(" · ")}
+                            </span>
+                          </p>
+                        )}
 
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
-                          {imovel.tipo && <Badge variant="outline" className="text-[10px] h-5">{imovel.tipo}</Badge>}
-                          {imovel.subtipo && <Badge variant="outline" className="text-[10px] h-5">{imovel.subtipo}</Badge>}
+                        <div className="flex items-center gap-1 text-xs flex-wrap">
+                          {tipoImovel && <Badge variant="outline" className="text-[10px] h-5">{tipoImovel}</Badge>}
+                          {subtipo && <Badge variant="outline" className="text-[10px] h-5">{subtipo}</Badge>}
                         </div>
 
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          {(imovel.dormitorios ?? 0) > 0 && (
+                          {dorms != null && dorms > 0 && (
                             <span className="flex items-center gap-0.5">
-                              <BedDouble className="h-3 w-3" /> {imovel.dormitorios}
-                              {(imovel.suites ?? 0) > 0 && <span className="text-[10px]">({imovel.suites}s)</span>}
+                              <BedDouble className="h-3 w-3" /> {dorms}
+                              {suites != null && suites > 0 && <span className="text-[10px]">({suites}s)</span>}
                             </span>
                           )}
-                          {(imovel.banheiros ?? 0) > 0 && (
+                          {banhos != null && banhos > 0 && (
                             <span className="flex items-center gap-0.5">
-                              <Bath className="h-3 w-3" /> {imovel.banheiros}
+                              <Bath className="h-3 w-3" /> {banhos}
                             </span>
                           )}
-                          {(imovel.area_privativa ?? 0) > 0 && (
+                          {area != null && area > 0 && (
                             <span className="flex items-center gap-0.5">
-                              <Maximize className="h-3 w-3" /> {imovel.area_privativa}m²
+                              <Maximize className="h-3 w-3" /> {area}m²
                             </span>
                           )}
-                          {(imovel.vagas ?? 0) > 0 && (
+                          {vagas != null && vagas > 0 && (
                             <span className="flex items-center gap-0.5">
-                              <Car className="h-3 w-3" /> {imovel.vagas}
+                              <Car className="h-3 w-3" /> {vagas}
                             </span>
                           )}
                         </div>
@@ -284,19 +328,14 @@ export default function ImoveisPage() {
 
                       <div className="flex items-end justify-between mt-1">
                         <div>
-                          <p className="text-sm font-bold text-primary">{getPreco(imovel)}</p>
-                          {(imovel.condominio ?? 0) > 0 && (
-                            <p className="text-[10px] text-muted-foreground">
-                              Cond. {fmtBRL(imovel.condominio!)}
-                            </p>
+                          <p className="text-sm font-bold text-primary">{getPreco(item)}</p>
+                          {cond != null && cond > 0 && (
+                            <p className="text-[10px] text-muted-foreground">Cond. {fmtBRL(cond)}</p>
                           )}
                         </div>
-                        {imovel.disponibilidade && (
-                          <Badge
-                            variant={imovel.disponibilidade === "disponivel" ? "default" : "secondary"}
-                            className="text-[10px]"
-                          >
-                            {imovel.disponibilidade}
+                        {disponib && (
+                          <Badge variant={disponib === "disponivel" ? "default" : "secondary"} className="text-[10px]">
+                            {disponib}
                           </Badge>
                         )}
                       </div>
@@ -312,9 +351,7 @@ export default function ImoveisPage() {
               <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchImoveis(page - 1)}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm text-muted-foreground">
-                {page} de {totalPages}
-              </span>
+              <span className="text-sm text-muted-foreground">{page} de {totalPages}</span>
               <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchImoveis(page + 1)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
