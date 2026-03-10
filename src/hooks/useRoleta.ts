@@ -630,6 +630,7 @@ export function useRoleta() {
     recusarCredenciamento,
     aprovarTodos,
     removerDaFila,
+    incluirManualNaFila,
     reload: () => Promise.all([loadCredenciamentos(), loadFila(), loadDistribuicoes()]),
   };
 }
