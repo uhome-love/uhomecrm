@@ -33,9 +33,19 @@ function CeoView() {
   const {
     segmentos, credenciamentos, fila, distribuicoes, loading, submitting,
     pendentesCount, leadsAcumulados, aprovarCredenciamento, recusarCredenciamento,
-    aprovarTodos, removerDaFila, reload,
+    aprovarTodos, removerDaFila, incluirManualNaFila, reload,
   } = useRoleta();
   const windowInfo = getCurrentWindowInfo();
+  const [showIncluirModal, setShowIncluirModal] = useState(false);
+  const [allCorretores, setAllCorretores] = useState<{id: string; nome: string}[]>([]);
+  const [selectedCorretor, setSelectedCorretor] = useState("");
+  const [selectedSegmento, setSelectedSegmento] = useState("");
+
+  // Load all corretores for manual inclusion
+  useEffect(() => {
+    supabase.from("profiles").select("id, nome").eq("cargo", "corretor").order("nome")
+      .then(({ data }) => setAllCorretores(data || []));
+  }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
