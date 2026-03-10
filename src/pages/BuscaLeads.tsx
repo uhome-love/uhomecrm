@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useBuscaLeads, BuscaFilters, BuscaLead, LeadTentativa } from "@/hooks/useBuscaLeads";
 import { useUserRole } from "@/hooks/useUserRole";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Search, Phone, User, Mail, Building2, Filter, X, CheckCircle2,
   Trash2, ArrowRightLeft, Lock, Unlock, ShieldAlert, Clock, History,
-  AlertTriangle, Loader2,
+  AlertTriangle, Loader2, UserPlus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -48,7 +49,7 @@ const RESULTADO_LABELS: Record<string, string> = {
 };
 
 export default function BuscaLeads() {
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isGestor } = useUserRole();
   const { results, isSearching, totalResults, buscar, fetchTentativas, executarAcao, fetchCorretores } = useBuscaLeads();
 
   // Search state
@@ -108,6 +109,56 @@ export default function BuscaLeads() {
   const executeAction = async () => {
     if (!actionModal) return;
     const { acao, lead } = actionModal;
+
+    // Pipeline inclusion — handled separately
+    if (acao === "incluir_pipeline") {
+      if (!selectedCorretor) {
+        toast.error("Selecione o corretor");
+        return;
+      }
+      setExecuting(true);
+      try {
+        // Get first stage
+        const { data: stages } = await supabase
+          .from("pipeline_stages")
+          .select("id")
+          .eq("pipeline_tipo", "leads")
+          .eq("ativo", true)
+          .order("ordem", { ascending: true })
+          .limit(1);
+        const stageId = stages?.[0]?.id;
+        if (!stageId) {
+          toast.error("Nenhum estágio configurado no pipeline");
+          setExecuting(false);
+          return;
+        }
+
+        const { error } = await supabase.from("pipeline_leads").insert({
+          nome: lead.nome,
+          telefone: lead.telefone,
+          email: lead.email,
+          empreendimento: lead.empreendimento,
+          origem: lead.origem || "oferta_ativa",
+          origem_detalhe: lead.campanha,
+          corretor_id: selectedCorretor,
+          stage_id: stageId,
+          aceite_status: "aceito",
+          aceito_em: new Date().toISOString(),
+          observacoes: motivo || `Incluído via Busca de Leads (OA)`,
+        });
+        if (error) throw error;
+        toast.success("✅ Lead incluído no pipeline do corretor!");
+        setActionModal(null);
+        setSelectedLead(null);
+        handleSearch();
+      } catch (err: any) {
+        console.error(err);
+        toast.error("Erro ao incluir no pipeline");
+      }
+      setExecuting(false);
+      return;
+    }
+
     if ((acao === "aproveitado" || acao === "transferir") && !selectedCorretor) {
       toast.error("Selecione o corretor");
       return;
@@ -139,6 +190,7 @@ export default function BuscaLeads() {
     bloquear: "Bloquear (WhatsApp em andamento)",
     desbloquear: "Desbloquear Lead",
     quebrar_reserva: "Quebrar Reserva",
+    incluir_pipeline: "Incluir no Pipeline de Leads",
   };
 
   return (
@@ -413,6 +465,15 @@ export default function BuscaLeads() {
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aproveitar e Atribuir
                 </Button>
+                {(isAdmin || isGestor) && (
+                  <Button
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    onClick={() => openAction("incluir_pipeline", selectedLead)}
+                  >
+                    <UserPlus className="h-3.5 w-3.5 mr-1" /> Incluir no Pipeline
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -513,7 +574,7 @@ export default function BuscaLeads() {
               </DialogHeader>
 
               <div className="space-y-3">
-                {(actionModal.acao === "aproveitado" || actionModal.acao === "transferir") && (
+                {(actionModal.acao === "aproveitado" || actionModal.acao === "transferir" || actionModal.acao === "incluir_pipeline") && (
                   <div>
                     <Label className="text-xs">Corretor responsável</Label>
                     <Select value={selectedCorretor} onValueChange={setSelectedCorretor}>
