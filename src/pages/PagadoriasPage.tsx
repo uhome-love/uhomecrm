@@ -92,8 +92,8 @@ export default function PagadoriasPage() {
   // Initialize credores when entering step 2
   useEffect(() => {
     if (step === 2 && credores.length === 0) {
-      const corretorPct = getFaixaPercentual(corretorFaixas, vgvAcumuladoCorretor);
-      const gerentePct = getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente);
+      const corretorPct = corretorFaixas[selectedCorretorFaixaIdx]?.percentual ?? 0;
+      const gerentePct = gerenteFaixas[selectedGerenteFaixaIdx]?.percentual ?? 0;
 
       const initial: Credor[] = [
         { credor_tipo: "corretor", credor_nome: form.corretor_nome || "Corretor", credor_id: null, percentual: corretorPct, valor: 0, auto: true },
