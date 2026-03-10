@@ -214,7 +214,7 @@ export default function MeusNegocios() {
 
     await moveFase(negocioId, novaFase);
 
-    // GATILHO 5: If moved to "assinado", trigger pos-vendas
+    // GATILHO 5: If moved to "assinado", trigger pos-vendas + epic celebration
     if (novaFase === "assinado") {
       await onNegocioAssinado({
         negocioId,
@@ -224,10 +224,15 @@ export default function MeusNegocios() {
         corretorId: negocio.corretor_id || user?.id || "",
         vgvFinal: negocio.vgv_estimado || undefined,
       });
-      // Confetti
-      spawnConfetti();
+      // Epic celebration screen
+      setCelebrationData({
+        nomeCliente: negocio.nome_cliente,
+        empreendimento: negocio.empreendimento || undefined,
+        vgv: negocio.vgv_final || negocio.vgv_estimado || 0,
+        corretorNome: negocio.corretor_id ? corretorNomes[negocio.corretor_id] : undefined,
+      });
     }
-  }, [negocios, moveFase, onNegocioAssinado, user]);
+  }, [negocios, moveFase, onNegocioAssinado, user, corretorNomes]);
 
   const handleDrop = (e: React.DragEvent, fase: string) => {
     e.preventDefault();
