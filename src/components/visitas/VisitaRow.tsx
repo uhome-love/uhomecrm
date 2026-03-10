@@ -144,8 +144,8 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       )}
       style={{
         gridTemplateColumns: showCorretor
-          ? "3.5rem 3px 1fr 10rem 8rem 9rem 6.5rem auto auto"
-          : "3.5rem 3px 1fr 10rem 8rem 6.5rem auto auto",
+          ? "3.5rem 3px 1fr 10rem 8rem 7rem 9rem 6.5rem auto auto"
+          : "3.5rem 3px 1fr 10rem 8rem 7rem 6.5rem auto auto",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
