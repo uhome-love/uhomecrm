@@ -14,24 +14,15 @@ function addToCalendar(v: Visita) {
   const m = time.slice(2, 4);
   const endH = String(h + 1).padStart(2, "0");
   const endDT = `${dateStr}T${endH}${m}00`;
-
   const local = v.local_visita
     ? ({ stand: "Stand do empreendimento", empresa: "Escritório", videochamada: "Videochamada", decorado: "Apartamento decorado", outro: "" }[v.local_visita] || v.local_visita)
     : "";
   const location = [local, v.empreendimento].filter(Boolean).join(" - ");
   const title = `Visita: ${v.nome_cliente}`;
   const details = [v.telefone && `Tel: ${v.telefone}`, v.observacoes].filter(Boolean).join("\\n");
-
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
   if (isIOS) {
-    const ics = [
-      "BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
-      `DTSTART:${startDT}`, `DTEND:${endDT}`,
-      `SUMMARY:${title}`, `LOCATION:${location}`,
-      `DESCRIPTION:${details.replace(/\n/g, "\\n")}`,
-      "END:VEVENT", "END:VCALENDAR"
-    ].join("\r\n");
+    const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", `DTSTART:${startDT}`, `DTEND:${endDT}`, `SUMMARY:${title}`, `LOCATION:${location}`, `DESCRIPTION:${details.replace(/\n/g, "\\n")}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
     const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -96,7 +87,6 @@ export function getTeamBadgeStyle(equipe?: string) {
   return { emoji: "⚪", className: "bg-muted text-muted-foreground border-border", label: equipe };
 }
 
-/** Parse objetivo and responsável from observacoes stored as "Objetivo: X | Responsável: Y | notes" */
 function parseNegocioMeta(obs: string | null) {
   if (!obs) return { objetivo: null, responsavel: null };
   const parts = obs.split("|").map(s => s.trim());
@@ -107,6 +97,24 @@ function parseNegocioMeta(obs: string | null) {
     if (p.startsWith("Responsável:")) responsavel = p.replace("Responsável:", "").trim();
   }
   return { objetivo, responsavel };
+}
+
+/** Column header for the list view */
+export function VisitaRowHeader({ showCorretor, showTeam }: { showCorretor?: boolean; showTeam?: boolean }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2 border-b border-border/60 bg-muted/30 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+      <span className="w-12 text-center shrink-0">Hora</span>
+      <span className="w-1 shrink-0" />
+      <span style={{ width: "clamp(90px, 15%, 160px)" }} className="shrink-0">Cliente</span>
+      <span style={{ width: "clamp(80px, 13%, 140px)" }} className="shrink-0 hidden md:block">Produto</span>
+      <span style={{ width: "clamp(70px, 10%, 110px)" }} className="shrink-0 hidden md:block">Local</span>
+      {showCorretor && <span style={{ width: "clamp(80px, 12%, 130px)" }} className="shrink-0 hidden lg:block">Corretor</span>}
+      {showTeam && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Time</span>}
+      <span className="flex-1" />
+      <span className="w-[90px] text-right shrink-0">Status</span>
+      <span className="w-[72px] shrink-0" />
+    </div>
+  );
 }
 
 interface Props {
@@ -121,42 +129,37 @@ interface Props {
 
 export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete, showCorretor, showTeam, isPastPending }: Props) {
   const [hovered, setHovered] = useState(false);
-
   const isNegocio = v.tipo === "negocio";
   const negocioMeta = isNegocio ? parseNegocioMeta(v.observacoes) : { objetivo: null, responsavel: null };
-
   const teamStyle = showTeam ? getTeamBadgeStyle(v.equipe) : null;
 
   return (
     <div
       className={cn(
-        "group grid items-center gap-x-3 px-4 py-3 transition-colors hover:bg-muted/30",
-        isPastPending && "bg-red-50/50",
-        showCorretor
-          ? "grid-cols-[48px_4px_1fr_1fr_100px_1fr_100px_1fr_auto_auto]"
-          : "grid-cols-[48px_4px_1fr_1fr_100px_auto_auto]"
+        "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30",
+        isPastPending && "bg-red-50/50"
       )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* 1 — Horário */}
-      <span className="text-sm font-bold font-mono text-foreground text-center">
+      {/* Hora */}
+      <span className="text-sm font-bold font-mono text-foreground shrink-0 w-12 text-center">
         {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
       </span>
 
       {/* Status color line */}
-      <div className={cn("w-0.5 h-8 rounded-full", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
+      <div className={cn("w-0.5 h-8 rounded-full shrink-0", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
 
-      {/* 2 — Cliente */}
-      <div className="min-w-0">
+      {/* Cliente */}
+      <div className="min-w-0 shrink-0" style={{ width: "clamp(90px, 15%, 160px)" }}>
         <p className="text-sm font-semibold text-foreground truncate leading-tight">{v.nome_cliente}</p>
         {v.telefone && (
           <p className="text-[11px] text-muted-foreground truncate mt-0.5">📞 {v.telefone}</p>
         )}
       </div>
 
-      {/* 3 — Produto (Empreendimento) */}
-      <div className="min-w-0">
+      {/* Produto (Empreendimento) */}
+      <div className="hidden md:block min-w-0 shrink-0" style={{ width: "clamp(80px, 13%, 140px)" }}>
         <p className="text-xs text-muted-foreground truncate">
           🏢 {v.empreendimento || "—"}
         </p>
@@ -165,25 +168,25 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         )}
       </div>
 
-      {/* 4 — Local da Visita */}
-      <div className="min-w-0">
+      {/* Local da Visita */}
+      <div className="hidden md:block min-w-0 shrink-0" style={{ width: "clamp(70px, 10%, 110px)" }}>
         <p className="text-xs text-muted-foreground truncate">
           📍 {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "—"}
         </p>
       </div>
 
-      {/* 5 — Responsável (Corretor nome) — only in CEO/Gerente view */}
+      {/* Corretor */}
       {showCorretor && (
-        <div className="min-w-0">
+        <div className="hidden lg:block min-w-0 shrink-0" style={{ width: "clamp(80px, 12%, 130px)" }}>
           <p className="text-xs font-medium text-foreground truncate">
             👤 {v.corretor_nome?.split(" ").slice(0, 2).join(" ") || "—"}
           </p>
         </div>
       )}
 
-      {/* 6 — Time — only in CEO view */}
-      {showCorretor && (
-        <div className="min-w-0 flex items-center justify-center">
+      {/* Time */}
+      {showTeam && (
+        <div className="hidden lg:flex items-center min-w-0 shrink-0" style={{ width: "clamp(70px, 10%, 100px)" }}>
           {teamStyle ? (
             <span className={cn("text-[10px] px-2 py-0.5 rounded-full border whitespace-nowrap font-semibold", teamStyle.className)}>
               {teamStyle.emoji} {teamStyle.label}
@@ -194,32 +197,23 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         </div>
       )}
 
-      {/* 7 — Origem (se OA) — only in CEO/Gerente view */}
-      {showCorretor && (
-        <div className="min-w-0 flex items-center justify-center">
-          {v.origem?.toLowerCase().includes("oferta") ? (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-purple-500/10 text-purple-600 border-purple-500/30">OA</span>
-          ) : (
-            <span className="text-[10px] text-muted-foreground/50">—</span>
-          )}
-        </div>
-      )}
+      {/* Spacer */}
+      <div className="flex-1 min-w-0" />
 
-      {/* 8 — Status badge */}
-      <div className="flex items-center justify-end">
+      {/* Status badge */}
+      <div className="shrink-0 w-[90px] flex justify-end">
         <Badge className={cn("text-[10px] px-2.5 py-0.5 border font-semibold whitespace-nowrap", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
           {STATUS_EMOJIS[v.status]} {STATUS_LABELS[v.status]}
         </Badge>
       </div>
 
-      {/* 9 — Actions */}
-      <div className="flex items-center gap-1">
+      {/* Actions */}
+      <div className="flex items-center gap-1 shrink-0 w-[72px] justify-end">
         <div className={cn("flex items-center gap-1 transition-opacity", hovered ? "opacity-100" : "opacity-0")}>
           {(v.status === "marcada" || v.status === "confirmada") && (
             <>
-              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")}>✅</Button>
-              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")}>❌</Button>
-              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => onUpdateStatus(v.id, "reagendada")}>🔄</Button>
+              <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")}>✅</Button>
+              <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")}>❌</Button>
             </>
           )}
         </div>

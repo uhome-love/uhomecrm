@@ -5,7 +5,7 @@ import { CalendarDays, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { type Visita, type VisitaStatus } from "@/hooks/useVisitas";
-import VisitaRow from "./VisitaRow";
+import VisitaRow, { VisitaRowHeader } from "./VisitaRow";
 
 interface Props {
   visitas: Visita[];
@@ -128,24 +128,27 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
               </div>
             </button>
 
-            {/* Visita rows */}
+            {/* Column header + Visita rows */}
             {isOpen && (
-              <div className="divide-y divide-border/40">
-                {g.visitas.map(v => {
-                  const isPastPending = g.isPast && (v.status === "marcada" || v.status === "confirmada");
-                  return (
-                    <VisitaRow
-                      key={v.id}
-                      visita={v}
-                      onUpdateStatus={onUpdateStatus}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      showCorretor={showCorretor}
-                      showTeam={showTeam}
-                      isPastPending={isPastPending}
-                    />
-                  );
-                })}
+              <div>
+                <VisitaRowHeader showCorretor={showCorretor} showTeam={showTeam} />
+                <div className="divide-y divide-border/40">
+                  {g.visitas.map(v => {
+                    const isPastPending = g.isPast && (v.status === "marcada" || v.status === "confirmada");
+                    return (
+                      <VisitaRow
+                        key={v.id}
+                        visita={v}
+                        onUpdateStatus={onUpdateStatus}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        showCorretor={showCorretor}
+                        showTeam={showTeam}
+                        isPastPending={isPastPending}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
