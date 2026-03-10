@@ -87,6 +87,7 @@ export default function ImoveisPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [campanhaAtiva, setCampanhaAtiva] = useState(false);
+  const [uhomeOnly, setUhomeOnly] = useState(false);
 
   const [search, setSearch] = useState("");
   const [contrato, setContrato] = useState("venda");
