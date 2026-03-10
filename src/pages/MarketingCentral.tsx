@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useConteudosMarketing } from "@/hooks/useBackofficeData";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarDays, Lightbulb, BarChart3, Plus, Palette, Camera, Video, Megaphone, Building2, PartyPopper, Newspaper, Loader2 } from "lucide-react";
+import { CalendarDays, Lightbulb, BarChart3, Plus, Palette, Camera, Video, Megaphone, Building2, PartyPopper, Newspaper, Loader2, Edit2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { lazy, Suspense } from "react";
+
+const HomiIdeiasChat = lazy(() => import("@/components/marketing/HomiIdeiasChat"));
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: string }> = {
   planejado: { label: "Planejado", color: "bg-neutral-500", icon: "📝" },
@@ -33,30 +36,68 @@ const TIPOS = [
   { value: "informativo", label: "📰 Informativo", icon: Newspaper },
 ];
 
+const emptyForm = {
+  tipo: "post_estatico",
+  plataforma: ["instagram"],
+  tema: "",
+  descricao: "",
+  data_publicacao: "",
+  status: "planejado",
+};
+
 export default function MarketingCentral() {
   const { user } = useAuth();
   const { conteudos, isLoading, createConteudo, updateConteudo, deleteConteudo } = useConteudosMarketing();
   const [newOpen, setNewOpen] = useState(false);
-  const [form, setForm] = useState({
-    tipo: "post_estatico",
-    plataforma: ["instagram"],
-    tema: "",
-    descricao: "",
-    data_publicacao: "",
-    status: "planejado",
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
-  const handleCreate = async () => {
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setNewOpen(true);
+  };
+
+  const openEdit = (c: any) => {
+    setEditingId(c.id);
+    setForm({
+      tipo: c.tipo || "post_estatico",
+      plataforma: c.plataforma || ["instagram"],
+      tema: c.tema || "",
+      descricao: c.descricao || "",
+      data_publicacao: c.data_publicacao ? new Date(c.data_publicacao).toISOString().slice(0, 16) : "",
+      status: c.status || "planejado",
+    });
+    setNewOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!user || !form.tema) return;
     try {
-      await createConteudo.mutateAsync({
+      const payload: any = {
         ...form,
         data_publicacao: form.data_publicacao ? new Date(form.data_publicacao).toISOString() : null,
-        criado_por: user.id,
-      });
-      toast.success("Conteúdo criado!");
+      };
+      if (editingId) {
+        await updateConteudo.mutateAsync({ id: editingId, ...payload });
+        toast.success("Conteúdo atualizado!");
+      } else {
+        await createConteudo.mutateAsync({ ...payload, criado_por: user.id });
+        toast.success("Conteúdo criado!");
+      }
       setNewOpen(false);
-      setForm({ tipo: "post_estatico", plataforma: ["instagram"], tema: "", descricao: "", data_publicacao: "", status: "planejado" });
+      setForm(emptyForm);
+      setEditingId(null);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Excluir este conteúdo?")) return;
+    try {
+      await deleteConteudo.mutateAsync(id);
+      toast.success("Conteúdo excluído!");
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -68,15 +109,6 @@ export default function MarketingCentral() {
     return c.status;
   };
 
-  // Group by week
-  const today = new Date();
-  const thisWeek = conteudos.filter((c: any) => {
-    if (!c.data_publicacao) return false;
-    const d = new Date(c.data_publicacao);
-    const diff = (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
-    return diff >= -7 && diff <= 7;
-  });
-
   return (
     <div className="space-y-5 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
@@ -86,7 +118,7 @@ export default function MarketingCentral() {
           </h1>
           <p className="text-sm text-muted-foreground">Agenda editorial, ideias e performance</p>
         </div>
-        <Button onClick={() => setNewOpen(true)} className="gap-1.5">
+        <Button onClick={openCreate} className="gap-1.5">
           <Plus className="h-4 w-4" /> Novo Conteúdo
         </Button>
       </div>
@@ -152,6 +184,12 @@ export default function MarketingCentral() {
                               <SelectItem value="publicado">Publicado</SelectItem>
                             </SelectContent>
                           </Select>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)} title="Editar">
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(c.id)} title="Excluir">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -163,16 +201,9 @@ export default function MarketingCentral() {
         </TabsContent>
 
         <TabsContent value="ideias" className="mt-4">
-          <Card>
-            <CardContent className="py-8 text-center">
-              <Lightbulb className="h-10 w-10 mx-auto mb-3 text-amber-500" />
-              <p className="font-medium">Gerador de Ideias</p>
-              <p className="text-sm text-muted-foreground mt-1">Use o HOMI Ana para gerar ideias de conteúdo personalizadas!</p>
-              <Button variant="outline" className="mt-4" onClick={() => window.location.href = "/homi-ana"}>
-                🤖 Abrir HOMI Ana
-              </Button>
-            </CardContent>
-          </Card>
+          <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}>
+            <HomiIdeiasChat />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="performance" className="mt-4">
@@ -186,11 +217,11 @@ export default function MarketingCentral() {
         </TabsContent>
       </Tabs>
 
-      {/* New Content Dialog */}
-      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+      {/* Create/Edit Dialog */}
+      <Dialog open={newOpen} onOpenChange={v => { if (!v) { setNewOpen(false); setEditingId(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Novo Conteúdo</DialogTitle>
+            <DialogTitle>{editingId ? "Editar Conteúdo" : "Novo Conteúdo"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -214,8 +245,8 @@ export default function MarketingCentral() {
               <Label>Data de publicação</Label>
               <Input type="datetime-local" value={form.data_publicacao} onChange={e => setForm(f => ({ ...f, data_publicacao: e.target.value }))} />
             </div>
-            <Button className="w-full" onClick={handleCreate} disabled={!form.tema}>
-              Criar Conteúdo
+            <Button className="w-full" onClick={handleSave} disabled={!form.tema}>
+              {editingId ? "Salvar Alterações" : "Criar Conteúdo"}
             </Button>
           </div>
         </DialogContent>
