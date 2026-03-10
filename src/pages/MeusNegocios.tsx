@@ -738,7 +738,7 @@ export default function MeusNegocios() {
         <div
           ref={scrollRef}
           onScroll={updateScrollState}
-          className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-none"
+          className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-none pb-2 pr-4"
           style={{ scrollSnapType: "x proximity" }}
         >
           {NEGOCIOS_FASES.map((fase) => {
