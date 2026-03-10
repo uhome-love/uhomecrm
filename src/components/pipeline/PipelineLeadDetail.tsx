@@ -93,6 +93,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   // Partnership & Comunicacao
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
+  const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
+  const [showNovaTarefa, setShowNovaTarefa] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
