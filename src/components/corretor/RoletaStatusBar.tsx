@@ -175,11 +175,11 @@ export default function RoletaStatusBar() {
         .eq("data", today)
         .in("status", ["aprovado", "pendente"]);
 
-      const porJanela: Record<string, boolean> = {};
+      const porJanela: Record<string, string> = {};
       let activeIds: string[] = [];
       let activeStatus = "";
       (creds || []).forEach(c => {
-        porJanela[toUiJanela(c.janela)] = true;
+        porJanela[toUiJanela(c.janela)] = c.status || "pendente";
         const ids = [c.segmento_1_id, c.segmento_2_id].filter(Boolean) as string[];
         if (ids.length > 0) { activeIds = ids; activeStatus = c.status || ""; }
       });
