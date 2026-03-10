@@ -147,7 +147,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
       if (!caiuMotivo.trim()) return;
       onConfirm({
         fase: "distrato",
-        fields: { motivo: caiuMotivo, destino: caiuDestino },
+        fields: { motivo: caiuMotivo, destino: caiuDestino, stage_id: caiuDestino === "pipeline" ? caiuStageId : undefined },
       });
     }
   };
