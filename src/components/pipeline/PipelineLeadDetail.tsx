@@ -20,7 +20,7 @@ import {
   Plus, CheckCircle2, AlertTriangle,
   FileText, ChevronDown, ClipboardList,
   Flame, Snowflake, Sun, Zap, Brain, TrendingUp,
-  Trash2, Ban, PhoneOff, Handshake, MoreHorizontal, Bot, History
+  Trash2, Ban, PhoneOff, Handshake, MoreHorizontal, Bot, History, Tag
 } from "lucide-react";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
@@ -30,6 +30,8 @@ import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
+import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
+import QuickActionMenu from "./QuickActionMenu";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import { format, formatDistanceToNow, differenceInHours, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
