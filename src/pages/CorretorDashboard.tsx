@@ -144,7 +144,7 @@ export default function CorretorDashboard() {
     }
   };
 
-  const radar = radarData || { pendingLeads: 0, totalNegocios: 0, rankingPos: 0, totalBrokers: 1, ptsToNext: 0, myPts: 0, totalWithPoints: 0 };
+  const radar = radarData || { totalLeads: 0, totalNegocios: 0, rankingPos: 0, totalBrokers: 1, ptsToNext: 0, myPts: 0, totalWithPoints: 0 };
 
   const greetingData = getDynamicGreeting({
     nome: nome || "Corretor",
