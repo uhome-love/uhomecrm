@@ -326,9 +326,14 @@ export default function CeoDashboard() {
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => aprovar(c.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs w-full sm:w-auto">
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
-                  </Button>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button size="sm" onClick={() => aprovar(c.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs flex-1 sm:flex-none">
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => recusar(c.id)} className="text-destructive border-destructive/30 hover:bg-destructive/10 text-xs flex-1 sm:flex-none">
+                      <XCircle className="h-3.5 w-3.5 mr-1" /> Recusar
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
