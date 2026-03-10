@@ -31,6 +31,8 @@ const DEFAULT_EMPREENDIMENTOS = [
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  /** Called only when user picks from dropdown list (not on every keystroke) */
+  onSelect?: (value: string) => void;
   extraOptions?: string[];
   placeholder?: string;
   className?: string;
