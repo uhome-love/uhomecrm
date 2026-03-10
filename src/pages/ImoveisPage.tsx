@@ -239,15 +239,15 @@ export default function ImoveisPage() {
               const img = extractImage(item);
               const loc = extractEndereco(item);
               const codigo = item.codigo || item.code || item.referencia || item.id;
-              const tipoImovel = item.tipo || item.type || item.finalidade || "";
-              const subtipo = item.subtipo || item.subtype || item.categoria || "";
-              const dorms = getNum(item, "dormitorios", "quartos", "bedrooms", "dorms");
-              const suites = getNum(item, "suites", "suite");
-              const banhos = getNum(item, "banheiros", "bathrooms", "wcs");
-              const area = getNum(item, "area_privativa", "area_util", "area_total", "area", "metragem");
-              const vagas = getNum(item, "vagas", "garagem", "parking");
-              const cond = getNum(item, "condominio", "valor_condominio");
-              const disponib = item.disponibilidade || item.status || "";
+              const tipoImovel = item.tipo || "";
+              const subtipo = item.subtipo || "";
+              const dorms = getNum(item, "dormitorios");
+              const suites = getNum(item, "suites");
+              const banhos = getNum(item, "banheiros");
+              const area = getNumIncZero(item, "area_privativa", "area_util", "area_total");
+              const vagas = getNum(item, "garagens", "vagas");
+              const cond = getNum(item, "valor_condominio");
+              const disponib = item.situacao || item.status || "";
 
               return (
                 <Card key={item.id || codigo || idx} className="overflow-hidden hover:shadow-lg transition-shadow">
