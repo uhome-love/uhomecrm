@@ -772,7 +772,8 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
           onOpenChange={setWhatsappOpen}
           leadNome={fullNeg.nome_cliente}
           leadTelefone={fullNeg.telefone}
-          leadEmpreendimento={fullNeg.empreendimento || undefined}
+          leadEmpreendimento={fullNeg.empreendimento || null}
+          leadId={negocio.pipeline_lead_id || negocio.id}
         />
       )}
     </>
