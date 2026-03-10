@@ -624,7 +624,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
       {/* Mini-map nav pills — colored by stage */}
       <div className="shrink-0 flex items-center gap-1 mb-1 px-0.5 overflow-x-auto scrollbar-none">
-        {stages.map((stage, idx) => {
+        {visibleStages.map((stage, idx) => {
           const stageLeads = leadsByStage.get(stage.id) || [];
           const isActive = idx === activeIndex;
           const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📍";
