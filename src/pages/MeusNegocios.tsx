@@ -222,7 +222,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* Ligar */}
           <button
             onClick={() => setLigarPopup(true)}
-            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1 py-2 text-[10px] text-white/40 hover:text-white hover:bg-white/5 transition-colors"
           >
             <Phone className="h-3 w-3" /> Ligar
           </button>
