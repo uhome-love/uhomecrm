@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,7 +106,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fullNeg, setFullNeg] = useState<NegocioExtended>(negocio as NegocioExtended);
-  const [activeTab, setActiveTab] = useState("tarefas");
+  const [activeTab, setActiveTab] = useState("historico");
 
   // Data
   const [atividades, setAtividades] = useState<NegocioAtividade[]>([]);
@@ -316,20 +317,20 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
 
   if (loading) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl p-0 overflow-hidden">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     );
   }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl max-h-screen overflow-hidden flex flex-col p-0">
 
           {/* ════════ HEADER ════════ */}
           <div className="shrink-0 border-b border-border/50 bg-card px-6 pt-5 pb-3 space-y-3">
@@ -423,8 +424,8 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
           <div className="flex-1 overflow-y-auto px-6 pb-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-3">
               <TabsList className="grid w-full grid-cols-3 h-9">
-                <TabsTrigger value="tarefas" className="text-xs gap-1">📋 Tarefas</TabsTrigger>
                 <TabsTrigger value="historico" className="text-xs gap-1">🕐 Histórico</TabsTrigger>
+                <TabsTrigger value="tarefas" className="text-xs gap-1">📋 Tarefas</TabsTrigger>
                 <TabsTrigger value="imovel" className="text-xs gap-1">🏠 Imóvel</TabsTrigger>
               </TabsList>
 
@@ -676,8 +677,8 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
             )}
             <div className="flex-1" />
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Proposta Popup ── */}
       <Dialog open={propostaPopup} onOpenChange={setPropostaPopup}>
