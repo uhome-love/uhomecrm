@@ -497,18 +497,21 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             const totalVGV = stageLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
             const alerts = getStageAlerts(stageLeads);
             const avgTime = getAvgTimeLabel(stageLeads);
+            const stageBg = PIPELINE_STAGE_BG[stage.nome] || { bg: "rgba(0,0,0,0.02)", border: "rgba(0,0,0,0.08)", headerBg: "rgba(0,0,0,0.04)" };
 
             return (
               <div
                 key={stage.id}
                 className={`flex flex-col shrink-0 h-full rounded-xl transition-all duration-200 ${
                   isDragOver
-                    ? "ring-2 ring-primary/50 bg-primary/5 shadow-xl shadow-primary/10 scale-[1.01]"
-                    : "bg-muted/20"
+                    ? "ring-2 ring-primary/50 shadow-xl shadow-primary/10 scale-[1.01]"
+                    : ""
                 }`}
                 style={{
                   width: `${getColumnWidth()}px`,
                   scrollSnapAlign: "start",
+                  background: isDragOver ? `${stageBg.bg.replace("0.06", "0.12")}` : stageBg.bg,
+                  border: `1px solid ${stageBg.border}`,
                   animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
                   ["--flash-color" as any]: stage.cor,
                 }}
@@ -517,27 +520,30 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
                 {/* Column header — colored */}
-                <div className="shrink-0 px-2.5 py-2 bg-card border border-border/40 rounded-t-xl">
+                <div
+                  className="shrink-0 px-2.5 py-2.5 rounded-t-xl"
+                  style={{ background: stageBg.headerBg, borderBottom: `2px solid ${stage.cor}40` }}
+                >
                   <div className="flex items-center gap-1.5 justify-between">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <div className="h-full w-1 rounded-full shrink-0 self-stretch" style={{ backgroundColor: stage.cor }} />
                       <span className="text-sm shrink-0">{PIPELINE_STAGE_EMOJIS[stage.nome] || "📍"}</span>
-                      <span className="text-[11px] font-bold text-foreground truncate">{stage.nome}</span>
-                      <span className="text-[10px] font-bold text-muted-foreground">{stageLeads.length}</span>
+                      <span className="text-xs font-bold text-foreground truncate">{stage.nome}</span>
+                      <span className="text-xs font-bold text-muted-foreground">{stageLeads.length}</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {totalVGV > 0 && (
-                        <span className="text-[9px] font-semibold text-foreground">
+                        <span className="text-[10px] font-semibold text-foreground">
                           {formatVGV(totalVGV)}
                         </span>
                       )}
                       {avgTime && (
-                        <span className="text-[9px] text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground">
                           {avgTime}
                         </span>
                       )}
                       {alerts.semCorretor > 0 && (
-                        <span className="text-[9px] font-semibold text-purple-600 dark:text-purple-400">
+                        <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400">
                           👤{alerts.semCorretor}
                         </span>
                       )}
