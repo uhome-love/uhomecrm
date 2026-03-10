@@ -381,6 +381,7 @@ export function AppSidebar() {
             { title: "Pipeline de Leads", url: "/pipeline", icon: Kanban },
             { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
             { title: "Pipeline Negócios", url: "/meus-negocios", icon: Briefcase },
+            { title: "Pós-Vendas", url: "/pos-vendas", icon: PackageCheck },
           ],
         },
         {
