@@ -202,6 +202,7 @@ export default function AgendaVisitas() {
   const [sendingCobranca, setSendingCobranca] = useState(false);
   const [agendaTipo, setAgendaTipo] = useState<"lead" | "negocio">("lead");
   const [leadSubTab, setLeadSubTab] = useState<"minhas" | "time">("minhas");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
 
   const { visitas: allVisitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
 
