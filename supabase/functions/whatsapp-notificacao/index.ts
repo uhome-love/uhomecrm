@@ -18,7 +18,7 @@ serve(async (req) => {
     const phoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || Deno.env.get("WHATSAPP_PHONE_ID");
 
     if (!token || !phoneId) {
-      console.error("WHATSAPP_TOKEN or WHATSAPP_PHONE_ID not configured");
+      console.error("WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID not configured");
       return new Response(
         JSON.stringify({ error: "WhatsApp credentials not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -28,40 +28,67 @@ serve(async (req) => {
     const numeroLimpo = telefone.replace(/\D/g, "");
     const numeroFinal = numeroLimpo.startsWith("55") ? numeroLimpo : `55${numeroLimpo}`;
 
-    let mensagem = "";
+    console.log(`Sending WhatsApp to ${numeroFinal}, tipo: ${tipo}`);
 
-    if (tipo === "novo_lead") {
-      mensagem = `🔔 *NOVO LEAD — VOCÊ TEM 5 MINUTOS!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n📱 ${dados.telefone}\n\n⏱️ Acesse o UhomeSales agora e aceite antes que expire!\n👉 https://6e97ca96-8d59-451c-8ca6-c1b3d18c3c30.lovableproject.com/roleta-leads`;
-    }
+    // Template-based messages
+    const TEMPLATE_MESSAGES: Record<string, () => any> = {
+      novo_lead: () => ({
+        messaging_product: "whatsapp",
+        to: numeroFinal,
+        type: "template",
+        template: {
+          name: "novo_lead",
+          language: { code: "pt_BR" },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", parameter_name: "nome", text: dados.nome || "Lead" },
+                { type: "text", parameter_name: "whatsapp_lead", text: dados.telefone || "N/A" },
+                { type: "text", parameter_name: "email", text: dados.email || "N/A" },
+                { type: "text", parameter_name: "empreendimento", text: dados.empreendimento || "Não identificado" },
+              ],
+            },
+          ],
+        },
+      }),
+    };
 
-    if (tipo === "aviso_1h") {
-      mensagem = `⚠️ *Lead sem contato há 1 hora!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nFaça a primeira interação agora no UhomeSales!`;
-    }
+    // Fallback text messages for types without templates
+    const TEXT_MESSAGES: Record<string, () => string> = {
+      aviso_1h: () => `⚠️ *Lead sem contato há 1 hora!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nFaça a primeira interação agora no UhomeSales!`,
+      aviso_1h30: () => `⚠️ *Segundo aviso — 1h30 sem contato!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nUrgente! Acesse o sistema agora.`,
+      aviso_repasse: () => `🔴 *ÚLTIMO AVISO — Lead repassado em 30 min!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nApós 3 avisos o lead será repassado para outro corretor.`,
+      lead_expirado_gestor: () => `📋 *Lead repassado por inatividade*\n\nCorretor: ${dados.corretor}\nLead: ${dados.nome} — ${dados.empreendimento}\n\nLead devolvido para a fila automaticamente.`,
+      cobranca: () => dados.mensagem_personalizada || dados.mensagem || "",
+    };
 
-    if (tipo === "aviso_1h30") {
-      mensagem = `⚠️ *Segundo aviso — 1h30 sem contato!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nUrgente! Acesse o sistema agora.`;
-    }
+    let body: any;
 
-    if (tipo === "aviso_repasse") {
-      mensagem = `🔴 *ÚLTIMO AVISO — Lead repassado em 30 min!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nApós 3 avisos o lead será repassado para outro corretor.`;
-    }
-
-    if (tipo === "lead_expirado_gestor") {
-      mensagem = `📋 *Lead repassado por inatividade*\n\nCorretor: ${dados.corretor}\nLead: ${dados.nome} — ${dados.empreendimento}\n\nLead devolvido para a fila automaticamente.`;
-    }
-
-    if (tipo === "cobranca") {
-      mensagem = dados.mensagem_personalizada || dados.mensagem || "";
-    }
-
-    if (!mensagem) {
+    if (TEMPLATE_MESSAGES[tipo]) {
+      // Use approved template
+      body = TEMPLATE_MESSAGES[tipo]();
+    } else if (TEXT_MESSAGES[tipo]) {
+      // Fallback to text (only works within 24h window)
+      const mensagem = TEXT_MESSAGES[tipo]();
+      if (!mensagem) {
+        return new Response(
+          JSON.stringify({ error: `Mensagem vazia para tipo: ${tipo}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      body = {
+        messaging_product: "whatsapp",
+        to: numeroFinal,
+        type: "text",
+        text: { body: mensagem },
+      };
+    } else {
       return new Response(
         JSON.stringify({ error: `Tipo de mensagem desconhecido: ${tipo}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log(`Sending WhatsApp to ${numeroFinal}, tipo: ${tipo}`);
 
     const response = await fetch(
       `https://graph.facebook.com/v18.0/${phoneId}/messages`,
@@ -71,12 +98,7 @@ serve(async (req) => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: numeroFinal,
-          type: "text",
-          text: { body: mensagem },
-        }),
+        body: JSON.stringify(body),
       }
     );
 
