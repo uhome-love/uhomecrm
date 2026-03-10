@@ -127,7 +127,7 @@ export default function ImoveisPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, contrato, tipo, cidade, bairro]);
+  }, [search, contrato, tipo, cidade, bairro, dormitorios, valorMin, valorMax]);
 
   useEffect(() => {
     fetchImoveis(1);
