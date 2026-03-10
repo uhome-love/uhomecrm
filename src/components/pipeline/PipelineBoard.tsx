@@ -678,7 +678,15 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   arrivedLeadId={arrivedLeadId}
                   onToggleSelect={onToggleSelect}
                   onSelectLead={onSelectLead}
-                  onMoveLead={onMoveLead}
+                  onMoveLead={(leadId: string, stageId: string) => {
+                    const lead = leads.find(l => l.id === leadId);
+                    const targetStage = stages.find(s => s.id === stageId);
+                    if (lead && targetStage && needsTransitionPopup(targetStage.nome, targetStage.tipo)) {
+                      setTransitionPopup({ lead, targetStage });
+                      return;
+                    }
+                    completeTransition(leadId, stageId);
+                  }}
                   onTransferred={onTransferred}
                   stageIndexMap={stageIndexMap}
                   handleDragStart={handleDragStart}
