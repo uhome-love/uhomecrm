@@ -144,8 +144,8 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       )}
       style={{
         gridTemplateColumns: showCorretor
-          ? "3.5rem 3px 1fr 10rem 8rem 9rem 6.5rem auto auto"
-          : "3.5rem 3px 1fr 10rem 8rem 6.5rem auto auto",
+          ? "3.5rem 3px 1fr 10rem 8rem 7rem 9rem 6.5rem auto auto"
+          : "3.5rem 3px 1fr 10rem 8rem 7rem 6.5rem auto auto",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -201,6 +201,13 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
         <span className="text-xs text-muted-foreground truncate">
           {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "—"}
+        </span>
+      </div>
+
+      {/* Responsável (always visible) */}
+      <div className="hidden sm:block min-w-0">
+        <span className="text-xs text-muted-foreground truncate block">
+          👤 {v.corretor_nome || "—"}
         </span>
       </div>
 
