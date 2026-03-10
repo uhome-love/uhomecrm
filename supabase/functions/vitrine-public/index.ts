@@ -6,6 +6,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function fetchImovelFromJetimob(apiKey: string, imovelId: number) {
+  const url = `https://api.jetimob.com/webservice/${apiKey}/imoveis/codigo/${imovelId}?v=6`;
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const item = data?.result || data;
+  if (!item || !item.id) return null;
+
+  return {
+    id: item.id || imovelId,
+    titulo: item.titulo || item.descricao_curta || `Imóvel ${imovelId}`,
+    endereco: item.endereco?.logradouro
+      ? `${item.endereco.logradouro}${item.endereco.bairro ? `, ${item.endereco.bairro}` : ""}${item.endereco.cidade ? ` — ${item.endereco.cidade}` : ""}`
+      : null,
+    area: item.area_util || item.area_total || null,
+    quartos: item.quartos || item.dormitorios || null,
+    vagas: item.vagas || item.garagens || null,
+    valor: item.valor_venda || item.valor || null,
+    fotos: (item.fotos || []).slice(0, 10).map((f: any) => f.link || f.link_thumb || f.url),
+    empreendimento: item.empreendimento?.nome || null,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,6 +41,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const { action, vitrine_id, imovel_ids } = body;
+
+    const JETIMOB_API_KEY = Deno.env.get("JETIMOB_API_KEY");
 
     // GET vitrine data + fetch properties from Jetimob
     if (action === "get_vitrine") {
@@ -52,42 +77,20 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       // Fetch properties from Jetimob
-      const JETIMOB_TOKEN = Deno.env.get("JETIMOB_API_TOKEN");
-      const JETIMOB_API_URL = Deno.env.get("JETIMOB_API_URL");
-      
       let imoveis: any[] = [];
       const ids = (vitrine.imovel_ids as number[]) || [];
-      
-      if (JETIMOB_TOKEN && JETIMOB_API_URL && ids.length > 0) {
-        for (const imovelId of ids) {
-          try {
-            const res = await fetch(`${JETIMOB_API_URL}/imoveis/${imovelId}`, {
-              headers: {
-                Authorization: `Bearer ${JETIMOB_TOKEN}`,
-                Accept: "application/json",
-              },
-            });
-            if (res.ok) {
-              const data = await res.json();
-              const item = data.result || data;
-              imoveis.push({
-                id: item.id || imovelId,
-                titulo: item.titulo || item.descricao_curta || `Imóvel ${imovelId}`,
-                endereco: item.endereco?.logradouro
-                  ? `${item.endereco.logradouro}${item.endereco.bairro ? `, ${item.endereco.bairro}` : ""}${item.endereco.cidade ? ` — ${item.endereco.cidade}` : ""}`
-                  : null,
-                area: item.area_util || item.area_total || null,
-                quartos: item.quartos || item.dormitorios || null,
-                vagas: item.vagas || item.garagens || null,
-                valor: item.valor_venda || item.valor || null,
-                fotos: (item.fotos || []).slice(0, 10).map((f: any) => f.link || f.link_thumb || f.url),
-                empreendimento: item.empreendimento?.nome || null,
-              });
-            }
-          } catch (e) {
-            console.warn(`Failed to fetch imovel ${imovelId}:`, e);
+
+      if (JETIMOB_API_KEY && ids.length > 0) {
+        const results = await Promise.allSettled(
+          ids.map(id => fetchImovelFromJetimob(JETIMOB_API_KEY, id))
+        );
+        for (const r of results) {
+          if (r.status === "fulfilled" && r.value) {
+            imoveis.push(r.value);
           }
         }
+      } else {
+        console.warn("JETIMOB_API_KEY not configured or no imovel_ids");
       }
 
       return jsonResponse({
@@ -115,28 +118,21 @@ Deno.serve(async (req) => {
       const { data: { user } } = await supabase.auth.getUser(token);
       if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
 
-      const JETIMOB_TOKEN = Deno.env.get("JETIMOB_API_TOKEN");
-      const JETIMOB_API_URL = Deno.env.get("JETIMOB_API_URL");
-      
-      if (!JETIMOB_TOKEN || !JETIMOB_API_URL || !imovel_ids?.length) {
+      if (!JETIMOB_API_KEY || !imovel_ids?.length) {
         return jsonResponse({ imoveis: [] });
       }
 
       const imoveis: any[] = [];
       for (const id of imovel_ids.slice(0, 20)) {
         try {
-          const res = await fetch(`${JETIMOB_API_URL}/imoveis/${id}`, {
-            headers: { Authorization: `Bearer ${JETIMOB_TOKEN}`, Accept: "application/json" },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const item = data.result || data;
+          const item = await fetchImovelFromJetimob(JETIMOB_API_KEY, id);
+          if (item) {
             imoveis.push({
-              id: item.id || id,
-              titulo: item.titulo || item.descricao_curta || `Imóvel ${id}`,
-              foto_thumb: (item.fotos || [])[0]?.link_thumb || null,
-              area: item.area_util || item.area_total || null,
-              valor: item.valor_venda || item.valor || null,
+              id: item.id,
+              titulo: item.titulo,
+              foto_thumb: (item.fotos || [])[0] || null,
+              area: item.area,
+              valor: item.valor,
             });
           }
         } catch (e) {
