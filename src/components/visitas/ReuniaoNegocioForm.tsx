@@ -19,7 +19,15 @@ interface NegocioOption {
   vgv_estimado: number | null;
   fase: string | null;
   corretor_id: string | null;
+  telefone: string | null;
 }
+
+const RESPONSAVEL_OPTIONS = [
+  { value: "gerente", label: "👔 Gerente" },
+  { value: "corretor", label: "🏠 Próprio Corretor" },
+  { value: "corretor_parceiro", label: "🤝 Corretor Parceiro" },
+  { value: "construtora", label: "🏗️ Responsável Construtora" },
+];
 
 const OBJETIVO_OPTIONS = [
   { value: "negociacao", label: "🤝 Negociação" },
