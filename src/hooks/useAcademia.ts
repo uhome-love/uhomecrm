@@ -96,6 +96,18 @@ export function useAcademia() {
   const queryClient = useQueryClient();
   const canManage = isAdmin || isGestor;
 
+  // Resolve profiles.id from auth user.id (FK references profiles.id, not auth.users.id)
+  const { data: profileId } = useQuery({
+    queryKey: ["profile-id", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
+      return data?.id || null;
+    },
+    enabled: !!user,
+    staleTime: 300000,
+  });
+
   // Load trilhas (published for students, all for managers)
   const { data: trilhas = [], isLoading: trilhasLoading } = useQuery({
     queryKey: ["academia-trilhas", canManage],
@@ -124,27 +136,27 @@ export function useAcademia() {
 
   // Load user progress
   const { data: progresso = [], isLoading: progressoLoading } = useQuery({
-    queryKey: ["academia-progresso", user?.id],
+    queryKey: ["academia-progresso", profileId],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase.from("academia_progresso").select("*").eq("corretor_id", user.id);
+      if (!profileId) return [];
+      const { data, error } = await supabase.from("academia_progresso").select("*").eq("corretor_id", profileId);
       if (error) throw error;
       return (data || []) as Progresso[];
     },
-    enabled: !!user,
+    enabled: !!profileId,
     staleTime: 30000,
   });
 
   // Load certificates
   const { data: certificados = [] } = useQuery({
-    queryKey: ["academia-certificados", user?.id],
+    queryKey: ["academia-certificados", profileId],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase.from("academia_certificados").select("*").eq("corretor_id", user.id);
+      if (!profileId) return [];
+      const { data, error } = await supabase.from("academia_certificados").select("*").eq("corretor_id", profileId);
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user,
+    enabled: !!profileId,
     staleTime: 60000,
   });
 
@@ -170,7 +182,7 @@ export function useAcademia() {
   }, [aulas]);
 
   const completeAula = useCallback(async (aulaId: string, trilhaId: string, quizScore?: number) => {
-    if (!user) return;
+    if (!profileId) return;
     const aula = aulas.find(a => a.id === aulaId);
     let xp = aula?.xp_recompensa || 10;
 
@@ -179,7 +191,7 @@ export function useAcademia() {
 
     // Use upsert to avoid stale-state race condition with startAula
     const { error } = await supabase.from("academia_progresso").upsert({
-      corretor_id: user.id,
+      corretor_id: profileId,
       trilha_id: trilhaId,
       aula_id: aulaId,
       status: "concluida",
@@ -205,24 +217,24 @@ export function useAcademia() {
     if (completedCount >= trilhaAulas.length) {
       const trilha = trilhas.find(t => t.id === trilhaId);
       const codigo = `UHOME-${Date.now().toString(36).toUpperCase()}`;
-      await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: user.id, codigo });
+      await supabase.from("academia_certificados").insert({ trilha_id: trilhaId, corretor_id: profileId, codigo });
       toast(`🏆 TRILHA CONCLUÍDA! ${trilha?.titulo || ""}`, { description: `+100 XP bônus · Certificado emitido!`, duration: 6000 });
     }
 
     await queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });
     await queryClient.invalidateQueries({ queryKey: ["academia-certificados"] });
-    await queryClient.refetchQueries({ queryKey: ["academia-progresso", user.id] });
-  }, [user, aulas, progresso, trilhas, queryClient]);
+    await queryClient.refetchQueries({ queryKey: ["academia-progresso", profileId] });
+  }, [profileId, aulas, progresso, trilhas, queryClient]);
 
   const startAula = useCallback(async (aulaId: string, trilhaId: string) => {
-    if (!user) return;
+    if (!profileId) return;
     const existing = progresso.find(p => p.aula_id === aulaId);
     if (existing) return;
     await supabase.from("academia_progresso").insert({
-      corretor_id: user.id, trilha_id: trilhaId, aula_id: aulaId, status: "em_andamento", xp_ganho: 0,
+      corretor_id: profileId, trilha_id: trilhaId, aula_id: aulaId, status: "em_andamento", xp_ganho: 0,
     });
     queryClient.invalidateQueries({ queryKey: ["academia-progresso"] });
-  }, [user, progresso, queryClient]);
+  }, [profileId, progresso, queryClient]);
 
   // CRUD for trilhas
   const createTrilha = useCallback(async (data: Partial<Trilha>) => {
