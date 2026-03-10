@@ -78,7 +78,7 @@ export default function ReuniaoNegocioForm({ open, onClose, onSubmit }: Props) {
     (async () => {
       const { data } = await supabase
         .from("negocios")
-        .select("id, cliente_nome, imovel, vgv, fase, corretor_id")
+        .select("id, nome_cliente, imovel_interesse, vgv_estimado, fase, corretor_id")
         .not("fase", "eq", "caiu")
         .order("updated_at", { ascending: false })
         .limit(200);
