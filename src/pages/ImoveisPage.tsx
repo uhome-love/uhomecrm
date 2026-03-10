@@ -670,7 +670,7 @@ export default function ImoveisPage() {
               const cond = getNum(item, "valor_condominio");
               const disponib = item.situacao || item.status || "";
               const isCampanha = CAMPANHA_CODES.some((c) => c.codigo === codigo);
-              const origem = extractOrigemExterna(item);
+              
 
               return (
                 <Card key={item.id_imovel || codigo || idx} className={cn("overflow-hidden hover:shadow-lg transition-shadow", isCampanha && "ring-1 ring-primary/30")}>
