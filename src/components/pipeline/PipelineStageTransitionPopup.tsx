@@ -463,10 +463,12 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("oferta_ativa_listas").select("id, nome, empreendimento").eq("status", "ativa").then(({ data }) => {
+    const load = async () => {
+      const { data } = await supabase.from("oferta_ativa_listas").select("id, nome, empreendimento").eq("status", "ativa") as any;
       setListas(data || []);
       setLoading(false);
-    });
+    };
+    load();
   }, []);
 
   // Auto-select lista matching empreendimento
