@@ -111,8 +111,8 @@ export function VisitaRowHeader({ showCorretor, showTeam }: { showCorretor?: boo
       {showCorretor && <span style={{ width: "clamp(80px, 12%, 130px)" }} className="shrink-0 hidden lg:block">Corretor</span>}
       {showTeam && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Time</span>}
       <span className="flex-1" />
-      <span className="w-[90px] text-right shrink-0">Status</span>
-      <span className="w-[72px] shrink-0" />
+      <span className="text-right shrink-0">Status / Ações</span>
+      <span className="w-7 shrink-0" />
     </div>
   );
 }
@@ -128,7 +128,6 @@ interface Props {
 }
 
 export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete, showCorretor, showTeam, isPastPending }: Props) {
-  const [hovered, setHovered] = useState(false);
   const isNegocio = v.tipo === "negocio";
   const negocioMeta = isNegocio ? parseNegocioMeta(v.observacoes) : { objetivo: null, responsavel: null };
   const teamStyle = showTeam ? getTeamBadgeStyle(v.equipe) : null;
@@ -139,8 +138,6 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30",
         isPastPending && "bg-red-50/50"
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {/* Hora */}
       <span className="text-sm font-bold font-mono text-foreground shrink-0 w-12 text-center">
@@ -200,24 +197,24 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 
-      {/* Status badge */}
-      <div className="shrink-0 w-[90px] flex justify-end">
+      {/* Status badge + inline action buttons */}
+      <div className="shrink-0 flex items-center gap-1.5 justify-end">
         <Badge className={cn("text-[10px] px-2.5 py-0.5 border font-semibold whitespace-nowrap", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
           {STATUS_EMOJIS[v.status]} {STATUS_LABELS[v.status]}
         </Badge>
+
+        {(v.status === "marcada" || v.status === "confirmada") && (
+          <>
+            <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")} title="Realizada">✅</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => onUpdateStatus(v.id, "reagendada")} title="Reagendada">🔄</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")} title="No Show">❌</Button>
+            <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-gray-300 text-gray-600 hover:bg-gray-50" onClick={() => onUpdateStatus(v.id, "cancelada")} title="Cancelada">⚫</Button>
+          </>
+        )}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0 w-[72px] justify-end">
-        <div className={cn("flex items-center gap-1 transition-opacity", hovered ? "opacity-100" : "opacity-0")}>
-          {(v.status === "marcada" || v.status === "confirmada") && (
-            <>
-              <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")}>✅</Button>
-              <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")}>❌</Button>
-            </>
-          )}
-        </div>
-
+      {/* Menu */}
+      <div className="shrink-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
