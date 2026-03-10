@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Clock, RefreshCw, CheckCircle2, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown, Rocket, Inbox } from "lucide-react";
+import { Loader2, Clock, RefreshCw, CheckCircle2, XCircle, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown, Rocket, Inbox } from "lucide-react";
 import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -183,6 +183,25 @@ export default function CeoDashboard() {
     toast.success(`✅ ${item?.corretor_nome || "Corretor"} aprovado(a) na Roleta!`);
   }, [user, localPendentes, getProfileId, insertFilaForCred]);
 
+  const recusar = useCallback(async (id: string) => {
+    if (!user) return;
+    const profileId = await getProfileId();
+    if (!profileId) return;
+    const item = localPendentes.find((c: any) => c.id === id);
+    setLocalPendentes(prev => prev.filter((c: any) => c.id !== id));
+
+    const { error } = await supabase.from("roleta_credenciamentos")
+      .update({ status: "recusado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Erro ao recusar");
+      setLocalPendentes(prev => [...prev, item].filter(Boolean));
+      return;
+    }
+    toast.success(`❌ ${item?.corretor_nome || "Corretor"} recusado(a) da Roleta.`);
+  }, [user, localPendentes, getProfileId]);
+
   const aprovarTodos = useCallback(async () => {
     if (!user) return;
     const profileId = await getProfileId();
@@ -307,9 +326,14 @@ export default function CeoDashboard() {
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => aprovar(c.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs w-full sm:w-auto">
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
-                  </Button>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button size="sm" onClick={() => aprovar(c.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs flex-1 sm:flex-none">
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => recusar(c.id)} className="text-destructive border-destructive/30 hover:bg-destructive/10 text-xs flex-1 sm:flex-none">
+                      <XCircle className="h-3.5 w-3.5 mr-1" /> Recusar
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
