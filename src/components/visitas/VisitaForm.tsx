@@ -34,6 +34,14 @@ interface Props {
 
 const QUICK_TIMES = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"];
 
+const LOCAL_OPTIONS = [
+  { value: "stand", label: "🏗️ Stand do empreendimento" },
+  { value: "empresa", label: "🏢 Escritório / Empresa" },
+  { value: "videochamada", label: "📹 Videochamada" },
+  { value: "decorado", label: "🏠 Apartamento decorado" },
+  { value: "outro", label: "📍 Outro" },
+];
+
 function getDefaultForm(initialData?: Props["initialData"]) {
   return {
     nome_cliente: initialData?.nome_cliente || "",
@@ -43,6 +51,7 @@ function getDefaultForm(initialData?: Props["initialData"]) {
     origem: initialData?.origem || "manual",
     data_visita: initialData?.data_visita || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
     hora_visita: initialData?.hora_visita || "",
+    local_visita: initialData?.local_visita || "",
     observacoes: initialData?.observacoes || "",
     pipeline_lead_id: (initialData as any)?.pipeline_lead_id || "",
   };
@@ -128,6 +137,7 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
         telefone: form.telefone || null,
         empreendimento: form.empreendimento || null,
         hora_visita: form.hora_visita || null,
+        local_visita: form.local_visita || null,
         observacoes: form.observacoes || null,
         // Explicitly use pipeline_lead_id (NOT lead_id) for pipeline leads
         pipeline_lead_id: form.pipeline_lead_id || null,
@@ -216,6 +226,19 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
               extraOptions={empreendimentos}
               placeholder="Selecione ou digite o empreendimento"
             />
+          </div>
+
+          {/* Local da Visita */}
+          <div>
+            <Label className="text-xs font-semibold mb-1 block">Local da Visita</Label>
+            <Select value={form.local_visita} onValueChange={v => set("local_visita", v)}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Onde será a visita?" /></SelectTrigger>
+              <SelectContent>
+                {LOCAL_OPTIONS.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Corretor — only show for gestores/admins who manage a team (not for corretores) */}

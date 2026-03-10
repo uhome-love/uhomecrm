@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Trash2, Phone } from "lucide-react";
+import { MoreVertical, Trash2, Phone, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import { useState } from "react";
@@ -17,6 +17,14 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
 
 const STATUS_EMOJIS: Record<string, string> = {
   marcada: "🟡", confirmada: "🔵", realizada: "✅", reagendada: "🔄", cancelada: "⚫", no_show: "❌",
+};
+
+const LOCAL_LABELS: Record<string, string> = {
+  stand: "🏗️ Stand",
+  empresa: "🏢 Escritório",
+  videochamada: "📹 Videochamada",
+  decorado: "🏠 Decorado",
+  outro: "📍 Outro",
 };
 
 const STATUS_LINE_COLORS: Record<string, string> = {
@@ -95,6 +103,14 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCor
       {/* Empreendimento */}
       <div className="w-32 shrink-0 hidden sm:block">
         <span className="text-xs text-muted-foreground truncate block">{v.empreendimento || "—"}</span>
+      </div>
+
+      {/* Local da visita */}
+      <div className="w-28 shrink-0 hidden sm:flex items-center gap-1">
+        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">
+          {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "Não informado"}
+        </span>
       </div>
 
       {/* Corretor + Team */}
