@@ -293,6 +293,16 @@ serve(async (req) => {
           prioridadeLead = "alta";
         }
 
+        // Resolve segmento from empreendimento
+        const segmentoId = resolveSegmentoId(empreendimento);
+
+        // Extract campaign detail (e.g. "Vídeo Lucas", "Video Gabriel")
+        const campanhaDetalhe = campanhaNome || msg || null;
+        // Clean origin: just empreendimento name for display; full text goes to origem_detalhe
+        const origemClean = empreendimento !== "Avulso" ? empreendimento : (lead.source || lead.origin || "API Jetimob");
+        // Detect canal (Meta Ads, TikTok, Portal, etc.)
+        const canalOrigem = detectCanal(msg, lead.source, lead.origin);
+
         const { data: insertedLead, error: insertError } = await adminClient
           .from("pipeline_leads")
           .insert({
@@ -301,9 +311,10 @@ serve(async (req) => {
             telefone2,
             email,
             empreendimento,
+            segmento_id: segmentoId,
             stage_id: novoLeadStageId,
-            origem: campanhaNome || msg || "API Jetimob",
-            origem_detalhe: lead.source || lead.origin || null,
+            origem: origemClean,
+            origem_detalhe: campanhaDetalhe,
             jetimob_lead_id: jetimobId,
             observacoes: msg || null,
             corretor_id: null,
