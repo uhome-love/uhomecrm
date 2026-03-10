@@ -74,7 +74,7 @@ export default function PagadoriasPage() {
         cliente_cpf: c.cpf,
         cliente_email: c.email,
         cliente_telefone: c.telefone,
-        cliente_endereco: c.endereco + (c.cidade ? `, ${c.cidade}` : "") + (c.estado ? `/${c.estado}` : ""),
+        cliente_endereco: c.endereco + (c.bairro ? `, Bairro ${c.bairro}` : "") + (c.cidade ? `, ${c.cidade}` : "") + (c.estado ? `/${c.estado}` : "") + (c.cep ? `, CEP: ${c.cep}` : ""),
       }));
     }
   }, [compradores]);
