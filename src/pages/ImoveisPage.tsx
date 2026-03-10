@@ -236,8 +236,10 @@ export default function ImoveisPage() {
   const [total, setTotal] = useState(0);
   const [campanhaAtiva, setCampanhaAtiva] = useState(false);
   const [uhomeOnly, setUhomeOnly] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const [search, setSearch] = useState("");
   const [contrato, setContrato] = useState("venda");
   const [tipo, setTipo] = useState("");
   const [bairro, setBairro] = useState("");
