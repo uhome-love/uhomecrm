@@ -72,6 +72,8 @@ export default function MinhasTarefas() {
   const [adiarData, setAdiarData] = useState("");
   const [adiarHora, setAdiarHora] = useState("");
   const [showNovaTarefa, setShowNovaTarefa] = useState(false);
+  const [showTipoSelector, setShowTipoSelector] = useState(false);
+  const [showNovaTarefaNegocio, setShowNovaTarefaNegocio] = useState(false);
   const [novoTipo, setNovoTipo] = useState("follow_up");
   const [novoData, setNovoData] = useState("");
   const [novoHora, setNovoHora] = useState("");
@@ -79,6 +81,14 @@ export default function MinhasTarefas() {
   const [leadSearch, setLeadSearch] = useState("");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [selectedLeadNome, setSelectedLeadNome] = useState("");
+  // Negocio task state
+  const [negocioSearch, setNegocioSearch] = useState("");
+  const [selectedNegocioId, setSelectedNegocioId] = useState<string | null>(null);
+  const [selectedNegocioNome, setSelectedNegocioNome] = useState("");
+  const [negocioTipo, setNegocioTipo] = useState("mandar_simulacao");
+  const [negocioData, setNegocioData] = useState("");
+  const [negocioHora, setNegocioHora] = useState("");
+  const [negocioObs, setNegocioObs] = useState("");
   // Edit task state
   const [editId, setEditId] = useState<string | null>(null);
   const [editTipo, setEditTipo] = useState("follow_up");
