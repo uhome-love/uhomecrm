@@ -52,7 +52,7 @@ export default function CentralComunicacao({
     if (leadNome) text = text.replace(/\{\{nome\}\}/g, leadNome);
     if (leadEmpreendimento) text = text.replace(/\{\{empreendimento\}\}/g, leadEmpreendimento);
     navigator.clipboard.writeText(text);
-    useItem(item.id);
+    useItem.mutate(item.id);
     toast.success("Script copiado! 📋");
   };
 
