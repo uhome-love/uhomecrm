@@ -103,9 +103,9 @@ export default function ReuniaoNegocioForm({ open, onClose, onSubmit }: Props) {
     try {
       const objetivoLabel = OBJETIVO_OPTIONS.find(o => o.value === form.objetivo)?.label || form.objetivo;
       const result = await onSubmit({
-        nome_cliente: selectedNegocio.cliente_nome,
+        nome_cliente: selectedNegocio.nome_cliente || "Sem nome",
         telefone: form.telefone || null,
-        empreendimento: selectedNegocio.imovel || null,
+        empreendimento: selectedNegocio.imovel_interesse || null,
         local_visita: form.local_visita || null,
         data_visita: form.data_visita,
         hora_visita: form.hora_visita || null,
