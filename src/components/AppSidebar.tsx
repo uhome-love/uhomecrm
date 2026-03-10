@@ -345,7 +345,7 @@ export function AppSidebar() {
           {
             label: "Operacional",
             items: [
-              { title: "📋 Tarefas & Marketing", url: "/backoffice/tarefas", icon: ListChecks },
+              { title: "Tarefas & Marketing", url: "/backoffice/tarefas", icon: ListChecks },
               { title: "HOMI Ana", url: "/backoffice/homi-ana", icon: Bot },
             ],
           },
