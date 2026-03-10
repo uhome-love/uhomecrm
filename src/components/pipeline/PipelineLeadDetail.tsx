@@ -350,11 +350,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-xs text-muted-foreground">Sem tarefas agendadas</span>
-              <Button variant="link" size="sm" className="h-6 text-[10px] px-1 text-primary" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
-                ➕ Criar tarefa
+            <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300/50 dark:border-amber-600/30 rounded-lg px-3 py-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              <div className="flex-1">
+                <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Lead desatualizado</span>
+                <p className="text-[10px] text-amber-600 dark:text-amber-400/80 mt-0.5">
+                  Para manter o lead atualizado, crie uma tarefa com a próxima ação a ser realizada.
+                </p>
+              </div>
+              <Button variant="default" size="sm" className="h-7 text-xs px-3 gap-1 bg-amber-500 hover:bg-amber-600 text-white shrink-0" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
+                <Plus className="h-3 w-3" /> Criar próxima ação
               </Button>
             </div>
           )}
