@@ -568,6 +568,7 @@ export default function MeusNegocios() {
     if (data.fields.imovel) updates.empreendimento = data.fields.imovel;
     if (data.fields.vgv) updates.vgv_estimado = parseFloat(data.fields.vgv);
     if (data.fields.valor_proposta) updates.vgv_estimado = parseFloat(data.fields.valor_proposta);
+    if (data.fields.data_assinatura) updates.data_assinatura = data.fields.data_assinatura;
 
     if (Object.keys(updates).length > 1) {
       await supabase.from("negocios").update(updates as any).eq("id", negocioId);

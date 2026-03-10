@@ -231,7 +231,7 @@ export default function CheckpointGerente() {
       supabase.from("negocios").select("vgv_estimado, vgv_final, fase, data_assinatura").eq("gerente_id", user.id).in("fase", ["assinado", "vendido"]).gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim),
     ]);
 
-    const vgvReal = (negocios || []).filter(n => n.fase === "assinado").reduce((s, n) => s + Number(n.vgv_estimado || 0), 0);
+    const vgvReal = (negocios || []).reduce((s, n) => s + Number(n.vgv_final || n.vgv_estimado || 0), 0);
 
     setMetasMes(prev => ({
       ...prev,

@@ -145,10 +145,12 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     const visitasRealizadas = visitas?.filter(v => v.status === "realizada").length || 0;
     const noShows = visitas?.filter(v => v.status === "no_show").length || 0;
 
-    // Negocios
+    // Negocios — all created in period
     const { data: negocios } = await supabase.from("negocios").select("id, fase, status, vgv_estimado, vgv_final").gte("created_at", startTs).lte("created_at", endTs);
+    // Assinados — filter by data_assinatura (actual signing date, not creation date)
+    const { data: negociosAssinados } = await supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final").in("fase", ["assinado", "vendido"]).gte("data_assinatura", r.start).lte("data_assinatura", r.end);
     const vgvGerado = negocios?.reduce((s, n) => s + (n.vgv_estimado || 0), 0) || 0;
-    const vgvAssinado = negocios?.filter(n => n.fase === "assinado" || n.fase === "vendido").reduce((s, n) => s + (n.vgv_final || n.vgv_estimado || 0), 0) || 0;
+    const vgvAssinado = (negociosAssinados || []).reduce((s, n) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
     const propostas = negocios?.filter(n => n.fase === "proposta" || n.fase === "negociacao").length || 0;
     const negociosPerdidos = negocios?.filter(n => n.status === "perdido" || n.status === "cancelado").length || 0;
 

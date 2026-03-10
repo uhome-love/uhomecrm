@@ -62,7 +62,7 @@ export default function CeoMetasMensais() {
     }
 
     // VGV from negocios (source of truth)
-    const { data: pdns } = await supabase.from("negocios").select("gerente_id, vgv_final, vgv_estimado, fase").eq("fase", "assinado").gte("created_at", `${mes}-01`).lt("created_at", `${mes}-32`).in("gerente_id", gerenteIds);
+    const { data: pdns } = await supabase.from("negocios").select("gerente_id, vgv_final, vgv_estimado, fase").in("fase", ["assinado", "vendido"]).gte("data_assinatura", `${mes}-01`).lte("data_assinatura", `${mes}-31`).in("gerente_id", gerenteIds);
     const vgvByGerente = new Map<string, number>();
     for (const p of (pdns || [])) {
       if (!p.gerente_id) continue;
