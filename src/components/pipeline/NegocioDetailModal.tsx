@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Briefcase, Save, Loader2, Phone, MessageSquare, Mail, Plus,
-  CheckCircle2, Building2, Home, ClipboardList, TrendingUp, Handshake,
+  CheckCircle2, Building2, Home, ClipboardList, TrendingUp, Handshake, CalendarDays,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
