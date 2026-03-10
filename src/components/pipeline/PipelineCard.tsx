@@ -328,14 +328,21 @@ const PipelineCard = memo(function PipelineCard({
           )}
         </div>
 
-        {/* Line 2: Empreendimento · Phone */}
-        <div className="text-xs text-muted-foreground truncate leading-tight">
-          {displayEmpreendimento ? (
-            <span className="font-medium text-foreground/70">{displayEmpreendimento}</span>
-          ) : (
-            <span className="text-amber-500/80 font-medium">🏠 Sem empreend.</span>
+        {/* Line 2: Empreendimento · Phone · Origin badge */}
+        <div className="text-xs text-muted-foreground truncate leading-tight flex items-center gap-1">
+          <span className="truncate">
+            {displayEmpreendimento ? (
+              <span className="font-medium text-foreground/70">{displayEmpreendimento}</span>
+            ) : (
+              <span className="text-amber-500/80 font-medium">🏠 Sem empreend.</span>
+            )}
+            {lead.telefone && <span> · {formatPhone(lead.telefone)}</span>}
+          </span>
+          {lead.origem?.toLowerCase().includes("oferta") && (
+            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-purple-500/15 text-purple-500 dark:text-purple-400 border border-purple-500/20">
+              OA
+            </span>
           )}
-          {lead.telefone && <span> · {formatPhone(lead.telefone)}</span>}
         </div>
 
         {/* Negócio criado badge */}
