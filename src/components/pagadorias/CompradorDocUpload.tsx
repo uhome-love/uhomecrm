@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, Loader2, UserPlus, Trash2, Sparkles, FileCheck, AlertCircle } from "lucide-react";
+import { Upload, Loader2, UserPlus, Trash2, Sparkles, FileCheck, AlertCircle, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Comprador {
