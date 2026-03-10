@@ -50,14 +50,16 @@ export function getCurrentWindowInfo(): {
   const mins = getMinutesFromMidnight(now.getHours(), now.getMinutes());
 
   // Janelas de distribuição:
-  // Manhã:   07:30 — 09:30 (cred 00:00-07:30)
+  // Manhã:   07:30 — 09:30 (cred 07:30-09:30)
   // Tarde:   13:30 — 18:00 (cred 12:00-13:30)
-  // Noturna: 18:00 — 23:59 (cred 18:00+, com requisitos)
+  // Noturna: 18:30 — 23:59 (cred 18:30-20:30, com requisitos)
 
   const t0730 = parseTime("07:30");
   const t0930 = parseTime("09:30");
+  const t1200 = parseTime("12:00");
   const t1330 = parseTime("13:30");
-  const t1800 = parseTime("18:00");
+  const t1830 = parseTime("18:30");
+  const t2030 = parseTime("20:30");
 
   let janela: JanelaId;
   let descricao: string;
@@ -66,50 +68,54 @@ export function getCurrentWindowInfo(): {
   let credenciamentoJanela: JanelaId | null = null;
   let nextTransitionMins: number;
 
-  // Credenciamento manhã SEMPRE aberto (qualquer horário)
-  credenciamentoAberto = true;
-  credenciamentoJanela = "manha";
-
   if (mins < t0730) {
-    // 00:00 — 07:30: Madrugada/acúmulo.
+    // 00:00 — 07:30: Madrugada, nenhum credenciamento aberto
     janela = "madrugada";
     emoji = "🌅";
-    descricao = "Credenciamento manhã aberto";
+    descricao = "Acumulando leads · Credenciamento manhã abre às 07:30";
     nextTransitionMins = t0730;
   } else if (mins < t0930) {
-    // 07:30 — 09:30: Manhã ativa.
+    // 07:30 — 09:30: Manhã ativa, cred manhã aberto
     janela = "manha";
     emoji = "☀️";
     descricao = "Roleta da manhã ativa · Cred manhã aberto";
+    credenciamentoAberto = true;
+    credenciamentoJanela = "manha";
     nextTransitionMins = t0930;
-  } else if (mins < t1330) {
-    // 09:30 — 13:30: Intervalo, cred tarde aberto.
+  } else if (mins < t1200) {
+    // 09:30 — 12:00: Manhã encerrada, aguardando tarde
     janela = "manha";
     emoji = "☀️";
-    descricao = "Cred manhã e tarde abertos";
+    descricao = "Manhã encerrada · Cred tarde abre às 12h";
+    nextTransitionMins = t1200;
+  } else if (mins < t1330) {
+    // 12:00 — 13:30: Cred tarde aberto
+    janela = "manha";
+    emoji = "☀️";
+    descricao = "Cred tarde aberto";
+    credenciamentoAberto = true;
     credenciamentoJanela = "tarde";
     nextTransitionMins = t1330;
-  } else if (mins < t1800) {
-    // 13:30 — 18:00: Tarde ativa.
+  } else if (mins < t1830) {
+    // 13:30 — 18:30: Tarde ativa
     janela = "tarde";
     emoji = "🌞";
-    descricao = "Roleta da tarde ativa · Cred manhã aberto";
-    nextTransitionMins = t1800;
-  } else {
-    // 18:00+: Noturna.
-    const t2030 = parseTime("20:30");
+    descricao = "Roleta da tarde ativa";
+    nextTransitionMins = t1830;
+  } else if (mins < t2030) {
+    // 18:30 — 20:30: Noturna ativa, cred noturna aberto
     janela = "noturna";
     emoji = "🌙";
-    if (mins < t2030) {
-      descricao = "Roleta noturna ativa · Cred manhã e noturna abertos";
-      credenciamentoJanela = "noturna";
-    } else {
-      // After 20:30 — night credentialing closed
-      descricao = "Roleta noturna ativa · Cred noturno encerrado";
-      credenciamentoJanela = null;
-      // Keep morning credentialing open
-    }
-    nextTransitionMins = 24 * 60; // midnight
+    descricao = "Roleta noturna ativa · Cred noturno aberto";
+    credenciamentoAberto = true;
+    credenciamentoJanela = "noturna";
+    nextTransitionMins = t2030;
+  } else {
+    // 20:30+: Noturna ativa, cred encerrado
+    janela = "noturna";
+    emoji = "🌙";
+    descricao = "Roleta noturna ativa · Cred noturno encerrado";
+    nextTransitionMins = 24 * 60;
   }
 
   const proximaTransicao = new Date(now);
