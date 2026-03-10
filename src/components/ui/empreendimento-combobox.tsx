@@ -96,7 +96,7 @@ export default function EmpreendimentoCombobox({
           ref={inputRef}
           value={search || value}
           onChange={(e) => handleInputChange(e.target.value)}
-          onFocus={() => setOpen(true)}
+          onClick={() => setOpen(true)}
           placeholder={placeholder}
           className="pl-8 pr-14 h-9 text-sm"
         />
