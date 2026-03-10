@@ -545,52 +545,53 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   <div className="flex items-center gap-6 flex-wrap text-sm py-2">
                     <div className="relative">
                       <span className="text-xs text-muted-foreground">Empreendimento</span>
-                      {lead.empreendimento ? (
-                        <Popover open={empreendimentoOpen} onOpenChange={setEmpreendimentoOpen}>
-                          <PopoverTrigger asChild>
+                      <Popover open={empreendimentoOpen} onOpenChange={(o) => {
+                        setEmpreendimentoOpen(o);
+                        if (o) setEmpreendimentoSearch(lead.empreendimento || "");
+                      }}>
+                        <PopoverTrigger asChild>
+                          {lead.empreendimento ? (
                             <button className="flex items-center gap-1.5 font-medium text-foreground hover:text-primary transition-colors group">
                               {lead.empreendimento}
                               <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity text-xs">✏️</span>
                             </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-64 p-2" align="start">
-                            <EmpreendimentoCombobox
-                              value={empreendimentoSearch || lead.empreendimento || ""}
-                              onChange={async (v) => {
-                                setSavingEmpreendimento(true);
-                                await onUpdate(lead.id, { empreendimento: v } as any);
-                                setEmpreendimentoOpen(false);
-                                setEmpreendimentoSearch("");
-                                setSavingEmpreendimento(false);
-                                toast.success("Empreendimento atualizado ✅");
-                              }}
-                              placeholder="Buscar ou digitar empreendimento..."
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      ) : (
-                        <Popover open={empreendimentoOpen} onOpenChange={setEmpreendimentoOpen}>
-                          <PopoverTrigger asChild>
+                          ) : (
                             <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors border border-amber-300 dark:border-amber-700">
                               🏠 Selecionar Empreendimento ▼
                             </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-64 p-2" align="start">
-                            <EmpreendimentoCombobox
-                              value={empreendimentoSearch || ""}
-                              onChange={async (v) => {
-                                setSavingEmpreendimento(true);
-                                await onUpdate(lead.id, { empreendimento: v } as any);
-                                setEmpreendimentoOpen(false);
-                                setEmpreendimentoSearch("");
-                                setSavingEmpreendimento(false);
-                                toast.success("Empreendimento atualizado ✅");
-                              }}
-                              placeholder="Buscar ou digitar empreendimento..."
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      )}
+                          )}
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 p-3 space-y-2" align="start">
+                          <EmpreendimentoCombobox
+                            value={empreendimentoSearch}
+                            onChange={(v) => setEmpreendimentoSearch(v)}
+                            onSelect={async (v) => {
+                              setSavingEmpreendimento(true);
+                              await onUpdate(lead.id, { empreendimento: v } as any);
+                              setEmpreendimentoOpen(false);
+                              setEmpreendimentoSearch("");
+                              setSavingEmpreendimento(false);
+                              toast.success("Empreendimento atualizado ✅");
+                            }}
+                            placeholder="Buscar ou digitar empreendimento..."
+                          />
+                          <Button
+                            size="sm"
+                            className="w-full h-8 text-xs font-semibold"
+                            disabled={!empreendimentoSearch.trim() || savingEmpreendimento}
+                            onClick={async () => {
+                              setSavingEmpreendimento(true);
+                              await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
+                              setEmpreendimentoOpen(false);
+                              setEmpreendimentoSearch("");
+                              setSavingEmpreendimento(false);
+                              toast.success("Empreendimento atualizado ✅");
+                            }}
+                          >
+                            {savingEmpreendimento ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Salvar Empreendimento"}
+                          </Button>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div className="h-8 w-px bg-border" />
                     <div>
