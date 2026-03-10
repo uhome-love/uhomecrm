@@ -545,6 +545,16 @@ export default function AgendaVisitas() {
         <VisitaForm open={showForm} onClose={() => setShowForm(false)} onSubmit={createVisita} />
       )}
 
+      {editingVisita && (
+        <VisitaForm
+          open={!!editingVisita}
+          onClose={() => setEditingVisita(null)}
+          onSubmit={handleEditSubmit}
+          initialData={editingVisita}
+          mode="edit"
+        />
+      )}
+
       {resultadoVisita && (
         <VisitaResultadoDialog
           open={!!resultadoVisita}
