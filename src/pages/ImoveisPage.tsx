@@ -349,6 +349,7 @@ export default function ImoveisPage() {
   const [dormitorios, setDormitorios] = useState("");
   const [valorMin, setValorMin] = useState("");
   const [valorMax, setValorMax] = useState("");
+  const [somenteObras, setSomenteObras] = useState(false);
 
   const filteredBairros = useMemo(() => {
     if (!bairroSearch) return BAIRROS_POA;
