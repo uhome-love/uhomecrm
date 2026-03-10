@@ -798,6 +798,7 @@ export default function MeusNegocios() {
                       onDragStart={() => { dragNegocioId.current = negocio.id; }}
                       onClick={() => setSelectedNegocio(negocio)}
                       onMoveFase={requestMoveFase}
+                      onUpdateNegocio={updateNegocio}
                     />
                   ))}
                 </div>
