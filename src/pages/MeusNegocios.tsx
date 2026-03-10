@@ -560,16 +560,22 @@ export default function MeusNegocios() {
           </div>
 
           <Button
-            variant={showFilters ? "default" : "outline"}
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="gap-1.5 h-9 border-white/10 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
+            className="gap-1.5 h-9 rounded-lg text-white border-none"
+            style={{ background: showFilters ? "linear-gradient(135deg, hsl(217 91% 50%), hsl(265 83% 47%))" : "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Filtros</span>
           </Button>
 
-          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 border-white/10 text-white/50 hover:text-white hover:bg-white/10 rounded-lg" onClick={handleRefresh} disabled={refreshing}>
+          <Button
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-lg text-white border-none"
+            style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
         </div>
