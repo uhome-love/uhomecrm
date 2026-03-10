@@ -128,7 +128,6 @@ interface Props {
 }
 
 export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete, showCorretor, showTeam, isPastPending }: Props) {
-  const [hovered, setHovered] = useState(false);
   const isNegocio = v.tipo === "negocio";
   const negocioMeta = isNegocio ? parseNegocioMeta(v.observacoes) : { objetivo: null, responsavel: null };
   const teamStyle = showTeam ? getTeamBadgeStyle(v.equipe) : null;
@@ -139,8 +138,6 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30",
         isPastPending && "bg-red-50/50"
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {/* Hora */}
       <span className="text-sm font-bold font-mono text-foreground shrink-0 w-12 text-center">
