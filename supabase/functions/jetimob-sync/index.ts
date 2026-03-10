@@ -52,6 +52,18 @@ function normalizeEmpreendimento(text: string | null | undefined): string | null
   return null;
 }
 
+/** Detect origin channel from message/source fields */
+function detectCanal(msg: string | null, source: string | null, origin: string | null): string {
+  const all = `${msg || ""} ${source || ""} ${origin || ""}`.toLowerCase();
+  if (all.includes("tik tok") || all.includes("tiktok")) return "TikTok";
+  if (all.includes("meta") || all.includes("facebook") || all.includes("instagram")) return "Meta Ads";
+  if (all.includes("google")) return "Google Ads";
+  if (all.includes("portal") || all.includes("zap") || all.includes("olx") || all.includes("viva real")) return "Portal";
+  if (all.includes("site") || all.includes("website") || all.includes("código")) return "Site";
+  if (all.includes("formulário") || all.includes("formulario")) return "Formulário";
+  return "Outro";
+}
+
 /** Build a unique ID for deduplication (API has no id field) */
 function buildJetimobId(lead: any): string {
   const phone = lead.phones?.[0] || lead.phone || "";
