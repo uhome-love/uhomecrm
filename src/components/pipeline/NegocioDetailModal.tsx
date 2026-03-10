@@ -187,6 +187,46 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
     load();
   }, [open, negocio.id]);
 
+  // Load pipeline stages for regress option
+  useEffect(() => {
+    if (!open) return;
+    supabase.from("pipeline_stages")
+      .select("id, nome")
+      .eq("pipeline_tipo", "leads")
+      .eq("ativo", true)
+      .order("ordem")
+      .then(({ data }) => {
+        const stages = (data || []).filter((s: any) => !["descarte"].includes(s.nome?.toLowerCase()));
+        setPipelineStages(stages);
+        if (stages.length > 0) setRegressStageId(stages.find((s: any) => s.nome?.toLowerCase().includes("qualifica"))?.id || stages[0].id);
+      });
+  }, [open]);
+
+  // ── Regress to pipeline ──
+  const handleRegressToPipeline = async () => {
+    if (!regressStageId || !fullNeg.pipeline_lead_id || !user) return;
+    // Clear negocio_id on lead and move to selected stage
+    await supabase.from("pipeline_leads").update({
+      stage_id: regressStageId,
+      negocio_id: null,
+      stage_changed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", fullNeg.pipeline_lead_id);
+    // Move negócio to distrato
+    onMoveFase(negocio.id, "distrato");
+    // Log activity
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id,
+      tipo: "regressao_pipeline",
+      titulo: "Regredido para Pipeline de Leads",
+      descricao: `Lead retornado para o Pipeline`,
+      created_by: user.id,
+    } as any);
+    setRegressOpen(false);
+    onOpenChange(false);
+    toast.success("🔄 Lead retornado ao Pipeline de Leads");
+  };
+
   // ── Register activity ──
   const handleRegistrarAtividade = async () => {
     if (!regTipo || !user) return;
