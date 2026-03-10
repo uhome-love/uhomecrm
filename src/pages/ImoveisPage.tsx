@@ -270,6 +270,28 @@ const BAIRROS_POA = [
 const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
+/** Extract delivery date / construction phase from Jetimob item */
+function extractEntrega(item: any): { emObras: boolean; previsao: string | null } {
+  const situacao = (item.situacao || item.status || item.fase || "").toLowerCase();
+  const emObras = situacao.includes("obra") || situacao.includes("constru") || situacao.includes("planta") || situacao.includes("lançamento") || situacao === "lancamento";
+  
+  const previsao = item.previsao_entrega || item.data_entrega || item.prazo_entrega 
+    || item.previsao || item.entrega || null;
+  
+  // Try to extract from description/observações if not directly available
+  if (!previsao) {
+    const texts = [item.descricao_interna, item.observacoes_internas, item.observacoes, item.descricao].filter(Boolean);
+    for (const t of texts) {
+      if (typeof t !== "string") continue;
+      const match = t.match(/(?:entrega|previs[ãa]o)[:\s]*(\d{1,2}[\/\-]\d{4}|\d{4})/i)
+        || t.match(/(?:entrega|previs[ãa]o)[:\s]*([\w]+\s*(?:de\s*)?\d{4})/i);
+      if (match) return { emObras, previsao: match[1].trim() };
+    }
+  }
+  
+  return { emObras, previsao };
+}
+
 
 function extractEndereco(item: any): { endereco: string; bairro: string; cidade: string } {
   const logradouro = item.endereco_logradouro || item.endereco || item.logradouro || "";
