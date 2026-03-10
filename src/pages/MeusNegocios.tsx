@@ -15,6 +15,8 @@ import { differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import AddNegocioDialog from "@/components/pipeline/AddNegocioDialog";
+import NegocioDetailModal from "@/components/pipeline/NegocioDetailModal";
+import VendaCelebration from "@/components/pipeline/VendaCelebration";
 
 function formatVGV(value: number) {
   if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
