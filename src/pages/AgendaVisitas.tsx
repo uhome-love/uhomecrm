@@ -202,6 +202,7 @@ export default function AgendaVisitas() {
   const [sendingCobranca, setSendingCobranca] = useState(false);
   const [agendaTipo, setAgendaTipo] = useState<"lead" | "negocio">("lead");
   const [leadSubTab, setLeadSubTab] = useState<"minhas" | "time">("minhas");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
 
   const { visitas: allVisitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
 
@@ -325,6 +326,12 @@ export default function AgendaVisitas() {
     if (statusFilter !== "all") list = list.filter(v => v.status === statusFilter);
     if (corretorFilter !== "all") list = list.filter(v => v.corretor_id === corretorFilter);
     if (empreendimentoFilter !== "all") list = list.filter(v => v.empreendimento === empreendimentoFilter);
+    if (teamFilter !== "all") {
+      list = list.filter(v => {
+        const equipe = (v.equipe || "").toLowerCase().replace(/^equipe\s+/i, "").trim();
+        return equipe.includes(teamFilter);
+      });
+    }
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       list = list.filter(v =>
@@ -357,7 +364,7 @@ export default function AgendaVisitas() {
       return sortOrder === "asc" ? timeA.localeCompare(timeB) : timeB.localeCompare(timeA);
     });
     return list;
-  }, [visitas, statusFilter, corretorFilter, empreendimentoFilter, searchTerm, dateFrom, dateTo, sortOrder, pendingOnly]);
+  }, [visitas, statusFilter, corretorFilter, empreendimentoFilter, searchTerm, dateFrom, dateTo, sortOrder, pendingOnly, teamFilter]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -391,12 +398,13 @@ export default function AgendaVisitas() {
     return list;
   }, [allVisitas, searchTerm, dateFrom, dateTo, statusFilter, corretorFilter, empreendimentoFilter]);
 
-  const hasFilters = statusFilter !== "all" || corretorFilter !== "all" || empreendimentoFilter !== "all" || !!dateFrom || !!dateTo || searchTerm.trim() || pendingOnly;
+  const hasFilters = statusFilter !== "all" || corretorFilter !== "all" || empreendimentoFilter !== "all" || !!dateFrom || !!dateTo || searchTerm.trim() || pendingOnly || teamFilter !== "all";
 
   const clearAll = () => {
     setStatusFilter("all");
     setCorretorFilter("all");
     setEmpreendimentoFilter("all");
+    setTeamFilter("all");
     setDateFrom(undefined);
     setDateTo(undefined);
     setSearchTerm("");
@@ -516,6 +524,38 @@ export default function AgendaVisitas() {
 
       {/* ─── DAY SUMMARY ─── */}
       <DaySummary visitas={visitas} showTeamBreakdown={isAdmin} />
+
+      {/* ─── TEAM TABS (CEO/Admin) ─── */}
+      {isAdmin && (
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+          {[
+            { key: "all", label: "Todas Equipes", emoji: "👥" },
+            ...FIXED_TEAMS,
+          ].map(t => {
+            const isActive = teamFilter === t.key;
+            const count = t.key === "all"
+              ? visitas.length
+              : visitas.filter(v => (v.equipe || "").toLowerCase().replace(/^equipe\s+/i, "").trim().includes(t.key)).length;
+            const teamMeta = FIXED_TEAMS.find(ft => ft.key === t.key);
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTeamFilter(t.key)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+                  isActive
+                    ? t.key === "all"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : `${teamMeta?.className || ""} shadow-sm border`
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.emoji} {t.label} <Badge variant="secondary" className="text-[10px] ml-0.5 px-1.5 py-0">{count}</Badge>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ─── FILTERS ROW ─── */}
       <div className="flex flex-wrap items-center gap-2">
