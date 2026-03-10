@@ -282,7 +282,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                   <ArrowRight className="h-3.5 w-3.5" /> Mover para etapa
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato").map(f => (
+                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato" && !("hidden" in f && f.hidden)).map(f => (
                     <DropdownMenuItem key={f.key} onClick={() => onMoveFase(negocio.id, f.key)} className="gap-2 cursor-pointer text-xs">
                       <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: f.cor }} />
                       {f.icon} {f.label}
