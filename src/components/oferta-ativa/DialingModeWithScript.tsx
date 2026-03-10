@@ -360,15 +360,15 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     }
   };
 
-  // Open result popup (ensure AttemptModal is closed)
+  // Open AttemptModal directly (single popup flow)
   const handleOpenResultPopup = () => {
     if (!actionTaken) {
       setActionTaken("ligacao");
       setCurrentIdempotencyKey(`${user?.id}_${lead?.id}_${Date.now()}`);
     }
     stopTimer();
-    setShowModal(false); // ensure only one popup
-    setShowResultPopup(true);
+    setShowResultPopup(false);
+    setShowModal(true);
   };
 
   // Quick result from popup
