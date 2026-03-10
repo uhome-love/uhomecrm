@@ -274,6 +274,32 @@ export default function MinhasTarefas() {
     queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
   };
 
+  const handleCriarTarefaNegocio = async () => {
+    if (!user || !selectedNegocioId || !negocioData) return;
+    await supabase.from("negocios_tarefas").insert({
+      negocio_id: selectedNegocioId,
+      titulo: `${NEGOCIO_TIPO_LABELS[negocioTipo] || negocioTipo}: ${selectedNegocioNome}`,
+      descricao: negocioObs || null,
+      tipo: negocioTipo,
+      vence_em: negocioData,
+      hora_vencimento: negocioHora || null,
+      status: "pendente",
+      prioridade: "media",
+      responsavel_id: user.id,
+      created_by: user.id,
+    } as any);
+    toast.success("Tarefa de negócio criada ✅");
+    setShowNovaTarefaNegocio(false);
+    setSelectedNegocioId(null);
+    setSelectedNegocioNome("");
+    setNegocioSearch("");
+    setNegocioObs("");
+    setNegocioData("");
+    setNegocioHora("");
+    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
+    queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
+  };
+
   const openEditTarefa = (tarefa: TarefaComLead) => {
     setEditId(tarefa.id);
     setEditTipo(tarefa.tipo);
