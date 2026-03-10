@@ -343,9 +343,10 @@ export function AppSidebar() {
         topItem: { title: "Dashboard", url: "/backoffice", icon: Home },
         groups: [
           {
-            label: "Marketing",
+            label: "Operacional",
             items: [
-              { title: "Central de Marketing", url: "/backoffice/marketing", icon: BarChart3 },
+              { title: "📋 Tarefas & Marketing", url: "/backoffice/tarefas", icon: ListChecks },
+              { title: "HOMI Ana", url: "/backoffice/homi-ana", icon: Bot },
             ],
           },
           {
@@ -355,10 +356,8 @@ export function AppSidebar() {
             ],
           },
           {
-            label: "Ferramentas",
+            label: "Mais",
             items: [
-              { title: "HOMI Ana", url: "/backoffice/homi-ana", icon: Bot },
-              { title: "📋 Minhas Tarefas", url: "/backoffice/tarefas", icon: ListChecks },
               { title: "Marketplace", url: "/marketplace", icon: BookOpen },
             ],
           },
