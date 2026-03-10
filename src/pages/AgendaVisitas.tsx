@@ -388,6 +388,32 @@ export default function AgendaVisitas() {
         </Button>
       </div>
 
+      {/* ─── TIPO TABS (Lead / Negócio) ─── */}
+      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setAgendaTipo("lead")}
+          className={cn(
+            "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+            agendaTipo === "lead"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          🏠 Visitas de Leads <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{leadCount}</Badge>
+        </button>
+        <button
+          onClick={() => setAgendaTipo("negocio")}
+          className={cn(
+            "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+            agendaTipo === "negocio"
+              ? "bg-amber-600 text-white shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          💼 Reuniões de Negócios <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{negocioCount}</Badge>
+        </button>
+      </div>
+
       {/* ─── PENDING ALERT ─── */}
       {pendingCount > 0 && (
         <div
