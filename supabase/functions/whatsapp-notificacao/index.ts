@@ -43,10 +43,10 @@ serve(async (req) => {
             {
               type: "body",
               parameters: [
-                { type: "text", parameter_name: "nome", text: dados.nome || "Lead" },
-                { type: "text", parameter_name: "whatsapp_lead", text: dados.telefone || "N/A" },
-                { type: "text", parameter_name: "email", text: dados.email || "N/A" },
-                { type: "text", parameter_name: "empreendimento", text: dados.empreendimento || "Não identificado" },
+                { type: "text", text: dados.nome || "Lead" },
+                { type: "text", text: dados.telefone || "N/A" },
+                { type: "text", text: dados.email || "N/A" },
+                { type: "text", text: dados.empreendimento || "Não identificado" },
               ],
             },
           ],
@@ -91,7 +91,7 @@ serve(async (req) => {
     }
 
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${phoneId}/messages`,
+      `https://graph.facebook.com/v21.0/${phoneId}/messages`,
       {
         method: "POST",
         headers: {
