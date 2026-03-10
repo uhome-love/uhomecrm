@@ -180,11 +180,22 @@ export function useCustomListRegistrar() {
         : resultado === "agendar" ? "Reagendar"
         : resultado;
 
+      // Build detailed title including sub-option for sem_interesse
+      const semInteresseLabels: Record<string, string> = {
+        nao_quer_produto: "Não quer o produto",
+        ja_comprou: "Já comprou outro",
+        sem_condicao: "Sem condição financeira",
+        nao_momento: "Não é o momento",
+      };
+      const subLabel = resultado === "sem_interesse" && interesseTipo && semInteresseLabels[interesseTipo]
+        ? ` (${semInteresseLabels[interesseTipo]})`
+        : "";
+
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: lead.id,
         created_by: user.id,
         tipo: "contato",
-        titulo: `[Oferta Ativa] ${canalLabel}: ${resultLabel}`,
+        titulo: `[Oferta Ativa] ${canalLabel}: ${resultLabel}${subLabel}`,
         descricao: feedback || null,
         status: "concluida",
         prioridade: "normal",
