@@ -302,7 +302,7 @@ export default function CompradorDocUpload({ compradores, onChange }: Props) {
               {compradores.filter(c => c.nome).map((c, i) => (
                 <span key={i}>
                   {i > 0 && " e "}
-                  <strong>{c.nome || "_______________"}</strong>, {c.nacionalidade || "___________"}, {c.estado_civil || "___________"}, inscrito no CPF/MF sob o nº {c.cpf || "___.___.___-__"}, telefone: {c.telefone || "(__) _____-____"}, e-mail: {c.email || "________________"}, residente e domiciliado na {c.endereco || "________________________________"}{c.cidade ? `, ${c.cidade}` : ""}{c.estado ? `/${c.estado}` : ""}
+                  <strong>{c.nome || "_______________"}</strong>, {c.nacionalidade || "___________"}, {c.estado_civil || "___________"}, inscrito no CPF/MF sob o nº {c.cpf || "___.___.___-__"}, telefone: {c.telefone || "(__) _____-____"}, e-mail: {c.email || "________________"}, residente e domiciliado na {c.endereco || "________________________________"}{c.bairro ? `, Bairro ${c.bairro}` : ""}{c.cidade ? `, ${c.cidade}` : ""}{c.estado ? `/${c.estado}` : ""}{c.cep ? `, CEP: ${c.cep}` : ""}
                 </span>
               ))}
               .
