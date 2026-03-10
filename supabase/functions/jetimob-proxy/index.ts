@@ -136,6 +136,15 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      // Log first item structure for debugging
+      const items = data?.result || data?.imoveis || data?.data || [];
+      if (Array.isArray(items) && items.length > 0) {
+        console.log("Jetimob first imovel keys:", JSON.stringify(Object.keys(items[0])));
+        console.log("Jetimob first imovel sample:", JSON.stringify(items[0]).substring(0, 1500));
+      } else {
+        console.log("Jetimob response keys:", JSON.stringify(Object.keys(data)));
+        console.log("Jetimob response sample:", JSON.stringify(data).substring(0, 1000));
+      }
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
