@@ -68,6 +68,7 @@ export default function VisitasEquipe() {
         p_date_from: dateFrom,
         p_date_to: dateTo,
       });
+      console.log("[VisitasEquipe] RPC result:", { data, error, userId: user?.id, dateFrom, dateTo });
       if (error) throw error;
       return (data || []) as TeamVisita[];
     },
