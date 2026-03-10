@@ -223,7 +223,6 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
   // Stage transition popup state
   const [transitionPopup, setTransitionPopup] = useState<{ lead: PipelineLead; targetStage: PipelineStage } | null>(null);
-  const [canScrollRight, setCanScrollRight] = useState(true);
 
   // Fetch next pending task per lead for all visible leads
   const leadIds = useMemo(() => leads.map(l => l.id), [leads]);
