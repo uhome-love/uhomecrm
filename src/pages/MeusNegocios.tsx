@@ -21,6 +21,7 @@ import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import AddNegocioDialog from "@/components/pipeline/AddNegocioDialog";
 import NegocioDetailModal from "@/components/pipeline/NegocioDetailModal";
 import VendaCelebration from "@/components/pipeline/VendaCelebration";
+import FaseTransitionModal, { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
 import { supabase } from "@/integrations/supabase/client";
 
 function formatVGV(value: number) {
