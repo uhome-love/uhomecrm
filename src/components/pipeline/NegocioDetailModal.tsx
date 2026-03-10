@@ -351,6 +351,41 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
     setTarefas(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
+  const deleteTask = async (taskId: string) => {
+    const { error } = await supabase.from("negocios_tarefas").delete().eq("id", taskId);
+    if (!error) {
+      setTarefas(prev => prev.filter(t => t.id !== taskId));
+      toast.success("Tarefa excluída");
+    } else {
+      toast.error("Erro ao excluir tarefa");
+    }
+  };
+
+  const startEditTask = (t: NegocioTarefa) => {
+    setEditingTaskId(t.id);
+    setEditTitulo(t.titulo);
+    setEditTipo(t.tipo);
+    setEditData(t.vence_em || "");
+    setEditHora(t.hora_vencimento || "");
+  };
+
+  const saveEditTask = async () => {
+    if (!editingTaskId || !editTitulo.trim()) return;
+    const { error } = await supabase.from("negocios_tarefas").update({
+      titulo: editTitulo.trim(),
+      tipo: editTipo,
+      vence_em: editData || null,
+      hora_vencimento: editHora || null,
+    } as any).eq("id", editingTaskId);
+    if (!error) {
+      setTarefas(prev => prev.map(t => t.id === editingTaskId ? { ...t, titulo: editTitulo.trim(), tipo: editTipo, vence_em: editData || null, hora_vencimento: editHora || null } : t));
+      setEditingTaskId(null);
+      toast.success("Tarefa atualizada");
+    } else {
+      toast.error("Erro ao atualizar tarefa");
+    }
+  };
+
   // ── Agendar Reunião (Visita de Negócio) ──
   const handleAgendarReuniao = async () => {
     if (!reuniaoData || !reuniaoHora || !user) return;
