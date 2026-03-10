@@ -202,8 +202,8 @@ export default function CorretorDashboard() {
                     <AlertCircle className="h-4 w-4 text-danger-500" />
                     <span className="text-xs font-medium text-muted-foreground">Leads</span>
                   </div>
-                  <p className={`text-3xl lg:text-4xl font-bold leading-none ${radar.pendingLeads > 0 ? "text-orange-500" : "text-foreground"}`}>{radar.pendingLeads}</p>
-                  <p className="text-sm text-muted-foreground mt-1.5">p/ atualizar</p>
+                  <p className="text-3xl lg:text-4xl font-bold leading-none text-foreground">{radar.totalLeads}</p>
+                  <p className="text-sm text-muted-foreground mt-1.5">total</p>
                 </CardContent>
               </Card>
 
