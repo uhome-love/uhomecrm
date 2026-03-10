@@ -51,7 +51,7 @@ const CARD_QUICK_ACTIONS = [
   { id: "contrato", emoji: "📝", label: "Enviei contrato", tipo: "contrato", titulo: "Contrato enviado", openPopup: "contrato" },
 ];
 
-function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, paradoInfo, onDragStart, onClick, onMoveFase }: {
+function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, paradoInfo, onDragStart, onClick, onMoveFase, onUpdateNegocio }: {
   negocio: Negocio;
   corretorNome?: string;
   corretorInfo?: CorretorInfo;
@@ -60,6 +60,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
   onDragStart: () => void;
   onClick: () => void;
   onMoveFase: (id: string, fase: string) => void;
+  onUpdateNegocio: (id: string, updates: Partial<Negocio>) => Promise<void>;
 }) {
   const { user } = useAuth();
   const faseInfo = NEGOCIOS_FASES.find(f => f.key === negocio.fase);
@@ -73,6 +74,8 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
   const [quedaMotivo, setQuedaMotivo] = useState("");
   const [propostaPopup, setPropostaPopup] = useState(false);
   const [contratoPopup, setContratoPopup] = useState(false);
+  const [quickVgvId, setQuickVgvId] = useState<string | null>(null);
+  const [quickVgvValue, setQuickVgvValue] = useState("");
   const [propEmp, setPropEmp] = useState(negocio.empreendimento || "");
   const [propUni, setPropUni] = useState("");
   const [propVgv, setPropVgv] = useState(negocio.vgv_estimado ? String(negocio.vgv_estimado) : "");
@@ -177,29 +180,14 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             </span>
           </div>
 
-          {/* Row 2: Imóvel (fase) */}
+          {/* Row 2: Imóvel */}
           <p className="text-[11px] text-white/50 truncate">
             {negocio.empreendimento || <span className="italic text-amber-400/70">🏠 Sem imóvel</span>}
-            {negocio.empreendimento && (
-              <span className="ml-1 text-white/30">({faseInfo?.label})</span>
-            )}
           </p>
 
-          {/* Row 3: VGV */}
-          <div className="flex items-center gap-2">
-            {negocio.vgv_estimado ? (
-              <span className="text-sm font-bold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
-                <TrendingUp className="h-3 w-3" />
-                {formatVGV(negocio.vgv_estimado)}
-              </span>
-            ) : (
-              <span className="text-[11px] text-red-400/80 font-medium">⚠️ VGV obrigatório</span>
-            )}
-          </div>
-
-          {/* Row 4: Corretor (para admin/gestor) */}
-          {showCorretor && corretorInfo && (
-            <div className="flex items-center gap-1.5 pt-0.5">
+          {/* Row 3: Corretor responsável */}
+          {showCorretor && corretorInfo ? (
+            <div className="flex items-center gap-1.5">
               <Avatar className="h-4 w-4">
                 <AvatarImage src={corretorInfo.avatar_gamificado_url || corretorInfo.avatar_url || undefined} className="object-cover" />
                 <AvatarFallback className="text-[7px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
@@ -211,7 +199,26 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                 </Badge>
               )}
             </div>
+          ) : (
+            <p className="text-[10px] text-white/30 italic">Sem corretor</p>
           )}
+
+          {/* Row 4: VGV with quick-fill */}
+          <div className="flex items-center gap-2">
+            {negocio.vgv_estimado ? (
+              <span className="text-sm font-bold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
+                <TrendingUp className="h-3 w-3" />
+                {formatVGV(negocio.vgv_estimado)}
+              </span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); setQuickVgvId(negocio.id); setQuickVgvValue(""); }}
+                className="text-[11px] text-amber-400/80 font-medium hover:text-amber-300 transition-colors flex items-center gap-1"
+              >
+                ⚠️ Preencher VGV
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Action bar - glass effect */}
@@ -296,6 +303,35 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           </DropdownMenu>
         </div>
       </div>
+
+      {/* ── Popup: Quick VGV ── */}
+      <Dialog open={!!quickVgvId} onOpenChange={(o) => { if (!o) setQuickVgvId(null); }}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-base">💰 Preencher VGV</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">VGV (R$)</Label>
+              <Input
+                value={quickVgvValue ? `R$ ${quickVgvValue.replace(/^0+/, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}` : ""}
+                onChange={(e) => setQuickVgvValue(e.target.value.replace(/\D/g, ""))}
+                placeholder="R$ 500.000"
+                inputMode="numeric"
+                className="h-9"
+              />
+            </div>
+            <Button size="sm" className="w-full" onClick={async () => {
+              if (!quickVgvId || !quickVgvValue) return;
+              const val = parseInt(quickVgvValue, 10);
+              if (!val) return;
+              await onUpdateNegocio(quickVgvId, { vgv_estimado: val });
+              toast.success("VGV atualizado!");
+              setQuickVgvId(null);
+            }}>Salvar VGV</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Popup: Registrar Ligação ── */}
       <Dialog open={ligarPopup} onOpenChange={setLigarPopup}>
@@ -762,6 +798,7 @@ export default function MeusNegocios() {
                       onDragStart={() => { dragNegocioId.current = negocio.id; }}
                       onClick={() => setSelectedNegocio(negocio)}
                       onMoveFase={requestMoveFase}
+                      onUpdateNegocio={updateNegocio}
                     />
                   ))}
                 </div>
