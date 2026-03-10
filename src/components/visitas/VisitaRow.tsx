@@ -139,68 +139,57 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
   return (
     <div
       className={cn(
-        "group grid items-center gap-x-3 px-4 py-3 transition-colors hover:bg-muted/30",
+        "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30",
         isPastPending && "bg-red-50/50"
       )}
-      style={{
-        gridTemplateColumns: "3.5rem 3px 1fr 8rem 10rem 7rem 9rem 6.5rem auto",
-      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* 1. Horário */}
-      <div className="text-center">
-        <span className="text-sm font-bold font-mono text-foreground">
-          {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
-        </span>
-      </div>
+      {/* Horário */}
+      <span className="text-sm font-bold font-mono text-foreground shrink-0 w-12 text-center">
+        {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
+      </span>
 
       {/* Status color line */}
-      <div className={cn("w-0.5 h-9 rounded-full", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
+      <div className={cn("w-0.5 h-8 rounded-full shrink-0", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
 
-      {/* 2. Nome do cliente + telefone */}
-      <div className="min-w-0">
+      {/* Nome do cliente */}
+      <div className="min-w-0 shrink-0" style={{ width: "clamp(100px, 18%, 180px)" }}>
         <p className="text-sm font-semibold text-foreground truncate leading-tight">{v.nome_cliente}</p>
         {v.telefone && (
-          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-            <Phone className="h-3 w-3 shrink-0" />
-            {formatPhone(v.telefone)}
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+            📞 {formatPhone(v.telefone)}
           </p>
         )}
       </div>
 
-      {/* 3. Local da visita */}
-      <div className="hidden sm:flex items-center gap-1 min-w-0">
-        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+      {/* Local da visita */}
+      <div className="hidden md:flex items-center gap-1 min-w-0 shrink-0" style={{ width: "clamp(80px, 14%, 140px)" }}>
         <span className="text-xs text-muted-foreground truncate">
           {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "—"}
         </span>
       </div>
 
-      {/* 4. Empreendimento + Negocio meta */}
-      <div className="min-w-0 hidden sm:block">
-        <span className="text-xs text-muted-foreground truncate block leading-tight">
-          {v.empreendimento || "—"}
+      {/* Empreendimento */}
+      <div className="hidden md:block min-w-0 flex-1">
+        <span className="text-xs text-muted-foreground truncate block">
+          🏢 {v.empreendimento || "—"}
         </span>
-        {isNegocio && (
-          <div className="flex flex-col gap-0 mt-0.5">
-            {negocioMeta.objetivo && (
-              <span className="text-[10px] text-amber-600 font-medium truncate leading-tight">🎯 {negocioMeta.objetivo}</span>
-            )}
-            {missingNegocioInfo && onEdit && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(v); }}
-                className="text-[10px] text-amber-500 hover:text-amber-400 font-medium flex items-center gap-0.5 mt-0.5"
-              >
-                <Pencil className="h-2.5 w-2.5" /> Completar
-              </button>
-            )}
-          </div>
+        {isNegocio && negocioMeta.objetivo && (
+          <span className="text-[10px] text-amber-600 font-medium truncate block">🎯 {negocioMeta.objetivo}</span>
+        )}
+        {isNegocio && missingNegocioInfo && onEdit && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(v); }}
+            className="text-[10px] text-amber-500 hover:text-amber-400 font-medium flex items-center gap-0.5"
+          >
+            <Pencil className="h-2.5 w-2.5" /> Completar
+          </button>
         )}
       </div>
 
-      {/* 5. Responsável (corretor) + Team badge */}
-      <div className="hidden sm:flex items-center gap-1.5 min-w-0">
+      {/* Responsável */}
+      <div className="hidden lg:flex items-center gap-1 min-w-0 shrink-0" style={{ width: "clamp(70px, 12%, 120px)" }}>
         <span className="text-xs text-muted-foreground truncate">
           👤 {v.corretor_nome || "—"}
         </span>
@@ -215,27 +204,21 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         })()}
       </div>
 
-      {/* 6. Status badge */}
-      <div>
+      {/* Status badge */}
+      <div className="shrink-0">
         <Badge className={cn("text-[10px] px-2.5 py-0.5 border font-semibold whitespace-nowrap", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
           {STATUS_EMOJIS[v.status]} {STATUS_LABELS[v.status]}
         </Badge>
       </div>
 
-      {/* Quick actions + Menu */}
-      <div className={cn("flex items-center gap-1")}>
+      {/* Actions */}
+      <div className="flex items-center gap-1 shrink-0">
         <div className={cn("flex items-center gap-1 transition-opacity", hovered ? "opacity-100" : "opacity-0")}>
           {(v.status === "marcada" || v.status === "confirmada") && (
             <>
-              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")}>
-                ✅
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")}>
-                ❌
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => onUpdateStatus(v.id, "reagendada")}>
-                🔄
-              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")}>✅</Button>
+              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")}>❌</Button>
+              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => onUpdateStatus(v.id, "reagendada")}>🔄</Button>
             </>
           )}
         </div>
