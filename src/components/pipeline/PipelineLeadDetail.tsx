@@ -429,11 +429,19 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" /> Visitas
                   </h4>
-                  <a href={`/agenda-visitas?lead=${lead.id}&nome=${encodeURIComponent(lead.nome)}&telefone=${encodeURIComponent(lead.telefone || "")}&empreendimento=${encodeURIComponent(lead.empreendimento || "")}`} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
-                      <Calendar className="h-3 w-3" /> + Agendar Visita
-                    </Button>
-                  </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => {
+                      onOpenChange(false);
+                      setTimeout(() => {
+                        navigate(`/agenda-visitas?lead=${lead.id}&nome=${encodeURIComponent(lead.nome)}&telefone=${encodeURIComponent(lead.telefone || "")}&empreendimento=${encodeURIComponent(lead.empreendimento || "")}`);
+                      }, 200);
+                    }}
+                  >
+                    <Calendar className="h-3 w-3" /> + Agendar Visita
+                  </Button>
                 </div>
                 <OpportunityVisitasTab pipelineLeadId={lead.id} />
               </div>
