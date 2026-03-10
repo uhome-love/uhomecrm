@@ -140,11 +140,11 @@ export default function ReuniaoNegocioForm({ open, onClose, onSubmit }: Props) {
             <Label className="text-xs font-semibold">Cliente (Negócio) *</Label>
             {selectedNegocio ? (
               <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 border mt-1">
-                <div>
-                  <p className="text-sm font-semibold">{selectedNegocio.cliente_nome}</p>
+              <div>
+                  <p className="text-sm font-semibold">{selectedNegocio.nome_cliente}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {[selectedNegocio.imovel, selectedNegocio.fase].filter(Boolean).join(" · ")}
-                    {selectedNegocio.vgv ? ` · R$ ${(selectedNegocio.vgv / 1000).toFixed(0)}k` : ""}
+                    {[selectedNegocio.imovel_interesse, selectedNegocio.fase].filter(Boolean).join(" · ")}
+                    {selectedNegocio.vgv_estimado ? ` · R$ ${(selectedNegocio.vgv_estimado / 1000).toFixed(0)}k` : ""}
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" className="h-6 text-[10px] text-destructive" onClick={() => setSelectedNegocio(null)}>
