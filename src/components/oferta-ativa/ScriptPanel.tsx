@@ -43,7 +43,6 @@ function applyVars(text: string, leadName: string, emp: string) {
 export default function ScriptPanel({ empreendimento, lead, compact, darkMode, scriptFilter, hideCta, onEmpChange }: Props) {
   const { templates } = useOATemplates(empreendimento);
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [editingScript, setEditingScript] = useState<"ligacao" | "whatsapp" | null>(null);
   const [scriptMode, setScriptMode] = useState<"generico" | "personalizado">("generico");
 
