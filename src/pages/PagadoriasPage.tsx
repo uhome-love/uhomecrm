@@ -387,26 +387,25 @@ export default function PagadoriasPage() {
               {/* SEÇÃO B2 — Gerente */}
               <div className="space-y-2 border rounded-lg p-3">
                 <h4 className="font-semibold text-sm">Comissão do Gerente</h4>
-                <div className="flex gap-2 flex-wrap text-xs">
-                  {gerenteFaixas.map((f, i) => {
-                    const active = getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente) === f.percentual;
-                    return (
-                      <span key={i} className={`px-2 py-1 rounded ${active ? "bg-primary/20 text-primary font-semibold border border-primary/40" : "bg-muted"}`}>
-                        {fmtVgv(f.vgv_max)} → {f.percentual}%
-                      </span>
-                    );
-                  })}
-                </div>
                 <div className="grid grid-cols-2 gap-3 items-end">
                   <div>
-                    <Label className="text-xs">VGV acumulado do gerente no mês</Label>
-                    <Input type="number" value={vgvAcumuladoGerente || ""} onChange={e => setVgvAcumuladoGerente(Number(e.target.value))} className="h-8 text-sm" />
+                    <Label className="text-xs">Faixa do gerente</Label>
+                    <Select value={String(selectedGerenteFaixaIdx)} onValueChange={v => setSelectedGerenteFaixaIdx(Number(v))}>
+                      <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {gerenteFaixas.map((f, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            {fmtVgv(f.vgv_max)} → {f.percentual}%
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">Gerente recebe </span>
-                    <strong className="text-primary">{getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente)}%</strong>
+                    <strong className="text-primary">{gerenteFaixas[selectedGerenteFaixaIdx]?.percentual ?? 0}%</strong>
                     <span className="text-muted-foreground"> → </span>
-                    <strong>{fmtR((getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente) / 100) * totalComissao)}</strong>
+                    <strong>{fmtR(((gerenteFaixas[selectedGerenteFaixaIdx]?.percentual ?? 0) / 100) * totalComissao)}</strong>
                   </div>
                 </div>
               </div>
