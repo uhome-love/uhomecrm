@@ -66,7 +66,10 @@ export function useSmartAlerts() {
       // 2. Negócios não preenchidos no mês atual
       try {
         const currentMonth = format(now, "yyyy-MM");
-        let negQuery = supabase.from("negocios").select("id", { count: "exact", head: true }).gte("created_at", `${currentMonth}-01`).lt("created_at", `${currentMonth}-32`);
+        const nextMonth = now.getMonth() === 11
+          ? `${now.getFullYear() + 1}-01-01`
+          : `${now.getFullYear()}-${String(now.getMonth() + 2).padStart(2, "0")}-01`;
+        let negQuery = supabase.from("negocios").select("id", { count: "exact", head: true }).gte("created_at", `${currentMonth}-01T00:00:00`).lt("created_at", `${nextMonth}T00:00:00`);
         // Admin/CEO vê todos os negócios; gerente filtra pelo seu time (inclui negócios sem gerente_id)
         if (!isAdmin) {
           // Buscar corretores do time do gerente
