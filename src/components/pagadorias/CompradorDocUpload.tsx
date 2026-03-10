@@ -251,9 +251,36 @@ export default function CompradorDocUpload({ compradores, onChange }: Props) {
                   <Input value={comp.estado} onChange={e => updateComprador(idx, "estado", e.target.value)} placeholder="RS" className="h-8 text-sm w-14" />
                 </div>
               </div>
+              <div>
+                <Label className="text-xs">CEP</Label>
+                <div className="flex gap-1.5">
+                  <Input
+                    value={comp.cep}
+                    onChange={e => updateComprador(idx, "cep", e.target.value)}
+                    onBlur={() => buscarCep(idx, comp.cep)}
+                    placeholder="00000-000"
+                    className="h-8 text-sm flex-1"
+                    maxLength={9}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    disabled={!!cepLoading[idx]}
+                    onClick={() => buscarCep(idx, comp.cep)}
+                  >
+                    {cepLoading[idx] ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              </div>
               <div className="col-span-2">
-                <Label className="text-xs">Endereço Completo *</Label>
-                <Input value={comp.endereco} onChange={e => updateComprador(idx, "endereco", e.target.value)} placeholder="Rua, número, complemento, bairro, CEP" className="h-8 text-sm" />
+                <Label className="text-xs">Endereço (Rua, nº, complemento) *</Label>
+                <Input value={comp.endereco} onChange={e => updateComprador(idx, "endereco", e.target.value)} placeholder="Rua, número, complemento" className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Bairro</Label>
+                <Input value={comp.bairro} onChange={e => updateComprador(idx, "bairro", e.target.value)} placeholder="Bairro" className="h-8 text-sm" />
               </div>
             </div>
           </CardContent>
