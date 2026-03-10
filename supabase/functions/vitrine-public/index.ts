@@ -6,55 +6,37 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function fetchImovelFromJetimob(apiKey: string, imovelId: number) {
-  // imovel_ids stores internal Jetimob IDs (id_imovel), not property codes
-  // Try fetching by internal ID first, then fallback to codigo
-  const urls = [
-    `https://api.jetimob.com/webservice/${apiKey}/imoveis/${imovelId}?v=6`,
-    `https://api.jetimob.com/webservice/${apiKey}/imoveis/codigo/${imovelId}?v=6`,
-  ];
-
-  let item: any = null;
-  for (const url of urls) {
-    console.log(`Trying: ${url}`);
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (res.ok) {
-      const data = await res.json();
-      const result = data?.result || data?.data || data;
-      if (result && (result.id || result.codigo || result.id_imovel)) {
-        item = result;
-        console.log(`Success for imovel ${imovelId} via ${url}`);
-        break;
-      }
-    } else {
-      console.warn(`${url} returned ${res.status}`);
-    }
+async function fetchImovelFromJetimob(apiKey: string, codigo: string) {
+  const url = `https://api.jetimob.com/webservice/${apiKey}/imoveis/codigo/${codigo}?v=6`;
+  console.log(`Fetching imovel codigo=${codigo}`);
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) {
+    console.warn(`Jetimob ${res.status} for codigo ${codigo}`);
+    return null;
   }
-
-  if (!item) {
-    console.warn(`No result for imovel ${imovelId} on any endpoint`);
+  const data = await res.json();
+  const item = data?.result || data?.data || data;
+  if (!item || (!item.id && !item.codigo && !item.id_imovel)) {
+    console.warn(`Empty result for codigo ${codigo}`);
     return null;
   }
 
-  // Extract images - try multiple field names
   const imgArr = item.imagens || item.fotos || [];
   const fotos = imgArr.slice(0, 10).map((f: any) => f.link || f.link_thumb || f.url).filter(Boolean);
 
-  const codigo = item.codigo || "";
-
   return {
-    id: item.id_imovel || item.id || imovelId,
-    codigo,
-    titulo: item.titulo || item.descricao_curta || `Imóvel ${codigo || imovelId}`,
+    id: item.id_imovel || item.id || codigo,
+    codigo: item.codigo || codigo,
+    titulo: item.titulo_anuncio || item.titulo || item.descricao_curta || `Imóvel ${codigo}`,
     endereco: item.endereco?.logradouro
       ? `${item.endereco.logradouro}${item.endereco.bairro ? `, ${item.endereco.bairro}` : ""}${item.endereco.cidade ? ` — ${item.endereco.cidade}` : ""}`
       : (item.bairro ? `${item.bairro}${item.cidade ? ` — ${item.cidade}` : ""}` : null),
     bairro: item.endereco?.bairro || item.bairro || null,
     cidade: item.endereco?.cidade || item.cidade || null,
-    area: item.area_util || item.area_total || item.area || null,
-    quartos: item.quartos || item.dormitorios || null,
+    area: item.area_privativa || item.area_util || item.area_total || item.area || null,
+    quartos: item.dormitorios || item.quartos || null,
     suites: item.suites || null,
-    vagas: item.vagas || item.garagens || null,
+    vagas: item.garagens || item.vagas || null,
     banheiros: item.banheiros || null,
     valor: item.valor_venda || item.valor || null,
     fotos,
@@ -111,14 +93,14 @@ Deno.serve(async (req) => {
         .eq("user_id", vitrine.created_by)
         .maybeSingle();
 
-      // Fetch properties from Jetimob
+      // Fetch properties from Jetimob using codigos
       let imoveis: any[] = [];
-      const ids = (vitrine.imovel_ids as number[]) || [];
+      const ids = (vitrine.imovel_ids as string[]) || [];
       console.log(`Vitrine ${vitrine_id} has ${ids.length} imovel_ids:`, ids);
 
       if (JETIMOB_API_KEY && ids.length > 0) {
         const results = await Promise.allSettled(
-          ids.map(id => fetchImovelFromJetimob(JETIMOB_API_KEY, id))
+          ids.map(id => fetchImovelFromJetimob(JETIMOB_API_KEY, String(id)))
         );
         for (const r of results) {
           if (r.status === "fulfilled" && r.value) {
@@ -162,7 +144,7 @@ Deno.serve(async (req) => {
 
       const imoveis: any[] = [];
       for (const id of imovel_ids.slice(0, 20)) {
-        const item = await fetchImovelFromJetimob(JETIMOB_API_KEY, id);
+        const item = await fetchImovelFromJetimob(JETIMOB_API_KEY, String(id));
         if (item) {
           imoveis.push({
             id: item.id,
