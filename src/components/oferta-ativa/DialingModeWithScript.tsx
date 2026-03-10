@@ -426,6 +426,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           }
         } else if (resultado === "nao_atendeu") {
           toast("📝 Não atendeu — registrado no histórico", { duration: 2000 });
+        } else if (resultado === "sem_interesse") {
+          toast("🚫 Sem interesse — registrado no histórico do Pipeline", { duration: 2000 });
+          // Update temperatura to frio
+          try {
+            await supabase.from("pipeline_leads").update({
+              temperatura: "frio",
+            } as any).eq("id", lead.id);
+          } catch {}
         } else if (resultado === "descarte_oa") {
           toast("📤 Lead enviado para Oferta Ativa", { duration: 2000 });
         }
