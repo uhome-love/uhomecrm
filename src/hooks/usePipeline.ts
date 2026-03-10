@@ -180,25 +180,26 @@ export function usePipeline(pipelineTipo: string = "leads") {
     });
     setLeads(leadsData);
 
-    // Load corretor + gerente names
-    const allUserIds = [...new Set([
-      ...leadsData.map(l => l.corretor_id).filter(Boolean),
-      ...leadsData.map(l => l.gerente_id).filter(Boolean),
-    ])] as string[];
-    if (allUserIds.length > 0) {
-      const { data: members } = await supabase
-        .from("team_members")
-        .select("user_id, nome")
-        .in("user_id", allUserIds);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, nome")
-        .in("user_id", allUserIds);
-      const map: Record<string, string> = {};
-      members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
-      // Profiles as fallback for gerentes who may not be in team_members
-      profiles?.forEach(p => { if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome; });
-      setCorretorNomes(map);
+    // Load corretor + gerente names (skip for corretores — they only see their own leads)
+    if ((isGestor || isAdmin) && allRows.length > 0) {
+      const allUserIds = [...new Set([
+        ...leadsData.map(l => l.corretor_id).filter(Boolean),
+        ...leadsData.map(l => l.gerente_id).filter(Boolean),
+      ])] as string[];
+      if (allUserIds.length > 0) {
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("user_id, nome")
+          .in("user_id", allUserIds);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, nome")
+          .in("user_id", allUserIds);
+        const map: Record<string, string> = {};
+        members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
+        profiles?.forEach(p => { if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome; });
+        setCorretorNomes(map);
+      }
     }
   }, [user, isGestor, isAdmin]);
 
