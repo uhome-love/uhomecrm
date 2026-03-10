@@ -171,9 +171,9 @@ export default function ReuniaoNegocioForm({ open, onClose, onSubmit }: Props) {
                         className="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors border-b border-border/30 last:border-0"
                         onClick={() => setSelectedNegocio(n)}
                       >
-                        <span className="text-sm font-medium">{n.cliente_nome}</span>
+                        <span className="text-sm font-medium">{n.nome_cliente}</span>
                         <span className="text-[10px] text-muted-foreground ml-2">
-                          {[n.imovel, n.fase].filter(Boolean).join(" · ")}
+                          {[n.imovel_interesse, n.fase].filter(Boolean).join(" · ")}
                         </span>
                       </button>
                     ))}
