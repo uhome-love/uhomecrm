@@ -227,8 +227,6 @@ export default function CheckpointTableTab({
               <td className="px-2 py-3 text-center bg-green-50/30 text-green-700 font-bold">{totalAprov}</td>
               <td className="px-2 py-3 text-center bg-green-50/30 text-green-700">{totalVm}</td>
               <td className="px-2 py-3 text-center bg-green-50/30 text-green-700">{rows.reduce((a, r) => a + r.res_visitas_realizadas, 0)}</td>
-              <td className="px-2 py-3 text-center bg-green-50/30 text-green-700">{rows.reduce((a, r) => a + r.res_propostas, 0)}</td>
-              <td className="px-2 py-3 text-center bg-green-50/30 text-green-700 text-xs">{fmtR(rows.reduce((a, r) => a + r.res_vgv, 0))}</td>
               <td className="bg-green-50/30" />
               <td />
             </tr>
