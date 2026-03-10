@@ -41,7 +41,16 @@ function getTeamColorClass(equipe: string | null) {
   return TEAM_COLORS[key] || "bg-muted text-muted-foreground";
 }
 
-function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, paradoInfo, onDragStart, onClick }: {
+// ── Quick Actions for card ──
+const CARD_QUICK_ACTIONS = [
+  { id: "simulacao", emoji: "📊", label: "Mandei simulação", tipo: "simulacao", titulo: "Simulação enviada" },
+  { id: "vpl", emoji: "📈", label: "Mandei VPL", tipo: "vpl", titulo: "VPL enviado" },
+  { id: "documentos", emoji: "📁", label: "Subi docs p/ aprovação", tipo: "documentos_aprovacao", titulo: "Documentos submetidos" },
+  { id: "proposta", emoji: "📄", label: "Enviei proposta", tipo: "proposta", titulo: "Proposta enviada", openPopup: "proposta" },
+  { id: "contrato", emoji: "📝", label: "Enviei contrato", tipo: "contrato", titulo: "Contrato enviado", openPopup: "contrato" },
+];
+
+function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, paradoInfo, onDragStart, onClick, onMoveFase }: {
   negocio: Negocio;
   corretorNome?: string;
   corretorInfo?: CorretorInfo;
@@ -49,106 +58,332 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
   paradoInfo?: { diasParado: number; severity: "warning" | "danger" };
   onDragStart: () => void;
   onClick: () => void;
+  onMoveFase: (id: string, fase: string) => void;
 }) {
+  const { user } = useAuth();
   const faseInfo = NEGOCIOS_FASES.find(f => f.key === negocio.fase);
   const daysInFase = differenceInDays(new Date(), new Date(negocio.fase_changed_at || negocio.created_at));
-  const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
+
+  // Local state for popups
+  const [ligarPopup, setLigarPopup] = useState(false);
+  const [ligarNota, setLigarNota] = useState("");
+  const [ligarResultado, setLigarResultado] = useState("atendeu");
+  const [quedaPopup, setQuedaPopup] = useState(false);
+  const [quedaMotivo, setQuedaMotivo] = useState("");
+  const [propostaPopup, setPropostaPopup] = useState(false);
+  const [contratoPopup, setContratoPopup] = useState(false);
+  const [propEmp, setPropEmp] = useState(negocio.empreendimento || "");
+  const [propUni, setPropUni] = useState("");
+  const [propVgv, setPropVgv] = useState(negocio.vgv_estimado ? String(negocio.vgv_estimado) : "");
+  const [contEmp, setContEmp] = useState(negocio.empreendimento || "");
+  const [contUni, setContUni] = useState("");
+  const [contVgv, setContVgv] = useState(negocio.vgv_estimado ? String(negocio.vgv_estimado) : "");
+  const [contTipo, setContTipo] = useState("digital");
+
+  const whatsappUrl = negocio.telefone ? `https://wa.me/${negocio.telefone.replace(/\D/g, "")}` : null;
+
+  const handleLigarRegistro = async () => {
+    if (!user) return;
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id, tipo: "ligacao", resultado: ligarResultado,
+      descricao: ligarNota || null, titulo: "Ligação registrada", created_by: user.id,
+    } as any);
+    toast.success("📞 Ligação registrada!");
+    setLigarPopup(false); setLigarNota(""); setLigarResultado("atendeu");
+  };
+
+  const handleQueda = async () => {
+    if (!quedaMotivo.trim()) { toast.error("Informe o motivo da queda"); return; }
+    if (!user) return;
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id, tipo: "queda", resultado: "negativo",
+      descricao: quedaMotivo, titulo: "Negócio caiu", created_by: user.id,
+    } as any);
+    onMoveFase(negocio.id, "distrato");
+    toast("❌ Negócio movido para Caiu");
+    setQuedaPopup(false); setQuedaMotivo("");
+  };
+
+  const handleCardAction = async (action: typeof CARD_QUICK_ACTIONS[0]) => {
+    if (!user) return;
+    if (action.openPopup === "proposta") { setPropostaPopup(true); return; }
+    if (action.openPopup === "contrato") { setContratoPopup(true); return; }
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id, tipo: action.tipo, titulo: action.titulo, created_by: user.id,
+    } as any);
+    toast.success(`${action.emoji} ${action.titulo}`);
+  };
+
+  const handlePropostaSubmit = async () => {
+    if (!user) return;
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id, tipo: "proposta", titulo: "Proposta enviada",
+      descricao: `Empreendimento: ${propEmp}, Unidade: ${propUni}, VGV: R$ ${propVgv}`, created_by: user.id,
+    } as any);
+    await supabase.from("negocios").update({
+      empreendimento: propEmp || negocio.empreendimento,
+      vgv_estimado: propVgv ? parseFloat(propVgv) : negocio.vgv_estimado,
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", negocio.id);
+    onMoveFase(negocio.id, "proposta");
+    setPropostaPopup(false);
+    toast.success("📄 Proposta → coluna Proposta");
+  };
+
+  const handleContratoSubmit = async () => {
+    if (!user) return;
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id, tipo: "contrato", titulo: "Contrato enviado",
+      descricao: `Emp: ${contEmp}, Uni: ${contUni}, VGV: R$ ${contVgv}, Assinatura: ${contTipo === "digital" ? "Digital" : "Presencial"}`,
+      created_by: user.id,
+    } as any);
+    await supabase.from("negocios").update({
+      empreendimento: contEmp || negocio.empreendimento,
+      vgv_final: contVgv ? parseFloat(contVgv) : negocio.vgv_final,
+      updated_at: new Date().toISOString(),
+    } as any).eq("id", negocio.id);
+    onMoveFase(negocio.id, "documentacao");
+    setContratoPopup(false);
+    toast.success("📝 Contrato → coluna Contrato Gerado");
+  };
 
   return (
     <>
       <div
         draggable
         onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
-        onClick={onClick}
-        className="group rounded-lg border bg-card cursor-pointer active:cursor-grabbing hover:bg-accent/40 transition-all duration-150 select-none overflow-hidden"
-        style={{ borderLeftWidth: 3, borderLeftColor: faseInfo?.cor || "#6B7280" }}
+        className="group rounded-lg cursor-pointer active:cursor-grabbing hover:brightness-110 transition-all duration-150 select-none overflow-hidden"
+        style={{
+          background: "hsl(220 20% 16%)",
+          border: `1px solid hsl(220 15% 22%)`,
+          borderLeftWidth: 3,
+          borderLeftColor: faseInfo?.cor || "#6B7280",
+        }}
       >
-        <div className="px-3 pt-2.5 pb-2 space-y-1.5">
-          {/* Header: JornadaLead + parado badge */}
+        {/* Body - click opens modal */}
+        <div className="px-3 pt-2.5 pb-2 space-y-1" onClick={onClick}>
+          {/* Row 1: Nome + Days badge */}
           <div className="flex items-center justify-between">
-            <JornadaLead moduloAtual="negocios" size="sm" />
-            <div className="flex items-center gap-1">
-              {paradoInfo && (
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                  paradoInfo.severity === "danger"
-                    ? "bg-red-500/10 text-red-600"
-                    : "bg-amber-500/10 text-amber-600"
-                }`}>
-                  {paradoInfo.severity === "danger" ? "🔥" : "⚠️"} {paradoInfo.diasParado}d
-                </span>
-              )}
-              <span className={`text-[10px] font-bold ${
-                daysInFase <= 3 ? "text-emerald-600" : daysInFase <= 7 ? "text-amber-600" : "text-red-600"
-              }`}>
-                {daysInFase}d
-              </span>
-            </div>
+            <p className="text-[13px] font-bold text-white truncate flex-1">{negocio.nome_cliente}</p>
+            <span className={`text-[10px] font-bold ml-2 shrink-0 ${
+              daysInFase <= 3 ? "text-emerald-400" : daysInFase <= 7 ? "text-amber-400" : "text-red-400"
+            }`}>
+              {daysInFase}d
+            </span>
           </div>
 
-          {/* Name */}
-          <p className="text-[13px] font-bold text-foreground truncate">{negocio.nome_cliente}</p>
+          {/* Row 2: Imóvel (fase) */}
+          <p className="text-[11px] text-gray-400 truncate">
+            {negocio.empreendimento || <span className="italic text-amber-400/70">🏠 Sem imóvel</span>}
+            {negocio.empreendimento && (
+              <span className="ml-1 text-gray-500">({faseInfo?.label})</span>
+            )}
+          </p>
 
-          {/* Empreendimento */}
-          {negocio.empreendimento && (
-            <p className="text-[11px] text-muted-foreground truncate">{negocio.empreendimento}</p>
-          )}
-
-          {/* VGV */}
-          <div className="flex items-center justify-between text-[10px]">
+          {/* Row 3: VGV (obrigatório) */}
+          <div className="flex items-center gap-2">
             {negocio.vgv_estimado ? (
-              <span className="font-semibold text-foreground flex items-center gap-0.5">
-                <TrendingUp className="h-2.5 w-2.5 text-primary" />
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5">
+                <TrendingUp className="h-3 w-3" />
                 {formatVGV(negocio.vgv_estimado)}
               </span>
             ) : (
-              <span className="text-muted-foreground italic">Sem VGV</span>
+              <span className="text-[11px] text-red-400/80 font-medium">⚠️ VGV obrigatório</span>
             )}
           </div>
 
-          {/* Data de criação */}
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>Criado em {new Date(negocio.created_at).toLocaleDateString("pt-BR")}</span>
-          </div>
-
-          {/* Corretor info for CEO/Gerente */}
+          {/* Row 4: Corretor (para admin/gestor) */}
           {showCorretor && corretorInfo && (
             <div className="flex items-center gap-1.5 pt-0.5">
-              <Avatar className="h-5 w-5">
+              <Avatar className="h-4 w-4">
                 <AvatarImage src={corretorInfo.avatar_gamificado_url || corretorInfo.avatar_url || undefined} className="object-cover" />
-                <AvatarFallback className="text-[8px] bg-muted">{(corretorInfo.nome || "?")[0]}</AvatarFallback>
+                <AvatarFallback className="text-[7px] bg-gray-700 text-gray-300">{(corretorInfo.nome || "?")[0]}</AvatarFallback>
               </Avatar>
-              <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{corretorInfo.nome?.split(" ")[0]}</span>
+              <span className="text-[10px] text-gray-400 truncate">{corretorInfo.nome?.split(" ")[0]}</span>
               {corretorInfo.equipe && (
-                <Badge variant="outline" className={`text-[8px] px-1 py-0 h-3.5 border ${getTeamColorClass(corretorInfo.equipe)}`}>
+                <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-gray-600 text-gray-400">
                   {corretorInfo.equipe}
                 </Badge>
               )}
             </div>
           )}
-          {!showCorretor && corretorNome && (
-            <div className="text-[10px] text-muted-foreground truncate">👤 {corretorNome}</div>
+        </div>
+
+        {/* Action bar */}
+        <div className="flex items-center gap-0 border-t border-white/5 bg-white/[0.03]" onClick={(e) => e.stopPropagation()}>
+          {/* Ligar */}
+          <button
+            onClick={() => setLigarPopup(true)}
+            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            <Phone className="h-3 w-3" /> Ligar
+          </button>
+
+          {/* WhatsApp */}
+          {whatsappUrl ? (
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] text-green-500 hover:text-green-400 hover:bg-white/5 transition-colors"
+            >
+              <MessageSquare className="h-3 w-3" /> WhatsApp
+            </a>
+          ) : (
+            <span className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] text-gray-600">
+              <MessageSquare className="h-3 w-3" /> WhatsApp
+            </span>
           )}
 
-          {/* Comunicar button */}
-          <div className="pt-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 text-[10px] px-2 gap-1 text-primary hover:text-primary/80"
-              onClick={(e) => { e.stopPropagation(); setComunicacaoOpen(true); }}
-            >
-              <MessageCircle className="h-3 w-3" /> 💬 Comunicar
-            </Button>
-          </div>
+          {/* ⚡ Ação */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-white/5 transition-colors">
+                <Zap className="h-3 w-3" /> Ação
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <p className="px-2 py-1.5 text-xs font-bold text-muted-foreground">⚡ Ação do Negócio</p>
+              <DropdownMenuSeparator />
+              {CARD_QUICK_ACTIONS.map(action => (
+                <DropdownMenuItem key={action.id} onClick={() => handleCardAction(action)} className="gap-2 cursor-pointer text-xs">
+                  <span>{action.emoji}</span> {action.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* ⋯ Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="px-2 py-1.5 text-gray-500 hover:text-white hover:bg-white/5 transition-colors">
+                <MoreVertical className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {/* Move between stages */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-2 text-xs">
+                  <ArrowRight className="h-3.5 w-3.5" /> Mover para etapa
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato").map(f => (
+                    <DropdownMenuItem key={f.key} onClick={() => onMoveFase(negocio.id, f.key)} className="gap-2 cursor-pointer text-xs">
+                      <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: f.cor }} />
+                      {f.icon} {f.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 cursor-pointer text-xs">
+                <Handshake className="h-3.5 w-3.5" /> Parceria
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer text-xs">
+                <Repeat2 className="h-3.5 w-3.5" /> Repassar negócio
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 cursor-pointer text-xs text-red-500" onClick={() => setQuedaPopup(true)}>
+                <XCircle className="h-3.5 w-3.5" /> Caiu negócio
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-      <CentralComunicacao
-        open={comunicacaoOpen}
-        onOpenChange={setComunicacaoOpen}
-        leadNome={negocio.nome_cliente}
-        leadEmpreendimento={negocio.empreendimento}
-      />
+
+      {/* ── Popup: Registrar Ligação ── */}
+      <Dialog open={ligarPopup} onOpenChange={setLigarPopup}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">📞 Registrar Ligação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Resultado</Label>
+              <Select value={ligarResultado} onValueChange={setLigarResultado}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="atendeu">✅ Atendeu</SelectItem>
+                  <SelectItem value="nao_atendeu">❌ Não atendeu</SelectItem>
+                  <SelectItem value="caixa_postal">📭 Caixa postal</SelectItem>
+                  <SelectItem value="ocupado">🔴 Ocupado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Observação</Label>
+              <Textarea value={ligarNota} onChange={e => setLigarNota(e.target.value)} placeholder="O que aconteceu na ligação..." className="text-xs h-20" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button size="sm" onClick={handleLigarRegistro} className="text-xs gap-1">
+              <Phone className="h-3 w-3" /> Registrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Popup: Motivo da Queda ── */}
+      <Dialog open={quedaPopup} onOpenChange={setQuedaPopup}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">❌ Motivo da Queda</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">Negócio: <strong>{negocio.nome_cliente}</strong></p>
+            <div>
+              <Label className="text-xs">Motivo</Label>
+              <Textarea value={quedaMotivo} onChange={e => setQuedaMotivo(e.target.value)} placeholder="Descreva o motivo..." className="text-xs h-20" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button size="sm" variant="destructive" onClick={handleQueda} className="text-xs gap-1">
+              <XCircle className="h-3 w-3" /> Confirmar queda
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Popup: Enviar Proposta ── */}
+      <Dialog open={propostaPopup} onOpenChange={setPropostaPopup}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">📄 Enviar Proposta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div><Label className="text-xs">Empreendimento</Label><Input value={propEmp} onChange={e => setPropEmp(e.target.value)} className="h-8 text-xs" /></div>
+            <div><Label className="text-xs">Unidade</Label><Input value={propUni} onChange={e => setPropUni(e.target.value)} className="h-8 text-xs" /></div>
+            <div><Label className="text-xs">VGV (R$)</Label><Input value={propVgv} onChange={e => setPropVgv(e.target.value)} type="number" className="h-8 text-xs" /></div>
+          </div>
+          <DialogFooter>
+            <Button size="sm" onClick={handlePropostaSubmit} className="text-xs gap-1">📄 Enviar e mover para Proposta</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Popup: Enviar Contrato ── */}
+      <Dialog open={contratoPopup} onOpenChange={setContratoPopup}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">📝 Enviar Contrato</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div><Label className="text-xs">Empreendimento</Label><Input value={contEmp} onChange={e => setContEmp(e.target.value)} className="h-8 text-xs" /></div>
+            <div><Label className="text-xs">Unidade</Label><Input value={contUni} onChange={e => setContUni(e.target.value)} className="h-8 text-xs" /></div>
+            <div><Label className="text-xs">VGV (R$)</Label><Input value={contVgv} onChange={e => setContVgv(e.target.value)} type="number" className="h-8 text-xs" /></div>
+            <div>
+              <Label className="text-xs">Tipo de assinatura</Label>
+              <Select value={contTipo} onValueChange={setContTipo}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="digital">🖊️ Digital</SelectItem>
+                  <SelectItem value="presencial">🤝 Presencial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button size="sm" onClick={handleContratoSubmit} className="text-xs gap-1">📝 Enviar e mover para Contrato Gerado</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
