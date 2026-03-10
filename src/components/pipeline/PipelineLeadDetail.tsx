@@ -364,13 +364,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <div className="shrink-0 mx-6 mt-3 mb-4 flex items-center gap-2">
             <TabsList className="bg-muted/50 h-9 flex-1">
-              <TabsTrigger value="tarefas" className="text-sm h-7 data-[state=active]:shadow-sm">
-                <ClipboardList className="h-3.5 w-3.5 mr-1" /> 📋 Tarefas
-                {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
-              </TabsTrigger>
               <TabsTrigger value="historico" className="text-sm h-7 data-[state=active]:shadow-sm">
                 <History className="h-3.5 w-3.5 mr-1" /> 📝 Histórico
                 {leadData.atividades.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{leadData.atividades.length}</Badge>}
+              </TabsTrigger>
+              <TabsTrigger value="tarefas" className="text-sm h-7 data-[state=active]:shadow-sm">
+                <ClipboardList className="h-3.5 w-3.5 mr-1" /> 📋 Tarefas
+                {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="visitas-propostas" className="text-sm h-7 data-[state=active]:shadow-sm">
                 <MapPin className="h-3.5 w-3.5 mr-1" /> 📊 Visitas
