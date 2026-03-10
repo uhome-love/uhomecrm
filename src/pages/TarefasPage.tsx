@@ -43,11 +43,11 @@ interface Tarefa {
   updated_at: string;
 }
 
-const COLUMNS: { key: TarefaStatus; label: string; emoji: string; color: string; bg: string }[] = [
-  { key: "a_fazer", label: "A Fazer", emoji: "📋", color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.5)" },
-  { key: "em_andamento", label: "Em Andamento", emoji: "⚡", color: "hsl(220 90% 56%)", bg: "hsl(220 90% 56% / 0.08)" },
-  { key: "revisao", label: "Revisão", emoji: "👀", color: "hsl(38 92% 50%)", bg: "hsl(38 92% 50% / 0.08)" },
-  { key: "concluida", label: "Concluída", emoji: "✅", color: "hsl(142 71% 45%)", bg: "hsl(142 71% 45% / 0.08)" },
+const COLUMNS: { key: TarefaStatus; label: string; emoji: string; color: string; bg: string; cardBg: string; borderAccent: string; headerBg: string }[] = [
+  { key: "a_fazer", label: "A Fazer", emoji: "📋", color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.3)", cardBg: "hsl(var(--muted) / 0.15)", borderAccent: "hsl(var(--muted-foreground) / 0.2)", headerBg: "hsl(var(--muted) / 0.5)" },
+  { key: "em_andamento", label: "Em Andamento", emoji: "⚡", color: "hsl(220 90% 56%)", bg: "hsl(220 90% 56% / 0.06)", cardBg: "hsl(220 90% 56% / 0.04)", borderAccent: "hsl(220 90% 56% / 0.25)", headerBg: "hsl(220 90% 56% / 0.1)" },
+  { key: "revisao", label: "Revisão", emoji: "👀", color: "hsl(38 92% 50%)", bg: "hsl(38 92% 50% / 0.06)", cardBg: "hsl(38 92% 50% / 0.04)", borderAccent: "hsl(38 92% 50% / 0.25)", headerBg: "hsl(38 92% 50% / 0.1)" },
+  { key: "concluida", label: "Concluída", emoji: "✅", color: "hsl(142 71% 45%)", bg: "hsl(142 71% 45% / 0.06)", cardBg: "hsl(142 71% 45% / 0.04)", borderAccent: "hsl(142 71% 45% / 0.25)", headerBg: "hsl(142 71% 45% / 0.1)" },
 ];
 
 const PRIORIDADE_CONFIG: Record<TarefaPrioridade, { label: string; color: string; border: string; badge: string }> = {
