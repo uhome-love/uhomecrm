@@ -185,22 +185,24 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             {negocio.empreendimento || <span className="italic text-amber-400/70">🏠 Sem imóvel</span>}
           </p>
 
-          {/* Row 3: Corretor responsável */}
-          {showCorretor && corretorInfo ? (
-            <div className="flex items-center gap-1.5">
-              <Avatar className="h-4 w-4">
-                <AvatarImage src={corretorInfo.avatar_gamificado_url || corretorInfo.avatar_url || undefined} className="object-cover" />
-                <AvatarFallback className="text-[7px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
-              </Avatar>
-              <span className="text-[10px] text-white/40 truncate">{corretorInfo.nome?.split(" ")[0]}</span>
-              {corretorInfo.equipe && (
-                <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-white/10 text-white/30">
-                  {corretorInfo.equipe}
-                </Badge>
-              )}
-            </div>
-          ) : (
-            <p className="text-[10px] text-white/30 italic">Sem corretor</p>
+          {/* Row 3: Corretor responsável (only for admin/gestor) */}
+          {showCorretor && (
+            corretorInfo ? (
+              <div className="flex items-center gap-1.5">
+                <Avatar className="h-4 w-4">
+                  <AvatarImage src={corretorInfo.avatar_gamificado_url || corretorInfo.avatar_url || undefined} className="object-cover" />
+                  <AvatarFallback className="text-[7px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
+                </Avatar>
+                <span className="text-[10px] text-white/40 truncate">{corretorInfo.nome?.split(" ")[0]}</span>
+                {corretorInfo.equipe && (
+                  <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-white/10 text-white/30">
+                    {corretorInfo.equipe}
+                  </Badge>
+                )}
+              </div>
+            ) : (
+              <p className="text-[10px] text-white/30 italic">Sem corretor</p>
+            )
           )}
 
           {/* Row 4: VGV with quick-fill */}
