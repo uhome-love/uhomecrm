@@ -90,8 +90,8 @@ export default function ReuniaoNegocioForm({ open, onClose, onSubmit }: Props) {
     if (!searchTerm.trim()) return negocios.slice(0, 15);
     const term = searchTerm.toLowerCase();
     return negocios.filter(n =>
-      n.cliente_nome?.toLowerCase().includes(term) ||
-      n.imovel?.toLowerCase().includes(term)
+      n.nome_cliente?.toLowerCase().includes(term) ||
+      n.imovel_interesse?.toLowerCase().includes(term)
     ).slice(0, 15);
   }, [negocios, searchTerm]);
 
