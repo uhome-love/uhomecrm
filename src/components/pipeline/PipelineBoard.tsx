@@ -17,7 +17,7 @@ interface PipelineBoardProps {
   segmentos: PipelineSegmento[];
   corretorNomes: Record<string, string>;
   parcerias: Record<string, string>;
-  onMoveLead: (leadId: string, newStageId: string) => void;
+  onMoveLead: (leadId: string, newStageId: string, observacao?: string) => void;
   onSelectLead: (lead: PipelineLead) => void;
   onTransferred?: (leadId: string, corretorId: string, corretorNome: string) => void;
   selectionMode?: boolean;
