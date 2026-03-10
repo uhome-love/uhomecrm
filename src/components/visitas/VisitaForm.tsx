@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, CalendarPlus, Search, Handshake } from "lucide-react";
-import { ORIGEM_LABELS, type Visita } from "@/hooks/useVisitas";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, CalendarPlus, Search, Handshake, Filter, X } from "lucide-react";
+import { type Visita } from "@/hooks/useVisitas";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import { toast } from "sonner";
@@ -19,10 +21,17 @@ interface PipelineLeadOption {
   nome: string;
   empreendimento: string | null;
   telefone: string | null;
+  stage_id: string;
 }
 
 interface TeamMemberOption {
   user_id: string;
+  nome: string;
+  equipe: string | null;
+}
+
+interface StageOption {
+  id: string;
   nome: string;
 }
 
@@ -61,13 +70,21 @@ function getDefaultForm(initialData?: Props["initialData"]) {
 
 export default function VisitaForm({ open, onClose, onSubmit, initialData, mode = "create" }: Props) {
   const { user } = useAuth();
+  const { isGestor, isAdmin } = useUserRole();
+  const isManager = isGestor || isAdmin;
+
   const [form, setForm] = useState(() => getDefaultForm(initialData));
   const [submitting, setSubmitting] = useState(false);
   const [pipelineLeads, setPipelineLeads] = useState<PipelineLeadOption[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([]);
+  const [stages, setStages] = useState<StageOption[]>([]);
   const [searchPipeline, setSearchPipeline] = useState("");
-  const [loadingLeads, setLoadingLeads] = useState(false);
   const [empreendimentos, setEmpreendimentos] = useState<string[]>([]);
+
+  // Filter state for client search
+  const [filterStage, setFilterStage] = useState("");
+  const [filterEmp, setFilterEmp] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Partnership state
   const [isParceria, setIsParceria] = useState(false);
@@ -81,50 +98,74 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
       setSubmitting(false);
       setIsParceria(false);
       setParceiroId("");
+      setFilterStage("");
+      setFilterEmp("");
+      setShowFilters(false);
     }
   }, [open, initialData]);
 
-  // Load pipeline leads + team members + empreendimentos
+  // Load pipeline leads + team members + empreendimentos + stages
   useEffect(() => {
     if (!user || !open) return;
     const load = async () => {
-      setLoadingLeads(true);
-      const [leadsRes, teamRes, campanhasRes] = await Promise.all([
-        supabase.from("pipeline_leads").select("id, nome, empreendimento, telefone").order("updated_at", { ascending: false }).limit(200),
-        supabase.from("team_members").select("user_id, nome").eq("status", "ativo"),
+      const [leadsRes, teamRes, campanhasRes, stagesRes] = await Promise.all([
+        supabase.from("pipeline_leads").select("id, nome, empreendimento, telefone, stage_id").order("updated_at", { ascending: false }).limit(500),
+        supabase.from("team_members").select("user_id, nome, equipe").eq("status", "ativo"),
         supabase.from("roleta_campanhas").select("empreendimento").eq("ativo", true),
+        supabase.from("pipeline_stages").select("id, nome").order("ordem", { ascending: true }),
       ]);
       const leads = (leadsRes.data || []) as PipelineLeadOption[];
       setPipelineLeads(leads);
       setTeamMembers((teamRes.data || []).filter(m => m.user_id) as TeamMemberOption[]);
+      setStages((stagesRes.data || []) as StageOption[]);
 
-      // Merge empreendimentos from campanhas (official) + pipeline_leads
       const empSet = new Set<string>();
       (campanhasRes.data || []).forEach((c: any) => { if (c.empreendimento) empSet.add(c.empreendimento); });
       leads.forEach(l => { if (l.empreendimento) empSet.add(l.empreendimento); });
       setEmpreendimentos(Array.from(empSet).sort());
-      setLoadingLeads(false);
     };
     load();
   }, [user, open]);
 
+  // Filtered leads with search + stage + empreendimento filters
   const filteredLeads = useMemo(() => {
-    if (!searchPipeline.trim()) return pipelineLeads.slice(0, 20);
-    const term = searchPipeline.toLowerCase();
-    return pipelineLeads.filter(l =>
-      l.nome.toLowerCase().includes(term) ||
-      l.empreendimento?.toLowerCase().includes(term) ||
-      l.telefone?.includes(term)
-    ).slice(0, 20);
-  }, [pipelineLeads, searchPipeline]);
+    let result = pipelineLeads;
+    if (filterStage) result = result.filter(l => l.stage_id === filterStage);
+    if (filterEmp) result = result.filter(l => l.empreendimento === filterEmp);
+    if (searchPipeline.trim()) {
+      const term = searchPipeline.toLowerCase();
+      result = result.filter(l =>
+        l.nome.toLowerCase().includes(term) ||
+        l.empreendimento?.toLowerCase().includes(term) ||
+        l.telefone?.includes(term)
+      );
+    }
+    return result.slice(0, 25);
+  }, [pipelineLeads, searchPipeline, filterStage, filterEmp]);
 
   const selectedLead = pipelineLeads.find(l => l.id === form.pipeline_lead_id);
 
-  // Parceiro options: all team members except the selected corretor
-  const parceiroOptions = useMemo(() => {
+  // Unique empreendimentos from loaded leads for filter chips
+  const leadEmpreendimentos = useMemo(() => {
+    const set = new Set<string>();
+    pipelineLeads.forEach(l => { if (l.empreendimento) set.add(l.empreendimento); });
+    return Array.from(set).sort();
+  }, [pipelineLeads]);
+
+  // Parceiro options: grouped by equipe, exclude current corretor
+  const parceiroGroups = useMemo(() => {
     const excludeId = form.corretor_id || user?.id;
-    return teamMembers.filter(m => m.user_id !== excludeId);
+    const filtered = teamMembers.filter(m => m.user_id !== excludeId);
+    const groups = new Map<string, TeamMemberOption[]>();
+    for (const m of filtered) {
+      const team = m.equipe || "Sem equipe";
+      if (!groups.has(team)) groups.set(team, []);
+      groups.get(team)!.push(m);
+    }
+    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [teamMembers, form.corretor_id, user?.id]);
+
+  const hasActiveFilters = !!filterStage || !!filterEmp;
 
   const handleSelectPipelineLead = (leadId: string) => {
     const lead = pipelineLeads.find(l => l.id === leadId);
@@ -137,6 +178,7 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
         empreendimento: lead.empreendimento || f.empreendimento || "",
       }));
       setSearchPipeline("");
+      setShowFilters(false);
     }
   };
 
@@ -198,38 +240,126 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
 
   const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
 
+  // Stage name lookup
+  const stageName = (stageId: string) => stages.find(s => s.id === stageId)?.nome || "";
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <CalendarPlus className="h-5 w-5 text-blue-600" />
+            <CalendarPlus className="h-5 w-5 text-primary" />
             {mode === "create" ? "Nova Visita" : "Editar Visita"}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Autocomplete: Search leads */}
+          {/* === CLIENT SEARCH === */}
           <div>
-            <Label className="text-xs font-semibold mb-1 block">Cliente *</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs font-semibold">Cliente *</Label>
+              {!selectedLead && (
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={cn(
+                    "flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md transition-colors",
+                    showFilters || hasActiveFilters
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Filter className="h-3 w-3" />
+                  Filtros
+                  {hasActiveFilters && (
+                    <span className="h-3.5 w-3.5 rounded-full bg-primary text-primary-foreground text-[8px] flex items-center justify-center font-bold">
+                      {(filterStage ? 1 : 0) + (filterEmp ? 1 : 0)}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+
             {selectedLead ? (
               <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2 border">
                 <div>
                   <p className="text-sm font-semibold">{selectedLead.nome}</p>
-                  {selectedLead.empreendimento && (
-                    <p className="text-[10px] text-muted-foreground">{selectedLead.empreendimento} {selectedLead.telefone && `· ${selectedLead.telefone}`}</p>
-                  )}
+                  <p className="text-[10px] text-muted-foreground">
+                    {[selectedLead.empreendimento, stageName(selectedLead.stage_id), selectedLead.telefone].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
                 <Button variant="ghost" size="sm" className="h-6 text-[10px] text-destructive" onClick={() => set("pipeline_lead_id", "")}>
                   Trocar
                 </Button>
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
+                {/* Filter chips */}
+                {showFilters && (
+                  <div className="space-y-2 p-2.5 rounded-lg border border-border/60 bg-muted/20 animate-fade-in">
+                    {/* Stage filter */}
+                    <div>
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Etapa</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {stages.map(s => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setFilterStage(filterStage === s.id ? "" : s.id)}
+                            className={cn(
+                              "px-2 py-1 rounded-md text-[10px] font-medium border transition-all",
+                              filterStage === s.id
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-card text-muted-foreground border-border/60 hover:border-primary/40"
+                            )}
+                          >
+                            {s.nome}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Empreendimento filter */}
+                    {leadEmpreendimentos.length > 0 && (
+                      <div>
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Empreendimento</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {leadEmpreendimentos.slice(0, 10).map(e => (
+                            <button
+                              key={e}
+                              type="button"
+                              onClick={() => setFilterEmp(filterEmp === e ? "" : e)}
+                              className={cn(
+                                "px-2 py-1 rounded-md text-[10px] font-medium border transition-all",
+                                filterEmp === e
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-card text-muted-foreground border-border/60 hover:border-primary/40"
+                              )}
+                            >
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {hasActiveFilters && (
+                      <button
+                        type="button"
+                        onClick={() => { setFilterStage(""); setFilterEmp(""); }}
+                        className="flex items-center gap-1 text-[10px] text-destructive hover:underline"
+                      >
+                        <X className="h-3 w-3" /> Limpar filtros
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Search input */}
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nome ou telefone..."
+                    placeholder="Buscar por nome, empreendimento ou telefone..."
                     value={searchPipeline || form.nome_cliente}
                     onChange={e => {
                       setSearchPipeline(e.target.value);
@@ -238,8 +368,10 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
                     className="pl-8 h-9 text-sm"
                   />
                 </div>
-                {searchPipeline.trim().length > 1 && filteredLeads.length > 0 && (
-                  <div className="max-h-36 overflow-y-auto rounded-lg border bg-card shadow-md">
+
+                {/* Results */}
+                {(searchPipeline.trim().length > 1 || hasActiveFilters) && filteredLeads.length > 0 && (
+                  <div className="max-h-44 overflow-y-auto rounded-lg border bg-card shadow-md">
                     {filteredLeads.map(l => (
                       <button
                         key={l.id}
@@ -247,19 +379,35 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
                         className="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors border-b border-border/30 last:border-0"
                         onClick={() => handleSelectPipelineLead(l.id)}
                       >
-                        <p className="text-xs font-semibold">{l.nome}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold truncate">{l.nome}</p>
+                          {l.stage_id && (
+                            <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 shrink-0 ml-2">
+                              {stageName(l.stage_id)}
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-[10px] text-muted-foreground">
                           {[l.empreendimento, l.telefone].filter(Boolean).join(" · ") || "Sem detalhes"}
                         </p>
                       </button>
                     ))}
+                    {filteredLeads.length >= 25 && (
+                      <p className="text-[9px] text-muted-foreground text-center py-1.5">Refine a busca para ver mais resultados</p>
+                    )}
                   </div>
+                )}
+
+                {(searchPipeline.trim().length > 1 || hasActiveFilters) && filteredLeads.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground text-center py-3">
+                    Nenhum lead encontrado. O nome digitado será usado como cliente manual.
+                  </p>
                 )}
               </div>
             )}
           </div>
 
-          {/* Empreendimento */}
+          {/* === EMPREENDIMENTO (combobox allows manual) === */}
           <div>
             <Label className="text-xs font-semibold mb-1 block">Empreendimento</Label>
             <EmpreendimentoCombobox
@@ -283,16 +431,27 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
             </Select>
           </div>
 
-          {/* Corretor — only show for gestores/admins who manage a team (not for corretores) */}
-          {teamMembers.length > 1 && teamMembers.some(m => m.user_id !== user?.id) && (
+          {/* Corretor — only for gestores/admins */}
+          {isManager && teamMembers.length > 0 && (
             <div>
               <Label className="text-xs font-semibold mb-1 block">Corretor</Label>
               <Select value={form.corretor_id} onValueChange={v => set("corretor_id", v)}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o corretor" /></SelectTrigger>
                 <SelectContent>
-                  {teamMembers.map(m => (
-                    <SelectItem key={m.user_id} value={m.user_id}>{m.nome}</SelectItem>
-                  ))}
+                  {parceiroGroups.length > 1 ? (
+                    parceiroGroups.map(([equipe, members]) => (
+                      <SelectGroup key={equipe}>
+                        <SelectLabel className="text-[10px] text-muted-foreground uppercase tracking-wider">{equipe}</SelectLabel>
+                        {members.map(m => (
+                          <SelectItem key={m.user_id} value={m.user_id}>{m.nome}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))
+                  ) : (
+                    teamMembers.map(m => (
+                      <SelectItem key={m.user_id} value={m.user_id}>{m.nome}</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -325,8 +484,15 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
                       <SelectValue placeholder="Selecione o corretor parceiro" />
                     </SelectTrigger>
                     <SelectContent>
-                      {parceiroOptions.map(m => (
-                        <SelectItem key={m.user_id} value={m.user_id}>{m.nome}</SelectItem>
+                      {parceiroGroups.map(([equipe, members]) => (
+                        <SelectGroup key={equipe}>
+                          <SelectLabel className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                            {equipe}
+                          </SelectLabel>
+                          {members.map(m => (
+                            <SelectItem key={m.user_id} value={m.user_id}>{m.nome}</SelectItem>
+                          ))}
+                        </SelectGroup>
                       ))}
                     </SelectContent>
                   </Select>
@@ -360,7 +526,7 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
                   form.hora_visita === t
-                    ? "bg-blue-100 text-blue-700 border-blue-300"
+                    ? "bg-primary/10 text-primary border-primary/30"
                     : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
                 )}
               >
@@ -383,12 +549,12 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
 
           {/* Submit */}
           <Button
-            className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white h-10 text-sm font-semibold"
+            className="w-full gap-2 h-10 text-sm font-semibold"
             disabled={!form.nome_cliente.trim() || !form.data_visita || submitting || (isParceria && !parceiroId)}
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {mode === "create" ? "📅 Agendar Visita" : "Salvar Alterações"}
+            {mode === "create" ? "📅 Agendar Visita" : "💾 Salvar Alterações"}
           </Button>
         </div>
       </DialogContent>
