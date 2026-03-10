@@ -93,18 +93,10 @@ export default function ImoveisPage() {
         return;
       }
 
-      const results = data?.result || data?.imoveis || data?.data || [];
-      const items = Array.isArray(results) ? results : [];
-      
-      // Debug: log first item to understand API structure
-      if (items.length > 0) {
-        console.log("JETIMOB_KEYS:", Object.keys(items[0]));
-        console.log("JETIMOB_SAMPLE:", JSON.stringify(items[0]).substring(0, 3000));
-      }
-      
+      const items = Array.isArray(data?.data) ? data.data : [];
       setImoveis(items);
-      setTotal(data?.total || data?.count || items.length);
-      setTotalPages(data?.totalPages || data?.pages || Math.ceil((data?.total || items.length) / 20));
+      setTotal(data?.total || items.length);
+      setTotalPages(data?.totalPages || Math.ceil((data?.total || items.length) / 20));
       setPage(pageNum);
     } catch (err) {
       console.error(err);
