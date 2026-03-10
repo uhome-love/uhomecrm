@@ -2494,6 +2494,106 @@ export type Database = {
         }
         Relationships: []
       }
+      negocios_atividades: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          negocio_id: string
+          resultado: string | null
+          tipo: string
+          titulo: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          negocio_id: string
+          resultado?: string | null
+          tipo: string
+          titulo?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          negocio_id?: string
+          resultado?: string | null
+          tipo?: string
+          titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negocios_atividades_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      negocios_tarefas: {
+        Row: {
+          concluida_em: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          hora_vencimento: string | null
+          id: string
+          negocio_id: string
+          prioridade: string
+          responsavel_id: string | null
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+          vence_em: string | null
+        }
+        Insert: {
+          concluida_em?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          hora_vencimento?: string | null
+          id?: string
+          negocio_id: string
+          prioridade?: string
+          responsavel_id?: string | null
+          status?: string
+          tipo?: string
+          titulo: string
+          updated_at?: string
+          vence_em?: string | null
+        }
+        Update: {
+          concluida_em?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          hora_vencimento?: string | null
+          id?: string
+          negocio_id?: string
+          prioridade?: string
+          responsavel_id?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          vence_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negocios_tarefas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           agrupar_similares: boolean
