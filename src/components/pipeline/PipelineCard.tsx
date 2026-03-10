@@ -150,18 +150,18 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
     };
   }
 
-  // Recent contact, no task
+  // Recent contact, no task → DESATUALIZADO
   const contactLabel = isTodayFn(new Date(lastContact))
     ? `hoje ${format(new Date(lastContact), "HH:mm")}`
     : isYesterdayFn(new Date(lastContact))
     ? "ontem"
     : format(new Date(lastContact), "dd/MM");
   return {
-    indicator: null,
-    indicatorCls: "",
-    text: `Último contato: ${contactLabel}`,
-    textCls: "text-muted-foreground",
-    borderCls: "border-l-muted-foreground/30",
+    indicator: "⚠️",
+    indicatorCls: "text-amber-500",
+    text: `⚠️ Desatualizado · falta tarefa`,
+    textCls: "text-amber-600 dark:text-amber-400 font-semibold",
+    borderCls: "border-l-amber-400",
   };
 }
 
