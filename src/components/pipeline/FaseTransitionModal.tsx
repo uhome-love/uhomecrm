@@ -21,26 +21,16 @@ interface Props {
   onConfirm: (data: TransitionData) => void;
 }
 
-// Format number as BRL currency: 900000 → "900.000,00"
+// Format number string as BRL: "900000" → "900.000"
 function formatBRL(value: string): string {
-  const num = value.replace(/\D/g, "");
-  if (!num) return "";
-  const cents = num.padStart(3, "0");
-  const intPart = cents.slice(0, -2);
-  const decPart = cents.slice(-2);
-  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  return `${formatted},${decPart}`;
+  const num = value.replace(/^0+/, "") || "0";
+  return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-// Parse formatted BRL back to raw cents string
-function parseBRL(formatted: string): string {
-  return formatted.replace(/\./g, "").replace(",", "");
-}
-
-// Get numeric value from raw cents string
+// Get numeric value from raw string (whole reais)
 function rawToNumber(raw: string): number {
   if (!raw) return 0;
-  return parseInt(raw, 10) / 100;
+  return parseInt(raw, 10);
 }
 
 function CurrencyInput({ value, onChange, placeholder, label }: { value: string; onChange: (v: string) => void; placeholder?: string; label: string }) {
@@ -58,7 +48,7 @@ function CurrencyInput({ value, onChange, placeholder, label }: { value: string;
         value={display}
         onChange={handleChange}
         className="h-8 text-xs"
-        placeholder={placeholder || "R$ 0,00"}
+        placeholder={placeholder || "R$ 0"}
         inputMode="numeric"
       />
     </div>
@@ -70,7 +60,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
   const [propImovel, setPropImovel] = useState(negocio.empreendimento || "");
   const [propValorImovel, setPropValorImovel] = useState("");
   const [propValorProposta, setPropValorProposta] = useState(
-    negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado * 100)) : ""
+    negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado)) : ""
   );
   const [propUnidade, setPropUnidade] = useState("");
   const [propDocsStatus, setPropDocsStatus] = useState("sem_documentos");
@@ -85,7 +75,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
   const [contUnidade, setContUnidade] = useState("");
   const [contEndereco, setContEndereco] = useState("");
   const [contVgv, setContVgv] = useState(
-    negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado * 100)) : ""
+    negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado)) : ""
   );
   const [contTaxa, setContTaxa] = useState("5");
   const [contTaxaCustom, setContTaxaCustom] = useState("");
