@@ -64,6 +64,35 @@ export default function CompradorDocUpload({ compradores, onChange }: Props) {
     onChange(compradores.filter((_, i) => i !== idx));
   };
 
+  const buscarCep = useCallback(async (idx: number, cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+    setCepLoading(prev => ({ ...prev, [idx]: true }));
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      const updated = [...compradores];
+      updated[idx] = {
+        ...updated[idx],
+        endereco: `${data.logradouro || ""}${data.complemento ? `, ${data.complemento}` : ""}`,
+        bairro: data.bairro || "",
+        cidade: data.localidade || "",
+        estado: data.uf || "",
+        cep: cleanCep.replace(/(\d{5})(\d{3})/, "$1-$2"),
+      };
+      onChange(updated);
+      toast.success("Endereço preenchido!");
+    } catch {
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setCepLoading(prev => ({ ...prev, [idx]: false }));
+    }
+  }, [compradores, onChange]);
+
   const handleFileUpload = useCallback(async (
     idx: number,
     docType: "identidade" | "comprovante",
