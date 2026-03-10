@@ -202,6 +202,20 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         </div>
       )}
 
+      {/* Responsável */}
+      {(showCorretor || showTeam) && (
+        <div className="hidden lg:flex items-center min-w-0 shrink-0" style={{ width: "clamp(70px, 10%, 100px)" }}>
+          {(v as any).responsavel_visita ? (
+            <span className="text-[10px] font-medium text-foreground whitespace-nowrap">
+              {RESPONSAVEL_LABELS[(v as any).responsavel_visita]?.emoji || "👤"}{" "}
+              {RESPONSAVEL_LABELS[(v as any).responsavel_visita]?.label || (v as any).responsavel_visita}
+            </span>
+          ) : (
+            <span className="text-[10px] text-muted-foreground">—</span>
+          )}
+        </div>
+      )}
+
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 

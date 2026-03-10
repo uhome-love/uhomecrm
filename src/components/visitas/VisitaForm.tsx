@@ -251,6 +251,7 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
         observacoes: form.observacoes || null,
         pipeline_lead_id: form.pipeline_lead_id || null,
         lead_id: null,
+        responsavel_visita: form.responsavel_visita || null,
       } as any);
 
       // Create partnership if enabled and we have a pipeline_lead_id

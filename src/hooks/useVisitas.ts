@@ -189,6 +189,7 @@ export function useVisitas(filters?: {
       tipo: visita.tipo || "lead",
       negocio_id: visita.negocio_id || null,
       tipo_reuniao: visita.tipo_reuniao || null,
+      responsavel_visita: (visita as any).responsavel_visita || null,
     };
 
     console.log("[createVisita] payload:", JSON.stringify(payload));
