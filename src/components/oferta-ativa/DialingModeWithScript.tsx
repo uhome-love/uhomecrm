@@ -110,7 +110,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   const [scriptTab, setScriptTab] = useState<"ligacao" | "whatsapp">("ligacao");
 
   // Shared empreendimento selection (HOMI helper + FichaRapida)
-  const [selectedEmp, setSelectedEmp] = useState(lead?.empreendimento || "Alfa");
+  const [selectedEmp, setSelectedEmp] = useState("");
 
   // Arena overlays
   const [showRound, setShowRound] = useState(false);

@@ -160,6 +160,7 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
                 height: 30,
               }}
             >
+              <option value="" disabled>Selecionar empreendimento...</option>
               {EMPREENDIMENTOS.map(e => (
                 <option key={e} value={e}>{e}</option>
               ))}
