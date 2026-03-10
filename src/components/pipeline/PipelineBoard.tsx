@@ -428,97 +428,129 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const handleTransitionConfirm = useCallback(async (result: TransitionResult) => {
     setTransitionPopup(null);
 
-    // Move the lead with the observation
+    // Move the lead with the observation (saves in pipeline_historico automatically)
     completeTransition(result.leadId, result.targetStageId, result.observacao);
 
-    // Register in pipeline_historico with extra data
-    if (result.extraData) {
-      // Save extra data as observation in historico (already handled by moveLead)
-      // Handle side effects based on extra data
-      const extra = result.extraData;
+    const lead = leads.find(l => l.id === result.leadId);
+    const targetStage = stages.find(s => s.id === result.targetStageId);
+    const extra = result.extraData || {};
 
-      // Visita Marcada → create visita in agenda
-      if (extra.criarVisita && extra.data && extra.horario) {
-        const lead = leads.find(l => l.id === result.leadId);
-        if (lead) {
-          try {
-            await supabase.from("visitas").insert({
-              pipeline_lead_id: result.leadId,
-              cliente_nome: lead.nome,
-              cliente_telefone: lead.telefone || null,
-              empreendimento: lead.empreendimento || null,
-              data: extra.data,
-              horario: extra.horario,
-              local_tipo: extra.local || "stand",
-              corretor_id: lead.corretor_id || null,
-              parceiro_id: extra.parceiro || null,
-              observacoes: extra.observacao || null,
-              status: "confirmada",
-            } as any);
-            toast.success("📅 Visita criada na agenda!");
-          } catch (err) {
-            console.error("Error creating visita:", err);
-          }
-        }
-      }
+    // ═══ REGISTER IN PIPELINE_ATIVIDADES for timeline visibility ═══
+    const atividadeMap: Record<string, { tipo: string; titulo: string }> = {
+      "sem contato": { tipo: "ligacao", titulo: `Tentativa de contato: ${(extra.acoes || []).join(", ")}` },
+      "contato inic": { tipo: "ligacao", titulo: `Contato inicial: ${extra.retorno?.replace(/_/g, " ") || "realizado"}` },
+      "contato iniciado": { tipo: "ligacao", titulo: `Contato inicial: ${extra.retorno?.replace(/_/g, " ") || "realizado"}` },
+      "qualifica": { tipo: "reuniao", titulo: `Qualificação registrada` },
+      "possível visita": { tipo: "visita", titulo: `Possível visita: ${extra.imovel || "imóvel selecionado"}` },
+      "visita marcada": { tipo: "visita", titulo: `Visita agendada: ${extra.data || ""} ${extra.horario || ""}` },
+      "visita realizada": { tipo: "visita", titulo: `Visita realizada — Interesse: ${extra.interesse?.replace(/_/g, " ") || "registrado"}` },
+      "descarte": { tipo: "retorno", titulo: `Descarte: ${extra.motivo?.replace(/_/g, " ") || "motivo registrado"}` },
+    };
 
-      // Visita Realizada → update visita status
-      if (extra.criarNegocio !== undefined) {
-        // The negocio creation is handled by usePipeline.moveLead automatically
-        // Just update the visita status if one exists
-        const { data: visita } = await supabase
-          .from("visitas")
-          .select("id")
-          .eq("pipeline_lead_id", result.leadId)
-          .eq("status", "confirmada")
-          .order("data", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (visita) {
-          await supabase.from("visitas").update({ status: "realizada" } as any).eq("id", visita.id);
-        }
-      }
+    const stageName = targetStage?.nome.toLowerCase() || "";
+    let atividadeTipo = "retorno";
+    let atividadeTitulo = `Transição para ${targetStage?.nome || "etapa"}`;
 
-      // Descarte → send to oferta ativa
-      if (extra.enviarOfertaAtiva && extra.listaId) {
-        const lead = leads.find(l => l.id === result.leadId);
-        if (lead) {
-          try {
-            await supabase.from("oferta_ativa_leads").insert({
-              lista_id: extra.listaId,
-              nome: lead.nome,
-              telefone: lead.telefone || "",
-              empreendimento: extra.empreendimento || lead.empreendimento || "",
-              pipeline_lead_id: result.leadId,
-              status: "pendente",
-            } as any);
-            toast.success("📋 Lead enviado para Oferta Ativa!");
-          } catch (err) {
-            console.error("Error sending to OA:", err);
-          }
-        }
-      }
-
-      // Possível Visita → update empreendimento if provided
-      if (extra.empreendimento && extra.imovelTipo === "empreendimento") {
-        await supabase.from("pipeline_leads").update({
-          empreendimento: extra.empreendimento,
-        } as any).eq("id", result.leadId);
-      }
-
-      // Create task for "faltaParaMarcar"
-      if (extra.faltaParaMarcar) {
-        await supabase.from("pipeline_tarefas").insert({
-          pipeline_lead_id: result.leadId,
-          tipo: "follow_up",
-          descricao: extra.faltaParaMarcar,
-          status: "pendente",
-          criado_por: leads.find(l => l.id === result.leadId)?.corretor_id || null,
-        } as any);
-        toast.info("📋 Tarefa criada: " + extra.faltaParaMarcar.substring(0, 50));
+    for (const [key, val] of Object.entries(atividadeMap)) {
+      if (stageName.includes(key)) {
+        atividadeTipo = val.tipo;
+        atividadeTitulo = val.titulo;
+        break;
       }
     }
-  }, [completeTransition, leads]);
+
+    try {
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: result.leadId,
+        tipo: atividadeTipo,
+        titulo: atividadeTitulo,
+        descricao: result.observacao || null,
+        resultado: extra.interesse || extra.retorno || (extra.acoes ? "realizado" : null),
+        status: "concluida",
+      } as any);
+    } catch (err) {
+      console.error("Error registering atividade:", err);
+    }
+
+    // ═══ SIDE EFFECTS ═══
+
+    // Visita Marcada → create visita in agenda
+    if (extra.criarVisita && extra.data && extra.horario) {
+      if (lead) {
+        try {
+          await supabase.from("visitas").insert({
+            pipeline_lead_id: result.leadId,
+            cliente_nome: lead.nome,
+            cliente_telefone: lead.telefone || null,
+            empreendimento: lead.empreendimento || null,
+            data: extra.data,
+            horario: extra.horario,
+            local_tipo: extra.local || "stand",
+            corretor_id: lead.corretor_id || null,
+            parceiro_id: extra.parceiro || null,
+            observacoes: extra.observacao || null,
+            status: "confirmada",
+          } as any);
+          toast.success("📅 Visita criada na agenda!");
+        } catch (err) {
+          console.error("Error creating visita:", err);
+        }
+      }
+    }
+
+    // Visita Realizada → update visita status
+    if (extra.criarNegocio !== undefined) {
+      const { data: visita } = await supabase
+        .from("visitas")
+        .select("id")
+        .eq("pipeline_lead_id", result.leadId)
+        .eq("status", "confirmada")
+        .order("data", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (visita) {
+        await supabase.from("visitas").update({ status: "realizada" } as any).eq("id", visita.id);
+      }
+    }
+
+    // Descarte → send to oferta ativa
+    if (extra.enviarOfertaAtiva && extra.listaId) {
+      if (lead) {
+        try {
+          await supabase.from("oferta_ativa_leads").insert({
+            lista_id: extra.listaId,
+            nome: lead.nome,
+            telefone: lead.telefone || "",
+            empreendimento: extra.empreendimento || lead.empreendimento || "",
+            pipeline_lead_id: result.leadId,
+            status: "pendente",
+          } as any);
+          toast.success("📋 Lead enviado para Oferta Ativa!");
+        } catch (err) {
+          console.error("Error sending to OA:", err);
+        }
+      }
+    }
+
+    // Possível Visita → update empreendimento if provided
+    if (extra.empreendimento && extra.imovelTipo === "empreendimento") {
+      await supabase.from("pipeline_leads").update({
+        empreendimento: extra.empreendimento,
+      } as any).eq("id", result.leadId);
+    }
+
+    // Create task for "faltaParaMarcar"
+    if (extra.faltaParaMarcar) {
+      await supabase.from("pipeline_tarefas").insert({
+        pipeline_lead_id: result.leadId,
+        tipo: "follow_up",
+        descricao: extra.faltaParaMarcar,
+        status: "pendente",
+        criado_por: lead?.corretor_id || null,
+      } as any);
+      toast.info("📋 Tarefa criada: " + extra.faltaParaMarcar.substring(0, 50));
+    }
+  }, [completeTransition, leads, stages]);
 
   const handleTransitionCancel = useCallback(() => {
     setTransitionPopup(null);
