@@ -101,7 +101,7 @@ export default function CustomListAttemptModal({ open, onClose, onSubmit, leadNa
     }
   }, [open, handleKeyDown]);
 
-  const canSubmit = resultado && feedback.trim().length >= 10 && (resultado !== "atendeu" || subOption);
+  const canSubmit = resultado && feedback.trim().length >= 10 && (resultado !== "atendeu" || subOption) && (resultado !== "sem_interesse" || subOption);
 
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return;
