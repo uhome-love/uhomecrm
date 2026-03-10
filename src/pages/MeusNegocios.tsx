@@ -534,6 +534,11 @@ export default function MeusNegocios() {
         vgv: negocio.vgv_final || negocio.vgv_estimado || 0,
         corretorNome: negocio.corretor_id ? corretorNomes[negocio.corretor_id] : undefined,
       });
+
+      // Move to hidden "vendido" fase after a short delay
+      setTimeout(async () => {
+        await moveFase(negocioId, "vendido");
+      }, 10000);
     }
   }, [negocios, moveFase, onNegocioAssinado, user, corretorNomes]);
 
