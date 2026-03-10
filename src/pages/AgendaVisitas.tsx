@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarDays, List, Users, Plus, CalendarIcon, X, ArrowUpDown, Search, AlertTriangle, CheckCircle2, XCircle, Clock, RefreshCw, TrendingUp, MessageCircle } from "lucide-react";
+import { CalendarDays, List, Users, Plus, CalendarIcon, X, ArrowUpDown, Search, AlertTriangle, CheckCircle2, XCircle, Clock, RefreshCw, TrendingUp, MessageCircle, Users2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import { getTeamBadgeStyle } from "@/components/visitas/VisitaRow";
@@ -25,6 +25,7 @@ import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaTypeSelector from "@/components/visitas/VisitaTypeSelector";
 import ReuniaoNegocioForm from "@/components/visitas/ReuniaoNegocioForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import VisitasEquipe from "@/components/visitas/VisitasEquipe";
 
 
 const FIXED_TEAMS = [
@@ -200,6 +201,7 @@ export default function AgendaVisitas() {
   const [cobrancaMsg, setCobrancaMsg] = useState("");
   const [sendingCobranca, setSendingCobranca] = useState(false);
   const [agendaTipo, setAgendaTipo] = useState<"lead" | "negocio">("lead");
+  const [leadSubTab, setLeadSubTab] = useState<"minhas" | "time">("minhas");
 
   const { visitas: allVisitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
 
@@ -444,6 +446,39 @@ export default function AgendaVisitas() {
         </button>
       </div>
 
+      {/* Sub-tab: Minhas vs Time (only for leads, only for gerente/admin) */}
+      {agendaTipo === "lead" && (isAdmin || isGestor) && (
+        <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 w-fit">
+          <button
+            onClick={() => setLeadSubTab("minhas")}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+              leadSubTab === "minhas"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            📋 Minhas Visitas
+          </button>
+          <button
+            onClick={() => setLeadSubTab("time")}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+              leadSubTab === "time"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Users2 className="h-3.5 w-3.5" /> Visitas do Time
+          </button>
+        </div>
+      )}
+
+      {/* ─── TEAM VIEW (Visitas do Time) ─── */}
+      {agendaTipo === "lead" && leadSubTab === "time" && (isAdmin || isGestor) ? (
+        <VisitasEquipe />
+      ) : (
+      <>
       {/* ─── PENDING ALERT ─── */}
       {pendingCount > 0 && (
         <div
@@ -634,6 +669,8 @@ export default function AgendaVisitas() {
           </TabsContent>
         )}
       </Tabs>
+      </>
+      )}
 
       {/* ─── TYPE SELECTOR ─── */}
       <VisitaTypeSelector
