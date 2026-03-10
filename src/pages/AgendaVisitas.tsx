@@ -195,8 +195,20 @@ export default function AgendaVisitas() {
   const [showCobranca, setShowCobranca] = useState(false);
   const [cobrancaMsg, setCobrancaMsg] = useState("");
   const [sendingCobranca, setSendingCobranca] = useState(false);
+  const [agendaTipo, setAgendaTipo] = useState<"lead" | "negocio">("lead");
 
-  const { visitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
+  const { visitas: allVisitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
+
+  // Split visitas by tipo
+  const visitas = useMemo(() => {
+    return allVisitas.filter(v => {
+      const tipo = (v as any).tipo || "lead";
+      return tipo === agendaTipo;
+    });
+  }, [allVisitas, agendaTipo]);
+
+  const negocioCount = useMemo(() => allVisitas.filter(v => (v as any).tipo === "negocio").length, [allVisitas]);
+  const leadCount = useMemo(() => allVisitas.filter(v => (v as any).tipo !== "negocio").length, [allVisitas]);
 
   const handleEdit = useCallback((visita: Visita) => {
     setEditingVisita(visita);
@@ -374,6 +386,32 @@ export default function AgendaVisitas() {
         <Button onClick={() => setShowForm(true)} className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
           <Plus className="h-4 w-4" /> Nova Visita
         </Button>
+      </div>
+
+      {/* ─── TIPO TABS (Lead / Negócio) ─── */}
+      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setAgendaTipo("lead")}
+          className={cn(
+            "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+            agendaTipo === "lead"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          🏠 Visitas de Leads <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{leadCount}</Badge>
+        </button>
+        <button
+          onClick={() => setAgendaTipo("negocio")}
+          className={cn(
+            "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+            agendaTipo === "negocio"
+              ? "bg-amber-600 text-white shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          💼 Reuniões de Negócios <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{negocioCount}</Badge>
+        </button>
       </div>
 
       {/* ─── PENDING ALERT ─── */}

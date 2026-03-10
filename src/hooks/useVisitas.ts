@@ -31,6 +31,9 @@ export interface Visita {
   converted_to_pdn_by: string | null;
   corretor_nome?: string;
   equipe?: string;
+  tipo?: string;
+  negocio_id?: string | null;
+  tipo_reuniao?: string | null;
 }
 
 export type VisitaStatus = "marcada" | "confirmada" | "realizada" | "reagendada" | "cancelada" | "no_show";

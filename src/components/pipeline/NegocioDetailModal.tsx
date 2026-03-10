@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Briefcase, Save, Loader2, Phone, MessageSquare, Mail, Plus,
-  CheckCircle2, Building2, Home, ClipboardList, TrendingUp, Handshake,
+  CheckCircle2, Building2, Home, ClipboardList, TrendingUp, Handshake, CalendarDays,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -130,6 +130,15 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
   const [contratoPopup, setContratoPopup] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
   const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [reuniaoOpen, setReuniaoOpen] = useState(false);
+
+  // Reunião form fields
+  const [reuniaoTipo, setReuniaoTipo] = useState("fechamento");
+  const [reuniaoData, setReuniaoData] = useState("");
+  const [reuniaoHora, setReuniaoHora] = useState("");
+  const [reuniaoLocal, setReuniaoLocal] = useState("empresa");
+  const [reuniaoObs, setReuniaoObs] = useState("");
+  const [salvandoReuniao, setSalvandoReuniao] = useState(false);
 
   // Proposta popup fields
   const [propEmpreendimento, setPropEmpreendimento] = useState("");
@@ -293,6 +302,57 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
     setTarefas(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
+  // ── Agendar Reunião (Visita de Negócio) ──
+  const handleAgendarReuniao = async () => {
+    if (!reuniaoData || !reuniaoHora || !user) return;
+    setSalvandoReuniao(true);
+    try {
+      const TIPO_LABELS: Record<string, string> = {
+        fechamento: "Reunião de Fechamento",
+        negociacao: "Reunião de Negociação",
+        assinatura: "Assinatura de Contrato",
+        outro: "Reunião",
+      };
+      await supabase.from("visitas").insert({
+        nome_cliente: fullNeg.nome_cliente,
+        telefone: fullNeg.telefone || null,
+        empreendimento: fullNeg.empreendimento || null,
+        data_visita: reuniaoData,
+        hora_visita: reuniaoHora,
+        local_visita: reuniaoLocal,
+        corretor_id: fullNeg.corretor_id,
+        gerente_id: fullNeg.gerente_id,
+        created_by: user.id,
+        status: "confirmada",
+        origem: "negocio",
+        origem_detalhe: TIPO_LABELS[reuniaoTipo] || reuniaoTipo,
+        observacoes: reuniaoObs || null,
+        tipo: "negocio",
+        negocio_id: negocio.id,
+        tipo_reuniao: reuniaoTipo,
+      } as any);
+
+      // Register activity
+      await supabase.from("negocios_atividades").insert({
+        negocio_id: negocio.id,
+        tipo: "reuniao",
+        titulo: `${TIPO_LABELS[reuniaoTipo]} agendada — ${reuniaoData} ${reuniaoHora}`,
+        created_by: user.id,
+      } as any);
+
+      toast.success(`📅 ${TIPO_LABELS[reuniaoTipo]} agendada!`, {
+        description: `${reuniaoData} às ${reuniaoHora}`,
+      });
+      setReuniaoOpen(false);
+      setReuniaoData(""); setReuniaoHora(""); setReuniaoObs("");
+      // Reload activities
+      const { data } = await supabase.from("negocios_atividades").select("*").eq("negocio_id", negocio.id).order("created_at", { ascending: false }).limit(50);
+      setAtividades((data || []) as NegocioAtividade[]);
+    } finally {
+      setSalvandoReuniao(false);
+    }
+  };
+
   // ── Save imóvel tab ──
   const handleSaveImovel = async () => {
     setSaving(true);
@@ -383,6 +443,9 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
               )}
               <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary" onClick={() => setComunicacaoOpen(true)}>
                 <MessageSquare className="h-3.5 w-3.5" /> 💬 Mensagem
+              </Button>
+              <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-amber-300 text-amber-600 hover:bg-amber-50" onClick={() => setReuniaoOpen(true)}>
+                <CalendarDays className="h-3.5 w-3.5" /> 📅 Reunião
               </Button>
 
               {/* + Ação dropdown */}
@@ -777,6 +840,70 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
           leadId={negocio.pipeline_lead_id || negocio.id}
         />
       )}
+      {/* ── Reunião Dialog ── */}
+      <Dialog open={reuniaoOpen} onOpenChange={setReuniaoOpen}>
+        <DialogContent className="sm:max-w-md space-y-3">
+          <DialogHeader>
+            <DialogTitle className="text-base flex items-center gap-2">📅 Agendar Reunião de Negócio</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">Cliente: <strong>{fullNeg.nome_cliente}</strong> {fullNeg.empreendimento && <Badge variant="outline" className="ml-1 text-[10px]">{fullNeg.empreendimento}</Badge>}</p>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs mb-2 block">Tipo de reunião *</Label>
+              <Select value={reuniaoTipo} onValueChange={setReuniaoTipo}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fechamento">🤝 Reunião de Fechamento</SelectItem>
+                  <SelectItem value="negociacao">💼 Reunião de Negociação</SelectItem>
+                  <SelectItem value="assinatura">📝 Assinatura de Contrato</SelectItem>
+                  <SelectItem value="apresentacao">📊 Apresentação de Proposta</SelectItem>
+                  <SelectItem value="outro">📋 Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Data *</Label>
+                <Input type="date" value={reuniaoData} onChange={e => setReuniaoData(e.target.value)} className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Horário *</Label>
+                <Input type="time" value={reuniaoHora} onChange={e => setReuniaoHora(e.target.value)} className="h-8 text-xs" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Local</Label>
+              <Select value={reuniaoLocal} onValueChange={setReuniaoLocal}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="empresa">🏢 Escritório</SelectItem>
+                  <SelectItem value="stand">🏗️ Stand</SelectItem>
+                  <SelectItem value="videochamada">📹 Videochamada</SelectItem>
+                  <SelectItem value="cartorio">📜 Cartório</SelectItem>
+                  <SelectItem value="outro">📍 Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Observação</Label>
+              <Textarea value={reuniaoObs} onChange={e => setReuniaoObs(e.target.value)} className="text-xs h-16" placeholder="Detalhes da reunião..." />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setReuniaoOpen(false)}>Cancelar</Button>
+            <Button
+              size="sm"
+              className="text-xs gap-1"
+              disabled={!reuniaoData || !reuniaoHora || salvandoReuniao}
+              onClick={handleAgendarReuniao}
+            >
+              {salvandoReuniao ? <Loader2 className="h-3 w-3 animate-spin" /> : "📅"} Agendar reunião
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
