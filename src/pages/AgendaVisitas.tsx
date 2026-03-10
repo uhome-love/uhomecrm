@@ -669,6 +669,8 @@ export default function AgendaVisitas() {
           </TabsContent>
         )}
       </Tabs>
+      </>
+      )}
 
       {/* ─── TYPE SELECTOR ─── */}
       <VisitaTypeSelector
