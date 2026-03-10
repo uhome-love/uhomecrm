@@ -387,7 +387,7 @@ export default function AgendaVisitas() {
             {isAdmin ? "Visão consolidada da empresa" : isGestor ? "Visitas da sua equipe" : "Suas visitas agendadas"}
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+        <Button onClick={() => setShowTypeSelector(true)} className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
           <Plus className="h-4 w-4" /> Nova Visita
         </Button>
       </div>
