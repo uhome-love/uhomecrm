@@ -65,6 +65,7 @@ const EMPREENDIMENTOS_UHOME = [
 
 export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const leadData = usePipelineLeadData(open ? lead.id : null);
   const [activeTab, setActiveTab] = useState("tarefas");
