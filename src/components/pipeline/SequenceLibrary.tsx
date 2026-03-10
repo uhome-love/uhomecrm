@@ -492,8 +492,65 @@ export default function SequenceLibrary({ onSequenceCreated }: Props) {
                 </div>
               </div>
 
+              {/* Lead selector inline */}
+              <div className="space-y-2">
+                <Label className="text-[10px] flex items-center gap-1.5">
+                  <Users className="h-3 w-3" /> Vincular a lead(s)
+                </Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar lead por nome ou empreendimento..."
+                    value={leadSearch}
+                    onChange={e => setLeadSearch(e.target.value)}
+                    onFocus={() => { if (leads.length === 0) loadLeads(); }}
+                    className="pl-9 h-8 text-xs"
+                  />
+                </div>
+                {selectedLeadIds.size > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {[...selectedLeadIds].map(id => {
+                      const lead = leads.find(l => l.id === id);
+                      return (
+                        <Badge key={id} variant="secondary" className="text-[10px] gap-1 cursor-pointer hover:bg-destructive/10" onClick={() => toggleLead(id)}>
+                          {lead?.nome || id.slice(0, 6)} ✕
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+                {leads.length > 0 && (
+                  <ScrollArea className="max-h-[120px] rounded-lg border border-border">
+                    {loadingLeads ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border/50">
+                        {filteredLeads.slice(0, 30).map(lead => (
+                          <label key={lead.id} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-accent/30 transition-colors">
+                            <Checkbox
+                              checked={selectedLeadIds.has(lead.id)}
+                              onCheckedChange={() => toggleLead(lead.id)}
+                              className="h-3.5 w-3.5"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-foreground truncate">{lead.nome}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{lead.empreendimento || "Sem empreendimento"}</p>
+                            </div>
+                          </label>
+                        ))}
+                        {filteredLeads.length === 0 && (
+                          <p className="text-[10px] text-muted-foreground text-center py-3">Nenhum lead encontrado</p>
+                        )}
+                      </div>
+                    )}
+                  </ScrollArea>
+                )}
+              </div>
+
               {/* Steps list */}
-              <ScrollArea className="max-h-[300px]">
+              <ScrollArea className="max-h-[200px]">
                 <div className="space-y-1">
                   {previewTemplate.passos.map((p, idx) => {
                     const TIcon = TIPO_ICONS[p.tipo] || TIPO_ICONS[p.canal] || MessageSquare;
