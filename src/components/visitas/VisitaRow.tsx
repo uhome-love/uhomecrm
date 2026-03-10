@@ -139,48 +139,55 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
   return (
     <div
       className={cn(
-        "group flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-muted/30",
+        "group grid items-center gap-x-3 px-4 py-3 transition-colors hover:bg-muted/30",
         isPastPending && "bg-red-50/50"
       )}
+      style={{
+        gridTemplateColumns: showCorretor
+          ? "3.5rem 3px 1fr 10rem 8rem 9rem 6.5rem auto auto"
+          : "3.5rem 3px 1fr 10rem 8rem 6.5rem auto auto",
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Time */}
-      <div className="w-12 shrink-0 text-center">
+      <div className="text-center">
         <span className="text-sm font-bold font-mono text-foreground">
           {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
         </span>
       </div>
 
       {/* Status color line */}
-      <div className={cn("w-0.5 h-8 rounded-full shrink-0", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
+      <div className={cn("w-0.5 h-9 rounded-full", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
 
       {/* Client + Phone */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">{v.nome_cliente}</p>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-foreground truncate leading-tight">{v.nome_cliente}</p>
         {v.telefone && (
-          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-            <Phone className="h-3 w-3" />
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+            <Phone className="h-3 w-3 shrink-0" />
             {formatPhone(v.telefone)}
           </p>
         )}
       </div>
 
-      {/* Empreendimento */}
-      <div className="w-32 shrink-0 hidden sm:block">
-        <span className="text-xs text-muted-foreground truncate block">{v.empreendimento || "—"}</span>
+      {/* Empreendimento + Negocio meta */}
+      <div className="min-w-0 hidden sm:block">
+        <span className="text-xs text-muted-foreground truncate block leading-tight">
+          {v.empreendimento || "—"}
+        </span>
         {isNegocio && (
-          <div className="flex items-center gap-1.5 mt-0.5">
+          <div className="flex flex-col gap-0 mt-0.5">
             {negocioMeta.objetivo && (
-              <span className="text-[10px] text-amber-600 font-medium truncate">🎯 {negocioMeta.objetivo}</span>
+              <span className="text-[10px] text-amber-600 font-medium truncate leading-tight">🎯 {negocioMeta.objetivo}</span>
             )}
             {negocioMeta.responsavel && (
-              <span className="text-[10px] text-muted-foreground truncate">👤 {negocioMeta.responsavel}</span>
+              <span className="text-[10px] text-muted-foreground truncate leading-tight">👤 {negocioMeta.responsavel}</span>
             )}
             {missingNegocioInfo && onEdit && (
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(v); }}
-                className="text-[10px] text-amber-500 hover:text-amber-400 font-medium flex items-center gap-0.5"
+                className="text-[10px] text-amber-500 hover:text-amber-400 font-medium flex items-center gap-0.5 mt-0.5"
               >
                 <Pencil className="h-2.5 w-2.5" /> Completar
               </button>
@@ -190,22 +197,22 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       </div>
 
       {/* Local da visita */}
-      <div className="w-28 shrink-0 hidden sm:flex items-center gap-1">
+      <div className="hidden sm:flex items-center gap-1 min-w-0">
         <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
         <span className="text-xs text-muted-foreground truncate">
-          {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "Não informado"}
+          {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "—"}
         </span>
       </div>
 
       {/* Corretor + Team */}
       {showCorretor && (
-        <div className="w-36 shrink-0 hidden md:flex items-center gap-1.5">
+        <div className="hidden md:flex items-center gap-1.5 min-w-0">
           <span className="text-xs text-muted-foreground truncate">{v.corretor_nome || "—"}</span>
           {showTeam && (() => {
             const style = getTeamBadgeStyle(v.equipe);
             if (!style) return null;
             return (
-              <span className={cn("text-[11px] px-1.5 py-0 rounded-full border whitespace-nowrap shrink-0", style.className)}>
+              <span className={cn("text-[10px] px-1.5 py-0 rounded-full border whitespace-nowrap shrink-0", style.className)}>
                 {style.emoji} {style.label}
               </span>
             );
@@ -213,16 +220,15 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         </div>
       )}
 
-
       {/* Status badge */}
-      <div className="w-24 shrink-0">
-        <Badge className={cn("text-[10px] px-2 py-0.5 border font-semibold", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
+      <div>
+        <Badge className={cn("text-[10px] px-2.5 py-0.5 border font-semibold whitespace-nowrap", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
           {STATUS_EMOJIS[v.status]} {STATUS_LABELS[v.status]}
         </Badge>
       </div>
 
       {/* Inline quick actions */}
-      <div className={cn("flex items-center gap-1 shrink-0 transition-opacity", hovered ? "opacity-100" : "opacity-0")}>
+      <div className={cn("flex items-center gap-1 transition-opacity", hovered ? "opacity-100" : "opacity-0")}>
         {(v.status === "marcada" || v.status === "confirmada") && (
           <>
             <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")}>
@@ -241,7 +247,7 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       {/* Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
             <MoreVertical className="h-3.5 w-3.5" />
           </Button>
         </DropdownMenuTrigger>
