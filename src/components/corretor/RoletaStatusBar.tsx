@@ -207,23 +207,29 @@ export default function RoletaStatusBar() {
     if (newStatus === "offline" && profileId) {
       const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
       // Mark credenciamentos as "saiu"
-      await supabase.from("roleta_credenciamentos")
+      const { error: credErr } = await supabase.from("roleta_credenciamentos")
         .update({ status: "saiu", saiu_em: new Date().toISOString() })
         .eq("corretor_id", profileId)
         .eq("data", today)
         .in("status", ["pendente", "aprovado"]);
       // Deactivate from fila
-      await supabase.from("roleta_fila")
+      const { error: filaErr } = await supabase.from("roleta_fila")
         .update({ ativo: false })
         .eq("corretor_id", profileId)
         .eq("data", today)
         .eq("ativo", true);
-      // Reset local state
+      
+      if (credErr) console.error("Erro ao sair da roleta (cred):", credErr);
+      if (filaErr) console.error("Erro ao sair da fila:", filaErr);
+      
+      // Reset local state immediately
       setCredenciamentosPorJanela({});
       setMySegmentoIds([]);
       setSelectedIds([]);
       setCredStatus("");
       toast.info("Você saiu da roleta automaticamente.");
+      // Refetch to ensure consistency
+      setTimeout(() => fetchData(), 500);
     }
   };
 
