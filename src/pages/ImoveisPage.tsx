@@ -158,9 +158,9 @@ export default function ImoveisPage() {
 
       {/* Filters */}
       <Card className="p-4 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Busca</label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="space-y-1 col-span-2 sm:col-span-1">
+            <label className="text-xs font-medium text-muted-foreground">Busca livre</label>
             <Input
               placeholder="Endereço, código, condomínio..."
               value={search}
@@ -190,15 +190,62 @@ export default function ImoveisPage() {
                 <SelectItem value="terreno">Terreno</SelectItem>
                 <SelectItem value="comercial">Comercial</SelectItem>
                 <SelectItem value="cobertura">Cobertura</SelectItem>
+                <SelectItem value="duplex">Duplex</SelectItem>
+                <SelectItem value="loft">Loft</SelectItem>
+                <SelectItem value="kitnet">Kitnet</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Dormitórios</label>
+            <Select value={dormitorios} onValueChange={setDormitorios}>
+              <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="1">1+</SelectItem>
+                <SelectItem value="2">2+</SelectItem>
+                <SelectItem value="3">3+</SelectItem>
+                <SelectItem value="4">4+</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Bairro</label>
             <Input
               placeholder="Qualquer bairro"
               value={bairro}
               onChange={(e) => setBairro(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Cidade</label>
+            <Input
+              placeholder="Porto Alegre"
+              value={cidade}
+              onChange={(e) => setCidade(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Valor mínimo</label>
+            <Input
+              type="number"
+              placeholder="Ex: 300000"
+              value={valorMin}
+              onChange={(e) => setValorMin(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Valor máximo</label>
+            <Input
+              type="number"
+              placeholder="Ex: 800000"
+              value={valorMax}
+              onChange={(e) => setValorMax(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
           </div>
