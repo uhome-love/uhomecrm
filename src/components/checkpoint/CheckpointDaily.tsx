@@ -132,20 +132,46 @@ export default function CheckpointDaily() {
     // Fetch OA stats for linked members
     const oaStats = await fetchOAStats(members, date);
 
-    // Fetch corretor daily goals for linked members
+    // Fetch corretor daily goals for linked members (today first, fallback to most recent)
     const linkedMembers = members.filter(m => m.user_id);
     const userIds = linkedMembers.map(m => m.user_id!);
     let goalsMap: Record<string, { meta_ligacoes: number; meta_aproveitados: number; meta_visitas_marcadas: number }> = {};
     if (userIds.length > 0) {
+      // Try exact date first
       const { data: goals } = await supabase
         .from("corretor_daily_goals")
         .select("corretor_id, meta_ligacoes, meta_aproveitados, meta_visitas_marcadas")
         .in("corretor_id", userIds)
         .eq("data", date);
+      
+      const foundIds = new Set((goals || []).map((g: any) => g.corretor_id));
+      
       for (const g of (goals || []) as any[]) {
         const member = linkedMembers.find(m => m.user_id === g.corretor_id);
         if (member) {
           goalsMap[member.id] = { meta_ligacoes: g.meta_ligacoes, meta_aproveitados: g.meta_aproveitados, meta_visitas_marcadas: g.meta_visitas_marcadas ?? 0 };
+        }
+      }
+
+      // For corretors without a goal for this exact date, fetch their most recent goal
+      const missingIds = userIds.filter(id => !foundIds.has(id));
+      if (missingIds.length > 0) {
+        const { data: recentGoals } = await supabase
+          .from("corretor_daily_goals")
+          .select("corretor_id, meta_ligacoes, meta_aproveitados, meta_visitas_marcadas, data")
+          .in("corretor_id", missingIds)
+          .lte("data", date)
+          .order("data", { ascending: false });
+        
+        // Take only the most recent per corretor
+        const seenRecent = new Set<string>();
+        for (const g of (recentGoals || []) as any[]) {
+          if (seenRecent.has(g.corretor_id)) continue;
+          seenRecent.add(g.corretor_id);
+          const member = linkedMembers.find(m => m.user_id === g.corretor_id);
+          if (member) {
+            goalsMap[member.id] = { meta_ligacoes: g.meta_ligacoes, meta_aproveitados: g.meta_aproveitados, meta_visitas_marcadas: g.meta_visitas_marcadas ?? 0 };
+          }
         }
       }
     }
@@ -173,10 +199,10 @@ export default function CheckpointDaily() {
       const oa = oaStats[m.id];
       const cGoal = goalsMap[m.id];
       if (existing) {
-        // Auto-fill metas from corretor goals if checkpoint meta is still 0 and corretor set a goal
-        const autoLig = (existing.meta_ligacoes === 0 || existing.meta_ligacoes == null) && cGoal ? cGoal.meta_ligacoes : (existing.meta_ligacoes ?? 0);
-        const autoLeads = (existing.meta_leads === 0 || existing.meta_leads == null) && cGoal ? cGoal.meta_aproveitados : (existing.meta_leads ?? 0);
-        const autoVisitas = (existing.meta_visitas_marcadas === 0 || existing.meta_visitas_marcadas == null) && cGoal ? cGoal.meta_visitas_marcadas : (existing.meta_visitas_marcadas ?? 0);
+        // Always sync metas from corretor goals when available
+        const autoLig = cGoal ? cGoal.meta_ligacoes : (existing.meta_ligacoes ?? 0);
+        const autoLeads = cGoal ? cGoal.meta_aproveitados : (existing.meta_leads ?? 0);
+        const autoVisitas = cGoal ? cGoal.meta_visitas_marcadas : (existing.meta_visitas_marcadas ?? 0);
         allLines.push({
           id: existing.id, corretor_id: m.id, corretor_nome: m.nome,
           meta_ligacoes: autoLig, meta_presenca: existing.meta_presenca ?? "sim",
