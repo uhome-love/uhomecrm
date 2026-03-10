@@ -21,6 +21,7 @@ import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import AddNegocioDialog from "@/components/pipeline/AddNegocioDialog";
 import NegocioDetailModal from "@/components/pipeline/NegocioDetailModal";
 import VendaCelebration from "@/components/pipeline/VendaCelebration";
+import FaseTransitionModal, { type TransitionData } from "@/components/pipeline/FaseTransitionModal";
 import { supabase } from "@/integrations/supabase/client";
 
 function formatVGV(value: number) {
@@ -417,6 +418,10 @@ export default function MeusNegocios() {
   const [celebrationData, setCelebrationData] = useState<{
     nomeCliente: string; empreendimento?: string; vgv: number; corretorNome?: string;
   } | null>(null);
+  // Phase transition modal state
+  const [transitionTarget, setTransitionTarget] = useState<{ negocioId: string; fase: string } | null>(null);
+  const transitionNegocio = transitionTarget ? negocios.find(n => n.id === transitionTarget.negocioId) : null;
+
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -456,13 +461,26 @@ export default function MeusNegocios() {
     return map;
   }, [filteredNegocios]);
 
-  const handleMoveFase = useCallback(async (negocioId: string, novaFase: string) => {
+  // Phases that require a transition popup
+  const PHASES_WITH_POPUP = ["proposta", "negociacao", "documentacao", "assinado", "distrato"];
+
+  const requestMoveFase = useCallback((negocioId: string, novaFase: string) => {
+    const negocio = negocios.find(n => n.id === negocioId);
+    if (!negocio || negocio.fase === novaFase) return;
+
+    if (PHASES_WITH_POPUP.includes(novaFase)) {
+      setTransitionTarget({ negocioId, fase: novaFase });
+    } else {
+      executeMoveFase(negocioId, novaFase);
+    }
+  }, [negocios]);
+
+  const executeMoveFase = useCallback(async (negocioId: string, novaFase: string) => {
     const negocio = negocios.find(n => n.id === negocioId);
     if (!negocio) return;
 
     await moveFase(negocioId, novaFase);
 
-    // GATILHO 5: If moved to "assinado", trigger pos-vendas + epic celebration
     if (novaFase === "assinado") {
       await onNegocioAssinado({
         negocioId,
@@ -472,7 +490,6 @@ export default function MeusNegocios() {
         corretorId: negocio.corretor_id || user?.id || "",
         vgvFinal: negocio.vgv_estimado || undefined,
       });
-      // Epic celebration screen
       setCelebrationData({
         nomeCliente: negocio.nome_cliente,
         empreendimento: negocio.empreendimento || undefined,
@@ -482,13 +499,52 @@ export default function MeusNegocios() {
     }
   }, [negocios, moveFase, onNegocioAssinado, user, corretorNomes]);
 
+  const handleTransitionConfirm = useCallback(async (data: TransitionData) => {
+    if (!transitionTarget || !user) return;
+    const negocioId = transitionTarget.negocioId;
+    const negocio = negocios.find(n => n.id === negocioId);
+    if (!negocio) return;
+
+    // Log the activity with all the fields
+    const descParts: string[] = [];
+    Object.entries(data.fields).forEach(([k, v]) => {
+      if (v !== "" && v !== null && v !== undefined) descParts.push(`${k}: ${v}`);
+    });
+
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocioId,
+      tipo: `transicao_${data.fase}`,
+      titulo: `Movido para ${data.fase}`,
+      descricao: descParts.join(" | "),
+      created_by: user.id,
+    } as any);
+
+    // Update negocio fields based on phase
+    const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (data.fields.imovel) updates.empreendimento = data.fields.imovel;
+    if (data.fields.vgv) updates.vgv_estimado = parseFloat(data.fields.vgv);
+    if (data.fields.valor_proposta) updates.vgv_estimado = parseFloat(data.fields.valor_proposta);
+
+    if (Object.keys(updates).length > 1) {
+      await supabase.from("negocios").update(updates as any).eq("id", negocioId);
+    }
+
+    // Handle "caiu" destination
+    if (data.fase === "distrato" && data.fields.destino === "pipeline" && negocio.pipeline_lead_id) {
+      await supabase.from("pipeline_leads").update({ etapa: "qualificacao", updated_at: new Date().toISOString() } as any).eq("id", negocio.pipeline_lead_id);
+    }
+
+    setTransitionTarget(null);
+    await executeMoveFase(negocioId, data.fase);
+  }, [transitionTarget, user, negocios, executeMoveFase]);
+
   const handleDrop = (e: React.DragEvent, fase: string) => {
     e.preventDefault();
     setDragOverFase(null);
     if (!dragNegocioId.current) return;
     const id = dragNegocioId.current;
     dragNegocioId.current = null;
-    handleMoveFase(id, fase);
+    requestMoveFase(id, fase);
   };
 
   const updateScrollState = useCallback(() => {
@@ -559,16 +615,22 @@ export default function MeusNegocios() {
           </div>
 
           <Button
-            variant={showFilters ? "default" : "outline"}
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="gap-1.5 h-9 border-white/10 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
+            className="gap-1.5 h-9 rounded-lg text-white border-none"
+            style={{ background: showFilters ? "linear-gradient(135deg, hsl(217 91% 50%), hsl(265 83% 47%))" : "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Filtros</span>
           </Button>
 
-          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 border-white/10 text-white/50 hover:text-white hover:bg-white/10 rounded-lg" onClick={handleRefresh} disabled={refreshing}>
+          <Button
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-lg text-white border-none"
+            style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -699,7 +761,7 @@ export default function MeusNegocios() {
                       paradoInfo={paradoMap.get(negocio.id)}
                       onDragStart={() => { dragNegocioId.current = negocio.id; }}
                       onClick={() => setSelectedNegocio(negocio)}
-                      onMoveFase={handleMoveFase}
+                      onMoveFase={requestMoveFase}
                     />
                   ))}
                 </div>
@@ -721,7 +783,7 @@ export default function MeusNegocios() {
           onOpenChange={(open) => { if (!open) setSelectedNegocio(null); }}
           negocio={selectedNegocio}
           onUpdate={updateNegocio}
-          onMoveFase={handleMoveFase}
+          onMoveFase={requestMoveFase}
         />
       )}
 
@@ -732,6 +794,16 @@ export default function MeusNegocios() {
           vgv={celebrationData.vgv}
           corretorNome={celebrationData.corretorNome}
           onDismiss={() => setCelebrationData(null)}
+        />
+      )}
+
+      {transitionTarget && transitionNegocio && (
+        <FaseTransitionModal
+          open={!!transitionTarget}
+          onOpenChange={(v) => { if (!v) setTransitionTarget(null); }}
+          targetFase={transitionTarget.fase}
+          negocio={transitionNegocio}
+          onConfirm={handleTransitionConfirm}
         />
       )}
     </div>
