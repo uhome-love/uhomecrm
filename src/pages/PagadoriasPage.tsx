@@ -83,6 +83,8 @@ export default function PagadoriasPage() {
   const [comissaoPct, setComissaoPct] = useState(5);
   const [vgvAcumuladoCorretor, setVgvAcumuladoCorretor] = useState(0);
   const [vgvAcumuladoGerente, setVgvAcumuladoGerente] = useState(0);
+  const [selectedCorretorFaixaIdx, setSelectedCorretorFaixaIdx] = useState(0);
+  const [selectedGerenteFaixaIdx, setSelectedGerenteFaixaIdx] = useState(0);
   const [credores, setCredores] = useState<Credor[]>([]);
 
   const totalComissao = (form.vgv * comissaoPct) / 100;
@@ -90,8 +92,8 @@ export default function PagadoriasPage() {
   // Initialize credores when entering step 2
   useEffect(() => {
     if (step === 2 && credores.length === 0) {
-      const corretorPct = getFaixaPercentual(corretorFaixas, vgvAcumuladoCorretor);
-      const gerentePct = getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente);
+      const corretorPct = corretorFaixas[selectedCorretorFaixaIdx]?.percentual ?? 0;
+      const gerentePct = gerenteFaixas[selectedGerenteFaixaIdx]?.percentual ?? 0;
 
       const initial: Credor[] = [
         { credor_tipo: "corretor", credor_nome: form.corretor_nome || "Corretor", credor_id: null, percentual: corretorPct, valor: 0, auto: true },
@@ -108,9 +110,8 @@ export default function PagadoriasPage() {
   // Recalc when comissaoPct or vgv changes
   useEffect(() => {
     if (credores.length > 0) {
-      // Update corretor/gerente auto percentuals
-      const corretorPct = getFaixaPercentual(corretorFaixas, vgvAcumuladoCorretor);
-      const gerentePct = getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente);
+      const corretorPct = corretorFaixas[selectedCorretorFaixaIdx]?.percentual ?? 0;
+      const gerentePct = gerenteFaixas[selectedGerenteFaixaIdx]?.percentual ?? 0;
       const updated = credores.map(c => {
         if (c.credor_tipo === "corretor") return { ...c, percentual: corretorPct };
         if (c.credor_tipo === "gerente") return { ...c, percentual: gerentePct };
@@ -118,7 +119,7 @@ export default function PagadoriasPage() {
       });
       setCredores(recalcCredores(totalComissao, updated));
     }
-  }, [comissaoPct, form.vgv, vgvAcumuladoCorretor, vgvAcumuladoGerente]);
+  }, [comissaoPct, form.vgv, selectedCorretorFaixaIdx, selectedGerenteFaixaIdx]);
 
   const recalcCredores = (total: number, creds: Credor[]) => {
     const sumPctExcUhome = creds.filter(c => c.credor_tipo !== "uhome").reduce((s, c) => s + c.percentual, 0);
@@ -209,6 +210,8 @@ export default function PagadoriasPage() {
     setComissaoPct(5);
     setVgvAcumuladoCorretor(0);
     setVgvAcumuladoGerente(0);
+    setSelectedCorretorFaixaIdx(0);
+    setSelectedGerenteFaixaIdx(0);
   };
 
   return (
@@ -361,26 +364,25 @@ export default function PagadoriasPage() {
               {/* SEÇÃO B — Tabela Progressiva do Corretor */}
               <div className="space-y-2 border rounded-lg p-3">
                 <h4 className="font-semibold text-sm">Comissão do Corretor (tabela progressiva)</h4>
-                <div className="flex gap-2 flex-wrap text-xs">
-                  {corretorFaixas.map((f, i) => {
-                    const active = getFaixaPercentual(corretorFaixas, vgvAcumuladoCorretor) === f.percentual;
-                    return (
-                      <span key={i} className={`px-2 py-1 rounded ${active ? "bg-primary/20 text-primary font-semibold border border-primary/40" : "bg-muted"}`}>
-                        {fmtVgv(f.vgv_max)} → {f.percentual}%
-                      </span>
-                    );
-                  })}
-                </div>
                 <div className="grid grid-cols-2 gap-3 items-end">
                   <div>
-                    <Label className="text-xs">VGV acumulado do corretor no mês</Label>
-                    <Input type="number" value={vgvAcumuladoCorretor || ""} onChange={e => setVgvAcumuladoCorretor(Number(e.target.value))} className="h-8 text-sm" />
+                    <Label className="text-xs">Faixa do corretor</Label>
+                    <Select value={String(selectedCorretorFaixaIdx)} onValueChange={v => setSelectedCorretorFaixaIdx(Number(v))}>
+                      <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {corretorFaixas.map((f, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            {fmtVgv(f.vgv_max)} → {f.percentual}%
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">Corretor recebe </span>
-                    <strong className="text-primary">{getFaixaPercentual(corretorFaixas, vgvAcumuladoCorretor)}%</strong>
+                    <strong className="text-primary">{corretorFaixas[selectedCorretorFaixaIdx]?.percentual ?? 0}%</strong>
                     <span className="text-muted-foreground"> → </span>
-                    <strong>{fmtR((getFaixaPercentual(corretorFaixas, vgvAcumuladoCorretor) / 100) * totalComissao)}</strong>
+                    <strong>{fmtR(((corretorFaixas[selectedCorretorFaixaIdx]?.percentual ?? 0) / 100) * totalComissao)}</strong>
                   </div>
                 </div>
               </div>
@@ -388,26 +390,25 @@ export default function PagadoriasPage() {
               {/* SEÇÃO B2 — Gerente */}
               <div className="space-y-2 border rounded-lg p-3">
                 <h4 className="font-semibold text-sm">Comissão do Gerente</h4>
-                <div className="flex gap-2 flex-wrap text-xs">
-                  {gerenteFaixas.map((f, i) => {
-                    const active = getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente) === f.percentual;
-                    return (
-                      <span key={i} className={`px-2 py-1 rounded ${active ? "bg-primary/20 text-primary font-semibold border border-primary/40" : "bg-muted"}`}>
-                        {fmtVgv(f.vgv_max)} → {f.percentual}%
-                      </span>
-                    );
-                  })}
-                </div>
                 <div className="grid grid-cols-2 gap-3 items-end">
                   <div>
-                    <Label className="text-xs">VGV acumulado do gerente no mês</Label>
-                    <Input type="number" value={vgvAcumuladoGerente || ""} onChange={e => setVgvAcumuladoGerente(Number(e.target.value))} className="h-8 text-sm" />
+                    <Label className="text-xs">Faixa do gerente</Label>
+                    <Select value={String(selectedGerenteFaixaIdx)} onValueChange={v => setSelectedGerenteFaixaIdx(Number(v))}>
+                      <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {gerenteFaixas.map((f, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            {fmtVgv(f.vgv_max)} → {f.percentual}%
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">Gerente recebe </span>
-                    <strong className="text-primary">{getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente)}%</strong>
+                    <strong className="text-primary">{gerenteFaixas[selectedGerenteFaixaIdx]?.percentual ?? 0}%</strong>
                     <span className="text-muted-foreground"> → </span>
-                    <strong>{fmtR((getFaixaPercentual(gerenteFaixas, vgvAcumuladoGerente) / 100) * totalComissao)}</strong>
+                    <strong>{fmtR(((gerenteFaixas[selectedGerenteFaixaIdx]?.percentual ?? 0) / 100) * totalComissao)}</strong>
                   </div>
                 </div>
               </div>
