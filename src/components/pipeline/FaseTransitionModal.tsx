@@ -76,6 +76,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
   const [propDocsStatus, setPropDocsStatus] = useState("sem_documentos");
 
   // Negociação fields
+  const [negValorProposta, setNegValorProposta] = useState("");
   const [negContraProposta, setNegContraProposta] = useState("");
   const [negObs, setNegObs] = useState("");
 
