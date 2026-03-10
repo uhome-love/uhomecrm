@@ -39,7 +39,7 @@ export default function DashboardRankingsPreview() {
 
   // OA ranking
   const { ranking: oaRanking } = useOARanking("hoje");
-  const oaItems = (oaRanking || []).map(r => ({ id: r.corretor_id, nome: r.corretor_nome, value: r.tentativas }));
+  const oaItems = (oaRanking || []).map(r => ({ id: r.corretor_id, nome: r.nome, value: r.tentativas }));
 
   // VGV mini ranking (from negocios)
   const { data: vgvItems = [] } = useQuery({
