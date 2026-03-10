@@ -7,22 +7,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  Briefcase, Save, Loader2, CalendarPlus, TrendingUp,
-  Handshake, FileText, CheckCircle2, Building2, Home, ClipboardList,
+  Briefcase, Save, Loader2, Phone, MessageSquare, Mail, Plus,
+  CheckCircle2, Building2, Home, ClipboardList, TrendingUp, Handshake,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { type Negocio, NEGOCIOS_FASES } from "@/hooks/useNegocios";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
+import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
+import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import { cn } from "@/lib/utils";
-
-interface TeamMember {
-  user_id: string;
-  nome: string;
-}
+import { format, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Props {
   open: boolean;
@@ -32,7 +31,6 @@ interface Props {
   onMoveFase: (id: string, fase: string) => void;
 }
 
-// Extended negocio with new fields
 interface NegocioExtended extends Negocio {
   unidade?: string | null;
   imovel_interesse?: string | null;
@@ -45,159 +43,276 @@ interface NegocioExtended extends Negocio {
   documentacao_situacao?: string | null;
 }
 
-const PROPOSTA_STATUS = [
-  { value: "aguardando_aceite", label: "⏳ Aguardando Aceite", color: "bg-amber-100 text-amber-700" },
-  { value: "aprovada", label: "✅ Aprovada", color: "bg-green-100 text-green-700" },
-  { value: "reprovada", label: "❌ Reprovada", color: "bg-red-100 text-red-700" },
+interface NegocioAtividade {
+  id: string;
+  negocio_id: string;
+  tipo: string;
+  resultado: string | null;
+  descricao: string | null;
+  titulo: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+interface NegocioTarefa {
+  id: string;
+  negocio_id: string;
+  titulo: string;
+  descricao: string | null;
+  tipo: string;
+  status: string;
+  prioridade: string;
+  vence_em: string | null;
+  hora_vencimento: string | null;
+  concluida_em: string | null;
+  created_at: string;
+}
+
+// ── Activity types ──
+const ATIVIDADE_BUTTONS = [
+  { value: "ligacao", label: "Ligou", emoji: "📞" },
+  { value: "whatsapp", label: "WhatsApp", emoji: "💬" },
+  { value: "email", label: "Email", emoji: "✉️" },
+  { value: "visita", label: "Visita", emoji: "🏠" },
+  { value: "proposta", label: "Proposta", emoji: "📄" },
+  { value: "reuniao", label: "Reunião", emoji: "📋" },
+  { value: "nao_atendeu", label: "Não atendeu", emoji: "❌" },
 ];
 
-const NEGOCIACAO_STATUS = [
-  { value: "contra_proposta", label: "🔄 Contra-proposta" },
-  { value: "pendente_cliente", label: "⏳ Pendente Cliente" },
-  { value: "pendente_construtora", label: "⏳ Pendente Construtora" },
-  { value: "em_analise", label: "🔍 Em Análise" },
-  { value: "aprovada", label: "✅ Aprovada" },
+const RESULTADO_OPTIONS = [
+  { value: "positivo", label: "Positivo", emoji: "✅" },
+  { value: "neutro", label: "Neutro", emoji: "⏳" },
+  { value: "negativo", label: "Negativo", emoji: "❌" },
 ];
 
-const DOC_STATUS = [
-  { value: "leitura_contrato", label: "📖 Leitura do Contrato" },
-  { value: "tiragem_duvidas", label: "❓ Tiragem de Dúvidas" },
-  { value: "leitura_presencial", label: "🏢 Leitura Presencial" },
-  { value: "contrato_gerado", label: "✅ Contrato Gerado" },
+// ── Quick Actions for Negócios ──
+const NEGOCIO_QUICK_ACTIONS = [
+  { id: "simulacao", emoji: "📊", label: "Mandei simulação", tipo: "simulacao", titulo: "Simulação enviada" },
+  { id: "vpl", emoji: "📈", label: "Mandei VPL", tipo: "vpl", titulo: "VPL enviado" },
+  { id: "documentos", emoji: "📁", label: "Subi documentos para aprovação", tipo: "documentos_aprovacao", titulo: "Documentos submetidos para aprovação" },
+  { id: "proposta", emoji: "📄", label: "Enviei proposta", tipo: "proposta", titulo: "Proposta enviada", openPopup: "proposta" },
+  { id: "contrato", emoji: "📝", label: "Enviei contrato para assinatura", tipo: "contrato", titulo: "Contrato enviado para assinatura", openPopup: "contrato" },
 ];
+
+const TAREFA_TIPOS: Record<string, string> = {
+  follow_up: "🔄 Follow-up", ligar: "📞 Ligar", whatsapp: "💬 WhatsApp",
+  enviar_proposta: "📄 Proposta", enviar_material: "📎 Material",
+  marcar_visita: "📅 Visita", outro: "📋 Outro",
+};
 
 export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpdate, onMoveFase }: Props) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fullNeg, setFullNeg] = useState<NegocioExtended>(negocio as NegocioExtended);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [isParceria, setIsParceria] = useState(false);
-  const [parceiroId, setParceiroId] = useState("");
-  const [existingParceria, setExistingParceria] = useState<any>(null);
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [activeTab, setActiveTab] = useState("geral");
+  const [activeTab, setActiveTab] = useState("tarefas");
+
+  // Data
+  const [atividades, setAtividades] = useState<NegocioAtividade[]>([]);
+  const [tarefas, setTarefas] = useState<NegocioTarefa[]>([]);
+
+  // Activity form
+  const [showRegistro, setShowRegistro] = useState(false);
+  const [regTipo, setRegTipo] = useState("");
+  const [regResultado, setRegResultado] = useState("");
+  const [regDescricao, setRegDescricao] = useState("");
+
+  // Task form
+  const [showNovaTarefa, setShowNovaTarefa] = useState(false);
+  const [novaTarefaTitulo, setNovaTarefaTitulo] = useState("");
+  const [novaTarefaTipo, setNovaTarefaTipo] = useState("follow_up");
+  const [novaTarefaData, setNovaTarefaData] = useState("");
+  const [novaTarefaHora, setNovaTarefaHora] = useState("");
+
+  // Popups
+  const [propostaPopup, setPropostaPopup] = useState(false);
+  const [contratoPopup, setContratoPopup] = useState(false);
+  const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+
+  // Proposta popup fields
+  const [propEmpreendimento, setPropEmpreendimento] = useState("");
+  const [propUnidade, setPropUnidade] = useState("");
+  const [propVgv, setPropVgv] = useState("");
+
+  // Contrato popup fields
+  const [contEmpreendimento, setContEmpreendimento] = useState("");
+  const [contUnidade, setContUnidade] = useState("");
+  const [contVgv, setContVgv] = useState("");
+  const [contTipoAssinatura, setContTipoAssinatura] = useState("digital");
+
+  // Imóvel tab
+  const [imovelEmpreendimento, setImovelEmpreendimento] = useState("");
+  const [imovelUnidade, setImovelUnidade] = useState("");
+  const [imovelVgv, setImovelVgv] = useState("");
+  const [imovelObs, setImovelObs] = useState("");
 
   const faseInfo = NEGOCIOS_FASES.find(f => f.key === fullNeg.fase);
 
-  // Load full negocio data + team + tasks + parceria
+  // ── Load data ──
   useEffect(() => {
     if (!open || !negocio.id) return;
-
     const load = async () => {
       setLoading(true);
-      const [negRes, teamRes, tasksRes] = await Promise.all([
+      const [negRes, atvsRes, tasksRes] = await Promise.all([
         supabase.from("negocios").select("*").eq("id", negocio.id).single(),
-        supabase.from("team_members").select("user_id, nome").eq("status", "ativo"),
-        negocio.pipeline_lead_id
-          ? supabase.from("lead_tasks").select("*").eq("lead_id", negocio.pipeline_lead_id).order("created_at", { ascending: false }).limit(20)
-          : Promise.resolve({ data: [] }),
+        supabase.from("negocios_atividades").select("*").eq("negocio_id", negocio.id).order("created_at", { ascending: false }).limit(50),
+        supabase.from("negocios_tarefas").select("*").eq("negocio_id", negocio.id).order("created_at", { ascending: false }).limit(50),
       ]);
-
-      if (negRes.data) setFullNeg(negRes.data as NegocioExtended);
-      setTeamMembers((teamRes.data || []).filter(m => m.user_id) as TeamMember[]);
-      setTasks((tasksRes as any).data || []);
-
-      // Check existing partnership
-      if (negocio.pipeline_lead_id) {
-        const { data: parceria } = await supabase
-          .from("pipeline_parcerias")
-          .select("*")
-          .eq("pipeline_lead_id", negocio.pipeline_lead_id)
-          .eq("status", "ativa")
-          .maybeSingle();
-        if (parceria) {
-          setExistingParceria(parceria);
-          setIsParceria(true);
-          setParceiroId(parceria.corretor_parceiro_id || "");
-        }
+      if (negRes.data) {
+        const n = negRes.data as NegocioExtended;
+        setFullNeg(n);
+        setImovelEmpreendimento(n.empreendimento || "");
+        setImovelUnidade(n.unidade || "");
+        setImovelVgv(n.vgv_estimado ? String(n.vgv_estimado) : "");
+        setImovelObs(n.observacoes || "");
       }
-
+      setAtividades((atvsRes.data || []) as NegocioAtividade[]);
+      setTarefas((tasksRes.data || []) as NegocioTarefa[]);
       setLoading(false);
     };
     load();
-  }, [open, negocio.id, negocio.pipeline_lead_id]);
+  }, [open, negocio.id]);
 
-  const handleSave = useCallback(async () => {
-    setSaving(true);
-    try {
-      const updates: any = {
-        empreendimento: fullNeg.empreendimento || null,
-        vgv_estimado: fullNeg.vgv_estimado || null,
-        vgv_final: fullNeg.vgv_final || null,
-        unidade: fullNeg.unidade || null,
-        imovel_interesse: fullNeg.imovel_interesse || null,
-        proposta_imovel: fullNeg.proposta_imovel || null,
-        proposta_valor: fullNeg.proposta_valor || null,
-        proposta_situacao: fullNeg.proposta_situacao || null,
-        negociacao_situacao: fullNeg.negociacao_situacao || null,
-        negociacao_contra_proposta: fullNeg.negociacao_contra_proposta || null,
-        negociacao_pendencia: fullNeg.negociacao_pendencia || null,
-        documentacao_situacao: fullNeg.documentacao_situacao || null,
-        observacoes: fullNeg.observacoes || null,
-      };
-
-      await onUpdate(negocio.id, updates);
-
-      // Create partnership if enabled
-      if (isParceria && parceiroId && !existingParceria && negocio.pipeline_lead_id) {
-        const { error } = await supabase.from("pipeline_parcerias").insert({
-          pipeline_lead_id: negocio.pipeline_lead_id,
-          corretor_principal_id: negocio.corretor_id || user?.id,
-          corretor_parceiro_id: parceiroId,
-          divisao_principal: 50,
-          divisao_parceiro: 50,
-          motivo: "Parceria via negócio",
-          criado_por: user?.id,
-        });
-        if (!error) toast.success("🤝 Parceria registrada!");
-      }
-
-      toast.success("💾 Negócio atualizado!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao salvar");
-    } finally {
-      setSaving(false);
-    }
-  }, [fullNeg, isParceria, parceiroId, existingParceria, negocio, onUpdate, user]);
-
-  const handleCreateTask = async () => {
-    if (!newTaskTitle.trim() || !negocio.pipeline_lead_id || !user) return;
-    const { data, error } = await supabase.from("lead_tasks").insert({
-      lead_id: negocio.pipeline_lead_id,
-      user_id: user.id,
-      titulo: newTaskTitle.trim(),
-      status: "pendente",
-      prioridade: "media",
+  // ── Register activity ──
+  const handleRegistrarAtividade = async () => {
+    if (!regTipo || !user) return;
+    const { data, error } = await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id,
+      tipo: regTipo,
+      resultado: regResultado || null,
+      descricao: regDescricao || null,
+      titulo: ATIVIDADE_BUTTONS.find(a => a.value === regTipo)?.label || regTipo,
+      created_by: user.id,
     } as any).select().single();
     if (!error && data) {
-      setTasks(prev => [data, ...prev]);
-      setNewTaskTitle("");
+      setAtividades(prev => [data as NegocioAtividade, ...prev]);
+      setRegTipo(""); setRegResultado(""); setRegDescricao("");
+      setShowRegistro(false);
+      toast.success("📝 Atividade registrada!");
+      // Update ultima ação
+      await supabase.from("negocios").update({ updated_at: new Date().toISOString() } as any).eq("id", negocio.id);
+    }
+  };
+
+  // ── Quick action ──
+  const handleQuickAction = async (action: typeof NEGOCIO_QUICK_ACTIONS[0]) => {
+    if (!user) return;
+    if (action.openPopup === "proposta") {
+      setPropEmpreendimento(fullNeg.empreendimento || "");
+      setPropUnidade(fullNeg.unidade || "");
+      setPropVgv(fullNeg.vgv_estimado ? String(fullNeg.vgv_estimado) : "");
+      setPropostaPopup(true);
+      return;
+    }
+    if (action.openPopup === "contrato") {
+      setContEmpreendimento(fullNeg.empreendimento || "");
+      setContUnidade(fullNeg.unidade || "");
+      setContVgv(fullNeg.vgv_estimado ? String(fullNeg.vgv_estimado) : "");
+      setContratoPopup(true);
+      return;
+    }
+    // Direct action
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id, tipo: action.tipo, titulo: action.titulo, created_by: user.id,
+    } as any);
+    toast.success(`${action.emoji} ${action.titulo}`);
+    // Reload atividades
+    const { data } = await supabase.from("negocios_atividades").select("*").eq("negocio_id", negocio.id).order("created_at", { ascending: false }).limit(50);
+    setAtividades((data || []) as NegocioAtividade[]);
+  };
+
+  // ── Submit proposta popup ──
+  const handleSubmitProposta = async () => {
+    if (!user) return;
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id, tipo: "proposta",
+      titulo: "Proposta enviada",
+      descricao: `Empreendimento: ${propEmpreendimento}, Unidade: ${propUnidade}, VGV: R$ ${propVgv}`,
+      created_by: user.id,
+    } as any);
+    // Update negocio + move to proposta
+    await onUpdate(negocio.id, {
+      empreendimento: propEmpreendimento || fullNeg.empreendimento,
+      vgv_estimado: propVgv ? parseFloat(propVgv) : fullNeg.vgv_estimado,
+    } as any);
+    onMoveFase(negocio.id, "proposta");
+    setPropostaPopup(false);
+    toast.success("📄 Proposta enviada → Coluna Proposta");
+    const { data } = await supabase.from("negocios_atividades").select("*").eq("negocio_id", negocio.id).order("created_at", { ascending: false }).limit(50);
+    setAtividades((data || []) as NegocioAtividade[]);
+  };
+
+  // ── Submit contrato popup ──
+  const handleSubmitContrato = async () => {
+    if (!user) return;
+    await supabase.from("negocios_atividades").insert({
+      negocio_id: negocio.id, tipo: "contrato",
+      titulo: "Contrato enviado para assinatura",
+      descricao: `Empreendimento: ${contEmpreendimento}, Unidade: ${contUnidade}, VGV: R$ ${contVgv}, Assinatura: ${contTipoAssinatura === "digital" ? "Digital" : "Presencial"}`,
+      created_by: user.id,
+    } as any);
+    await onUpdate(negocio.id, {
+      empreendimento: contEmpreendimento || fullNeg.empreendimento,
+      vgv_final: contVgv ? parseFloat(contVgv) : fullNeg.vgv_final,
+    } as any);
+    onMoveFase(negocio.id, "documentacao");
+    setContratoPopup(false);
+    toast.success("📝 Contrato enviado → Coluna Contrato Gerado");
+    const { data } = await supabase.from("negocios_atividades").select("*").eq("negocio_id", negocio.id).order("created_at", { ascending: false }).limit(50);
+    setAtividades((data || []) as NegocioAtividade[]);
+  };
+
+  // ── Create task ──
+  const handleCreateTask = async () => {
+    if (!novaTarefaTitulo.trim() || !user) return;
+    const { data, error } = await supabase.from("negocios_tarefas").insert({
+      negocio_id: negocio.id,
+      titulo: novaTarefaTitulo.trim(),
+      tipo: novaTarefaTipo,
+      vence_em: novaTarefaData || null,
+      hora_vencimento: novaTarefaHora || null,
+      responsavel_id: user.id,
+      created_by: user.id,
+    } as any).select().single();
+    if (!error && data) {
+      setTarefas(prev => [data as NegocioTarefa, ...prev]);
+      setNovaTarefaTitulo(""); setNovaTarefaData(""); setNovaTarefaHora("");
+      setShowNovaTarefa(false);
       toast.success("📋 Tarefa criada!");
     }
   };
 
   const toggleTask = async (taskId: string, currentStatus: string) => {
     const newStatus = currentStatus === "concluida" ? "pendente" : "concluida";
-    await supabase.from("lead_tasks").update({
+    await supabase.from("negocios_tarefas").update({
       status: newStatus,
       concluida_em: newStatus === "concluida" ? new Date().toISOString() : null,
     } as any).eq("id", taskId);
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    setTarefas(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+  };
+
+  // ── Save imóvel tab ──
+  const handleSaveImovel = async () => {
+    setSaving(true);
+    try {
+      await onUpdate(negocio.id, {
+        empreendimento: imovelEmpreendimento || null,
+        vgv_estimado: imovelVgv ? parseFloat(imovelVgv) : null,
+        observacoes: imovelObs || null,
+      } as any);
+      // Update unidade via direct call
+      await supabase.from("negocios").update({ unidade: imovelUnidade || null } as any).eq("id", negocio.id);
+      toast.success("💾 Dados do imóvel salvos!");
+    } finally { setSaving(false); }
   };
 
   const set = (field: string, value: any) => setFullNeg(prev => ({ ...prev, [field]: value }));
 
-  const parceiroOptions = useMemo(() => {
-    return teamMembers.filter(m => m.user_id !== negocio.corretor_id && m.user_id !== user?.id);
-  }, [teamMembers, negocio.corretor_id, user?.id]);
+  const whatsappUrl = fullNeg.telefone ? `https://wa.me/${fullNeg.telefone.replace(/\D/g, "")}` : null;
 
-  const parceiroNome = useMemo(() => {
-    if (!parceiroId) return null;
-    return teamMembers.find(m => m.user_id === parceiroId)?.nome || null;
-  }, [parceiroId, teamMembers]);
+  const pendingTasks = tarefas.filter(t => t.status === "pendente");
+  const nextTask = pendingTasks[0];
 
   if (loading) {
     return (
@@ -212,386 +327,455 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-hidden flex flex-col p-0">
-        {/* Header */}
-        <div className="px-6 pt-5 pb-3 border-b border-border/50">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Briefcase className="h-5 w-5 text-primary" />
-              {fullNeg.nome_cliente}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <Badge
-              className="text-xs px-2 py-0.5 font-bold border"
-              style={{ backgroundColor: faseInfo?.cor + "20", color: faseInfo?.cor, borderColor: faseInfo?.cor + "40" }}
-            >
-              {faseInfo?.icon} {faseInfo?.label}
-            </Badge>
-            {fullNeg.vgv_estimado && (
-              <Badge variant="outline" className="text-xs gap-1">
-                <TrendingUp className="h-3 w-3" />
-                R$ {fullNeg.vgv_estimado.toLocaleString("pt-BR")}
-              </Badge>
-            )}
-            {existingParceria && (
-              <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
-                <Handshake className="h-3 w-3" /> Parceria
-              </Badge>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+
+          {/* ════════ HEADER ════════ */}
+          <div className="shrink-0 border-b border-border/50 bg-card px-6 pt-5 pb-3 space-y-3">
+            {/* Row 1: Name + Fase badge + VGV */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                <h2 className="text-xl font-bold text-foreground truncate">{fullNeg.nome_cliente}</h2>
+                <Badge
+                  className="text-xs px-2 py-0.5 font-bold border shrink-0"
+                  style={{ backgroundColor: faseInfo?.cor + "20", color: faseInfo?.cor, borderColor: faseInfo?.cor + "40" }}
+                >
+                  {faseInfo?.icon} {faseInfo?.label}
+                </Badge>
+                {fullNeg.vgv_estimado && (
+                  <span className="text-xs font-semibold text-amber-600 flex items-center gap-0.5">
+                    <TrendingUp className="h-3 w-3" />
+                    R$ {fullNeg.vgv_estimado.toLocaleString("pt-BR")}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Row 2: Contact */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {fullNeg.telefone && (
+                <a href={`tel:${fullNeg.telefone}`} className="text-base text-foreground hover:text-primary transition-colors flex items-center gap-1.5">
+                  <Phone className="h-4 w-4" /> {fullNeg.telefone}
+                </a>
+              )}
+              {fullNeg.empreendimento && (
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Building2 className="h-3.5 w-3.5" /> {fullNeg.empreendimento}
+                </span>
+              )}
+            </div>
+
+            {/* Row 3: Action buttons (like PipelineLeadDetail) */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {fullNeg.telefone && (
+                <a href={`tel:${fullNeg.telefone}`}>
+                  <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary">
+                    <Phone className="h-3.5 w-3.5" /> Ligar
+                  </Button>
+                </a>
+              )}
+              {fullNeg.telefone && (
+                <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-green-300 text-green-600 hover:bg-green-50" onClick={() => setWhatsappOpen(true)}>
+                  <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+                </Button>
+              )}
+              <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary" onClick={() => setComunicacaoOpen(true)}>
+                <MessageSquare className="h-3.5 w-3.5" /> 💬 Mensagem
+              </Button>
+
+              {/* + Ação dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full">
+                    <Plus className="h-3.5 w-3.5" /> Ação
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <p className="px-2 py-1.5 text-xs font-bold text-muted-foreground">⚡ Ação do Negócio</p>
+                  <DropdownMenuSeparator />
+                  {NEGOCIO_QUICK_ACTIONS.map(action => (
+                    <DropdownMenuItem key={action.id} onClick={() => handleQuickAction(action)} className="gap-2 cursor-pointer">
+                      <span>{action.emoji}</span>
+                      <span className="text-sm">{action.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => { setActiveTab("historico"); setShowRegistro(true); }} className="gap-2 cursor-pointer">
+                    <span>📝</span>
+                    <span className="text-sm">Registrar com detalhes</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Next task indicator */}
+            {nextTask && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-1.5">
+                <ClipboardList className="h-3.5 w-3.5" />
+                <span>{nextTask.titulo}</span>
+                {nextTask.vence_em && <span className="text-[10px]">• {nextTask.vence_em}</span>}
+              </div>
             )}
           </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex-1 overflow-y-auto px-6 pb-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-3">
-            <TabsList className="grid w-full grid-cols-4 h-9">
-              <TabsTrigger value="geral" className="text-xs">📋 Geral</TabsTrigger>
-              <TabsTrigger value="proposta" className="text-xs">💰 Proposta</TabsTrigger>
-              <TabsTrigger value="negociacao" className="text-xs">🤝 Negociação</TabsTrigger>
-              <TabsTrigger value="tarefas" className="text-xs">✅ Tarefas</TabsTrigger>
-            </TabsList>
+          {/* ════════ TABS ════════ */}
+          <div className="flex-1 overflow-y-auto px-6 pb-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-3">
+              <TabsList className="grid w-full grid-cols-3 h-9">
+                <TabsTrigger value="tarefas" className="text-xs gap-1">📋 Tarefas</TabsTrigger>
+                <TabsTrigger value="historico" className="text-xs gap-1">🕐 Histórico</TabsTrigger>
+                <TabsTrigger value="imovel" className="text-xs gap-1">🏠 Imóvel</TabsTrigger>
+              </TabsList>
 
-            {/* === TAB GERAL === */}
-            <TabsContent value="geral" className="space-y-4 mt-4">
-              {/* Imóvel de Interesse */}
-              <div>
-                <Label className="text-xs font-semibold mb-1 flex items-center gap-1.5"><Home className="h-3.5 w-3.5" /> Imóvel de Interesse</Label>
-                <Input
-                  value={fullNeg.imovel_interesse || ""}
-                  onChange={e => set("imovel_interesse", e.target.value)}
-                  placeholder="Ex: Apto 3 dorms, 90m², vista norte"
-                  className="h-9 text-sm"
-                />
-              </div>
+              {/* ── TAB TAREFAS ── */}
+              <TabsContent value="tarefas" className="space-y-3 mt-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold">📋 Tarefas ({pendingTasks.length} pendentes)</h3>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowNovaTarefa(!showNovaTarefa)}>
+                    <Plus className="h-3.5 w-3.5" /> Nova Tarefa
+                  </Button>
+                </div>
 
-              {/* Empreendimento */}
-              <div>
-                <Label className="text-xs font-semibold mb-1 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Empreendimento</Label>
-                <EmpreendimentoCombobox
-                  value={fullNeg.empreendimento || ""}
-                  onChange={v => set("empreendimento", v)}
-                  placeholder="Selecione o empreendimento"
-                />
-              </div>
+                {showNovaTarefa && (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-3">
+                    <Input
+                      value={novaTarefaTitulo}
+                      onChange={e => setNovaTarefaTitulo(e.target.value)}
+                      placeholder="Título da tarefa..."
+                      className="h-9 text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Select value={novaTarefaTipo} onValueChange={setNovaTarefaTipo}>
+                        <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(TAREFA_TIPOS).map(([k, v]) => (
+                            <SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input type="date" value={novaTarefaData} onChange={e => setNovaTarefaData(e.target.value)} className="h-8 text-xs w-36" />
+                      <Input type="time" value={novaTarefaHora} onChange={e => setNovaTarefaHora(e.target.value)} className="h-8 text-xs w-24" />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button size="sm" className="h-8 text-xs gap-1" onClick={handleCreateTask} disabled={!novaTarefaTitulo.trim()}>
+                        <Plus className="h-3 w-3" /> Criar
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
-              {/* Unidade */}
-              <div>
-                <Label className="text-xs font-semibold mb-1 block">Unidade Escolhida</Label>
-                <Input
-                  value={fullNeg.unidade || ""}
-                  onChange={e => set("unidade", e.target.value)}
-                  placeholder="Ex: Torre A - Apto 1204"
-                  className="h-9 text-sm"
-                />
-              </div>
+                {tarefas.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    📋 Sem tarefas pendentes
+                    <button className="block mx-auto mt-2 text-primary text-xs font-semibold hover:underline" onClick={() => setShowNovaTarefa(true)}>
+                      + Criar primeira tarefa
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
+                    {tarefas.map(t => (
+                      <div
+                        key={t.id}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors cursor-pointer",
+                          t.status === "concluida" ? "bg-muted/30 border-border/30" : "bg-card hover:bg-accent/30"
+                        )}
+                        onClick={() => toggleTask(t.id, t.status)}
+                      >
+                        <CheckCircle2 className={cn("h-4 w-4 shrink-0", t.status === "concluida" ? "text-green-500" : "text-muted-foreground/40")} />
+                        <div className="flex-1 min-w-0">
+                          <span className={cn("text-xs", t.status === "concluida" && "line-through text-muted-foreground")}>
+                            {t.titulo}
+                          </span>
+                          {t.vence_em && (
+                            <span className="text-[10px] text-muted-foreground ml-2">{t.vence_em}</span>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="text-[9px] px-1.5">{TAREFA_TIPOS[t.tipo] || t.tipo}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
 
-              {/* VGV */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* ── TAB HISTÓRICO ── */}
+              <TabsContent value="historico" className="space-y-3 mt-4">
+                {/* Register activity form */}
+                {!showRegistro ? (
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs" onClick={() => setShowRegistro(true)}>
+                    <Plus className="h-3.5 w-3.5" /> Registrar Atividade
+                  </Button>
+                ) : (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                    <h4 className="text-sm font-bold">+ Registrar Atividade</h4>
+
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">O que foi feito:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {ATIVIDADE_BUTTONS.map(a => (
+                          <button
+                            key={a.value}
+                            type="button"
+                            onClick={() => setRegTipo(a.value)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
+                              regTipo === a.value
+                                ? "bg-primary text-primary-foreground border-primary ring-2 ring-offset-1 ring-primary/30"
+                                : "bg-card text-foreground border-border hover:bg-accent"
+                            )}
+                          >
+                            {a.emoji} {a.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Resultado:</p>
+                      <div className="flex gap-2">
+                        {RESULTADO_OPTIONS.map(r => (
+                          <button
+                            key={r.value}
+                            type="button"
+                            onClick={() => setRegResultado(r.value)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
+                              regResultado === r.value
+                                ? "bg-primary text-primary-foreground border-primary ring-2 ring-offset-1 ring-primary/30"
+                                : "bg-card text-foreground border-border hover:bg-accent"
+                            )}
+                          >
+                            {r.emoji} {r.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">O que aconteceu:</p>
+                      <Textarea
+                        value={regDescricao}
+                        onChange={e => setRegDescricao(e.target.value)}
+                        placeholder="Ex: Cliente atendeu, pediu proposta por email"
+                        rows={3}
+                        className="text-sm"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" className="text-xs" onClick={() => setShowRegistro(false)}>Cancelar</Button>
+                      <Button size="sm" className="text-xs gap-1" onClick={handleRegistrarAtividade} disabled={!regTipo}>
+                        Registrar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Timeline */}
+                {atividades.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">Nenhuma atividade registrada.</p>
+                ) : (
+                  <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                    {atividades.map(a => {
+                      const tipoInfo = ATIVIDADE_BUTTONS.find(b => b.value === a.tipo);
+                      const emoji = tipoInfo?.emoji || "📌";
+                      return (
+                        <div key={a.id} className="flex gap-3 px-3 py-2.5 rounded-lg border border-border/40 bg-card">
+                          <span className="text-lg shrink-0">{emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold">{a.titulo || tipoInfo?.label || a.tipo}</p>
+                            {a.resultado && (
+                              <Badge variant="outline" className="text-[9px] mt-0.5">
+                                {RESULTADO_OPTIONS.find(r => r.value === a.resultado)?.emoji} {a.resultado}
+                              </Badge>
+                            )}
+                            {a.descricao && <p className="text-xs text-muted-foreground mt-1">{a.descricao}</p>}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {formatDistanceToNow(new Date(a.created_at), { addSuffix: true, locale: ptBR })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ── TAB IMÓVEL DE INTERESSE ── */}
+              <TabsContent value="imovel" className="space-y-4 mt-4">
+                <h3 className="text-sm font-bold flex items-center gap-2">
+                  <Home className="h-4 w-4 text-primary" /> Dados do Imóvel de Interesse
+                </h3>
+
                 <div>
-                  <Label className="text-xs font-semibold mb-1 block">VGV Estimado</Label>
+                  <Label className="text-xs font-semibold mb-1 block">Empreendimento</Label>
+                  <EmpreendimentoCombobox
+                    value={imovelEmpreendimento}
+                    onChange={setImovelEmpreendimento}
+                    placeholder="Selecione o empreendimento"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold mb-1 block">Unidade</Label>
+                  <Input
+                    value={imovelUnidade}
+                    onChange={e => setImovelUnidade(e.target.value)}
+                    placeholder="Ex: Torre A - Apto 1204"
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold mb-1 block">VGV (R$)</Label>
                   <Input
                     type="number"
-                    value={fullNeg.vgv_estimado || ""}
-                    onChange={e => set("vgv_estimado", e.target.value ? parseFloat(e.target.value) : null)}
+                    value={imovelVgv}
+                    onChange={e => setImovelVgv(e.target.value)}
                     placeholder="500000"
                     className="h-9 text-sm"
                   />
                 </div>
-                <div>
-                  <Label className="text-xs font-semibold mb-1 block">VGV Final (assinado)</Label>
-                  <Input
-                    type="number"
-                    value={fullNeg.vgv_final || ""}
-                    onChange={e => set("vgv_final", e.target.value ? parseFloat(e.target.value) : null)}
-                    placeholder="480000"
-                    className="h-9 text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Parceria */}
-              <div className="rounded-lg border border-border/60 p-3 space-y-3 bg-muted/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Handshake className="h-4 w-4 text-primary" />
-                    <Label className="text-xs font-semibold cursor-pointer" htmlFor="neg-parceria">
-                      {existingParceria ? "Parceria ativa" : "Negócio em parceria?"}
-                    </Label>
-                  </div>
-                  <Switch
-                    id="neg-parceria"
-                    checked={isParceria}
-                    onCheckedChange={checked => {
-                      setIsParceria(checked);
-                      if (!checked) setParceiroId("");
-                    }}
-                    disabled={!!existingParceria}
-                  />
-                </div>
-                {isParceria && (
-                  <div>
-                    {existingParceria ? (
-                      <div className="text-xs text-muted-foreground">
-                        🤝 Parceiro: <span className="font-semibold text-foreground">{parceiroNome || "Carregando..."}</span> (50/50)
-                      </div>
-                    ) : (
-                      <>
-                        <Label className="text-xs text-muted-foreground mb-1 block">Corretor parceiro (divisão 50/50)</Label>
-                        <Select value={parceiroId} onValueChange={setParceiroId}>
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue placeholder="Selecione o parceiro" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {parceiroOptions.map(m => (
-                              <SelectItem key={m.user_id} value={m.user_id}>{m.nome}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Observações */}
-              <div>
-                <Label className="text-xs font-semibold mb-1 block">Observações</Label>
-                <Textarea
-                  value={fullNeg.observacoes || ""}
-                  onChange={e => set("observacoes", e.target.value)}
-                  placeholder="Notas sobre o negócio..."
-                  rows={3}
-                  className="text-sm"
-                />
-              </div>
-            </TabsContent>
-
-            {/* === TAB PROPOSTA === */}
-            <TabsContent value="proposta" className="space-y-4 mt-4">
-              <div className="rounded-lg border p-4 space-y-4 bg-card">
-                <h3 className="text-sm font-bold flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-blue-600" /> Dados da Proposta
-                </h3>
 
                 <div>
-                  <Label className="text-xs font-semibold mb-1 block">Imóvel da proposta</Label>
-                  <Input
-                    value={fullNeg.proposta_imovel || ""}
-                    onChange={e => set("proposta_imovel", e.target.value)}
-                    placeholder="Ex: Torre B - Apto 804"
-                    className="h-9 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs font-semibold mb-1 block">Valor da proposta (R$)</Label>
-                  <Input
-                    type="number"
-                    value={fullNeg.proposta_valor || ""}
-                    onChange={e => set("proposta_valor", e.target.value ? parseFloat(e.target.value) : null)}
-                    placeholder="450000"
-                    className="h-9 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs font-semibold mb-1 block">Situação da Proposta</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {PROPOSTA_STATUS.map(s => (
-                      <button
-                        key={s.value}
-                        type="button"
-                        onClick={() => set("proposta_situacao", s.value)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                          fullNeg.proposta_situacao === s.value
-                            ? s.color + " ring-2 ring-offset-1 ring-primary/30"
-                            : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
-                        )}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick: move to proposta phase */}
-              {fullNeg.fase !== "proposta" && fullNeg.fase !== "negociacao" && fullNeg.fase !== "documentacao" && fullNeg.fase !== "assinado" && (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 text-sm border-blue-200 text-blue-700 hover:bg-blue-50"
-                  onClick={() => { onMoveFase(negocio.id, "proposta"); set("fase", "proposta"); }}
-                >
-                  📋 Mover para Proposta
-                </Button>
-              )}
-            </TabsContent>
-
-            {/* === TAB NEGOCIAÇÃO === */}
-            <TabsContent value="negociacao" className="space-y-4 mt-4">
-              <div className="rounded-lg border p-4 space-y-4 bg-card">
-                <h3 className="text-sm font-bold flex items-center gap-2">
-                  <Handshake className="h-4 w-4 text-amber-600" /> Negociação
-                </h3>
-
-                <div>
-                  <Label className="text-xs font-semibold mb-1 block">Situação</Label>
-                  <Select value={fullNeg.negociacao_situacao || ""} onValueChange={v => set("negociacao_situacao", v)}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      {NEGOCIACAO_STATUS.map(s => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {fullNeg.negociacao_situacao === "contra_proposta" && (
-                  <div>
-                    <Label className="text-xs font-semibold mb-1 block">Detalhes da contra-proposta</Label>
-                    <Textarea
-                      value={fullNeg.negociacao_contra_proposta || ""}
-                      onChange={e => set("negociacao_contra_proposta", e.target.value)}
-                      placeholder="Descreva a contra-proposta..."
-                      rows={2}
-                      className="text-sm"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <Label className="text-xs font-semibold mb-1 block">O que está pendente para evoluir?</Label>
+                  <Label className="text-xs font-semibold mb-1 block">Observações</Label>
                   <Textarea
-                    value={fullNeg.negociacao_pendencia || ""}
-                    onChange={e => set("negociacao_pendencia", e.target.value)}
-                    placeholder="Ex: Aguardando aprovação do financiamento..."
-                    rows={2}
+                    value={imovelObs}
+                    onChange={e => setImovelObs(e.target.value)}
+                    placeholder="Notas sobre o negócio..."
+                    rows={4}
                     className="text-sm"
                   />
                 </div>
-              </div>
 
-              {/* Documentação / Contrato */}
-              <div className="rounded-lg border p-4 space-y-4 bg-card">
-                <h3 className="text-sm font-bold flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-purple-600" /> Contrato Gerado
-                </h3>
-
-                <div>
-                  <Label className="text-xs font-semibold mb-1 block">Situação do contrato</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {DOC_STATUS.map(s => (
-                      <button
-                        key={s.value}
-                        type="button"
-                        onClick={() => set("documentacao_situacao", s.value)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                          fullNeg.documentacao_situacao === s.value
-                            ? "bg-purple-100 text-purple-700 ring-2 ring-offset-1 ring-primary/30"
-                            : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
-                        )}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* === TAB TAREFAS === */}
-            <TabsContent value="tarefas" className="space-y-3 mt-4">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={newTaskTitle}
-                  onChange={e => setNewTaskTitle(e.target.value)}
-                  placeholder="Nova tarefa para este negócio..."
-                  className="h-9 text-sm flex-1"
-                  onKeyDown={e => e.key === "Enter" && handleCreateTask()}
-                />
-                <Button size="sm" className="h-9 gap-1" onClick={handleCreateTask} disabled={!newTaskTitle.trim()}>
-                  <CalendarPlus className="h-3.5 w-3.5" /> Criar
+                <Button onClick={handleSaveImovel} disabled={saving} className="w-full gap-1.5 text-xs">
+                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Salvar Dados do Imóvel
                 </Button>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* ════════ FOOTER ════════ */}
+          <div className="shrink-0 border-t border-border/50 px-6 py-3 flex items-center gap-2">
+            {fullNeg.fase === "documentacao" && (
+              <Button className="gap-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => { onMoveFase(negocio.id, "assinado"); onOpenChange(false); }}>
+                🏆 Marcar como ASSINADO
+              </Button>
+            )}
+            {fullNeg.fase === "proposta" && (
+              <Button variant="outline" className="gap-1 text-xs border-amber-300 text-amber-700" onClick={() => { onMoveFase(negocio.id, "negociacao"); set("fase", "negociacao"); }}>
+                🤝 → Negociação
+              </Button>
+            )}
+            {fullNeg.fase === "negociacao" && (
+              <Button variant="outline" className="gap-1 text-xs border-purple-300 text-purple-700" onClick={() => { onMoveFase(negocio.id, "documentacao"); set("fase", "documentacao"); }}>
+                📄 → Contrato Gerado
+              </Button>
+            )}
+            <div className="flex-1" />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Proposta Popup ── */}
+      <Dialog open={propostaPopup} onOpenChange={setPropostaPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">📄 Enviar Proposta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs font-semibold mb-1 block">Empreendimento</Label>
+              <EmpreendimentoCombobox value={propEmpreendimento} onChange={setPropEmpreendimento} placeholder="Selecione" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold mb-1 block">Unidade</Label>
+              <Input value={propUnidade} onChange={e => setPropUnidade(e.target.value)} placeholder="Ex: Apto 1204" className="h-9 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold mb-1 block">VGV (R$)</Label>
+              <Input type="number" value={propVgv} onChange={e => setPropVgv(e.target.value)} placeholder="500000" className="h-9 text-sm" />
+            </div>
+            <Button className="w-full gap-1.5 text-xs" onClick={handleSubmitProposta}>
+              📄 Enviar e mover para Proposta
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Contrato Popup ── */}
+      <Dialog open={contratoPopup} onOpenChange={setContratoPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">📝 Enviar Contrato para Assinatura</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs font-semibold mb-1 block">Empreendimento</Label>
+              <EmpreendimentoCombobox value={contEmpreendimento} onChange={setContEmpreendimento} placeholder="Selecione" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold mb-1 block">Unidade</Label>
+              <Input value={contUnidade} onChange={e => setContUnidade(e.target.value)} placeholder="Ex: Apto 1204" className="h-9 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold mb-1 block">VGV (R$)</Label>
+              <Input type="number" value={contVgv} onChange={e => setContVgv(e.target.value)} placeholder="500000" className="h-9 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs font-semibold mb-1 block">Tipo de Assinatura</Label>
+              <div className="flex gap-2">
+                {[
+                  { value: "digital", label: "💻 Digital" },
+                  { value: "presencial", label: "🏢 Presencial" },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setContTipoAssinatura(opt.value)}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-xs font-semibold border transition-all flex-1",
+                      contTipoAssinatura === opt.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-foreground border-border hover:bg-accent"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
-
-              {tasks.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-6">Nenhuma tarefa vinculada a este negócio.</p>
-              ) : (
-                <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                  {tasks.map(t => (
-                    <div
-                      key={t.id}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors cursor-pointer",
-                        t.status === "concluida" ? "bg-muted/30 border-border/30" : "bg-card hover:bg-accent/30"
-                      )}
-                      onClick={() => toggleTask(t.id, t.status)}
-                    >
-                      <CheckCircle2 className={cn(
-                        "h-4 w-4 shrink-0 transition-colors",
-                        t.status === "concluida" ? "text-green-500" : "text-muted-foreground/40"
-                      )} />
-                      <span className={cn(
-                        "text-xs flex-1",
-                        t.status === "concluida" && "line-through text-muted-foreground"
-                      )}>
-                        {t.titulo}
-                      </span>
-                      {t.prioridade === "alta" || t.prioridade === "urgente" ? (
-                        <Badge variant="destructive" className="text-[9px] px-1.5 py-0">!</Badge>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Footer */}
-        <div className="shrink-0 border-t border-border/50 px-6 py-3 flex items-center gap-2">
-          {/* Phase quick actions */}
-          {fullNeg.fase === "documentacao" && (
-            <Button
-              variant="default"
-              className="gap-2 text-xs bg-green-600 hover:bg-green-700"
-              onClick={() => { onMoveFase(negocio.id, "assinado"); onOpenChange(false); }}
-            >
-              🏆 Marcar como ASSINADO
+            </div>
+            <Button className="w-full gap-1.5 text-xs" onClick={handleSubmitContrato}>
+              📝 Enviar e mover para Contrato Gerado
             </Button>
-          )}
-          {fullNeg.fase === "proposta" && (
-            <Button
-              variant="outline"
-              className="gap-1 text-xs border-amber-300 text-amber-700"
-              onClick={() => { onMoveFase(negocio.id, "negociacao"); set("fase", "negociacao"); }}
-            >
-              🤝 → Negociação
-            </Button>
-          )}
-          {fullNeg.fase === "negociacao" && (
-            <Button
-              variant="outline"
-              className="gap-1 text-xs border-purple-300 text-purple-700"
-              onClick={() => { onMoveFase(negocio.id, "documentacao"); set("fase", "documentacao"); }}
-            >
-              📄 → Contrato Gerado
-            </Button>
-          )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
-          <div className="flex-1" />
+      {/* ── Comunicação ── */}
+      {comunicacaoOpen && (
+        <CentralComunicacao
+          leadId={negocio.pipeline_lead_id || negocio.id}
+          leadNome={fullNeg.nome_cliente}
+          leadTelefone={fullNeg.telefone || ""}
+          open={comunicacaoOpen}
+          onOpenChange={setComunicacaoOpen}
+        />
+      )}
 
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-xs">Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving} className="gap-1.5 text-xs">
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            Salvar
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* ── WhatsApp Templates ── */}
+      {whatsappOpen && fullNeg.telefone && (
+        <WhatsAppTemplatesDialog
+          open={whatsappOpen}
+          onOpenChange={setWhatsappOpen}
+          leadNome={fullNeg.nome_cliente}
+          leadTelefone={fullNeg.telefone}
+          leadEmpreendimento={fullNeg.empreendimento || null}
+          leadId={negocio.pipeline_lead_id || negocio.id}
+        />
+      )}
+    </>
   );
 }

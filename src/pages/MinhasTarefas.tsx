@@ -62,6 +62,7 @@ export default function MinhasTarefas() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [categoria, setCategoria] = useState<"leads" | "negocios">("leads");
   const [activeTab, setActiveTab] = useState<TabFilter>("hoje");
   const [adiarId, setAdiarId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
@@ -109,6 +110,36 @@ export default function MinhasTarefas() {
     refetchOnWindowFocus: true,
   });
 
+  // ── Negocios tasks ──
+  const { data: negociosTarefas = [], isLoading: isLoadingNegocios } = useQuery({
+    queryKey: ["minhas-tarefas-negocios", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("negocios_tarefas")
+        .select("*")
+        .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
+        .order("vence_em", { ascending: true })
+        .order("hora_vencimento", { ascending: true });
+      if (error) return [];
+      const rows = (data || []) as any[];
+      // Enrich with negocio info
+      const negIds = [...new Set(rows.map(r => r.negocio_id).filter(Boolean))];
+      if (negIds.length > 0) {
+        const { data: negs } = await supabase
+          .from("negocios").select("id, nome_cliente, telefone, empreendimento").in("id", negIds);
+        const negMap = new Map((negs || []).map(n => [n.id, n]));
+        rows.forEach(r => {
+          const neg = negMap.get(r.negocio_id);
+          if (neg) { r.lead_nome = neg.nome_cliente; r.lead_telefone = neg.telefone; r.lead_empreendimento = neg.empreendimento; r.pipeline_lead_id = neg.id; }
+        });
+      }
+      return rows as TarefaComLead[];
+    },
+    enabled: !!user,
+    refetchOnWindowFocus: true,
+  });
+
   const { data: searchLeads = [] } = useQuery({
     queryKey: ["lead-search-tarefas", leadSearch],
     queryFn: async () => {
@@ -124,8 +155,10 @@ export default function MinhasTarefas() {
   const todayStart = startOfDay(now);
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
-  const pendentes = useMemo(() => tarefas.filter(t => t.status === "pendente"), [tarefas]);
-  const concluidas = useMemo(() => tarefas.filter(t => t.status === "concluida").slice(0, 20), [tarefas]);
+  const activeTarefas = categoria === "leads" ? tarefas : negociosTarefas;
+
+  const pendentes = useMemo(() => activeTarefas.filter(t => t.status === "pendente"), [activeTarefas]);
+  const concluidas = useMemo(() => activeTarefas.filter(t => t.status === "concluida").slice(0, 20), [activeTarefas]);
   const atrasadas = useMemo(() => pendentes.filter(t => t.vence_em && isBefore(parseDateBRT(t.vence_em), todayStart)), [pendentes]);
   const hoje = useMemo(() => pendentes.filter(t => t.vence_em && isToday(parseDateBRT(t.vence_em))), [pendentes]);
   const amanha = useMemo(() => pendentes.filter(t => t.vence_em && isTomorrow(parseDateBRT(t.vence_em))), [pendentes]);
@@ -139,6 +172,12 @@ export default function MinhasTarefas() {
     activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : semana;
 
   const handleConcluir = async (id: string, leadId: string) => {
+    if (categoria === "negocios") {
+      await supabase.from("negocios_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
+      toast.success("Tarefa concluída ✅");
+      queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
+      return;
+    }
     await supabase.from("pipeline_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
     await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", leadId);
     toast.success("Tarefa concluída ✅");
@@ -235,6 +274,18 @@ export default function MinhasTarefas() {
         </Button>
       </div>
 
+      {/* Category tabs: Leads vs Negócios */}
+      <div className="flex gap-2">
+        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("hoje"); }}>
+          🎯 Tarefas de Leads
+          <Badge variant="secondary" className="ml-1 text-xs">{tarefas.filter(t => t.status === "pendente").length}</Badge>
+        </Button>
+        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("hoje"); }}>
+          💼 Tarefas de Negócios
+          <Badge variant="secondary" className="ml-1 text-xs">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
+        </Button>
+      </div>
+
       {/* Summary */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <span>📊 <strong className="text-foreground">Hoje:</strong> {hoje.length} pendentes</span>
@@ -257,7 +308,7 @@ export default function MinhasTarefas() {
       </div>
 
       {/* Task list */}
-      {isLoading ? (
+      {(isLoading || isLoadingNegocios) ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
       ) : filteredTarefas.length === 0 ? (
         <Card className="p-8 text-center">
@@ -290,9 +341,9 @@ export default function MinhasTarefas() {
                     </div>
                   </div>
 
-                  <button onClick={() => navigate("/pipeline")} className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <button onClick={() => navigate(categoria === "negocios" ? "/meus-negocios" : "/pipeline")} className="text-sm font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1">
                     <User className="h-3.5 w-3.5" />
-                    {tarefa.lead_nome || "Lead"}
+                    {tarefa.lead_nome || (categoria === "negocios" ? "Negócio" : "Lead")}
                   </button>
 
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
