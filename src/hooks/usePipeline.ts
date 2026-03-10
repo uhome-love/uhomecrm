@@ -296,45 +296,57 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const newStage = stages.find(s => s.id === newStageId);
 
     // ═══ AUTO-CREATE NEGÓCIO when moving to "Visita Realizada" ═══
-    if (newStage && (newStage.tipo === "visita_realizada" || newStage.nome.toLowerCase().includes("visita realizada"))) {
+    const isVisitaRealizada = newStage && (newStage.tipo === "visita_realizada" || newStage.nome.toLowerCase().includes("visita realizada"));
+    console.log("[moveLead] Stage check:", { newStageTipo: newStage?.tipo, newStageNome: newStage?.nome, isVisitaRealizada });
+
+    if (isVisitaRealizada) {
       try {
         // Check if negócio already exists for this lead
-        const { data: existingNegocio } = await supabase
+        const { data: existingNegocio, error: checkError } = await supabase
           .from("negocios")
           .select("id")
           .eq("pipeline_lead_id", leadId)
           .limit(1)
           .maybeSingle();
 
+        console.log("[moveLead] Existing negocio check:", { existingNegocio, checkError });
+
         if (!existingNegocio) {
           // Resolve profiles.id from user_id for FK compatibility
           const corretorUserId = lead.corretor_id;
           const gerenteUserId = lead.gerente_id || user.id;
 
-          const { data: profileRows } = await supabase
+          const { data: profileRows, error: profileError } = await supabase
             .from("profiles")
             .select("id, user_id")
             .in("user_id", [corretorUserId, gerenteUserId].filter(Boolean) as string[]);
+
+          console.log("[moveLead] Profile resolution:", { corretorUserId, gerenteUserId, profileRows, profileError });
 
           const profileMap = new Map((profileRows || []).map(p => [p.user_id, p.id]));
           const corretorProfileId = corretorUserId ? profileMap.get(corretorUserId) || null : null;
           const gerenteProfileId = profileMap.get(gerenteUserId) || null;
 
+          const insertPayload = {
+            nome_cliente: lead.nome,
+            pipeline_lead_id: leadId,
+            corretor_id: corretorProfileId,
+            gerente_id: gerenteProfileId,
+            empreendimento: lead.empreendimento || null,
+            telefone: lead.telefone || null,
+            fase: "novo_negocio",
+            origem: "visita_realizada",
+            vgv_estimado: lead.valor_estimado || null,
+          };
+          console.log("[moveLead] Inserting negocio:", insertPayload);
+
           const { data: negocio, error: negError } = await supabase
             .from("negocios")
-            .insert({
-              nome_cliente: lead.nome,
-              pipeline_lead_id: leadId,
-              corretor_id: corretorProfileId,
-              gerente_id: gerenteProfileId,
-              empreendimento: lead.empreendimento || null,
-              telefone: lead.telefone || null,
-              fase: "novo_negocio",
-              origem: "visita_realizada",
-              vgv_estimado: lead.valor_estimado || null,
-            })
+            .insert(insertPayload)
             .select("id")
             .single();
+
+          console.log("[moveLead] Negocio insert result:", { negocio, negError });
 
           if (negocio && !negError) {
             await supabase.from("pipeline_leads").update({
@@ -350,7 +362,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
               duration: 5000,
             });
           } else if (negError) {
-            console.error("Erro ao criar negócio (não bloqueia mudança de etapa):", negError);
+            console.error("[moveLead] Erro ao criar negócio:", negError);
             toast.warning("Lead movido, mas houve erro ao criar negócio automaticamente.", { duration: 4000 });
           }
         } else {
@@ -362,7 +374,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
           }
         }
       } catch (negocioError) {
-        console.error("Erro ao criar negócio (não bloqueia mudança de etapa):", negocioError);
+        console.error("[moveLead] Catch - Erro ao criar negócio:", negocioError);
         toast.warning("Lead movido com sucesso, mas erro ao criar negócio.", { duration: 4000 });
       }
     }
