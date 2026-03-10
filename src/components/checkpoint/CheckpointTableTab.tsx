@@ -202,12 +202,6 @@ export default function CheckpointTableTab({
                   <td className="px-2 py-2 bg-green-50/20 text-center text-sm"><span className="font-semibold text-green-700">{row.res_aproveitados}</span></td>
                   <td className="px-2 py-2 bg-green-50/20 text-center text-sm text-gray-600">{row.res_visitas_marcadas}</td>
                   <td className="px-2 py-2 bg-green-50/20 text-center text-sm text-gray-600">{row.res_visitas_realizadas}</td>
-                  <td className="px-2 py-2 bg-green-50/20 text-center">
-                    <input type="number" min={0} value={row.res_propostas || ""} onChange={e => onUpdateRow(row.corretor_id, "res_propostas", parseInt(e.target.value) || 0)} placeholder="0" className="w-12 text-center text-sm border border-gray-200 rounded-md py-1 focus:outline-none focus:border-green-400" />
-                  </td>
-                  <td className="px-2 py-2 bg-green-50/20 text-center">
-                    <input type="number" min={0} value={row.res_vgv || ""} onChange={e => onUpdateRow(row.corretor_id, "res_vgv", parseFloat(e.target.value) || 0)} placeholder="0" className="w-20 text-center text-xs border border-gray-200 rounded-md py-1 focus:outline-none focus:border-green-400" />
-                  </td>
                   <td className="px-2 py-2 bg-green-50/20">
                     <input type="text" value={row.obs_dia} onChange={e => onUpdateRow(row.corretor_id, "obs_dia", e.target.value)} placeholder="..." className="w-full text-xs border border-gray-200 rounded-md py-1 px-2 focus:outline-none focus:border-green-400" />
                   </td>
