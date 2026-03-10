@@ -383,7 +383,7 @@ export default function CeoDashboard() {
           <Target className="h-4 w-4" /> Gestão de Leads
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard icon={Users} label="Total de Leads" value={pipelineStages.reduce((a, s) => a + s.count, 0)} iconColor="text-blue-600" />
+          <KpiCard icon={Users} label="Total de Leads" value={totalLeadsPeriodo} iconColor="text-blue-600" />
           <KpiCard icon={CalendarDays} label="Visitas Marcadas" value={kpis.visitasMarcadas} prev={prevKpis?.visitasMarcadas} iconColor="text-amber-600" />
           <KpiCard
             icon={CalendarCheck}
@@ -397,7 +397,7 @@ export default function CeoDashboard() {
             icon={TrendingDown}
             label="Conversão Lead→Visita"
             value={kpis.visitasMarcadas}
-            displayValue={`${pipelineStages.reduce((a, s) => a + s.count, 0) > 0 ? Math.round((kpis.visitasMarcadas / pipelineStages.reduce((a, s) => a + s.count, 0)) * 100) : 0}%`}
+            displayValue={`${totalLeadsPeriodo > 0 ? Math.round((kpis.visitasMarcadas / totalLeadsPeriodo) * 100) : 0}%`}
             iconColor="text-purple-600"
           />
         </div>
