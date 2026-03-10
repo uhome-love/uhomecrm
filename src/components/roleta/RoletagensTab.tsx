@@ -22,6 +22,18 @@ interface Roletagem {
   segmento_nome: string;
 }
 
+interface LeadPerdido {
+  id: string;
+  pipeline_lead_id: string;
+  corretor_id: string;
+  corretor_nome: string;
+  lead_nome: string;
+  empreendimento: string | null;
+  segmento_nome: string;
+  created_at: string;
+  tempo_resposta_seg: number | null;
+}
+
 function AceiteCountdown({ expiresAt }: { expiresAt: string }) {
   const [remaining, setRemaining] = useState(0);
 
@@ -71,6 +83,7 @@ function getStatusConfig(status: string, expiresAt: string | null) {
 
 export default function RoletagensTab() {
   const [roletagens, setRoletagens] = useState<Roletagem[]>([]);
+  const [leadsPerdidos, setLeadsPerdidos] = useState<LeadPerdido[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadRoletagens = useCallback(async () => {
@@ -86,35 +99,74 @@ export default function RoletagensTab() {
 
       if (!leads || leads.length === 0) {
         setRoletagens([]);
-        setLoading(false);
-        return;
+      } else {
+        // Resolve corretor names and segment names
+        const corretorIds = [...new Set(leads.map(l => l.corretor_id).filter(Boolean))] as string[];
+        const segmentoIds = [...new Set(leads.map(l => l.segmento_id).filter(Boolean))] as string[];
+
+        const [profilesRes, segRes] = await Promise.all([
+          corretorIds.length > 0 ? supabase.from("profiles").select("user_id, nome").in("user_id", corretorIds) : { data: [] },
+          segmentoIds.length > 0 ? supabase.from("pipeline_segmentos").select("id, nome").in("id", segmentoIds) : { data: [] },
+        ]);
+
+        const profMap = new Map((profilesRes.data || []).map(p => [p.user_id, p.nome]));
+        const segMap = new Map((segRes.data || []).map(s => [s.id, s.nome]));
+
+        setRoletagens(leads.map(l => ({
+          id: l.id,
+          nome: l.nome || "Lead",
+          telefone: l.telefone,
+          empreendimento: l.empreendimento,
+          corretor_id: l.corretor_id,
+          corretor_nome: l.corretor_id ? profMap.get(l.corretor_id) || "Corretor" : "—",
+          aceite_status: l.aceite_status || "pendente",
+          distribuido_em: l.distribuido_em,
+          aceite_expira_em: l.aceite_expira_em,
+          aceito_em: l.aceito_em,
+          segmento_nome: l.segmento_id ? segMap.get(l.segmento_id) || "—" : "—",
+        })));
       }
 
-      // Resolve corretor names and segment names
-      const corretorIds = [...new Set(leads.map(l => l.corretor_id).filter(Boolean))] as string[];
-      const segmentoIds = [...new Set(leads.map(l => l.segmento_id).filter(Boolean))] as string[];
+      // Load expired/timeout leads from distribuicao_historico
+      const { data: perdidos } = await supabase
+        .from("distribuicao_historico")
+        .select("id, pipeline_lead_id, corretor_id, segmento_id, tempo_resposta_seg, created_at")
+        .eq("acao", "timeout")
+        .order("created_at", { ascending: false })
+        .limit(50);
 
-      const [profilesRes, segRes] = await Promise.all([
-        corretorIds.length > 0 ? supabase.from("profiles").select("user_id, nome").in("user_id", corretorIds) : { data: [] },
-        segmentoIds.length > 0 ? supabase.from("pipeline_segmentos").select("id, nome").in("id", segmentoIds) : { data: [] },
-      ]);
+      if (perdidos && perdidos.length > 0) {
+        const pCorretorIds = [...new Set(perdidos.map(p => p.corretor_id).filter(Boolean))] as string[];
+        const pLeadIds = [...new Set(perdidos.map(p => p.pipeline_lead_id).filter(Boolean))] as string[];
+        const pSegIds = [...new Set(perdidos.map(p => p.segmento_id).filter(Boolean))] as string[];
 
-      const profMap = new Map((profilesRes.data || []).map(p => [p.user_id, p.nome]));
-      const segMap = new Map((segRes.data || []).map(s => [s.id, s.nome]));
+        const [profs, leadsData, segs] = await Promise.all([
+          pCorretorIds.length > 0 ? supabase.from("profiles").select("user_id, nome").in("user_id", pCorretorIds) : { data: [] },
+          pLeadIds.length > 0 ? supabase.from("pipeline_leads").select("id, nome, empreendimento").in("id", pLeadIds) : { data: [] },
+          pSegIds.length > 0 ? supabase.from("pipeline_segmentos").select("id, nome").in("id", pSegIds) : { data: [] },
+        ]);
 
-      setRoletagens(leads.map(l => ({
-        id: l.id,
-        nome: l.nome || "Lead",
-        telefone: l.telefone,
-        empreendimento: l.empreendimento,
-        corretor_id: l.corretor_id,
-        corretor_nome: l.corretor_id ? profMap.get(l.corretor_id) || "Corretor" : "—",
-        aceite_status: l.aceite_status || "pendente",
-        distribuido_em: l.distribuido_em,
-        aceite_expira_em: l.aceite_expira_em,
-        aceito_em: l.aceito_em,
-        segmento_nome: l.segmento_id ? segMap.get(l.segmento_id) || "—" : "—",
-      })));
+        const profMap2 = new Map((profs.data || []).map(p => [p.user_id, p.nome]));
+        const leadMap = new Map((leadsData.data || []).map(l => [l.id, l]));
+        const segMap2 = new Map((segs.data || []).map(s => [s.id, s.nome]));
+
+        setLeadsPerdidos(perdidos.map(p => {
+          const lead = leadMap.get(p.pipeline_lead_id);
+          return {
+            id: p.id,
+            pipeline_lead_id: p.pipeline_lead_id,
+            corretor_id: p.corretor_id,
+            corretor_nome: profMap2.get(p.corretor_id) || "Corretor",
+            lead_nome: lead?.nome || "Lead",
+            empreendimento: lead?.empreendimento || null,
+            segmento_nome: p.segmento_id ? segMap2.get(p.segmento_id) || "—" : "—",
+            created_at: p.created_at,
+            tempo_resposta_seg: p.tempo_resposta_seg,
+          };
+        }));
+      } else {
+        setLeadsPerdidos([]);
+      }
     } catch (err) {
       console.error("Error loading roletagens:", err);
     } finally {
@@ -150,7 +202,7 @@ export default function RoletagensTab() {
   return (
     <div className="space-y-4">
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/10">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{pendentes.length}</p>
@@ -167,6 +219,12 @@ export default function RoletagensTab() {
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-destructive">{expiradosOuRejeitados.length}</p>
             <p className="text-[10px] uppercase tracking-wide text-destructive/80 font-semibold">Expirados / Rejeitados</p>
+          </CardContent>
+        </Card>
+        <Card className="border-orange-300/50 bg-orange-50/50 dark:bg-orange-950/10">
+          <CardContent className="p-3 text-center">
+            <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{leadsPerdidos.length}</p>
+            <p className="text-[10px] uppercase tracking-wide text-orange-600/80 font-semibold">Leads Perdidos (Timeout)</p>
           </CardContent>
         </Card>
       </div>
@@ -227,6 +285,63 @@ export default function RoletagensTab() {
                   </div>
                 );
               })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Leads Perdidos por Timeout */}
+      {leadsPerdidos.length > 0 && (
+        <Card className="border-orange-400/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              Leads Perdidos por Timeout ({leadsPerdidos.length})
+            </CardTitle>
+            <p className="text-[10px] text-muted-foreground">Corretores que não aceitaram o lead dentro do prazo de 10 minutos</p>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground text-xs">
+                    <th className="pb-2 font-medium">Lead</th>
+                    <th className="pb-2 font-medium">Corretor que perdeu</th>
+                    <th className="pb-2 font-medium">Segmento</th>
+                    <th className="pb-2 font-medium">Quando</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leadsPerdidos.map(p => (
+                    <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="py-2.5">
+                        <div>
+                          <p className="font-medium text-sm">{p.lead_nome}</p>
+                          {p.empreendimento && (
+                            <p className="text-[10px] text-muted-foreground">{p.empreendimento}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <Avatar className="h-5 w-5">
+                            <AvatarFallback className="text-[8px] bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                              {p.corretor_nome.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs">{p.corretor_nome}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5">
+                        <Badge variant="outline" className="text-[10px]">{p.segmento_nome}</Badge>
+                      </td>
+                      <td className="py-2.5 text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(p.created_at), { addSuffix: true, locale: ptBR })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
