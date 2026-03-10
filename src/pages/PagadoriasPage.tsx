@@ -54,7 +54,9 @@ export default function PagadoriasPage() {
   const [form, setForm] = useState({
     cliente_nome: "", cliente_cpf: "", cliente_email: "", cliente_telefone: "", cliente_endereco: "",
     empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-    forma_pagamento: "a_vista", corretor_nome: "", gerente_nome: "",
+    forma_pagamento: "a_vista",
+    corretor_nome: "", corretor_cpf: "", corretor_creci: "", corretor_rg: "", corretor_email: "",
+    gerente_nome: "", gerente_cpf: "", gerente_creci: "", gerente_rg: "", gerente_email: "",
   });
 
   // Compradores (buyers) with document uploads
@@ -204,7 +206,7 @@ export default function PagadoriasPage() {
   const resetWizard = () => {
     setWizardOpen(false);
     setStep(1);
-    setForm({ cliente_nome: "", cliente_cpf: "", cliente_email: "", cliente_telefone: "", cliente_endereco: "", empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), forma_pagamento: "a_vista", corretor_nome: "", gerente_nome: "" });
+    setForm({ cliente_nome: "", cliente_cpf: "", cliente_email: "", cliente_telefone: "", cliente_endereco: "", empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), forma_pagamento: "a_vista", corretor_nome: "", corretor_cpf: "", corretor_creci: "", corretor_rg: "", corretor_email: "", gerente_nome: "", gerente_cpf: "", gerente_creci: "", gerente_rg: "", gerente_email: "" });
     setCompradores([{ nome: "", cpf: "", rg: "", nacionalidade: "brasileira", estado_civil: "", telefone: "", email: "", cep: "", endereco: "", cidade: "", estado: "", bairro: "", doc_identidade_url: null, doc_comprovante_url: null }]);
     setCredores([]);
     setComissaoPct(5);
@@ -332,6 +334,37 @@ export default function PagadoriasPage() {
                     </Select>
                   </div>
                 </div>
+              </div>
+
+              {/* ── Dados dos Contratados ── */}
+              <div className="border-t pt-4 space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground">Dados dos Contratados (para o contrato)</h3>
+                
+                {/* Corretor */}
+                <Card className="border-primary/20">
+                  <CardContent className="p-3 space-y-2">
+                    <h4 className="font-semibold text-xs text-foreground">🏷️ Corretor</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div><Label className="text-xs">CPF</Label><Input value={form.corretor_cpf} onChange={e => setForm(f => ({ ...f, corretor_cpf: e.target.value }))} placeholder="000.000.000-00" className="h-8 text-sm" /></div>
+                      <div><Label className="text-xs">CRECI</Label><Input value={form.corretor_creci} onChange={e => setForm(f => ({ ...f, corretor_creci: e.target.value }))} placeholder="Nº CRECI" className="h-8 text-sm" /></div>
+                      <div><Label className="text-xs">RG</Label><Input value={form.corretor_rg} onChange={e => setForm(f => ({ ...f, corretor_rg: e.target.value }))} placeholder="Nº RG" className="h-8 text-sm" /></div>
+                      <div><Label className="text-xs">E-mail</Label><Input value={form.corretor_email} onChange={e => setForm(f => ({ ...f, corretor_email: e.target.value }))} placeholder="email@email.com" className="h-8 text-sm" /></div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Gerente */}
+                <Card className="border-primary/20">
+                  <CardContent className="p-3 space-y-2">
+                    <h4 className="font-semibold text-xs text-foreground">🏷️ Gerente</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div><Label className="text-xs">CPF</Label><Input value={form.gerente_cpf} onChange={e => setForm(f => ({ ...f, gerente_cpf: e.target.value }))} placeholder="000.000.000-00" className="h-8 text-sm" /></div>
+                      <div><Label className="text-xs">CRECI</Label><Input value={form.gerente_creci} onChange={e => setForm(f => ({ ...f, gerente_creci: e.target.value }))} placeholder="Nº CRECI" className="h-8 text-sm" /></div>
+                      <div><Label className="text-xs">RG</Label><Input value={form.gerente_rg} onChange={e => setForm(f => ({ ...f, gerente_rg: e.target.value }))} placeholder="Nº RG" className="h-8 text-sm" /></div>
+                      <div><Label className="text-xs">E-mail</Label><Input value={form.gerente_email} onChange={e => setForm(f => ({ ...f, gerente_email: e.target.value }))} placeholder="email@email.com" className="h-8 text-sm" /></div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
               <div className="flex justify-end">
                 <Button onClick={() => setStep(2)} disabled={!compradores[0]?.nome || !form.empreendimento || !form.vgv}>Próximo →</Button>
@@ -532,8 +565,12 @@ export default function PagadoriasPage() {
                       comissao_total: totalComissao,
                       credores,
                       parcelas: [],
-                      corretor_cpf: "", corretor_creci: "", corretor_email: "",
-                      gerente_cpf: "", gerente_creci: "", gerente_email: "",
+                      corretor_cpf: form.corretor_cpf,
+                      corretor_creci: form.corretor_creci,
+                      corretor_email: form.corretor_email,
+                      gerente_cpf: form.gerente_cpf,
+                      gerente_creci: form.gerente_creci,
+                      gerente_email: form.gerente_email,
                       data_assinatura: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
                     });
                     setContratoOpen(true);

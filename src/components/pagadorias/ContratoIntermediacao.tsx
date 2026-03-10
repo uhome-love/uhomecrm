@@ -38,10 +38,12 @@ interface ContractData {
   corretor_nome: string;
   corretor_cpf: string;
   corretor_creci: string;
+  corretor_rg?: string;
   corretor_email: string;
   gerente_nome: string;
   gerente_cpf: string;
   gerente_creci: string;
+  gerente_rg?: string;
   gerente_email: string;
   data_assinatura: string;
 }
@@ -107,11 +109,13 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
     if (c.credor_tipo === "corretor") {
       cpf = data.corretor_cpf;
       creci = data.corretor_creci;
+      rg = data.corretor_rg || "";
       email = data.corretor_email;
       tipo = "Corretor(a)";
     } else if (c.credor_tipo === "gerente") {
       cpf = data.gerente_cpf;
       creci = data.gerente_creci;
+      rg = data.gerente_rg || "";
       email = data.gerente_email;
       tipo = "Corretor(a)";
     }
