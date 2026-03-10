@@ -223,7 +223,8 @@ export default function CeoDashboard() {
       }
     }
     toast.success(`✅ ${ok} corretor(es) aprovado(s) na Roleta!`);
-  }, [user, localPendentes, getProfileId, insertFilaForCred]);
+    reloadRoleta();
+  }, [user, localPendentes, getProfileId, insertFilaForCred, reloadRoleta]);
 
 
 
