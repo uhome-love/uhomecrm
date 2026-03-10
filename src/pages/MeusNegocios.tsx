@@ -521,28 +521,40 @@ export default function MeusNegocios() {
 
   return (
     <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
+    <div
+      className="flex flex-col w-full max-w-full min-w-0 overflow-hidden rounded-2xl"
+      style={{
+        height: "calc(100vh - 56px - 2rem)",
+        background: "linear-gradient(135deg, hsl(220 25% 8%) 0%, hsl(230 20% 12%) 50%, hsl(220 25% 8%) 100%)",
+      }}
+    >
       {/* Header */}
-      <div className="shrink-0 space-y-3 pb-3">
+      <div className="shrink-0 space-y-3 pb-3 px-4 pt-4">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2 mr-auto">
-            <Briefcase className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold">Pipeline Negócios</h1>
-            <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => setAddNegocioOpen(true)}>
+            <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}>
+              <Briefcase className="h-4 w-4 text-white" />
+            </div>
+            <h1 className="text-lg font-bold text-white">Pipeline Negócios</h1>
+            <Button size="sm" className="gap-1 h-7 text-xs rounded-lg" onClick={() => setAddNegocioOpen(true)}
+              style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))", color: "#fff", border: "none" }}
+            >
               <Plus className="h-3.5 w-3.5" /> Novo
             </Button>
           </div>
 
           <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
             <Input
               placeholder="Buscar negócio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 bg-card"
+              className="pl-9 h-9 text-white placeholder:text-white/30 border-white/10 rounded-lg"
+              style={{ background: "rgba(255,255,255,0.06)" }}
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
-                <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                <X className="h-3.5 w-3.5 text-white/40 hover:text-white" />
               </button>
             )}
           </div>
@@ -551,21 +563,21 @@ export default function MeusNegocios() {
             variant={showFilters ? "default" : "outline"}
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="gap-1.5 h-9"
+            className="gap-1.5 h-9 border-white/10 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Filtros</span>
           </Button>
 
-          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleRefresh} disabled={refreshing}>
+          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 border-white/10 text-white/50 hover:text-white hover:bg-white/10 rounded-lg" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
         </div>
 
         {showFilters && (
-          <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border border-border bg-card animate-fade-in">
+          <div className="flex items-center gap-2 flex-wrap p-3 rounded-xl border border-white/10 animate-fade-in" style={{ background: "rgba(255,255,255,0.04)" }}>
             <Select value={filterCorretor} onValueChange={setFilterCorretor}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs border-white/10 text-white/70" style={{ background: "rgba(255,255,255,0.06)" }}>
                 <SelectValue placeholder="Corretor" />
               </SelectTrigger>
               <SelectContent>
@@ -579,27 +591,28 @@ export default function MeusNegocios() {
         )}
 
         {/* Summary */}
-        <div className="flex items-center gap-2 flex-wrap px-1">
+        <div className="flex items-center gap-3 flex-wrap px-1">
           <div className="flex items-center gap-1.5">
-            <LayoutGrid className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs sm:text-sm font-bold text-foreground">
+            <LayoutGrid className="h-3.5 w-3.5 text-blue-400" />
+            <span className="text-xs sm:text-sm font-bold text-white">
               {filteredNegocios.length} negócios
             </span>
           </div>
           {totalVGV > 0 && (
-            <span className="text-sm text-muted-foreground font-medium">
-              • {formatVGV(totalVGV)} em VGV
+            <span className="text-sm font-semibold" style={{ color: "hsl(45 93% 58%)" }}>
+              💰 {formatVGV(totalVGV)}
             </span>
           )}
         </div>
       </div>
 
       {/* Kanban */}
-      <div className="relative flex-1 min-h-0">
+      <div className="relative flex-1 min-h-0 px-2">
         {canScrollLeft && (
           <button
             onClick={() => scrollTo("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground transition-all"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full shadow-xl transition-all text-white/70 hover:text-white"
+            style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.12)" }}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -607,7 +620,8 @@ export default function MeusNegocios() {
         {canScrollRight && (
           <button
             onClick={() => scrollTo("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-card/95 border border-border shadow-lg hover:bg-primary hover:text-primary-foreground transition-all"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full shadow-xl transition-all text-white/70 hover:text-white"
+            style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.12)" }}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -628,26 +642,38 @@ export default function MeusNegocios() {
               <div
                 key={fase.key}
                 className={`flex flex-col shrink-0 h-full rounded-xl transition-all duration-200 ${
-                  isDragOver ? "ring-2 ring-primary/50 bg-primary/5 scale-[1.01]" : "bg-muted/20"
+                  isDragOver ? "scale-[1.01]" : ""
                 }`}
-                style={{ width: 300, scrollSnapAlign: "start" }}
+                style={{
+                  width: 300,
+                  scrollSnapAlign: "start",
+                  background: isDragOver ? `${fase.cor}10` : "rgba(255,255,255,0.02)",
+                  border: isDragOver ? `2px solid ${fase.cor}50` : "1px solid rgba(255,255,255,0.06)",
+                }}
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverFase(fase.key); }}
                 onDragLeave={() => setDragOverFase(null)}
                 onDrop={(e) => handleDrop(e, fase.key)}
               >
-                {/* Column header */}
-                <div className="shrink-0 px-3.5 py-3 bg-card border border-border/40 rounded-t-xl">
+                {/* Column header - glass */}
+                <div
+                  className="shrink-0 px-3.5 py-3 rounded-t-xl"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    borderBottom: `2px solid ${fase.cor}40`,
+                    backdropFilter: "blur(8px)",
+                  }}
+                >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <div className="h-3 w-1 rounded-full" style={{ backgroundColor: fase.cor }} />
-                    <span className="text-xs font-bold text-foreground">{fase.icon} {fase.label}</span>
+                    <div className="h-2.5 w-2.5 rounded-full shadow-lg" style={{ backgroundColor: fase.cor, boxShadow: `0 0 8px ${fase.cor}80` }} />
+                    <span className="text-xs font-bold text-white/90">{fase.icon} {fase.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-bold">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold text-white/80" style={{ background: `${fase.cor}20` }}>
                       {faseNegocios.length}
-                    </Badge>
+                    </span>
                     {totalFaseVGV > 0 && (
-                      <span className="text-[10px] font-semibold text-foreground flex items-center gap-0.5">
-                        <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                      <span className="text-[10px] font-semibold flex items-center gap-0.5" style={{ color: fase.cor }}>
+                        <TrendingUp className="h-2.5 w-2.5" />
                         {formatVGV(totalFaseVGV)}
                       </span>
                     )}
@@ -655,13 +681,13 @@ export default function MeusNegocios() {
                 </div>
 
                 {/* Cards */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2 scrollbar-thin">
+                <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2.5 scrollbar-thin">
                   {faseNegocios.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
-                        <span className="text-muted-foreground/40 text-sm">+</span>
+                      <div className="h-10 w-10 rounded-full flex items-center justify-center mb-2" style={{ background: `${fase.cor}10`, border: `1px dashed ${fase.cor}30` }}>
+                        <span className="text-white/20 text-sm">+</span>
                       </div>
-                      <span className="text-[11px] text-muted-foreground/50">Arraste negócios aqui</span>
+                      <span className="text-[11px] text-white/20">Arraste negócios aqui</span>
                     </div>
                   )}
                   {faseNegocios.map(negocio => (
