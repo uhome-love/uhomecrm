@@ -303,6 +303,35 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
         </div>
       </div>
 
+      {/* ── Popup: Quick VGV ── */}
+      <Dialog open={!!quickVgvId} onOpenChange={(o) => { if (!o) setQuickVgvId(null); }}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-base">💰 Preencher VGV</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">VGV (R$)</Label>
+              <Input
+                value={quickVgvValue ? `R$ ${quickVgvValue.replace(/^0+/, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}` : ""}
+                onChange={(e) => setQuickVgvValue(e.target.value.replace(/\D/g, ""))}
+                placeholder="R$ 500.000"
+                inputMode="numeric"
+                className="h-9"
+              />
+            </div>
+            <Button size="sm" className="w-full" onClick={async () => {
+              if (!quickVgvId || !quickVgvValue) return;
+              const val = parseInt(quickVgvValue, 10);
+              if (!val) return;
+              await handleUpdateNegocio(quickVgvId, { vgv_estimado: val });
+              toast.success("VGV atualizado!");
+              setQuickVgvId(null);
+            }}>Salvar VGV</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Popup: Registrar Ligação ── */}
       <Dialog open={ligarPopup} onOpenChange={setLigarPopup}>
         <DialogContent className="sm:max-w-sm">
