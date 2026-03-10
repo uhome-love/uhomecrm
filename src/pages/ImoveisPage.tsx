@@ -413,7 +413,7 @@ export default function ImoveisPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, contrato, tipo, bairro, dormitorios, valorMin, valorMax, campanhaAtiva, uhomeOnly]);
+  }, [search, contrato, tipo, bairro, dormitorios, valorMin, valorMax, somenteObras, campanhaAtiva, uhomeOnly]);
 
   const mounted = React.useRef(false);
   useEffect(() => {
