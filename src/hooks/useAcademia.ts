@@ -96,6 +96,18 @@ export function useAcademia() {
   const queryClient = useQueryClient();
   const canManage = isAdmin || isGestor;
 
+  // Resolve profiles.id from auth user.id (FK references profiles.id, not auth.users.id)
+  const { data: profileId } = useQuery({
+    queryKey: ["profile-id", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).maybeSingle();
+      return data?.id || null;
+    },
+    enabled: !!user,
+    staleTime: 300000,
+  });
+
   // Load trilhas (published for students, all for managers)
   const { data: trilhas = [], isLoading: trilhasLoading } = useQuery({
     queryKey: ["academia-trilhas", canManage],
