@@ -519,6 +519,22 @@ export default function MinhasTarefas() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Scripts Marketplace Sheet */}
+      <Sheet open={scriptsOpen} onOpenChange={setScriptsOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" /> Scripts Prontos
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <Suspense fallback={<div className="text-center py-8 text-muted-foreground">Carregando scripts...</div>}>
+              <CorretorScriptsView />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
