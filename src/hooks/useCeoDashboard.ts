@@ -50,6 +50,12 @@ export interface TeamData {
   visitasMarcadas: number; visitasRealizadas: number; propostas: number; vgv: number;
 }
 
+export interface CorretorRankData {
+  corretor_id: string; nome: string; gerente_nome: string;
+  ligacoes: number; aproveitados: number; taxa: number;
+  visitasMarcadas: number; visitasRealizadas: number; propostas: number; vgv: number;
+}
+
 export interface OrigemData {
   origem: string; count: number;
 }
@@ -81,6 +87,7 @@ export function useCeoDashboard(period: DashPeriod) {
 
   // Teams
   const [teams, setTeams] = useState<TeamData[]>([]);
+  const [corretoresRank, setCorretoresRank] = useState<CorretorRankData[]>([]);
 
   // Marketing
   const [origens, setOrigens] = useState<OrigemData[]>([]);
@@ -257,41 +264,71 @@ export function useCeoDashboard(period: DashPeriod) {
 
     const { data: gerenteRoles } = await supabase.from("user_roles").select("user_id").eq("role", "gestor");
     const gerenteIds = (gerenteRoles || []).map(r => r.user_id);
-    if (gerenteIds.length === 0) { setTeams([]); return; }
+    if (gerenteIds.length === 0) { setTeams([]); setCorretoresRank([]); return; }
 
     const { data: profs } = await supabase.from("profiles").select("id, nome, user_id").in("user_id", gerenteIds);
     const profMap = new Map(profs?.map(p => [p.user_id, p.nome]) || []);
 
     const { data: members } = await supabase.from("team_members").select("id, user_id, gerente_id").in("gerente_id", gerenteIds);
+    const allMemberUserIds = (members || []).map(m => m.user_id).filter(Boolean) as string[];
 
+    // Load corretor profiles
+    const { data: corrProfs } = allMemberUserIds.length > 0
+      ? await supabase.from("profiles").select("id, nome, user_id").in("user_id", allMemberUserIds)
+      : { data: [] as { id: string; nome: string; user_id: string }[] };
+    const corrNameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"]));
+
+    // Load all tentativas, visitas, negocios for all members at once
+    const { data: allTent } = allMemberUserIds.length > 0
+      ? await supabase.from("oferta_ativa_tentativas").select("id, resultado, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs)
+      : { data: [] as any[] };
+    const { data: allVis } = allMemberUserIds.length > 0
+      ? await supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end)
+      : { data: [] as any[] };
+    const { data: allNeg } = allMemberUserIds.length > 0
+      ? await supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs)
+      : { data: [] as any[] };
+
+    const corretoresAll: CorretorRankData[] = [];
     const teamData: TeamData[] = [];
+
     for (const gId of gerenteIds) {
       const teamMembers = (members || []).filter(m => m.gerente_id === gId);
       const memberUserIds = teamMembers.map(m => m.user_id).filter(Boolean) as string[];
       if (memberUserIds.length === 0) continue;
 
-      // Tentativas
-      const { data: tent } = await supabase.from("oferta_ativa_tentativas").select("id, resultado").in("corretor_id", memberUserIds).gte("created_at", startTs).lte("created_at", endTs);
-      const ligacoes = tent?.length || 0;
-      const aproveitados = tent?.filter(t => t.resultado === "com_interesse").length || 0;
+      let tLig = 0, tAprov = 0, tVM = 0, tVR = 0, tProp = 0, tVgv = 0;
+      const memberSet = new Set(memberUserIds);
+      const gerenteNome = profMap.get(gId) || "Gerente";
 
-      // Visitas
-      const { data: vis } = await supabase.from("visitas").select("id, status").in("corretor_id", memberUserIds).gte("data_visita", range.start).lte("data_visita", range.end);
-      const visitasMarcadas = vis?.length || 0;
-      const visitasRealizadas = vis?.filter(v => v.status === "realizada").length || 0;
+      for (const uid of memberUserIds) {
+        const tent = (allTent || []).filter(t => t.corretor_id === uid);
+        const lig = tent.length;
+        const aprov = tent.filter(t => t.resultado === "com_interesse").length;
+        const vis = (allVis || []).filter(v => v.corretor_id === uid);
+        const vm = vis.length;
+        const vr = vis.filter(v => v.status === "realizada").length;
+        const neg = (allNeg || []).filter(n => n.corretor_id === uid);
+        const prop = neg.filter(n => n.fase === "proposta" || n.fase === "negociacao").length;
+        const vgv = neg.reduce((s, n) => s + (n.vgv_estimado || 0), 0);
 
-      // Negocios
-      const { data: neg } = await supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final").in("corretor_id", memberUserIds).gte("created_at", startTs).lte("created_at", endTs);
-      const propostas = neg?.filter(n => n.fase === "proposta" || n.fase === "negociacao").length || 0;
-      const vgv = neg?.reduce((s, n) => s + (n.vgv_estimado || 0), 0) || 0;
+        tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
+
+        corretoresAll.push({
+          corretor_id: uid, nome: corrNameMap.get(uid) || "Corretor", gerente_nome: gerenteNome,
+          ligacoes: lig, aproveitados: aprov, taxa: lig > 0 ? Math.round((aprov / lig) * 100) : 0,
+          visitasMarcadas: vm, visitasRealizadas: vr, propostas: prop, vgv,
+        });
+      }
 
       teamData.push({
-        gerente_id: gId, gerente_nome: profMap.get(gId) || "Gerente",
-        ligacoes, aproveitados, taxa: ligacoes > 0 ? Math.round((aproveitados / ligacoes) * 100) : 0,
-        visitasMarcadas, visitasRealizadas, propostas, vgv,
+        gerente_id: gId, gerente_nome: gerenteNome,
+        ligacoes: tLig, aproveitados: tAprov, taxa: tLig > 0 ? Math.round((tAprov / tLig) * 100) : 0,
+        visitasMarcadas: tVM, visitasRealizadas: tVR, propostas: tProp, vgv: tVgv,
       });
     }
     setTeams(teamData);
+    setCorretoresRank(corretoresAll);
   }, [range]);
 
   const loadVisitasPorEmp = useCallback(async () => {
@@ -372,7 +409,7 @@ export function useCeoDashboard(period: DashPeriod) {
   return {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
     pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv,
-    teams, origens, leadsPorEmpreendimento, visitasPorEmp,
+    teams, corretoresRank, origens, leadsPorEmpreendimento, visitasPorEmp,
     totalLeadsPeriodo, presentesHoje, metasDiaTotal,
     reload: loadAll, reloadRoleta: loadRoleta,
   };

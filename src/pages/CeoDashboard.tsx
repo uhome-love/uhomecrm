@@ -91,10 +91,12 @@ export default function CeoDashboard() {
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
     pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv,
-    teams, origens, leadsPorEmpreendimento, visitasPorEmp,
+    teams, corretoresRank, origens, leadsPorEmpreendimento, visitasPorEmp,
     totalLeadsPeriodo, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
   } = useCeoDashboard(period);
+
+  const [rankingView, setRankingView] = useState<"equipe" | "corretores">("equipe");
 
   // Build dashboard data for HOMI
   const dashboardData = useMemo(() => ({
@@ -497,9 +499,25 @@ export default function CeoDashboard() {
       {/* ─── SEÇÃO 5: RANKINGS ─── */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
-          <Trophy className="h-4 w-4" /> Rankings
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+            <Trophy className="h-4 w-4" /> Rankings
+          </h2>
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+            <button
+              onClick={() => setRankingView("equipe")}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${rankingView === "equipe" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Por Equipe
+            </button>
+            <button
+              onClick={() => setRankingView("corretores")}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${rankingView === "corretores" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Todos Corretores
+            </button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Ranking Gestão de Leads */}
           <Card>
@@ -510,24 +528,49 @@ export default function CeoDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {teams
-                  .sort((a, b) => (b.visitasMarcadas + b.visitasRealizadas) - (a.visitasMarcadas + a.visitasRealizadas))
-                  .slice(0, 5)
-                  .map((t, i) => (
-                    <div key={t.gerente_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                      <span className="flex items-center gap-2">
-                        <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                        </span>
-                        <span className="font-medium">{t.gerente_nome}</span>
-                      </span>
-                      <div className="flex items-center gap-3 text-muted-foreground">
-                        <span title="V. Marcadas">{t.visitasMarcadas} VM</span>
-                        <span title="V. Realizadas" className="font-semibold text-foreground">{t.visitasRealizadas} VR</span>
-                      </div>
-                    </div>
-                  ))}
-                {teams.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                {rankingView === "equipe" ? (
+                  <>
+                    {teams
+                      .sort((a, b) => (b.visitasMarcadas + b.visitasRealizadas) - (a.visitasMarcadas + a.visitasRealizadas))
+                      .slice(0, 5)
+                      .map((t, i) => (
+                        <div key={t.gerente_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
+                          <span className="flex items-center gap-2">
+                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
+                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                            </span>
+                            <span className="font-medium">{t.gerente_nome}</span>
+                          </span>
+                          <div className="flex items-center gap-3 text-muted-foreground">
+                            <span title="V. Marcadas">{t.visitasMarcadas} VM</span>
+                            <span title="V. Realizadas" className="font-semibold text-foreground">{t.visitasRealizadas} VR</span>
+                          </div>
+                        </div>
+                      ))}
+                    {teams.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                  </>
+                ) : (
+                  <>
+                    {[...corretoresRank]
+                      .sort((a, b) => (b.visitasMarcadas + b.visitasRealizadas) - (a.visitasMarcadas + a.visitasRealizadas))
+                      .slice(0, 5)
+                      .map((c, i) => (
+                        <div key={c.corretor_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
+                          <span className="flex items-center gap-2">
+                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
+                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                            </span>
+                            <span className="font-medium">{c.nome}</span>
+                          </span>
+                          <div className="flex items-center gap-3 text-muted-foreground">
+                            <span title="V. Marcadas">{c.visitasMarcadas} VM</span>
+                            <span title="V. Realizadas" className="font-semibold text-foreground">{c.visitasRealizadas} VR</span>
+                          </div>
+                        </div>
+                      ))}
+                    {corretoresRank.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -541,18 +584,40 @@ export default function CeoDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {topCorretoresVgv.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                    <span className="flex items-center gap-2">
-                      <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                      </span>
-                      <span className="font-medium">{c.nome}</span>
-                    </span>
-                    <span className="font-semibold">{formatCurrency(c.vgv)}</span>
-                  </div>
-                ))}
-                {topCorretoresVgv.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                {rankingView === "equipe" ? (
+                  <>
+                    {[...teams]
+                      .sort((a, b) => b.vgv - a.vgv)
+                      .slice(0, 5)
+                      .map((t, i) => (
+                        <div key={t.gerente_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
+                          <span className="flex items-center gap-2">
+                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
+                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                            </span>
+                            <span className="font-medium">{t.gerente_nome}</span>
+                          </span>
+                          <span className="font-semibold">{formatCurrency(t.vgv)}</span>
+                        </div>
+                      ))}
+                    {teams.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                  </>
+                ) : (
+                  <>
+                    {topCorretoresVgv.map((c, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
+                        <span className="flex items-center gap-2">
+                          <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
+                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                          </span>
+                          <span className="font-medium">{c.nome}</span>
+                        </span>
+                        <span className="font-semibold">{formatCurrency(c.vgv)}</span>
+                      </div>
+                    ))}
+                    {topCorretoresVgv.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -566,24 +631,49 @@ export default function CeoDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {teams
-                  .sort((a, b) => b.ligacoes - a.ligacoes)
-                  .slice(0, 5)
-                  .map((t, i) => (
-                    <div key={t.gerente_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                      <span className="flex items-center gap-2">
-                        <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                        </span>
-                        <span className="font-medium">{t.gerente_nome}</span>
-                      </span>
-                      <div className="flex items-center gap-3 text-muted-foreground">
-                        <span>{t.ligacoes} lig</span>
-                        <span className="font-semibold text-foreground">{t.aproveitados} aprov ({t.taxa}%)</span>
-                      </div>
-                    </div>
-                  ))}
-                {teams.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                {rankingView === "equipe" ? (
+                  <>
+                    {[...teams]
+                      .sort((a, b) => b.ligacoes - a.ligacoes)
+                      .slice(0, 5)
+                      .map((t, i) => (
+                        <div key={t.gerente_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
+                          <span className="flex items-center gap-2">
+                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
+                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                            </span>
+                            <span className="font-medium">{t.gerente_nome}</span>
+                          </span>
+                          <div className="flex items-center gap-3 text-muted-foreground">
+                            <span>{t.ligacoes} lig</span>
+                            <span className="font-semibold text-foreground">{t.aproveitados} aprov ({t.taxa}%)</span>
+                          </div>
+                        </div>
+                      ))}
+                    {teams.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                  </>
+                ) : (
+                  <>
+                    {[...corretoresRank]
+                      .sort((a, b) => b.ligacoes - a.ligacoes)
+                      .slice(0, 5)
+                      .map((c, i) => (
+                        <div key={c.corretor_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
+                          <span className="flex items-center gap-2">
+                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
+                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                            </span>
+                            <span className="font-medium">{c.nome}</span>
+                          </span>
+                          <div className="flex items-center gap-3 text-muted-foreground">
+                            <span>{c.ligacoes} lig</span>
+                            <span className="font-semibold text-foreground">{c.aproveitados} aprov ({c.taxa}%)</span>
+                          </div>
+                        </div>
+                      ))}
+                    {corretoresRank.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
