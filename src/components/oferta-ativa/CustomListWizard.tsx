@@ -256,10 +256,11 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
     if (!user) return;
     setCreating(true);
     try {
-      const listName = nome.trim() || "Lista personalizada";
-      const result = await createList.mutateAsync({ nome: listName, filtros });
+      const campanhaLabel = CAMPANHAS.find(c => c.id === campanha)?.label?.replace(/^[^\s]+ /, "") || "";
+      const listName = nome.trim() || (campanhaLabel ? `${campanhaLabel} - Lista personalizada` : "Lista personalizada");
+      const filtersWithCampanha = { ...filtros, campanha: campanha || undefined };
+      const result = await createList.mutateAsync({ nome: listName, filtros: filtersWithCampanha });
       onCreated(result.id);
-      onClose();
     } catch (err: any) {
       console.error("Erro ao criar lista personalizada:", err);
       toast.error("Erro ao criar lista: " + (err?.message || "Erro desconhecido"));
