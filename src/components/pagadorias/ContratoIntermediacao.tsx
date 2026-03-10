@@ -123,11 +123,21 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
     if (!contractRef.current) return;
     setGenerating(true);
     try {
-      // Dynamic import to avoid SSR issues
       const html2pdfModule = await import("html2pdf.js");
       const html2pdf = html2pdfModule.default;
       
-      const element = contractRef.current;
+      // Clone content into a detached container to avoid Dialog transform/z-index bugs
+      const clone = contractRef.current.cloneNode(true) as HTMLElement;
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "fixed";
+      wrapper.style.left = "-9999px";
+      wrapper.style.top = "0";
+      wrapper.style.width = "210mm"; // A4 width
+      wrapper.style.background = "#fff";
+      wrapper.style.zIndex = "-1";
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
       const filename = `Intermediacao_${(data.cliente_nome || "Cliente").replace(/\s+/g, "_")}_${(data.empreendimento || "Empreendimento").replace(/\s+/g, "_")}_${data.unidade || "SN"}.pdf`;
       
       await html2pdf()
@@ -135,13 +145,14 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
           margin: [20, 20, 15, 20],
           filename,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false, allowTaint: true },
+          html2canvas: { scale: 2, useCORS: true, logging: false, allowTaint: true, windowWidth: 794 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
           pagebreak: { mode: ["css", "legacy"] },
         })
-        .from(element)
+        .from(clone)
         .save();
       
+      document.body.removeChild(wrapper);
       onGenerated();
       toast.success("PDF gerado com sucesso!");
     } catch (e: any) {
