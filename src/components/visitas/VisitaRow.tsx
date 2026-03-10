@@ -117,6 +117,7 @@ export function VisitaRowHeader({ showCorretor, showTeam }: { showCorretor?: boo
       <span style={{ width: "clamp(70px, 10%, 110px)" }} className="shrink-0 hidden md:block">Local</span>
       {showCorretor && <span style={{ width: "clamp(80px, 12%, 130px)" }} className="shrink-0 hidden lg:block">Corretor</span>}
       {showTeam && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Time</span>}
+      {(showCorretor || showTeam) && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Responsável</span>}
       <span className="flex-1" />
       <span className="text-right shrink-0">Status / Ações</span>
       <span className="w-7 shrink-0" />
