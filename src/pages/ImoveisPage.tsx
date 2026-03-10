@@ -238,6 +238,7 @@ export default function ImoveisPage() {
   const [uhomeOnly, setUhomeOnly] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [search, setSearch] = useState("");
 
   const [contrato, setContrato] = useState("venda");
