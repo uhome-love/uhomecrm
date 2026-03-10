@@ -172,6 +172,12 @@ export default function MinhasTarefas() {
     activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : semana;
 
   const handleConcluir = async (id: string, leadId: string) => {
+    if (categoria === "negocios") {
+      await supabase.from("negocios_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
+      toast.success("Tarefa concluída ✅");
+      queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
+      return;
+    }
     await supabase.from("pipeline_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
     await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", leadId);
     toast.success("Tarefa concluída ✅");
