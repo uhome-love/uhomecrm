@@ -184,6 +184,7 @@ export const PIPELINE_STAGE_BG: Record<string, { bg: string; border: string; hea
   "Visita Marcada": { bg: "rgba(6,182,212,0.06)", border: "rgba(6,182,212,0.18)", headerBg: "rgba(6,182,212,0.10)" },
   "Visita Realizada": { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.18)", headerBg: "rgba(34,197,94,0.10)" },
   "Descarte": { bg: "rgba(239,68,68,0.06)", border: "rgba(239,68,68,0.18)", headerBg: "rgba(239,68,68,0.10)" },
+  "Convertido": { bg: "rgba(139,92,246,0.06)", border: "rgba(139,92,246,0.18)", headerBg: "rgba(139,92,246,0.10)" },
 };
 
 export const TEMPERATURA_EMOJIS: Record<string, string> = {
