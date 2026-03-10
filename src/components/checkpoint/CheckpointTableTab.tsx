@@ -139,7 +139,7 @@ export default function CheckpointTableTab({
               <th className="px-2 py-2.5 text-xs font-semibold text-gray-400 w-32">Presença</th>
               <th colSpan={3} className="text-center py-2.5 text-xs font-bold text-blue-600 bg-blue-50/50 border-l border-r border-blue-100">METAS DO DIA</th>
               <th className="px-2 py-2.5 text-xs font-semibold text-gray-400 bg-blue-50/50 border-r border-blue-100 w-40">Obs Gerente</th>
-              <th colSpan={6} className="text-center py-2.5 text-xs font-bold text-green-600 bg-green-50/50 border-r border-green-100">RESULTADO DO DIA</th>
+              <th colSpan={4} className="text-center py-2.5 text-xs font-bold text-green-600 bg-green-50/50 border-r border-green-100">RESULTADO DO DIA</th>
               <th className="px-2 py-2.5 text-xs font-semibold text-gray-400 bg-green-50/50 border-r border-green-100 w-32">Obs Dia</th>
               <th className="px-2 py-2.5 text-xs font-semibold text-gray-400 w-24 text-center">Status</th>
             </tr>
@@ -154,8 +154,6 @@ export default function CheckpointTableTab({
               <th className="px-2 py-2 text-center bg-green-50/30">Aprov.</th>
               <th className="px-2 py-2 text-center bg-green-50/30">V.Marc.</th>
               <th className="px-2 py-2 text-center bg-green-50/30">V.Real.</th>
-              <th className="px-2 py-2 text-center bg-green-50/30">Prop.</th>
-              <th className="px-2 py-2 text-center bg-green-50/30">VGV</th>
               <th className="px-2 py-2 bg-green-50/30" />
               <th className="px-2 py-2" />
             </tr>
@@ -204,12 +202,6 @@ export default function CheckpointTableTab({
                   <td className="px-2 py-2 bg-green-50/20 text-center text-sm"><span className="font-semibold text-green-700">{row.res_aproveitados}</span></td>
                   <td className="px-2 py-2 bg-green-50/20 text-center text-sm text-gray-600">{row.res_visitas_marcadas}</td>
                   <td className="px-2 py-2 bg-green-50/20 text-center text-sm text-gray-600">{row.res_visitas_realizadas}</td>
-                  <td className="px-2 py-2 bg-green-50/20 text-center">
-                    <input type="number" min={0} value={row.res_propostas || ""} onChange={e => onUpdateRow(row.corretor_id, "res_propostas", parseInt(e.target.value) || 0)} placeholder="0" className="w-12 text-center text-sm border border-gray-200 rounded-md py-1 focus:outline-none focus:border-green-400" />
-                  </td>
-                  <td className="px-2 py-2 bg-green-50/20 text-center">
-                    <input type="number" min={0} value={row.res_vgv || ""} onChange={e => onUpdateRow(row.corretor_id, "res_vgv", parseFloat(e.target.value) || 0)} placeholder="0" className="w-20 text-center text-xs border border-gray-200 rounded-md py-1 focus:outline-none focus:border-green-400" />
-                  </td>
                   <td className="px-2 py-2 bg-green-50/20">
                     <input type="text" value={row.obs_dia} onChange={e => onUpdateRow(row.corretor_id, "obs_dia", e.target.value)} placeholder="..." className="w-full text-xs border border-gray-200 rounded-md py-1 px-2 focus:outline-none focus:border-green-400" />
                   </td>
@@ -220,7 +212,7 @@ export default function CheckpointTableTab({
               );
             })}
             {rows.length === 0 && (
-              <tr><td colSpan={14} className="py-12 text-center text-gray-400 text-sm">Nenhum corretor no time. Adicione membros em "Painel do Time".</td></tr>
+              <tr><td colSpan={10} className="py-12 text-center text-gray-400 text-sm">Nenhum corretor no time. Adicione membros em "Painel do Time".</td></tr>
             )}
           </tbody>
           <tfoot>
@@ -235,8 +227,6 @@ export default function CheckpointTableTab({
               <td className="px-2 py-3 text-center bg-green-50/30 text-green-700 font-bold">{totalAprov}</td>
               <td className="px-2 py-3 text-center bg-green-50/30 text-green-700">{totalVm}</td>
               <td className="px-2 py-3 text-center bg-green-50/30 text-green-700">{rows.reduce((a, r) => a + r.res_visitas_realizadas, 0)}</td>
-              <td className="px-2 py-3 text-center bg-green-50/30 text-green-700">{rows.reduce((a, r) => a + r.res_propostas, 0)}</td>
-              <td className="px-2 py-3 text-center bg-green-50/30 text-green-700 text-xs">{fmtR(rows.reduce((a, r) => a + r.res_vgv, 0))}</td>
               <td className="bg-green-50/30" />
               <td />
             </tr>
