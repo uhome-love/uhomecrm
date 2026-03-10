@@ -465,6 +465,15 @@ export default function BuscaLeads() {
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aproveitar e Atribuir
                 </Button>
+                {(isAdmin) && (
+                  <Button
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    onClick={() => openAction("incluir_pipeline", selectedLead)}
+                  >
+                    <UserPlus className="h-3.5 w-3.5 mr-1" /> Incluir no Pipeline
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
