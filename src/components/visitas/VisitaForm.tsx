@@ -137,6 +137,7 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
         telefone: form.telefone || null,
         empreendimento: form.empreendimento || null,
         hora_visita: form.hora_visita || null,
+        local_visita: form.local_visita || null,
         observacoes: form.observacoes || null,
         // Explicitly use pipeline_lead_id (NOT lead_id) for pipeline leads
         pipeline_lead_id: form.pipeline_lead_id || null,
