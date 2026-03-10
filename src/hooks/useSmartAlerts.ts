@@ -63,41 +63,7 @@ export function useSmartAlerts() {
         console.error("Alert check checkpoint:", e);
       }
 
-      // 2. Negócios não preenchidos no mês atual
-      try {
-        const currentMonth = format(now, "yyyy-MM");
-        const nextMonth = now.getMonth() === 11
-          ? `${now.getFullYear() + 1}-01-01`
-          : `${now.getFullYear()}-${String(now.getMonth() + 2).padStart(2, "0")}-01`;
-        let negQuery = supabase.from("negocios").select("id", { count: "exact", head: true }).gte("created_at", `${currentMonth}-01T00:00:00.000Z`).lt("created_at", `${nextMonth}T00:00:00.000Z`);
-        // Admin/CEO vê todos os negócios; gerente filtra pelo seu time (inclui negócios sem gerente_id)
-        if (!isAdmin) {
-          // Buscar corretores do time do gerente
-          const { data: teamMembers } = await supabase
-            .from("team_members")
-            .select("user_id")
-            .eq("gerente_id", user.id)
-            .eq("status", "ativo");
-          const teamIds = teamMembers?.map(m => m.user_id) || [];
-          teamIds.push(user.id); // inclui o próprio gerente
-          negQuery = negQuery.in("corretor_id", teamIds);
-        }
-        const { count: negCount, error: negError } = await negQuery;
-
-        if (!negError && negCount !== null && negCount === 0) {
-          result.push({
-            id: "negocios_missing",
-            type: "pdn",
-            severity: dayOfMonth > 5 ? "critical" : "warning",
-            title: "Nenhum negócio registrado este mês",
-            description: `O pipeline de negócios de ${format(now, "MMMM/yyyy")} ainda não possui registros.`,
-            action: { label: "Ver Pipeline", url: "/pipeline" },
-          });
-          badgeCounts["/pipeline"] = (badgeCounts["/pipeline"] || 0) + 1;
-        }
-      } catch (e) {
-        console.error("Alert check negocios:", e);
-      }
+      // 2. Negócios check removed — was generating false-positive toasts for CEO/gerente
 
       // 3. Metas em risco — check checkpoint_lines vs metas
       try {
