@@ -60,7 +60,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
   const [propImovel, setPropImovel] = useState(negocio.empreendimento || "");
   const [propValorImovel, setPropValorImovel] = useState("");
   const [propValorProposta, setPropValorProposta] = useState(
-    negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado * 100)) : ""
+    negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado)) : ""
   );
   const [propUnidade, setPropUnidade] = useState("");
   const [propDocsStatus, setPropDocsStatus] = useState("sem_documentos");
