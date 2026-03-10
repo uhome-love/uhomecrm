@@ -363,7 +363,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
   // Custom list result handler — records in pipeline history, handles descarte_oa
   const handleCustomListResult = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => {
-    if (!lead || !actionTaken || submitting) return;
+    if (!lead || submitting) return;
+    // Ensure actionTaken is set even if user didn't click "Ligar" first
+    const effectiveAction = actionTaken || "ligacao";
+    if (!actionTaken) {
+      setActionTaken("ligacao");
+      setCurrentIdempotencyKey(`${user?.id}_${lead.id}_${Date.now()}`);
+    }
     setSubmitting(true);
     try {
       // Map custom results to registrar-compatible results
@@ -371,7 +377,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       let mappedInteresse = interesseTipo;
       if (resultado === "atendeu") {
         mappedResultado = "com_interesse";
-        // Map sub-options to pipeline stage mappings
         const subMap: Record<string, string> = {
           marcou_visita: "visita_marcada",
           follow_up: "demonstrou_interesse",
@@ -381,7 +386,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         mappedInteresse = subMap[interesseTipo || ""] || "pediu_informacoes";
       } else if (resultado === "descarte_oa") {
         mappedResultado = "sem_interesse";
-        // Also move lead to OA list
         try {
           await supabase.from("pipeline_leads").update({
             temperatura: "frio",
@@ -389,8 +393,14 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         } catch {}
       }
 
-      const result = await registrar(lead, actionTaken, mappedResultado, feedback, lista, currentIdempotencyKey || undefined, visitaMarcada, mappedInteresse);
-      if (!result?.success) { setSubmitting(false); return; }
+      const idKey = currentIdempotencyKey || `${user?.id}_${lead.id}_${Date.now()}`;
+      const result = await registrar(lead, effectiveAction, mappedResultado, feedback, lista, idKey, visitaMarcada, mappedInteresse);
+      if (!result?.success) {
+        console.error("Registrar failed:", result?.reason);
+        toast.error("Erro ao registrar tentativa. Tente novamente.");
+        setSubmitting(false);
+        return;
+      }
 
       if (!result.idempotent) {
         applyOptimisticUpdate(mappedResultado, actionTaken, mappedResultado === "com_interesse" ? 3 : 1, visitaMarcada ?? false);
