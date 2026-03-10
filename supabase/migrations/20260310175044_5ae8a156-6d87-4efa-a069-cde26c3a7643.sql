@@ -1,0 +1,1 @@
+ALTER TABLE public.visitas ADD COLUMN IF NOT EXISTS responsavel_visita text DEFAULT null;

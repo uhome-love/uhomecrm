@@ -5089,6 +5089,7 @@ export type Database = {
           origem: string
           origem_detalhe: string | null
           pipeline_lead_id: string | null
+          responsavel_visita: string | null
           resultado_visita: string | null
           status: string
           telefone: string | null
@@ -5121,6 +5122,7 @@ export type Database = {
           origem?: string
           origem_detalhe?: string | null
           pipeline_lead_id?: string | null
+          responsavel_visita?: string | null
           resultado_visita?: string | null
           status?: string
           telefone?: string | null
@@ -5153,6 +5155,7 @@ export type Database = {
           origem?: string
           origem_detalhe?: string | null
           pipeline_lead_id?: string | null
+          responsavel_visita?: string | null
           resultado_visita?: string | null
           status?: string
           telefone?: string | null
