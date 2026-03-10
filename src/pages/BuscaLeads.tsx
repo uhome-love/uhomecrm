@@ -118,19 +118,19 @@ export default function BuscaLeads() {
       }
       setExecuting(true);
       try {
-        // Check duplicate by phone
-        if (lead.telefone) {
-          const { data: existing } = await supabase
-            .from("pipeline_leads")
-            .select("id")
-            .eq("telefone", lead.telefone)
-            .eq("corretor_id", selectedCorretor)
-            .limit(1);
-          if (existing && existing.length > 0) {
-            toast.error("Este lead já existe no pipeline deste corretor");
-            setExecuting(false);
-            return;
-          }
+        // Get first stage
+        const { data: stages } = await supabase
+          .from("pipeline_stages")
+          .select("id")
+          .eq("pipeline_tipo", "leads")
+          .eq("ativo", true)
+          .order("ordem", { ascending: true })
+          .limit(1);
+        const stageId = stages?.[0]?.id;
+        if (!stageId) {
+          toast.error("Nenhum estágio configurado no pipeline");
+          setExecuting(false);
+          return;
         }
 
         const { error } = await supabase.from("pipeline_leads").insert({
@@ -138,12 +138,12 @@ export default function BuscaLeads() {
           telefone: lead.telefone,
           email: lead.email,
           empreendimento: lead.empreendimento,
-          campanha: lead.campanha,
           origem: lead.origem || "oferta_ativa",
+          origem_detalhe: lead.campanha,
           corretor_id: selectedCorretor,
-          estagio: "novo",
+          stage_id: stageId,
           aceite_status: "aceito",
-          status_temp: "morno",
+          aceito_em: new Date().toISOString(),
           observacoes: motivo || `Incluído via Busca de Leads (OA)`,
         });
         if (error) throw error;
