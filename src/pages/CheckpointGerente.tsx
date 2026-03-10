@@ -112,13 +112,40 @@ export default function CheckpointGerente() {
   const loadCheckpoint = useCallback(async () => {
     if (teamUserIds.length === 0) { setRows([]); return; }
 
-    const [{ data: saved }, { data: tentativas }, { data: visitasMarcadas }, { data: visitasRealizadas }, { data: corretorGoals }] = await Promise.all([
+    // Resolve profiles.id for each team member to check roleta credenciamentos
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, user_id")
+      .in("user_id", teamUserIds);
+    const userToProfileId = new Map<string, string>();
+    const profileToUserId = new Map<string, string>();
+    (profilesData || []).forEach((p: any) => {
+      if (p.user_id && p.id) {
+        userToProfileId.set(p.user_id, p.id);
+        profileToUserId.set(p.id, p.user_id);
+      }
+    });
+    const profileIds = Array.from(userToProfileId.values());
+
+    const [{ data: saved }, { data: tentativas }, { data: visitasMarcadas }, { data: visitasRealizadas }, { data: corretorGoals }, { data: credenciamentos }] = await Promise.all([
       supabase.from("checkpoint_diario").select("*").eq("data", dateStr).in("corretor_id", teamUserIds),
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`),
       supabase.from("visitas").select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr),
       supabase.from("visitas").select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr).eq("status", "realizada"),
       supabase.from("corretor_daily_goals").select("corretor_id, meta_ligacoes, meta_aproveitados, meta_visitas_marcadas, status").in("corretor_id", teamUserIds).eq("data", dateStr),
+      profileIds.length > 0
+        ? supabase.from("roleta_credenciamentos").select("corretor_id, status").eq("data", dateStr).in("corretor_id", profileIds)
+        : Promise.resolve({ data: [] }),
     ]);
+
+    // Set of user_ids that have an approved/pendente credenciamento (means they declared presence)
+    const presentByRoleta = new Set<string>();
+    (credenciamentos || []).forEach((c: any) => {
+      if (c.corretor_id && (c.status === "aprovado" || c.status === "pendente")) {
+        const uid = profileToUserId.get(c.corretor_id);
+        if (uid) presentByRoleta.add(uid);
+      }
+    });
 
     const savedMap: Record<string, any> = {};
     saved?.forEach((s: any) => { savedMap[s.corretor_id] = s; });
@@ -147,9 +174,10 @@ export default function CheckpointGerente() {
       const s = savedMap[uid];
       const g = goalsMap[uid];
       const hadActivity = (oaLig[uid] || 0) > 0;
-      // Auto-detect presence: if has activity → presente, otherwise keep saved or nao_informado
+      const hadRoletaPresence = presentByRoleta.has(uid);
+      // Auto-detect presence: roleta credenciamento OR OA activity → presente
       let presenca: CheckpointRow["presenca"] = s?.presenca ?? "nao_informado";
-      if (presenca === "nao_informado" && hadActivity) presenca = "presente";
+      if (presenca === "nao_informado" && (hadActivity || hadRoletaPresence)) presenca = "presente";
       // Map legacy values
       if ((presenca as string) === "home_office") presenca = "presente";
 
