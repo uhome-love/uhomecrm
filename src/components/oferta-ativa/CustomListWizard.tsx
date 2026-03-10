@@ -19,7 +19,7 @@ const FONTES = [
 ] as const;
 
 const ETAPAS_LEADS = [
-  "Novo Lead", "Contato Iniciado", "Qualificação",
+  "Novo Lead", "Sem Contato", "Contato Iniciado", "Qualificação",
   "Possível Visita", "Visita Marcada", "Visita Realizada"
 ];
 
