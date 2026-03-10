@@ -132,6 +132,7 @@ export function AppSidebar() {
   const [hoverFooter, setHoverFooter] = useState(false);
   const [roletaPendentes, setRoletaPendentes] = useState(0);
   const [tarefasPendentes, setTarefasPendentes] = useState(0);
+  const [aceiteLeadsPendentes, setAceiteLeadsPendentes] = useState(0);
 
   const fetchProfile = useCallback(() => {
     if (!user) return;
