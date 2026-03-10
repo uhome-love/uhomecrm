@@ -730,7 +730,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
       {/* Ficha Rápida — between script and CTA */}
       <div className="shrink-0 px-2 py-2" style={{ background: "#161B22" }}>
-        <FichaRapida empreendimento={selectedEmp} />
+        <FichaRapida empreendimento={selectedEmp} onEmpChange={setSelectedEmp} />
       </div>
 
       {/* CTA Final — pinned at bottom */}
