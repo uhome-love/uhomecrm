@@ -182,7 +182,7 @@ export function useAcademia() {
   }, [aulas]);
 
   const completeAula = useCallback(async (aulaId: string, trilhaId: string, quizScore?: number) => {
-    if (!user) return;
+    if (!profileId) return;
     const aula = aulas.find(a => a.id === aulaId);
     let xp = aula?.xp_recompensa || 10;
 
@@ -191,7 +191,7 @@ export function useAcademia() {
 
     // Use upsert to avoid stale-state race condition with startAula
     const { error } = await supabase.from("academia_progresso").upsert({
-      corretor_id: user.id,
+      corretor_id: profileId,
       trilha_id: trilhaId,
       aula_id: aulaId,
       status: "concluida",
