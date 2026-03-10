@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useOAServerQueue, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
 import { useOAPendingQueue } from "@/hooks/useOAPendingQueue";
 import { useOASessionGuard } from "@/hooks/useOASessionGuard";
+import { useCustomListQueue, useCustomListRegistrar, isCustomList } from "@/hooks/useCustomListQueue";
 import { supabase } from "@/integrations/supabase/client";
 import { createVisitaFromOA } from "@/hooks/useVisitas";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,8 +54,18 @@ interface Props {
 }
 
 export default function DialingModeWithScript({ lista, onBack }: Props) {
-  const { currentLead: lead, isLoading, queueEmpty, fetchNext, startHeartbeat, stopHeartbeat, unlockLead } = useOAServerQueue(lista.id);
-  const { registrar } = useOARegistrarTentativa();
+  const isCustom = isCustomList(lista);
+  
+  // Always call both hooks (React rules), but only use the active one
+  const serverQueue = useOAServerQueue(isCustom ? "__noop__" : lista.id);
+  const customQueue = useCustomListQueue(lista);
+  const { registrar: oaRegistrar } = useOARegistrarTentativa();
+  const { registrar: customRegistrar } = useCustomListRegistrar();
+  
+  // Pick the active queue and registrar
+  const { currentLead: lead, isLoading, queueEmpty, fetchNext, startHeartbeat, stopHeartbeat, unlockLead } = isCustom ? customQueue : serverQueue;
+  const registrar = isCustom ? customRegistrar : oaRegistrar;
+  
   const { templates } = useOATemplates(lista.empreendimento);
   const { progress, goals, saveGoals, applyOptimisticUpdate } = useCorretorProgress();
   const { user } = useAuth();
