@@ -27,6 +27,7 @@ interface ContractData {
   cliente_email: string;
   cliente_endereco: string;
   cliente_estado_civil?: string;
+  compradores?: { nome: string; cpf: string; rg: string; nacionalidade: string; estado_civil: string; telefone: string; email: string; endereco: string; cidade: string; estado: string }[];
   empreendimento: string;
   unidade: string;
   vgv: number;
@@ -182,9 +183,13 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
           <p style={S.p}>
             Pelo presente instrumento particular de intermediação imobiliária, de um lado, como <b>CONTRATANTE(S)</b>:
           </p>
-          <p style={S.p}>
-            <b>{data.cliente_nome || "_______________"}</b>, {data.cliente_estado_civil || "___________"}, inscrito no CPF/MF sob o nº {data.cliente_cpf || "___.___.___-__"}, telefone: {data.cliente_telefone || "(__) _____-____"}, e-mail: {data.cliente_email || "________________"}, residente e domiciliado na {data.cliente_endereco || "________________________________"}.
-          </p>
+          {(data.compradores && data.compradores.length > 0 ? data.compradores : [
+            { nome: data.cliente_nome, cpf: data.cliente_cpf, rg: "", nacionalidade: "", estado_civil: data.cliente_estado_civil || "", telefone: data.cliente_telefone, email: data.cliente_email, endereco: data.cliente_endereco, cidade: "", estado: "" }
+          ]).map((c, i, arr) => (
+            <p key={i} style={S.p}>
+              <b>{c.nome || "_______________"}</b>, {c.nacionalidade || "___________"}, {c.estado_civil || "___________"}, inscrito no CPF/MF sob o nº {c.cpf || "___.___.___-__"}, telefone: {c.telefone || "(__) _____-____"}, e-mail: {c.email || "________________"}, residente e domiciliado na {c.endereco || "________________________________"}{c.cidade ? `, ${c.cidade}` : ""}{c.estado ? `/${c.estado}` : ""}{i < arr.length - 1 ? ";" : "."}
+            </p>
+          ))}
 
           {/* CONTRATADOS */}
           <p style={S.p}>
