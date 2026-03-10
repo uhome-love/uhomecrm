@@ -28,7 +28,7 @@ serve(async (req) => {
     const numeroLimpo = telefone.replace(/\D/g, "");
     const numeroFinal = numeroLimpo.startsWith("55") ? numeroLimpo : `55${numeroLimpo}`;
 
-    console.log(`Sending WhatsApp to ${numeroFinal}, tipo: ${tipo}`);
+    console.log(`Sending WhatsApp to ${numeroFinal}, tipo: ${tipo}, dados:`, JSON.stringify(dados));
 
     // Template-based messages
     const TEMPLATE_MESSAGES: Record<string, () => any> = {
@@ -61,6 +61,7 @@ serve(async (req) => {
       aviso_repasse: () => `🔴 *ÚLTIMO AVISO — Lead repassado em 30 min!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nApós 3 avisos o lead será repassado para outro corretor.`,
       lead_expirado_gestor: () => `📋 *Lead repassado por inatividade*\n\nCorretor: ${dados.corretor}\nLead: ${dados.nome} — ${dados.empreendimento}\n\nLead devolvido para a fila automaticamente.`,
       cobranca: () => dados.mensagem_personalizada || dados.mensagem || "",
+      teste_texto: () => `🏠 Teste UhomeSales!\n\nSe você recebeu isso, a integração WhatsApp está funcionando. 🎉`,
     };
 
     let body: any;
@@ -91,7 +92,7 @@ serve(async (req) => {
     }
 
     const response = await fetch(
-      `https://graph.facebook.com/v21.0/${phoneId}/messages`,
+      `https://graph.facebook.com/v18.0/${phoneId}/messages`,
       {
         method: "POST",
         headers: {
