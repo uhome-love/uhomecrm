@@ -25,7 +25,7 @@ import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaTypeSelector from "@/components/visitas/VisitaTypeSelector";
 import ReuniaoNegocioForm from "@/components/visitas/ReuniaoNegocioForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
-import VisitasEquipe from "@/components/visitas/VisitasEquipe";
+
 
 const FIXED_TEAMS = [
   { key: "gabrielle", label: "Gabrielle", emoji: "🟢", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
@@ -363,6 +363,32 @@ export default function AgendaVisitas() {
     return c;
   }, [visitas]);
 
+  // Calendar shows ALL visitas (leads + negócios) with date/search filters but ignoring agendaTipo
+  const allVisitasFiltered = useMemo(() => {
+    let list = [...allVisitas];
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(v =>
+        v.nome_cliente.toLowerCase().includes(term) ||
+        v.empreendimento?.toLowerCase().includes(term) ||
+        v.telefone?.includes(term) ||
+        v.corretor_nome?.toLowerCase().includes(term)
+      );
+    }
+    if (dateFrom) {
+      const fromStr = format(dateFrom, "yyyy-MM-dd");
+      list = list.filter(v => v.data_visita >= fromStr);
+    }
+    if (dateTo) {
+      const toStr = format(dateTo, "yyyy-MM-dd");
+      list = list.filter(v => v.data_visita <= toStr);
+    }
+    if (statusFilter !== "all") list = list.filter(v => v.status === statusFilter);
+    if (corretorFilter !== "all") list = list.filter(v => v.corretor_id === corretorFilter);
+    if (empreendimentoFilter !== "all") list = list.filter(v => v.empreendimento === empreendimentoFilter);
+    return list;
+  }, [allVisitas, searchTerm, dateFrom, dateTo, statusFilter, corretorFilter, empreendimentoFilter]);
+
   const hasFilters = statusFilter !== "all" || corretorFilter !== "all" || empreendimentoFilter !== "all" || !!dateFrom || !!dateTo || searchTerm.trim() || pendingOnly;
 
   const clearAll = () => {
@@ -576,11 +602,6 @@ export default function AgendaVisitas() {
           <TabsTrigger value="calendario" className="gap-1.5 text-xs h-8 px-4">
             <CalendarDays className="h-3.5 w-3.5" /> 📅 Calendário
           </TabsTrigger>
-          {!isAdmin && !isGestor && (
-            <TabsTrigger value="equipe" className="gap-1.5 text-xs h-8 px-4">
-              <Users className="h-3.5 w-3.5" /> 👥 Equipe
-            </TabsTrigger>
-          )}
           {(isAdmin || isGestor) && (
             <TabsTrigger value="por-corretor" className="gap-1.5 text-xs h-8 px-4">
               <Users className="h-3.5 w-3.5" /> 👥 Por Corretor
@@ -604,14 +625,8 @@ export default function AgendaVisitas() {
         </TabsContent>
 
         <TabsContent value="calendario" className="mt-3">
-          <VisitasCalendar visitas={filtered} showTeam={isAdmin} />
+          <VisitasCalendar visitas={allVisitasFiltered} showTeam={isAdmin} />
         </TabsContent>
-
-        {!isAdmin && !isGestor && (
-          <TabsContent value="equipe" className="mt-3">
-            <VisitasEquipe />
-          </TabsContent>
-        )}
 
         {(isAdmin || isGestor) && (
           <TabsContent value="por-corretor" className="mt-3">
