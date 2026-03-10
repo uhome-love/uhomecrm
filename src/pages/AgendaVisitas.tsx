@@ -516,6 +516,7 @@ export default function AgendaVisitas() {
             <VisitasList
               visitas={filtered}
               onUpdateStatus={handleUpdateStatus}
+              onEdit={handleEdit}
               onDelete={deleteVisita}
               showCorretor={isAdmin || isGestor}
               showTeam={isAdmin}
