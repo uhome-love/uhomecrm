@@ -139,6 +139,7 @@ export default function FichaRapida({ empreendimento, onEmpChange }: Props) {
                 maxWidth: 160,
               }}
             >
+              <option value="" disabled>Selecionar...</option>
               {EMPREENDIMENTOS.map(e => (
                 <option key={e} value={e}>{e}</option>
               ))}
