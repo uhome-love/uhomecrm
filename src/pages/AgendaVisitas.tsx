@@ -33,25 +33,44 @@ const FIXED_TEAMS = [
 
 
 // ─── Day Summary Card ───
+type PlacarPeriodo = "dia" | "semana" | "mes";
+
 function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTeamBreakdown?: boolean }) {
+  const [periodo, setPeriodo] = useState<PlacarPeriodo>("dia");
   const today = startOfDay(new Date());
-  const todayVisitas = visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00")));
-  const realizadas = todayVisitas.filter(v => v.status === "realizada").length;
-  const noShows = todayVisitas.filter(v => v.status === "no_show").length;
-  const reagendadas = todayVisitas.filter(v => v.status === "reagendada").length;
-  const pendentes = todayVisitas.filter(v => v.status === "marcada" || v.status === "confirmada").length;
-  const total = todayVisitas.length;
+
+  const periodVisitas = useMemo(() => {
+    if (periodo === "dia") {
+      return visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00")));
+    }
+    const start = periodo === "semana"
+      ? startOfWeek(today, { weekStartsOn: 1 })
+      : startOfMonth(today);
+    const end = periodo === "semana"
+      ? endOfWeek(today, { weekStartsOn: 1 })
+      : endOfMonth(today);
+    return visitas.filter(v => {
+      const d = new Date(v.data_visita + "T12:00:00");
+      return isWithinInterval(d, { start, end });
+    });
+  }, [visitas, periodo, today]);
+
+  const realizadas = periodVisitas.filter(v => v.status === "realizada").length;
+  const noShows = periodVisitas.filter(v => v.status === "no_show").length;
+  const reagendadas = periodVisitas.filter(v => v.status === "reagendada").length;
+  const pendentes = periodVisitas.filter(v => v.status === "marcada" || v.status === "confirmada").length;
+  const total = periodVisitas.length;
   const taxa = total > 0 ? Math.round((realizadas / total) * 100) : 0;
 
-  // Team breakdown — always show all 3 fixed teams
+  const periodoLabel = periodo === "dia" ? "Hoje" : periodo === "semana" ? "Semana" : "Mês";
+
+  // Team breakdown
   const teamStats = useMemo(() => {
     if (!showTeamBreakdown) return [];
     const map = new Map<string, { total: number; realizadas: number }>();
-    // Initialize all fixed teams with 0
     FIXED_TEAMS.forEach(t => map.set(t.key, { total: 0, realizadas: 0 }));
-    for (const v of todayVisitas) {
+    for (const v of periodVisitas) {
       const equipe = (v.equipe || "").toLowerCase().replace(/^equipe\s+/i, "").trim();
-      // Match to fixed team
       const teamKey = FIXED_TEAMS.find(t => equipe.includes(t.key))?.key;
       if (teamKey) {
         const s = map.get(teamKey)!;
@@ -66,27 +85,45 @@ function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTea
       className: t.className,
       ...map.get(t.key)!,
     }));
-  }, [todayVisitas, showTeamBreakdown]);
+  }, [periodVisitas, showTeamBreakdown]);
 
-  if (total === 0) return null;
+  if (total === 0 && periodo === "dia") return null;
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center gap-2 mb-3">
-        <CalendarDays className="h-4 w-4 text-primary" />
-        <span className="text-sm font-bold text-foreground">Placar do Dia</span>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-primary" />
+          <span className="text-sm font-bold text-foreground">Placar</span>
+        </div>
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+          {(["dia", "semana", "mes"] as PlacarPeriodo[]).map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriodo(p)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all",
+                periodo === p
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {p === "dia" ? "Dia" : p === "semana" ? "Semana" : "Mês"}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="grid grid-cols-5 gap-3 mb-3">
         <div className="text-center">
           <p className="text-lg font-black text-foreground">{total}</p>
-          <p className="text-[10px] text-muted-foreground">📅 Hoje</p>
+          <p className="text-[10px] text-muted-foreground">📅 {periodoLabel}</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-black text-green-600">{realizadas}</p>
+          <p className="text-lg font-black text-emerald-600">{realizadas}</p>
           <p className="text-[10px] text-muted-foreground">✅ Realizadas</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-black text-red-600">{noShows}</p>
+          <p className="text-lg font-black text-destructive">{noShows}</p>
           <p className="text-[10px] text-muted-foreground">❌ No Show</p>
         </div>
         <div className="text-center">
@@ -100,7 +137,7 @@ function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTea
       </div>
       <div className="flex items-center gap-2">
         <Progress value={taxa} className="flex-1 h-2" />
-        <span className={cn("text-xs font-bold", taxa >= 70 ? "text-green-600" : taxa >= 40 ? "text-amber-600" : "text-red-600")}>
+        <span className={cn("text-xs font-bold", taxa >= 70 ? "text-emerald-600" : taxa >= 40 ? "text-amber-600" : "text-destructive")}>
           {taxa}% realização
         </span>
       </div>
