@@ -363,6 +363,32 @@ export default function AgendaVisitas() {
     return c;
   }, [visitas]);
 
+  // Calendar shows ALL visitas (leads + negócios) with date/search filters but ignoring agendaTipo
+  const allVisitasFiltered = useMemo(() => {
+    let list = [...allVisitas];
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(v =>
+        v.nome_cliente.toLowerCase().includes(term) ||
+        v.empreendimento?.toLowerCase().includes(term) ||
+        v.telefone?.includes(term) ||
+        v.corretor_nome?.toLowerCase().includes(term)
+      );
+    }
+    if (dateFrom) {
+      const fromStr = format(dateFrom, "yyyy-MM-dd");
+      list = list.filter(v => v.data_visita >= fromStr);
+    }
+    if (dateTo) {
+      const toStr = format(dateTo, "yyyy-MM-dd");
+      list = list.filter(v => v.data_visita <= toStr);
+    }
+    if (statusFilter !== "all") list = list.filter(v => v.status === statusFilter);
+    if (corretorFilter !== "all") list = list.filter(v => v.corretor_id === corretorFilter);
+    if (empreendimentoFilter !== "all") list = list.filter(v => v.empreendimento === empreendimentoFilter);
+    return list;
+  }, [allVisitas, searchTerm, dateFrom, dateTo, statusFilter, corretorFilter, empreendimentoFilter]);
+
   const hasFilters = statusFilter !== "all" || corretorFilter !== "all" || empreendimentoFilter !== "all" || !!dateFrom || !!dateTo || searchTerm.trim() || pendingOnly;
 
   const clearAll = () => {
