@@ -9,9 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath, Maximize, MapPin, Car, Megaphone, ChevronsUpDown, Check, UserCircle, Phone, Mail, X } from "lucide-react";
+import { Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath, Maximize, MapPin, Car, Megaphone, ChevronsUpDown, Check, UserCircle, Phone, Mail, X, Share2, CheckSquare, Square, Link2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -299,6 +300,7 @@ function getNumIncZero(item: any, ...keys: string[]): number | null {
 }
 
 export default function ImoveisPage() {
+  const { user } = useAuth();
   const [imoveis, setImoveis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -310,6 +312,12 @@ export default function ImoveisPage() {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [search, setSearch] = useState("");
+  
+  // Vitrine selection
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [creatingVitrine, setCreatingVitrine] = useState(false);
+  const [vitrineLink, setVitrineLink] = useState<string | null>(null);
 
   const [contrato, setContrato] = useState("venda");
   const [tipo, setTipo] = useState("");
@@ -433,6 +441,15 @@ export default function ImoveisPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
+            onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); setVitrineLink(null); }}
+            variant={selectMode ? "default" : "outline"}
+            size="sm"
+            className="gap-2 font-semibold"
+          >
+            <Share2 className="h-4 w-4" />
+            {selectMode ? `${selectedIds.size} selecionados` : "Criar Vitrine"}
+          </Button>
+          <Button
             onClick={handleUhome}
             variant={uhomeOnly ? "default" : "outline"}
             size="sm"
@@ -453,7 +470,64 @@ export default function ImoveisPage() {
         </div>
       </div>
 
-      {/* Campaign chips when active */}
+      {/* Vitrine action bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <Card className="p-3 flex items-center justify-between bg-primary/5 border-primary/20 flex-wrap gap-2">
+          <span className="text-sm font-medium text-foreground">
+            {selectedIds.size} imóvel(is) selecionado(s)
+          </span>
+          <div className="flex items-center gap-2">
+            {vitrineLink ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Input value={vitrineLink} readOnly className="text-xs h-8 w-64" />
+                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }}>
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção de imóveis: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-1">
+                    <Phone className="h-3.5 w-3.5" /> Enviar WhatsApp
+                  </Button>
+                </a>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                disabled={creatingVitrine}
+                onClick={async () => {
+                  if (!user) return;
+                  setCreatingVitrine(true);
+                  try {
+                    const { data, error } = await supabase
+                      .from("vitrines" as any)
+                      .insert({
+                        created_by: user.id,
+                        titulo: "Seleção de Imóveis",
+                        imovel_ids: [...selectedIds],
+                      } as any)
+                      .select("id")
+                      .single();
+                    if (error) throw error;
+                    const link = `${window.location.origin}/vitrine/${(data as any).id}`;
+                    setVitrineLink(link);
+                    navigator.clipboard.writeText(link);
+                    toast.success("Vitrine criada! Link copiado.");
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Erro ao criar vitrine");
+                  } finally {
+                    setCreatingVitrine(false);
+                  }
+                }}
+                className="gap-1.5"
+              >
+                {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+                Gerar Link
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
+
       {campanhaAtiva && (
         <div className="flex flex-wrap gap-2">
           {CAMPANHA_CODES.map((c) => (
@@ -671,10 +745,26 @@ export default function ImoveisPage() {
               const cond = getNum(item, "valor_condominio");
               const disponib = item.situacao || item.status || "";
               const isCampanha = CAMPANHA_CODES.some((c) => c.codigo === codigo);
-              
+              const imovelId = item.id_imovel || item.id || idx;
+              const isSelected = selectedIds.has(imovelId);
+
+              const toggleSelect = () => {
+                setSelectedIds(prev => {
+                  const next = new Set(prev);
+                  if (next.has(imovelId)) next.delete(imovelId);
+                  else next.add(imovelId);
+                  return next;
+                });
+                setVitrineLink(null);
+              };
 
               return (
-                <Card key={item.id_imovel || codigo || idx} className={cn("overflow-hidden hover:shadow-lg transition-shadow", isCampanha && "ring-1 ring-primary/30")}>
+                <Card key={item.id_imovel || codigo || idx} className={cn("overflow-hidden hover:shadow-lg transition-shadow relative", isCampanha && "ring-1 ring-primary/30", selectMode && isSelected && "ring-2 ring-primary")}>
+                  {selectMode && (
+                    <button onClick={toggleSelect} className="absolute top-2 left-2 z-20 bg-background/80 rounded p-0.5">
+                      {isSelected ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
+                    </button>
+                  )}
                   <div className="flex">
                     {/* Image */}
                     <div className="w-40 h-40 flex-shrink-0 bg-muted relative">

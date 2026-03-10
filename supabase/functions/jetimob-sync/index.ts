@@ -291,8 +291,80 @@ serve(async (req) => {
         const jetimobId = buildJetimobId(lead);
         const phone = lead.phones?.[0] || lead.phone || null;
 
-        // Skip if already exists by ID or phone
+        // Check if already exists by ID or phone
         if (existingIds.has(jetimobId) || (phone && existingPhones.has(phone))) {
+          // ── DEDUP: lead already exists — notify owner, update data, create task ──
+          if (phone) {
+            const { data: existingLead } = await adminClient
+              .from("pipeline_leads")
+              .select("id, corretor_id, nome, empreendimento, telefone")
+              .eq("telefone", phone)
+              .not("corretor_id", "is", null)
+              .limit(1)
+              .maybeSingle();
+
+            if (existingLead?.corretor_id) {
+              const nome = lead.full_name || lead.name || lead.nome || "Lead";
+              const msg = lead.message || "";
+              const campanhaNome = extractCampanha(msg);
+              const origemText = campanhaNome || msg || lead.source || lead.origin || "";
+              let newEmp = campanhaNome ? normalizeEmpreendimento(campanhaNome) || campanhaNome : null;
+              if (!newEmp) newEmp = normalizeEmpreendimento(origemText) || null;
+              const canalOrigem = detectCanal(msg, lead.source, lead.origin);
+
+              // Update lead data with new interest info
+              const updatePayload: Record<string, any> = { updated_at: new Date().toISOString() };
+              if (newEmp && newEmp !== existingLead.empreendimento) {
+                updatePayload.observacoes = `[NOVO INTERESSE ${new Date().toISOString().slice(0,10)}] ${newEmp} (${canalOrigem})${msg ? ` — "${msg}"` : ""}`;
+              }
+              await adminClient.from("pipeline_leads").update(updatePayload).eq("id", existingLead.id);
+
+              // Register in lead_historico
+              await adminClient.from("lead_historico").insert({
+                lead_id: existingLead.id,
+                tipo: "sistema",
+                descricao: `Lead gerou novamente via ${canalOrigem}${newEmp ? ` — interesse em ${newEmp}` : ""}. ${msg || ""}`.trim(),
+                user_id: existingLead.corretor_id,
+              }).then(r => { if (r.error) console.warn("lead_historico dedup insert:", r.error.message); });
+
+              // Notify the corretor
+              await adminClient.from("notifications").insert({
+                user_id: existingLead.corretor_id,
+                tipo: "lead",
+                categoria: "lead_retorno",
+                titulo: "🔄 Lead gerou novamente!",
+                mensagem: `${existingLead.nome || nome} (${phone}) demonstrou novo interesse${newEmp ? ` em ${newEmp}` : ""}. Entre em contato!`,
+                dados: { pipeline_lead_id: existingLead.id, novo_empreendimento: newEmp, canal: canalOrigem },
+                agrupamento_key: `lead_retorno_${existingLead.id}_${new Date().toISOString().slice(0,10)}`,
+              }).then(r => { if (r.error) console.warn("notification dedup insert:", r.error.message); });
+
+              // Create follow-up task
+              await adminClient.from("lead_tasks").insert({
+                lead_id: existingLead.id,
+                user_id: existingLead.corretor_id,
+                titulo: `Lead ${existingLead.nome || nome} gerou novamente${newEmp ? ` — ${newEmp}` : ""}`,
+                descricao: `Este lead demonstrou novo interesse via ${canalOrigem}. Faça contato imediato!`,
+                prioridade: "alta",
+                vence_em: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2h
+              }).then(r => { if (r.error) console.warn("lead_tasks dedup insert:", r.error.message); });
+
+              // Send WhatsApp + Push notifications
+              try {
+                await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    user_id: existingLead.corretor_id,
+                    title: "🔄 Lead gerou novamente!",
+                    body: `${existingLead.nome || nome}${newEmp ? ` — ${newEmp}` : ""}. Entre em contato!`,
+                    url: "/pipeline",
+                  }),
+                });
+              } catch (e) { console.warn("Push dedup error:", e); }
+
+              console.log(`DEDUP: Lead ${phone} already with corretor ${existingLead.corretor_id} — notified`);
+            }
+          }
           skipped++;
           continue;
         }

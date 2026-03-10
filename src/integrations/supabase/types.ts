@@ -5063,6 +5063,45 @@ export type Database = {
           },
         ]
       }
+      vitrines: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          expires_at: string | null
+          id: string
+          imovel_ids: Json
+          lead_nome: string | null
+          lead_telefone: string | null
+          mensagem_corretor: string | null
+          titulo: string
+          visualizacoes: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          imovel_ids?: Json
+          lead_nome?: string | null
+          lead_telefone?: string | null
+          mensagem_corretor?: string | null
+          titulo?: string
+          visualizacoes?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          imovel_ids?: Json
+          lead_nome?: string | null
+          lead_telefone?: string | null
+          mensagem_corretor?: string | null
+          titulo?: string
+          visualizacoes?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

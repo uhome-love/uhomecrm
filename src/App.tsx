@@ -71,7 +71,7 @@ const AcademiaGerenciarPage = lazy(() => import("./pages/AcademiaGerenciarPage")
 const GerenteDashboard = lazy(() => import("./pages/GerenteDashboard"));
 const RoletaLeads = lazy(() => import("./pages/RoletaLeads"));
 const ImoveisPage = lazy(() => import("./pages/ImoveisPage"));
-
+const VitrinePage = lazy(() => import("./pages/VitrinePage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,6 +124,7 @@ const App = () => (
             <Route path="/welcome" element={<Suspense fallback={<PageLoader />}><Welcome /></Suspense>} />
             <Route path="/visita/:token" element={<Suspense fallback={<PageLoader />}><VisitaConfirmacao /></Suspense>} />
             <Route path="/indica/:codigo" element={<Suspense fallback={<PageLoader />}><ReferralPage /></Suspense>} />
+            <Route path="/vitrine/:id" element={<Suspense fallback={<PageLoader />}><VitrinePage /></Suspense>} />
             {/* Acessível a todos os autenticados */}
             <Route path="/" element={<ProtectedPage><HomeDashboard /></ProtectedPage>} />
 
