@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { Negocio } from "@/hooks/useNegocios";
 
 export interface TransitionData {
@@ -22,13 +21,59 @@ interface Props {
   onConfirm: (data: TransitionData) => void;
 }
 
+// Format number as BRL currency: 900000 → "900.000,00"
+function formatBRL(value: string): string {
+  const num = value.replace(/\D/g, "");
+  if (!num) return "";
+  const cents = num.padStart(3, "0");
+  const intPart = cents.slice(0, -2);
+  const decPart = cents.slice(-2);
+  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${formatted},${decPart}`;
+}
+
+// Parse formatted BRL back to raw cents string
+function parseBRL(formatted: string): string {
+  return formatted.replace(/\./g, "").replace(",", "");
+}
+
+// Get numeric value from raw cents string
+function rawToNumber(raw: string): number {
+  if (!raw) return 0;
+  return parseInt(raw, 10) / 100;
+}
+
+function CurrencyInput({ value, onChange, placeholder, label }: { value: string; onChange: (v: string) => void; placeholder?: string; label: string }) {
+  const display = value ? `R$ ${formatBRL(value)}` : "";
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    onChange(raw);
+  };
+
+  return (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <Input
+        value={display}
+        onChange={handleChange}
+        className="h-8 text-xs"
+        placeholder={placeholder || "R$ 0,00"}
+        inputMode="numeric"
+      />
+    </div>
+  );
+}
+
 export default function FaseTransitionModal({ open, onOpenChange, targetFase, negocio, onConfirm }: Props) {
   // Proposta fields
   const [propImovel, setPropImovel] = useState(negocio.empreendimento || "");
   const [propValorImovel, setPropValorImovel] = useState("");
-  const [propValorProposta, setPropValorProposta] = useState(negocio.vgv_estimado ? String(negocio.vgv_estimado) : "");
+  const [propValorProposta, setPropValorProposta] = useState(
+    negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado * 100)) : ""
+  );
   const [propUnidade, setPropUnidade] = useState("");
-  const [propDocsEnviados, setPropDocsEnviados] = useState(false);
+  const [propDocsStatus, setPropDocsStatus] = useState("sem_documentos");
 
   // Negociação fields
   const [negContraProposta, setNegContraProposta] = useState("");
@@ -38,7 +83,9 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
   const [contImovel, setContImovel] = useState(negocio.empreendimento || "");
   const [contUnidade, setContUnidade] = useState("");
   const [contEndereco, setContEndereco] = useState("");
-  const [contVgv, setContVgv] = useState(negocio.vgv_estimado ? String(negocio.vgv_estimado) : "");
+  const [contVgv, setContVgv] = useState(
+    negocio.vgv_estimado ? String(Math.round(negocio.vgv_estimado * 100)) : ""
+  );
   const [contTaxa, setContTaxa] = useState("5");
   const [contTaxaCustom, setContTaxaCustom] = useState("");
   const [contDataAssinatura, setContDataAssinatura] = useState("");
@@ -56,18 +103,31 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
     if (targetFase === "proposta") {
       onConfirm({
         fase: "proposta",
-        fields: { imovel: propImovel, valor_imovel: propValorImovel, valor_proposta: propValorProposta, unidade: propUnidade, docs_enviados: propDocsEnviados },
+        fields: {
+          imovel: propImovel,
+          valor_imovel: rawToNumber(propValorImovel),
+          valor_proposta: rawToNumber(propValorProposta),
+          unidade: propUnidade,
+          docs_status: propDocsStatus,
+        },
       });
     } else if (targetFase === "negociacao") {
       onConfirm({
         fase: "negociacao",
-        fields: { valor_contra_proposta: negContraProposta, observacoes: negObs },
+        fields: { valor_contra_proposta: rawToNumber(negContraProposta), observacoes: negObs },
       });
     } else if (targetFase === "documentacao") {
       const taxa = contTaxa === "custom" ? contTaxaCustom : contTaxa;
       onConfirm({
         fase: "documentacao",
-        fields: { imovel: contImovel, unidade: contUnidade, endereco: contEndereco, vgv: contVgv, taxa_corretagem: taxa, data_assinatura: contDataAssinatura },
+        fields: {
+          imovel: contImovel,
+          unidade: contUnidade,
+          endereco: contEndereco,
+          vgv: rawToNumber(contVgv),
+          taxa_corretagem: taxa,
+          data_assinatura: contDataAssinatura,
+        },
       });
     } else if (targetFase === "assinado") {
       onConfirm({
@@ -94,12 +154,25 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
             <p className="text-xs text-muted-foreground">Negócio: <strong>{negocio.nome_cliente}</strong></p>
             <div className="space-y-3">
               <div><Label className="text-xs">Imóvel / Empreendimento</Label><Input value={propImovel} onChange={e => setPropImovel(e.target.value)} className="h-8 text-xs" /></div>
-              <div><Label className="text-xs">Valor do Imóvel (R$)</Label><Input value={propValorImovel} onChange={e => setPropValorImovel(e.target.value)} type="number" className="h-8 text-xs" placeholder="Ex: 450000" /></div>
-              <div><Label className="text-xs">Valor da Proposta (R$)</Label><Input value={propValorProposta} onChange={e => setPropValorProposta(e.target.value)} type="number" className="h-8 text-xs" placeholder="Ex: 430000" /></div>
+              <CurrencyInput label="Valor do Imóvel (R$)" value={propValorImovel} onChange={setPropValorImovel} placeholder="R$ 900.000,00" />
+              <CurrencyInput label="Valor da Proposta (R$)" value={propValorProposta} onChange={setPropValorProposta} placeholder="R$ 850.000,00" />
               <div><Label className="text-xs">Unidade</Label><Input value={propUnidade} onChange={e => setPropUnidade(e.target.value)} className="h-8 text-xs" placeholder="Ex: Apto 1201" /></div>
-              <div className="flex items-center gap-2">
-                <Checkbox checked={propDocsEnviados} onCheckedChange={(v) => setPropDocsEnviados(!!v)} id="docs-check" />
-                <Label htmlFor="docs-check" className="text-xs cursor-pointer">Documentos enviados</Label>
+              <div>
+                <Label className="text-xs mb-1 block">Documentos</Label>
+                <RadioGroup value={propDocsStatus} onValueChange={setPropDocsStatus} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="enviados" id="docs-enviados" />
+                    <Label htmlFor="docs-enviados" className="text-xs cursor-pointer">✅ Documentos enviados</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="parcialmente" id="docs-parcial" />
+                    <Label htmlFor="docs-parcial" className="text-xs cursor-pointer">⚠️ Documentos parcialmente enviados</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="sem_documentos" id="docs-sem" />
+                    <Label htmlFor="docs-sem" className="text-xs cursor-pointer">❌ Sem documentos</Label>
+                  </div>
+                </RadioGroup>
               </div>
             </div>
             <DialogFooter>
@@ -116,7 +189,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
             </DialogHeader>
             <p className="text-xs text-muted-foreground">Negócio: <strong>{negocio.nome_cliente}</strong></p>
             <div className="space-y-3">
-              <div><Label className="text-xs">Valor da Contra Proposta (R$)</Label><Input value={negContraProposta} onChange={e => setNegContraProposta(e.target.value)} type="number" className="h-8 text-xs" placeholder="Ex: 440000" /></div>
+              <CurrencyInput label="Valor da Contra Proposta (R$)" value={negContraProposta} onChange={setNegContraProposta} placeholder="R$ 440.000,00" />
               <div><Label className="text-xs">Observações Importantes</Label><Textarea value={negObs} onChange={e => setNegObs(e.target.value)} className="text-xs h-24" placeholder="Detalhes da negociação, condições, etc..." /></div>
             </div>
             <DialogFooter>
@@ -136,7 +209,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
               <div><Label className="text-xs">Imóvel / Empreendimento</Label><Input value={contImovel} onChange={e => setContImovel(e.target.value)} className="h-8 text-xs" /></div>
               <div><Label className="text-xs">Unidade</Label><Input value={contUnidade} onChange={e => setContUnidade(e.target.value)} className="h-8 text-xs" placeholder="Ex: Apto 1201" /></div>
               <div><Label className="text-xs">Endereço</Label><Input value={contEndereco} onChange={e => setContEndereco(e.target.value)} className="h-8 text-xs" placeholder="Rua, nº, bairro..." /></div>
-              <div><Label className="text-xs">VGV (R$)</Label><Input value={contVgv} onChange={e => setContVgv(e.target.value)} type="number" className="h-8 text-xs" /></div>
+              <CurrencyInput label="VGV (R$)" value={contVgv} onChange={setContVgv} placeholder="R$ 2.000.000,00" />
               <div>
                 <Label className="text-xs">Taxa de Corretagem</Label>
                 <Select value={contTaxa} onValueChange={setContTaxa}>
