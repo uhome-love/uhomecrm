@@ -335,15 +335,15 @@ function getWeekStart(dateStr: string): string {
 function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members: any[]): string {
   if (!pdn.length) return "Nenhum negócio registrado este mês.";
   const total = pdn.length;
-  const visita = pdn.filter(p => p.situacao === "visita").length;
-  const gerado = pdn.filter(p => p.situacao === "gerado").length;
-  const assinado = pdn.filter(p => p.situacao === "assinado").length;
-  const queda = pdn.filter(p => p.situacao === "queda").length;
-  const vgvAssinado = pdn.filter(p => p.situacao === "assinado").reduce((s, p) => s + (p.vgv || 0), 0);
-  const vgvProjetado = pdn.filter(p => ["gerado", "assinado"].includes(p.situacao)).reduce((s, p) => s + (p.vgv || 0), 0);
+  const novo = pdn.filter(p => p.fase === "novo_negocio").length;
+  const proposta = pdn.filter(p => ["proposta", "negociacao", "documentacao"].includes(p.fase)).length;
+  const assinado = pdn.filter(p => p.fase === "assinado").length;
+  const perdido = pdn.filter(p => p.status === "perdido").length;
+  const vgvAssinado = pdn.filter(p => p.fase === "assinado").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvProjetado = pdn.filter(p => ["proposta", "negociacao", "documentacao", "assinado"].includes(p.fase)).reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
   let summary = `- Total negócios: ${total}
-- Visita: ${visita} | Proposta: ${gerado} | Assinado: ${assinado} | Queda: ${queda}
+- Novo: ${novo} | Proposta: ${proposta} | Assinado: ${assinado} | Perdido: ${perdido}
 - VGV Assinado: R$ ${(vgvAssinado / 1000).toFixed(0)}k
 - VGV Projetado: R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
 
@@ -351,11 +351,12 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
   const byGerente: Record<string, { total: number; assinado: number; vgv: number }> = {};
   pdn.forEach(p => {
     const gId = p.gerente_id;
+    if (!gId) return;
     if (!byGerente[gId]) byGerente[gId] = { total: 0, assinado: 0, vgv: 0 };
     byGerente[gId].total++;
-    if (p.situacao === "assinado") {
+    if (p.fase === "assinado") {
       byGerente[gId].assinado++;
-      byGerente[gId].vgv += p.vgv || 0;
+      byGerente[gId].vgv += Number(p.vgv_final || p.vgv_estimado || 0);
     }
   });
   summary += "\n- Por gerente:";
@@ -366,7 +367,7 @@ function buildPdnGlobal(pdn: any[], managerMap: Record<string, string>, members:
   // Stale deals
   const now = Date.now();
   const stale = pdn.filter(p => {
-    if (["assinado", "queda"].includes(p.situacao)) return false;
+    if (p.fase === "assinado" || p.status === "perdido") return false;
     return (now - new Date(p.updated_at).getTime()) > 5 * 24 * 60 * 60 * 1000;
   });
   if (stale.length > 0) {

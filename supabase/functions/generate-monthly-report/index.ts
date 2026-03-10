@@ -130,11 +130,11 @@ serve(async (req) => {
       totals.vgv_assinado += vgvA;
     }
 
-    // 5. PDN data
-    const { data: pdns } = await supabase.from("pdn_entries").select("*").eq("mes", targetMes);
+    // 5. Negocios data
+    const { data: pdns } = await supabase.from("negocios").select("*").gte("created_at", `${targetMes}-01`).lt("created_at", `${targetMes}-32`);
     const pdnCount = (pdns || []).length;
-    const pdnVgv = (pdns || []).reduce((s, p) => s + Number(p.vgv || 0), 0);
-    const pdnAssinado = (pdns || []).filter(p => p.situacao === "assinado").reduce((s, p) => s + Number(p.vgv || 0), 0);
+    const pdnVgv = (pdns || []).reduce((s, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+    const pdnAssinado = (pdns || []).filter((p: any) => p.fase === "assinado").reduce((s, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
     // 6. Previous month data for comparison
     const prevMonth = new Date(year, month - 2, 1);
