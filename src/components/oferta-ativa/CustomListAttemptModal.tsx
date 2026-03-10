@@ -240,6 +240,12 @@ export default function CustomListAttemptModal({ open, onClose, onSubmit, leadNa
                 📝 Registrado no histórico do lead no Pipeline.
               </p>
             )}
+            {resultado === "sem_interesse" && (
+              <p className="text-[10px] text-rose-600 bg-rose-500/10 rounded px-2 py-1">
+                🚫 Lead marcado como sem interesse na oferta. Registrado no histórico do Pipeline.
+                {subOption === "nao_momento" ? " Poderá ser recontactado futuramente." : ""}
+              </p>
+            )}
             {resultado === "descarte_oa" && (
               <p className="text-[10px] text-red-600 bg-red-500/10 rounded px-2 py-1">
                 📤 Lead será enviado para a lista de Oferta Ativa para recontato.
