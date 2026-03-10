@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useBuscaLeads, BuscaFilters, BuscaLead, LeadTentativa } from "@/hooks/useBuscaLeads";
 import { useUserRole } from "@/hooks/useUserRole";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Search, Phone, User, Mail, Building2, Filter, X, CheckCircle2,
   Trash2, ArrowRightLeft, Lock, Unlock, ShieldAlert, Clock, History,
-  AlertTriangle, Loader2,
+  AlertTriangle, Loader2, UserPlus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
