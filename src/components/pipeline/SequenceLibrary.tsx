@@ -229,21 +229,51 @@ export default function SequenceLibrary({ onSequenceCreated }: Props) {
 
       if (passosErr) throw passosErr;
 
-      toast.success(`Sequência "${nome}" criada com ${template.passos.length} passos!`);
+      // Apply tasks to selected leads directly
+      if (selectedLeadIds.size > 0) {
+        const today = new Date();
+        const tasksToInsert: any[] = [];
+        for (const leadId of selectedLeadIds) {
+          const lead = leads.find(l => l.id === leadId);
+          for (const passo of template.passos) {
+            const dueDate = new Date(today);
+            dueDate.setDate(dueDate.getDate() + passo.dias_apos_inicio);
+            const conteudo = passo.conteudo
+              .replace(/\{\{nome\}\}/g, lead?.nome || "Cliente")
+              .replace(/\{\{empreendimento\}\}/g, customEmpreendimento || lead?.empreendimento || "Empreendimento");
+            tasksToInsert.push({
+              pipeline_lead_id: leadId,
+              titulo: `📋 ${passo.titulo}`,
+              descricao: conteudo,
+              prioridade: passo.dias_apos_inicio === 0 ? "alta" : "media",
+              vence_em: dueDate.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+              status: "pendente",
+              created_by: user.id,
+            });
+          }
+        }
+        if (tasksToInsert.length > 0) {
+          const { error } = await supabase.from("pipeline_tarefas").insert(tasksToInsert);
+          if (error) throw error;
+        }
+        toast.success(`✅ Sequência "${nome}" criada e aplicada a ${selectedLeadIds.size} lead(s) — ${tasksToInsert.length} tarefas!`);
+      } else {
+        toast.success(`Sequência "${nome}" criada com ${template.passos.length} passos!`);
+      }
+
       setPreviewTemplate(null);
       setCustomName("");
       setCustomEmpreendimento("");
+      setSelectedLeadIds(new Set());
+      setLeadSearch("");
       onSequenceCreated?.();
-
-      // Open lead selector
-      handleOpenLeadSelector(template);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao aplicar sequência");
     } finally {
       setApplying(false);
     }
-  }, [user, customName, customEmpreendimento, onSequenceCreated]);
+  }, [user, customName, customEmpreendimento, selectedLeadIds, leads, onSequenceCreated]);
 
   const handleApplyToLeads = useCallback(async () => {
     if (!user || !applyingTemplate || selectedLeadIds.size === 0) return;
