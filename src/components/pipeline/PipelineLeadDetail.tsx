@@ -504,7 +504,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
               {/* Sequence Suggestion */}
               {currentStage && (
-                <LeadSequenceSuggestion leadId={lead.id} leadNome={lead.nome} stageType={currentStage.tipo} empreendimento={lead.empreendimento} />
+                <LeadSequenceSuggestion leadId={lead.id} leadNome={lead.nome} stageType={currentStage.tipo} empreendimento={lead.empreendimento} onTasksCreated={leadData.reload} />
               )}
 
               {/* Commercial Data */}
