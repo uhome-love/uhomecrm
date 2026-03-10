@@ -231,21 +231,7 @@ const PipelineCard = memo(function PipelineCard({
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!lead.telefone) return;
-    window.open(getWhatsAppUrl(lead.telefone), "_blank");
-    if (user) {
-      supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: lead.id,
-        tipo: "whatsapp",
-        titulo: "WhatsApp enviado",
-        created_by: user.id,
-      }).then(() => {});
-      // Update ultima_acao_at
-      supabase.from("pipeline_leads").update({
-        ultima_acao_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as any).eq("id", lead.id).then(() => {});
-    }
-    toast.success("💬 WhatsApp registrado");
+    setWhatsappTemplatesOpen(true);
   };
 
   const handleScheduleVisit = async () => {
