@@ -127,7 +127,7 @@ export default function CheckpointGerente() {
     });
     const profileIds = Array.from(userToProfileId.values());
 
-    const [{ data: saved }, { data: tentativas }, { data: visitasMarcadas }, { data: visitasRealizadas }, { data: corretorGoals }, { data: credenciamentos }] = await Promise.all([
+    const [{ data: saved }, { data: tentativas }, { data: visitasMarcadas }, { data: visitasRealizadas }, { data: corretorGoals }, { data: credenciamentos }, { data: disponibilidades }] = await Promise.all([
       supabase.from("checkpoint_diario").select("*").eq("data", dateStr).in("corretor_id", teamUserIds),
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`),
       supabase.from("visitas").select("corretor_id").in("corretor_id", teamUserIds).eq("data_visita", dateStr),
@@ -136,7 +136,14 @@ export default function CheckpointGerente() {
       profileIds.length > 0
         ? supabase.from("roleta_credenciamentos").select("corretor_id, status").eq("data", dateStr).in("corretor_id", profileIds)
         : Promise.resolve({ data: [] }),
+      supabase.from("corretor_disponibilidade").select("user_id, status").in("user_id", teamUserIds),
     ]);
+
+    // Set of user_ids that are "online" (na empresa) via disponibilidade
+    const presentByDisponibilidade = new Set<string>();
+    (disponibilidades || []).forEach((d: any) => {
+      if (d.user_id && d.status === "online") presentByDisponibilidade.add(d.user_id);
+    });
 
     // Set of user_ids that have an approved/pendente credenciamento (means they declared presence)
     const presentByRoleta = new Set<string>();
