@@ -149,14 +149,14 @@ export function useAcademia() {
 
   // Load certificates
   const { data: certificados = [] } = useQuery({
-    queryKey: ["academia-certificados", user?.id],
+    queryKey: ["academia-certificados", profileId],
     queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase.from("academia_certificados").select("*").eq("corretor_id", user.id);
+      if (!profileId) return [];
+      const { data, error } = await supabase.from("academia_certificados").select("*").eq("corretor_id", profileId);
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user,
+    enabled: !!profileId,
     staleTime: 60000,
   });
 
