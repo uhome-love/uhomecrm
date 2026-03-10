@@ -344,7 +344,7 @@ serve(async (req) => {
             empreendimento,
             segmento_id: segmentoId,
             stage_id: novoLeadStageId,
-            origem: origemClean,
+            origem: canalOrigem,
             origem_detalhe: campanhaDetalhe,
             jetimob_lead_id: jetimobId,
             observacoes: msg || null,
