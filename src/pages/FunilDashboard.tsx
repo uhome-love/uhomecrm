@@ -147,31 +147,40 @@ export default function FunilDashboard() {
       }
     }
 
-    // Get PDN data for VGV (source of truth)
+    // Get negocios data for VGV (source of truth)
     const mesKey = `${start.slice(0, 7)}`;
     const { data: pdns } = await supabase
-      .from("pdn_entries")
-      .select("id, vgv, situacao, corretor")
+      .from("negocios")
+      .select("id, vgv_estimado, vgv_final, fase, corretor_id, nome_cliente")
       .eq("gerente_id", user.id)
-      .eq("mes", mesKey);
+      .gte("created_at", `${mesKey}-01`)
+      .lt("created_at", `${mesKey}-32`);
 
     const pdn_negocios = (pdns || []).length;
-    const pdn_vgv = (pdns || []).reduce((sum: number, p: any) => sum + Number(p.vgv || 0), 0);
+    const pdn_vgv = (pdns || []).reduce((sum: number, p: any) => sum + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
-    // VGV from PDN by situacao
-    const vgv_gerado = (pdns || []).filter((p: any) => p.situacao === "gerado").reduce((s: number, p: any) => s + Number(p.vgv || 0), 0);
-    const vgv_assinado = (pdns || []).filter((p: any) => p.situacao === "assinado").reduce((s: number, p: any) => s + Number(p.vgv || 0), 0);
+    // VGV from negocios by fase
+    const vgv_gerado = (pdns || []).filter((p: any) => p.fase === "proposta" || p.fase === "negociacao" || p.fase === "documentacao").reduce((s: number, p: any) => s + Number(p.vgv_estimado || 0), 0);
+    const vgv_assinado = (pdns || []).filter((p: any) => p.fase === "assinado").reduce((s: number, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
     totals.vgv_gerado = vgv_gerado;
     totals.vgv_assinado = vgv_assinado;
 
-    // Distribute VGV by corretor from PDN
+    // Distribute VGV by corretor from negocios (by corretor_id)
+    // Resolve corretor names
+    const cIds = [...new Set((pdns || []).map(p => p.corretor_id).filter(Boolean))];
+    const cNameMap = new Map<string, string>();
+    if (cIds.length > 0) {
+      const { data: cProf } = await supabase.from("profiles").select("id, nome").in("id", cIds);
+      (cProf || []).forEach(p => cNameMap.set(p.id, p.nome || ""));
+    }
     for (const p of (pdns || [])) {
-      if (!p.corretor || !p.vgv) continue;
-      // Find corretor by name match in by_corretor
-      const match = Object.entries(by_corretor).find(([_, c]) => c.nome === p.corretor);
+      if (!p.corretor_id || !p.vgv_estimado) continue;
+      const corretorName = cNameMap.get(p.corretor_id) || "";
+      const match = Object.entries(by_corretor).find(([_, c]) => c.nome === corretorName);
       if (match) {
-        if (p.situacao === "gerado") match[1].vgv_gerado += Number(p.vgv);
-        if (p.situacao === "assinado") match[1].vgv_assinado += Number(p.vgv);
+        const fase = p.fase || "";
+        if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") match[1].vgv_gerado += Number(p.vgv_estimado);
+        if (fase === "assinado") match[1].vgv_assinado += Number(p.vgv_final || p.vgv_estimado);
       }
     }
 

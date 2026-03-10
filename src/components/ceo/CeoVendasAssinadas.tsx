@@ -38,23 +38,29 @@ export default function CeoVendasAssinadas() {
 
   const loadVendas = async () => {
     setLoading(true);
-    const { data: pdns } = await supabase
-      .from("pdn_entries")
-      .select("id, nome, und, empreendimento, vgv, status_pagamento, corretor, equipe, gerente_id, mes, data_visita, created_at")
-      .eq("situacao", "assinado")
-      .eq("mes", mesFiltro);
+    const { data: negs } = await supabase
+      .from("negocios")
+      .select("id, nome_cliente, empreendimento, vgv_final, vgv_estimado, fase, gerente_id, corretor_id, created_at")
+      .eq("fase", "assinado")
+      .gte("created_at", `${mesFiltro}-01`)
+      .lt("created_at", `${mesFiltro}-32`);
 
-    if (!pdns || pdns.length === 0) { setVendas([]); setLoading(false); return; }
+    if (!negs || negs.length === 0) { setVendas([]); setLoading(false); return; }
 
-    const gerenteIds = [...new Set(pdns.map(p => p.gerente_id))];
-    const { data: profiles } = await supabase.from("profiles").select("user_id, nome").in("user_id", gerenteIds);
-    const profileMap = new Map((profiles || []).map(p => [p.user_id, p.nome]));
+    const gerenteIds = [...new Set(negs.map(p => p.gerente_id).filter(Boolean))];
+    const corretorIds = [...new Set(negs.map(p => p.corretor_id).filter(Boolean))];
+    const allIds = [...new Set([...gerenteIds, ...corretorIds])];
+    const { data: profiles } = await supabase.from("profiles").select("id, user_id, nome").in("id", allIds);
+    const profileMap = new Map((profiles || []).map(p => [p.id, p.nome]));
+    // Also map by user_id
+    (profiles || []).forEach(p => { if (p.user_id) profileMap.set(p.user_id, p.nome); });
 
-    const result: VendaAssinada[] = pdns.map(p => ({
-      id: p.id, nome: p.nome, und: p.und, empreendimento: p.empreendimento,
-      vgv: p.vgv, status_pagamento: p.status_pagamento, corretor: p.corretor,
-      equipe: p.equipe, gerente_nome: profileMap.get(p.gerente_id) || "—",
-      mes: p.mes, data_visita: p.data_visita, created_at: p.created_at,
+    const result: VendaAssinada[] = negs.map(p => ({
+      id: p.id, nome: p.nome_cliente || "—", und: null, empreendimento: p.empreendimento,
+      vgv: Number(p.vgv_final || p.vgv_estimado || 0), status_pagamento: null,
+      corretor: profileMap.get(p.corretor_id || "") || "—",
+      equipe: null, gerente_nome: profileMap.get(p.gerente_id || "") || "—",
+      mes: mesFiltro, data_visita: null, created_at: p.created_at,
     }));
 
     result.sort((a, b) => (b.vgv || 0) - (a.vgv || 0));

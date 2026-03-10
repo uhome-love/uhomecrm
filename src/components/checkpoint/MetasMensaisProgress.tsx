@@ -75,14 +75,15 @@ export default function MetasMensaisProgress() {
       });
     }
 
-    const { data: pdns } = await supabase
-      .from("pdn_entries")
-      .select("vgv, situacao")
+    const { data: negs } = await supabase
+      .from("negocios")
+      .select("vgv_final, vgv_estimado, fase")
       .eq("gerente_id", user.id)
-      .eq("mes", mesAtual)
-      .eq("situacao", "assinado");
+      .gte("created_at", `${mesAtual}-01`)
+      .lt("created_at", `${mesAtual}-32`)
+      .eq("fase", "assinado");
 
-    realVgv = (pdns || []).reduce((sum, p) => sum + Number(p.vgv || 0), 0);
+    realVgv = (negs || []).reduce((sum, p) => sum + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
     const metaData = {
       metaVgv: Number(meta.meta_vgv_assinado),

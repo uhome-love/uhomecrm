@@ -151,11 +151,12 @@ export default function CeoTeamPanel() {
       .in("corretor_id", corretorUserIds)
       .gte("data_visita", weekStart);
 
-    // 7. Get this month's VGV
+    // 7. Get this month's VGV from negocios
     const { data: negocios } = await supabase
-      .from("pdn_entries")
-      .select("corretor, vgv, situacao")
-      .eq("mes", todayStr.slice(0, 7));
+      .from("negocios")
+      .select("corretor_id, vgv_final, vgv_estimado, fase")
+      .gte("created_at", `${todayStr.slice(0, 7)}-01`)
+      .lt("created_at", `${todayStr.slice(0, 7)}-32`);
 
     // Aggregate stats per corretor
     const corretorStats: Record<string, { ligacoes: number; aproveitados: number; visitas: number }> = {};
@@ -205,16 +206,16 @@ export default function CeoTeamPanel() {
       team.totals.visitas += stats.visitas;
     }
 
-    // Try to add VGV from PDN
+    // Try to add VGV from negocios (by corretor_id match)
     if (negocios) {
       for (const n of negocios) {
+        if (!n.corretor_id) continue;
+        const vgv = Number(n.vgv_final || n.vgv_estimado || 0);
+        if (!vgv) continue;
         for (const [, team] of teamMap) {
-          const found = team.corretores.find(c =>
-            c.nome.toLowerCase().includes((n.corretor || "").toLowerCase()) ||
-            (n.corretor || "").toLowerCase().includes(c.nome.split(" ")[0]?.toLowerCase() || "___")
-          );
-          if (found && n.vgv) {
-            team.totals.vgv += Number(n.vgv) || 0;
+          const found = team.corretores.find(c => c.user_id === n.corretor_id);
+          if (found) {
+            team.totals.vgv += vgv;
             break;
           }
         }

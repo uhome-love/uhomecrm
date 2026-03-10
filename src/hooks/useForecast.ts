@@ -86,10 +86,10 @@ export function useForecast(): ForecastData {
       lines = data || [];
     }
 
-    // Get PDN entries this month (single source of truth for proposals, sales, VGV)
-    let pdnQuery = supabase.from("pdn_entries").select("*").eq("mes", mesKey);
-    if (!isAdmin) pdnQuery = pdnQuery.eq("gerente_id", user.id);
-    const { data: pdnData } = await pdnQuery;
+    // Get negocios this month (single source of truth for proposals, sales, VGV)
+    let negQuery = supabase.from("negocios").select("*").gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
+    if (!isAdmin) negQuery = negQuery.eq("gerente_id", user.id);
+    const { data: pdnData } = await negQuery;
 
     // Get ceo_metas_mensais
     let metasQuery = supabase.from("ceo_metas_mensais").select("*").eq("mes", mesKey);
@@ -110,22 +110,23 @@ export function useForecast(): ForecastData {
         visitas_realizadas += l.real_visitas_realizadas ?? 0;
       }
 
-      // PDN: propostas = gerado + assinado, vendas = assinado, VGV from assinado
+      // Negocios: propostas = proposta + assinado, vendas = assinado, VGV from assinado
       let propostas_reais = 0;
       let vendas_reais = 0;
       let vgv_real = 0;
       let vgv_gerado = 0;
 
       for (const p of gPdn) {
-        if (p.situacao === 'gerado' || p.situacao === 'assinado') {
+        const fase = p.fase || "";
+        if (fase === "proposta" || fase === "negociacao" || fase === "documentacao" || fase === "assinado") {
           propostas_reais += 1;
         }
-        if (p.situacao === 'assinado') {
+        if (fase === "assinado") {
           vendas_reais += 1;
-          vgv_real += Number(p.vgv ?? 0);
+          vgv_real += Number(p.vgv_final ?? p.vgv_estimado ?? 0);
         }
-        if (p.situacao === 'gerado') {
-          vgv_gerado += Number(p.vgv ?? 0);
+        if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") {
+          vgv_gerado += Number(p.vgv_estimado ?? 0);
         }
       }
 

@@ -161,12 +161,13 @@ export function useAudit() {
 
     setProgress(45);
 
-    // 3) PDN duplicates: same (gerente_id, mes, nome normalizado)
-    const { data: pdns } = await supabase.from("pdn_entries").select("id, gerente_id, mes, nome");
+    // 3) Negocios duplicates: same (gerente_id, nome_cliente normalizado)
+    const { data: pdns } = await supabase.from("negocios").select("id, gerente_id, nome_cliente, created_at");
     if (pdns) {
       const pSeen = new Map<string, string[]>();
       for (const p of pdns as any[]) {
-        const key = `${p.gerente_id}|${p.mes}|${normalizeName(p.nome)}`;
+        const mes = (p.created_at || "").slice(0, 7);
+        const key = `${p.gerente_id}|${mes}|${normalizeName(p.nome_cliente || "")}`;
         if (!pSeen.has(key)) pSeen.set(key, []);
         pSeen.get(key)!.push(p.id);
       }
@@ -175,10 +176,10 @@ export function useAudit() {
         dupPenalty += Math.min(10, pDups.length * 2);
         issues.push({
           id: `issue-${++issueCounter}`,
-          module: "PDN",
+          module: "Negócios",
           type: "duplication",
           severity: "medio",
-          title: `${pDups.length} possível(is) duplicação(ões) no PDN`,
+          title: `${pDups.length} possível(is) duplicação(ões) em Negócios`,
           description: `Mesmo cliente no mesmo mês com nomes semelhantes.`,
           ids: pDups.flatMap(([, ids]) => ids),
         });

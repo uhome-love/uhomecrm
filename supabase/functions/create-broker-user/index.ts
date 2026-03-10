@@ -215,7 +215,7 @@ serve(async (req) => {
         supabase.from("marketing_reports").delete().eq("user_id", target_user_id),
         supabase.from("corretor_reports").delete().eq("gerente_id", target_user_id),
         supabase.from("funnel_entries").delete().eq("gerente_id", target_user_id),
-        supabase.from("pdn_entries").delete().eq("gerente_id", target_user_id),
+        supabase.from("negocios").delete().eq("gerente_id", target_user_id),
         supabase.from("manager_checklist").delete().eq("gerente_id", target_user_id),
         supabase.from("ceo_metas_mensais").delete().eq("gerente_id", target_user_id),
       ];

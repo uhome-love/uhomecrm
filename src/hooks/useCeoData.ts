@@ -154,32 +154,43 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
       agg.real_propostas += l.real_propostas ?? 0;
     }
 
-    // VGV from PDN (source of truth) - by gerente
+    // VGV from negocios (source of truth) - by gerente
     const mesKey = dateRange.start.slice(0, 7);
-    let pdnQuery = supabase.from("pdn_entries").select("gerente_id, corretor, vgv, situacao").eq("mes", mesKey);
-    if (filterGerenteId) pdnQuery = pdnQuery.eq("gerente_id", filterGerenteId);
-    const { data: pdns } = await pdnQuery;
+    let negQuery = supabase.from("negocios").select("gerente_id, corretor_id, vgv_estimado, vgv_final, fase, nome_cliente").gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
+    if (filterGerenteId) negQuery = negQuery.eq("gerente_id", filterGerenteId);
+    const { data: pdns } = await negQuery;
 
-    // Build VGV + Propostas per gerente from PDN (single source of truth)
+    // Resolve corretor names for VGV assignment
+    const negCorretorIds = [...new Set((pdns || []).map(p => p.corretor_id).filter(Boolean))];
+    const corretorNameMap = new Map<string, string>();
+    if (negCorretorIds.length > 0) {
+      const { data: cProfiles } = await supabase.from("profiles").select("id, nome").in("id", negCorretorIds);
+      (cProfiles || []).forEach(p => corretorNameMap.set(p.id, p.nome || ""));
+    }
+
+    // Build VGV + Propostas per gerente from negocios (single source of truth)
     const pdnByGerente = new Map<string, { gerado: number; assinado: number; propostas_count: number }>();
     for (const p of (pdns || [])) {
-      const curr = pdnByGerente.get(p.gerente_id) || { gerado: 0, assinado: 0, propostas_count: 0 };
-      if (p.situacao === "gerado") { curr.gerado += Number(p.vgv || 0); curr.propostas_count++; }
-      if (p.situacao === "assinado") curr.assinado += Number(p.vgv || 0);
-      pdnByGerente.set(p.gerente_id, curr);
+      const gId = p.gerente_id;
+      if (!gId) continue;
+      const curr = pdnByGerente.get(gId) || { gerado: 0, assinado: 0, propostas_count: 0 };
+      const fase = p.fase || "";
+      if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") { curr.gerado += Number(p.vgv_estimado || 0); curr.propostas_count++; }
+      if (fase === "assinado") curr.assinado += Number(p.vgv_final || p.vgv_estimado || 0);
+      pdnByGerente.set(gId, curr);
 
-      // Also try to assign VGV to corretor by name match
-      if (p.corretor) {
-        const pdnName = (p.corretor as string).toLowerCase().trim();
+      // Also try to assign VGV to corretor by profile ID match
+      if (p.corretor_id) {
+        const corretorName = corretorNameMap.get(p.corretor_id) || "";
         for (const [, agg] of corretorAggMap) {
-          if (agg.gerente_id !== p.gerente_id) continue;
+          if (agg.gerente_id !== gId) continue;
           const tmName = agg.corretor_nome.toLowerCase().trim();
+          const cName = corretorName.toLowerCase().trim();
           const firstName = tmName.split(" ")[0];
-          // Flexible match: exact, first-name, or partial contains
-          if (tmName === pdnName || firstName === pdnName || tmName.includes(pdnName) || pdnName.includes(firstName)) {
-            if (p.situacao === "gerado") agg.real_vgv_gerado += Number(p.vgv || 0);
-            if (p.situacao === "assinado") agg.real_vgv_assinado += Number(p.vgv || 0);
-            break; // avoid double-counting
+          if (tmName === cName || firstName === cName || tmName.includes(cName) || cName.includes(firstName)) {
+            if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") agg.real_vgv_gerado += Number(p.vgv_estimado || 0);
+            if (fase === "assinado") agg.real_vgv_assinado += Number(p.vgv_final || p.vgv_estimado || 0);
+            break;
           }
         }
       }

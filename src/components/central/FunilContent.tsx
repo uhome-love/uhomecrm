@@ -115,21 +115,30 @@ export default function FunilContent() {
     }
 
     const mesKey = `${start.slice(0, 7)}`;
-    const { data: pdns } = await supabase.from("pdn_entries").select("id, vgv, situacao, corretor").eq("gerente_id", user.id).eq("mes", mesKey);
+    const { data: negs } = await supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, corretor_id, nome_cliente").eq("gerente_id", user.id).gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
 
-    const pdn_negocios = (pdns || []).length;
-    const pdn_vgv = (pdns || []).reduce((sum: number, p: any) => sum + Number(p.vgv || 0), 0);
-    const vgv_gerado = (pdns || []).filter((p: any) => p.situacao === "gerado").reduce((s: number, p: any) => s + Number(p.vgv || 0), 0);
-    const vgv_assinado = (pdns || []).filter((p: any) => p.situacao === "assinado").reduce((s: number, p: any) => s + Number(p.vgv || 0), 0);
+    const pdn_negocios = (negs || []).length;
+    const pdn_vgv = (negs || []).reduce((sum: number, p: any) => sum + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+    const vgv_gerado = (negs || []).filter((p: any) => ["proposta", "negociacao", "documentacao"].includes(p.fase)).reduce((s: number, p: any) => s + Number(p.vgv_estimado || 0), 0);
+    const vgv_assinado = (negs || []).filter((p: any) => p.fase === "assinado").reduce((s: number, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
     totals.vgv_gerado = vgv_gerado;
     totals.vgv_assinado = vgv_assinado;
 
-    for (const p of (pdns || [])) {
-      if (!p.corretor || !p.vgv) continue;
-      const match = Object.entries(by_corretor).find(([_, c]) => c.nome === p.corretor);
+    // Resolve corretor names for VGV distribution
+    const cIds = [...new Set((negs || []).map((p: any) => p.corretor_id).filter(Boolean))];
+    const cMap = new Map<string, string>();
+    if (cIds.length > 0) {
+      const { data: cProf } = await supabase.from("profiles").select("id, nome").in("id", cIds);
+      (cProf || []).forEach(p => cMap.set(p.id, p.nome || ""));
+    }
+    for (const p of (negs || []) as any[]) {
+      if (!p.corretor_id) continue;
+      const corretorName = cMap.get(p.corretor_id) || "";
+      const match = Object.entries(by_corretor).find(([_, c]) => c.nome === corretorName);
       if (match) {
-        if (p.situacao === "gerado") match[1].vgv_gerado += Number(p.vgv);
-        if (p.situacao === "assinado") match[1].vgv_assinado += Number(p.vgv);
+        const fase = p.fase || "";
+        if (["proposta", "negociacao", "documentacao"].includes(fase)) match[1].vgv_gerado += Number(p.vgv_estimado || 0);
+        if (fase === "assinado") match[1].vgv_assinado += Number(p.vgv_final || p.vgv_estimado || 0);
       }
     }
 

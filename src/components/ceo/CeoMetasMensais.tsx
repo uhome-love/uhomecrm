@@ -61,11 +61,12 @@ export default function CeoMetasMensais() {
       }
     }
 
-    // VGV from PDN (source of truth)
-    const { data: pdns } = await supabase.from("pdn_entries").select("gerente_id, vgv, situacao").eq("mes", mes).eq("situacao", "assinado").in("gerente_id", gerenteIds);
+    // VGV from negocios (source of truth)
+    const { data: pdns } = await supabase.from("negocios").select("gerente_id, vgv_final, vgv_estimado, fase").eq("fase", "assinado").gte("created_at", `${mes}-01`).lt("created_at", `${mes}-32`).in("gerente_id", gerenteIds);
     const vgvByGerente = new Map<string, number>();
     for (const p of (pdns || [])) {
-      vgvByGerente.set(p.gerente_id, (vgvByGerente.get(p.gerente_id) || 0) + Number(p.vgv || 0));
+      if (!p.gerente_id) continue;
+      vgvByGerente.set(p.gerente_id, (vgvByGerente.get(p.gerente_id) || 0) + Number(p.vgv_final || p.vgv_estimado || 0));
     }
 
     const result: GerenteMeta[] = gerenteIds.map(gId => {

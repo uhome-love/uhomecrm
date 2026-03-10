@@ -45,12 +45,13 @@ serve(async (req) => {
     const teamMemberIds = (teamMembers || []).map(m => m.id);
     const teamUserIds = (teamMembers || []).map(m => m.user_id).filter(Boolean);
 
-    // 2. PDN data (current month)
+    // 2. Negocios data (current month)
     const { data: pdnData } = await adminClient
-      .from("pdn_entries")
+      .from("negocios")
       .select("*")
       .eq("gerente_id", gerenteId)
-      .eq("mes", currentMonth);
+      .gte("created_at", `${currentMonth}-01`)
+      .lt("created_at", `${currentMonth}-32`);
 
     // 3. Checkpoint today
     const { data: checkpointToday } = await adminClient
@@ -106,7 +107,7 @@ serve(async (req) => {
 ═══ DADOS REAIS DO SISTEMA ═══
 Data: ${today} | Mês: ${currentMonth}
 
-📊 PDN (Planilha de Negócios) — ${currentMonth}
+📊 NEGÓCIOS (Pipeline de Negócios) — ${currentMonth}
 ${pdnStats}
 
 📋 CHECKPOINT HOJE
@@ -238,47 +239,33 @@ function buildPdnSummary(pdn: any[]): string {
   if (!pdn.length) return "Nenhum negócio registrado este mês.";
 
   const total = pdn.length;
-  const visita = pdn.filter(p => p.situacao === "visita").length;
-  const gerado = pdn.filter(p => p.situacao === "gerado").length;
-  const assinado = pdn.filter(p => p.situacao === "assinado").length;
-  const queda = pdn.filter(p => p.situacao === "queda").length;
+  const novo = pdn.filter(p => p.fase === "novo_negocio").length;
+  const proposta = pdn.filter(p => p.fase === "proposta" || p.fase === "negociacao" || p.fase === "documentacao").length;
+  const assinado = pdn.filter(p => p.fase === "assinado").length;
+  const perdido = pdn.filter(p => p.status === "perdido").length;
 
-  const vgvAssinado = pdn.filter(p => p.situacao === "assinado").reduce((s, p) => s + (p.vgv || 0), 0);
-  const vgvProjetado = pdn.filter(p => ["gerado", "assinado"].includes(p.situacao)).reduce((s, p) => s + (p.vgv || 0), 0);
+  const vgvAssinado = pdn.filter(p => p.fase === "assinado").reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+  const vgvProjetado = pdn.filter(p => ["proposta", "negociacao", "documentacao", "assinado"].includes(p.fase)).reduce((s, p) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
   // Stale deals (no update in 5+ days)
   const now = Date.now();
   const stale = pdn.filter(p => {
-    if (["assinado", "queda"].includes(p.situacao)) return false;
+    if (["assinado"].includes(p.fase) || p.status === "perdido") return false;
     const lastUpdate = new Date(p.updated_at).getTime();
     return (now - lastUpdate) > 5 * 24 * 60 * 60 * 1000;
   });
 
   let summary = `- Total negócios: ${total}
-- Visita: ${visita} | Proposta Gerada: ${gerado} | Assinado: ${assinado} | Queda: ${queda}
+- Novo: ${novo} | Proposta: ${proposta} | Assinado: ${assinado} | Perdido: ${perdido}
 - VGV Assinado: R$ ${(vgvAssinado / 1000).toFixed(0)}k
-- VGV Projetado (gerado+assinado): R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
+- VGV Projetado: R$ ${(vgvProjetado / 1000).toFixed(0)}k`;
 
   if (stale.length > 0) {
     summary += `\n- ⚠️ ${stale.length} negócios PARADOS (sem atualização há +5 dias):`;
     stale.slice(0, 5).forEach(s => {
-      summary += `\n  • ${s.nome} — ${s.empreendimento || "?"} — ${s.situacao} — Corretor: ${s.corretor || "?"}`;
+      summary += `\n  • ${s.nome_cliente} — ${s.empreendimento || "?"} — ${s.fase}`;
     });
   }
-
-  // Per-corretor breakdown
-  const byCorretor: Record<string, { total: number; gerado: number; assinado: number }> = {};
-  pdn.forEach(p => {
-    const c = p.corretor || "Sem corretor";
-    if (!byCorretor[c]) byCorretor[c] = { total: 0, gerado: 0, assinado: 0 };
-    byCorretor[c].total++;
-    if (p.situacao === "gerado") byCorretor[c].gerado++;
-    if (p.situacao === "assinado") byCorretor[c].assinado++;
-  });
-  summary += "\n- Por corretor:";
-  Object.entries(byCorretor).forEach(([name, stats]) => {
-    summary += `\n  • ${name}: ${stats.total} negócios (${stats.gerado} gerado, ${stats.assinado} assinado)`;
-  });
 
   return summary;
 }
