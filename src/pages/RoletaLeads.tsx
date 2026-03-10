@@ -67,9 +67,14 @@ function CeoView() {
             <CountdownTimer target={windowInfo.proximaTransicao} />
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => reload()}>
-          <RefreshCw className="h-3.5 w-3.5 mr-1" /> Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowIncluirModal(true)}>
+            <UserPlus className="h-3.5 w-3.5 mr-1" /> Incluir na Roleta
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => reload()}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" /> Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Leads acumulados (madrugada) */}
