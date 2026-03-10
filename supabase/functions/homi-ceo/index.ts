@@ -111,11 +111,12 @@ Seja direto, use dados concretos. Máximo 300 palavras. Período: ${periodo || "
 
     const allUserIds = (allTeamMembers || []).map(m => m.user_id).filter(Boolean);
 
-    // 3. PDN global (current month)
+    // 3. Negocios global (current month)
     const { data: allPdn } = await adminClient
-      .from("pdn_entries")
+      .from("negocios")
       .select("*")
-      .eq("mes", currentMonth);
+      .gte("created_at", `${currentMonth}-01`)
+      .lt("created_at", `${currentMonth}-32`);
 
     // 4. Checkpoints today (all managers)
     const { data: allCheckpoints } = await adminClient
