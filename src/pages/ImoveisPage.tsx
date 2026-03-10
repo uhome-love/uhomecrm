@@ -300,6 +300,7 @@ function getNumIncZero(item: any, ...keys: string[]): number | null {
 }
 
 export default function ImoveisPage() {
+  const { user } = useAuth();
   const [imoveis, setImoveis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -311,6 +312,12 @@ export default function ImoveisPage() {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [search, setSearch] = useState("");
+  
+  // Vitrine selection
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [creatingVitrine, setCreatingVitrine] = useState(false);
+  const [vitrineLink, setVitrineLink] = useState<string | null>(null);
 
   const [contrato, setContrato] = useState("venda");
   const [tipo, setTipo] = useState("");
