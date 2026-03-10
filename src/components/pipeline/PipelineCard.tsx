@@ -250,6 +250,8 @@ const PipelineCard = memo(function PipelineCard({
       gerente_id: user.id,
       created_by: user.id,
       pipeline_lead_id: lead.id,
+      local_visita: scheduleLocal || null,
+      observacoes: scheduleObs || null,
     });
     if (onMoveLead) {
       const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita marcada") || s.tipo === "visita");
@@ -257,6 +259,8 @@ const PipelineCard = memo(function PipelineCard({
     }
     setScheduleOpen(false);
     setScheduleDate(undefined);
+    setScheduleLocal("");
+    setScheduleObs("");
     toast.success("📅 Visita agendada e lead movido");
   };
 
