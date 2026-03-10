@@ -336,6 +336,57 @@ const PipelineCard = memo(function PipelineCard({
         </p>
       </div>
 
+      {/* Create Negócio button — only on Visita Realizada without linked deal */}
+      {stage?.nome?.toLowerCase().includes("visita realizada") && !lead.negocio_id && (
+        <div data-actions-area className="px-3 pb-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full h-7 text-[11px] gap-1.5 font-semibold border-green-500/40 text-green-600 dark:text-green-400 hover:bg-green-500/10"
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (!user) return;
+              try {
+                // Resolve profile IDs
+                const corretorUserId = lead.corretor_id;
+                const gerenteUserId = lead.gerente_id || user.id;
+                const { data: profileRows } = await supabase
+                  .from("profiles")
+                  .select("id, user_id")
+                  .in("user_id", [corretorUserId, gerenteUserId].filter(Boolean) as string[]);
+                const profileMap = new Map((profileRows || []).map(p => [p.user_id, p.id]));
+
+                const { data: negocio, error } = await supabase
+                  .from("negocios")
+                  .insert({
+                    nome_cliente: lead.nome,
+                    pipeline_lead_id: lead.id,
+                    corretor_id: corretorUserId ? profileMap.get(corretorUserId) || null : null,
+                    gerente_id: profileMap.get(gerenteUserId) || null,
+                    empreendimento: lead.empreendimento || null,
+                    telefone: lead.telefone || null,
+                    fase: "novo_negocio",
+                    origem: "visita_realizada",
+                    vgv_estimado: lead.valor_estimado || null,
+                  })
+                  .select("id")
+                  .single();
+                if (error) throw error;
+                if (negocio) {
+                  await supabase.from("pipeline_leads").update({ negocio_id: negocio.id } as any).eq("id", lead.id);
+                  toast.success(`🎉 Negócio criado para ${lead.nome}!`, { description: "Envie a proposta em até 24h!" });
+                }
+              } catch (err: any) {
+                console.error("Erro ao criar negócio:", err);
+                toast.error("Erro ao criar negócio: " + (err?.message || "Erro desconhecido"));
+              }
+            }}
+          >
+            <FileText className="h-3 w-3" /> Criar Negócio
+          </Button>
+        </div>
+      )}
+
       <div className="h-px bg-border/40" />
 
       {/* Line 4: Action buttons + 3-dot menu */}
