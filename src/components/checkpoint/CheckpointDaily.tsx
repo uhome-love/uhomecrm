@@ -203,6 +203,20 @@ export default function CheckpointDaily() {
         const autoLig = cGoal ? cGoal.meta_ligacoes : (existing.meta_ligacoes ?? 0);
         const autoLeads = cGoal ? cGoal.meta_aproveitados : (existing.meta_leads ?? 0);
         const autoVisitas = cGoal ? cGoal.meta_visitas_marcadas : (existing.meta_visitas_marcadas ?? 0);
+        
+        // Persist goal sync to DB if values changed
+        if (cGoal && existing.id && (
+          existing.meta_ligacoes !== autoLig || 
+          existing.meta_leads !== autoLeads || 
+          existing.meta_visitas_marcadas !== autoVisitas
+        )) {
+          supabase.from("checkpoint_lines").update({
+            meta_ligacoes: autoLig,
+            meta_leads: autoLeads,
+            meta_visitas_marcadas: autoVisitas,
+          }).eq("id", existing.id).then(() => {});
+        }
+
         allLines.push({
           id: existing.id, corretor_id: m.id, corretor_nome: m.nome,
           meta_ligacoes: autoLig, meta_presenca: existing.meta_presenca ?? "sim",
