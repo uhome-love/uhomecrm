@@ -507,7 +507,7 @@ export default function ImoveisPage() {
                       .select("id")
                       .single();
                     if (error) throw error;
-                    const link = `${window.location.origin}/vitrine/${(data as any).id}`;
+                    const link = `https://uhomesales.com/vitrine/${(data as any).id}`;
                     setVitrineLink(link);
                     navigator.clipboard.writeText(link);
                     toast.success("Vitrine criada! Link copiado.");
