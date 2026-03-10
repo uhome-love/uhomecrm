@@ -472,6 +472,7 @@ async function distributeSingleLead(
   if (notifRes.error) console.warn("notification insert:", notifRes.error.message);
 
   try { await sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead); } catch (e) { console.warn("WhatsApp error:", e); }
+  try { await sendPush(supabaseUrl, serviceKey, chosen.authUserId, lead); } catch (e) { console.warn("Push error:", e); }
 
   return { success: true, corretor_id: chosen.authUserId, segmento_id: segmentoId };
 }

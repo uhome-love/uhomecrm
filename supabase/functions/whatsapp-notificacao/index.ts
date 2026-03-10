@@ -14,8 +14,8 @@ serve(async (req) => {
   try {
     const { telefone, tipo, dados } = await req.json();
 
-    const token = Deno.env.get("WHATSAPP_TOKEN");
-    const phoneId = Deno.env.get("WHATSAPP_PHONE_ID");
+    const token = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || Deno.env.get("WHATSAPP_TOKEN");
+    const phoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || Deno.env.get("WHATSAPP_PHONE_ID");
 
     if (!token || !phoneId) {
       console.error("WHATSAPP_TOKEN or WHATSAPP_PHONE_ID not configured");
