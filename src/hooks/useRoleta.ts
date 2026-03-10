@@ -543,6 +543,56 @@ export function useRoleta() {
     }
   }, [user, loadFila]);
 
+  // CEO: Include any corretor manually in the fila (bypasses credenciamento)
+  const incluirManualNaFila = useCallback(async (corretorProfileId: string, segmentoId: string, janela: JanelaId) => {
+    if (!user) return;
+    setSubmitting(true);
+    try {
+      // Check if already active
+      const { data: alreadyActive } = await supabase.from("roleta_fila")
+        .select("id")
+        .eq("data", hoje)
+        .eq("segmento_id", segmentoId)
+        .eq("corretor_id", corretorProfileId)
+        .eq("ativo", true)
+        .limit(1);
+
+      if (alreadyActive && alreadyActive.length > 0) {
+        toast.warning("Corretor já está ativo neste segmento.");
+        setSubmitting(false);
+        return;
+      }
+
+      // Get next position
+      const { data: existing } = await supabase.from("roleta_fila")
+        .select("posicao")
+        .eq("data", hoje)
+        .eq("segmento_id", segmentoId)
+        .eq("ativo", true)
+        .order("posicao", { ascending: false })
+        .limit(1);
+
+      const nextPos = (existing?.[0]?.posicao || 0) + 1;
+
+      await supabase.from("roleta_fila").insert({
+        corretor_id: corretorProfileId,
+        segmento_id: segmentoId,
+        janela,
+        posicao: nextPos,
+        data: hoje,
+        ativo: true,
+      });
+
+      const { data: profile } = await supabase.from("profiles").select("nome").eq("id", corretorProfileId).single();
+      toast.success(`${profile?.nome || "Corretor"} incluído manualmente na fila!`);
+      await loadFila();
+    } catch (e: any) {
+      toast.error("Erro ao incluir na fila.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [user, hoje, loadFila]);
+
   // Current corretor's credenciamento
   const meuCredenciamento = useMemo(() => {
     if (!profileId) return null;
