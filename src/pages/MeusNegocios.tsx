@@ -624,10 +624,12 @@ export default function MeusNegocios() {
 
   return (
     <div
-      className="flex flex-col min-w-0 overflow-hidden -m-4 sm:-m-6 lg:-m-8 p-0"
+      className="flex flex-col min-w-0 overflow-hidden"
       style={{
         height: "calc(100vh - 56px)",
         background: "hsl(222 47% 11%)",
+        margin: "-1rem",
+        width: "calc(100% + 2rem)",
       }}
     >
       {/* Header */}
