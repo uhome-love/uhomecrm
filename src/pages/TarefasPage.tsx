@@ -202,14 +202,21 @@ export default function TarefasPage() {
   const weekNum = Math.ceil((now.getDate()) / 7);
   const weekLabel = `Semana ${weekNum} · ${format(weekStart, "d", { locale: ptBR })}–${format(weekEnd, "d 'de' MMMM", { locale: ptBR })}`;
 
+  const [dragOverCol, setDragOverCol] = useState<TarefaStatus | null>(null);
+
   // Drag handlers
   function onDragStart(e: React.DragEvent, id: string) {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = "move";
   }
   function onDragOver(e: React.DragEvent) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }
+  function onDragEnter(status: TarefaStatus) { setDragOverCol(status); }
+  function onDragLeave(e: React.DragEvent, colEl: HTMLDivElement | null) {
+    if (colEl && !colEl.contains(e.relatedTarget as Node)) setDragOverCol(null);
+  }
   function onDrop(e: React.DragEvent, status: TarefaStatus) {
     e.preventDefault();
+    setDragOverCol(null);
     if (draggedId) {
       moveTask.mutate({ id: draggedId, status });
       setDraggedId(null);
