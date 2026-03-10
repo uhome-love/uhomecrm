@@ -268,6 +268,18 @@ export default function MinhasTarefas() {
         </Button>
       </div>
 
+      {/* Category tabs: Leads vs Negócios */}
+      <div className="flex gap-2">
+        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("hoje"); }}>
+          🎯 Tarefas de Leads
+          <Badge variant="secondary" className="ml-1 text-xs">{tarefas.filter(t => t.status === "pendente").length}</Badge>
+        </Button>
+        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("hoje"); }}>
+          💼 Tarefas de Negócios
+          <Badge variant="secondary" className="ml-1 text-xs">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
+        </Button>
+      </div>
+
       {/* Summary */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <span>📊 <strong className="text-foreground">Hoje:</strong> {hoje.length} pendentes</span>
