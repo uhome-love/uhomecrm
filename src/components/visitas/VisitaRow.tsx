@@ -169,6 +169,24 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       {/* Empreendimento */}
       <div className="w-32 shrink-0 hidden sm:block">
         <span className="text-xs text-muted-foreground truncate block">{v.empreendimento || "—"}</span>
+        {isNegocio && (
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {negocioMeta.objetivo && (
+              <span className="text-[10px] text-amber-600 font-medium truncate">🎯 {negocioMeta.objetivo}</span>
+            )}
+            {negocioMeta.responsavel && (
+              <span className="text-[10px] text-muted-foreground truncate">👤 {negocioMeta.responsavel}</span>
+            )}
+            {missingNegocioInfo && onEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(v); }}
+                className="text-[10px] text-amber-500 hover:text-amber-400 font-medium flex items-center gap-0.5"
+              >
+                <Pencil className="h-2.5 w-2.5" /> Completar
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Local da visita */}
