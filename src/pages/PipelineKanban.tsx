@@ -520,7 +520,6 @@ export default function PipelineKanban() {
             />
           ) : null}
         </Suspense>
-          ) : null}
         </div>
 
       </div>
