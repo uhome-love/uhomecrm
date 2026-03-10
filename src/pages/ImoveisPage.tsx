@@ -745,9 +745,18 @@ export default function ImoveisPage() {
               const cond = getNum(item, "valor_condominio");
               const disponib = item.situacao || item.status || "";
               const isCampanha = CAMPANHA_CODES.some((c) => c.codigo === codigo);
-              
+              const imovelId = item.id_imovel || item.id || idx;
+              const isSelected = selectedIds.has(imovelId);
 
-              return (
+              const toggleSelect = () => {
+                setSelectedIds(prev => {
+                  const next = new Set(prev);
+                  if (next.has(imovelId)) next.delete(imovelId);
+                  else next.add(imovelId);
+                  return next;
+                });
+                setVitrineLink(null);
+              };
                 <Card key={item.id_imovel || codigo || idx} className={cn("overflow-hidden hover:shadow-lg transition-shadow", isCampanha && "ring-1 ring-primary/30")}>
                   <div className="flex">
                     {/* Image */}
