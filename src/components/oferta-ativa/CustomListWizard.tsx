@@ -113,6 +113,7 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
     initialFilters || { fontes: [], ordem: "score" }
   );
   const [nome, setNome] = useState("");
+  const [campanha, setCampanha] = useState("");
   const [resolving, setResolving] = useState(false);
   const [previewCount, setPreviewCount] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
