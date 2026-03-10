@@ -170,6 +170,8 @@ export function useLeadProgression() {
     negocioId: string;
     pipelineLeadId?: string;
     nomeCliente: string;
+    telefone?: string;
+    email?: string;
     empreendimento?: string;
     corretorId: string;
     vgvFinal?: number;
