@@ -19,6 +19,14 @@ const STATUS_EMOJIS: Record<string, string> = {
   marcada: "🟡", confirmada: "🔵", realizada: "✅", reagendada: "🔄", cancelada: "⚫", no_show: "❌",
 };
 
+const LOCAL_LABELS: Record<string, string> = {
+  stand: "🏗️ Stand",
+  empresa: "🏢 Escritório",
+  videochamada: "📹 Videochamada",
+  decorado: "🏠 Decorado",
+  outro: "📍 Outro",
+};
+
 const STATUS_LINE_COLORS: Record<string, string> = {
   marcada: "bg-amber-400",
   confirmada: "bg-blue-500",
