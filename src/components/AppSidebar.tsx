@@ -385,7 +385,7 @@ export function AppSidebar() {
           label: "Prospecção",
           items: [
             { title: "Oferta Ativa", url: "/corretor/call", icon: PhoneCall },
-            ...aceiteItem,
+            { title: "Aceite de Leads", url: "/aceite", icon: MailCheck },
           ],
         },
         {
