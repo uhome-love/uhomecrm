@@ -676,8 +676,8 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
             )}
             <div className="flex-1" />
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Proposta Popup ── */}
       <Dialog open={propostaPopup} onOpenChange={setPropostaPopup}>
