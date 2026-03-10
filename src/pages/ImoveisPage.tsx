@@ -210,14 +210,26 @@ export default function ImoveisPage() {
             Porto Alegre · Consulte imóveis para sugerir aos seus clientes
           </p>
         </div>
-        <Button
-          onClick={handleCampanha}
-          variant={campanhaAtiva ? "default" : "outline"}
-          className={cn("gap-2 font-semibold", campanhaAtiva && "bg-primary text-primary-foreground")}
-        >
-          <Megaphone className="h-4 w-4" />
-          {campanhaAtiva ? "Mostrando campanhas ativas" : "Imóveis com Campanha de Leads Ativa"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleUhome}
+            variant={uhomeOnly ? "default" : "outline"}
+            size="sm"
+            className={cn("gap-2 font-semibold", uhomeOnly && "bg-primary text-primary-foreground")}
+          >
+            <Building2 className="h-4 w-4" />
+            {uhomeOnly ? "Mostrando uHome" : "Imóveis uHome"}
+          </Button>
+          <Button
+            onClick={handleCampanha}
+            variant={campanhaAtiva ? "default" : "outline"}
+            size="sm"
+            className={cn("gap-2 font-semibold", campanhaAtiva && "bg-primary text-primary-foreground")}
+          >
+            <Megaphone className="h-4 w-4" />
+            {campanhaAtiva ? "Mostrando campanhas" : "Campanha de Leads Ativa"}
+          </Button>
+        </div>
       </div>
 
       {/* Campaign chips when active */}
