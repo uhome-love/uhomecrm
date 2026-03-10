@@ -200,6 +200,8 @@ const PipelineCard = memo(function PipelineCard({
   const [transferOpen, setTransferOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
+  const [scheduleLocal, setScheduleLocal] = useState("");
+  const [scheduleObs, setScheduleObs] = useState("");
 
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
   const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa]);
@@ -248,6 +250,8 @@ const PipelineCard = memo(function PipelineCard({
       gerente_id: user.id,
       created_by: user.id,
       pipeline_lead_id: lead.id,
+      local_visita: scheduleLocal || null,
+      observacoes: scheduleObs || null,
     });
     if (onMoveLead) {
       const visitaStage = stages.find(s => s.nome.toLowerCase().includes("visita marcada") || s.tipo === "visita");
@@ -255,6 +259,8 @@ const PipelineCard = memo(function PipelineCard({
     }
     setScheduleOpen(false);
     setScheduleDate(undefined);
+    setScheduleLocal("");
+    setScheduleObs("");
     toast.success("📅 Visita agendada e lead movido");
   };
 
@@ -467,9 +473,10 @@ const PipelineCard = memo(function PipelineCard({
       {/* Dialogs */}
       <div data-no-card-click onClick={(e) => e.stopPropagation()}>
         <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
-          <DialogContent className="max-w-[320px] p-4 gap-3">
+          <DialogContent className="max-w-[360px] p-5 gap-4">
             <DialogHeader className="p-0 mb-1">
-              <DialogTitle className="text-sm font-semibold">Agendar visita</DialogTitle>
+              <DialogTitle className="text-base font-semibold">📅 Agendar Visita</DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">{cleanName(lead.nome)}</p>
             </DialogHeader>
             <CalendarPicker
               mode="single"
@@ -477,19 +484,44 @@ const PipelineCard = memo(function PipelineCard({
               onSelect={setScheduleDate}
               className={cn("p-0 mx-auto pointer-events-auto border rounded-md")}
               locale={ptBR}
+              disabled={(date) => date < startOfDay(new Date())}
             />
-            <div className="space-y-1.5 mt-2">
-              <Input
-                type="time"
-                value={scheduleTime}
-                onChange={(e) => setScheduleTime(e.target.value)}
-                className="h-8 text-xs w-full"
-              />
-              <div className="text-[10px] text-muted-foreground truncate">
-                {lead.empreendimento || "Sem empreendimento"}
+            <div className="space-y-3 mt-1">
+              <div>
+                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Horário</label>
+                <Input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  className="h-9 text-sm w-full"
+                />
               </div>
-              <Button size="sm" className="w-full h-8 text-xs mt-1" disabled={!scheduleDate} onClick={handleScheduleVisit}>
-                Confirmar visita
+              <div>
+                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Empreendimento</label>
+                <div className="text-sm font-medium text-foreground">
+                  {lead.empreendimento || <span className="text-amber-500">Sem empreendimento definido</span>}
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Local da visita (opcional)</label>
+                <Input
+                  placeholder="Ex: Stand do empreendimento, sala 3..."
+                  value={scheduleLocal}
+                  onChange={(e) => setScheduleLocal(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Observações (opcional)</label>
+                <Input
+                  placeholder="Ex: Cliente prefere período da tarde..."
+                  value={scheduleObs}
+                  onChange={(e) => setScheduleObs(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <Button className="w-full h-9 text-sm font-semibold mt-1" disabled={!scheduleDate} onClick={handleScheduleVisit}>
+                <Calendar className="h-4 w-4 mr-1.5" /> Marcar Visita
               </Button>
             </div>
           </DialogContent>
