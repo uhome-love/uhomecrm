@@ -284,6 +284,46 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         const pontos = resultado === "com_interesse" ? 3 : resultado === "numero_errado" ? 0 : 1;
         applyOptimisticUpdate(resultado, actionTaken, pontos, visitaMarcada ?? false);
 
+        // Cross-reference: update pipeline lead card if phone matches
+        if (lead.telefone && !isCustom) {
+          const phone = lead.telefone.replace(/\D/g, "");
+          if (phone.length >= 8) {
+            try {
+              const { data: pipelineLead } = await supabase
+                .from("pipeline_leads")
+                .select("id")
+                .eq("corretor_id", user!.id)
+                .ilike("telefone", `%${phone.slice(-8)}`)
+                .limit(1)
+                .maybeSingle();
+              if (pipelineLead) {
+                const canalLabel = actionTaken === "ligacao" ? "Ligação" : actionTaken === "whatsapp" ? "WhatsApp" : actionTaken;
+                const resultLabel = resultado === "com_interesse" ? "Aproveitado"
+                  : resultado === "nao_atendeu" ? "Não atendeu"
+                  : resultado === "sem_interesse" ? "Sem interesse"
+                  : resultado === "numero_errado" ? "Número errado"
+                  : resultado;
+                await supabase.from("pipeline_atividades").insert({
+                  pipeline_lead_id: pipelineLead.id,
+                  created_by: user!.id,
+                  tipo: "contato",
+                  titulo: `[Oferta Ativa] ${canalLabel}: ${resultLabel}`,
+                  descricao: feedback || null,
+                  status: "concluida",
+                  prioridade: "normal",
+                  data: new Date().toISOString().slice(0, 10),
+                });
+                await supabase.from("pipeline_leads").update({
+                  ultima_acao_at: new Date().toISOString(),
+                } as any).eq("id", pipelineLead.id);
+                queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+              }
+            } catch (e) {
+              console.warn("[OA→Pipeline] cross-ref error:", e);
+            }
+          }
+        }
+
         if (resultado === "com_interesse") {
           setStreak(prev => prev + 1);
           playSoundSuccess();
@@ -425,9 +465,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             toast.success("📅 Visita registrada na Agenda!");
           }
         } else if (resultado === "nao_atendeu") {
-          toast("📝 Não atendeu — registrado no histórico", { duration: 2000 });
+          toast("📝 Não atendeu — registrado no card do Pipeline", { duration: 2500 });
         } else if (resultado === "sem_interesse") {
-          toast("🚫 Sem interesse — registrado no histórico do Pipeline", { duration: 2000 });
+          toast("🚫 Sem interesse — registrado no card do Pipeline e temperatura atualizada para Frio", { duration: 3000 });
           // Update temperatura to frio
           try {
             await supabase.from("pipeline_leads").update({
@@ -435,7 +475,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             } as any).eq("id", lead.id);
           } catch {}
         } else if (resultado === "descarte_oa") {
-          toast("📤 Lead enviado para Oferta Ativa", { duration: 2000 });
+          toast("📤 Lead enviado para Oferta Ativa — registrado no Pipeline", { duration: 2500 });
         }
         checkMilestone(progress.tentativas + 1);
       }
