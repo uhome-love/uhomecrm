@@ -552,6 +552,19 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
             </Select>
           </div>
 
+          {/* Responsável pela Visita */}
+          <div>
+            <Label className="text-xs font-semibold mb-1 block">Responsável pela Visita</Label>
+            <Select value={form.responsavel_visita} onValueChange={v => set("responsavel_visita", v)}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Quem acompanha a visita?" /></SelectTrigger>
+              <SelectContent>
+                {RESPONSAVEL_OPTIONS.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Corretor — only for gestores/admins */}
           {isManager && teamMembers.length > 0 && (
             <div>
