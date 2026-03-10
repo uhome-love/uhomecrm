@@ -391,14 +391,14 @@ const PipelineCard = memo(function PipelineCard({
                 if (negocio) {
                   await supabase.from("pipeline_leads").update({ negocio_id: negocio.id } as any).eq("id", lead.id);
                   setNegocioCriado(true);
-                  toast.success(`🎉 Negócio criado para ${lead.nome}!`, { description: "Envie a proposta em até 24h!" });
-                  // Delay moving to Convertido so user sees the success feedback
+                  toast.success(`🎉 Negócio criado para ${lead.nome}!`, { description: "🎯 Envie a proposta em até 24h!" });
+                  // Move to Convertido after 10 minutes so user has time to work on the deal
                   setTimeout(() => {
                     const convertidoStage = stages.find(s => s.tipo === "convertido");
                     if (convertidoStage && onMoveLead) {
                       onMoveLead(lead.id, convertidoStage.id);
                     }
-                  }, 1500);
+                  }, 10 * 60 * 1000);
                 }
               } catch (err: any) {
                 console.error("Erro ao criar negócio:", err);
