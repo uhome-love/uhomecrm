@@ -256,6 +256,7 @@ export function AppSidebar() {
             label: "Gestão de Vendas",
             items: [
               { title: "Pipeline Negócios", url: "/meus-negocios", icon: Kanban },
+              { title: "Pós-Vendas", url: "/pos-vendas", icon: PackageCheck },
             ],
           },
           {
