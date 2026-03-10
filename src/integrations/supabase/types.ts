@@ -2960,13 +2960,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "oferta_ativa_tentativas_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "oferta_ativa_leads"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "oferta_ativa_tentativas_lista_id_fkey"
             columns: ["lista_id"]
             isOneToOne: false
