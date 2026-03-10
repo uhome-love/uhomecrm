@@ -106,10 +106,23 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const pendingTasks = leadData.tarefas.filter(t => t.status === "pendente").length;
   const overdueTasks = leadData.tarefas.filter(t => t.status === "pendente" && t.vence_em && new Date(t.vence_em + "T12:00:00") < new Date()).length;
 
+  // Attempt counter (Melhoria 9)
+  const callAttempts = useMemo(() => {
+    return leadData.atividades.filter(a => a.tipo === "ligacao").length;
+  }, [leadData.atividades]);
+
   const temperatureInfo = TEMPERATURA_MAP[(lead as any).temperatura || "morno"] || TEMPERATURA_MAP.morno;
   const TempIcon = temperatureInfo.icon;
 
   const whatsappUrl = lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : null;
+
+  // Extract jetimob code from jetimob_lead_id
+  const jetimobCode = useMemo(() => {
+    const jid = (lead as any).jetimob_lead_id;
+    if (!jid) return null;
+    const match = jid.match(/(\d{4,6})/);
+    return match ? `${match[1]}-UH` : jid;
+  }, [(lead as any).jetimob_lead_id]);
 
   // Next task for indicator
   const nextTask = useMemo(() => {
