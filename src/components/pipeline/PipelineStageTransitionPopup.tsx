@@ -515,7 +515,7 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
               <SelectContent>
                 {listas.map(l => (
                   <SelectItem key={l.id} value={l.id}>
-                    {l.nome} <span className="text-muted-foreground">({l.empreendimento})</span>
+                    {l.nome} ({l.empreendimento})
                   </SelectItem>
                 ))}
               </SelectContent>
