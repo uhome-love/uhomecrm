@@ -129,6 +129,8 @@ serve(async (req) => {
       if (valor_min) url += `&valor_min=${encodeURIComponent(valor_min)}`;
       if (valor_max) url += `&valor_max=${encodeURIComponent(valor_max)}`;
 
+      console.log("Jetimob list_imoveis URL:", url);
+
       const response = await fetch(url, { headers: { "Accept": "application/json" } });
 
       if (!response.ok) {
@@ -140,19 +142,34 @@ serve(async (req) => {
         );
       }
 
-      let data = await response.json();
+      const rawData = await response.json();
+      
+      // Normalize: Jetimob may return { result: [...] }, { imoveis: [...] }, { data: [...] }, or just [...]
+      let items = Array.isArray(rawData) ? rawData 
+        : (rawData?.result || rawData?.imoveis || rawData?.data || []);
+      if (!Array.isArray(items)) items = [];
+      
+      const rawTotal = rawData?.total || rawData?.totalResults || rawData?.total_results || items.length;
+
+      console.log("Jetimob response keys:", Object.keys(rawData || {}), "items:", items.length, "total:", rawTotal);
 
       // Filter uHome properties (codes ending with -UH)
       if (search_uhome) {
-        const items = data?.result || data?.imoveis || data?.data || [];
-        const uhomeItems = Array.isArray(items) ? items.filter((item: any) => {
+        items = items.filter((item: any) => {
           const codigo = String(item.codigo || "").toUpperCase();
           return codigo.includes("-UH");
-        }) : [];
-        data = { data: uhomeItems, total: uhomeItems.length, totalPages: 1 };
+        });
       }
 
-      return new Response(JSON.stringify(data), {
+      const totalItems = search_uhome ? items.length : rawTotal;
+      const totalPagesCalc = search_uhome ? 1 : Math.ceil(totalItems / pageSize);
+
+      // Always return normalized format
+      return new Response(JSON.stringify({ 
+        data: items, 
+        total: totalItems, 
+        totalPages: totalPagesCalc 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

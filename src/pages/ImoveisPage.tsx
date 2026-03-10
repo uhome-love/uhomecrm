@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath, Maximize, MapPin, Car, Megaphone, ChevronsUpDown, Check, UserCircle, Phone, Mail, X, Share2, CheckSquare, Square, Link2, Copy } from "lucide-react";
+import { Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath, Maximize, MapPin, Car, Megaphone, ChevronsUpDown, Check, UserCircle, Phone, Mail, X, Share2, CheckSquare, Square, Link2, Copy, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -270,6 +270,28 @@ const BAIRROS_POA = [
 const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
+/** Extract delivery date / construction phase from Jetimob item */
+function extractEntrega(item: any): { emObras: boolean; previsao: string | null } {
+  const situacao = (item.situacao || item.status || item.fase || "").toLowerCase();
+  const emObras = situacao.includes("obra") || situacao.includes("constru") || situacao.includes("planta") || situacao.includes("lançamento") || situacao === "lancamento";
+  
+  const previsao = item.previsao_entrega || item.data_entrega || item.prazo_entrega 
+    || item.previsao || item.entrega || null;
+  
+  // Try to extract from description/observações if not directly available
+  if (!previsao) {
+    const texts = [item.descricao_interna, item.observacoes_internas, item.observacoes, item.descricao].filter(Boolean);
+    for (const t of texts) {
+      if (typeof t !== "string") continue;
+      const match = t.match(/(?:entrega|previs[ãa]o)[:\s]*(\d{1,2}[\/\-]\d{4}|\d{4})/i)
+        || t.match(/(?:entrega|previs[ãa]o)[:\s]*([\w]+\s*(?:de\s*)?\d{4})/i);
+      if (match) return { emObras, previsao: match[1].trim() };
+    }
+  }
+  
+  return { emObras, previsao };
+}
+
 
 function extractEndereco(item: any): { endereco: string; bairro: string; cidade: string } {
   const logradouro = item.endereco_logradouro || item.endereco || item.logradouro || "";
@@ -327,6 +349,7 @@ export default function ImoveisPage() {
   const [dormitorios, setDormitorios] = useState("");
   const [valorMin, setValorMin] = useState("");
   const [valorMax, setValorMax] = useState("");
+  const [somenteObras, setSomenteObras] = useState(false);
 
   const filteredBairros = useMemo(() => {
     if (!bairroSearch) return BAIRROS_POA;
@@ -685,7 +708,17 @@ export default function ImoveisPage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={somenteObras}
+                onChange={(e) => setSomenteObras(e.target.checked)}
+                className="rounded border-border"
+              />
+              <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground font-medium">Somente em obras / na planta</span>
+            </label>
             <Button onClick={handleSearch} disabled={loading} className="gap-2">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               Buscar
@@ -730,7 +763,11 @@ export default function ImoveisPage() {
             onClose={() => setLightboxOpen(false)}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {imoveis.map((item, idx) => {
+            {imoveis.filter(item => {
+              if (!somenteObras) return true;
+              const { emObras } = extractEntrega(item);
+              return emObras;
+            }).map((item, idx) => {
               const images = extractImages(item);
               const fullImages = extractFullImages(item);
               const loc = extractEndereco(item);
@@ -747,6 +784,7 @@ export default function ImoveisPage() {
               const isCampanha = CAMPANHA_CODES.some((c) => c.codigo === codigo);
               const imovelId = String(codigo || item.id_imovel || item.id || idx);
               const isSelected = selectedIds.has(imovelId);
+              const entrega = extractEntrega(item);
 
               const toggleSelect = () => {
                 setSelectedIds(prev => {
@@ -808,6 +846,12 @@ export default function ImoveisPage() {
 
                         <div className="flex items-center gap-1 text-xs flex-wrap">
                           {tipoImovel && <Badge variant="outline" className="text-[10px] h-5">{tipoImovel}</Badge>}
+                          {entrega.emObras && (
+                            <Badge variant="secondary" className="text-[10px] h-5 gap-0.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                              <CalendarClock className="h-2.5 w-2.5" />
+                              {entrega.previsao ? `Entrega ${entrega.previsao}` : "Em obras"}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
