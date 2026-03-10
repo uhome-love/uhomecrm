@@ -38,11 +38,12 @@ export function useNotifications() {
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["notifications", user?.id, cargo],
     queryFn: async () => {
+      // Fetch notifications: either targeted to this cargo OR without cargo filter (null = all)
       const { data, error } = await supabase
         .from("notifications")
         .select("id, user_id, tipo, categoria, titulo, mensagem, dados, lida, lida_em, agrupamento_key, agrupamento_count, cargo_destino, created_at")
         .eq("user_id", user!.id)
-        .contains("cargo_destino", [cargo])
+        .or(`cargo_destino.cs.{${cargo}},cargo_destino.is.null`)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;

@@ -29,6 +29,9 @@ const TIPO_LABELS: Record<string, string> = {
   corretor_ajuda: "Ajuda",
   zero_ligacoes: "Alerta",
   alertas: "Alertas",
+  lead_urgente: "Urgente",
+  lead_ultimo_alerta: "Último Alerta",
+  automacao: "Automação",
 };
 
 const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread: string }> = {
@@ -39,6 +42,9 @@ const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread
   lead_parado: { emoji: "⚠️", borderColor: "#F59E0B", bgUnread: "#FFFBEB" },
   lead_alto_valor: { emoji: "💼", borderColor: "#8B5CF6", bgUnread: "#F5F3FF" },
   fila_ceo: { emoji: "⚡", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
+  lead_urgente: { emoji: "⚡", borderColor: "#F97316", bgUnread: "#FFF7ED" },
+  lead_ultimo_alerta: { emoji: "🚨", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
+  automacao: { emoji: "⚙️", borderColor: "#6366F1", bgUnread: "#EEF2FF" },
   visitas: { emoji: "📅", borderColor: "#10B981", bgUnread: "#ECFDF5" },
   visita_agendada: { emoji: "📅", borderColor: "#10B981", bgUnread: "#ECFDF5" },
   visita_confirmada: { emoji: "📅", borderColor: "#10B981", bgUnread: "#ECFDF5" },
