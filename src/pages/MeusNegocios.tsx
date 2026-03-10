@@ -15,6 +15,8 @@ import { differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import AddNegocioDialog from "@/components/pipeline/AddNegocioDialog";
+import NegocioDetailModal from "@/components/pipeline/NegocioDetailModal";
+import VendaCelebration from "@/components/pipeline/VendaCelebration";
 
 function formatVGV(value: number) {
   if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
@@ -147,7 +149,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
 }
 
 export default function MeusNegocios() {
-  const { negocios, corretorNomes, corretorInfoMap, loading, moveFase, reload } = useNegocios();
+  const { negocios, corretorNomes, corretorInfoMap, loading, moveFase, updateNegocio, reload } = useNegocios();
   const { onNegocioAssinado } = useLeadProgression();
   const { user } = useAuth();
   const { isGestor, isAdmin } = useUserRole();
@@ -163,6 +165,10 @@ export default function MeusNegocios() {
   const [refreshing, setRefreshing] = useState(false);
   const [addNegocioOpen, setAddNegocioOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedNegocio, setSelectedNegocio] = useState<Negocio | null>(null);
+  const [celebrationData, setCelebrationData] = useState<{
+    nomeCliente: string; empreendimento?: string; vgv: number; corretorNome?: string;
+  } | null>(null);
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -208,7 +214,7 @@ export default function MeusNegocios() {
 
     await moveFase(negocioId, novaFase);
 
-    // GATILHO 5: If moved to "assinado", trigger pos-vendas
+    // GATILHO 5: If moved to "assinado", trigger pos-vendas + epic celebration
     if (novaFase === "assinado") {
       await onNegocioAssinado({
         negocioId,
@@ -218,10 +224,15 @@ export default function MeusNegocios() {
         corretorId: negocio.corretor_id || user?.id || "",
         vgvFinal: negocio.vgv_estimado || undefined,
       });
-      // Confetti
-      spawnConfetti();
+      // Epic celebration screen
+      setCelebrationData({
+        nomeCliente: negocio.nome_cliente,
+        empreendimento: negocio.empreendimento || undefined,
+        vgv: negocio.vgv_final || negocio.vgv_estimado || 0,
+        corretorNome: negocio.corretor_id ? corretorNomes[negocio.corretor_id] : undefined,
+      });
     }
-  }, [negocios, moveFase, onNegocioAssinado, user]);
+  }, [negocios, moveFase, onNegocioAssinado, user, corretorNomes]);
 
   const handleDrop = (e: React.DragEvent, fase: string) => {
     e.preventDefault();
@@ -414,9 +425,7 @@ export default function MeusNegocios() {
                       showCorretor={isAdmin || isGestor}
                       paradoInfo={paradoMap.get(negocio.id)}
                       onDragStart={() => { dragNegocioId.current = negocio.id; }}
-                      onClick={() => {
-                        toast.info(`${negocio.nome_cliente} — ${fase.label}`);
-                      }}
+                      onClick={() => setSelectedNegocio(negocio)}
                     />
                   ))}
                 </div>
@@ -431,27 +440,26 @@ export default function MeusNegocios() {
         onOpenChange={setAddNegocioOpen}
         onCreated={() => reload()}
       />
+
+      {selectedNegocio && (
+        <NegocioDetailModal
+          open={!!selectedNegocio}
+          onOpenChange={(open) => { if (!open) setSelectedNegocio(null); }}
+          negocio={selectedNegocio}
+          onUpdate={updateNegocio}
+          onMoveFase={handleMoveFase}
+        />
+      )}
+
+      {celebrationData && (
+        <VendaCelebration
+          nomeCliente={celebrationData.nomeCliente}
+          empreendimento={celebrationData.empreendimento}
+          vgv={celebrationData.vgv}
+          corretorNome={celebrationData.corretorNome}
+          onDismiss={() => setCelebrationData(null)}
+        />
+      )}
     </div>
   );
-}
-
-// Confetti helper
-function spawnConfetti() {
-  const colors = ["#22C55E", "#F59E0B", "#3B82F6", "#8B5CF6", "#FFFFFF"];
-  const container = document.createElement("div");
-  container.style.cssText = "position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden";
-  document.body.appendChild(container);
-  for (let i = 0; i < 50; i++) {
-    const p = document.createElement("div");
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    const left = Math.random() * 100;
-    const delay = Math.random() * 0.5;
-    const size = 6 + Math.random() * 8;
-    p.style.cssText = `position:absolute;top:-10px;left:${left}%;width:${size}px;height:${size}px;background:${color};border-radius:${Math.random() > 0.5 ? "50%" : "2px"};opacity:0.9;animation:confettiNeg ${2 + Math.random()}s ease-in ${delay}s forwards`;
-    container.appendChild(p);
-  }
-  const style = document.createElement("style");
-  style.textContent = `@keyframes confettiNeg { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }`;
-  container.appendChild(style);
-  setTimeout(() => container.remove(), 4000);
 }

@@ -2408,18 +2408,27 @@ export type Database = {
         Row: {
           corretor_id: string | null
           created_at: string | null
+          documentacao_situacao: string | null
           empreendimento: string | null
           fase: string | null
           fase_changed_at: string | null
           gerente_id: string | null
           id: string
+          imovel_interesse: string | null
           lead_id: string | null
+          negociacao_contra_proposta: string | null
+          negociacao_pendencia: string | null
+          negociacao_situacao: string | null
           nome_cliente: string | null
           observacoes: string | null
           origem: string | null
           pipeline_lead_id: string | null
+          proposta_imovel: string | null
+          proposta_situacao: string | null
+          proposta_valor: number | null
           status: string | null
           telefone: string | null
+          unidade: string | null
           updated_at: string | null
           vgv_estimado: number | null
           vgv_final: number | null
@@ -2428,18 +2437,27 @@ export type Database = {
         Insert: {
           corretor_id?: string | null
           created_at?: string | null
+          documentacao_situacao?: string | null
           empreendimento?: string | null
           fase?: string | null
           fase_changed_at?: string | null
           gerente_id?: string | null
           id?: string
+          imovel_interesse?: string | null
           lead_id?: string | null
+          negociacao_contra_proposta?: string | null
+          negociacao_pendencia?: string | null
+          negociacao_situacao?: string | null
           nome_cliente?: string | null
           observacoes?: string | null
           origem?: string | null
           pipeline_lead_id?: string | null
+          proposta_imovel?: string | null
+          proposta_situacao?: string | null
+          proposta_valor?: number | null
           status?: string | null
           telefone?: string | null
+          unidade?: string | null
           updated_at?: string | null
           vgv_estimado?: number | null
           vgv_final?: number | null
@@ -2448,18 +2466,27 @@ export type Database = {
         Update: {
           corretor_id?: string | null
           created_at?: string | null
+          documentacao_situacao?: string | null
           empreendimento?: string | null
           fase?: string | null
           fase_changed_at?: string | null
           gerente_id?: string | null
           id?: string
+          imovel_interesse?: string | null
           lead_id?: string | null
+          negociacao_contra_proposta?: string | null
+          negociacao_pendencia?: string | null
+          negociacao_situacao?: string | null
           nome_cliente?: string | null
           observacoes?: string | null
           origem?: string | null
           pipeline_lead_id?: string | null
+          proposta_imovel?: string | null
+          proposta_situacao?: string | null
+          proposta_valor?: number | null
           status?: string | null
           telefone?: string | null
+          unidade?: string | null
           updated_at?: string | null
           vgv_estimado?: number | null
           vgv_final?: number | null
