@@ -204,6 +204,7 @@ export default function PagadoriasPage() {
     setWizardOpen(false);
     setStep(1);
     setForm({ cliente_nome: "", cliente_cpf: "", cliente_email: "", cliente_telefone: "", cliente_endereco: "", empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), forma_pagamento: "a_vista", corretor_nome: "", gerente_nome: "" });
+    setCompradores([{ nome: "", cpf: "", rg: "", nacionalidade: "brasileira", estado_civil: "", telefone: "", email: "", endereco: "", cidade: "", estado: "", doc_identidade_url: null, doc_comprovante_url: null }]);
     setCredores([]);
     setComissaoPct(5);
     setVgvAcumuladoCorretor(0);
