@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Download, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import html2pdf from "html2pdf.js";
 
 interface Credor {
   credor_nome: string;
@@ -71,15 +70,15 @@ function fmtDateShort(dateStr: string) {
   return d.toLocaleDateString("pt-BR");
 }
 
-// Common inline styles
+// Inline styles matching the real document (Calibri 11px, justified)
 const S = {
-  p: { textAlign: "justify" as const, marginBottom: "12px", textIndent: "0" },
-  pSmall: { textAlign: "justify" as const, marginBottom: "6px" },
-  th: { border: "1px solid #000", padding: "4px 6px", textAlign: "center" as const, fontWeight: "bold" as const, fontSize: "9px", background: "#f5f5f5" },
-  thLeft: { border: "1px solid #000", padding: "4px 6px", textAlign: "left" as const, fontWeight: "bold" as const, fontSize: "9px", background: "#f5f5f5" },
-  td: { border: "1px solid #000", padding: "4px 6px", textAlign: "center" as const, fontSize: "9px" },
-  tdLeft: { border: "1px solid #000", padding: "4px 6px", textAlign: "left" as const, fontSize: "9px" },
-  tdBold: { border: "1px solid #000", padding: "4px 6px", textAlign: "center" as const, fontSize: "9px", fontWeight: "bold" as const },
+  p: { textAlign: "justify" as const, marginBottom: "10px", textIndent: "0", lineHeight: "1.6" },
+  pIndent: { textAlign: "justify" as const, marginBottom: "6px", marginLeft: "20px", lineHeight: "1.6" },
+  th: { border: "1px solid #000", padding: "4px 8px", textAlign: "center" as const, fontWeight: "bold" as const, fontSize: "9px", background: "#f5f5f5" },
+  thLeft: { border: "1px solid #000", padding: "4px 8px", textAlign: "left" as const, fontWeight: "bold" as const, fontSize: "9px", background: "#f5f5f5" },
+  td: { border: "1px solid #000", padding: "4px 8px", textAlign: "center" as const, fontSize: "9px" },
+  tdLeft: { border: "1px solid #000", padding: "4px 8px", textAlign: "left" as const, fontSize: "9px" },
+  tdBold: { border: "1px solid #000", padding: "4px 8px", textAlign: "center" as const, fontSize: "9px", fontWeight: "bold" as const },
 };
 
 export default function ContratoIntermediacao({ open, onOpenChange, data, onDataChange, onGenerated }: Props) {
@@ -89,41 +88,69 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
 
   const parcelas = data.parcelas.length > 0 ? data.parcelas : [{ numero: 1, data: data.data_venda, valor: data.comissao_total }];
 
-  // Separate credores: UHome vs Agilitas (everyone else)
+  // Separate credores
   const credoresAtivos = data.credores.filter(c => c.percentual > 0);
-  const uhomeCredor = credoresAtivos.find(c => c.credor_tipo === "imobiliaria" || c.credor_nome?.toLowerCase().includes("uhome"));
+  const uhomeCredor = credoresAtivos.find(c => c.credor_tipo === "uhome" || c.credor_nome?.toLowerCase().includes("uhome"));
   const agilitasCredores = credoresAtivos.filter(c => c !== uhomeCredor);
   const agilitasTotal = agilitasCredores.reduce((s, c) => s + c.valor, 0);
   const uhomeTotal = uhomeCredor?.valor || 0;
+
+  // Build contratados list from credores (everyone except uhome)
+  const contratadosList: { nome: string; cpf: string; creci: string; rg: string; email: string; tipo: string }[] = [];
+  
+  // Add all non-uhome credores as contratados
+  for (const c of credoresAtivos) {
+    if (c.credor_tipo === "uhome") continue;
+    
+    let cpf = "", creci = "", email = "", rg = "", tipo = "Corretor(a)";
+    
+    if (c.credor_tipo === "corretor") {
+      cpf = data.corretor_cpf;
+      creci = data.corretor_creci;
+      email = data.corretor_email;
+      tipo = "Corretor(a)";
+    } else if (c.credor_tipo === "gerente") {
+      cpf = data.gerente_cpf;
+      creci = data.gerente_creci;
+      email = data.gerente_email;
+      tipo = "Corretor(a)";
+    }
+    
+    contratadosList.push({ nome: c.credor_nome, cpf, creci, rg, email, tipo });
+  }
 
   const handleDownload = async () => {
     if (!contractRef.current) return;
     setGenerating(true);
     try {
+      // Dynamic import to avoid SSR issues
+      const html2pdfModule = await import("html2pdf.js");
+      const html2pdf = html2pdfModule.default;
+      
       const element = contractRef.current;
+      const filename = `Intermediacao_${(data.cliente_nome || "Cliente").replace(/\s+/g, "_")}_${(data.empreendimento || "Empreendimento").replace(/\s+/g, "_")}_${data.unidade || "SN"}.pdf`;
+      
       await html2pdf()
         .set({
-          margin: [25, 25, 20, 25],
-          filename: `Intermediacao_${data.cliente_nome.replace(/\s+/g, "_")}_${data.empreendimento.replace(/\s+/g, "_")}_${data.unidade || "SN"}.pdf`,
+          margin: [20, 20, 15, 20],
+          filename,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
+          html2canvas: { scale: 2, useCORS: true, logging: false, allowTaint: true },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
           pagebreak: { mode: ["css", "legacy"] },
         })
         .from(element)
         .save();
+      
       onGenerated();
       toast.success("PDF gerado com sucesso!");
     } catch (e: any) {
+      console.error("PDF generation error:", e);
       toast.error("Erro ao gerar PDF: " + e.message);
     } finally {
       setGenerating(false);
     }
   };
-
-  const contratados = [] as { nome: string; cpf: string; creci: string; email: string; tipo: string }[];
-  if (data.corretor_nome) contratados.push({ nome: data.corretor_nome, cpf: data.corretor_cpf, creci: data.corretor_creci, email: data.corretor_email, tipo: "Corretor(a)" });
-  if (data.gerente_nome) contratados.push({ nome: data.gerente_nome, cpf: data.gerente_cpf, creci: data.gerente_creci, email: data.gerente_email, tipo: "Gerente/Corretor(a)" });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,13 +184,13 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
           </div>
         )}
 
-        {/* Contract preview */}
+        {/* Contract preview — matches real PDF faithfully */}
         <div
           ref={contractRef}
           style={{
             fontFamily: "Calibri, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
             fontSize: "11px",
-            lineHeight: "1.5",
+            lineHeight: "1.6",
             color: "#000",
             background: "#fff",
             padding: "10px",
@@ -171,7 +198,7 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
         >
           {/* LOGO */}
           <div style={{ textAlign: "center", marginBottom: "24px" }}>
-            <img src="/logo-uhome.svg" alt="UHome Negócios Imobiliários" style={{ height: "55px" }} crossOrigin="anonymous" />
+            <img src="/logo-uhome.svg" alt="UHome" style={{ height: "55px" }} crossOrigin="anonymous" />
           </div>
 
           {/* TITLE */}
@@ -179,7 +206,7 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             INSTRUMENTO PARTICULAR DE INTERMEDIAÇÃO IMOBILIÁRIA
           </p>
 
-          {/* CONTRATANTE */}
+          {/* ── CONTRATANTE(S) ── */}
           <p style={S.p}>
             Pelo presente instrumento particular de intermediação imobiliária, de um lado, como <b>CONTRATANTE(S)</b>:
           </p>
@@ -191,12 +218,17 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             </p>
           ))}
 
-          {/* CONTRATADOS */}
+          {/* ── CONTRATADOS ── */}
           <p style={S.p}>
             De outro lado, como <b>CONTRATADOS</b>:{" "}
-            {contratados.map((c, i) => (
+            {contratadosList.map((c, i) => (
               <span key={i}>
-                <b>{c.nome}</b>, inscrito no CPF sob o nº {c.cpf || "___.___.___-__"}, CRECI nº {c.creci || "______"}, endereço eletrônico: {c.email || "________________"}{i < contratados.length - 1 ? "; " : "; e "}
+                <b>{c.nome || "_______________"}</b>
+                {c.cpf ? `, CPF nº ${c.cpf}` : ", inscrito no CPF sob o nº ___.___.___-__"}
+                {c.creci ? `, inscrita no CRECI sob o nº ${c.creci}` : ""}
+                {c.rg ? `, portador do RG nº ${c.rg}` : ""}
+                {c.email ? `, e-mail: ${c.email}` : ", endereço eletrônico: ________________"}
+                {i < contratadosList.length - 1 ? "; " : "; e "}
               </span>
             ))}
             <b>UHOME NEGÓCIOS IMOBILIÁRIOS</b>, pessoa jurídica inscrita no CNPJ sob o nº 37.900.790/0001-71, CRECI nº 25.682-J, com sede na Avenida João Wallig, nº 573, Loja 01, Bairro Passo d'Areia, Porto Alegre/RS, CEP 91340-000, neste ato representada por seu procurador <b>LUCAS SOUTO DE MORAES SARMENTO</b>, inscrito no CPF sob o nº 863.851.860-91, RG nº 9098653034, CRECI nº 58.516, endereço eletrônico: lucas@uhome.imb.br, doravante denominados, em conjunto, simplesmente CONTRATADOS.
@@ -206,24 +238,24 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             Isoladamente denominadas <b>"Parte"</b> e, em conjunto, <b>"Partes"</b>, têm entre si justo e contratado o que segue:
           </p>
 
-          {/* CLAUSULA 1 */}
+          {/* ── CLÁUSULA 1 ── */}
           <p style={S.p}>
             <b>1.</b> O(s) CONTRATANTE(S), por meio do presente instrumento, contrata(m) os CONTRATADOS para a prestação de serviços de intermediação imobiliária, com a finalidade de aquisição do imóvel descrito abaixo, assumindo o(s) CONTRATANTE(S) o compromisso de pagar aos CONTRATADOS os valores estabelecidos neste instrumento.
           </p>
 
-          <p style={{ ...S.pSmall, marginLeft: "20px" }}>
+          <p style={S.pIndent}>
             <b>EMPREENDIMENTO:</b> {data.empreendimento || "_______________"}
           </p>
-          <p style={{ ...S.p, marginLeft: "20px" }}>
+          <p style={{ ...S.pIndent, marginBottom: "12px" }}>
             <b>UNIDADE:</b> {data.unidade || "___"}
           </p>
 
-          {/* CLAUSULA 2 */}
+          {/* ── CLÁUSULA 2 ── */}
           <p style={S.p}>
             <b>2.</b> O valor total devido pelo(a,s) CONTRATANTE(S) a título de comissão de corretagem é de <b>{fmtR(data.comissao_total)}</b> a serem pagos da forma descrita nos respectivos vencimentos, que segue em no quadro abaixo:
           </p>
 
-          {/* TABLE CREDORES */}
+          {/* TABLE — Credores */}
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
             <thead>
               <tr>
@@ -240,7 +272,7 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
                   <td style={S.tdLeft}>{c.credor_nome || c.credor_tipo}</td>
                   <td style={S.td}>{fmtR(c.valor)}</td>
                   {parcelas.map((p, j) => {
-                    const parcelaVal = (c.valor / data.comissao_total) * p.valor;
+                    const parcelaVal = data.comissao_total > 0 ? (c.valor / data.comissao_total) * p.valor : 0;
                     return <td key={j} style={S.td}>{fmtR(parcelaVal)}</td>;
                   })}
                 </tr>
@@ -255,8 +287,8 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             </tbody>
           </table>
 
-          {/* 2.1 - Divisão de pagamento */}
-          <p style={S.pSmall}>
+          {/* ── 2.1 — Divisão de pagamento ── */}
+          <p style={{ ...S.p, marginBottom: "6px" }}>
             <b>2.1</b> - Divisão de pagamento:
           </p>
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
@@ -292,118 +324,142 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             </tbody>
           </table>
 
-          {/* 2.2 */}
+          {/* ── 2.2 ── */}
           <p style={S.p}>
             <b>2.2.</b> O(a,s) CONTRATANTE(S) tem ciência, desde já, que os pagamentos devem, obrigatoriamente, ser realizados exclusivamente na forma prevista no item 2. supra e, caso venham a ser realizados de outra maneira, serão considerados não efetivados, ficando os CONTRATADOS assim como os demais prestadores de serviço autônomos (corretores), autorizados a cobrar os valores não quitados com todos os acréscimos moratórios cabíveis, dispostos no item 3 infra.
           </p>
 
-          {/* 3 */}
+          {/* ── 3 ── */}
           <p style={S.p}>
             <b>3.</b> Sobre qualquer parcela não paga, será aplicada correção monetária utilizando-se a variação positiva do Índice de Preços ao Consumidor Amplo - IPCA, publicado pelo Instituto Brasileiro de Geografia e Estatística (IBGE), além de juros de mora de 1% (um por cento) ao mês e multa de 2% (dois por cento), a partir do inadimplemento da obrigação até o dia do seu efetivo pagamento.
           </p>
 
-          {/* 4 */}
+          {/* ── 4 ── */}
           <p style={S.p}>
             <b>4.</b> Eventual inadimplemento por parte do(a,s) CONTRATANTE(S) quanto ao pagamento de qualquer uma das parcelas da comissão de corretagem informadas na cláusula 2 supra, acarretará o vencimento integral e antecipado de todas as demais previstas em tal cláusula, considerando-se o presente instrumento, desde logo, como título executivo extrajudicial, nos termos do artigo 784, III do Código de Processo Civil, sujeitando o(a,s) CONTRATANTE(S) inadimplente a ser inscrito nos Órgãos de Proteção ao Crédito.
           </p>
 
-          {/* 5 */}
+          {/* ── 5 ── */}
           <p style={S.p}>
             <b>5.</b> Os serviços prestados pelos CONTRATADOS, em conformidade com o presente instrumento serão objeto da emissão dos respectivos Recibos de Pagamento a Autônomo e/ou das Notas Fiscais de Serviços de forma individual por cada um dos prestadores de serviço e credores da comissão referidos no item 2. do presente instrumento.
           </p>
 
-          {/* 6 */}
+          {/* ── 6 ── */}
           <p style={S.p}>
             <b>6.</b> O(a,s) CONTRATANTE(S) reconhece(m) que uma vez ocorrida a efetiva intermediação imobiliária, o montante relativo à comissão de corretagem é de responsabilidade dele(a,s), CONTRATANTE(S), e ainda que o imóvel aqui identificado não venha a ser efetivamente adquirido por ele, a comissão de corretagem é devida e não será, em qualquer hipótese, devolvida pelo(s) CONTRATADO(S) e/ou prestadores de serviço autônomos (corretores) que co-participaram do serviço de intermediação em conformidade com o artigo 725 e seguintes do Código Civil, nem tampouco poderá ser a qualquer momento questionada pelo(a,s) CONTRATANTE(S).
           </p>
 
-          {/* 7 - LGPD */}
+          {/* ── 7 — LGPD (fiel ao documento real) ── */}
           <p style={S.p}>
-            <b>7.</b> O(a,s) CONTRATANTE(S) declara(m) ter ciência e concordar com o tratamento de seus dados pessoais pelos CONTRATADOS, nos termos da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais - LGPD), conforme as disposições abaixo:
-          </p>
-          <p style={S.p}>
-            <b>7.1.</b> Os dados pessoais coletados serão utilizados exclusivamente para as seguintes finalidades:
-          </p>
-          <p style={{ ...S.pSmall, marginLeft: "20px" }}>
-            <b>7.1.1.</b> Prestação dos serviços de intermediação imobiliária objeto deste contrato, incluindo a comunicação com incorporadoras, construtoras, instituições financeiras e cartórios.
-          </p>
-          <p style={S.p}>
-            <b>7.2.</b> Os dados pessoais poderão ser compartilhados com terceiros estritamente necessários à execução dos serviços, tais como incorporadoras, construtoras, correspondentes bancários, cartórios de registro de imóveis e instituições financeiras, sempre observada a finalidade contratual.
-          </p>
-          <p style={S.p}>
-            <b>7.3.</b> Os CONTRATADOS se comprometem a adotar medidas de segurança técnicas e administrativas aptas a proteger os dados pessoais de acessos não autorizados e de situações acidentais ou ilícitas de destruição, perda, alteração, comunicação ou difusão.
-          </p>
-          <p style={S.p}>
-            <b>7.4.</b> Os dados pessoais serão armazenados pelo período necessário ao cumprimento das finalidades para as quais foram coletados, inclusive para fins de cumprimento de obrigações legais, contratuais, prestação de contas ou requisição de autoridades competentes.
-          </p>
-          <p style={S.p}>
-            <b>7.5.</b> O(a,s) CONTRATANTE(S) poderá(ão), a qualquer tempo, exercer os direitos previstos no artigo 18 da LGPD, mediante solicitação por escrito aos CONTRATADOS, incluindo confirmação da existência de tratamento, acesso aos dados, correção de dados incompletos, inexatos ou desatualizados, e eliminação dos dados pessoais tratados com consentimento, quando aplicável.
-          </p>
-          <p style={S.p}>
-            <b>7.6.</b> O consentimento para o tratamento dos dados pessoais poderá ser revogado a qualquer momento, mediante manifestação expressa do(a,s) CONTRATANTE(S), por meio de comunicação escrita, sem prejuízo da legalidade do tratamento realizado anteriormente.
-          </p>
-          <p style={S.p}>
-            <b>7.7.</b> Para fins de contato e exercício dos direitos relacionados à proteção de dados pessoais, o(a,s) CONTRATANTE(S) poderá(ão) entrar em contato através do endereço eletrônico: lucas@uhome.imb.br.
-          </p>
-          <p style={S.p}>
-            <b>7.8.</b> O(a,s) CONTRATANTE(S) declara(m) ter lido e compreendido integralmente as disposições desta cláusula, manifestando seu livre, informado e inequívoco consentimento para o tratamento de seus dados pessoais nos termos aqui estabelecidos.
+            <b>7.</b> Em atos pré-contratuais, na ocasião da celebração deste instrumento e durante o cumprimento das obrigações aqui determinadas, o(s) CONTRATADO(S) coletaram/coletarão do(a, os, as) CONTRATANTE(S) informações que são capazes de identificá-lo(s) ou torná-lo(s) identificável(s) (os "Dados Pessoais") e, para execução deste Contrato, os CONTRATADO(S) realizarão atividades diversas com os referidos (o "Tratamento"), sempre observando, de forma rigorosa, a legislação aplicável à tal atividade, incluindo, mas não se limitando, a Lei nº 13.709/2018 ("Lei Geral de Proteção de Dados Pessoais" ou "LGPD").
           </p>
 
-          {/* 8 */}
+          <p style={S.p}>
+            <b>7.1.</b> O Tratamento dos Dados Pessoais será realizado pelos CONTRATADO(S) ou por quem este(s) indicar(em), especialmente para: (a) viabilizar a execução deste Contrato; (b) Cumprir obrigações legais ou regulatórias; e (c) Exercer seus direitos em eventuais processos judiciais, administrativos ou arbitrais.
+          </p>
+
+          <p style={S.p}>
+            <b>7.1.1.</b> Caso necessário o compartilhamento de Dados Pessoais para cumprimento das finalidades acima especificadas, o(s) CONTRATADO(S) celebrarão com o terceiro um contrato escrito para garantir que todas as obrigações e responsabilidades relacionadas à proteção dos Dados Pessoais de cada parte envolvida estejam devidamente estabelecidas.
+          </p>
+
+          <p style={S.p}>
+            <b>7.2.</b> Os Dados Pessoais e os registros do Tratamento são armazenados em ambiente seguro e controlado, podendo estar em servidores do(s) CONTRATADO(S) localizados no Brasil, bem como em ambiente de uso de recursos ou servidores na nuvem (cloud computing), o que pode exigir transferência e/ou processamento Dados Pessoais fora do Brasil.
+          </p>
+
+          <p style={S.p}>
+            <b>7.3.</b> Caso os Dados Pessoais sejam transferidos e/ou processados fora do território brasileiro, nos termos da Cláusula 8.2 supra, o(s) CONTRATADO(S) tomarão as medidas cabíveis para assegurar que as atividades sejam realizadas em conformidade com a legislação aplicável, mantendo um nível de conformidade semelhante ou mais rigoroso que o previsto na legislação brasileira.
+          </p>
+
+          <p style={S.p}>
+            <b>7.4.</b> Os Dados Pessoais somente serão armazenados pelo(s) CONTRATADO(S) pelo tempo que for necessário para cumprir com as finalidades para as quais foram coletados ou para cumprimento de quaisquer obrigações legais, regulatórias ou para preservação de direitos.
+          </p>
+
+          <p style={S.p}>
+            <b>7.5.</b> Durante o período em que Tratarem os Dados Pessoais ou os mantiverem em seus arquivos, o(s) CONTRATADO(S) se compromete(m) a aplicar medidas técnicas e organizacionais de segurança da informação e governança corporativa aptas a proteger os Dados Pessoais tratados no âmbito do Contrato.
+          </p>
+
+          <p style={S.p}>
+            <b>7.6.</b> Findo o prazo de manutenção e a necessidade legal, os Dados Pessoais serão excluídos com uso de métodos de descarte seguro ou utilizados de forma anonimizada para fins estatísticos.
+          </p>
+
+          <p style={S.p}>
+            <b>7.7.</b> O(s) CONTRATADOS respeitam os direitos que o(s) CONTRATANTE(S) possuem na qualidade de titulares dos Dados Pessoais e disponibilizam o canal para esclarecer dúvidas sobre as atividades de Tratamento e garantir que o(s) CONTRATANTE(S) possam exercer seus direitos, tais como, mas não limitados a revogar consentimento, solicitar correção, anonimização, bloqueio ou portabilidade.
+          </p>
+
+          <p style={S.p}>
+            <b>7.8.</b> O(s) CONTRATANTE(S) compreende(m) que é(são) responsável(is) pela precisão, veracidade e atualização dos Dados Pessoais que fornecer ao(s) CONTRATADO(S), desta forma, deve(m) contatar estes últimos, para atualizá-las em caso de alterações.
+          </p>
+
+          {/* ── 8 ── */}
           <p style={S.p}>
             <b>8.</b> As partes elegem, com renúncia a qualquer outro, o foro Central da Comarca de Porto Alegre para conhecer e dirimir quaisquer questões relacionadas com o presente instrumento, renunciando a qualquer outro, por mais privilegiado que seja ou se torne.
           </p>
 
           {/* Assinatura digital */}
           <p style={S.p}>
-            As Partes concordam em assinar o presente instrumento, por: (i) meio de plataformas de assinatura digital, sendo certo que as assinaturas eletrônicas produzirão os mesmos efeitos das assinaturas manuscritas, nos termos do artigo 10, §2º, da Medida Provisória 2.200-2/2001, da Lei 14.063/2020 e demais legislação aplicável, incluindo eventual regulação vigente à época; ou (ii) de forma manuscrita, hipótese em que este instrumento será impresso e assinado em tantas vias quantas forem necessárias.
+            As Partes concordam em assinar o presente instrumento, por: (i) meio de plataformas de assinatura digital, admitindo expressamente tal meio como válido, nos termos do permissivo contido no § 2º do artigo 10 da Medida Provisória nº 2.200-2/2001. Neste caso, fica dispensada a obrigatoriedade do uso de assinaturas, das Partes e/ou das testemunhas, por meio de certificados emitidos pela ICP-Brasil, nos mesmos termos do dispositivo mencionado no item acima, concordando as Partes que qualquer meio idôneo de certificação digital de autoria e integridade deste Instrumento será válido com comprovação de suas assinaturas e, na impossibilidade da assinatura neste formato digital; (ii) em 02 (duas) vias de igual teor e para um só fim, na presença de duas testemunhas abaixo qualificadas.
           </p>
 
           {/* PAGE BREAK before signatures */}
           <div style={{ pageBreakBefore: "always" }} />
 
-          {/* DATE & SIGNATURES */}
+          {/* DATE */}
           <p style={{ textAlign: "center", marginTop: "30px", marginBottom: "50px" }}>
             Porto Alegre, {formatDate(data.data_assinatura)}.
           </p>
 
-          <div style={{ marginTop: "30px" }}>
-            {/* CONTRATANTE */}
-            <div style={{ borderTop: "1px solid #000", width: "70%", margin: "50px auto 5px auto" }} />
-            <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
-              <b>CONTRATANTE:</b> {data.cliente_nome || "_______________"} / CPF: {data.cliente_cpf || "___.___.___-__"}
-            </p>
-
-            {/* CONTRATADOS */}
-            {contratados.map((c, i) => (
-              <div key={i}>
+          {/* ── ASSINATURAS ── */}
+          <div style={{ marginTop: "20px" }}>
+            {/* CONTRATANTE(S) */}
+            {(data.compradores && data.compradores.length > 0 ? data.compradores : [
+              { nome: data.cliente_nome }
+            ]).map((c, i) => (
+              <div key={`contratante-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
                 <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
-                  <b>CONTRATADO {c.tipo.toUpperCase()}:</b> {c.nome} / CPF: {c.cpf || "___.___.___-__"} · CRECI: {c.creci || "______"}
+                  <b>CONTRATANTE:</b> {(c as any).nome || "_______________"}
                 </p>
               </div>
             ))}
 
-            {/* UHOME */}
+            {/* CONTRATADOS — each creditor gets a signature line */}
+            {contratadosList.map((c, i) => (
+              <div key={`contratado-${i}`}>
+                <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
+                <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
+                  <b>CONTRATADO — CORRETOR(A):</b> {c.nome}
+                </p>
+              </div>
+            ))}
+
+            {/* UHOME / IMOBILIÁRIA */}
             <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
             <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
-              <b>CONTRATADO IMOBILIÁRIA:</b> UHOME NEGÓCIOS IMOBILIÁRIOS / CNPJ: 37.900.790/0001-71 · CRECI: 25.682-J
+              <b>CONTRATADO — IMOBILIÁRIA:</b> UHOME NEGÓCIOS IMOBILIÁRIOS
             </p>
           </div>
 
-          {/* TESTEMUNHAS */}
+          {/* ── TESTEMUNHAS ── */}
           <div style={{ marginTop: "50px" }}>
-            <p style={{ marginBottom: "8px", fontWeight: "bold" }}>TESTEMUNHAS:</p>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div style={{ width: "45%" }}>
-                <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
-                <p style={{ fontSize: "10px" }}>01. Ana Paula Silveira — anapsilveiram@gmail.com</p>
-              </div>
-              <div style={{ width: "45%" }}>
-                <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
-                <p style={{ fontSize: "10px" }}>02. Bruno Schuler — bruno@uhome.imb.br</p>
-              </div>
-            </div>
+            <p style={{ marginBottom: "8px", fontWeight: "bold" }}>Testemunhas:</p>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: "50%", verticalAlign: "top", paddingRight: "20px" }}>
+                    <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
+                    <p style={{ fontSize: "10px" }}>01. ___________________________</p>
+                    <p style={{ fontSize: "10px" }}>Nome: Ana Paula Silveira</p>
+                    <p style={{ fontSize: "10px" }}>E-mail: anapsilveiram@gmail.com</p>
+                  </td>
+                  <td style={{ width: "50%", verticalAlign: "top", paddingLeft: "20px" }}>
+                    <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
+                    <p style={{ fontSize: "10px" }}>02. ___________________________</p>
+                    <p style={{ fontSize: "10px" }}>Nome: Bruno Schuler</p>
+                    <p style={{ fontSize: "10px" }}>E-mail: bruno@uhome.imb.br</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
