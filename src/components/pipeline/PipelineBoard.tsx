@@ -689,6 +689,18 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           })}
         </div>
       </div>
+
+      {/* Stage Transition Popup */}
+      {transitionPopup && (
+        <PipelineStageTransitionPopup
+          open={!!transitionPopup}
+          onOpenChange={(v) => !v && handleTransitionCancel()}
+          lead={transitionPopup.lead}
+          targetStage={transitionPopup.targetStage}
+          onConfirm={handleTransitionConfirm}
+          onCancel={handleTransitionCancel}
+        />
+      )}
     </div>
   );
 }
