@@ -232,16 +232,31 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
           {/* ── CONTRATADOS ── */}
           <p style={S.p}>
             De outro lado, como <b>CONTRATADOS</b>:{" "}
-            {contratadosList.map((c, i) => (
-              <span key={i}>
-                <b>{c.nome || "_______________"}</b>
-                {c.cpf ? `, CPF nº ${c.cpf}` : ", inscrito no CPF sob o nº ___.___.___-__"}
-                {c.creci ? `, inscrita no CRECI sob o nº ${c.creci}` : ""}
-                {c.rg ? `, portador do RG nº ${c.rg}` : ""}
-                {c.email ? `, e-mail: ${c.email}` : ", endereço eletrônico: ________________"}
-                {i < contratadosList.length - 1 ? "; " : "; e "}
-              </span>
-            ))}
+            {contratadosList.map((c, i) => {
+              // Format varies: with CRECI → "inscrito(a) no CRECI sob o nº X, CPF nº Y, portador do RG nº Z, e-mail: W"
+              // Without CRECI → "CPF nº X, e-mail: Y"
+              const hasCRECI = !!c.creci;
+              return (
+                <span key={i}>
+                  <b>{c.nome || "_______________"}</b>
+                  {hasCRECI ? (
+                    <>
+                      {`, inscrito(a) no CRECI sob o nº ${c.creci}`}
+                      {c.cpf ? `, CPF nº ${c.cpf}` : ""}
+                      {c.rg ? `, portador do RG nº ${c.rg}` : ""}
+                      {c.email ? `, e-mail: ${c.email}` : ", endereço eletrônico: ________________"}
+                    </>
+                  ) : (
+                    <>
+                      {c.cpf ? `, CPF nº ${c.cpf}` : ""}
+                      {c.rg ? `, portador do RG nº ${c.rg}` : ""}
+                      {c.email ? `, e-mail: ${c.email}` : ", endereço eletrônico: ________________"}
+                    </>
+                  )}
+                  {i < contratadosList.length - 1 ? "; " : "; e "}
+                </span>
+              );
+            })}
             <b>UHOME NEGÓCIOS IMOBILIÁRIOS</b>, pessoa jurídica inscrita no CNPJ sob o nº 37.900.790/0001-71, CRECI nº 25.682-J, com sede na Avenida João Wallig, nº 573, Loja 01, Bairro Passo d'Areia, Porto Alegre/RS, CEP 91340-000, neste ato representada por seu procurador <b>LUCAS SOUTO DE MORAES SARMENTO</b>, inscrito no CPF sob o nº 863.851.860-91, RG nº 9098653034, CRECI nº 58.516, endereço eletrônico: lucas@uhome.imb.br, doravante denominados, em conjunto, simplesmente CONTRATADOS.
           </p>
 
@@ -427,8 +442,11 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             ]).map((c, i) => (
               <div key={`contratante-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
+                <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "0px" }}>
+                  <b>CONTRATANTE:</b>
+                </p>
                 <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
-                  <b>CONTRATANTE:</b> {(c as any).nome || "_______________"}
+                  {(c as any).nome || "_______________"}
                 </p>
               </div>
             ))}
@@ -437,16 +455,28 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             {contratadosList.map((c, i) => (
               <div key={`contratado-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
+                <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "0px" }}>
+                  <b>CONTRATADO:</b>
+                </p>
+                <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "0px" }}>
+                  <b>CORRETOR{c.tipo === "Corretora" ? "A" : ""}:</b>
+                </p>
                 <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
-                  <b>CONTRATADO — CORRETOR(A):</b> {c.nome}
+                  {c.nome}
                 </p>
               </div>
             ))}
 
             {/* UHOME / IMOBILIÁRIA */}
             <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
+            <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "0px" }}>
+              <b>CONTRATADO:</b>
+            </p>
+            <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "0px" }}>
+              <b>IMOBILIÁRIA:</b>
+            </p>
             <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
-              <b>CONTRATADO — IMOBILIÁRIA:</b> UHOME NEGÓCIOS IMOBILIÁRIOS
+              UHOME NEGÓCIOS IMOBILIÁRIOS
             </p>
           </div>
 
