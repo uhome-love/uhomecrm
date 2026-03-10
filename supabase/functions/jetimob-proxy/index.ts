@@ -117,10 +117,15 @@ serve(async (req) => {
     }
 
     if (action === "list_imoveis") {
-      const response = await fetch(
-        `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/todos?v=6&page=1&pageSize=50`,
-        { headers: { "Accept": "application/json" } }
-      );
+      const { page = 1, pageSize = 30, search, contrato, tipo, cidade, bairro } = body;
+      let url = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/todos?v=6&page=${page}&pageSize=${pageSize}`;
+      if (contrato) url += `&contrato=${encodeURIComponent(contrato)}`;
+      if (tipo) url += `&tipo=${encodeURIComponent(tipo)}`;
+      if (cidade) url += `&cidade=${encodeURIComponent(cidade)}`;
+      if (bairro) url += `&bairro=${encodeURIComponent(bairro)}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const response = await fetch(url, { headers: { "Accept": "application/json" } });
 
       if (!response.ok) {
         const text = await response.text();
