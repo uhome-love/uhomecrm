@@ -166,6 +166,17 @@ export default function MinhasTarefas() {
     enabled: !!user && leadSearch.length >= 2,
   });
 
+  const { data: searchNegocios = [] } = useQuery({
+    queryKey: ["negocio-search-tarefas", negocioSearch],
+    queryFn: async () => {
+      if (!user || negocioSearch.length < 2) return [];
+      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, fase")
+        .not("fase", "eq", "caiu").ilike("nome_cliente", `%${negocioSearch}%`).limit(10);
+      return (data || []) as { id: string; nome_cliente: string | null; empreendimento: string | null; fase: string | null }[];
+    },
+    enabled: !!user && negocioSearch.length >= 2,
+  });
+
   const now = new Date();
   const todayStart = startOfDay(now);
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
