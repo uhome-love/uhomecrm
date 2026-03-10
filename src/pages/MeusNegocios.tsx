@@ -418,6 +418,10 @@ export default function MeusNegocios() {
   const [celebrationData, setCelebrationData] = useState<{
     nomeCliente: string; empreendimento?: string; vgv: number; corretorNome?: string;
   } | null>(null);
+  // Phase transition modal state
+  const [transitionTarget, setTransitionTarget] = useState<{ negocioId: string; fase: string } | null>(null);
+  const transitionNegocio = transitionTarget ? negocios.find(n => n.id === transitionTarget.negocioId) : null;
+
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
