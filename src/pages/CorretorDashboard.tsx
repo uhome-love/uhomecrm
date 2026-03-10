@@ -86,7 +86,7 @@ export default function CorretorDashboard() {
       const nextAbove = myPos > 1 ? sorted[myPos - 2]?.[1] - myPts : 0;
 
       return {
-        pendingLeads: pendingLeads || 0,
+        totalLeads: totalLeads || 0,
         totalNegocios: totalNegocios || 0,
         rankingPos: myPos || totalBrokers,
         totalBrokers,
