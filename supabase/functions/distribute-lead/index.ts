@@ -280,9 +280,12 @@ Deno.serve(async (req) => {
           agrupamento_key: `lead_novo_${lead.id}`,
         }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
 
-        // Send WhatsApp notification (fire and forget)
+        // Send WhatsApp + Push notifications (fire and forget)
         sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
           console.warn("WhatsApp notify error:", e)
+        );
+        sendPush(supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
+          console.warn("Push notify error:", e)
         );
 
         distributionLog.push({ leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown" });
@@ -469,6 +472,7 @@ async function distributeSingleLead(
   if (notifRes.error) console.warn("notification insert:", notifRes.error.message);
 
   try { await sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead); } catch (e) { console.warn("WhatsApp error:", e); }
+  try { await sendPush(supabaseUrl, serviceKey, chosen.authUserId, lead); } catch (e) { console.warn("Push error:", e); }
 
   return { success: true, corretor_id: chosen.authUserId, segmento_id: segmentoId };
 }
@@ -580,6 +584,24 @@ async function sendWhatsApp(supabase: any, supabaseUrl: string, serviceKey: stri
         },
       }),
     });
+  }
+}
+
+async function sendPush(supabaseUrl: string, serviceKey: string, authUserId: string, lead: any) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: authUserId,
+        title: "🚨 Novo Lead!",
+        body: `${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}. Aceite em 10 min!`,
+        url: "/aceite-leads",
+        data: { tag: `lead_novo_${lead.id}` },
+      }),
+    });
+  } catch (e) {
+    console.warn("Push notification error:", e);
   }
 }
 
