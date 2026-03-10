@@ -915,14 +915,6 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         </div>
       </div>
 
-      {/* Arena timer — prominent */}
-      {callActive && (
-        <div className="flex items-center justify-center py-1">
-          <div className={`arena-timer ${timerColorClass}`}>
-            {formatTimer(callTimer)}
-          </div>
-        </div>
-      )}
 
       {/* ═══ MOBILE: Tabs ═══ */}
       {isMobile ? (
