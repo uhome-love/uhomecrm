@@ -441,6 +441,15 @@ export default function ImoveisPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
+            onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); setVitrineLink(null); }}
+            variant={selectMode ? "default" : "outline"}
+            size="sm"
+            className="gap-2 font-semibold"
+          >
+            <Share2 className="h-4 w-4" />
+            {selectMode ? `${selectedIds.size} selecionados` : "Criar Vitrine"}
+          </Button>
+          <Button
             onClick={handleUhome}
             variant={uhomeOnly ? "default" : "outline"}
             size="sm"
