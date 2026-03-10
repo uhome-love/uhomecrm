@@ -280,9 +280,12 @@ Deno.serve(async (req) => {
           agrupamento_key: `lead_novo_${lead.id}`,
         }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
 
-        // Send WhatsApp notification (fire and forget)
+        // Send WhatsApp + Push notifications (fire and forget)
         sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
           console.warn("WhatsApp notify error:", e)
+        );
+        sendPush(supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
+          console.warn("Push notify error:", e)
         );
 
         distributionLog.push({ leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown" });
