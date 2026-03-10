@@ -34,6 +34,7 @@ export interface Visita {
   tipo?: string;
   negocio_id?: string | null;
   tipo_reuniao?: string | null;
+  responsavel_visita?: string | null;
 }
 
 export type VisitaStatus = "marcada" | "confirmada" | "realizada" | "reagendada" | "cancelada" | "no_show";
