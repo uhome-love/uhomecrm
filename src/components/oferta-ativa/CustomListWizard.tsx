@@ -577,6 +577,21 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
           </CardContent>
         </Card>
 
+        {/* Campanha / Ação */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-foreground">Campanha / Ação direcionada</p>
+          <div className="flex flex-wrap gap-1.5">
+            {CAMPANHAS.map(c => (
+              <ChipToggle
+                key={c.id}
+                label={c.label}
+                selected={campanha === c.id}
+                onClick={() => setCampanha(campanha === c.id ? "" : c.id)}
+              />
+            ))}
+          </div>
+        </div>
+
         {/* Ordem */}
         <div className="space-y-2">
           <p className="text-xs font-semibold text-foreground">Ordem de prioridade</p>
@@ -600,7 +615,7 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
 
         {/* Nome */}
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-foreground">Nome da lista (opcional)</p>
+          <p className="text-xs font-semibold text-foreground">Nome da lista *</p>
           <Input
             value={nome}
             onChange={e => setNome(e.target.value)}
