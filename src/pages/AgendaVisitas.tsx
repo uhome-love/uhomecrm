@@ -446,6 +446,34 @@ export default function AgendaVisitas() {
         </button>
       </div>
 
+      {/* Sub-tab: Minhas vs Time (only for leads, only for gerente/admin) */}
+      {agendaTipo === "lead" && (isAdmin || isGestor) && (
+        <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 w-fit">
+          <button
+            onClick={() => setLeadSubTab("minhas")}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+              leadSubTab === "minhas"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            📋 Minhas Visitas
+          </button>
+          <button
+            onClick={() => setLeadSubTab("time")}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+              leadSubTab === "time"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Users2 className="h-3.5 w-3.5" /> Visitas do Time
+          </button>
+        </div>
+      )}
+
       {/* ─── PENDING ALERT ─── */}
       {pendingCount > 0 && (
         <div
