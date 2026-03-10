@@ -400,7 +400,7 @@ export default function RoletaStatusBar() {
                                 ? "Encerrado"
                                 : jStatus === "futuro"
                                   ? `Abre às ${j.credAberto.inicio}h`
-                                  : `Aberto até ${j.credAberto.fim === 13.5 ? "13:30" : j.credAberto.fim + "h"}`
+                                  : `Aberto até ${j.credAberto.fim === 13.5 ? "13:30" : j.credAberto.fim === 9.5 ? "09:30" : j.credAberto.fim === 20.5 ? "20:30" : j.credAberto.fim + "h"}`
                             }
                           </p>
                         </div>
