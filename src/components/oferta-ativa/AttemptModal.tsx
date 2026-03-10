@@ -176,14 +176,14 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
                         setInteresseTipo(opt.key);
                         if (opt.key === "visita_marcada") setVisitaMarcada(true);
                       }}
-                      className={`flex flex-col items-start gap-0.5 p-2 rounded-lg border-2 transition-all text-left ${
+                      className={`flex flex-col items-start gap-0.5 p-2.5 rounded-lg border-2 transition-all text-left ${
                         interesseTipo === opt.key
-                          ? "border-emerald-500/50 bg-emerald-500/10 ring-1 ring-emerald-500/30"
-                          : "border-border hover:border-emerald-500/20"
+                          ? "border-emerald-500/60 bg-emerald-500/15 ring-1 ring-emerald-500/30"
+                          : "border-[rgba(255,255,255,0.2)] bg-[#1C2128] hover:border-emerald-500/30 hover:bg-[#232a34]"
                       }`}
                     >
-                      <span className="text-xs font-medium">{opt.emoji} {opt.label}</span>
-                      <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+                      <span className="text-sm font-medium text-[#E2E8F0]">{opt.emoji} {opt.label}</span>
+                      <span className="text-[10px] text-[#94A3B8]">{opt.desc}</span>
                     </button>
                   ))}
                 </div>
