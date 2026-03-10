@@ -196,6 +196,21 @@ export default function ReuniaoNegocioForm({ open, onClose, onSubmit }: Props) {
             )}
           </div>
 
+          {/* Responsável */}
+          <div>
+            <Label className="text-xs font-semibold">Responsável</Label>
+            <Select value={form.responsavel} onValueChange={v => set("responsavel", v)}>
+              <SelectTrigger className="mt-1 h-9 text-sm">
+                <SelectValue placeholder="Quem será o responsável?" />
+              </SelectTrigger>
+              <SelectContent>
+                {RESPONSAVEL_OPTIONS.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Objetivo */}
           <div>
             <Label className="text-xs font-semibold">Objetivo *</Label>
