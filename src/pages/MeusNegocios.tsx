@@ -73,6 +73,8 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
   const [quedaMotivo, setQuedaMotivo] = useState("");
   const [propostaPopup, setPropostaPopup] = useState(false);
   const [contratoPopup, setContratoPopup] = useState(false);
+  const [quickVgvId, setQuickVgvId] = useState<string | null>(null);
+  const [quickVgvValue, setQuickVgvValue] = useState("");
   const [propEmp, setPropEmp] = useState(negocio.empreendimento || "");
   const [propUni, setPropUni] = useState("");
   const [propVgv, setPropVgv] = useState(negocio.vgv_estimado ? String(negocio.vgv_estimado) : "");
