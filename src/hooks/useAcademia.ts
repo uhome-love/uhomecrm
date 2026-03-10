@@ -189,6 +189,8 @@ export function useAcademia() {
     // Bonus XP for 100% quiz
     if (quizScore === 100) xp += 50;
 
+    console.log("[completeAula] profileId:", profileId, "aulaId:", aulaId, "trilhaId:", trilhaId, "xp:", xp);
+
     // Use upsert to avoid stale-state race condition with startAula
     const { error } = await supabase.from("academia_progresso").upsert({
       corretor_id: profileId,
@@ -201,8 +203,8 @@ export function useAcademia() {
     }, { onConflict: "corretor_id,aula_id" });
 
     if (error) {
-      console.error("Erro ao concluir aula:", error);
-      toast.error("Erro ao salvar progresso");
+      console.error("Erro ao concluir aula:", error, "profileId:", profileId);
+      toast.error("Erro ao salvar progresso: " + (error.message || error.code));
       return;
     }
 

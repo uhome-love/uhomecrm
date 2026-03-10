@@ -5413,6 +5413,7 @@ export type Database = {
         Returns: Json
       }
       get_individual_oa_ranking: { Args: { p_period?: string }; Returns: Json }
+      get_profile_id_for_auth: { Args: never; Returns: string }
       get_ranking_gestao_leads: {
         Args: { p_periodo?: string }
         Returns: {
