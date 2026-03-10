@@ -43,10 +43,10 @@ serve(async (req) => {
             {
               type: "body",
               parameters: [
-                { type: "text", text: dados.nome || "Lead" },
-                { type: "text", text: dados.telefone || "N/A" },
-                { type: "text", text: dados.email || "N/A" },
-                { type: "text", text: dados.empreendimento || "Não identificado" },
+                { type: "text", parameter_name: "nome", text: dados.nome || "Lead" },
+                { type: "text", parameter_name: "whatsapp_lead", text: dados.telefone || "N/A" },
+                { type: "text", parameter_name: "email", text: dados.email || "N/A" },
+                { type: "text", parameter_name: "empreendimento", text: dados.empreendimento || "Não identificado" },
               ],
             },
           ],
