@@ -16,16 +16,18 @@ export interface Comprador {
   estado_civil: string;
   telefone: string;
   email: string;
+  cep: string;
   endereco: string;
   cidade: string;
   estado: string;
+  bairro: string;
   doc_identidade_url: string | null;
   doc_comprovante_url: string | null;
 }
 
 const emptyComprador: Comprador = {
   nome: "", cpf: "", rg: "", nacionalidade: "brasileira", estado_civil: "",
-  telefone: "", email: "", endereco: "", cidade: "", estado: "",
+  telefone: "", email: "", cep: "", endereco: "", cidade: "", estado: "", bairro: "",
   doc_identidade_url: null, doc_comprovante_url: null,
 };
 
