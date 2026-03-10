@@ -80,6 +80,14 @@ export default function ImoveisPage() {
 
       const results = data?.result || data?.imoveis || data?.data || [];
       const items = Array.isArray(results) ? results : [];
+      // Debug: log first item to see field names
+      if (items.length > 0) {
+        console.log("JETIMOB_IMOVEL_KEYS:", Object.keys(items[0]));
+        console.log("JETIMOB_IMOVEL_SAMPLE:", JSON.stringify(items[0]).substring(0, 2000));
+      } else {
+        console.log("JETIMOB_RESPONSE_KEYS:", Object.keys(data));
+        console.log("JETIMOB_RESPONSE:", JSON.stringify(data).substring(0, 1000));
+      }
       setImoveis(items);
       setTotal(data?.total || data?.count || items.length);
       setTotalPages(data?.totalPages || data?.pages || Math.ceil((data?.total || items.length) / 20));
