@@ -59,13 +59,12 @@ export default function CorretorDashboard() {
       const today = todayBRT();
       const ontem = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-      const { count: pendingLeads } = await (supabase
+      const { count: totalLeads } = await supabase
         .from("pipeline_leads")
-        .select("id", { count: "exact", head: true }) as any)
+        .select("id", { count: "exact", head: true })
         .eq("corretor_id", user!.id)
         .eq("aceite_status", "aceito")
-        .neq("stage_id", "1dd66c25-3848-4053-9f66-82e902989b4d")
-        .or(`ultima_acao_at.is.null,ultima_acao_at.lt.${ontem}`);
+        .neq("stage_id", "1dd66c25-3848-4053-9f66-82e902989b4d");
 
       const { count: totalNegocios } = await supabase
         .from("negocios")
