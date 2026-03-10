@@ -343,7 +343,7 @@ export default function PipelineKanban() {
         {/* Summary line + Forecast inline */}
         {isKanbanOrIntel && (
           <div className="flex items-center gap-2 flex-wrap px-0.5" style={{ minHeight: 28 }}>
-            <span className="text-[11px] font-bold text-foreground">
+            <span className="text-xs font-bold text-foreground">
               {activeFiltersCount > 0
                 ? `${filteredLeads.length}/${pipeline.leads.length}`
                 : `${filteredLeads.length}`} oportunidades
