@@ -298,8 +298,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
     const colW = getColumnWidth();
     const idx = Math.round(el.scrollLeft / (colW + COLUMN_GAP));
-    setActiveIndex(Math.min(idx, stages.length - 1));
-  }, [stages.length]);
+    setActiveIndex(Math.min(idx, visibleStages.length - 1));
+  }, [visibleStages.length]);
 
   useEffect(() => {
     const el = scrollRef.current;
