@@ -4,9 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from "date-fns";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 
-export type DashPeriod = "hoje" | "semana" | "mes";
+export type DashPeriod = "hoje" | "semana" | "mes" | "custom";
 
-function getRange(period: DashPeriod) {
+function getRange(period: DashPeriod, customRange?: { start: string; end: string }) {
+  if (period === "custom" && customRange) return customRange;
   const now = new Date();
   if (period === "hoje") { const t = todayBRT(); return { start: t, end: t }; }
   if (period === "semana") return { start: dateToBRT(startOfWeek(now, { weekStartsOn: 1 })), end: dateToBRT(endOfWeek(now, { weekStartsOn: 1 })) };
@@ -60,7 +61,7 @@ export interface OrigemData {
   origem: string; count: number;
 }
 
-export function useCeoDashboard(period: DashPeriod) {
+export function useCeoDashboard(period: DashPeriod, customRange?: { start: string; end: string }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -101,7 +102,7 @@ export function useCeoDashboard(period: DashPeriod) {
   const [presentesHoje, setPresentesHoje] = useState(0);
   const [metasDiaTotal, setMetasDiaTotal] = useState({ ligacoes: 0, aproveitados: 0, visitasMarcadas: 0 });
 
-  const range = useMemo(() => getRange(period), [period]);
+  const range = useMemo(() => getRange(period, customRange), [period, customRange]);
   const prevRange = useMemo(() => getPrevRange(period), [period]);
   const hoje = todayBRT();
 
@@ -267,42 +268,38 @@ export function useCeoDashboard(period: DashPeriod) {
     const gerenteIds = (gerenteRoles || []).map(r => r.user_id);
     if (gerenteIds.length === 0) { setTeams([]); setCorretoresRank([]); return; }
 
-    const { data: profs } = await supabase.from("profiles").select("id, nome, user_id").in("user_id", gerenteIds);
+    // Parallel: profiles + members
+    const [{ data: profs }, { data: members }] = await Promise.all([
+      supabase.from("profiles").select("id, nome, user_id").in("user_id", gerenteIds),
+      supabase.from("team_members").select("id, user_id, gerente_id").in("gerente_id", gerenteIds),
+    ]);
     const profMap = new Map(profs?.map(p => [p.user_id, p.nome]) || []);
-
-    const { data: members } = await supabase.from("team_members").select("id, user_id, gerente_id").in("gerente_id", gerenteIds);
     const allMemberUserIds = (members || []).map(m => m.user_id).filter(Boolean) as string[];
+    if (allMemberUserIds.length === 0) { setTeams([]); setCorretoresRank([]); return; }
 
-    // Load corretor profiles
-    const { data: corrProfs } = allMemberUserIds.length > 0
-      ? await supabase.from("profiles").select("id, nome, user_id").in("user_id", allMemberUserIds)
-      : { data: [] as { id: string; nome: string; user_id: string }[] };
+    // Parallel: corretor profiles + tentativas (count per corretor) + visitas + negocios
+    const [{ data: corrProfs }, { data: allVis }, { data: allNeg }] = await Promise.all([
+      supabase.from("profiles").select("id, nome, user_id").in("user_id", allMemberUserIds),
+      supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
+      supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
+    ]);
     const corrNameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"]));
 
-    // Load all tentativas with pagination (can exceed 1000 rows)
+    // Tentativas with pagination (can exceed 1000)
     let allTent: any[] = [];
-    if (allMemberUserIds.length > 0) {
-      let page = 0;
-      const pageSize = 1000;
-      while (true) {
-        const { data } = await supabase.from("oferta_ativa_tentativas")
-          .select("id, resultado, corretor_id")
-          .in("corretor_id", allMemberUserIds)
-          .gte("created_at", startTs).lte("created_at", endTs)
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-        if (!data || data.length === 0) break;
-        allTent = allTent.concat(data);
-        if (data.length < pageSize) break;
-        page++;
-      }
+    let page = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data } = await supabase.from("oferta_ativa_tentativas")
+        .select("id, resultado, corretor_id")
+        .in("corretor_id", allMemberUserIds)
+        .gte("created_at", startTs).lte("created_at", endTs)
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      if (!data || data.length === 0) break;
+      allTent = allTent.concat(data);
+      if (data.length < pageSize) break;
+      page++;
     }
-
-    const { data: allVis } = allMemberUserIds.length > 0
-      ? await supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end)
-      : { data: [] as any[] };
-    const { data: allNeg } = allMemberUserIds.length > 0
-      ? await supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs)
-      : { data: [] as any[] };
 
     const corretoresAll: CorretorRankData[] = [];
     const teamData: TeamData[] = [];
@@ -393,12 +390,20 @@ export function useCeoDashboard(period: DashPeriod) {
     if (!user) return;
     setLoading(true);
     try {
-      await loadProfile();
-      await loadRoleta();
-      const [currentKpis, previousKpis] = await Promise.all([loadKPIs(range), loadKPIs(prevRange)]);
+      // Run ALL loads in parallel — no sequential dependencies
+      const [, , currentKpis, previousKpis] = await Promise.all([
+        loadProfile(),
+        loadRoleta(),
+        loadKPIs(range),
+        loadKPIs(prevRange),
+        loadPipeline(),
+        loadNegocios(),
+        loadTeams(),
+        loadVisitasPorEmp(),
+        loadExtraKpis(),
+      ]);
       setKpis(currentKpis);
       setPrevKpis(previousKpis);
-      await Promise.all([loadPipeline(), loadNegocios(), loadTeams(), loadVisitasPorEmp(), loadExtraKpis()]);
     } catch (err) {
       console.error("Erro ao carregar dashboard CEO:", err);
     } finally {

@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Clock, RefreshCw, CheckCircle2, XCircle, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown, Rocket, Inbox } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Loader2, Clock, RefreshCw, CheckCircle2, XCircle, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown, Rocket, Inbox, CalendarRange } from "lucide-react";
 import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -83,6 +86,10 @@ function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor
 export default function CeoDashboard() {
   const { user } = useAuth();
   const [period, setPeriod] = useState<DashPeriod>("hoje");
+  const [customRange, setCustomRange] = useState<{ start: string; end: string } | undefined>();
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [datePickerFrom, setDatePickerFrom] = useState<Date | undefined>();
+  const [datePickerTo, setDatePickerTo] = useState<Date | undefined>();
   const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [filaCeoCount, setFilaCeoCount] = useState(0);
@@ -94,9 +101,25 @@ export default function CeoDashboard() {
     teams, corretoresRank, origens, leadsPorEmpreendimento, visitasPorEmp,
     totalLeadsPeriodo, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
-  } = useCeoDashboard(period);
+  } = useCeoDashboard(period, customRange);
 
   const [rankingView, setRankingView] = useState<"equipe" | "corretores">("equipe");
+
+  const handleSelectPeriod = (p: DashPeriod) => {
+    if (p !== "custom") setCustomRange(undefined);
+    setPeriod(p);
+  };
+
+  const handleApplyCustomRange = () => {
+    if (datePickerFrom && datePickerTo) {
+      setCustomRange({
+        start: format(datePickerFrom, "yyyy-MM-dd"),
+        end: format(datePickerTo, "yyyy-MM-dd"),
+      });
+      setPeriod("custom");
+      setDatePickerOpen(false);
+    }
+  };
 
   // Build dashboard data for HOMI
   const dashboardData = useMemo(() => ({
@@ -272,11 +295,11 @@ export default function CeoDashboard() {
         </div>
         {/* Period pills — always visible */}
         <div className="flex items-center justify-between mt-3 gap-2">
-          <div className="flex rounded-lg p-0.5 gap-1">
+          <div className="flex rounded-lg p-0.5 gap-1 items-center">
             {(["hoje", "semana", "mes"] as DashPeriod[]).map(p => (
               <button
                 key={p}
-                onClick={() => setPeriod(p)}
+                onClick={() => handleSelectPeriod(p)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                   period === p
                     ? "bg-[#1e293b] text-white border border-[#3B82F6]"
@@ -286,6 +309,55 @@ export default function CeoDashboard() {
                 {p === "hoje" ? "Hoje" : p === "semana" ? "Semana" : "Mês"}
               </button>
             ))}
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                    period === "custom"
+                      ? "bg-[#1e293b] text-white border border-[#3B82F6]"
+                      : "text-[#94A3B8] hover:text-white border border-transparent"
+                  }`}
+                >
+                  <CalendarRange className="h-3 w-3" />
+                  {period === "custom" && customRange
+                    ? `${format(new Date(customRange.start + "T12:00:00"), "dd/MM")} — ${format(new Date(customRange.end + "T12:00:00"), "dd/MM")}`
+                    : "Personalizado"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3" align="start">
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-muted-foreground">Selecione o período</p>
+                  <div className="flex gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-muted-foreground">De</label>
+                      <Input
+                        type="date"
+                        className="h-8 text-xs w-36"
+                        value={datePickerFrom ? format(datePickerFrom, "yyyy-MM-dd") : ""}
+                        onChange={e => setDatePickerFrom(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-muted-foreground">Até</label>
+                      <Input
+                        type="date"
+                        className="h-8 text-xs w-36"
+                        value={datePickerTo ? format(datePickerTo, "yyyy-MM-dd") : ""}
+                        onChange={e => setDatePickerTo(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full h-8 text-xs"
+                    disabled={!datePickerFrom || !datePickerTo}
+                    onClick={handleApplyCustomRange}
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <button onClick={reload} className="sm:hidden flex items-center gap-1 text-[10px] text-white/50 hover:text-white">
             <RefreshCw className="h-3 w-3" /> {format(lastUpdate, "HH:mm")}
