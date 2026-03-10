@@ -587,6 +587,110 @@ export default function MinhasTarefas() {
         </DialogContent>
       </Dialog>
 
+
+      {/* Type selector dialog */}
+      <Dialog open={showTipoSelector} onOpenChange={setShowTipoSelector}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle className="text-center text-lg font-bold">Qual tipo de tarefa?</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              onClick={() => { setShowTipoSelector(false); setShowNovaTarefa(true); }}
+              className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
+            >
+              <div className="h-14 w-14 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                <Target className="h-7 w-7 text-blue-600" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold text-foreground">Tarefa de Lead</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Follow-up, ligar, enviar material</p>
+              </div>
+            </button>
+            <button
+              onClick={() => { setShowTipoSelector(false); setShowNovaTarefaNegocio(true); }}
+              className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border/60 bg-card hover:border-primary hover:bg-primary/5 transition-all group"
+            >
+              <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+                <Briefcase className="h-7 w-7 text-amber-600" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold text-foreground">Tarefa de Negócio</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Simulação, contrato, presente</p>
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Nova Tarefa de Negócio dialog */}
+      <Dialog open={showNovaTarefaNegocio} onOpenChange={setShowNovaTarefaNegocio}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-amber-600" /> Nova Tarefa de Negócio</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Negócio *</label>
+              {selectedNegocioId ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-sm">{selectedNegocioNome}</Badge>
+                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setSelectedNegocioId(null); setSelectedNegocioNome(""); }}>Trocar</Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Buscar negócio..." value={negocioSearch} onChange={e => setNegocioSearch(e.target.value)} className="pl-8" />
+                  {searchNegocios.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                      {searchNegocios.map((n: any) => (
+                        <button key={n.id} className="w-full px-3 py-2 text-left text-sm hover:bg-muted" onClick={() => {
+                          setSelectedNegocioId(n.id);
+                          setSelectedNegocioNome(n.nome_cliente || "Sem nome");
+                          setNegocioSearch("");
+                        }}>
+                          <p className="font-medium">{n.nome_cliente || "Sem nome"}</p>
+                          <p className="text-xs text-muted-foreground">{[n.empreendimento, n.fase].filter(Boolean).join(" · ")}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Tipo *</label>
+              <Select value={negocioTipo} onValueChange={setNegocioTipo}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(NEGOCIO_TIPO_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{NEGOCIO_TIPO_EMOJI[k]} {v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Data *</label>
+                <Input type="date" value={negocioData} onChange={e => setNegocioData(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Hora</label>
+                <Input type="time" value={negocioHora} onChange={e => setNegocioHora(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Observação</label>
+              <Textarea value={negocioObs} onChange={e => setNegocioObs(e.target.value)} placeholder="Ex: Enviar simulação do apto 301" rows={2} />
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowNovaTarefaNegocio(false)}>Cancelar</Button>
+              <Button onClick={handleCriarTarefaNegocio} disabled={!selectedNegocioId || !negocioData}>✅ Criar Tarefa</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Scripts Marketplace Sheet */}
       <Sheet open={scriptsOpen} onOpenChange={setScriptsOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
