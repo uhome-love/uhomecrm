@@ -57,6 +57,28 @@ export default function PagadoriasPage() {
     forma_pagamento: "a_vista", corretor_nome: "", gerente_nome: "",
   });
 
+  // Compradores (buyers) with document uploads
+  const [compradores, setCompradores] = useState<Comprador[]>([{
+    nome: "", cpf: "", rg: "", nacionalidade: "brasileira", estado_civil: "",
+    telefone: "", email: "", endereco: "", cidade: "", estado: "",
+    doc_identidade_url: null, doc_comprovante_url: null,
+  }]);
+
+  // Sync first comprador data to form (for backward compat)
+  useEffect(() => {
+    const c = compradores[0];
+    if (c) {
+      setForm(f => ({
+        ...f,
+        cliente_nome: c.nome,
+        cliente_cpf: c.cpf,
+        cliente_email: c.email,
+        cliente_telefone: c.telefone,
+        cliente_endereco: c.endereco + (c.cidade ? `, ${c.cidade}` : "") + (c.estado ? `/${c.estado}` : ""),
+      }));
+    }
+  }, [compradores]);
+
   // Step 2
   const [comissaoPct, setComissaoPct] = useState(5);
   const [vgvAcumuladoCorretor, setVgvAcumuladoCorretor] = useState(0);
