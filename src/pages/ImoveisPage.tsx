@@ -244,7 +244,7 @@ export default function ImoveisPage() {
       )}
 
       {/* Filters */}
-      {!campanhaAtiva && (
+      {!campanhaAtiva && !uhomeOnly && (
         <Card className="p-4 space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             <div className="space-y-1 col-span-2 sm:col-span-1">
