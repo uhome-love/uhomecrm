@@ -144,7 +144,7 @@ export default function RoletaStatusBar() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [credenciamentosPorJanela, setCredenciamentosPorJanela] = useState<Record<string, boolean>>({});
+  const [credenciamentosPorJanela, setCredenciamentosPorJanela] = useState<Record<string, string>>({});
 
   const nightReqs = useNightRequirements(user?.id, profileId);
 
@@ -175,11 +175,11 @@ export default function RoletaStatusBar() {
         .eq("data", today)
         .in("status", ["aprovado", "pendente"]);
 
-      const porJanela: Record<string, boolean> = {};
+      const porJanela: Record<string, string> = {};
       let activeIds: string[] = [];
       let activeStatus = "";
       (creds || []).forEach(c => {
-        porJanela[toUiJanela(c.janela)] = true;
+        porJanela[toUiJanela(c.janela)] = c.status || "pendente";
         const ids = [c.segmento_1_id, c.segmento_2_id].filter(Boolean) as string[];
         if (ids.length > 0) { activeIds = ids; activeStatus = c.status || ""; }
       });
@@ -241,13 +241,13 @@ export default function RoletaStatusBar() {
     setCredModalOpen(false);
     setSaving(false);
     const jCfg = JANELAS_CONFIG.find(j => j.key === janela)!;
-    toast.success(`Credenciado para ${jCfg.emoji} ${jCfg.label}! ✅`);
+    toast.success(`Credenciamento enviado para ${jCfg.emoji} ${jCfg.label}! Aguardando aprovação ⏳`);
   };
 
   const currentOpt = STATUS_OPTIONS.find(o => o.value === status) || STATUS_OPTIONS[3];
   const isAvailable = status === "na_empresa" || status === "em_plantao";
   const hasSegmentos = mySegmentoIds.length > 0;
-  const isActiveRoleta = isAvailable && hasSegmentos;
+  const isActiveRoleta = isAvailable && hasSegmentos && credStatus === "aprovado";
 
   const segNames = mySegmentoIds.map(id => segmentos.find(s => s.id === id)?.nome).filter(Boolean);
 
@@ -307,8 +307,12 @@ export default function RoletaStatusBar() {
           </AnimatePresence>
 
           <div className="h-5 w-px bg-border" />
-          <span className={`text-xs font-medium ${isActiveRoleta ? "text-emerald-600" : "text-muted-foreground"}`}>
-            {isActiveRoleta ? "🟢 Ativo na Roleta" : "⚪ Inativo na Roleta"}
+          <span className={`text-xs font-medium ${
+            isActiveRoleta ? "text-emerald-600" : 
+            credStatus === "pendente" ? "text-amber-600" : "text-muted-foreground"
+          }`}>
+            {isActiveRoleta ? "🟢 Ativo na Roleta" : 
+             credStatus === "pendente" ? "⏳ Aguardando aprovação" : "⚪ Inativo na Roleta"}
           </span>
         </div>
 
@@ -357,7 +361,10 @@ export default function RoletaStatusBar() {
               <p className="text-sm text-muted-foreground">Escolha a janela para se credenciar:</p>
               {JANELAS_CONFIG.map(j => {
                 const jStatus = getJanelaStatus(j);
-                const jaCredenciado = !!credenciamentosPorJanela[j.key];
+                const credJanelaStatus = credenciamentosPorJanela[j.key]; // "aprovado" | "pendente" | undefined
+                const jaCredenciado = !!credJanelaStatus;
+                const isAprovado = credJanelaStatus === "aprovado";
+                const isPendente = credJanelaStatus === "pendente";
                 // Desbloqueia com visita marcada OU realizada (+ sistema atualizado)
                 const nightBlocked = j.temRequisitos && !((nightReqs.visitaMarcada || nightReqs.visitaRealizada) && nightReqs.sistemaAtualizado);
                 const isDisabled = jStatus !== "aberto" || jaCredenciado || (j.temRequisitos && nightBlocked);
@@ -369,21 +376,24 @@ export default function RoletaStatusBar() {
                     disabled={isDisabled}
                     onClick={() => { setSelectedJanela(j.key); }}
                     className={`w-full text-left rounded-xl border-2 p-4 transition-all ${
-                      jaCredenciado
+                      isAprovado
                         ? "border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20"
-                        : isDisabled
-                          ? "border-border bg-muted/30 opacity-60 cursor-not-allowed"
-                          : "border-border hover:border-primary/40 hover:bg-primary/5 cursor-pointer"
+                        : isPendente
+                          ? "border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20"
+                          : isDisabled
+                            ? "border-border bg-muted/30 opacity-60 cursor-not-allowed"
+                            : "border-border hover:border-primary/40 hover:bg-primary/5 cursor-pointer"
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${
-                          jaCredenciado ? "bg-emerald-100 dark:bg-emerald-900/30" :
+                          isAprovado ? "bg-emerald-100 dark:bg-emerald-900/30" :
+                          isPendente ? "bg-amber-100 dark:bg-amber-900/30" :
                           isDisabled ? "bg-muted" : "bg-primary/10"
                         }`}>
                           <Icon className={`h-5 w-5 ${
-                            jaCredenciado ? "text-emerald-600" : isDisabled ? "text-muted-foreground" : "text-primary"
+                            isAprovado ? "text-emerald-600" : isPendente ? "text-amber-600" : isDisabled ? "text-muted-foreground" : "text-primary"
                           }`} />
                         </div>
                         <div>
@@ -394,20 +404,26 @@ export default function RoletaStatusBar() {
                             </span>
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {jaCredenciado
-                              ? "✅ Credenciado"
-                              : jStatus === "encerrado"
-                                ? "Encerrado"
-                                : jStatus === "futuro"
-                                  ? `Abre às ${j.credAberto.inicio}h`
-                                  : `Aberto até ${j.credAberto.fim === 13.5 ? "13:30" : j.credAberto.fim === 9.5 ? "09:30" : j.credAberto.fim === 20.5 ? "20:30" : j.credAberto.fim + "h"}`
+                            {isAprovado
+                              ? "✅ Aprovado — Ativo na roleta"
+                              : isPendente
+                                ? "⏳ Aguardando aprovação do gestor"
+                                : jStatus === "encerrado"
+                                  ? "Encerrado"
+                                  : jStatus === "futuro"
+                                    ? `Abre às ${j.credAberto.inicio}h`
+                                    : `Aberto até ${j.credAberto.fim === 13.5 ? "13:30" : j.credAberto.fim === 9.5 ? "09:30" : j.credAberto.fim === 20.5 ? "20:30" : j.credAberto.fim + "h"}`
                             }
                           </p>
                         </div>
                       </div>
-                      {jaCredenciado ? (
+                      {isAprovado ? (
                         <Badge variant="outline" className="border-emerald-500 text-emerald-600 text-[10px]">
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Ativo
+                        </Badge>
+                      ) : isPendente ? (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px]">
+                          ⏳ Pendente
                         </Badge>
                       ) : isDisabled ? (
                         <Lock className="h-4 w-4 text-muted-foreground" />
