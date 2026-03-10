@@ -666,6 +666,7 @@ export default function MeusNegocios() {
                       paradoInfo={paradoMap.get(negocio.id)}
                       onDragStart={() => { dragNegocioId.current = negocio.id; }}
                       onClick={() => setSelectedNegocio(negocio)}
+                      onMoveFase={handleMoveFase}
                     />
                   ))}
                 </div>
