@@ -444,6 +444,9 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
               <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary" onClick={() => setComunicacaoOpen(true)}>
                 <MessageSquare className="h-3.5 w-3.5" /> 💬 Mensagem
               </Button>
+              <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-amber-300 text-amber-600 hover:bg-amber-50" onClick={() => setReuniaoOpen(true)}>
+                <CalendarDays className="h-3.5 w-3.5" /> 📅 Reunião
+              </Button>
 
               {/* + Ação dropdown */}
               <DropdownMenu>
