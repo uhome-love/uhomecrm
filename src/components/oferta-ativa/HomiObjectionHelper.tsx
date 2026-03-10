@@ -67,8 +67,30 @@ export default function HomiObjectionHelper({ leadNome, leadEmpreendimento, sele
 
       if (!res.ok) throw new Error("Erro na resposta");
 
-      const data = await res.json();
-      const reply = data.reply || data.content || data.message || "Sem resposta";
+      // The edge function returns SSE stream — parse it
+      let reply = "";
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No reader");
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(payload);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) reply += delta;
+          } catch {
+            // skip malformed lines
+          }
+        }
+      }
 
       const newResponse: HomiResponse = { id: nextId, empreendimento: selectedEmp, text: reply };
       setResponses(prev => [...prev, newResponse]);
