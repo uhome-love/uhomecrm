@@ -204,6 +204,13 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         </span>
       </div>
 
+      {/* Responsável (always visible) */}
+      <div className="hidden sm:block min-w-0">
+        <span className="text-xs text-muted-foreground truncate block">
+          👤 {v.corretor_nome || "—"}
+        </span>
+      </div>
+
       {/* Corretor + Team */}
       {showCorretor && (
         <div className="hidden md:flex items-center gap-1.5 min-w-0">
