@@ -54,6 +54,13 @@ const LOCAL_OPTIONS = [
   { value: "outro", label: "📍 Outro" },
 ];
 
+const RESPONSAVEL_OPTIONS = [
+  { value: "gerente", label: "👔 Gerente" },
+  { value: "proprio_corretor", label: "👤 Próprio corretor" },
+  { value: "corretor_parceiro", label: "🤝 Corretor parceiro" },
+  { value: "responsavel_construtora", label: "🏗️ Responsável da construtora" },
+];
+
 function getDefaultForm(initialData?: Props["initialData"]) {
   return {
     nome_cliente: initialData?.nome_cliente || "",
@@ -66,6 +73,7 @@ function getDefaultForm(initialData?: Props["initialData"]) {
     local_visita: initialData?.local_visita || "",
     observacoes: initialData?.observacoes || "",
     pipeline_lead_id: (initialData as any)?.pipeline_lead_id || "",
+    responsavel_visita: (initialData as any)?.responsavel_visita || "",
   };
 }
 
