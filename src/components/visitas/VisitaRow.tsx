@@ -143,14 +143,12 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         isPastPending && "bg-red-50/50"
       )}
       style={{
-        gridTemplateColumns: showCorretor
-          ? "3.5rem 3px 1fr 10rem 8rem 7rem 9rem 6.5rem auto auto"
-          : "3.5rem 3px 1fr 10rem 8rem 7rem 6.5rem auto auto",
+        gridTemplateColumns: "3.5rem 3px 1fr 8rem 10rem 7rem 9rem 6.5rem auto",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Time */}
+      {/* 1. Horário */}
       <div className="text-center">
         <span className="text-sm font-bold font-mono text-foreground">
           {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
@@ -160,7 +158,7 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       {/* Status color line */}
       <div className={cn("w-0.5 h-9 rounded-full", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
 
-      {/* Client + Phone */}
+      {/* 2. Nome do cliente + telefone */}
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground truncate leading-tight">{v.nome_cliente}</p>
         {v.telefone && (
@@ -171,7 +169,15 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         )}
       </div>
 
-      {/* Empreendimento + Negocio meta */}
+      {/* 3. Local da visita */}
+      <div className="hidden sm:flex items-center gap-1 min-w-0">
+        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">
+          {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "—"}
+        </span>
+      </div>
+
+      {/* 4. Empreendimento + Negocio meta */}
       <div className="min-w-0 hidden sm:block">
         <span className="text-xs text-muted-foreground truncate block leading-tight">
           {v.empreendimento || "—"}
@@ -180,9 +186,6 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
           <div className="flex flex-col gap-0 mt-0.5">
             {negocioMeta.objetivo && (
               <span className="text-[10px] text-amber-600 font-medium truncate leading-tight">🎯 {negocioMeta.objetivo}</span>
-            )}
-            {negocioMeta.responsavel && (
-              <span className="text-[10px] text-muted-foreground truncate leading-tight">👤 {negocioMeta.responsavel}</span>
             )}
             {missingNegocioInfo && onEdit && (
               <button
@@ -196,98 +199,84 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
         )}
       </div>
 
-      {/* Local da visita */}
-      <div className="hidden sm:flex items-center gap-1 min-w-0">
-        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+      {/* 5. Responsável (corretor) + Team badge */}
+      <div className="hidden sm:flex items-center gap-1.5 min-w-0">
         <span className="text-xs text-muted-foreground truncate">
-          {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "—"}
-        </span>
-      </div>
-
-      {/* Responsável (always visible) */}
-      <div className="hidden sm:block min-w-0">
-        <span className="text-xs text-muted-foreground truncate block">
           👤 {v.corretor_nome || "—"}
         </span>
+        {showTeam && (() => {
+          const style = getTeamBadgeStyle(v.equipe);
+          if (!style) return null;
+          return (
+            <span className={cn("text-[10px] px-1.5 py-0 rounded-full border whitespace-nowrap shrink-0", style.className)}>
+              {style.emoji}
+            </span>
+          );
+        })()}
       </div>
 
-      {/* Corretor + Team */}
-      {showCorretor && (
-        <div className="hidden md:flex items-center gap-1.5 min-w-0">
-          <span className="text-xs text-muted-foreground truncate">{v.corretor_nome || "—"}</span>
-          {showTeam && (() => {
-            const style = getTeamBadgeStyle(v.equipe);
-            if (!style) return null;
-            return (
-              <span className={cn("text-[10px] px-1.5 py-0 rounded-full border whitespace-nowrap shrink-0", style.className)}>
-                {style.emoji} {style.label}
-              </span>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* Status badge */}
+      {/* 6. Status badge */}
       <div>
         <Badge className={cn("text-[10px] px-2.5 py-0.5 border font-semibold whitespace-nowrap", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
           {STATUS_EMOJIS[v.status]} {STATUS_LABELS[v.status]}
         </Badge>
       </div>
 
-      {/* Inline quick actions */}
-      <div className={cn("flex items-center gap-1 transition-opacity", hovered ? "opacity-100" : "opacity-0")}>
-        {(v.status === "marcada" || v.status === "confirmada") && (
-          <>
-            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")}>
-              ✅
-            </Button>
-            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")}>
-              ❌
-            </Button>
-            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => onUpdateStatus(v.id, "reagendada")}>
-              🔄
-            </Button>
-          </>
-        )}
-      </div>
-
-      {/* Menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-            <MoreVertical className="h-3.5 w-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="text-xs">
-          {onEdit && (
-            <DropdownMenuItem onClick={() => onEdit(v)} className="text-xs">
-              <Pencil className="h-3 w-3 mr-1.5" /> Editar
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem onClick={() => addToCalendar(v)} className="text-xs">
-            <CalendarPlus className="h-3 w-3 mr-1.5" /> Adicionar ao Calendário
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {Object.entries(STATUS_LABELS)
-            .filter(([k]) => k !== v.status)
-            .map(([k, label]) => (
-              <DropdownMenuItem key={k} onClick={() => onUpdateStatus(v.id, k as VisitaStatus)} className="text-xs">
-                {STATUS_EMOJIS[k]} {label}
-              </DropdownMenuItem>
-            ))}
-          {onDelete && (
+      {/* Quick actions + Menu */}
+      <div className={cn("flex items-center gap-1")}>
+        <div className={cn("flex items-center gap-1 transition-opacity", hovered ? "opacity-100" : "opacity-0")}>
+          {(v.status === "marcada" || v.status === "confirmada") && (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => { if (window.confirm("Tem certeza?")) onDelete(v.id); }}
-                className="text-xs text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-3 w-3 mr-1.5" /> Excluir
-              </DropdownMenuItem>
+              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")}>
+                ✅
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")}>
+                ❌
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => onUpdateStatus(v.id, "reagendada")}>
+                🔄
+              </Button>
             </>
           )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="text-xs">
+            {onEdit && (
+              <DropdownMenuItem onClick={() => onEdit(v)} className="text-xs">
+                <Pencil className="h-3 w-3 mr-1.5" /> Editar
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => addToCalendar(v)} className="text-xs">
+              <CalendarPlus className="h-3 w-3 mr-1.5" /> Adicionar ao Calendário
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {Object.entries(STATUS_LABELS)
+              .filter(([k]) => k !== v.status)
+              .map(([k, label]) => (
+                <DropdownMenuItem key={k} onClick={() => onUpdateStatus(v.id, k as VisitaStatus)} className="text-xs">
+                  {STATUS_EMOJIS[k]} {label}
+                </DropdownMenuItem>
+              ))}
+            {onDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => { if (window.confirm("Tem certeza?")) onDelete(v.id); }}
+                  className="text-xs text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3 mr-1.5" /> Excluir
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
