@@ -352,17 +352,18 @@ const PipelineCard = memo(function PipelineCard({
       </div>
 
       {/* Create Negócio button — only on Visita Realizada without linked deal */}
-      {stage?.nome?.toLowerCase().includes("visita realizada") && !lead.negocio_id && (
+      {stage?.nome?.toLowerCase().includes("visita realizada") && !lead.negocio_id && !negocioCriado && (
         <div data-actions-area className="px-3 pb-1.5">
           <Button
             size="sm"
             variant="outline"
+            disabled={criandoNegocio}
             className="w-full h-7 text-[11px] gap-1.5 font-semibold border-green-500/40 text-green-600 dark:text-green-400 hover:bg-green-500/10"
             onClick={async (e) => {
               e.stopPropagation();
-              if (!user) return;
+              if (!user || criandoNegocio) return;
+              setCriandoNegocio(true);
               try {
-                // Resolve profile IDs
                 const corretorUserId = lead.corretor_id;
                 const gerenteUserId = lead.gerente_id || user.id;
                 const { data: profileRows } = await supabase
@@ -389,21 +390,39 @@ const PipelineCard = memo(function PipelineCard({
                 if (error) throw error;
                 if (negocio) {
                   await supabase.from("pipeline_leads").update({ negocio_id: negocio.id } as any).eq("id", lead.id);
-                  // Move lead to Convertido stage
-                  const convertidoStage = stages.find(s => s.tipo === "convertido");
-                  if (convertidoStage && onMoveLead) {
-                    onMoveLead(lead.id, convertidoStage.id);
-                  }
+                  setNegocioCriado(true);
                   toast.success(`🎉 Negócio criado para ${lead.nome}!`, { description: "Envie a proposta em até 24h!" });
+                  // Delay moving to Convertido so user sees the success feedback
+                  setTimeout(() => {
+                    const convertidoStage = stages.find(s => s.tipo === "convertido");
+                    if (convertidoStage && onMoveLead) {
+                      onMoveLead(lead.id, convertidoStage.id);
+                    }
+                  }, 1500);
                 }
               } catch (err: any) {
                 console.error("Erro ao criar negócio:", err);
                 toast.error("Erro ao criar negócio: " + (err?.message || "Erro desconhecido"));
+              } finally {
+                setCriandoNegocio(false);
               }
             }}
           >
-            <FileText className="h-3 w-3" /> Criar Negócio
+            {criandoNegocio ? (
+              <><span className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> Criando...</>
+            ) : (
+              <><FileText className="h-3 w-3" /> Criar Negócio</>
+            )}
           </Button>
+        </div>
+      )}
+
+      {/* Show success state after negócio created */}
+      {negocioCriado && (
+        <div data-actions-area className="px-3 pb-1.5">
+          <div className="w-full h-7 flex items-center justify-center text-[11px] font-semibold text-green-600 dark:text-green-400 bg-green-500/10 rounded-md">
+            ✅ Negócio criado com sucesso!
+          </div>
         </div>
       )}
 
