@@ -83,6 +83,8 @@ export default function PagadoriasPage() {
   const [comissaoPct, setComissaoPct] = useState(5);
   const [vgvAcumuladoCorretor, setVgvAcumuladoCorretor] = useState(0);
   const [vgvAcumuladoGerente, setVgvAcumuladoGerente] = useState(0);
+  const [selectedCorretorFaixaIdx, setSelectedCorretorFaixaIdx] = useState(0);
+  const [selectedGerenteFaixaIdx, setSelectedGerenteFaixaIdx] = useState(0);
   const [credores, setCredores] = useState<Credor[]>([]);
 
   const totalComissao = (form.vgv * comissaoPct) / 100;
