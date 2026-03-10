@@ -29,9 +29,13 @@ import {
   Building2,
   Cog,
   GraduationCap,
-  
   ListChecks,
   Inbox,
+  MailCheck,
+  Briefcase,
+  Store,
+  ListTodo,
+  PhoneCall,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
