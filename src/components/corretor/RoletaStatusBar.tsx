@@ -59,11 +59,11 @@ interface JanelaConfig {
 const toDbJanela = (janela: JanelaKey): JanelaDb => (janela === "noite" ? "noturna" : janela);
 const toUiJanela = (janela: string): JanelaKey => (janela === "noturna" ? "noite" : (janela as JanelaKey));
 
-// Manhã: credenciamento aberto 24h (sem restrição de horário)
+// Janelas de credenciamento com horários de abertura e fechamento
 const JANELAS_CONFIG: JanelaConfig[] = [
-  { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 0, fim: 24 }, recebimento: "7h30 — 9h30", temRequisitos: false },
+  { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 0, fim: 9.5 }, recebimento: "7h30 — 9h30", temRequisitos: false },
   { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 13.5 }, recebimento: "13h30 — 18h", temRequisitos: false },
-  { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 24 }, recebimento: "18h — 23h59", temRequisitos: true },
+  { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 20.5 }, recebimento: "18h — 23h59", temRequisitos: true },
 ];
 
 function getHoraDecimal() {
