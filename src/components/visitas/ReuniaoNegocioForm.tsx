@@ -179,7 +179,10 @@ export default function ReuniaoNegocioForm({ open, onClose, onSubmit }: Props) {
                         key={n.id}
                         type="button"
                         className="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors border-b border-border/30 last:border-0"
-                        onClick={() => setSelectedNegocio(n)}
+                        onClick={() => {
+                          setSelectedNegocio(n);
+                          if (n.telefone) set("telefone", n.telefone);
+                        }}
                       >
                         <span className="text-sm font-medium">{n.nome_cliente}</span>
                         <span className="text-[10px] text-muted-foreground ml-2">
