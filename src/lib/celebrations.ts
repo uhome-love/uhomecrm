@@ -151,13 +151,25 @@ export function formatStreak(streak: number): { emoji: string; label: string; co
 // ─── Emoji maps ───
 
 export const PIPELINE_STAGE_EMOJIS: Record<string, string> = {
-  "Novo Lead": "📥",
+  "Novo Lead": "🆕",
   "Contato Iniciado": "📞",
-  "Qualificação": "🔍",
+  "Sem Contato": "📵",
+  "Qualificação": "🎯",
   "Possível Visita": "🏠",
   "Visita Marcada": "📅",
   "Visita Realizada": "✅",
   "Descarte": "🗑️",
+};
+
+export const PIPELINE_STAGE_COLORS: Record<string, string> = {
+  "Novo Lead": "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500",
+  "Contato Iniciado": "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500",
+  "Sem Contato": "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500",
+  "Qualificação": "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500",
+  "Possível Visita": "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500",
+  "Visita Marcada": "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500",
+  "Visita Realizada": "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500",
+  "Descarte": "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500",
 };
 
 export const TEMPERATURA_EMOJIS: Record<string, string> = {

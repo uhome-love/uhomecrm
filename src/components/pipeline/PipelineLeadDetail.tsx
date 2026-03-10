@@ -20,7 +20,7 @@ import {
   Plus, CheckCircle2, AlertTriangle,
   FileText, ChevronDown, ClipboardList,
   Flame, Snowflake, Sun, Zap, Brain, TrendingUp,
-  Trash2, Ban, PhoneOff, Handshake, MoreHorizontal, Bot, History
+  Trash2, Ban, PhoneOff, Handshake, MoreHorizontal, Bot, History, Tag
 } from "lucide-react";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
@@ -30,6 +30,8 @@ import OpportunityVisitasTab from "./OpportunityVisitasTab";
 import OpportunityPropostasTab from "./OpportunityPropostasTab";
 import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
+import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
+import QuickActionMenu from "./QuickActionMenu";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import { format, formatDistanceToNow, differenceInHours, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -91,6 +93,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   // Partnership & Comunicacao
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
+  const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
+  const [showNovaTarefa, setShowNovaTarefa] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
@@ -102,10 +106,23 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const pendingTasks = leadData.tarefas.filter(t => t.status === "pendente").length;
   const overdueTasks = leadData.tarefas.filter(t => t.status === "pendente" && t.vence_em && new Date(t.vence_em + "T12:00:00") < new Date()).length;
 
+  // Attempt counter (Melhoria 9)
+  const callAttempts = useMemo(() => {
+    return leadData.atividades.filter(a => a.tipo === "ligacao").length;
+  }, [leadData.atividades]);
+
   const temperatureInfo = TEMPERATURA_MAP[(lead as any).temperatura || "morno"] || TEMPERATURA_MAP.morno;
   const TempIcon = temperatureInfo.icon;
 
   const whatsappUrl = lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : null;
+
+  // Extract jetimob code from jetimob_lead_id
+  const jetimobCode = useMemo(() => {
+    const jid = (lead as any).jetimob_lead_id;
+    if (!jid) return null;
+    const match = jid.match(/(\d{4,6})/);
+    return match ? `${match[1]}-UH` : jid;
+  }, [(lead as any).jetimob_lead_id]);
 
   // Next task for indicator
   const nextTask = useMemo(() => {
@@ -212,12 +229,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   </Button>
                 </a>
               )}
-              {whatsappUrl && (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-green-300 text-green-600 hover:bg-green-50">
-                    <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
-                  </Button>
-                </a>
+              {lead.telefone && (
+                <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-green-300 text-green-600 hover:bg-green-50" onClick={() => setWhatsappTemplatesOpen(true)}>
+                  <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+                </Button>
               )}
               {lead.email && (
                 <a href={`mailto:${lead.email}`}>
@@ -229,9 +244,11 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
                 <MessageSquare className="h-3.5 w-3.5" /> 💬 Mensagem
               </Button>
-              <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full" onClick={() => { setActiveTab("historico"); }}>
-                <Plus className="h-3.5 w-3.5" /> Ação
-              </Button>
+              <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")}>
+                <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full">
+                  <Plus className="h-3.5 w-3.5" /> Ação
+                </Button>
+              </QuickActionMenu>
 
               {/* ⋯ More menu */}
               <DropdownMenu>
@@ -274,7 +291,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </DropdownMenu>
             </div>
 
-            {/* Row 4: Empreendimento + Canal + Campanha */}
+            {/* Row 4: Empreendimento + Canal + Campanha + Jetimob */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1.5">
                 <Building2 className="h-3.5 w-3.5" />
@@ -289,6 +306,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 <span className="flex items-center gap-1 text-xs">
                   📢 {(lead as any).origem_detalhe}
                 </span>
+              )}
+              {jetimobCode && (
+                <span className="flex items-center gap-1 text-xs">
+                  <Tag className="h-3 w-3" /> {jetimobCode}
+                </span>
+              )}
+              {callAttempts > 0 && (
+                <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="text-[10px] h-5 px-1.5">
+                  📞 {callAttempts}/4 tentativas
+                </Badge>
               )}
             </div>
 
@@ -324,7 +351,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             <div className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-xs text-muted-foreground">Sem tarefas agendadas</span>
-              <Button variant="link" size="sm" className="h-6 text-[10px] px-1 text-primary" onClick={() => setActiveTab("tarefas")}>
+              <Button variant="link" size="sm" className="h-6 text-[10px] px-1 text-primary" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
                 ➕ Criar tarefa
               </Button>
             </div>
@@ -396,9 +423,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             {/* ===== TAB: VISITAS & PROPOSTAS ===== */}
             <TabsContent value="visitas-propostas" className="px-6 pb-8 space-y-6 mt-0">
               <div>
-                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" /> Visitas
-                </h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin className="h-4 w-4" /> Visitas
+                  </h4>
+                  <a href={`/agenda-visitas?lead=${lead.id}&nome=${encodeURIComponent(lead.nome)}&telefone=${encodeURIComponent(lead.telefone || "")}&empreendimento=${encodeURIComponent(lead.empreendimento || "")}`} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+                      <Calendar className="h-3 w-3" /> + Agendar Visita
+                    </Button>
+                  </a>
+                </div>
                 <OpportunityVisitasTab pipelineLeadId={lead.id} />
               </div>
               <div className="border-t border-border/50 pt-5">

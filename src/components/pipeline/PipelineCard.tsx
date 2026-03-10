@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
+import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
+import QuickActionMenu from "./QuickActionMenu";
 import { format, isToday as isTodayFn, isTomorrow as isTomorrowFn, isYesterday as isYesterdayFn, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -197,6 +199,7 @@ const PipelineCard = memo(function PipelineCard({
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
+  const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
 
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
   const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa]);
@@ -228,21 +231,7 @@ const PipelineCard = memo(function PipelineCard({
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!lead.telefone) return;
-    window.open(getWhatsAppUrl(lead.telefone), "_blank");
-    if (user) {
-      supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: lead.id,
-        tipo: "whatsapp",
-        titulo: "WhatsApp enviado",
-        created_by: user.id,
-      }).then(() => {});
-      // Update ultima_acao_at
-      supabase.from("pipeline_leads").update({
-        ultima_acao_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as any).eq("id", lead.id).then(() => {});
-    }
-    toast.success("💬 WhatsApp registrado");
+    setWhatsappTemplatesOpen(true);
   };
 
   const handleScheduleVisit = async () => {
@@ -372,14 +361,20 @@ const PipelineCard = memo(function PipelineCard({
             <MessageCircle className="h-3 w-3" /> WhatsApp
           </Button>
 
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-[11px] px-2 gap-1 font-medium text-primary hover:bg-primary/10"
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
+          <QuickActionMenu
+            leadId={lead.id}
+            leadNome={lead.nome}
+            onOpenDetail={onClick}
+            onScheduleVisit={() => setScheduleOpen(true)}
           >
-            <Zap className="h-3 w-3" /> Ação
-          </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-[11px] px-2 gap-1 font-medium text-primary hover:bg-primary/10"
+            >
+              <Zap className="h-3 w-3" /> Ação
+            </Button>
+          </QuickActionMenu>
         </div>
 
         {/* 3-dot quick actions menu */}
@@ -478,6 +473,15 @@ const PipelineCard = memo(function PipelineCard({
             leadEmpreendimento={lead.empreendimento}
           />
         )}
+        <WhatsAppTemplatesDialog
+          open={whatsappTemplatesOpen}
+          onOpenChange={setWhatsappTemplatesOpen}
+          leadNome={lead.nome}
+          leadTelefone={lead.telefone}
+          leadEmpreendimento={lead.empreendimento}
+          leadId={lead.id}
+          corretorNome={corretorNome}
+        />
       </div>
     </div>
   );

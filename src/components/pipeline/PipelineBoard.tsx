@@ -5,7 +5,7 @@ import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
-import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
+import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS } from "@/lib/celebrations";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -434,23 +434,26 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         }
       `}</style>
 
-      {/* Mini-map nav pills — compact */}
+      {/* Mini-map nav pills — colored by stage */}
       <div className="shrink-0 flex items-center gap-0.5 mb-1 px-0.5 overflow-x-auto scrollbar-none">
         {stages.map((stage, idx) => {
           const stageLeads = leadsByStage.get(stage.id) || [];
           const isActive = idx === activeIndex;
+          const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📍";
+          const stageColorCls = PIPELINE_STAGE_COLORS[stage.nome] || "";
           return (
             <button
               key={stage.id}
               onClick={() => scrollToIndex(idx)}
               className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all border ${
                 isActive
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  ? `${stageColorCls} border shadow-sm font-bold`
                   : "bg-card text-muted-foreground border-border/40 hover:border-primary/30"
               }`}
             >
+              <span>{emoji}</span>
               <span>{stage.nome}</span>
-              <span className={`font-bold ${isActive ? "text-primary-foreground" : ""}`}>
+              <span className="font-bold">
                 {stageLeads.length}
               </span>
             </button>
@@ -513,11 +516,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
-                {/* Column header — compact */}
+                {/* Column header — colored */}
                 <div className="shrink-0 px-2.5 py-2 bg-card border border-border/40 rounded-t-xl">
                   <div className="flex items-center gap-1.5 justify-between">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <div className="h-2.5 w-1 rounded-full shrink-0" style={{ backgroundColor: stage.cor }} />
+                      <div className="h-full w-1 rounded-full shrink-0 self-stretch" style={{ backgroundColor: stage.cor }} />
+                      <span className="text-sm shrink-0">{PIPELINE_STAGE_EMOJIS[stage.nome] || "📍"}</span>
                       <span className="text-[11px] font-bold text-foreground truncate">{stage.nome}</span>
                       <span className="text-[10px] font-bold text-muted-foreground">{stageLeads.length}</span>
                     </div>
