@@ -576,11 +576,6 @@ export default function AgendaVisitas() {
           <TabsTrigger value="calendario" className="gap-1.5 text-xs h-8 px-4">
             <CalendarDays className="h-3.5 w-3.5" /> 📅 Calendário
           </TabsTrigger>
-          {!isAdmin && !isGestor && (
-            <TabsTrigger value="equipe" className="gap-1.5 text-xs h-8 px-4">
-              <Users className="h-3.5 w-3.5" /> 👥 Equipe
-            </TabsTrigger>
-          )}
           {(isAdmin || isGestor) && (
             <TabsTrigger value="por-corretor" className="gap-1.5 text-xs h-8 px-4">
               <Users className="h-3.5 w-3.5" /> 👥 Por Corretor
@@ -604,14 +599,8 @@ export default function AgendaVisitas() {
         </TabsContent>
 
         <TabsContent value="calendario" className="mt-3">
-          <VisitasCalendar visitas={filtered} showTeam={isAdmin} />
+          <VisitasCalendar visitas={allVisitasFiltered} showTeam={isAdmin} />
         </TabsContent>
-
-        {!isAdmin && !isGestor && (
-          <TabsContent value="equipe" className="mt-3">
-            <VisitasEquipe />
-          </TabsContent>
-        )}
 
         {(isAdmin || isGestor) && (
           <TabsContent value="por-corretor" className="mt-3">
