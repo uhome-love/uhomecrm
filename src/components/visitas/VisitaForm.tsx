@@ -91,7 +91,11 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
   const [isParceria, setIsParceria] = useState(false);
   const [parceiroId, setParceiroId] = useState("");
 
-  // Reset form state when dialog opens
+  // Imóvel Jetimob search
+  const [imovelSearch, setImovelSearch] = useState("");
+  const [imovelResults, setImovelResults] = useState<any[]>([]);
+  const [imovelLoading, setImovelLoading] = useState(false);
+  const [selectedImovel, setSelectedImovel] = useState<any>(null);
   useEffect(() => {
     if (open) {
       setForm(getDefaultForm(initialData));
