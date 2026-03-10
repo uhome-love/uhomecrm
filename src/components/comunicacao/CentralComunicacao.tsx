@@ -1,22 +1,18 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquare, Phone, Smartphone, Copy, Sparkles, RotateCcw, Check, Loader2, ExternalLink } from "lucide-react";
+import { Search, Copy, Star, BookOpen, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  useComunicacaoTemplates,
-  useIncrementTemplateUsage,
-  substituirVariaveis,
-  personalizarComHomi,
-  TIPO_CONFIG,
-  type ComunicacaoTemplate,
-  type LeadContext,
-} from "@/hooks/useComunicacao";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+  useMarketplace,
+  CATEGORY_LABELS,
+  CATEGORY_ICONS,
+  type MarketplaceCategory,
+} from "@/hooks/useMarketplace";
 
 interface CentralComunicacaoProps {
   open: boolean;
@@ -29,325 +25,167 @@ interface CentralComunicacaoProps {
   leadFase?: string;
 }
 
-const TIPO_FILTERS = [
+const CATEGORY_FILTERS: { value: string; label: string }[] = [
   { value: "todos", label: "Todos" },
-  { value: "contato_inicial", label: "Contato Inicial" },
-  { value: "follow_up_ligacao", label: "Follow Up" },
-  { value: "follow_up_visita", label: "Follow Up Visita" },
-  { value: "proposta", label: "Proposta" },
-  { value: "campanha", label: "Campanha" },
-  { value: "reengajamento", label: "Reengajamento" },
-  { value: "pos_venda", label: "Pós-Venda" },
+  { value: "script_ligacao", label: "📞 Ligação" },
+  { value: "whatsapp", label: "💬 WhatsApp" },
+  { value: "argumento_empreendimento", label: "🏠 Argumentos" },
+  { value: "quebra_objecao", label: "🛡️ Objeções" },
+  { value: "template_proposta", label: "📊 Proposta" },
 ];
 
 export default function CentralComunicacao({
   open,
   onOpenChange,
-  leadId,
   leadNome,
-  leadTelefone,
   leadEmpreendimento,
-  leadScore,
-  leadFase,
 }: CentralComunicacaoProps) {
-  const [canal, setCanal] = useState<"whatsapp" | "ligacao">("whatsapp");
-  const [tipoFilter, setTipoFilter] = useState("todos");
-  const [selectedTemplate, setSelectedTemplate] = useState<ComunicacaoTemplate | null>(null);
-  const [previewText, setPreviewText] = useState("");
-  const [isPersonalizing, setIsPersonalizing] = useState(false);
-  const [isHomiVersion, setIsHomiVersion] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [corretorNome, setCorretorNome] = useState("");
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState("todos");
 
-  const { user } = useAuth();
-  const { data: templates = [], isLoading } = useComunicacaoTemplates(canal, tipoFilter);
-  const incrementUsage = useIncrementTemplateUsage();
+  const category = catFilter === "todos" ? undefined : (catFilter as MarketplaceCategory);
+  const { items, isLoading, useItem } = useMarketplace(category, "mais_usados", search || undefined);
 
-  const leadContext: LeadContext = useMemo(() => ({
-    nome: leadNome || "Cliente",
-    empreendimento: leadEmpreendimento,
-    score: leadScore,
-    fase: leadFase,
-  }), [leadNome, leadEmpreendimento, leadScore, leadFase]);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("nome").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-      if (data?.nome) setCorretorNome(data.nome);
-    });
-  }, [user]);
-
-  const handleUseTemplate = (tmpl: ComunicacaoTemplate) => {
-    const filled = substituirVariaveis(tmpl.conteudo, leadContext, corretorNome);
-    setPreviewText(filled);
-    setSelectedTemplate(tmpl);
-    setIsHomiVersion(false);
-  };
-
-  const handlePersonalize = async (tmpl: ComunicacaoTemplate) => {
-    setSelectedTemplate(tmpl);
-    setIsPersonalizing(true);
-    setIsHomiVersion(true);
-    try {
-      const filled = substituirVariaveis(tmpl.conteudo, leadContext, corretorNome);
-      const personalized = await personalizarComHomi(filled, leadContext, corretorNome);
-      setPreviewText(personalized);
-    } catch {
-      toast.error("Erro ao personalizar. Usando template original.");
-      const filled = substituirVariaveis(tmpl.conteudo, leadContext, corretorNome);
-      setPreviewText(filled);
-      setIsHomiVersion(false);
-    } finally {
-      setIsPersonalizing(false);
-    }
-  };
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(previewText);
-    setCopied(true);
-    toast.success("Copiado! Cola no WhatsApp ✅");
-    setTimeout(() => setCopied(false), 2000);
-
-    if (selectedTemplate) {
-      incrementUsage.mutate({
-        templateId: selectedTemplate.id,
-        leadId,
-        canal,
-        mensagem: previewText,
-        personalizado: isHomiVersion,
-      });
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (!selectedTemplate) return;
-    await handlePersonalize(selectedTemplate);
+  const handleCopy = (item: any) => {
+    let text = item.conteudo || "";
+    // Replace variables if lead context available
+    if (leadNome) text = text.replace(/\{\{nome\}\}/g, leadNome);
+    if (leadEmpreendimento) text = text.replace(/\{\{empreendimento\}\}/g, leadEmpreendimento);
+    navigator.clipboard.writeText(text);
+    useItem(item.id);
+    toast.success("Script copiado! 📋");
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-lg p-0 flex flex-col"
-        style={{ background: "#FAFAFA" }}
-      >
+      <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
         {/* Header */}
-        <SheetHeader className="px-5 pt-5 pb-3" style={{ borderBottom: "1px solid #E5E7EB" }}>
-          <SheetTitle className="flex items-center gap-2 text-lg font-bold" style={{ color: "#1F2937" }}>
-            <MessageSquare className="h-5 w-5" style={{ color: "#3B82F6" }} />
-            Central de Comunicação
+        <SheetHeader className="shrink-0 px-5 pt-5 pb-3 border-b border-border/50">
+          <SheetTitle className="flex items-center gap-2 text-lg">
+            <BookOpen className="h-5 w-5 text-primary" />
+            Marketplace — Scripts Prontos
           </SheetTitle>
-          {leadNome && (
-            <p className="text-sm" style={{ color: "#6B7280" }}>
-              {leadNome} {leadEmpreendimento ? `· ${leadEmpreendimento}` : ""}
+          {(leadNome || leadEmpreendimento) && (
+            <p className="text-xs text-muted-foreground">
+              {leadNome}{leadEmpreendimento ? ` · ${leadEmpreendimento}` : ""}
             </p>
           )}
         </SheetHeader>
 
-        {/* Preview mode */}
-        {selectedTemplate ? (
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-            <Button variant="ghost" size="sm" className="text-xs gap-1" style={{ color: "#6B7280" }}
-              onClick={() => { setSelectedTemplate(null); setPreviewText(""); }}>
-              ← Voltar aos templates
-            </Button>
-
-            {isHomiVersion && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6", width: "fit-content" }}>
-                <Sparkles className="h-3 w-3" /> Personalizado pelo HOMI
-              </div>
-            )}
-
-            {isPersonalizing ? (
-              <div className="flex items-center justify-center py-12 gap-2" style={{ color: "#8B5CF6" }}>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span className="text-sm font-medium">✨ HOMI está personalizando...</span>
-              </div>
-            ) : (
-              <>
-                <Textarea
-                  value={previewText}
-                  onChange={(e) => setPreviewText(e.target.value)}
-                  className="min-h-[200px] text-sm"
-                  style={{
-                    background: "white",
-                    border: "1px solid #E5E7EB",
-                    borderRadius: 12,
-                    color: "#374151",
-                  }}
-                />
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleCopy}
-                    className="flex-1 gap-2 font-semibold"
-                    style={{
-                      background: copied ? "#22C55E" : "#3B82F6",
-                      color: "white",
-                      borderRadius: 10,
-                    }}
-                  >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied ? "Copiado!" : "📋 Copiar mensagem"}
-                  </Button>
-                  {isHomiVersion && (
-                    <Button variant="outline" onClick={handleRegenerate} className="gap-1.5"
-                      style={{ borderRadius: 10, borderColor: "#E5E7EB" }}>
-                      <RotateCcw className="h-3.5 w-3.5" /> Gerar outra
-                    </Button>
-                  )}
-                </div>
-
-                {leadTelefone && (
-                  <Button
-                    onClick={() => {
-                      const digits = leadTelefone.replace(/\D/g, "");
-                      const number = digits.startsWith("55") ? digits : `55${digits}`;
-                      const encoded = encodeURIComponent(previewText);
-                      window.open(`https://wa.me/${number}?text=${encoded}`, "_blank");
-
-                      if (selectedTemplate) {
-                        incrementUsage.mutate({
-                          templateId: selectedTemplate.id,
-                          leadId,
-                          canal,
-                          mensagem: previewText,
-                          personalizado: isHomiVersion,
-                        });
-                      }
-                    }}
-                    className="w-full gap-2 font-semibold"
-                    style={{
-                      background: "#25D366",
-                      color: "white",
-                      borderRadius: 10,
-                    }}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Enviar no WhatsApp
-                  </Button>
-                )}
-              </>
-            )}
+        {/* Search */}
+        <div className="shrink-0 px-5 pt-3 pb-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar scripts..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9 bg-card text-sm"
+            />
           </div>
-        ) : (
-          /* Template browser */
-          <div className="flex-1 overflow-y-auto">
-            {/* Canal tabs */}
-            <div className="px-5 pt-3">
-              <Tabs value={canal} onValueChange={(v) => setCanal(v as any)}>
-                <TabsList className="grid w-full grid-cols-2 h-10" style={{ background: "#F3F4F6", borderRadius: 8 }}>
-                  <TabsTrigger value="whatsapp" className="gap-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm" style={{ borderRadius: 6 }}>
-                    <Smartphone className="h-3.5 w-3.5" /> WhatsApp
-                  </TabsTrigger>
-                  <TabsTrigger value="ligacao" className="gap-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm" style={{ borderRadius: 6 }}>
-                    <Phone className="h-3.5 w-3.5" /> Ligação
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+        </div>
 
-            {/* Type filter pills */}
-            <div className="px-5 py-3 flex gap-1.5 overflow-x-auto no-scrollbar">
-              {TIPO_FILTERS.map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => setTipoFilter(f.value)}
-                  className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
-                  style={{
-                    background: tipoFilter === f.value ? "#1F2937" : "white",
-                    color: tipoFilter === f.value ? "white" : "#6B7280",
-                    border: `1px solid ${tipoFilter === f.value ? "#1F2937" : "#E5E7EB"}`,
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Template cards */}
-            <div className="px-5 pb-5 space-y-3">
-              {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="rounded-xl p-4 space-y-2" style={{ background: "white", border: "1px solid #E5E7EB" }}>
-                    <Skeleton className="h-4 w-2/3 rounded" />
-                    <Skeleton className="h-3 w-full rounded" />
-                    <Skeleton className="h-3 w-4/5 rounded" />
-                  </div>
-                ))
-              ) : templates.length === 0 ? (
-                <div className="text-center py-12" style={{ color: "#9CA3AF" }}>
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">Nenhum template encontrado</p>
-                </div>
-              ) : (
-                templates.map((tmpl) => {
-                  const cfg = TIPO_CONFIG[tmpl.tipo] || { label: tmpl.tipo, color: "#6B7280", emoji: "📝" };
-                  return (
-                    <div
-                      key={tmpl.id}
-                      className="rounded-xl p-4 transition-all duration-150 hover:shadow-md"
-                      style={{
-                        background: "white",
-                        border: "1px solid #E5E7EB",
-                        borderLeft: `3px solid ${cfg.color}`,
-                      }}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-sm" style={{ color: "#1F2937" }}>{tmpl.titulo}</h4>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                            style={{ background: `${cfg.color}15`, color: cfg.color, border: `1px solid ${cfg.color}30` }}>
-                            {cfg.emoji} {cfg.label}
-                          </span>
-                          {tmpl.campanha && (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                              style={{ background: "rgba(236,72,153,0.1)", color: "#EC4899", border: "1px solid rgba(236,72,153,0.3)" }}>
-                              🎉 {tmpl.campanha}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="text-xs line-clamp-2 mb-3" style={{ color: "#9CA3AF" }}>
-                        {tmpl.conteudo.slice(0, 120)}...
-                      </p>
-
-                      {tmpl.uso_count > 0 && (
-                        <p className="text-[10px] mb-2" style={{ color: "#D1D5DB" }}>
-                          Usado {tmpl.uso_count}x
-                        </p>
-                      )}
-
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 gap-1.5 text-xs font-semibold"
-                          style={{ borderRadius: 8, borderColor: "#E5E7EB" }}
-                          onClick={() => handlePersonalize(tmpl)}
-                        >
-                          <Sparkles className="h-3 w-3" style={{ color: "#8B5CF6" }} />
-                          Personalizar com HOMI
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 gap-1.5 text-xs font-semibold"
-                          style={{ background: "#3B82F6", color: "white", borderRadius: 8 }}
-                          onClick={() => handleUseTemplate(tmpl)}
-                        >
-                          <Copy className="h-3 w-3" />
-                          Usar template
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+        {/* Category pills */}
+        <div className="shrink-0 px-5 pb-3">
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+            {CATEGORY_FILTERS.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => setCatFilter(cat.value)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  catFilter === cat.value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* Items list */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-5 space-y-3">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-lg" />
+            ))
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <BookOpen className="h-10 w-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Nenhum script encontrado</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Tente ajustar os filtros ou busca</p>
+            </div>
+          ) : (
+            items.map((item: any) => (
+              <ScriptCard key={item.id} item={item} onCopy={() => handleCopy(item)} />
+            ))
+          )}
+        </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function ScriptCard({ item, onCopy }: { item: any; onCopy: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const preview = item.conteudo?.slice(0, 180) + (item.conteudo?.length > 180 ? "..." : "");
+  const catLabel = CATEGORY_LABELS[item.categoria as MarketplaceCategory]?.replace(/^.\s/, "") || item.categoria;
+  const catIcon = CATEGORY_ICONS[item.categoria as MarketplaceCategory] || "📄";
+
+  return (
+    <Card className="border-border hover:border-primary/30 transition-all hover:shadow-md">
+      <CardContent className="p-4">
+        {/* Title row */}
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-base">{catIcon}</span>
+            <h3 className="font-semibold text-sm text-foreground truncate">{item.titulo}</h3>
+          </div>
+          <Badge variant="secondary" className="text-[10px] shrink-0">{catLabel}</Badge>
+        </div>
+
+        {/* Tags */}
+        {(item.tags || []).length > 0 && (
+          <div className="flex gap-1 flex-wrap mb-2">
+            {(item.tags || []).slice(0, 3).map((t: string) => (
+              <Badge key={t} variant="outline" className="text-[9px] px-1.5 py-0">{t}</Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Content preview */}
+        <div
+          className="text-xs text-muted-foreground whitespace-pre-wrap cursor-pointer bg-muted/30 rounded-lg p-3 border border-border hover:border-primary/20 transition-colors"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? item.conteudo : preview}
+          {item.conteudo?.length > 180 && (
+            <span className="text-primary text-[10px] ml-1 font-medium">
+              {expanded ? "ver menos ↑" : "ver mais →"}
+            </span>
+          )}
+        </div>
+
+        {/* Footer: rating + use button */}
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map(n => (
+                <Star
+                  key={n}
+                  className={`h-3 w-3 ${n <= Number(item.media_avaliacao || 0) ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/20"}`}
+                />
+              ))}
+              <span className="text-[10px] text-muted-foreground ml-0.5">({item.total_avaliacoes || 0})</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground">📋 {item.total_usos || 0}x</span>
+          </div>
+          <Button size="sm" onClick={onCopy} className="gap-1 text-xs h-7">
+            <Copy className="h-3 w-3" /> Usar script
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
