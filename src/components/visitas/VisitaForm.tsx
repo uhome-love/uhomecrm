@@ -96,6 +96,7 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
   const [imovelResults, setImovelResults] = useState<any[]>([]);
   const [imovelLoading, setImovelLoading] = useState(false);
   const [selectedImovel, setSelectedImovel] = useState<any>(null);
+  // Reset form state when dialog opens
   useEffect(() => {
     if (open) {
       setForm(getDefaultForm(initialData));
@@ -106,6 +107,9 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
       setFilterStage("");
       setFilterEmp("");
       setShowFilters(false);
+      setImovelSearch("");
+      setImovelResults([]);
+      setSelectedImovel(null);
     }
   }, [open, initialData]);
 
