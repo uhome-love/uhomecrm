@@ -75,11 +75,11 @@ export default function ReportsContent() {
         }
       }
 
-      // PDN data
-      const { data: pdns } = await supabase.from("pdn_entries").select("*").eq("gerente_id", user.id).eq("mes", mesKey);
-      const pdnCount = (pdns || []).length;
-      const pdnVgv = (pdns || []).reduce((s, p) => s + Number(p.vgv || 0), 0);
-      const pdnAssinado = (pdns || []).filter(p => p.situacao === "assinado").reduce((s, p) => s + Number(p.vgv || 0), 0);
+      // Negocios data
+      const { data: negs } = await supabase.from("negocios").select("*").eq("gerente_id", user.id).gte("created_at", `${mesKey}-01`).lt("created_at", `${mesKey}-32`);
+      const pdnCount = (negs || []).length;
+      const pdnVgv = (negs || []).reduce((s, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+      const pdnAssinado = (negs || []).filter((p: any) => p.fase === "assinado").reduce((s, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
 
       // Metas CEO
       const { data: metas } = await supabase.from("ceo_metas_mensais").select("*").eq("gerente_id", user.id).eq("mes", mesKey).maybeSingle();
@@ -93,13 +93,13 @@ export default function ReportsContent() {
       }
 
       if (reportType === "forecast" || reportType === "completo") {
-        prompt += `\n\n## DADOS PDN / FORECAST\n- Negócios ativos: ${pdnCount}\n- VGV potencial: ${fmtCurrency(pdnVgv)}\n- VGV assinado: ${fmtCurrency(pdnAssinado)}`;
+        prompt += `\n\n## DADOS NEGÓCIOS / FORECAST\n- Negócios ativos: ${pdnCount}\n- VGV potencial: ${fmtCurrency(pdnVgv)}\n- VGV assinado: ${fmtCurrency(pdnAssinado)}`;
         if (metas) {
           prompt += `\n\nMETAS DO MÊS:\n- Meta VGV Assinado: ${fmtCurrency(Number(metas.meta_vgv_assinado))}\n- Meta Visitas Marcadas: ${metas.meta_visitas_marcadas}\n- Meta Visitas Realizadas: ${metas.meta_visitas_realizadas}`;
         }
-        // PDN details
-        if (pdns && pdns.length > 0) {
-          prompt += `\n\nDETALHES PDN:\n${pdns.slice(0, 20).map(p => `  - ${p.nome} | ${p.empreendimento} | ${p.situacao} | ${p.temperatura} | VGV: ${fmtCurrency(Number(p.vgv || 0))}`).join("\n")}`;
+        // Negocios details
+        if (negs && negs.length > 0) {
+          prompt += `\n\nDETALHES NEGÓCIOS:\n${negs.slice(0, 20).map((p: any) => `  - ${p.nome_cliente} | ${p.empreendimento} | ${p.fase} | VGV: ${fmtCurrency(Number(p.vgv_final || p.vgv_estimado || 0))}`).join("\n")}`;
         }
       }
 

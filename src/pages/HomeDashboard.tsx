@@ -106,17 +106,17 @@ export default function HomeDashboard() {
     });
   }, [user]);
 
-  // Fetch PDN summary (strictly scoped by selected period)
+  // Fetch negocios summary (strictly scoped by selected period)
   const fetchPdn = useCallback(async () => {
     if (!user) return;
 
     const { startDate, endDate } = getPeriodRange(period);
 
     let q = supabase
-      .from("pdn_entries")
-      .select("situacao, docs_status, data_visita, temperatura, vgv, motivo_queda")
-      .gte("data_visita", startDate)
-      .lte("data_visita", endDate);
+      .from("negocios")
+      .select("fase, status, vgv_estimado, vgv_final, created_at")
+      .gte("created_at", startDate)
+      .lte("created_at", endDate);
 
     if (!isAdmin) q = q.eq("gerente_id", user.id);
 
@@ -125,25 +125,25 @@ export default function HomeDashboard() {
 
     const now = new Date();
     const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
-    const visitas = data.filter(d => d.situacao === "visita");
-    const gerados = data.filter(d => d.situacao === "gerado");
-    const assinados = data.filter(d => d.situacao === "assinado");
-    const caidos = data.filter(d => d.situacao === "caiu");
+    const novos = data.filter(d => d.fase === "novo_negocio");
+    const propostas = data.filter(d => d.fase === "proposta" || d.fase === "negociacao" || d.fase === "documentacao");
+    const assinados = data.filter(d => d.fase === "assinado");
+    const perdidos = data.filter(d => d.status === "perdido");
 
     setPdnStats({
-      propostas: gerados.length + assinados.length,
-      docs: visitas.filter(d => d.docs_status === "sem_docs" || d.docs_status === "em_andamento").length,
-      visitaRecente: data.filter(d => d.data_visita && new Date(d.data_visita) >= fiveDaysAgo).length,
-      total_visitas: visitas.length,
-      quente: visitas.filter(d => d.temperatura === "quente").length,
-      morno: visitas.filter(d => d.temperatura === "morno").length,
-      frio: visitas.filter(d => d.temperatura === "frio").length,
-      total_gerados: gerados.length,
+      propostas: propostas.length + assinados.length,
+      docs: 0,
+      visitaRecente: data.filter(d => d.created_at && new Date(d.created_at) >= fiveDaysAgo).length,
+      total_visitas: novos.length,
+      quente: 0,
+      morno: 0,
+      frio: 0,
+      total_gerados: propostas.length,
       total_assinados: assinados.length,
-      total_caidos: caidos.length,
-      vgv_gerado: gerados.reduce((s, e) => s + Number(e.vgv || 0), 0),
-      vgv_assinado: assinados.reduce((s, e) => s + Number(e.vgv || 0), 0),
-      vgv_caido: caidos.reduce((s, e) => s + Number(e.vgv || 0), 0),
+      total_caidos: perdidos.length,
+      vgv_gerado: propostas.reduce((s, e) => s + Number(e.vgv_estimado || 0), 0),
+      vgv_assinado: assinados.reduce((s, e) => s + Number(e.vgv_final || e.vgv_estimado || 0), 0),
+      vgv_caido: perdidos.reduce((s, e) => s + Number(e.vgv_estimado || 0), 0),
     });
   }, [user, isAdmin, period]);
 
