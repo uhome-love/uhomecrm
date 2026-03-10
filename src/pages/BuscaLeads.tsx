@@ -307,7 +307,7 @@ export default function BuscaLeads() {
                   ))}
                 </TableBody>
               </Table>
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
       ) : !isSearching && totalResults === 0 && (
