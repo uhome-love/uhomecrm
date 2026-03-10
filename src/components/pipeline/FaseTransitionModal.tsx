@@ -76,6 +76,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
   const [propDocsStatus, setPropDocsStatus] = useState("sem_documentos");
 
   // Negociação fields
+  const [negValorProposta, setNegValorProposta] = useState("");
   const [negContraProposta, setNegContraProposta] = useState("");
   const [negObs, setNegObs] = useState("");
 
@@ -114,7 +115,7 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
     } else if (targetFase === "negociacao") {
       onConfirm({
         fase: "negociacao",
-        fields: { valor_contra_proposta: rawToNumber(negContraProposta), observacoes: negObs },
+        fields: { valor_proposta_cliente: rawToNumber(negValorProposta), valor_contra_proposta: rawToNumber(negContraProposta), observacoes: negObs },
       });
     } else if (targetFase === "documentacao") {
       const taxa = contTaxa === "custom" ? contTaxaCustom : contTaxa;
@@ -189,8 +190,9 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
             </DialogHeader>
             <p className="text-xs text-muted-foreground">Negócio: <strong>{negocio.nome_cliente}</strong></p>
             <div className="space-y-3">
-              <CurrencyInput label="Valor da Contra Proposta (R$)" value={negContraProposta} onChange={setNegContraProposta} placeholder="R$ 440.000,00" />
-              <div><Label className="text-xs">Observações Importantes</Label><Textarea value={negObs} onChange={e => setNegObs(e.target.value)} className="text-xs h-24" placeholder="Detalhes da negociação, condições, etc..." /></div>
+              <CurrencyInput label="Valor Proposta do Cliente (R$)" value={negValorProposta} onChange={setNegValorProposta} placeholder="R$ 850.000,00" />
+              <CurrencyInput label="Contra Proposta (Construtora / Proprietário) (R$)" value={negContraProposta} onChange={setNegContraProposta} placeholder="R$ 880.000,00" />
+              <div><Label className="text-xs">Observações Importantes da Negociação</Label><Textarea value={negObs} onChange={e => setNegObs(e.target.value)} className="text-xs h-24" placeholder="Detalhes da negociação, condições, prazos..." /></div>
             </div>
             <DialogFooter>
               <Button size="sm" onClick={handleConfirm} className="text-xs gap-1">🤝 Confirmar e mover para Negociação</Button>
