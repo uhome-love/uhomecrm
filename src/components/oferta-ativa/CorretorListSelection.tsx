@@ -443,8 +443,42 @@ export default function CorretorListSelection() {
       <CustomListWizard
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
-        onCreated={(listId) => {
+        onCreated={async (listId) => {
           setWizardOpen(false);
+          if (!user) return;
+          // Find the just-created list and start Arena
+          const { data: newList } = await supabase
+            .from("custom_lists")
+            .select("*")
+            .eq("id", listId)
+            .maybeSingle();
+          if (!newList) return;
+          const filtros = (newList.filtros || {}) as any;
+          toast.loading("Carregando leads da lista...");
+          const result = await resolveCustomListLeads(user.id, filtros);
+          toast.dismiss();
+          if (result.count === 0) {
+            toast.error("Nenhum lead encontrado.");
+            return;
+          }
+          const virtualLista: OALista = {
+            id: `custom_${listId}`,
+            nome: newList.nome || "Lista personalizada",
+            empreendimento: newList.nome || "Lista personalizada",
+            campanha: filtros.campanha || null,
+            origem: "custom_list",
+            status: "liberada",
+            max_tentativas: 4,
+            cooldown_dias: 1,
+            total_leads: result.count,
+            criado_por: user.id,
+            created_at: newList.criada_at,
+            updated_at: newList.criada_at,
+          };
+          sessionStorage.setItem("custom_list_lead_ids", JSON.stringify(result.ids));
+          sessionStorage.setItem("custom_list_name", newList.nome);
+          setSelectedLista(virtualLista);
+          toast.success(`📋 ${result.count} leads carregados! Arena pronta.`);
         }}
       />
     </div>
