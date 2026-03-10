@@ -318,9 +318,11 @@ function VisitaMarcadaForm({ lead, onConfirm, targetStageId }: { lead: PipelineL
   const [corretores, setCorretores] = useState<{ user_id: string; nome: string }[]>([]);
 
   useEffect(() => {
-    (supabase.from("team_members").select("user_id, nome").eq("ativo", true) as any).then(({ data }: any) => {
+    const load = async () => {
+      const { data } = await supabase.from("team_members").select("user_id, nome").eq("ativo", true) as any;
       if (data) setCorretores(data.filter((c: any) => c.user_id));
-    });
+    };
+    load();
   }, []);
 
   const LOCAL_OPTIONS = [
