@@ -347,6 +347,7 @@ export default function Configuracoes() {
 
       {/* Integrations - Admin only */}
       {isAdmin && <MetaAdsSettings />}
+      {isAdmin && <RoletaCampanhasPanel />}
 
       {/* Notification Preferences */}
       <NotificationPreferences />
