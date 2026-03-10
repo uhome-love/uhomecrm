@@ -71,8 +71,22 @@ const LOCAL_LABELS: Record<string, string> = {
   empresa: "🏢 Escritório",
   videochamada: "📹 Videochamada",
   decorado: "🏠 Decorado",
+  cartorio: "📜 Cartório",
   outro: "📍 Outro",
 };
+
+/** Parse objetivo and responsável from observacoes stored as "Objetivo: X | Responsável: Y | notes" */
+function parseNegocioMeta(obs: string | null) {
+  if (!obs) return { objetivo: null, responsavel: null };
+  const parts = obs.split("|").map(s => s.trim());
+  let objetivo: string | null = null;
+  let responsavel: string | null = null;
+  for (const p of parts) {
+    if (p.startsWith("Objetivo:")) objetivo = p.replace("Objetivo:", "").trim();
+    if (p.startsWith("Responsável:")) responsavel = p.replace("Responsável:", "").trim();
+  }
+  return { objetivo, responsavel };
+}
 
 const STATUS_LINE_COLORS: Record<string, string> = {
   marcada: "bg-amber-400",
@@ -118,6 +132,10 @@ interface Props {
 export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete, showCorretor, showTeam, isPastPending }: Props) {
   const [hovered, setHovered] = useState(false);
 
+  const isNegocio = v.tipo === "negocio";
+  const negocioMeta = isNegocio ? parseNegocioMeta(v.observacoes) : { objetivo: null, responsavel: null };
+  const missingNegocioInfo = isNegocio && (!negocioMeta.objetivo || !negocioMeta.responsavel);
+
   return (
     <div
       className={cn(
@@ -151,6 +169,24 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       {/* Empreendimento */}
       <div className="w-32 shrink-0 hidden sm:block">
         <span className="text-xs text-muted-foreground truncate block">{v.empreendimento || "—"}</span>
+        {isNegocio && (
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {negocioMeta.objetivo && (
+              <span className="text-[10px] text-amber-600 font-medium truncate">🎯 {negocioMeta.objetivo}</span>
+            )}
+            {negocioMeta.responsavel && (
+              <span className="text-[10px] text-muted-foreground truncate">👤 {negocioMeta.responsavel}</span>
+            )}
+            {missingNegocioInfo && onEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(v); }}
+                className="text-[10px] text-amber-500 hover:text-amber-400 font-medium flex items-center gap-0.5"
+              >
+                <Pencil className="h-2.5 w-2.5" /> Completar
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Local da visita */}
