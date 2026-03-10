@@ -25,6 +25,7 @@ import VisitaForm from "@/components/visitas/VisitaForm";
 import VisitaTypeSelector from "@/components/visitas/VisitaTypeSelector";
 import ReuniaoNegocioForm from "@/components/visitas/ReuniaoNegocioForm";
 import VisitaResultadoDialog, { type ResultadoVisita } from "@/components/visitas/VisitaResultadoDialog";
+import VisitasEquipe from "@/components/visitas/VisitasEquipe";
 
 
 const FIXED_TEAMS = [
