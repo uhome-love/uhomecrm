@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath, Maximize, MapPin } from "lucide-react";
+import { Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath, Maximize, MapPin, Car } from "lucide-react";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface Imovel {
   id: number;
@@ -30,10 +31,13 @@ interface Imovel {
   suites?: number;
   banheiros?: number;
   vagas?: number;
-  fotos?: { url: string }[];
+  fotos?: { url: string; descricao?: string }[];
   foto_principal?: string;
+  imagens?: { url: string }[];
   status?: string;
   disponibilidade?: string;
+  descricao?: string;
+  caracteristicas?: string[];
 }
 
 const fmtBRL = (v: number) =>
@@ -41,13 +45,11 @@ const fmtBRL = (v: number) =>
 
 export default function ImoveisPage() {
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Filters
   const [search, setSearch] = useState("");
   const [contrato, setContrato] = useState("venda");
   const [tipo, setTipo] = useState("");
@@ -64,7 +66,7 @@ export default function ImoveisPage() {
           pageSize: 20,
           search: search || undefined,
           contrato: contrato || undefined,
-          tipo: tipo || undefined,
+          tipo: tipo && tipo !== "all" ? tipo : undefined,
           cidade: cidade || undefined,
           bairro: bairro || undefined,
         },
@@ -72,18 +74,16 @@ export default function ImoveisPage() {
 
       if (error) {
         toast.error("Erro ao buscar imóveis");
-        console.error(error);
+        console.error("jetimob-proxy error:", error);
         return;
       }
 
-      // Jetimob API response structure
       const results = data?.result || data?.imoveis || data?.data || [];
       const items = Array.isArray(results) ? results : [];
       setImoveis(items);
       setTotal(data?.total || data?.count || items.length);
       setTotalPages(data?.totalPages || data?.pages || Math.ceil((data?.total || items.length) / 20));
       setPage(pageNum);
-      setSearched(true);
     } catch (err) {
       console.error(err);
       toast.error("Erro de conexão com Jetimob");
@@ -92,11 +92,17 @@ export default function ImoveisPage() {
     }
   }, [search, contrato, tipo, cidade, bairro]);
 
+  // Auto-load on mount
+  useEffect(() => {
+    fetchImoveis(1);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSearch = () => fetchImoveis(1);
 
   const getImageUrl = (imovel: Imovel): string | null => {
     if (imovel.foto_principal) return imovel.foto_principal;
-    if (imovel.fotos && imovel.fotos.length > 0) return imovel.fotos[0].url;
+    if (imovel.fotos?.length) return imovel.fotos[0].url;
+    if (imovel.imagens?.length) return imovel.imagens[0].url;
     return null;
   };
 
@@ -115,7 +121,7 @@ export default function ImoveisPage() {
           Imóveis Jetimob
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Consulte e busque imóveis para sugerir aos seus clientes
+          Consulte imóveis para sugerir aos seus clientes
         </p>
       </div>
 
@@ -173,9 +179,9 @@ export default function ImoveisPage() {
         <div className="flex items-center gap-3">
           <Button onClick={handleSearch} disabled={loading} className="gap-2">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            Buscar Imóveis
+            Buscar
           </Button>
-          {searched && (
+          {total > 0 && (
             <span className="text-sm text-muted-foreground">
               {total.toLocaleString()} imóveis encontrados
             </span>
@@ -184,20 +190,26 @@ export default function ImoveisPage() {
       </Card>
 
       {/* Results */}
-      {loading && !searched ? (
+      {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-48 rounded-lg" />
+            <Card key={i} className="overflow-hidden">
+              <div className="flex">
+                <Skeleton className="w-40 h-40 flex-shrink-0 rounded-none" />
+                <div className="flex-1 p-3 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-5 w-1/3 mt-4" />
+                </div>
+              </div>
+            </Card>
           ))}
         </div>
-      ) : !searched ? (
-        <Card className="p-12 text-center">
-          <Building2 className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-          <p className="text-muted-foreground">Use os filtros acima para buscar imóveis no Jetimob</p>
-        </Card>
       ) : imoveis.length === 0 ? (
         <Card className="p-8 text-center">
-          <p className="text-muted-foreground">Nenhum imóvel encontrado com esses filtros</p>
+          <Building2 className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
+          <p className="text-muted-foreground">Nenhum imóvel encontrado</p>
         </Card>
       ) : (
         <>
@@ -207,7 +219,6 @@ export default function ImoveisPage() {
               return (
                 <Card key={imovel.id || imovel.codigo} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="flex">
-                    {/* Image */}
                     <div className="w-40 h-40 flex-shrink-0 bg-muted relative">
                       {img ? (
                         <img src={img} alt={imovel.endereco || ""} className="w-full h-full object-cover" loading="lazy" />
@@ -221,60 +232,54 @@ export default function ImoveisPage() {
                       </Badge>
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
                       <div className="space-y-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate">
-                              {imovel.endereco}{imovel.numero ? `, ${imovel.numero}` : ""}
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <MapPin className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">
-                                {[imovel.bairro, imovel.cidade].filter(Boolean).join(" · ")}
-                              </span>
-                            </p>
-                          </div>
-                        </div>
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {imovel.endereco}{imovel.numero ? `, ${imovel.numero}` : ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {[imovel.bairro, imovel.cidade].filter(Boolean).join(" · ")}
+                          </span>
+                        </p>
 
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
                           {imovel.tipo && <Badge variant="outline" className="text-[10px] h-5">{imovel.tipo}</Badge>}
                           {imovel.subtipo && <Badge variant="outline" className="text-[10px] h-5">{imovel.subtipo}</Badge>}
                         </div>
 
-                        {/* Features */}
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          {imovel.dormitorios != null && imovel.dormitorios > 0 && (
+                          {(imovel.dormitorios ?? 0) > 0 && (
                             <span className="flex items-center gap-0.5">
                               <BedDouble className="h-3 w-3" /> {imovel.dormitorios}
+                              {(imovel.suites ?? 0) > 0 && <span className="text-[10px]">({imovel.suites}s)</span>}
                             </span>
                           )}
-                          {imovel.banheiros != null && imovel.banheiros > 0 && (
+                          {(imovel.banheiros ?? 0) > 0 && (
                             <span className="flex items-center gap-0.5">
                               <Bath className="h-3 w-3" /> {imovel.banheiros}
                             </span>
                           )}
-                          {imovel.area_privativa != null && imovel.area_privativa > 0 && (
+                          {(imovel.area_privativa ?? 0) > 0 && (
                             <span className="flex items-center gap-0.5">
-                              <Maximize className="h-3 w-3" /> {imovel.area_privativa} m²
+                              <Maximize className="h-3 w-3" /> {imovel.area_privativa}m²
                             </span>
                           )}
-                          {imovel.vagas != null && imovel.vagas > 0 && (
-                            <span className="flex items-center gap-0.5">🚗 {imovel.vagas}</span>
+                          {(imovel.vagas ?? 0) > 0 && (
+                            <span className="flex items-center gap-0.5">
+                              <Car className="h-3 w-3" /> {imovel.vagas}
+                            </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Price */}
                       <div className="flex items-end justify-between mt-1">
                         <div>
-                          <p className="text-sm font-bold text-primary">
-                            {getPreco(imovel)}
-                          </p>
-                          {imovel.condominio != null && imovel.condominio > 0 && (
+                          <p className="text-sm font-bold text-primary">{getPreco(imovel)}</p>
+                          {(imovel.condominio ?? 0) > 0 && (
                             <p className="text-[10px] text-muted-foreground">
-                              Cond. {fmtBRL(imovel.condominio)}
+                              Cond. {fmtBRL(imovel.condominio!)}
                             </p>
                           )}
                         </div>
@@ -294,26 +299,15 @@ export default function ImoveisPage() {
             })}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1 || loading}
-                onClick={() => fetchImoveis(page - 1)}
-              >
+              <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchImoveis(page - 1)}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm text-muted-foreground">
-                Página {page} de {totalPages}
+                {page} de {totalPages}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages || loading}
-                onClick={() => fetchImoveis(page + 1)}
-              >
+              <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchImoveis(page + 1)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
