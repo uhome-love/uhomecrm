@@ -49,15 +49,13 @@ export function getCurrentWindowInfo(): {
   const now = new Date();
   const mins = getMinutesFromMidnight(now.getHours(), now.getMinutes());
 
-  // TODO: TEMPORÁRIO - ajustar horários após período de teste
   // Janelas de distribuição:
-  // Manhã:   10:00 — 12:00 (cred 00:00-10:00)
+  // Manhã:   07:30 — 09:30 (cred 00:00-07:30)
   // Tarde:   13:30 — 18:00 (cred 12:00-13:30)
   // Noturna: 18:00 — 23:59 (cred 18:00+, com requisitos)
-  // Madrugada: 00:00 — 10:00 (acumulando)
 
-  const t1000 = parseTime("10:00");
-  const t1200 = parseTime("12:00");
+  const t0730 = parseTime("07:30");
+  const t0930 = parseTime("09:30");
   const t1330 = parseTime("13:30");
   const t1800 = parseTime("18:00");
 
