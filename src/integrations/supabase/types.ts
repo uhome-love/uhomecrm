@@ -5090,6 +5090,7 @@ export type Database = {
           linked_attempt_id: string | null
           linked_pdn_id: string | null
           local_visita: string | null
+          negocio_id: string | null
           nome_cliente: string
           observacoes: string | null
           origem: string
@@ -5098,6 +5099,8 @@ export type Database = {
           resultado_visita: string | null
           status: string
           telefone: string | null
+          tipo: string
+          tipo_reuniao: string | null
           token_expires_at: string | null
           updated_at: string
         }
@@ -5119,6 +5122,7 @@ export type Database = {
           linked_attempt_id?: string | null
           linked_pdn_id?: string | null
           local_visita?: string | null
+          negocio_id?: string | null
           nome_cliente: string
           observacoes?: string | null
           origem?: string
@@ -5127,6 +5131,8 @@ export type Database = {
           resultado_visita?: string | null
           status?: string
           telefone?: string | null
+          tipo?: string
+          tipo_reuniao?: string | null
           token_expires_at?: string | null
           updated_at?: string
         }
@@ -5148,6 +5154,7 @@ export type Database = {
           linked_attempt_id?: string | null
           linked_pdn_id?: string | null
           local_visita?: string | null
+          negocio_id?: string | null
           nome_cliente?: string
           observacoes?: string | null
           origem?: string
@@ -5156,6 +5163,8 @@ export type Database = {
           resultado_visita?: string | null
           status?: string
           telefone?: string | null
+          tipo?: string
+          tipo_reuniao?: string | null
           token_expires_at?: string | null
           updated_at?: string
         }
@@ -5179,6 +5188,13 @@ export type Database = {
             columns: ["linked_pdn_id"]
             isOneToOne: false
             referencedRelation: "pdn_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
           {
