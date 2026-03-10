@@ -60,7 +60,7 @@ export default function PagadoriasPage() {
   // Compradores (buyers) with document uploads
   const [compradores, setCompradores] = useState<Comprador[]>([{
     nome: "", cpf: "", rg: "", nacionalidade: "brasileira", estado_civil: "",
-    telefone: "", email: "", endereco: "", cidade: "", estado: "",
+    telefone: "", email: "", cep: "", endereco: "", cidade: "", estado: "", bairro: "",
     doc_identidade_url: null, doc_comprovante_url: null,
   }]);
 
@@ -74,7 +74,7 @@ export default function PagadoriasPage() {
         cliente_cpf: c.cpf,
         cliente_email: c.email,
         cliente_telefone: c.telefone,
-        cliente_endereco: c.endereco + (c.cidade ? `, ${c.cidade}` : "") + (c.estado ? `/${c.estado}` : ""),
+        cliente_endereco: c.endereco + (c.bairro ? `, Bairro ${c.bairro}` : "") + (c.cidade ? `, ${c.cidade}` : "") + (c.estado ? `/${c.estado}` : "") + (c.cep ? `, CEP: ${c.cep}` : ""),
       }));
     }
   }, [compradores]);
@@ -205,7 +205,7 @@ export default function PagadoriasPage() {
     setWizardOpen(false);
     setStep(1);
     setForm({ cliente_nome: "", cliente_cpf: "", cliente_email: "", cliente_telefone: "", cliente_endereco: "", empreendimento: "", unidade: "", vgv: 0, data_venda: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), forma_pagamento: "a_vista", corretor_nome: "", gerente_nome: "" });
-    setCompradores([{ nome: "", cpf: "", rg: "", nacionalidade: "brasileira", estado_civil: "", telefone: "", email: "", endereco: "", cidade: "", estado: "", doc_identidade_url: null, doc_comprovante_url: null }]);
+    setCompradores([{ nome: "", cpf: "", rg: "", nacionalidade: "brasileira", estado_civil: "", telefone: "", email: "", cep: "", endereco: "", cidade: "", estado: "", bairro: "", doc_identidade_url: null, doc_comprovante_url: null }]);
     setCredores([]);
     setComissaoPct(5);
     setVgvAcumuladoCorretor(0);

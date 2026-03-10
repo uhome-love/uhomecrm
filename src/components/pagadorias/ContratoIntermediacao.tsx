@@ -225,7 +225,7 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             { nome: data.cliente_nome, cpf: data.cliente_cpf, rg: "", nacionalidade: "", estado_civil: data.cliente_estado_civil || "", telefone: data.cliente_telefone, email: data.cliente_email, endereco: data.cliente_endereco, cidade: "", estado: "" }
           ]).map((c, i, arr) => (
             <p key={i} style={S.p}>
-              <b>{c.nome || "_______________"}</b>, {c.nacionalidade || "___________"}, {c.estado_civil || "___________"}, inscrito no CPF/MF sob o nº {c.cpf || "___.___.___-__"}, telefone: {c.telefone || "(__) _____-____"}, e-mail: {c.email || "________________"}, residente e domiciliado na {c.endereco || "________________________________"}{c.cidade ? `, ${c.cidade}` : ""}{c.estado ? `/${c.estado}` : ""}{i < arr.length - 1 ? ";" : "."}
+              <b>{c.nome || "_______________"}</b>, {c.nacionalidade || "___________"}, {c.estado_civil || "___________"}, inscrito no CPF/MF sob o nº {c.cpf || "___.___.___-__"}, telefone: {c.telefone || "(__) _____-____"}, e-mail: {c.email || "________________"}, residente e domiciliado na {c.endereco || "________________________________"}{(c as any).bairro ? `, Bairro ${(c as any).bairro}` : ""}{c.cidade ? `, na cidade de ${c.cidade}` : ""}{c.estado ? `/${c.estado}` : ""}{(c as any).cep ? `, CEP: ${(c as any).cep}` : ""}{i < arr.length - 1 ? ";" : "."}
             </p>
           ))}
 

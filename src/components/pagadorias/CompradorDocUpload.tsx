@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, Loader2, UserPlus, Trash2, Sparkles, FileCheck, AlertCircle } from "lucide-react";
+import { Upload, Loader2, UserPlus, Trash2, Sparkles, FileCheck, AlertCircle, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export interface Comprador {
@@ -16,16 +16,18 @@ export interface Comprador {
   estado_civil: string;
   telefone: string;
   email: string;
+  cep: string;
   endereco: string;
   cidade: string;
   estado: string;
+  bairro: string;
   doc_identidade_url: string | null;
   doc_comprovante_url: string | null;
 }
 
 const emptyComprador: Comprador = {
   nome: "", cpf: "", rg: "", nacionalidade: "brasileira", estado_civil: "",
-  telefone: "", email: "", endereco: "", cidade: "", estado: "",
+  telefone: "", email: "", cep: "", endereco: "", cidade: "", estado: "", bairro: "",
   doc_identidade_url: null, doc_comprovante_url: null,
 };
 
@@ -44,6 +46,7 @@ interface Props {
 
 export default function CompradorDocUpload({ compradores, onChange }: Props) {
   const [extracting, setExtracting] = useState<Record<string, boolean>>({});
+  const [cepLoading, setCepLoading] = useState<Record<number, boolean>>({});
 
   const updateComprador = (idx: number, field: keyof Comprador, value: string | null) => {
     const updated = [...compradores];
@@ -60,6 +63,35 @@ export default function CompradorDocUpload({ compradores, onChange }: Props) {
     if (compradores.length <= 1) return;
     onChange(compradores.filter((_, i) => i !== idx));
   };
+
+  const buscarCep = useCallback(async (idx: number, cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+    setCepLoading(prev => ({ ...prev, [idx]: true }));
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      const updated = [...compradores];
+      updated[idx] = {
+        ...updated[idx],
+        endereco: `${data.logradouro || ""}${data.complemento ? `, ${data.complemento}` : ""}`,
+        bairro: data.bairro || "",
+        cidade: data.localidade || "",
+        estado: data.uf || "",
+        cep: cleanCep.replace(/(\d{5})(\d{3})/, "$1-$2"),
+      };
+      onChange(updated);
+      toast.success("Endereço preenchido!");
+    } catch {
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setCepLoading(prev => ({ ...prev, [idx]: false }));
+    }
+  }, [compradores, onChange]);
 
   const handleFileUpload = useCallback(async (
     idx: number,
@@ -219,9 +251,36 @@ export default function CompradorDocUpload({ compradores, onChange }: Props) {
                   <Input value={comp.estado} onChange={e => updateComprador(idx, "estado", e.target.value)} placeholder="RS" className="h-8 text-sm w-14" />
                 </div>
               </div>
+              <div>
+                <Label className="text-xs">CEP</Label>
+                <div className="flex gap-1.5">
+                  <Input
+                    value={comp.cep}
+                    onChange={e => updateComprador(idx, "cep", e.target.value)}
+                    onBlur={() => buscarCep(idx, comp.cep)}
+                    placeholder="00000-000"
+                    className="h-8 text-sm flex-1"
+                    maxLength={9}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    disabled={!!cepLoading[idx]}
+                    onClick={() => buscarCep(idx, comp.cep)}
+                  >
+                    {cepLoading[idx] ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              </div>
               <div className="col-span-2">
-                <Label className="text-xs">Endereço Completo *</Label>
-                <Input value={comp.endereco} onChange={e => updateComprador(idx, "endereco", e.target.value)} placeholder="Rua, número, complemento, bairro, CEP" className="h-8 text-sm" />
+                <Label className="text-xs">Endereço (Rua, nº, complemento) *</Label>
+                <Input value={comp.endereco} onChange={e => updateComprador(idx, "endereco", e.target.value)} placeholder="Rua, número, complemento" className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Bairro</Label>
+                <Input value={comp.bairro} onChange={e => updateComprador(idx, "bairro", e.target.value)} placeholder="Bairro" className="h-8 text-sm" />
               </div>
             </div>
           </CardContent>
@@ -243,7 +302,7 @@ export default function CompradorDocUpload({ compradores, onChange }: Props) {
               {compradores.filter(c => c.nome).map((c, i) => (
                 <span key={i}>
                   {i > 0 && " e "}
-                  <strong>{c.nome || "_______________"}</strong>, {c.nacionalidade || "___________"}, {c.estado_civil || "___________"}, inscrito no CPF/MF sob o nº {c.cpf || "___.___.___-__"}, telefone: {c.telefone || "(__) _____-____"}, e-mail: {c.email || "________________"}, residente e domiciliado na {c.endereco || "________________________________"}{c.cidade ? `, ${c.cidade}` : ""}{c.estado ? `/${c.estado}` : ""}
+                  <strong>{c.nome || "_______________"}</strong>, {c.nacionalidade || "___________"}, {c.estado_civil || "___________"}, inscrito no CPF/MF sob o nº {c.cpf || "___.___.___-__"}, telefone: {c.telefone || "(__) _____-____"}, e-mail: {c.email || "________________"}, residente e domiciliado na {c.endereco || "________________________________"}{c.bairro ? `, Bairro ${c.bairro}` : ""}{c.cidade ? `, ${c.cidade}` : ""}{c.estado ? `/${c.estado}` : ""}{c.cep ? `, CEP: ${c.cep}` : ""}
                 </span>
               ))}
               .
