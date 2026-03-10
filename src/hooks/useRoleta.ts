@@ -49,15 +49,13 @@ export function getCurrentWindowInfo(): {
   const now = new Date();
   const mins = getMinutesFromMidnight(now.getHours(), now.getMinutes());
 
-  // TODO: TEMPORÁRIO - ajustar horários após período de teste
   // Janelas de distribuição:
-  // Manhã:   10:00 — 12:00 (cred 00:00-10:00)
+  // Manhã:   07:30 — 09:30 (cred 00:00-07:30)
   // Tarde:   13:30 — 18:00 (cred 12:00-13:30)
   // Noturna: 18:00 — 23:59 (cred 18:00+, com requisitos)
-  // Madrugada: 00:00 — 10:00 (acumulando)
 
-  const t1000 = parseTime("10:00");
-  const t1200 = parseTime("12:00");
+  const t0730 = parseTime("07:30");
+  const t0930 = parseTime("09:30");
   const t1330 = parseTime("13:30");
   const t1800 = parseTime("18:00");
 
@@ -72,20 +70,20 @@ export function getCurrentWindowInfo(): {
   credenciamentoAberto = true;
   credenciamentoJanela = "manha";
 
-  if (mins < t1000) {
-    // 00:00 — 10:00: Madrugada/acúmulo.
+  if (mins < t0730) {
+    // 00:00 — 07:30: Madrugada/acúmulo.
     janela = "madrugada";
     emoji = "🌅";
     descricao = "Credenciamento manhã aberto";
-    nextTransitionMins = t1000;
-  } else if (mins < t1200) {
-    // 10:00 — 12:00: Manhã ativa.
+    nextTransitionMins = t0730;
+  } else if (mins < t0930) {
+    // 07:30 — 09:30: Manhã ativa.
     janela = "manha";
     emoji = "☀️";
     descricao = "Roleta da manhã ativa · Cred manhã aberto";
-    nextTransitionMins = t1200;
+    nextTransitionMins = t0930;
   } else if (mins < t1330) {
-    // 12:00 — 13:30: Intervalo, cred tarde aberto.
+    // 09:30 — 13:30: Intervalo, cred tarde aberto.
     janela = "manha";
     emoji = "☀️";
     descricao = "Cred manhã e tarde abertos";

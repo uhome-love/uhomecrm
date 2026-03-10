@@ -61,7 +61,7 @@ const toUiJanela = (janela: string): JanelaKey => (janela === "noturna" ? "noite
 
 // Manhã: credenciamento aberto 24h (sem restrição de horário)
 const JANELAS_CONFIG: JanelaConfig[] = [
-  { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 0, fim: 24 }, recebimento: "10h — 12h", temRequisitos: false },
+  { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 0, fim: 24 }, recebimento: "7h30 — 9h30", temRequisitos: false },
   { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 13.5 }, recebimento: "13h30 — 18h", temRequisitos: false },
   { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 24 }, recebimento: "18h — 23h59", temRequisitos: true },
 ];
