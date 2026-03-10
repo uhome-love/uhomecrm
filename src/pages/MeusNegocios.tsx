@@ -425,9 +425,7 @@ export default function MeusNegocios() {
                       showCorretor={isAdmin || isGestor}
                       paradoInfo={paradoMap.get(negocio.id)}
                       onDragStart={() => { dragNegocioId.current = negocio.id; }}
-                      onClick={() => {
-                        toast.info(`${negocio.nome_cliente} — ${fase.label}`);
-                      }}
+                      onClick={() => setSelectedNegocio(negocio)}
                     />
                   ))}
                 </div>
