@@ -244,7 +244,7 @@ export function AppSidebar() {
             label: "Marketing",
             items: [
               { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
-              { title: "Empreendimentos", url: "/empreendimentos", icon: Building2 },
+              { title: "Imóveis Jetimob", url: "/imoveis", icon: Building2 },
             ],
           },
           {
@@ -302,6 +302,7 @@ export function AppSidebar() {
             items: [
               { title: "HOMI Gerente", url: "/homi-gerente", icon: Bot },
               { title: "Base HOMI", url: "/homi/base-conhecimento", icon: Brain },
+              { title: "Imóveis", url: "/imoveis", icon: Building2 },
               { title: "Academia", url: "/academia/gerenciar", icon: Award },
               { title: "Templates", url: "/templates-comunicacao", icon: MessageSquare },
               { title: "Marketplace", url: "/marketplace", icon: BookOpen },
@@ -374,6 +375,7 @@ export function AppSidebar() {
           label: "Ferramentas",
           items: [
             { title: "HOMI Assistente", url: "/homi", icon: Bot },
+            { title: "Imóveis", url: "/imoveis", icon: Building2 },
             { title: "🎓 Academia", url: "/academia", icon: Award },
             { title: "Meus Scripts", url: "/scripts", icon: FileEdit },
             { title: "Marketplace", url: "/marketplace", icon: BookOpen },

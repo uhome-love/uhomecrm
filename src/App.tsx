@@ -70,6 +70,7 @@ const AcademiaAulaPage = lazy(() => import("./pages/AcademiaAulaPage"));
 const AcademiaGerenciarPage = lazy(() => import("./pages/AcademiaGerenciarPage"));
 const GerenteDashboard = lazy(() => import("./pages/GerenteDashboard"));
 const RoletaLeads = lazy(() => import("./pages/RoletaLeads"));
+const ImoveisPage = lazy(() => import("./pages/ImoveisPage"));
 
 
 const queryClient = new QueryClient({
@@ -164,6 +165,7 @@ const App = () => (
             <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><HomiCeo /></ProtectedPage>} />
             <Route path="/homi/base-conhecimento" element={<ProtectedPage roles={["admin", "gestor"]}><BaseConhecimento /></ProtectedPage>} />
             <Route path="/meus-negocios" element={<ProtectedPage><MeusNegocios /></ProtectedPage>} />
+            <Route path="/imoveis" element={<ProtectedPage><ImoveisPage /></ProtectedPage>} />
             
 
             {/* Busca de Leads / Higienização — gestor + admin */}
