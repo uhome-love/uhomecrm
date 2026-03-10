@@ -5,7 +5,7 @@ import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
-import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS } from "@/lib/celebrations";
+import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS, PIPELINE_STAGE_BG } from "@/lib/celebrations";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
