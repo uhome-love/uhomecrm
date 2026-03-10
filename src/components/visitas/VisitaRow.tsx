@@ -1,10 +1,57 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Trash2, Phone, MapPin, Pencil } from "lucide-react";
+import { MoreVertical, Trash2, Phone, MapPin, Pencil, CalendarPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+
+function addToCalendar(v: Visita) {
+  const dateStr = v.data_visita.replace(/-/g, "");
+  const time = v.hora_visita ? v.hora_visita.replace(":", "") : "1000";
+  const startDT = `${dateStr}T${time.padEnd(4, "0")}00`;
+  // 1 hour duration
+  const h = parseInt(time.slice(0, 2), 10);
+  const m = time.slice(2, 4);
+  const endH = String(h + 1).padStart(2, "0");
+  const endDT = `${dateStr}T${endH}${m}00`;
+
+  const local = v.local_visita
+    ? ({ stand: "Stand do empreendimento", empresa: "Escritório", videochamada: "Videochamada", decorado: "Apartamento decorado", outro: "" }[v.local_visita] || v.local_visita)
+    : "";
+  const location = [local, v.empreendimento].filter(Boolean).join(" - ");
+  const title = `Visita: ${v.nome_cliente}`;
+  const details = [v.telefone && `Tel: ${v.telefone}`, v.observacoes].filter(Boolean).join("\\n");
+
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isIOS) {
+    // Generate .ics file for Apple Calendar
+    const ics = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
+      `DTSTART:${startDT}`, `DTEND:${endDT}`,
+      `SUMMARY:${title}`, `LOCATION:${location}`,
+      `DESCRIPTION:${details.replace(/\n/g, "\\n")}`,
+      "END:VEVENT", "END:VCALENDAR"
+    ].join("\r\n");
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `visita-${v.nome_cliente.replace(/\s+/g, "-")}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    // Google Calendar URL
+    const gcUrl = new URL("https://calendar.google.com/calendar/render");
+    gcUrl.searchParams.set("action", "TEMPLATE");
+    gcUrl.searchParams.set("text", title);
+    gcUrl.searchParams.set("dates", `${startDT}/${endDT}`);
+    gcUrl.searchParams.set("details", details);
+    if (location) gcUrl.searchParams.set("location", location);
+    window.open(gcUrl.toString(), "_blank");
+  }
+}
 
 const STATUS_BADGE_COLORS: Record<string, string> = {
   marcada: "bg-amber-100 text-amber-700 border-amber-300",
@@ -168,7 +215,10 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
               <Pencil className="h-3 w-3 mr-1.5" /> Editar
             </DropdownMenuItem>
           )}
-          {onEdit && <DropdownMenuSeparator />}
+          <DropdownMenuItem onClick={() => addToCalendar(v)} className="text-xs">
+            <CalendarPlus className="h-3 w-3 mr-1.5" /> Adicionar ao Calendário
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {Object.entries(STATUS_LABELS)
             .filter(([k]) => k !== v.status)
             .map(([k, label]) => (
