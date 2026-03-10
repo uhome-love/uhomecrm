@@ -526,6 +526,7 @@ export default function PagadoriasPage() {
                   <Button variant="outline" size="sm" onClick={() => {
                     setContratoData({
                       ...form,
+                      compradores,
                       comissao_pct: comissaoPct,
                       comissao_total: totalComissao,
                       credores,
