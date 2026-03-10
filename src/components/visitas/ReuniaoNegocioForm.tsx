@@ -162,7 +162,7 @@ export default function ReuniaoNegocioForm({ open, onClose, onSubmit }: Props) {
                     className="pl-8 h-9 text-sm"
                   />
                 </div>
-                {filteredNegocios.length > 0 && (
+                {searchTerm.trim().length > 0 && filteredNegocios.length > 0 && (
                   <div className="max-h-44 overflow-y-auto rounded-lg border bg-card shadow-md">
                     {filteredNegocios.map(n => (
                       <button
