@@ -326,6 +326,12 @@ export default function AgendaVisitas() {
     if (statusFilter !== "all") list = list.filter(v => v.status === statusFilter);
     if (corretorFilter !== "all") list = list.filter(v => v.corretor_id === corretorFilter);
     if (empreendimentoFilter !== "all") list = list.filter(v => v.empreendimento === empreendimentoFilter);
+    if (teamFilter !== "all") {
+      list = list.filter(v => {
+        const equipe = (v.equipe || "").toLowerCase().replace(/^equipe\s+/i, "").trim();
+        return equipe.includes(teamFilter);
+      });
+    }
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       list = list.filter(v =>
@@ -358,7 +364,7 @@ export default function AgendaVisitas() {
       return sortOrder === "asc" ? timeA.localeCompare(timeB) : timeB.localeCompare(timeA);
     });
     return list;
-  }, [visitas, statusFilter, corretorFilter, empreendimentoFilter, searchTerm, dateFrom, dateTo, sortOrder, pendingOnly]);
+  }, [visitas, statusFilter, corretorFilter, empreendimentoFilter, searchTerm, dateFrom, dateTo, sortOrder, pendingOnly, teamFilter]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
