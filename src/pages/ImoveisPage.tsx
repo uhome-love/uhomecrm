@@ -14,6 +14,64 @@ import { cn } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/** Extract all image URLs from Jetimob imagens array */
+function extractImages(item: any): string[] {
+  const arr = item.imagens;
+  if (!Array.isArray(arr) || arr.length === 0) return [];
+  return arr.map((img: any) => img.link_thumb || img.link).filter(Boolean);
+}
+
+/** Mini image slider for property cards */
+function ImageSlider({ images, alt }: { images: string[]; alt: string }) {
+  const [current, setCurrent] = useState(0);
+
+  if (images.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Home className="h-8 w-8 text-muted-foreground/40" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full relative group">
+      <img
+        src={images[current]}
+        alt={alt}
+        className="w-full h-full object-cover"
+        loading="lazy"
+      />
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); setCurrent((p) => (p - 1 + images.length) % images.length); }}
+            className="absolute left-0.5 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Foto anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setCurrent((p) => (p + 1) % images.length); }}
+            className="absolute right-0.5 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Próxima foto"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {images.slice(0, 8).map((_, i) => (
+              <span
+                key={i}
+                className={cn("w-1.5 h-1.5 rounded-full", i === current ? "bg-primary" : "bg-background/60")}
+              />
+            ))}
+            {images.length > 8 && <span className="text-[8px] text-background/80 ml-0.5">+{images.length - 8}</span>}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Códigos dos imóveis com campanha de leads ativa */
 const CAMPANHA_CODES: { codigo: string; nome: string }[] = [
   { codigo: "97325-UH", nome: "Shift" },
@@ -44,13 +102,6 @@ const BAIRROS_POA = [
 const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-function extractImage(item: any): string | null {
-  const arr = item.imagens;
-  if (Array.isArray(arr) && arr.length > 0) {
-    return arr[0].link_thumb || arr[0].link || null;
-  }
-  return null;
-}
 
 function extractEndereco(item: any): { endereco: string; bairro: string; cidade: string } {
   const logradouro = item.endereco_logradouro || item.endereco || item.logradouro || "";
@@ -430,7 +481,7 @@ export default function ImoveisPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {imoveis.map((item, idx) => {
-              const img = extractImage(item);
+              const images = extractImages(item);
               const loc = extractEndereco(item);
               const codigo = item.codigo;
               const titulo = item.titulo_anuncio || "";
@@ -449,20 +500,14 @@ export default function ImoveisPage() {
                   <div className="flex">
                     {/* Image */}
                     <div className="w-40 h-40 flex-shrink-0 bg-muted relative">
-                      {img ? (
-                        <img src={img} alt={titulo || loc.endereco} className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Home className="h-8 w-8 text-muted-foreground/40" />
-                        </div>
-                      )}
+                      <ImageSlider images={images} alt={titulo || loc.endereco} />
                       {codigo && (
-                        <Badge variant="secondary" className="absolute bottom-1 left-1 text-[10px]">
+                        <Badge variant="secondary" className="absolute bottom-1 left-1 text-[10px] z-10">
                           {codigo}
                         </Badge>
                       )}
                       {isCampanha && (
-                        <Badge className="absolute top-1 right-1 text-[10px] bg-primary text-primary-foreground">
+                        <Badge className="absolute top-1 right-1 text-[10px] bg-primary text-primary-foreground z-10">
                           <Megaphone className="h-2.5 w-2.5 mr-0.5" /> Campanha
                         </Badge>
                       )}
