@@ -473,6 +473,15 @@ const PipelineCard = memo(function PipelineCard({
             leadEmpreendimento={lead.empreendimento}
           />
         )}
+        <WhatsAppTemplatesDialog
+          open={whatsappTemplatesOpen}
+          onOpenChange={setWhatsappTemplatesOpen}
+          leadNome={lead.nome}
+          leadTelefone={lead.telefone}
+          leadEmpreendimento={lead.empreendimento}
+          leadId={lead.id}
+          corretorNome={corretorNome}
+        />
       </div>
     </div>
   );
