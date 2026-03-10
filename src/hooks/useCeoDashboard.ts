@@ -279,10 +279,24 @@ export function useCeoDashboard(period: DashPeriod) {
       : { data: [] as { id: string; nome: string; user_id: string }[] };
     const corrNameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"]));
 
-    // Load all tentativas, visitas, negocios for all members at once
-    const { data: allTent } = allMemberUserIds.length > 0
-      ? await supabase.from("oferta_ativa_tentativas").select("id, resultado, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs)
-      : { data: [] as any[] };
+    // Load all tentativas with pagination (can exceed 1000 rows)
+    let allTent: any[] = [];
+    if (allMemberUserIds.length > 0) {
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase.from("oferta_ativa_tentativas")
+          .select("id, resultado, corretor_id")
+          .in("corretor_id", allMemberUserIds)
+          .gte("created_at", startTs).lte("created_at", endTs)
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (!data || data.length === 0) break;
+        allTent = allTent.concat(data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+    }
+
     const { data: allVis } = allMemberUserIds.length > 0
       ? await supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end)
       : { data: [] as any[] };
