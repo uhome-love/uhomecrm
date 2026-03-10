@@ -587,9 +587,7 @@ export default function PipelineStageTransitionPopup({ open, onOpenChange, lead,
     if (stageName.includes("poss") && stageName.includes("visita")) {
       return <PossivelVisitaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
-    if (stageName.includes("visita marcada") || (stageName.includes("visita") && stageName.includes("marcad"))) {
-      return <VisitaMarcadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
-    }
+    // visita marcada is handled by PipelineCard's own schedule dialog
     if (stageName.includes("visita realizada") || (stageName.includes("visita") && stageName.includes("realizad"))) {
       return <VisitaRealizadaForm lead={lead} onConfirm={onConfirm} targetStageId={targetStage.id} />;
     }
@@ -615,7 +613,7 @@ export function needsTransitionPopup(stageName: string, stageType: string): bool
   if (name.includes("contato inic") || name.includes("contato iniciado")) return true;
   if (name.includes("qualifica")) return true;
   if (name.includes("poss") && name.includes("visita")) return true;
-  if (name.includes("visita marcada") || (name.includes("visita") && name.includes("marcad"))) return true;
+  // "visita marcada" uses the card's own schedule dialog, not this popup
   if (name.includes("visita realizada") || (name.includes("visita") && name.includes("realizad"))) return true;
   if (name.includes("descarte") || stageType === "descarte") return true;
   return false;
