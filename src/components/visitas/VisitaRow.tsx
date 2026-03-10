@@ -97,6 +97,12 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCor
         <span className="text-xs text-muted-foreground truncate block">{v.empreendimento || "—"}</span>
       </div>
 
+      {/* Local da visita */}
+      <div className="w-28 shrink-0 hidden sm:flex items-center gap-1">
+        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">{v.local_visita || "Não informado"}</span>
+      </div>
+
       {/* Corretor + Team */}
       {showCorretor && (
         <div className="w-36 shrink-0 hidden md:flex items-center gap-1.5">
