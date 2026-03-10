@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, CalendarPlus, Search } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, CalendarPlus, Search, Handshake } from "lucide-react";
 import { ORIGEM_LABELS, type Visita } from "@/hooks/useVisitas";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
+import { toast } from "sonner";
 
 interface PipelineLeadOption {
   id: string;
@@ -67,12 +69,18 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [empreendimentos, setEmpreendimentos] = useState<string[]>([]);
 
+  // Partnership state
+  const [isParceria, setIsParceria] = useState(false);
+  const [parceiroId, setParceiroId] = useState("");
+
   // Reset form state when dialog opens
   useEffect(() => {
     if (open) {
       setForm(getDefaultForm(initialData));
       setSearchPipeline("");
       setSubmitting(false);
+      setIsParceria(false);
+      setParceiroId("");
     }
   }, [open, initialData]);
 
@@ -112,14 +120,19 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
 
   const selectedLead = pipelineLeads.find(l => l.id === form.pipeline_lead_id);
 
+  // Parceiro options: all team members except the selected corretor
+  const parceiroOptions = useMemo(() => {
+    const excludeId = form.corretor_id || user?.id;
+    return teamMembers.filter(m => m.user_id !== excludeId);
+  }, [teamMembers, form.corretor_id, user?.id]);
+
   const handleSelectPipelineLead = (leadId: string) => {
     const lead = pipelineLeads.find(l => l.id === leadId);
     if (lead) {
-      // BUG 4 FIX: Always use full name from pipeline lead (override any partial typing)
       setForm(f => ({
         ...f,
         pipeline_lead_id: leadId,
-        nome_cliente: lead.nome, // always use complete name
+        nome_cliente: lead.nome,
         telefone: lead.telefone || f.telefone || "",
         empreendimento: lead.empreendimento || f.empreendimento || "",
       }));
@@ -139,11 +152,40 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
         hora_visita: form.hora_visita || null,
         local_visita: form.local_visita || null,
         observacoes: form.observacoes || null,
-        // Explicitly use pipeline_lead_id (NOT lead_id) for pipeline leads
         pipeline_lead_id: form.pipeline_lead_id || null,
-        lead_id: null, // force null — only set for oferta_ativa leads
+        lead_id: null,
       } as any);
-      // Only close if creation succeeded (not null)
+
+      // Create partnership if enabled and we have a pipeline_lead_id
+      if (result && isParceria && parceiroId) {
+        const leadId = form.pipeline_lead_id || (result as any)?.pipeline_lead_id;
+        if (leadId) {
+          try {
+            const { error } = await supabase.from("pipeline_parcerias").insert({
+              pipeline_lead_id: leadId,
+              corretor_principal_id: form.corretor_id || user?.id,
+              corretor_parceiro_id: parceiroId,
+              divisao_principal: 50,
+              divisao_parceiro: 50,
+              motivo: "Visita em parceria",
+              criado_por: user?.id,
+            });
+            if (error) {
+              if (error.code === "23505") {
+                toast.info("Parceria já existe com este corretor");
+              } else {
+                console.error("Erro ao criar parceria:", error);
+                toast.error("Erro ao registrar parceria");
+              }
+            } else {
+              toast.success("🤝 Parceria registrada!", { duration: 3000 });
+            }
+          } catch (err) {
+            console.error("Partnership error:", err);
+          }
+        }
+      }
+
       if (result !== null && result !== undefined) {
         onClose();
       }
@@ -256,6 +298,46 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
             </div>
           )}
 
+          {/* Partnership toggle */}
+          {form.pipeline_lead_id && (
+            <div className="rounded-lg border border-border/60 p-3 space-y-3 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Handshake className="h-4 w-4 text-primary" />
+                  <Label className="text-xs font-semibold cursor-pointer" htmlFor="parceria-switch">
+                    Visita em parceria?
+                  </Label>
+                </div>
+                <Switch
+                  id="parceria-switch"
+                  checked={isParceria}
+                  onCheckedChange={(checked) => {
+                    setIsParceria(checked);
+                    if (!checked) setParceiroId("");
+                  }}
+                />
+              </div>
+              {isParceria && (
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Corretor parceiro (divisão 50/50)</Label>
+                  <Select value={parceiroId} onValueChange={setParceiroId}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Selecione o corretor parceiro" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parceiroOptions.map(m => (
+                        <SelectItem key={m.user_id} value={m.user_id}>{m.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    O lead será compartilhado no pipeline com divisão 50/50 da comissão.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Date + Time */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -302,7 +384,7 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
           {/* Submit */}
           <Button
             className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white h-10 text-sm font-semibold"
-            disabled={!form.nome_cliente.trim() || !form.data_visita || submitting}
+            disabled={!form.nome_cliente.trim() || !form.data_visita || submitting || (isParceria && !parceiroId)}
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

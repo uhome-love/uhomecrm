@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Trash2, Phone, MapPin } from "lucide-react";
+import { MoreVertical, Trash2, Phone, MapPin, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import { useState } from "react";
@@ -61,13 +61,14 @@ export function getTeamBadgeStyle(equipe?: string) {
 interface Props {
   visita: Visita;
   onUpdateStatus: (id: string, status: VisitaStatus) => void;
+  onEdit?: (visita: Visita) => void;
   onDelete?: (id: string) => void;
   showCorretor?: boolean;
   showTeam?: boolean;
   isPastPending?: boolean;
 }
 
-export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCorretor, showTeam, isPastPending }: Props) {
+export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete, showCorretor, showTeam, isPastPending }: Props) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -162,6 +163,12 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onDelete, showCor
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="text-xs">
+          {onEdit && (
+            <DropdownMenuItem onClick={() => onEdit(v)} className="text-xs">
+              <Pencil className="h-3 w-3 mr-1.5" /> Editar
+            </DropdownMenuItem>
+          )}
+          {onEdit && <DropdownMenuSeparator />}
           {Object.entries(STATUS_LABELS)
             .filter(([k]) => k !== v.status)
             .map(([k, label]) => (

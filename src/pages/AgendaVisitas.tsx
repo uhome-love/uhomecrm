@@ -145,6 +145,7 @@ const STATUS_EMOJIS: Record<string, string> = {
 export default function AgendaVisitas() {
   const { isAdmin, isGestor } = useUserRole();
   const [showForm, setShowForm] = useState(false);
+  const [editingVisita, setEditingVisita] = useState<Visita | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
@@ -159,6 +160,17 @@ export default function AgendaVisitas() {
   const [sendingCobranca, setSendingCobranca] = useState(false);
 
   const { visitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
+
+  const handleEdit = useCallback((visita: Visita) => {
+    setEditingVisita(visita);
+  }, []);
+
+  const handleEditSubmit = useCallback(async (data: Partial<Visita>) => {
+    if (!editingVisita) return null;
+    const result = await updateVisita(editingVisita.id, data);
+    if (result) setEditingVisita(null);
+    return result;
+  }, [editingVisita, updateVisita]);
 
   const handleUpdateStatus = useCallback((id: string, newStatus: VisitaStatus) => {
     if (newStatus === "realizada") {
@@ -504,6 +516,7 @@ export default function AgendaVisitas() {
             <VisitasList
               visitas={filtered}
               onUpdateStatus={handleUpdateStatus}
+              onEdit={handleEdit}
               onDelete={deleteVisita}
               showCorretor={isAdmin || isGestor}
               showTeam={isAdmin}
@@ -530,6 +543,16 @@ export default function AgendaVisitas() {
 
       {showForm && (
         <VisitaForm open={showForm} onClose={() => setShowForm(false)} onSubmit={createVisita} />
+      )}
+
+      {editingVisita && (
+        <VisitaForm
+          open={!!editingVisita}
+          onClose={() => setEditingVisita(null)}
+          onSubmit={handleEditSubmit}
+          initialData={editingVisita}
+          mode="edit"
+        />
       )}
 
       {resultadoVisita && (

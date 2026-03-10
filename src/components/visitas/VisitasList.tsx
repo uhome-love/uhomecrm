@@ -138,6 +138,7 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
                       key={v.id}
                       visita={v}
                       onUpdateStatus={onUpdateStatus}
+                      onEdit={onEdit}
                       onDelete={onDelete}
                       showCorretor={showCorretor}
                       showTeam={showTeam}
