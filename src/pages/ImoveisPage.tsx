@@ -391,6 +391,7 @@ export default function ImoveisPage() {
             dormitorios: dormitorios && dormitorios !== "all" ? dormitorios : undefined,
             valor_min: valorMin || undefined,
             valor_max: valorMax || undefined,
+            somente_obras: somenteObras || undefined,
           },
         });
 
@@ -412,7 +413,7 @@ export default function ImoveisPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, contrato, tipo, bairro, dormitorios, valorMin, valorMax, campanhaAtiva, uhomeOnly]);
+  }, [search, contrato, tipo, bairro, dormitorios, valorMin, valorMax, somenteObras, campanhaAtiva, uhomeOnly]);
 
   const mounted = React.useRef(false);
   useEffect(() => {
