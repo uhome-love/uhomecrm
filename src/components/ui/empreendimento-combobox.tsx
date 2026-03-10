@@ -75,6 +75,7 @@ export default function EmpreendimentoCombobox({
 
   const handleSelect = (option: string) => {
     onChange(option);
+    if (onSelect) onSelect(option);
     setSearch("");
     setOpen(false);
   };
