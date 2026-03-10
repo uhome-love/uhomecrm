@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, FileText, MessageCircle, Pencil, Check, Users, BookOpen, ChevronDown } from "lucide-react";
+import { Copy, FileText, MessageCircle, Pencil, Check, Users, BookOpen, ChevronDown, Building2 } from "lucide-react";
 import { useOATemplates, type OALead } from "@/hooks/useOfertaAtiva";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,18 +11,28 @@ import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 
+const EMPREENDIMENTOS = [
+  "Alfa", "Orygem", "Las Casas", "Casa Tua", "Lake Eyre", "Open Bosque",
+  "Casa Bastian", "Shift", "Seen Menino Deus", "Me Day",
+  "Alto Lindóia", "Terrace", "Duetto", "Salzburg", "Melnick Day",
+  "Boa Vista Country Club",
+];
+
 interface Props {
   empreendimento: string;
   lead?: OALead | null;
   compact?: boolean;
   darkMode?: boolean;
-  /** Show only "ligacao" or "whatsapp" script. Omit to show both. */
   scriptFilter?: "ligacao" | "whatsapp";
-  /** Hide the CTA Final block (when parent renders it separately) */
   hideCta?: boolean;
+  onEmpChange?: (emp: string) => void;
 }
 
-function buildDefaultScript(leadName: string, emp: string) {
+function buildGenericScript(leadName: string) {
+  return `Olá, ${leadName}! Aqui é da Uhome, tudo bem?\n\nEstou entrando em contato porque temos empreendimentos com condições especiais que podem te interessar.\n\nPosso te contar em 2 minutos?`;
+}
+
+function buildEmpScript(leadName: string, emp: string) {
   return `Olá, ${leadName}! Aqui é da Uhome, tudo bem?\n\nVi que você se interessou pelo ${emp}. Tenho informações atualizadas sobre valores e condições especiais.\n\nPosso te contar em 2 minutos?`;
 }
 
@@ -30,13 +40,13 @@ function applyVars(text: string, leadName: string, emp: string) {
   return text.replace(/\{nome\}/g, leadName).replace(/\{empreendimento\}/g, emp);
 }
 
-export default function ScriptPanel({ empreendimento, lead, compact, darkMode, scriptFilter, hideCta }: Props) {
+export default function ScriptPanel({ empreendimento, lead, compact, darkMode, scriptFilter, hideCta, onEmpChange }: Props) {
   const { templates } = useOATemplates(empreendimento);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [editingScript, setEditingScript] = useState<"ligacao" | "whatsapp" | null>(null);
+  const [scriptMode, setScriptMode] = useState<"generico" | "personalizado">("generico");
 
-  // Fetch team scripts assigned by manager
   const { data: teamScript } = useQuery({
     queryKey: ["team-script-for-dialing", empreendimento, user?.id],
     queryFn: async () => {
@@ -52,7 +62,6 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
     enabled: !!user && !!empreendimento,
   });
 
-  // Fetch marketplace scripts for selector
   const { data: marketplaceScripts = [] } = useQuery({
     queryKey: ["marketplace-scripts-for-selector"],
     queryFn: async () => {
@@ -70,46 +79,42 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
   });
 
   const leadName = lead?.nome || "{nome}";
-  const emp = lead?.empreendimento || empreendimento;
+  const emp = empreendimento;
 
   const scriptTemplate = templates.find(t => t.canal === "whatsapp" && t.tipo === "primeiro_contato");
 
-  const defaultLigacao = teamScript?.script_ligacao
-    ? applyVars(teamScript.script_ligacao, leadName, emp)
-    : buildDefaultScript(leadName, emp);
-  const defaultWhatsApp = teamScript?.script_whatsapp
-    ? applyVars(teamScript.script_whatsapp, leadName, emp)
-    : scriptTemplate
-      ? scriptTemplate.conteudo.replace("{nome}", leadName).replace("{empreendimento}", emp)
-      : `Olá ${leadName}! 😊\n\nVi que você se interessou pelo *${emp}*. Tenho novidades sobre condições exclusivas!\n\nPodemos conversar rapidinho?`;
+  const getDefaultLigacao = (mode: "generico" | "personalizado") => {
+    if (teamScript?.script_ligacao) return applyVars(teamScript.script_ligacao, leadName, emp);
+    return mode === "personalizado" ? buildEmpScript(leadName, emp) : buildGenericScript(leadName);
+  };
 
-  const [scriptLigacao, setScriptLigacao] = useState(defaultLigacao);
-  const [scriptWhatsApp, setScriptWhatsApp] = useState(defaultWhatsApp);
+  const getDefaultWhatsApp = () => {
+    if (teamScript?.script_whatsapp) return applyVars(teamScript.script_whatsapp, leadName, emp);
+    if (scriptTemplate) return scriptTemplate.conteudo.replace("{nome}", leadName).replace("{empreendimento}", emp);
+    return `Olá ${leadName}! 😊\n\nTemos empreendimentos com condições exclusivas que podem te interessar!\n\nPodemos conversar rapidinho?`;
+  };
+
+  const [scriptLigacao, setScriptLigacao] = useState(getDefaultLigacao("generico"));
+  const [scriptWhatsApp, setScriptWhatsApp] = useState(getDefaultWhatsApp());
   const [activeScriptName, setActiveScriptName] = useState<Record<string, string>>({
-    ligacao: teamScript ? teamScript.titulo : "Script padrão",
-    whatsapp: teamScript ? teamScript.titulo : "Script padrão",
+    ligacao: teamScript ? teamScript.titulo : "Script genérico",
+    whatsapp: teamScript ? teamScript.titulo : "Script genérico",
   });
 
   useEffect(() => {
     const ln = lead?.nome || "{nome}";
-    const e = lead?.empreendimento || empreendimento;
-
-    setScriptLigacao(teamScript?.script_ligacao
-      ? applyVars(teamScript.script_ligacao, ln, e)
-      : buildDefaultScript(ln, e));
-
-    const wt = templates.find(t => t.canal === "whatsapp" && t.tipo === "primeiro_contato");
-    setScriptWhatsApp(teamScript?.script_whatsapp
-      ? applyVars(teamScript.script_whatsapp, ln, e)
-      : wt ? wt.conteudo.replace("{nome}", ln).replace("{empreendimento}", e)
-        : `Olá ${ln}! 😊\n\nVi que você se interessou pelo *${e}*. Tenho novidades sobre condições exclusivas!\n\nPodemos conversar rapidinho?`);
-
+    setScriptLigacao(getDefaultLigacao(scriptMode));
+    setScriptWhatsApp(getDefaultWhatsApp());
     setEditingScript(null);
     setActiveScriptName({
-      ligacao: teamScript ? teamScript.titulo : "Script padrão",
-      whatsapp: teamScript ? teamScript.titulo : "Script padrão",
+      ligacao: teamScript ? teamScript.titulo : scriptMode === "personalizado" ? `Script · ${emp}` : "Script genérico",
+      whatsapp: teamScript ? teamScript.titulo : "Script genérico",
     });
-  }, [lead?.id, leadName, emp, templates, teamScript]);
+  }, [lead?.id, leadName, emp, templates, teamScript, scriptMode]);
+
+  const handleModeSwitch = (mode: "generico" | "personalizado") => {
+    setScriptMode(mode);
+  };
 
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -138,6 +143,54 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
 
   return (
     <div className="space-y-3">
+      {/* Empreendimento selector + mode toggle */}
+      {onEmpChange && (
+        <div className="px-3 pt-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: "#6B7280" }} />
+            <select
+              value={emp}
+              onChange={e => onEmpChange(e.target.value)}
+              className="flex-1 text-sm rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+              style={{
+                background: "#0f1628",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "#E2E8F0",
+                height: 30,
+              }}
+            >
+              {EMPREENDIMENTOS.map(e => (
+                <option key={e} value={e}>{e}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => handleModeSwitch("generico")}
+              className="flex-1 text-[10px] font-semibold rounded-md py-1 transition-all"
+              style={{
+                background: scriptMode === "generico" ? "rgba(6,182,212,0.15)" : "transparent",
+                border: scriptMode === "generico" ? "1px solid rgba(6,182,212,0.3)" : "1px solid rgba(255,255,255,0.08)",
+                color: scriptMode === "generico" ? "#22D3EE" : "#6B7280",
+              }}
+            >
+              📋 Genérico
+            </button>
+            <button
+              onClick={() => handleModeSwitch("personalizado")}
+              className="flex-1 text-[10px] font-semibold rounded-md py-1 transition-all"
+              style={{
+                background: scriptMode === "personalizado" ? "rgba(34,197,94,0.15)" : "transparent",
+                border: scriptMode === "personalizado" ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(255,255,255,0.08)",
+                color: scriptMode === "personalizado" ? "#86EFAC" : "#6B7280",
+              }}
+            >
+              🏠 {emp}
+            </button>
+          </div>
+        </div>
+      )}
+
       {teamScript && (
         <div className="flex items-center gap-1.5 px-1">
           <span className={`text-[10px] px-2 py-0.5 rounded ${darkMode ? "bg-white/5 text-neutral-400" : "bg-muted text-muted-foreground"}`}>
@@ -175,8 +228,8 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64">
                     <DropdownMenuItem className="text-xs gap-2" onClick={() => {
-                      if (s.key === "ligacao") setScriptLigacao(defaultLigacao);
-                      else setScriptWhatsApp(defaultWhatsApp);
+                      if (s.key === "ligacao") setScriptLigacao(getDefaultLigacao(scriptMode));
+                      else setScriptWhatsApp(getDefaultWhatsApp());
                       setActiveScriptName(prev => ({ ...prev, [s.key]: "Script padrão" }));
                     }}>
                       <Check className={`h-3 w-3 ${activeScriptName[s.key] === "Script padrão" ? "opacity-100" : "opacity-0"}`} />
@@ -216,7 +269,6 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
         );
       })}
 
-      {/* CTA Final — only when showing ligacao or both, and not hidden */}
       {!hideCta && (!scriptFilter || scriptFilter === "ligacao") && (
         <div className="rounded-xl p-3" style={{ background: darkMode ? "rgba(59,130,246,0.06)" : undefined, border: darkMode ? "1px solid rgba(59,130,246,0.15)" : undefined }}>
           <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className={`uppercase mb-1.5 ${darkMode ? "text-blue-400" : "text-primary"}`}>🎯 CTA Final</h4>

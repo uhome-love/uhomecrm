@@ -1,8 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
-import { Pencil, Check, Loader2 } from "lucide-react";
+import { Pencil, Check, Loader2, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
+
+const EMPREENDIMENTOS = [
+  "Alfa", "Orygem", "Las Casas", "Casa Tua", "Lake Eyre", "Open Bosque",
+  "Casa Bastian", "Shift", "Seen Menino Deus", "Me Day",
+  "Alto Lindóia", "Terrace", "Duetto", "Salzburg", "Melnick Day",
+  "Boa Vista Country Club",
+];
 
 interface FichaData {
   entrada: string;
@@ -25,9 +32,10 @@ const FIELDS: { key: keyof Omit<FichaData, "notas">; icon: string; label: string
 
 interface Props {
   empreendimento: string;
+  onEmpChange?: (emp: string) => void;
 }
 
-export default function FichaRapida({ empreendimento }: Props) {
+export default function FichaRapida({ empreendimento, onEmpChange }: Props) {
   const { user } = useAuth();
   const [data, setData] = useState<FichaData>(EMPTY);
   const [editing, setEditing] = useState(false);
@@ -111,14 +119,33 @@ export default function FichaRapida({ empreendimento }: Props) {
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <span
-            className="uppercase"
+            className="uppercase shrink-0"
             style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#22D3EE" }}
           >
             📋 FICHA RÁPIDA
           </span>
-          <span className="text-sm font-bold text-white">· {empreendimento}</span>
+          {onEmpChange ? (
+            <select
+              value={empreendimento}
+              onChange={e => onEmpChange(e.target.value)}
+              className="text-sm font-bold rounded-md px-1.5 ml-1 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 min-w-0"
+              style={{
+                background: "#0f1628",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "#E2E8F0",
+                height: 26,
+                maxWidth: 160,
+              }}
+            >
+              {EMPREENDIMENTOS.map(e => (
+                <option key={e} value={e}>{e}</option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-sm font-bold text-white">· {empreendimento}</span>
+          )}
         </div>
         <button
           onClick={() => {
