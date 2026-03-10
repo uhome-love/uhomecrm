@@ -464,15 +464,15 @@ export default function CeoDashboard() {
           <KpiCard
             icon={Users}
             label="Presentes Hoje"
-            value={teams.reduce((a, t) => a + (t.ligacoes > 0 ? 1 : 0), 0)}
-            displayValue={`${teams.filter(t => t.ligacoes > 0).length} equipes ativas`}
+            value={presentesHoje}
+            displayValue={`${presentesHoje} corretores`}
             iconColor="text-emerald-600"
           />
           <KpiCard
             icon={Target}
             label="Metas do Dia"
-            value={kpis.ligacoes > 0 ? 1 : 0}
-            displayValue={kpis.ligacoes > 0 ? "Em andamento" : "Sem atividade"}
+            value={metasDiaTotal.ligacoes}
+            displayValue={`${metasDiaTotal.ligacoes} lig · ${metasDiaTotal.aproveitados} aprov · ${metasDiaTotal.visitasMarcadas} VM`}
             iconColor="text-blue-600"
           />
           <KpiCard
