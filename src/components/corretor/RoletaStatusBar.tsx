@@ -144,7 +144,7 @@ export default function RoletaStatusBar() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [credenciamentosPorJanela, setCredenciamentosPorJanela] = useState<Record<string, boolean>>({});
+  const [credenciamentosPorJanela, setCredenciamentosPorJanela] = useState<Record<string, string>>({});
 
   const nightReqs = useNightRequirements(user?.id, profileId);
 
