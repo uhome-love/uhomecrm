@@ -470,7 +470,64 @@ export default function ImoveisPage() {
         </div>
       </div>
 
-      {/* Campaign chips when active */}
+      {/* Vitrine action bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <Card className="p-3 flex items-center justify-between bg-primary/5 border-primary/20 flex-wrap gap-2">
+          <span className="text-sm font-medium text-foreground">
+            {selectedIds.size} imóvel(is) selecionado(s)
+          </span>
+          <div className="flex items-center gap-2">
+            {vitrineLink ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Input value={vitrineLink} readOnly className="text-xs h-8 w-64" />
+                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }}>
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção de imóveis: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-1">
+                    <Phone className="h-3.5 w-3.5" /> Enviar WhatsApp
+                  </Button>
+                </a>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                disabled={creatingVitrine}
+                onClick={async () => {
+                  if (!user) return;
+                  setCreatingVitrine(true);
+                  try {
+                    const { data, error } = await supabase
+                      .from("vitrines" as any)
+                      .insert({
+                        created_by: user.id,
+                        titulo: "Seleção de Imóveis",
+                        imovel_ids: [...selectedIds],
+                      } as any)
+                      .select("id")
+                      .single();
+                    if (error) throw error;
+                    const link = `${window.location.origin}/vitrine/${(data as any).id}`;
+                    setVitrineLink(link);
+                    navigator.clipboard.writeText(link);
+                    toast.success("Vitrine criada! Link copiado.");
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Erro ao criar vitrine");
+                  } finally {
+                    setCreatingVitrine(false);
+                  }
+                }}
+                className="gap-1.5"
+              >
+                {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+                Gerar Link
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
+
       {campanhaAtiva && (
         <div className="flex flex-wrap gap-2">
           {CAMPANHA_CODES.map((c) => (
