@@ -177,29 +177,14 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             </span>
           </div>
 
-          {/* Row 2: Imóvel (fase) */}
+          {/* Row 2: Imóvel */}
           <p className="text-[11px] text-white/50 truncate">
             {negocio.empreendimento || <span className="italic text-amber-400/70">🏠 Sem imóvel</span>}
-            {negocio.empreendimento && (
-              <span className="ml-1 text-white/30">({faseInfo?.label})</span>
-            )}
           </p>
 
-          {/* Row 3: VGV */}
-          <div className="flex items-center gap-2">
-            {negocio.vgv_estimado ? (
-              <span className="text-sm font-bold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
-                <TrendingUp className="h-3 w-3" />
-                {formatVGV(negocio.vgv_estimado)}
-              </span>
-            ) : (
-              <span className="text-[11px] text-red-400/80 font-medium">⚠️ VGV obrigatório</span>
-            )}
-          </div>
-
-          {/* Row 4: Corretor (para admin/gestor) */}
-          {showCorretor && corretorInfo && (
-            <div className="flex items-center gap-1.5 pt-0.5">
+          {/* Row 3: Corretor responsável */}
+          {showCorretor && corretorInfo ? (
+            <div className="flex items-center gap-1.5">
               <Avatar className="h-4 w-4">
                 <AvatarImage src={corretorInfo.avatar_gamificado_url || corretorInfo.avatar_url || undefined} className="object-cover" />
                 <AvatarFallback className="text-[7px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
@@ -211,7 +196,26 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                 </Badge>
               )}
             </div>
+          ) : (
+            <p className="text-[10px] text-white/30 italic">Sem corretor</p>
           )}
+
+          {/* Row 4: VGV with quick-fill */}
+          <div className="flex items-center gap-2">
+            {negocio.vgv_estimado ? (
+              <span className="text-sm font-bold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
+                <TrendingUp className="h-3 w-3" />
+                {formatVGV(negocio.vgv_estimado)}
+              </span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); setQuickVgvId(negocio.id); setQuickVgvValue(""); }}
+                className="text-[11px] text-amber-400/80 font-medium hover:text-amber-300 transition-colors flex items-center gap-1"
+              >
+                ⚠️ Preencher VGV
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Action bar - glass effect */}
