@@ -58,7 +58,7 @@ interface NegocioTask {
   status: string;
 }
 
-function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, paradoInfo, nextTask, parceriaInfo, onDragStart, onClick, onMoveFase, onUpdateNegocio, onTaskSaved }: {
+function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, paradoInfo, nextTask, parceriaInfo, onDragStart, onClick, onMoveFase, onUpdateNegocio, onTaskSaved, onDelete, isAdmin: cardIsAdmin }: {
   negocio: Negocio;
   corretorNome?: string;
   corretorInfo?: CorretorInfo;
@@ -71,6 +71,8 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
   onMoveFase: (id: string, fase: string) => void;
   onUpdateNegocio: (id: string, updates: Partial<Negocio>) => Promise<void>;
   onTaskSaved?: () => void;
+  onDelete?: (id: string) => void;
+  isAdmin?: boolean;
 }) {
   const { user } = useAuth();
   const faseInfo = NEGOCIOS_FASES.find(f => f.key === negocio.fase);
@@ -218,7 +220,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             {negocio.empreendimento || <span className="italic text-amber-400/80 font-semibold">🏠 Sem imóvel</span>}
           </p>
 
-          {/* Row 3: Corretor responsável (only for admin/gestor) */}
+          {/* Row 3: Corretor responsável (only for admin/gestor) — show both names if partnership */}
           {showCorretor && (
             corretorInfo ? (
               <div className="flex items-center gap-1.5">
@@ -226,8 +228,12 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                   <AvatarImage src={corretorInfo.avatar_gamificado_url || corretorInfo.avatar_url || undefined} className="object-cover" />
                   <AvatarFallback className="text-[8px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
                 </Avatar>
-                <span className="text-[12px] font-medium text-white/60 truncate">{corretorInfo.nome?.split(" ")[0]}</span>
-                {corretorInfo.equipe && (
+                {parceriaInfo?.isParceria ? (
+                  <span className="text-[12px] font-medium text-white/60 truncate">{parceriaInfo.label}</span>
+                ) : (
+                  <span className="text-[12px] font-medium text-white/60 truncate">{corretorInfo.nome?.split(" ")[0]}</span>
+                )}
+                {corretorInfo.equipe && !parceriaInfo?.isParceria && (
                   <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-border/40 text-muted-foreground">
                     {corretorInfo.equipe}
                   </Badge>
@@ -377,6 +383,14 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
               <DropdownMenuItem className="gap-2 cursor-pointer text-xs text-red-500" onClick={() => setQuedaPopup(true)}>
                 <XCircle className="h-3.5 w-3.5" /> Caiu negócio
               </DropdownMenuItem>
+              {cardIsAdmin && onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="gap-2 cursor-pointer text-xs text-red-600 font-bold" onClick={() => onDelete(negocio.id)}>
+                    <X className="h-3.5 w-3.5" /> 🗑️ Excluir negócio
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -587,6 +601,15 @@ export default function MeusNegocios() {
   // Phase transition modal state
   const [transitionTarget, setTransitionTarget] = useState<{ negocioId: string; fase: string } | null>(null);
   const transitionNegocio = transitionTarget ? negocios.find(n => n.id === transitionTarget.negocioId) : null;
+
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDeleteNegocio = useCallback(async (id: string) => {
+    const { error } = await supabase.from("negocios").delete().eq("id", id);
+    if (error) { toast.error("Erro ao excluir negócio"); return; }
+    toast.success("🗑️ Negócio excluído");
+    reload();
+  }, [reload]);
 
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
@@ -957,6 +980,8 @@ export default function MeusNegocios() {
                       onMoveFase={requestMoveFase}
                       onUpdateNegocio={updateNegocio}
                       onTaskSaved={loadTasks}
+                      isAdmin={isAdmin}
+                      onDelete={(id) => setDeleteConfirmId(id)}
                     />
                   ))}
                 </div>
@@ -1001,6 +1026,24 @@ export default function MeusNegocios() {
           onConfirm={handleTransitionConfirm}
         />
       )}
+
+      {/* Delete confirmation dialog (CEO only) */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(o) => { if (!o) setDeleteConfirmId(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base text-red-500">🗑️ Excluir Negócio</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja excluir este negócio permanentemente? Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
+            <Button variant="destructive" size="sm" onClick={() => { if (deleteConfirmId) { handleDeleteNegocio(deleteConfirmId); setDeleteConfirmId(null); } }}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
