@@ -358,6 +358,10 @@ serve(async (req) => {
       const paginatedItems = items.slice(start, start + pageSize);
 
       console.log(`Returning page ${page}: ${paginatedItems.length} items of ${totalFiltered} filtered`);
+      // Normalize images on paginated results
+      for (const item of paginatedItems) {
+        item._fotos_normalized = normalizeImages(item);
+      }
 
       return new Response(JSON.stringify({ 
         data: paginatedItems, 
