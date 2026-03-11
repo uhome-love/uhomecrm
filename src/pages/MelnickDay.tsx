@@ -30,7 +30,7 @@ type Empreendimento = {
   status: string;
   precoDe?: string;
   precoPor?: string;
-  imagem?: string;
+  imagens?: string[];
   condicoes?: string;
   descontoMax?: string;
   unRef?: string;
@@ -61,9 +61,9 @@ const SEGMENTOS: Record<string, {
     ],
     metodologia: "NÃO REPRESADO — Vendas a partir de 05/03 até 18/03. A cada 4 vendas Open = 1 viagem sorteada entre os corretores.",
     empreendimentos: [
-      { nome: "Open Major", bairro: "Marechal Rondon", metragens: "43 m²", dorms: "2 dorms", status: "Em obras", precoPor: "R$ 235.505", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122722/open-major.png" },
-      { nome: "Open Alto Ipiranga", bairro: "Jardim Carvalho", metragens: "42 m²", dorms: "2 dorms", status: "Em obras", precoPor: "R$ 271.310", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122643/Camada-20.png" },
-      { nome: "Open Bosque", bairro: "Passo d'Areia", metragens: "31 a 63 m²", dorms: "Até 3 dorms", status: "Em obras", precoPor: "R$ 240.582", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122725/Retangulo-2.png" },
+      { nome: "Open Major", bairro: "Marechal Rondon", metragens: "43 m²", dorms: "2 dorms", status: "Em obras", precoPor: "R$ 235.505", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122722/open-major.png"] },
+      { nome: "Open Alto Ipiranga", bairro: "Jardim Carvalho", metragens: "42 m²", dorms: "2 dorms", status: "Em obras", precoPor: "R$ 271.310", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122643/Camada-20.png"] },
+      { nome: "Open Bosque", bairro: "Passo d'Areia", metragens: "31 a 63 m²", dorms: "Até 3 dorms", status: "Em obras", precoPor: "R$ 240.582", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122725/Retangulo-2.png"] },
     ],
   },
   compactos: {
@@ -80,19 +80,19 @@ const SEGMENTOS: Record<string, {
     ],
     metodologia: "NÃO REPRESADO — Studios, Lofts e 1 dorm comercial. Vendas a partir de 05/03. Vendeu, viajou!",
     empreendimentos: [
-      { nome: "GO Cidade Baixa", bairro: "Cidade Baixa", metragens: "27 a 90 m²", dorms: "Studio a 3 dorms", status: "Pronto", precoDe: "R$ 497.462", precoPor: "R$ 338.274", descontoMax: "-32%", m2: "R$ 12.216/m²", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122703/cidade-baixa.png" },
-      { nome: "Carlos Gomes Square", bairro: "Auxiliadora", metragens: "25 a 59 m²", dorms: "Lofts e 1 dorm", status: "Pronto", precoDe: "R$ 453.983", precoPor: "R$ 304.169", descontoMax: "-33%", m2: "R$ 12.211/m²", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122655/Camada-931.png" },
-      { nome: "GO Rio Branco", bairro: "Rio Branco", metragens: "25 a 63 m²", dorms: "Studio a 2 dorms", status: "Pronto", precoDe: "R$ 554.032", precoPor: "R$ 448.766", descontoMax: "-19%", m2: "R$ 17.254/m²", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122727/rio-granco.png" },
-      { nome: "GO 24", bairro: "Auxiliadora", metragens: "24 a 29 m²", dorms: "1 dorm", status: "Pronto", precoDe: "R$ 600.712", precoPor: "R$ 492.584", descontoMax: "-18%", m2: "R$ 20.313/m²", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/14150218/DSC00790.webp" },
-      { nome: "Maxplaza", bairro: "Canoas, Centro", metragens: "34 a 47 m²", dorms: "1 dorm", status: "Pronto", precoDe: "R$ 427.360", precoPor: "R$ 367.530", descontoMax: "-14%", m2: "R$ 9.455/m²", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/08143643/fachada-min-3.jpeg" },
-      { nome: "GO Bom Fim", bairro: "Bom Fim", metragens: "28 a 40 m²", dorms: "1 dorm", status: "Em obras", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2023/05/14150148/JTL_02_Fachada_EF2_T-scaled.jpg" },
-      { nome: "GO Carlos Gomes", bairro: "Boa Vista", metragens: "25 a 49 m²", dorms: "1-2 dorms", status: "Pronto", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/03/14154149/DJI_20241204194812_0689_D-HDR.webp" },
-      { nome: "GO Home Design", bairro: "Bela Vista", metragens: "25 a 32 m²", dorms: "1 dorm", status: "Em obras", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/07/03173727/CTN_01_Fachada_EF_v3-C-scaled.jpg" },
-      { nome: "Linked Teresópolis", bairro: "Glória", metragens: "35 a 53 m²", dorms: "Lofts e 1 dorm", status: "Pronto", precoDe: "R$ 524.902", precoPor: "R$ 461.914", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122644/Camada-913.png" },
-      { nome: "Nilo Square Multistay", bairro: "Boa Vista", metragens: "24 a 64 m²", dorms: "1 dorm", status: "Entrega 2026", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/05/12125610/12-1.jpg" },
-      { nome: "Nilo Square Hotel", bairro: "Boa Vista", metragens: "29 a 34 m²", dorms: "1 dorm", status: "Entrega 2026", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/05/12125610/12-1.jpg" },
-      { nome: "Square Garden Multistay", bairro: "Santa Cecília", metragens: "19 a 40 m²", dorms: "1 dorm", status: "Lançamento", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/25174954/GBM_03_Fachada_B_Ipiranga_EF2_T.jpg" },
-      { nome: "Reserva do Lago", bairro: "Petrópolis", metragens: "Até 406 m²", dorms: "Terrenos", status: "Pronto", precoPor: "R$ 148.500", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122630/Camada-8.png" },
+      { nome: "GO Cidade Baixa", bairro: "Cidade Baixa", metragens: "27 a 90 m²", dorms: "Studio a 3 dorms", status: "Pronto", precoDe: "R$ 497.462", precoPor: "R$ 338.274", descontoMax: "-32%", m2: "R$ 12.216/m²", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/13134325/04-36-1.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/13134338/07-35-1.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/13134413/13-29-1.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/13134539/33-13-1.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/13134551/21-21-1.jpg"] },
+      { nome: "Carlos Gomes Square", bairro: "Auxiliadora", metragens: "25 a 59 m²", dorms: "Lofts e 1 dorm", status: "Pronto", precoDe: "R$ 453.983", precoPor: "R$ 304.169", descontoMax: "-33%", m2: "R$ 12.211/m²", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/28162833/DJI_20250512180934_0645_D-HDR.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/28162726/CFF3260-HDR.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/28162824/DJI_20250512180503_0590_D-HDR.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/28162842/CFF3429-HDR.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/28162739/CFF3346-HDR.jpg"] },
+      { nome: "GO Rio Branco", bairro: "Rio Branco", metragens: "25 a 63 m²", dorms: "Studio a 2 dorms", status: "Pronto", precoDe: "R$ 554.032", precoPor: "R$ 448.766", descontoMax: "-19%", m2: "R$ 17.254/m²", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122727/rio-granco.png"] },
+      { nome: "GO 24", bairro: "Auxiliadora", metragens: "24 a 29 m²", dorms: "1 dorm", status: "Pronto", precoDe: "R$ 600.712", precoPor: "R$ 492.584", descontoMax: "-18%", m2: "R$ 20.313/m²", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/14150218/DSC00790.webp"] },
+      { nome: "Maxplaza", bairro: "Canoas, Centro", metragens: "34 a 47 m²", dorms: "1 dorm", status: "Pronto", precoDe: "R$ 427.360", precoPor: "R$ 367.530", descontoMax: "-14%", m2: "R$ 9.455/m²", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/04/08143643/fachada-min-3.jpeg"] },
+      { nome: "GO Bom Fim", bairro: "Bom Fim", metragens: "28 a 40 m²", dorms: "1 dorm", status: "Em obras", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2023/05/14150148/JTL_02_Fachada_EF2_T-scaled.jpg"] },
+      { nome: "GO Carlos Gomes", bairro: "Boa Vista", metragens: "25 a 49 m²", dorms: "1-2 dorms", status: "Pronto", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/03/14154149/DJI_20241204194812_0689_D-HDR.webp"] },
+      { nome: "GO Home Design", bairro: "Bela Vista", metragens: "25 a 32 m²", dorms: "1 dorm", status: "Em obras", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/07/03173727/CTN_01_Fachada_EF_v3-C-scaled.jpg"] },
+      { nome: "Linked Teresópolis", bairro: "Glória", metragens: "35 a 53 m²", dorms: "Lofts e 1 dorm", status: "Pronto", precoDe: "R$ 524.902", precoPor: "R$ 461.914", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122644/Camada-913.png"] },
+      { nome: "Nilo Square Multistay", bairro: "Boa Vista", metragens: "24 a 64 m²", dorms: "1 dorm", status: "Entrega 2026", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/05/12125610/12-1.jpg"] },
+      { nome: "Nilo Square Hotel", bairro: "Boa Vista", metragens: "29 a 34 m²", dorms: "1 dorm", status: "Entrega 2026", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/05/12125610/12-1.jpg"] },
+      { nome: "Square Garden Multistay", bairro: "Santa Cecília", metragens: "19 a 40 m²", dorms: "1 dorm", status: "Lançamento", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/25174954/GBM_03_Fachada_B_Ipiranga_EF2_T.jpg"] },
+      { nome: "Reserva do Lago", bairro: "Petrópolis", metragens: "Até 406 m²", dorms: "Terrenos", status: "Pronto", precoPor: "R$ 148.500", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122630/Camada-8.png"] },
     ],
   },
   medio: {
@@ -107,11 +107,11 @@ const SEGMENTOS: Record<string, {
     ],
     metodologia: "REPRESADO — 2D e 3D residencial. Vendas concentradas no Dia D (21/03). A partir de R$ 1M vendido = viagem.",
     empreendimentos: [
-      { nome: "Supreme Altos do Central Parque", bairro: "Jardim do Salso", metragens: "59 a 70 m²", dorms: "2 e 3 dorms", status: "Pronto", precoDe: "R$ 657.169", precoPor: "R$ 499.448", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122731/supreme.png" },
-      { nome: "Grand Park Lindóia", bairro: "São Sebastião", metragens: "56 a 81 m²", dorms: "2 e 3 dorms", status: "Pronto", precoDe: "R$ 622.810", precoPor: "R$ 485.792", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122658/Camada-933.png" },
-      { nome: "Vida Viva Linked", bairro: "Teresópolis", metragens: "55 e 67 m²", dorms: "2 e 3 dorms", status: "Pronto", precoDe: "R$ 656.978", precoPor: "R$ 499.303", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122656/Camada-932.png" },
-      { nome: "Grand Park Moinhos", bairro: "Canoas", metragens: "56 a 87 m²", dorms: "2 e 3 dorms", status: "Em obras", precoDe: "R$ 546.932", precoPor: "R$ 464.892", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/06/31110805/Fotomontagem.webp" },
-      { nome: "High Garden Iguatemi", bairro: "Boa Vista", metragens: "102 a 125 m²", dorms: "Até 3 suítes", status: "Em obras", precoDe: "R$ 1.649.477", precoPor: "R$ 1.232.604", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122629/Camada-7.png" },
+      { nome: "Supreme Altos do Central Parque", bairro: "Jardim do Salso", metragens: "59 a 70 m²", dorms: "2 e 3 dorms", status: "Pronto", precoDe: "R$ 657.169", precoPor: "R$ 499.448", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122731/supreme.png"] },
+      { nome: "Grand Park Lindóia", bairro: "São Sebastião", metragens: "56 a 81 m²", dorms: "2 e 3 dorms", status: "Pronto", precoDe: "R$ 622.810", precoPor: "R$ 485.792", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122658/Camada-933.png"] },
+      { nome: "Vida Viva Linked", bairro: "Teresópolis", metragens: "55 e 67 m²", dorms: "2 e 3 dorms", status: "Pronto", precoDe: "R$ 656.978", precoPor: "R$ 499.303", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122656/Camada-932.png"] },
+      { nome: "Grand Park Moinhos", bairro: "Canoas", metragens: "56 a 87 m²", dorms: "2 e 3 dorms", status: "Em obras", precoDe: "R$ 546.932", precoPor: "R$ 464.892", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/06/31110805/Fotomontagem.webp"] },
+      { nome: "High Garden Iguatemi", bairro: "Boa Vista", metragens: "102 a 125 m²", dorms: "Até 3 suítes", status: "Em obras", precoDe: "R$ 1.649.477", precoPor: "R$ 1.232.604", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122629/Camada-7.png"] },
     ],
   },
   alto: {
@@ -128,18 +128,18 @@ const SEGMENTOS: Record<string, {
     ],
     metodologia: "REPRESADO — Vendas concentradas no Dia D (21/03). A partir de R$ 1M vendido = viagem.",
     empreendimentos: [
-      { nome: "SEEN Três Figueiras", bairro: "Três Figueiras", metragens: "149 e 169 m²", dorms: "3 a 4 suítes", status: "Em obras", precoDe: "R$ 2.504.640", precoPor: "R$ 1.596.482", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122710/fachada_seen_tres_figueiras-1.png" },
-      { nome: "Gama, 1375", bairro: "Auxiliadora", metragens: "159 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.429.859", precoPor: "R$ 1.707.589", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122713/gama.png" },
-      { nome: "SEEN Boa Vista", bairro: "Boa Vista", metragens: "156 m²", dorms: "3 suítes", status: "Pronto", precoDe: "R$ 2.842.040", precoPor: "R$ 2.671.517", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122625/Camada-4.png" },
-      { nome: "SEEN Menino Deus", bairro: "Menino Deus", metragens: "98 e 151 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 1.808.963", precoPor: "R$ 1.338.633", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122721/menino-deus.png" },
-      { nome: "High Garden Rio Branco", bairro: "Rio Branco", metragens: "123 e 143 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.040.468", precoPor: "R$ 1.636.005", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122716/high-garden.png" },
-      { nome: "Botanique Residence", bairro: "Petrópolis", metragens: "98 e 115 m²", dorms: "3 dorms", status: "Pronto", precoDe: "R$ 1.854.951", precoPor: "R$ 1.407.003", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122620/botanique.png" },
-      { nome: "Yofi", bairro: "Bom Fim", metragens: "131 e 144 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.307.446", precoPor: "R$ 1.645.058", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122741/yofi.png" },
-      { nome: "Square Garden", bairro: "Santa Cecília", metragens: "93 a 119 m²", dorms: "3 dorms", status: "Lançamento", precoDe: "R$ 1.911.621", precoPor: "R$ 1.312.054", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122634/Camada-12.png" },
-      { nome: "Jazz Nova York", bairro: "Auxiliadora", metragens: "118 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.065.289", precoPor: "R$ 1.628.005", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122628/Camada-6.png" },
-      { nome: "GO Moinhos", bairro: "Moinhos de Vento", metragens: "106 m²", dorms: "3 dorms", status: "Em obras", precoDe: "R$ 1.890.885", precoPor: "R$ 1.543.682", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122621/Camada-1.png" },
-      { nome: "Mirá - Zuckhan", bairro: "Petrópolis", metragens: "155 a 313 m²", dorms: "3 suítes", status: "2027", precoDe: "R$ 2.604.000", precoPor: "R$ 2.300.000", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122641/Camada-18.png" },
-      { nome: "Season - TGD", bairro: "Rio Branco", metragens: "118 a 122 m²", dorms: "3 suítes", status: "2027", precoDe: "R$ 1.804.946", precoPor: "R$ 1.534.204", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/14132308/EDU_04_Conceitual_B_EF.jpg" },
+      { nome: "SEEN Três Figueiras", bairro: "Três Figueiras", metragens: "149 e 169 m²", dorms: "3 a 4 suítes", status: "Em obras", precoDe: "R$ 2.504.640", precoPor: "R$ 1.596.482", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/14132308/EDU_04_Conceitual_B_EF.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/14132311/EDU_07_Piscina-Externa_EF.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/14132314/EDU_08_Playground_V2_EF2_T.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/14132305/EDU_21_Living-APTO_148m_Living-Estendido_EF_T.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/14132335/EDU_17_Piscina-Coberta_EF_T.jpg"] },
+      { nome: "Gama, 1375", bairro: "Auxiliadora", metragens: "159 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.429.859", precoPor: "R$ 1.707.589", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122713/gama.png"] },
+      { nome: "SEEN Boa Vista", bairro: "Boa Vista", metragens: "156 m²", dorms: "3 suítes", status: "Pronto", precoDe: "R$ 2.842.040", precoPor: "R$ 2.671.517", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122625/Camada-4.png"] },
+      { nome: "SEEN Menino Deus", bairro: "Menino Deus", metragens: "98 e 151 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 1.808.963", precoPor: "R$ 1.338.633", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122721/menino-deus.png"] },
+      { nome: "High Garden Rio Branco", bairro: "Rio Branco", metragens: "123 e 143 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.040.468", precoPor: "R$ 1.636.005", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122716/high-garden.png"] },
+      { nome: "Botanique Residence", bairro: "Petrópolis", metragens: "98 e 115 m²", dorms: "3 dorms", status: "Pronto", precoDe: "R$ 1.854.951", precoPor: "R$ 1.407.003", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/03/09151921/CFF1685-scaled.webp","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/03/09152201/DJI_20241108055959_0834_D-HDR-scaled.webp","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/03/09152207/DJI_20241108060107_0849_D-HDR-scaled.webp","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/03/09152404/CFF2096-HDR-scaled.webp","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/03/09152147/DJI_20241108054339_0629_D-HDR.webp"] },
+      { nome: "Yofi", bairro: "Bom Fim", metragens: "131 e 144 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.307.446", precoPor: "R$ 1.645.058", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/01/16161301/%C2%A9VISTA_03_EXT_ACESSO_FINAL-1_T-scaled.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/01/16161444/%C2%A9VISTA_04_EXT_INSERCAO_DRONE_FINAL-2-2-scaled.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/01/16162248/%C2%A9VISTA_20_INT_SACADA_APTO_PADRAO_FINAL_T-scaled.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/01/16162907/%C2%A9VISTA_09_EXT_PISCINA_EXTERNA_FINAL_T-scaled.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/01/16161819/%C2%A9VISTA_16_EXT_ROOFTOP_VISTA_FINAL-2_T-1-scaled.jpg"] },
+      { nome: "Square Garden", bairro: "Santa Cecília", metragens: "93 a 119 m²", dorms: "3 dorms", status: "Lançamento", precoDe: "R$ 1.911.621", precoPor: "R$ 1.312.054", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/25174954/GBM_03_Fachada_B_Ipiranga_EF2_T.jpg"] },
+      { nome: "Jazz Nova York", bairro: "Auxiliadora", metragens: "118 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.065.289", precoPor: "R$ 1.628.005", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122628/Camada-6.png"] },
+      { nome: "GO Moinhos", bairro: "Moinhos de Vento", metragens: "106 m²", dorms: "3 dorms", status: "Em obras", precoDe: "R$ 1.890.885", precoPor: "R$ 1.543.682", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122621/Camada-1.png"] },
+      { nome: "Mirá - Zuckhan", bairro: "Petrópolis", metragens: "155 a 313 m²", dorms: "3 suítes", status: "2027", precoDe: "R$ 2.604.000", precoPor: "R$ 2.300.000", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122641/Camada-18.png"] },
+      { nome: "Season - TGD", bairro: "Rio Branco", metragens: "118 a 122 m²", dorms: "3 suítes", status: "2027", precoDe: "R$ 1.804.946", precoPor: "R$ 1.534.204", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/14132308/EDU_04_Conceitual_B_EF.jpg"] },
     ],
   },
   altissimo: {
@@ -156,11 +156,11 @@ const SEGMENTOS: Record<string, {
     ],
     metodologia: "REPRESADO — Vendas concentradas no Dia D (21/03). A partir de R$ 1M vendido = viagem.",
     empreendimentos: [
-      { nome: "Nilo Square Résidence", bairro: "Boa Vista", metragens: "176 e 216 m²", dorms: "3 suítes", status: "Em obras", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122659/Camada-934.png" },
-      { nome: "Arte Cidade Nilo", bairro: "Bela Vista", metragens: "273 e 330 m²", dorms: "3 e 4 suítes", status: "Em obras", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122700/Camada-935.png" },
-      { nome: "Arte Country Club", bairro: "Bela Vista", metragens: "246 a 321 m²", dorms: "3 e 4 suítes", status: "Em obras", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122653/Camada-923.png" },
-      { nome: "Casa Moinhos", bairro: "Moinhos de Vento", metragens: "292 a 644 m²", dorms: "4 suítes", status: "Em obras", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122707/Fachada_EF-scaled-1-1.png" },
-      { nome: "Zayt", bairro: "Bela Vista", metragens: "490 a 540 m²", dorms: "4 suítes", status: "Em obras", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122654/Camada-924.png" },
+      { nome: "Nilo Square Résidence", bairro: "Boa Vista", metragens: "176 e 216 m²", dorms: "3 suítes", status: "Em obras", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122659/Camada-934.png"] },
+      { nome: "Arte Cidade Nilo", bairro: "Bela Vista", metragens: "273 e 330 m²", dorms: "3 e 4 suítes", status: "Em obras", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122700/Camada-935.png"] },
+      { nome: "Arte Country Club", bairro: "Bela Vista", metragens: "246 a 321 m²", dorms: "3 e 4 suítes", status: "Em obras", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122653/Camada-923.png"] },
+      { nome: "Casa Moinhos", bairro: "Moinhos de Vento", metragens: "292 a 644 m²", dorms: "4 suítes", status: "Em obras", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2023/06/11153412/HLR_02_Fachada_EF_V2_T.webp","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2023/06/11153427/HLR_05_Guarita_Acesso_EF_T.webp","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2023/06/11153443/HLR_06_Piscina_Externa_Deck_EF.webp","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2023/06/11153508/HLR_07_Playground_EF2.webp","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2023/06/11153533/HLR_08_Gourmet_Externo_EF4.webp"] },
+      { nome: "Zayt", bairro: "Bela Vista", metragens: "490 a 540 m²", dorms: "4 suítes", status: "Em obras", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/03/17175015/CRT_05_Conceitual_B_EF2_T-1-scaled.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/03/01223031/CRT_24_Complexo_Quadras_EF2-1-scaled.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/03/01223135/CRT_26_Apto_Living_B_EF_V2-scaled.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/03/17175004/CRT_04_Conceitual_EF2-scaled.jpg","https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2024/03/17174833/CRT_06_Conceitual_C_EF2-scaled.jpg"] },
     ],
   },
 };
@@ -415,18 +415,10 @@ function EmpreendimentoCard({ emp, segKey, selected, onToggle }: { emp: Empreend
         </button>
       </div>
 
-      {emp.imagem ? (
-        <div className="relative h-32 overflow-hidden bg-muted cursor-pointer" onClick={onToggle}>
-          <img src={emp.imagem} alt={emp.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-          {desconto && (
-            <span className="absolute bottom-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
-              -{typeof desconto === "string" && desconto.startsWith("-") ? desconto.slice(1) : desconto}
-            </span>
-          )}
-          <Badge className="absolute bottom-2 left-2 text-[9px] py-0" variant="secondary">{emp.status}</Badge>
-        </div>
+      {emp.imagens && emp.imagens.length > 0 ? (
+        <ImageSlider images={emp.imagens} alt={emp.nome} onToggle={onToggle} desconto={desconto} status={emp.status} />
       ) : (
-        <div className="relative h-20 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center cursor-pointer" onClick={onToggle}>
+        <div className="relative h-32 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center cursor-pointer" onClick={onToggle}>
           <Building2 className="h-8 w-8 text-muted-foreground/30" />
           {desconto && (
             <span className="absolute bottom-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -993,7 +985,7 @@ export default function MelnickDay() {
                       precoDe: emp.precoDe,
                       precoPor: emp.precoPor,
                       descontoMax: emp.descontoMax,
-                      imagem: emp.imagem,
+                      imagens: emp.imagens,
                       condicoes: emp.condicoes,
                       segmento: emp.segmento,
                       m2: emp.m2,
