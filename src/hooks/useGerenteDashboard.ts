@@ -161,13 +161,16 @@ export function useGerenteDashboard(period: Period) {
   const { data: kpis, isLoading: kpisLoading } = useQuery({
     queryKey: ["gerente-kpis-v2", user?.id, period, teamUserIds.join(",")],
     queryFn: async () => {
-      if (teamUserIds.length === 0) return { ligacoes: 0, metaTime: 0, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", count: 0 } };
+      if (teamUserIds.length === 0) return { ligacoes: 0, metaTime: 0, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, visitasMarcadas: 0, visitasRealizadas: 0, totalLeads: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", count: 0 } };
 
-      const [{ count: ligacoes }, { count: aproveitados }, { count: visitasHoje }, { count: visitasSemana }] = await Promise.all([
+      const [{ count: ligacoes }, { count: aproveitados }, { count: visitasHoje }, { count: visitasSemana }, { count: visitasMarcadas }, { count: visitasRealizadas }, { count: totalLeads }] = await Promise.all([
         supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).eq("resultado", "com_interesse").gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today),
         supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).gte("data_visita", format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).lte("data_visita", format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")),
+        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).gte("data_visita", start).lte("data_visita", end),
+        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("status", "realizada").gte("data_visita", start).lte("data_visita", end),
+        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds),
       ]);
 
       const { data: negocios } = await supabase.from("negocios").select("fase, vgv_estimado").eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato")');
@@ -185,7 +188,10 @@ export function useGerenteDashboard(period: Period) {
 
       return {
         ligacoes: lig, metaTime, aproveitados: apr, taxa: lig > 0 ? Math.round((apr / lig) * 100) : 0,
-        visitasHoje: visitasHoje || 0, visitasSemana: visitasSemana || 0, negociosAtivos, vgvTotal,
+        visitasHoje: visitasHoje || 0, visitasSemana: visitasSemana || 0,
+        visitasMarcadas: visitasMarcadas || 0, visitasRealizadas: visitasRealizadas || 0,
+        totalLeads: totalLeads || 0,
+        negociosAtivos, vgvTotal,
         melhorStreak: topStreakId ? { nome: teamNameMap[topStreakId[0]]?.split(" ")[0] || "Corretor", count: topStreakId[1] } : { nome: "-", count: 0 },
       };
     },
