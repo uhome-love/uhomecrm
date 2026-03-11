@@ -16,18 +16,25 @@ import { useAuth } from "@/hooks/useAuth";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-/** Extract all image URLs from Jetimob imagens array */
+/** Extract all image URLs from Jetimob item — prefer normalized, fallback to raw */
 function extractImages(item: any): string[] {
+  // Use normalized photos from edge function if available
+  if (item._fotos_normalized?.length) {
+    return item._fotos_normalized;
+  }
   const arr = item.imagens;
   if (!Array.isArray(arr) || arr.length === 0) return [];
-  return arr.map((img: any) => img.link_thumb || img.link).filter(Boolean);
+  return arr.map((img: any) => img.link_thumb || img.link || img.url || img.src || "").filter(Boolean);
 }
 
 /** Extract full-size image URLs for lightbox */
 function extractFullImages(item: any): string[] {
+  if (item._fotos_normalized?.length) {
+    return item._fotos_normalized;
+  }
   const arr = item.imagens;
   if (!Array.isArray(arr) || arr.length === 0) return [];
-  return arr.map((img: any) => img.link || img.link_thumb).filter(Boolean);
+  return arr.map((img: any) => img.link || img.link_thumb || img.url || img.src || "").filter(Boolean);
 }
 
 /** Extract origin/responsible info from Jetimob item (detail response) */

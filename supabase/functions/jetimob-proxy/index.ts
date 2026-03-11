@@ -37,6 +37,30 @@ function getTipo(item: any): string {
   return String(item.subtipo || item.tipo_imovel || item.tipo || "").toLowerCase();
 }
 
+/** Extract and normalize all image URLs from a Jetimob imovel object */
+function normalizeImages(imovel: any, logCodigo?: string): string[] {
+  const fotos: string[] = [];
+  if (imovel.foto_principal) fotos.push(imovel.foto_principal);
+  if (imovel.foto_destaque && imovel.foto_destaque !== imovel.foto_principal) fotos.push(imovel.foto_destaque);
+  
+  const imgFieldNames = ["imagens", "fotos", "galeria", "photos", "images", "fotos_imovel", "galeria_fotos", "midia", "midias"];
+  for (const fieldName of imgFieldNames) {
+    const arr = imovel[fieldName];
+    if (Array.isArray(arr) && arr.length > 0) {
+      if (logCodigo) console.log(`Jetimob ${logCodigo} image field "${fieldName}": ${arr.length} items, sample:`, JSON.stringify(arr[0]).substring(0, 300));
+      for (const item of arr) {
+        if (typeof item === "string") {
+          if (item && !fotos.includes(item)) fotos.push(item);
+        } else if (item && typeof item === "object") {
+          const url = item.link || item.link_thumb || item.url || item.arquivo || item.src || item.path || item.foto || item.imagem || "";
+          if (url && !fotos.includes(url)) fotos.push(url);
+        }
+      }
+    }
+  }
+  return fotos;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -107,22 +131,12 @@ serve(async (req) => {
       }
 
       if (imovel) {
-        // Normalize images into a flat array of URLs
-        const fotos: string[] = [];
-        if (imovel.foto_principal) fotos.push(imovel.foto_principal);
-        if (imovel.foto_destaque) fotos.push(imovel.foto_destaque);
-        // Handle various image array formats
-        const imgArrays = [imovel.imagens, imovel.fotos, imovel.galeria, imovel.photos, imovel.images];
-        for (const arr of imgArrays) {
-          if (Array.isArray(arr)) {
-            for (const item of arr) {
-              const url = typeof item === "string" ? item : (item?.url || item?.arquivo || item?.link || item?.src || "");
-              if (url && !fotos.includes(url)) fotos.push(url);
-            }
-          }
-        }
+        // Log ALL keys for debugging image issues
+        console.log("Jetimob imovel keys:", codigo, JSON.stringify(Object.keys(imovel)));
+        
+        const fotos = normalizeImages(imovel, codigo);
         imovel._fotos_normalized = fotos;
-        console.log("Jetimob imovel normalized:", codigo, "fotos:", fotos.length, "keys:", JSON.stringify(Object.keys(imovel)).substring(0, 200));
+        console.log("Jetimob imovel normalized:", codigo, "fotos:", fotos.length);
       }
 
       return new Response(JSON.stringify({ imovel, not_found: !imovel }), {
@@ -246,6 +260,12 @@ serve(async (req) => {
         // For non-filtered requests, return API pagination directly
         const rawTotal = rawData?.total || rawData?.totalResults || rawData?.total_results || items.length;
         console.log("Jetimob raw items:", items.length, "rawTotal:", rawTotal);
+        // Log first item keys for debugging
+        if (items.length > 0) console.log("Jetimob list first item keys:", JSON.stringify(Object.keys(items[0])).substring(0, 400));
+        // Normalize images on each item
+        for (const item of items) {
+          item._fotos_normalized = normalizeImages(item);
+        }
         
         return new Response(JSON.stringify({ 
           data: items, 
@@ -338,6 +358,10 @@ serve(async (req) => {
       const paginatedItems = items.slice(start, start + pageSize);
 
       console.log(`Returning page ${page}: ${paginatedItems.length} items of ${totalFiltered} filtered`);
+      // Normalize images on paginated results
+      for (const item of paginatedItems) {
+        item._fotos_normalized = normalizeImages(item);
+      }
 
       return new Response(JSON.stringify({ 
         data: paginatedItems, 
