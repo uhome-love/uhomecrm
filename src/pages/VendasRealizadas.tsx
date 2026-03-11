@@ -134,12 +134,28 @@ export default function VendasRealizadas() {
         (profiles || []).forEach(p => { profileMap[p.id] = p as ProfileInfo; });
       }
 
-      return { vendas: rows, profiles: profileMap };
+      // Fetch annual VGV for corretor tier (year-to-date)
+      const yearStart = `${new Date().getFullYear()}-01-01`;
+      let annualVgvByCorretor: Record<string, number> = {};
+      if (ids.length > 0) {
+        const { data: annualData } = await supabase.from("negocios")
+          .select("corretor_id, vgv_final, vgv_estimado")
+          .in("fase", ["assinado", "vendido"])
+          .gte("data_assinatura", yearStart)
+          .in("corretor_id", ids);
+        (annualData || []).forEach(n => {
+          const cid = n.corretor_id as string;
+          annualVgvByCorretor[cid] = (annualVgvByCorretor[cid] || 0) + (n.vgv_final || n.vgv_estimado || 0);
+        });
+      }
+
+      return { vendas: rows, profiles: profileMap, annualVgvByCorretor };
     },
   });
 
   const vendas = data?.vendas || [];
   const profiles = data?.profiles || {};
+  const annualVgvByCorretor = data?.annualVgvByCorretor || {};
 
   const filtered = useMemo(() => {
     if (!search.trim()) return vendas;
@@ -156,10 +172,33 @@ export default function VendasRealizadas() {
   const totalVendas = filtered.length;
   const ticketMedio = totalVendas > 0 ? totalVGV / totalVendas : 0;
 
-  // Commissions
-  const comissaoCorretor32 = totalVGV * 0.0032; // 0.32% do VGV (32% da comissão de ~1%)
-  const comissaoCorretor36 = totalVGV * 0.0036;
-  const comissaoGerente = totalVGV * 0.0015; // 15% da comissão
+  // Commission logic:
+  // Corretagem = VGV × 5%
+  // Corretor tier based on annual VGV: <1.5M = 32%, >=1.5M = 34%, >=3M = 36%
+  // Gerente = Corretagem × 15%
+  function getCorretorTier(annualVgv: number): { pct: number; label: string } {
+    if (annualVgv >= 3_000_000) return { pct: 0.36, label: "36%" };
+    if (annualVgv >= 1_500_000) return { pct: 0.34, label: "34%" };
+    return { pct: 0.32, label: "32%" };
+  }
+
+  function calcComissaoCorretor(vgv: number, annualVgv: number): number {
+    const corretagem = vgv * 0.05;
+    const tier = getCorretorTier(annualVgv);
+    return corretagem * tier.pct;
+  }
+
+  function calcComissaoGerente(vgv: number): number {
+    return vgv * 0.05 * 0.15;
+  }
+
+  // Total commissions for summary
+  // For per-corretor, use their annual VGV tier; for aggregate, show range
+  const totalCorretagem = totalVGV * 0.05;
+  const comissaoCorretor32 = totalCorretagem * 0.32;
+  const comissaoCorretor34 = totalCorretagem * 0.34;
+  const comissaoCorretor36 = totalCorretagem * 0.36;
+  const comissaoGerente = totalCorretagem * 0.15;
 
   // Rankings by corretor
   const corretorRanking = useMemo(() => {
@@ -260,7 +299,7 @@ export default function VendasRealizadas() {
             { icon: Trophy, label: "Vendas", value: totalVendas, format: (v: number) => String(v), color: "hsl(160, 60%, 42%)", emoji: "🏆" },
             { icon: TrendingUp, label: "VGV Total", value: totalVGV, format: formatCurrency, color: "hsl(142, 70%, 45%)", emoji: "💰" },
             { icon: DollarSign, label: "Ticket Médio", value: ticketMedio, format: formatCurrency, color: "hsl(210, 70%, 55%)", emoji: "📊" },
-            { icon: Star, label: "Comissão Aprox.", value: comissaoCorretor32, format: formatCurrency, color: "hsl(45, 90%, 50%)", emoji: "⭐", sub: `32%-36% corretor` },
+            { icon: Star, label: "Corretagem (5%)", value: totalCorretagem, format: formatCurrency, color: "hsl(45, 90%, 50%)", emoji: "⭐", sub: `5% do VGV total` },
           ].map((kpi, i) => (
             <motion.div key={kpi.label} whileHover={{ y: -2 }} transition={{ duration: 0.15 }}
               className="rounded-2xl p-4 bg-card border border-border/60 hover:shadow-lg transition-shadow relative overflow-hidden">
@@ -285,20 +324,31 @@ export default function VendasRealizadas() {
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="h-4 w-4 text-yellow-500" />
               <h2 className="text-sm font-bold text-foreground">Estimativa de Comissão</h2>
-              <span className="text-[10px] text-muted-foreground ml-auto">Baseado no VGV total do período</span>
+              <span className="text-[10px] text-muted-foreground ml-auto">Corretagem = VGV × 5%</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <p className="text-[11px] text-muted-foreground mb-3">
+              Faixa do corretor: <strong>32%</strong> (até R$ 1,5M/ano) → <strong>34%</strong> (≥ R$ 1,5M) → <strong>36%</strong> (≥ R$ 3M). Gerente: 15% da corretagem.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3.5 text-center">
                 <p className="text-[10px] font-medium text-emerald-600 mb-1">Corretor (32%)</p>
                 <p className="text-xl font-black text-emerald-500">{formatCurrencyFull(comissaoCorretor32)}</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">VGV anual {'<'} R$ 1,5M</p>
+              </div>
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3.5 text-center">
+                <p className="text-[10px] font-medium text-emerald-600 mb-1">Corretor (34%)</p>
+                <p className="text-xl font-black text-emerald-500">{formatCurrencyFull(comissaoCorretor34)}</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">VGV anual ≥ R$ 1,5M</p>
               </div>
               <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3.5 text-center">
                 <p className="text-[10px] font-medium text-emerald-600 mb-1">Corretor (36%)</p>
                 <p className="text-xl font-black text-emerald-500">{formatCurrencyFull(comissaoCorretor36)}</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">VGV anual ≥ R$ 3M</p>
               </div>
               <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3.5 text-center">
                 <p className="text-[10px] font-medium text-blue-600 mb-1">Gerente (15%)</p>
                 <p className="text-xl font-black text-blue-500">{formatCurrencyFull(comissaoGerente)}</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">15% da corretagem</p>
               </div>
             </div>
           </CardContent>
@@ -386,7 +436,9 @@ export default function VendasRealizadas() {
                       {filtered.map((v, i) => {
                         const vgv = v.vgv_final || v.vgv_estimado || 0;
                         const corr = v.corretor_id ? profiles[v.corretor_id] : null;
-                        const comissao = vgv * 0.0034; // média 34%
+                        const annualVgv = v.corretor_id ? (annualVgvByCorretor[v.corretor_id] || 0) : 0;
+                        const comissao = calcComissaoCorretor(vgv, annualVgv);
+                        const tier = getCorretorTier(annualVgv);
 
                         return (
                           <motion.tr key={v.id}
@@ -455,7 +507,7 @@ export default function VendasRealizadas() {
                       <td className="py-3 px-3 text-right text-sm font-black text-emerald-500">{formatCurrency(totalVGV)}</td>
                       <td></td>
                       <td></td>
-                      <td className="py-3 px-3 text-right text-xs font-bold text-yellow-500">{formatCurrencyFull(totalVGV * 0.0034)}</td>
+                      <td className="py-3 px-3 text-right text-xs font-bold text-yellow-500">{formatCurrencyFull(totalCorretagem * 0.34)}</td>
                     </tr>
                   </tfoot>
                 </table>
