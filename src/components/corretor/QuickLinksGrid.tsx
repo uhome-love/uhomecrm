@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 const links = [
   { label: "Agenda", icon: CalendarCheck, path: "/agenda-visitas", color: "text-amber-600", bg: "bg-amber-500/10" },
-  { label: "Negócios", icon: Briefcase, path: "/meus-negocios", color: "text-purple-600", bg: "bg-purple-500/10" },
+  { label: "Negócios", icon: Briefcase, path: "/pipeline-negocios", color: "text-purple-600", bg: "bg-purple-500/10" },
   { label: "Resumo", icon: BarChart3, path: "/corretor/resumo", color: "text-blue-600", bg: "bg-blue-500/10" },
   { label: "HOMI", icon: Bot, path: "/homi", color: "text-primary", bg: "bg-primary/10" },
   { label: "Scripts", icon: FileText, path: "/scripts", color: "text-emerald-600", bg: "bg-emerald-500/10" },

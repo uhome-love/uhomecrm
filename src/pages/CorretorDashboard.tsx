@@ -261,7 +261,7 @@ export default function CorretorDashboard() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="h-16 rounded-xl flex items-center gap-3 px-4 bg-gradient-to-br from-[#1E40AF] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#2563EB] text-white shadow-[0_4px_14px_rgba(29,78,216,0.35)] transition-all duration-200"
-                onClick={() => navigate("/pipeline")}
+                onClick={() => navigate("/pipeline-leads")}}
               >
                 <Kanban className="h-6 w-6 shrink-0" />
                 <div className="text-left">

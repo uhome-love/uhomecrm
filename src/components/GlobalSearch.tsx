@@ -120,7 +120,7 @@ export default function GlobalSearch() {
           title: n.nome_cliente,
           subtitle: [n.empreendimento, n.fase, vgvStr].filter(Boolean).join(" · "),
           badge: "Negócio",
-          url: `/meus-negocios?negocio=${n.id}`,
+          url: `/pipeline-negocios?negocio=${n.id}`,
         });
       });
 

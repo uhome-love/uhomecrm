@@ -142,7 +142,7 @@ export default function CorretorHome() {
         <RadarLeadsPendentes
           leads={radarLeads}
           loading={radarLoading}
-          onOpenPipeline={() => navigate("/pipeline")}
+          onOpenPipeline={() => navigate("/pipeline-leads")}
         />
       </motion.div>
 
