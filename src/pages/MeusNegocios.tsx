@@ -273,13 +273,13 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             <button onClick={() => { setTaskText(nextTask?.titulo || ""); setEditingTask(true); }} className="w-full text-left group/task">
               {nextTask ? (
                 <div className="flex items-center gap-1.5">
-                  <Clock className="h-3 w-3 text-blue-400 shrink-0" />
-                  <span className="text-[11px] text-blue-300/80 truncate group-hover/task:text-blue-200 transition-colors">{nextTask.titulo}</span>
+                  <Clock className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                  <span className="text-[12px] font-medium text-blue-300/90 truncate group-hover/task:text-blue-200 transition-colors">{nextTask.titulo}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <Plus className="h-3 w-3 text-white/20 shrink-0" />
-                  <span className="text-[11px] text-white/25 italic group-hover/task:text-white/40 transition-colors">Definir próximo passo...</span>
+                  <Plus className="h-3.5 w-3.5 text-white/25 shrink-0" />
+                  <span className="text-[12px] text-white/30 italic group-hover/task:text-white/50 transition-colors">Definir próximo passo...</span>
                 </div>
               )}
             </button>
