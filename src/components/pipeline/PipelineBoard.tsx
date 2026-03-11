@@ -95,7 +95,7 @@ const INITIAL_RENDER = 15;
 const LOAD_MORE_BATCH = 20;
 
 const VirtualizedCardList = memo(function VirtualizedCardList({
-  stageLeads, stage, stages, segmentos, corretorNomes, parcerias,
+  stageLeads, stage, stages, segmentos, corretorNomes, corretorAvatars, parcerias,
   selectionMode, selectedLeads, arrivedLeadId,
   onToggleSelect, onSelectLead, onMoveLead, onTransferred, stageIndexMap, handleDragStart,
   tarefasMap,
@@ -105,6 +105,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   stages: PipelineStage[];
   segmentos: PipelineSegmento[];
   corretorNomes: Record<string, string>;
+  corretorAvatars?: Record<string, string>;
   parcerias: Record<string, string>;
   selectionMode?: boolean;
   selectedLeads?: Set<string>;
