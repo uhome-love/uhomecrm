@@ -101,11 +101,10 @@ export default function PipelineManagerActions({ leads, corretorNomes }: Props) 
       type: "leads_parados",
       icon: RefreshCw,
       label: "Cobrar Atualização",
-      description: "Corretores com leads sem atualização >3h",
+      description: "Corretores com leads sem tarefa e sem contato >48h",
       buildMessage: (m, mLeads) => {
         const count = mLeads.length;
-        const tempo = "3 horas";
-        return `Oi ${m.nome?.split(" ")[0]}! Você tem ${count} lead(s) sem atualização há mais de ${tempo}. Por favor, atualize no sistema. 🙏`;
+        return `Oi ${m.nome?.split(" ")[0]}! Você tem ${count} lead(s) sem tarefa agendada e sem contato recente. Por favor, crie tarefas ou atualize no sistema. 🙏`;
       },
     },
     {
