@@ -980,6 +980,8 @@ export default function MeusNegocios() {
                       onMoveFase={requestMoveFase}
                       onUpdateNegocio={updateNegocio}
                       onTaskSaved={loadTasks}
+                      isAdmin={isAdmin}
+                      onDelete={(id) => setDeleteConfirmId(id)}
                     />
                   ))}
                 </div>
