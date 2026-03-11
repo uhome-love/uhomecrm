@@ -304,12 +304,6 @@ export function AppSidebar() {
         topItem: { title: "Dashboard", url: "/gerente/dashboard", icon: Home },
         groups: [
           {
-            label: "Principal",
-            items: [
-              ...melnickDayItem,
-            ],
-          },
-          {
             label: "Gestão de Leads",
             items: [
               { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
