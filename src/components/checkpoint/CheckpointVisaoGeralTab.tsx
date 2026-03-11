@@ -177,12 +177,12 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
     }
 
     // Leads sem contato
-    if ((leadsPendentes || []).length > 0) {
+    if (leadsSemContatoList.length > 0) {
       newAlerts.push({
         id: "leads-sem-contato",
         type: "danger",
         icon: "🚨",
-        message: `${(leadsPendentes || []).length} leads sem contato há mais de 48h`,
+        message: `${leadsSemContatoList.length} leads sem contato há mais de 48h`,
         action: { label: "Ver Pipeline", route: "/pipeline" },
       });
     }
