@@ -342,7 +342,7 @@ export function useGerenteDashboard(period: Period) {
   const { data: negociosAcao } = useQuery({
     queryKey: ["gerente-negocios-acao-v2", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")').order("updated_at", { ascending: true }).limit(5);
+      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")').order("updated_at", { ascending: true }).limit(5);
       if (!data) return [];
       const corrIds = [...new Set(data.map(n => n.corretor_id).filter(Boolean))];
       const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds as string[]) : { data: [] };
