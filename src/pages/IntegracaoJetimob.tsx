@@ -203,11 +203,9 @@ function EditableRow({ mapping, onSave, onDelete, categoria }: { mapping: FieldM
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(mapping);
 
-  const jetimobOpts = getJetimobFields(categoria);
-  const uhomeOpts = getUhomeFields(categoria);
-
-  const handleSave = () => { onSave(draft); setEditing(false); };
-  const handleCancel = () => { setDraft(mapping); setEditing(false); };
+  const jetimobOpts = getJetimobFields(categoria, draft.jetimob_field);
+  const uhomeOpts = getUhomeFields(categoria, draft.uhome_field);
+  const tableOpts = getTableOptions(draft.uhome_table);
 
   if (editing) {
     return (
