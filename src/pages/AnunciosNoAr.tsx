@@ -274,7 +274,7 @@ function MaterialSection({
         empreendimento_nome: empreendimentoNome,
         segmento,
         tipo: uploadTipo,
-        nome_arquivo: file.name,
+        nome_arquivo: uploadNome.trim() || file.name,
         url: publicUrl,
         mime_type: file.type,
         uploaded_by: user.id,
