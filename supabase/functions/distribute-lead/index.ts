@@ -115,7 +115,6 @@ Deno.serve(async (req) => {
         .from("pipeline_leads")
         .select("id, empreendimento, nome, telefone")
         .in("id", leadIds)
-        .eq("aceite_status", "pendente_distribuicao")
         .is("corretor_id", null);
 
       const leads = leadsData || [];
