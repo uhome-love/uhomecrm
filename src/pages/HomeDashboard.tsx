@@ -7,7 +7,7 @@ import { useMarketing, getCanalLabel } from "@/hooks/useMarketing";
 import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
-import { todayBRT } from "@/lib/utils";
+import { todayBRT, formatBRLCompact } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
   TrendingUp, Users, Trophy, Target, BarChart3, AlertTriangle,
