@@ -34,6 +34,7 @@ import LeadHistoricoTab from "./LeadHistoricoTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import QuickActionMenu from "./QuickActionMenu";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
+import RadarImoveisTab from "./RadarImoveisTab";
 import { format, formatDistanceToNow, differenceInHours, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
