@@ -45,7 +45,7 @@ const PRESENCA_OPTIONS = [
   { value: "folga", label: "Folga", icon: "🏖️" },
 ];
 
-function MiniRing({ value, max, size = 36, strokeWidth = 3, color = "hsl(var(--primary))" }: {
+function MiniRing({ value, max, size = 52, strokeWidth = 4, color = "hsl(var(--primary))" }: {
   value: number; max: number; size?: number; strokeWidth?: number; color?: string;
 }) {
   const radius = (size - strokeWidth) / 2;
@@ -60,7 +60,7 @@ function MiniRing({ value, max, size = 36, strokeWidth = 3, color = "hsl(var(--p
         <circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} className="transition-all duration-500" />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[10px] font-extrabold text-foreground leading-none">{value}</span>
+        <span className="text-sm font-extrabold text-foreground leading-none">{value}</span>
       </div>
     </div>
   );
