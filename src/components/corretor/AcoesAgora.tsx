@@ -50,7 +50,7 @@ export default function AcoesAgora({ followUps, visitasHoje, newLeadsCount, onSt
                 <MessageCircle className="h-4 w-4 text-primary" />
                 <span className="text-xs font-medium text-foreground">{newLeadsCount} lead{newLeadsCount > 1 ? "s" : ""} novo{newLeadsCount > 1 ? "s" : ""} para responder</span>
               </div>
-              <Button size="sm" variant="ghost" className="h-7 text-[10px] gap-1 text-primary" onClick={() => navigate("/pipeline")}>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] gap-1 text-primary" onClick={() => navigate("/pipeline-leads")}>
                 Ver <ArrowRight className="h-3 w-3" />
               </Button>
             </div>
