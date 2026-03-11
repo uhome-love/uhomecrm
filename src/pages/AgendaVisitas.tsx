@@ -93,19 +93,21 @@ function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTea
   if (total === 0 && periodo === "dia") return null;
 
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm px-5 py-3 shadow-sm">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-primary" />
-          <span className="text-sm font-bold text-foreground">Placar</span>
+          <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <CalendarDays className="h-3.5 w-3.5 text-primary" />
+          </div>
+          <span className="text-sm font-bold text-foreground tracking-tight">Placar</span>
         </div>
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+        <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5">
           {(["dia", "semana", "mes"] as PlacarPeriodo[]).map(p => (
             <button
               key={p}
               onClick={() => setPeriodo(p)}
               className={cn(
-                "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all",
+                "px-3 py-1 rounded-md text-[11px] font-bold transition-all",
                 periodo === p
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -116,50 +118,38 @@ function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTea
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-5 gap-3 mb-3">
-        <div className="text-center">
-          <p className="text-lg font-black text-foreground">{total}</p>
-          <p className="text-[10px] text-muted-foreground">📅 {periodoLabel}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-black text-emerald-600">{realizadas}</p>
-          <p className="text-[10px] text-muted-foreground">✅ Realizadas</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-black text-destructive">{noShows}</p>
-          <p className="text-[10px] text-muted-foreground">❌ No Show</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-black text-purple-600">{reagendadas}</p>
-          <p className="text-[10px] text-muted-foreground">🔄 Reagend.</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-black text-amber-600">{pendentes}</p>
-          <p className="text-[10px] text-muted-foreground">⏳ Pendentes</p>
-        </div>
+      <div className="flex items-center gap-0 divide-x divide-border/40">
+        {[
+          { value: total, label: periodoLabel, emoji: "📅", color: "text-foreground" },
+          { value: realizadas, label: "Realizadas", emoji: "✅", color: "text-emerald-600" },
+          { value: noShows, label: "No Show", emoji: "❌", color: "text-destructive" },
+          { value: reagendadas, label: "Reagend.", emoji: "🔄", color: "text-purple-600" },
+          { value: pendentes, label: "Pendentes", emoji: "⏳", color: "text-amber-600" },
+        ].map((item, i) => (
+          <div key={i} className="text-center flex-1 py-1">
+            <p className={cn("text-base font-black", item.color)}>{item.value}</p>
+            <p className="text-[9px] text-muted-foreground font-medium">{item.emoji} {item.label}</p>
+          </div>
+        ))}
       </div>
-      <div className="flex items-center gap-2">
-        <Progress value={taxa} className="flex-1 h-2" />
-        <span className={cn("text-xs font-bold", taxa >= 70 ? "text-emerald-600" : taxa >= 40 ? "text-amber-600" : "text-destructive")}>
+      <div className="flex items-center gap-3 mt-1.5">
+        <Progress value={taxa} className="flex-1 h-1.5" />
+        <span className={cn("text-[11px] font-bold tabular-nums", taxa >= 70 ? "text-emerald-600" : taxa >= 40 ? "text-amber-600" : "text-destructive")}>
           {taxa}% realização
         </span>
       </div>
 
       {/* Team breakdown for CEO/admin */}
       {showTeamBreakdown && teamStats.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
-          <span className="text-[11px] font-semibold text-muted-foreground">Por equipe</span>
+        <div className="mt-2 pt-2 border-t border-border/40 flex items-center gap-4 flex-wrap">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Equipes</span>
           {teamStats.map(t => (
-            <div key={t.name} className="flex items-center gap-2">
-              <span className={cn("text-[11px] px-1.5 py-0 rounded-full border whitespace-nowrap", t.className)}>
+            <div key={t.name} className="flex items-center gap-1.5">
+              <span className={cn("text-[10px] px-2 py-0.5 rounded-full border whitespace-nowrap font-bold", t.className)}>
                 {t.emoji} {t.label}
               </span>
-              <span className="text-[11px] text-foreground font-semibold ml-auto">
-                {t.total} visita{t.total !== 1 ? "s" : ""}
-              </span>
-              <span className="text-[11px] text-green-600 font-semibold">
-                {t.realizadas} realizada{t.realizadas !== 1 ? "s" : ""}
-              </span>
+              <span className="text-[10px] text-foreground font-bold">{t.total}</span>
+              <span className="text-[10px] text-emerald-600 font-semibold">{t.realizadas}✅</span>
             </div>
           ))}
         </div>

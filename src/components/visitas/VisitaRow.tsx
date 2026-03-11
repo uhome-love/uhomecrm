@@ -109,15 +109,15 @@ function parseNegocioMeta(obs: string | null) {
 /** Column header for the list view */
 export function VisitaRowHeader({ showCorretor, showTeam }: { showCorretor?: boolean; showTeam?: boolean }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border-b border-border/60 bg-muted/30 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-      <span className="w-12 text-center shrink-0">Hora</span>
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/50 bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
+      <span className="w-14 text-center shrink-0">Hora</span>
       <span className="w-1 shrink-0" />
-      <span style={{ width: "clamp(90px, 15%, 160px)" }} className="shrink-0">Cliente</span>
-      <span style={{ width: "clamp(80px, 13%, 140px)" }} className="shrink-0 hidden md:block">Produto</span>
+      <span style={{ width: "clamp(100px, 16%, 180px)" }} className="shrink-0">Cliente</span>
+      <span style={{ width: "clamp(90px, 14%, 150px)" }} className="shrink-0 hidden md:block">Produto</span>
       <span style={{ width: "clamp(70px, 10%, 110px)" }} className="shrink-0 hidden md:block">Local</span>
-      {showCorretor && <span style={{ width: "clamp(80px, 12%, 130px)" }} className="shrink-0 hidden lg:block">Corretor</span>}
+      {showCorretor && <span style={{ width: "clamp(90px, 13%, 140px)" }} className="shrink-0 hidden lg:block">Corretor</span>}
       {showTeam && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Time</span>}
-      {(showCorretor || showTeam) && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Responsável</span>}
+      {(showCorretor || showTeam) && <span style={{ width: "clamp(80px, 10%, 110px)" }} className="shrink-0 hidden lg:block">Responsável</span>}
       <span className="flex-1" />
       <span className="text-right shrink-0">Status / Ações</span>
       <span className="w-7 shrink-0" />
@@ -143,47 +143,49 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30",
-        isPastPending && "bg-red-50/50"
+        "group flex items-center gap-3 px-4 py-3.5 transition-all hover:bg-accent/30",
+        isPastPending && "bg-red-50/60 dark:bg-red-950/20"
       )}
     >
       {/* Hora */}
-      <span className="text-sm font-bold font-mono text-foreground shrink-0 w-12 text-center">
+      <span className="text-[13px] font-black font-mono text-foreground shrink-0 w-14 text-center tracking-tight">
         {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
       </span>
 
       {/* Status color line */}
-      <div className={cn("w-0.5 h-8 rounded-full shrink-0", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
+      <div className={cn("w-[3px] h-9 rounded-full shrink-0", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
 
       {/* Cliente */}
-      <div className="min-w-0 shrink-0" style={{ width: "clamp(90px, 15%, 160px)" }}>
-        <p className="text-sm font-semibold text-foreground truncate leading-tight">{v.nome_cliente}</p>
+      <div className="min-w-0 shrink-0" style={{ width: "clamp(100px, 16%, 180px)" }}>
+        <p className="text-[13px] font-bold text-foreground truncate leading-tight tracking-tight">{v.nome_cliente}</p>
         {v.telefone && (
-          <p className="text-[11px] text-muted-foreground truncate mt-0.5">📞 {v.telefone}</p>
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5 font-medium">
+            <span className="opacity-60">📞</span> {v.telefone}
+          </p>
         )}
       </div>
 
       {/* Produto (Empreendimento) */}
-      <div className="hidden md:block min-w-0 shrink-0" style={{ width: "clamp(80px, 13%, 140px)" }}>
-        <p className="text-xs text-muted-foreground truncate">
-          🏢 {v.empreendimento || "—"}
+      <div className="hidden md:block min-w-0 shrink-0" style={{ width: "clamp(90px, 14%, 150px)" }}>
+        <p className="text-xs font-semibold text-foreground/70 truncate">
+          🏢 {v.empreendimento || <span className="text-muted-foreground/50 font-normal">—</span>}
         </p>
         {isNegocio && negocioMeta.objetivo && (
-          <p className="text-[10px] text-amber-600 font-medium truncate">🎯 {negocioMeta.objetivo}</p>
+          <p className="text-[10px] text-amber-600 font-semibold truncate mt-0.5">🎯 {negocioMeta.objetivo}</p>
         )}
       </div>
 
       {/* Local da Visita */}
       <div className="hidden md:block min-w-0 shrink-0" style={{ width: "clamp(70px, 10%, 110px)" }}>
-        <p className="text-xs text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate font-medium">
           📍 {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "—"}
         </p>
       </div>
 
       {/* Corretor */}
       {showCorretor && (
-        <div className="hidden lg:block min-w-0 shrink-0" style={{ width: "clamp(80px, 12%, 130px)" }}>
-          <p className="text-xs font-medium text-foreground truncate">
+        <div className="hidden lg:block min-w-0 shrink-0" style={{ width: "clamp(90px, 13%, 140px)" }}>
+          <p className="text-xs font-semibold text-foreground truncate">
             👤 {v.corretor_nome?.split(" ").slice(0, 2).join(" ") || "—"}
           </p>
         </div>
@@ -193,7 +195,7 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
       {showTeam && (
         <div className="hidden lg:flex items-center min-w-0 shrink-0" style={{ width: "clamp(70px, 10%, 100px)" }}>
           {teamStyle ? (
-            <span className={cn("text-[10px] px-2 py-0.5 rounded-full border whitespace-nowrap font-semibold", teamStyle.className)}>
+            <span className={cn("text-[10px] px-2 py-0.5 rounded-full border whitespace-nowrap font-bold", teamStyle.className)}>
               {teamStyle.emoji} {teamStyle.label}
             </span>
           ) : (
@@ -204,9 +206,9 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
 
       {/* Responsável */}
       {(showCorretor || showTeam) && (
-        <div className="hidden lg:flex items-center min-w-0 shrink-0" style={{ width: "clamp(70px, 10%, 100px)" }}>
+        <div className="hidden lg:flex items-center min-w-0 shrink-0" style={{ width: "clamp(80px, 10%, 110px)" }}>
           {(v as any).responsavel_visita ? (
-            <span className="text-[10px] font-medium text-foreground whitespace-nowrap">
+            <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">
               {RESPONSAVEL_LABELS[(v as any).responsavel_visita]?.emoji || "👤"}{" "}
               {RESPONSAVEL_LABELS[(v as any).responsavel_visita]?.label || (v as any).responsavel_visita}
             </span>
@@ -221,16 +223,16 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
 
       {/* Status badge + inline action buttons */}
       <div className="shrink-0 flex items-center gap-1.5 justify-end">
-        <Badge className={cn("text-[10px] px-2.5 py-0.5 border font-semibold whitespace-nowrap", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
+        <Badge className={cn("text-[10px] px-2.5 py-0.5 border font-bold whitespace-nowrap shadow-sm", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
           {STATUS_EMOJIS[v.status]} {STATUS_LABELS[v.status]}
         </Badge>
 
         {(v.status === "marcada" || v.status === "confirmada") && (
           <>
-            <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-green-300 text-green-700 hover:bg-green-50" onClick={() => onUpdateStatus(v.id, "realizada")} title="Realizada">✅</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => onUpdateStatus(v.id, "reagendada")} title="Reagendada">🔄</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-red-300 text-red-700 hover:bg-red-50" onClick={() => onUpdateStatus(v.id, "no_show")} title="No Show">❌</Button>
-            <Button size="sm" variant="outline" className="h-6 text-[10px] px-1.5 border-gray-300 text-gray-600 hover:bg-gray-50" onClick={() => onUpdateStatus(v.id, "cancelada")} title="Cancelada">⚫</Button>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-green-300 text-green-700 hover:bg-green-50 rounded-lg font-bold shadow-sm" onClick={() => onUpdateStatus(v.id, "realizada")} title="Realizada">✅</Button>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-purple-300 text-purple-700 hover:bg-purple-50 rounded-lg font-bold shadow-sm" onClick={() => onUpdateStatus(v.id, "reagendada")} title="Reagendada">🔄</Button>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-red-300 text-red-700 hover:bg-red-50 rounded-lg font-bold shadow-sm" onClick={() => onUpdateStatus(v.id, "no_show")} title="No Show">❌</Button>
+            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg font-bold shadow-sm" onClick={() => onUpdateStatus(v.id, "cancelada")} title="Cancelada">⚫</Button>
           </>
         )}
       </div>

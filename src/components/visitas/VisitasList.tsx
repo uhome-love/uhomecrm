@@ -74,50 +74,50 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {groups.map(g => {
         const isOpen = !collapsed.has(g.dateStr);
         const taxa = g.total > 0 ? Math.round((g.realizadas / g.total) * 100) : 0;
 
         return (
-          <div key={g.dateStr} className="rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm">
+          <div key={g.dateStr} className="rounded-xl border border-border/50 overflow-hidden bg-card shadow-sm">
             {/* Date group header */}
             <button
               onClick={() => toggle(g.dateStr)}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+                "w-full flex items-center gap-3 px-5 py-3 text-left transition-all",
                 g.isToday
-                  ? "bg-[hsl(221,83%,53%)] text-white"
+                  ? "bg-gradient-to-r from-[hsl(221,83%,53%)] to-[hsl(221,83%,60%)] text-white"
                   : g.isPast
-                    ? "bg-muted/50 text-muted-foreground"
-                    : "bg-[hsl(222,47%,11%)] text-white"
+                    ? "bg-muted/40 text-muted-foreground"
+                    : "bg-gradient-to-r from-[hsl(222,47%,11%)] to-[hsl(222,47%,18%)] text-white"
               )}
             >
-              {isOpen ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+              {isOpen ? <ChevronDown className="h-4 w-4 shrink-0 opacity-70" /> : <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />}
               <CalendarDays className="h-4 w-4 shrink-0" />
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-bold">{g.dayOfWeek}</span>
-                <span className={cn("text-sm ml-2", g.isToday ? "text-white/80" : g.isPast ? "text-muted-foreground" : "text-white/70")}>
+                <span className="text-sm font-black tracking-tight">{g.dayOfWeek}</span>
+                <span className={cn("text-sm ml-2 font-medium", g.isToday ? "text-white/80" : g.isPast ? "text-muted-foreground" : "text-white/60")}>
                   {g.label}
                 </span>
               </div>
               {g.isToday && (
-                <Badge className="bg-white text-[hsl(221,83%,53%)] text-[10px] font-bold px-2 py-0.5 border-0 shrink-0">
+                <Badge className="bg-white/95 text-[hsl(221,83%,53%)] text-[10px] font-black px-2.5 py-0.5 border-0 shrink-0 shadow-sm">
                   HOJE
                 </Badge>
               )}
               <div className="flex items-center gap-2 shrink-0">
-                <span className={cn("text-xs font-medium", g.isToday ? "text-white/80" : g.isPast ? "text-muted-foreground" : "text-white/70")}>
+                <span className={cn("text-xs font-bold tabular-nums", g.isToday ? "text-white/90" : g.isPast ? "text-muted-foreground" : "text-white/80")}>
                   {g.total} visita{g.total !== 1 ? "s" : ""}
                 </span>
                 {g.realizadas > 0 && (
-                  <span className="text-xs text-green-400 font-semibold">
+                  <span className="text-xs text-green-400 font-bold tabular-nums">
                     {g.realizadas} ✅
                   </span>
                 )}
                 {g.isPast && g.total > 0 && (
                   <Badge className={cn(
-                    "text-[10px] px-1.5 py-0 border font-bold",
+                    "text-[10px] px-2 py-0.5 border font-black tabular-nums shadow-sm",
                     taxa >= 80 ? "bg-green-100 text-green-700 border-green-300"
                       : taxa >= 50 ? "bg-amber-100 text-amber-700 border-amber-300"
                         : "bg-red-100 text-red-700 border-red-300"
@@ -132,7 +132,7 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
             {isOpen && (
               <div>
                 <VisitaRowHeader showCorretor={showCorretor} showTeam={showTeam} />
-                <div className="divide-y divide-border/40">
+                <div className="divide-y divide-border/30">
                   {g.visitas.map(v => {
                     const isPastPending = g.isPast && (v.status === "marcada" || v.status === "confirmada");
                     return (
