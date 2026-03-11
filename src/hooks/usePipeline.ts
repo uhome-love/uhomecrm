@@ -548,6 +548,9 @@ export function usePipeline(pipelineTipo: string = "leads") {
     updateLead,
     deleteLead,
     getLeadsByStage,
-    reload: loadLeads,
+    reload: useCallback(async () => {
+      setError(null);
+      await Promise.all([loadStages(), loadSegmentos(), loadLeads()]);
+    }, [loadStages, loadSegmentos, loadLeads]),
   };
 }
