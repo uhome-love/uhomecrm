@@ -247,10 +247,13 @@ serve(async (req) => {
         }
       }
 
+      if (!imovel) {
+        const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+        imovel = catalogItems.find((item: any) => isCodigoMatch(item, requestedCodigo)) || null;
+        console.log("Jetimob catalog fallback for", requestedCodigo, "match:", !!imovel);
+      }
+
       if (imovel) {
-        console.log("Jetimob get_imovel matched:", requestedCodigo, "->", imovel.codigo || imovel.id_imovel || "(sem codigo)");
-        // Log ALL keys for debugging image issues
-        console.log("Jetimob imovel keys:", requestedCodigo, JSON.stringify(Object.keys(imovel)).substring(0, 500));
 
         const fotos = normalizeImages(imovel, requestedCodigo);
         imovel._fotos_normalized = fotos;
