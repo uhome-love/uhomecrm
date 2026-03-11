@@ -1,0 +1,1 @@
+UPDATE team_members SET equipe = 'Bruno' WHERE gerente_id = 'fb61ecda-5c4b-49d7-bda7-ccf9b589da07' AND (equipe IS NULL OR equipe = '');
