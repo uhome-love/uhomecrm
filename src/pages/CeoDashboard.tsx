@@ -885,7 +885,21 @@ export default function CeoDashboard() {
         </Card>
       </div>
 
-      {/* ─── SEÇÃO 8: MARKETING ─── */}
+      {/* ─── SEÇÃO 8: RELATÓRIO DO DIA ─── */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
+          <FileText className="h-4 w-4" /> Relatório do Dia
+        </h2>
+        <CeoDailyReport
+          teams={teams}
+          corretoresRank={corretoresRank}
+          kpis={kpis}
+          totalLeads={totalLeadsPeriodo}
+          presentesHoje={presentesHoje}
+        />
+      </div>
+
+      {/* ─── SEÇÃO 9: MARKETING ─── */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
           <BarChart3 className="h-4 w-4" /> Marketing e Origem
