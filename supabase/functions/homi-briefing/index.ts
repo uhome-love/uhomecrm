@@ -38,8 +38,8 @@ serve(async (req) => {
 
     const { dashboardData } = await req.json();
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const systemPrompt = `Você é o HOMI, co-CEO inteligente da Uhome Negócios Imobiliários. 
 Analise os dados do dia e gere um briefing executivo conciso e estratégico para o CEO. 
