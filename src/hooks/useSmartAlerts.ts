@@ -55,9 +55,9 @@ export function useSmartAlerts() {
             severity: "critical",
             title: "Checkpoint não preenchido",
             description: "O checkpoint de hoje ainda não foi preenchido. Preencha para manter o controle do time.",
-            action: { label: "Preencher agora", url: "/checkpoint" },
+            action: { label: "Preencher agora", url: "/central-do-gerente" },
           });
-          badgeCounts["/checkpoint"] = (badgeCounts["/checkpoint"] || 0) + 1;
+          badgeCounts["/central-do-gerente"] = (badgeCounts["/central-do-gerente"] || 0) + 1;
         }
       } catch (e) {
         console.error("Alert check checkpoint:", e);
