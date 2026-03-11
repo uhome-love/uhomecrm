@@ -263,6 +263,7 @@ Deno.serve(async (req) => {
           return 0;
         });
 
+        console.log(`Lead ${lead.nome}: ${eligible.length} eligible. Top 3: ${eligible.slice(0, 3).map(e => `${e.authUserId.slice(0,8)}(hoje=${e.leadsHoje},total=${e.totalAtivos})`).join(", ")}`);
         const chosen = eligible[0];
         const now = new Date();
         const expireAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 min
