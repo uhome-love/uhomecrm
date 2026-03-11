@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { Target, ClipboardList, CheckCircle2, BarChart2, AlertCircle, Loader2, Pencil, Save } from "lucide-react";
+import { Target, ClipboardList, CheckCircle2, BarChart2, AlertCircle, Loader2, Pencil, Save, Send } from "lucide-react";
 import { format, subDays, getDaysInMonth, getDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import CheckpointCards from "@/components/checkpoint/CheckpointCards";
 import AproveitadosTab from "@/components/checkpoint/AproveitadosTab";
+import LeadsDistribuidosPanel from "@/components/distribuicao/LeadsDistribuidosPanel";
 import RelatoriosTab from "@/components/checkpoint/RelatoriosTab";
 
 
@@ -73,7 +74,7 @@ export default function CheckpointGerente() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<"visao_geral" | "checkpoint" | "relatorios">("visao_geral");
+  const [activeTab, setActiveTab] = useState<"visao_geral" | "checkpoint" | "distribuicao" | "relatorios">("visao_geral");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [checkpointStatus, setCheckpointStatus] = useState<"aberto" | "publicado">("aberto");
   const [rows, setRows] = useState<CheckpointRow[]>([]);
@@ -369,6 +370,7 @@ export default function CheckpointGerente() {
   const tabs = [
     { key: "visao_geral" as const, icon: <Target size={15} />, label: "Visão Geral" },
     { key: "checkpoint" as const, icon: <ClipboardList size={15} />, label: "Checkpoint" },
+    { key: "distribuicao" as const, icon: <Send size={15} />, label: "Leads Distribuídos" },
     { key: "relatorios" as const, icon: <BarChart2 size={15} />, label: "Relatórios" },
   ];
 
@@ -489,6 +491,10 @@ export default function CheckpointGerente() {
           <CheckpointCards teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
         )}
 
+
+        {activeTab === "distribuicao" && (
+          <LeadsDistribuidosPanel teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
+        )}
 
         {activeTab === "relatorios" && (
           <RelatoriosTab teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
