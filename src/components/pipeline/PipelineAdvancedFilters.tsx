@@ -69,7 +69,11 @@ function loadSavedFilters(): SavedFilter[] {
 }
 
 function persistSavedFilters(filters: SavedFilter[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    // Ignore storage errors (privacy mode / blocked storage)
+  }
 }
 
 const PRESETS: SavedFilter[] = [
