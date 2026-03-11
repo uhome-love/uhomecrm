@@ -106,7 +106,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
     items.push({ title: "🔄 Lead distribuído", date: lead.distribuido_em, icon: ArrowRight, color: "bg-blue-100 text-blue-600" });
   }
 
-  items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  items.sort((a, b) => (parseDateTimeSafe(b.date)?.getTime() ?? 0) - (parseDateTimeSafe(a.date)?.getTime() ?? 0));
   return items;
 }
 
