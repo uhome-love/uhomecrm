@@ -102,12 +102,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
 
-  // Insights
-  const hoursInStage = differenceInHours(new Date(), new Date(lead.stage_changed_at));
-  const daysSinceCreation = differenceInDays(new Date(), new Date(lead.created_at));
+  const hoursInStage = differenceInHoursSafe(lead.stage_changed_at) ?? 0;
+  const daysSinceCreation = differenceInDaysSafe(lead.created_at) ?? 0;
   const lastActivity = leadData.atividades[0];
   const pendingTasks = leadData.tarefas.filter(t => t.status === "pendente").length;
-  const overdueTasks = leadData.tarefas.filter(t => t.status === "pendente" && t.vence_em && new Date(t.vence_em + "T12:00:00") < new Date()).length;
+  const overdueTasks = leadData.tarefas.filter(t => {
+    const dueDate = parseDateBRTSafe(t.vence_em);
+    return t.status === "pendente" && !!dueDate && dueDate < new Date();
+  }).length;
 
   // Attempt counter (Melhoria 9)
   const callAttempts = useMemo(() => {
