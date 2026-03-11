@@ -37,6 +37,7 @@ import {
   ListTodo,
   PhoneCall,
   PackageCheck,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
