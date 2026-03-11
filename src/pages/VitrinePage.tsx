@@ -259,7 +259,7 @@ export default function VitrinePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* ─── Hero Section ─── */}
-      <header className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 overflow-hidden">
+      <header className={`relative overflow-hidden ${isMelnickDay ? "bg-gradient-to-br from-[#0a1628] via-[#0d2137] to-[#1a3a5c]" : "bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900"}`}>
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
