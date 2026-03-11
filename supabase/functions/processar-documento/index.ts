@@ -65,7 +65,7 @@ serve(async (req) => {
     if (!documentId) throw new Error("documentId is required");
 
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) throw new Error("OPENAI_API_KEY not configured");
+    if (!openaiKey) throw new Error("OPENAI_API_KEY necessária para gerar embeddings de documentos.");
 
     const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
