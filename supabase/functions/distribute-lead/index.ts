@@ -516,9 +516,9 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
         user_id: userId,
         tipo: "lead",
         categoria: "lead_aceito",
-        titulo: "✅ Lead aceito!",
-        mensagem: `${leadData.nome || "Lead"} - ${leadData.empreendimento || ""}. Faça o primeiro contato agora!`,
-        dados: { pipeline_lead_id },
+        titulo: `✅ Lead aceito! ${leadData.nome || ""}`.trim(),
+        mensagem: `${leadData.nome || "Lead"}${leadData.empreendimento ? ` — ${leadData.empreendimento}` : ""}. Faça o primeiro contato agora!`,
+        dados: { pipeline_lead_id, lead_nome: leadData.nome, empreendimento: leadData.empreendimento },
         agrupamento_key: `lead_aceito_${pipeline_lead_id}`,
       });
       if (notifRes2.error) console.warn("notification insert:", notifRes2.error.message);
