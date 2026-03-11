@@ -767,6 +767,36 @@ export default function AgendaVisitas() {
         <TabsContent value="performance" className="mt-3">
           <VisitasPerformance visitas={visitas} showCorretor={isAdmin || isGestor} />
         </TabsContent>
+
+        {/* ─── ALERTAS TAB ─── */}
+        <TabsContent value="alertas" className="mt-3 space-y-4">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <h3 className="text-sm font-bold text-destructive">
+                  {pendingCount} visita{pendingCount > 1 ? "s" : ""} sem atualização de status
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <Button variant="outline" size="sm" className="text-xs gap-1 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={openCobranca}>
+                    <MessageCircle className="h-3.5 w-3.5" /> Cobrar todos
+                  </Button>
+                )}
+              </div>
+            </div>
+            <VisitasList
+              visitas={pendingVisitas}
+              onUpdateStatus={handleUpdateStatus}
+              onEdit={handleEdit}
+              onDelete={deleteVisita}
+              showCorretor={isAdmin || isGestor}
+              showTeam={isAdmin}
+              mode="past"
+            />
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* ─── TYPE SELECTOR ─── */}
