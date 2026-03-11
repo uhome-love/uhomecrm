@@ -118,7 +118,7 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
     setNegociosData(neg);
 
     setLoading(false);
-  }, [teamUserIds, user, today]);
+  }, [teamUserIds, user, dateStr]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
