@@ -190,7 +190,7 @@ interface PipelineCardProps {
 }
 
 const PipelineCard = memo(function PipelineCard({
-  lead, stage, stages, segmentos, corretorNome, gerenteNome, parceiroNome,
+  lead, stage, stages, segmentos, corretorNome, corretorAvatar, gerenteNome, parceiroNome,
   onDragStart, onClick, onMoveLead, onTransferred, stageIndexMap, proximaTarefa,
 }: PipelineCardProps) {
   const { user } = useAuth();
