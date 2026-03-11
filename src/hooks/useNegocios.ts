@@ -71,12 +71,38 @@ export function useNegocios() {
       .order("updated_at", { ascending: false })
       .limit(500);
 
-    // BUG 1 FIX: Corretor sees only their own negocios
     if (!isAdmin && !isGestor && profileId) {
+      // Corretor sees only their own negocios
       query = query.eq("corretor_id", profileId);
-    } else if (isGestor && profileId) {
-      // Gestor sees negocios where they are gerente
-      query = query.eq("gerente_id", profileId);
+    } else if (isGestor && !isAdmin) {
+      // Gestor: get team member profile IDs, then filter by corretor_id
+      // This avoids relying on gerente_id which may be incorrect on some negocios
+      const { data: teamMembers } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("gerente_id", user.id);
+
+      if (teamMembers && teamMembers.length > 0) {
+        // Map team_members.user_id to profiles.id (negocios uses profiles.id as corretor_id)
+        const tmUserIds = teamMembers.map(tm => tm.user_id);
+        const { data: teamProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .in("user_id", tmUserIds);
+
+        const teamProfileIds = (teamProfiles || []).map(p => p.id);
+        // Include gerente's own profile_id too
+        if (profileId) teamProfileIds.push(profileId);
+
+        if (teamProfileIds.length > 0) {
+          query = query.in("corretor_id", teamProfileIds);
+        } else if (profileId) {
+          query = query.eq("gerente_id", profileId);
+        }
+      } else if (profileId) {
+        // Fallback: no team members found, use gerente_id
+        query = query.eq("gerente_id", profileId);
+      }
     }
     // Admin/CEO sees all
 
