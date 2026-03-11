@@ -345,7 +345,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                   <ArrowRight className="h-3.5 w-3.5" /> Mover para etapa
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato" && !("hidden" in f && f.hidden)).map(f => (
+                  {NEGOCIOS_FASES.filter(f => f.key !== negocio.fase && f.key !== "distrato" && (!("hidden" in f && f.hidden) || (showCorretor && f.key === "vendido"))).map(f => (
                     <DropdownMenuItem key={f.key} onClick={() => onMoveFase(negocio.id, f.key)} className="gap-2 cursor-pointer text-xs">
                       <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: f.cor }} />
                       {f.icon} {f.label}
@@ -831,7 +831,7 @@ export default function MeusNegocios() {
           className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-none pb-2 pr-4"
           style={{ scrollSnapType: "x proximity" }}
         >
-          {NEGOCIOS_FASES.filter(f => !("hidden" in f && f.hidden)).map((fase) => {
+          {NEGOCIOS_FASES.filter(f => !("hidden" in f && f.hidden) || ((isAdmin || isGestor) && f.key === "vendido")).map((fase) => {
             const faseNegocios = negociosByFase.get(fase.key) || [];
             const isDragOver = dragOverFase === fase.key;
             const totalFaseVGV = faseNegocios.reduce((sum, n) => sum + (n.vgv_estimado || 0), 0);
