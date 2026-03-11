@@ -588,10 +588,10 @@ export default function MelnickDay() {
             <Button size="sm" className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white border-0" onClick={() => window.open("https://www.melnick.com.br/melnickday/", "_blank")}>
               <ExternalLink className="h-3.5 w-3.5" /> Site Oficial
             </Button>
-            <Button size="sm" variant="outline" className="gap-1.5 border-white/20 text-white hover:bg-white/10" onClick={() => navigate("/oferta-ativa")}>
+            <Button size="sm" className="gap-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/30 backdrop-blur-sm" onClick={() => navigate("/oferta-ativa")}>
               <Zap className="h-3.5 w-3.5" /> Iniciar Oferta Ativa
             </Button>
-            <Button size="sm" variant="outline" className="gap-1.5 border-white/20 text-white hover:bg-white/10" onClick={() => navigate("/pipeline")}>
+            <Button size="sm" className="gap-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/30 backdrop-blur-sm" onClick={() => navigate("/pipeline")}>
               <Target className="h-3.5 w-3.5" /> Meu Pipeline
             </Button>
           </div>
