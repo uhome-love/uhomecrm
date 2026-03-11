@@ -311,9 +311,9 @@ export function AppSidebar() {
           {
             label: "Operação",
             items: [
-              { title: "Pipeline de Leads", url: "/pipeline", icon: Kanban },
+              { title: "Pipeline de Leads", url: "/pipeline-leads", icon: Kanban },
               { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
-              { title: "Pipeline Negócios", url: "/meus-negocios", icon: Kanban },
+              { title: "Pipeline Negócios", url: "/pipeline-negocios", icon: Kanban },
               { title: "Pós-Vendas", url: "/pos-vendas", icon: PackageCheck },
               { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
               { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
