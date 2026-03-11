@@ -88,11 +88,7 @@ function spawnConfetti() {
   setTimeout(() => container.remove(), 4000);
 }
 
-const formatVGV = (value: number) => {
-  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}mil`;
-  return `R$ ${value.toLocaleString("pt-BR")}`;
-};
+const formatVGV = formatBRLCompact;
 
 // Virtualized card list — only renders visible cards + small buffer
 const INITIAL_RENDER = 15;

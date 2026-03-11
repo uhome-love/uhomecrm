@@ -614,9 +614,9 @@ export default function HomeDashboard() {
               <SectionHeader icon={Megaphone} title="Marketing" action={isAdmin ? { label: "Ver detalhes", onClick: () => navigate("/marketing") } : undefined} />
               <div className="p-4 space-y-3">
                 <div className="grid grid-cols-3 gap-2">
-                  <MiniStat label="Investimento" value={`R$ ${(mktTotals.investimento / 1000).toFixed(0)}k`} />
+                  <MiniStat label="Investimento" value={formatBRLCompact(mktTotals.investimento)} />
                   <MiniStat label="Leads" value={`${mktTotals.leads}`} />
-                  <MiniStat label="CPL" value={mktTotals.leads > 0 ? `R$ ${(mktTotals.investimento / mktTotals.leads).toFixed(0)}` : "—"} />
+                  <MiniStat label="CPL" value={mktTotals.leads > 0 ? formatBRLCompact(mktTotals.investimento / mktTotals.leads) : "—"} />
                 </div>
                 <div className="divide-y divide-border/50">
                   {channelStats.slice(0, 4).map(ch => (

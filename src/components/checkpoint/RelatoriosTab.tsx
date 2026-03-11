@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 
 const pct = (a: number, b: number) => b === 0 ? 0 : Math.round((a / b) * 100);
 const fmt = (n: number) => n.toLocaleString("pt-BR");
-const fmtR = (n: number) => `R$ ${n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + "M" : n >= 1_000 ? (n / 1_000).toFixed(0) + "k" : n}`;
+const fmtR = formatBRLCompact;
 
 interface Props {
   teamUserIds: string[];
