@@ -167,6 +167,29 @@ async function findImoveisByCodigos(apiKey: string, codigos: string[]): Promise<
 
   const catalogItems = await fetchJetimobCatalog(apiKey);
 
+  // Phase 1: Try UH-code mapping — find item by empreendimento name match in catalog
+  for (const codigo of Array.from(pending)) {
+    const empName = resolveUhCode(codigo);
+    if (empName) {
+      const empLower = normalize(empName);
+      const match = catalogItems.find((item: any) => {
+        const itemEmp = normalize(item.empreendimento_nome || item.empreendimento || item.condominio || "");
+        const itemRef = normalize(item.referencia || item.codigo || "");
+        const itemTitulo = normalize(item.titulo_anuncio || item.titulo || "");
+        return itemEmp.includes(empLower) || empLower.includes(itemEmp) ||
+               itemRef.includes(empLower) || itemTitulo.includes(empLower);
+      });
+      if (match) {
+        console.log(`UH mapping: ${codigo} → "${empName}" → found item`, match.codigo || match.referencia || match.id);
+        found.set(codigo, match);
+        pending.delete(codigo);
+        continue;
+      }
+      console.warn(`UH mapping: ${codigo} → "${empName}" but no catalog match found`);
+    }
+  }
+
+  // Phase 2: Direct código match in catalog
   for (const item of catalogItems) {
     for (const codigo of Array.from(pending)) {
       if (isCodigoMatch(item, codigo)) {
@@ -174,10 +197,10 @@ async function findImoveisByCodigos(apiKey: string, codigos: string[]): Promise<
         pending.delete(codigo);
       }
     }
-
     if (pending.size === 0) break;
   }
 
+  // Phase 3: Fallback API search for remaining
   if (pending.size > 0) {
     for (const codigo of Array.from(pending)) {
       const searchTerms = [codigo, extractCodigoNumber(codigo)]
@@ -215,6 +238,7 @@ async function findImoveisByCodigos(apiKey: string, codigos: string[]): Promise<
     requested: wanted.length,
     found: found.size,
     missing: pending.size,
+    missingCodes: Array.from(pending),
   });
 
   const out: Record<string, any | null> = {};
