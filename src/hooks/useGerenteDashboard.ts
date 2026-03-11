@@ -391,7 +391,7 @@ export function useGerenteDashboard(period: Period) {
         })
         .slice(0, 5) as NegocioQuente[];
     },
-    enabled: !!user,
+    enabled: !!user && !!profileId,
     staleTime: 60_000,
   });
 
