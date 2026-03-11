@@ -240,7 +240,7 @@ export function AppSidebar() {
             label: "Visão Geral",
             items: [
               { title: "Painel da Equipe", url: "/meu-time", icon: Users },
-              { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+{ title: "Central do Gerente", url: "/checkpoint", icon: ClipboardCheck },
             ],
           },
           {
@@ -305,7 +305,7 @@ export function AppSidebar() {
             label: "Visão Geral",
             items: [
               { title: "Painel do Time", url: "/meu-time", icon: Users },
-              { title: "Checkpoint", url: "/checkpoint", icon: ClipboardCheck },
+              { title: "Central do Gerente", url: "/checkpoint", icon: ClipboardCheck },
             ],
           },
           {

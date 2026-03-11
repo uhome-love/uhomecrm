@@ -4,14 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { Target, ClipboardList, CheckCircle2, BarChart2, AlertCircle, Loader2, Briefcase, Pencil, Save } from "lucide-react";
+import { Target, ClipboardList, CheckCircle2, BarChart2, AlertCircle, Loader2, Pencil, Save } from "lucide-react";
 import { format, subDays, getDaysInMonth, getDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import CheckpointTableTab from "@/components/checkpoint/CheckpointTableTab";
 import AproveitadosTab from "@/components/checkpoint/AproveitadosTab";
 import RelatoriosTab from "@/components/checkpoint/RelatoriosTab";
 
-import CheckpointNegociosTab from "@/components/checkpoint/CheckpointNegociosTab";
+
 import CheckpointVisaoGeralTab from "@/components/checkpoint/CheckpointVisaoGeralTab";
 import CeoCheckpointViewer from "@/components/ceo/CeoCheckpointViewer";
 
@@ -73,7 +73,7 @@ export default function CheckpointGerente() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<"visao_geral" | "checkpoint" | "negocios" | "aproveitados" | "relatorios">("visao_geral");
+  const [activeTab, setActiveTab] = useState<"visao_geral" | "checkpoint" | "aproveitados" | "relatorios">("visao_geral");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [checkpointStatus, setCheckpointStatus] = useState<"aberto" | "publicado">("aberto");
   const [rows, setRows] = useState<CheckpointRow[]>([]);
@@ -354,7 +354,6 @@ export default function CheckpointGerente() {
   const tabs = [
     { key: "visao_geral" as const, icon: <Target size={15} />, label: "Visão Geral" },
     { key: "checkpoint" as const, icon: <ClipboardList size={15} />, label: "Checkpoint" },
-    { key: "negocios" as const, icon: <Briefcase size={15} />, label: "Negócios" },
     { key: "aproveitados" as const, icon: <CheckCircle2 size={15} />, label: "Aproveitados" },
     { key: "relatorios" as const, icon: <BarChart2 size={15} />, label: "Relatórios" },
   ];
@@ -507,9 +506,6 @@ export default function CheckpointGerente() {
           />
         )}
 
-        {activeTab === "negocios" && (
-          <CheckpointNegociosTab teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
-        )}
 
         {activeTab === "aproveitados" && (
           <AproveitadosTab teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
