@@ -279,7 +279,7 @@ export function useGerenteDashboard(period: Period) {
       const { data: tentHoje } = await supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`);
       const comLigacao = new Set((tentHoje || []).map(t => t.corretor_id));
       const semLigacao = teamUserIds.filter(id => !comLigacao.has(id)).length;
-      if (semLigacao > 0) alerts.push({ id: "sem_ligacao", type: "warning", icon: "🚫", label: "corretores sem ligação hoje", count: semLigacao, route: "/checkpoint" });
+      if (semLigacao > 0) alerts.push({ id: "sem_ligacao", type: "warning", icon: "🚫", label: "corretores sem ligação hoje", count: semLigacao, route: "/central-do-gerente" });
 
       const { count: visitasPendentes } = await supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today).eq("status", "marcada");
       if ((visitasPendentes || 0) > 0) alerts.push({ id: "visitas_pendentes", type: "info", icon: "📅", label: "visitas pendentes de status", count: visitasPendentes || 0, route: "/agenda-visitas" });
