@@ -322,11 +322,11 @@ serve(async (req) => {
         );
       }
 
-      const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+      const foundMap = await findImoveisByCodigos(JETIMOB_API_KEY, codigos);
       const imoveis: Record<string, any> = {};
 
       for (const requestedCodigo of codigos) {
-        const matched = catalogItems.find((item: any) => isCodigoMatch(item, requestedCodigo)) || null;
+        const matched = foundMap[requestedCodigo] || null;
         imoveis[requestedCodigo] = matched
           ? { ...matched, _fotos_normalized: normalizeImages(matched, requestedCodigo) }
           : null;
