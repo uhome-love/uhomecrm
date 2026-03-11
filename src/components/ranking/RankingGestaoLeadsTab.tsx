@@ -175,8 +175,8 @@ export default function RankingGestaoLeadsTab({ period }: { period: "hoje" | "se
                           {isMe && <span className="text-[10px] text-primary font-medium">← você</span>}
                         </div>
                       </td>
-                      <td className="py-2.5 px-3 text-center">{r.tentativas}</td>
-                      <td className="py-2.5 px-3 text-center text-emerald-600 font-semibold">{r.leads_responderam}</td>
+                      <td className="py-2.5 px-3 text-center">{r.contatos}</td>
+                      <td className="py-2.5 px-3 text-center text-emerald-600 font-semibold">{r.qualificados}</td>
                       <td className="py-2.5 px-3 text-center">{r.visitas_marcadas}</td>
                       <td className="py-2.5 px-3 text-center text-purple-600 font-semibold">{r.propostas}</td>
                       <td className="py-2.5 px-3 text-center font-bold text-primary">{r.pontos_total}</td>
