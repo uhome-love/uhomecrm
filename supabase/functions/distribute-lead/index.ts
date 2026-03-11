@@ -287,6 +287,7 @@ Deno.serve(async (req) => {
 
         // Update counters for next iteration
         leadsCount.set(chosen.authUserId, (leadsCount.get(chosen.authUserId) || 0) + 1);
+        totalAtivosCount.set(chosen.authUserId, (totalAtivosCount.get(chosen.authUserId) || 0) + 1);
         lastReceived.set(chosen.authUserId, now.toISOString());
 
         // Log distribution
