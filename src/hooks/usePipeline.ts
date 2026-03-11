@@ -194,12 +194,20 @@ export function usePipeline(pipelineTipo: string = "leads") {
           .in("user_id", allUserIds);
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("user_id, nome")
+          .select("user_id, nome, avatar_url, avatar_gamificado_url")
           .in("user_id", allUserIds);
         const map: Record<string, string> = {};
+        const avatarMap: Record<string, string> = {};
         members?.forEach(m => { if (m.user_id) map[m.user_id] = m.nome; });
-        profiles?.forEach(p => { if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome; });
+        profiles?.forEach(p => {
+          if (p.user_id && !map[p.user_id]) map[p.user_id] = p.nome;
+          if (p.user_id) {
+            const url = (p as any).avatar_gamificado_url || p.avatar_url;
+            if (url) avatarMap[p.user_id] = url;
+          }
+        });
         setCorretorNomes(map);
+        setCorretorAvatars(avatarMap);
       }
     }
   }, [user, isGestor, isAdmin]);
