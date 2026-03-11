@@ -374,8 +374,8 @@ export default function HomeDashboard() {
     { icon: "📅", label: "Visitas Marcadas", value: oaPeriodStats.visitas_marcadas, color: "text-amber-600", bg: "bg-amber-50" },
     { icon: "✅", label: "Visitas Realizadas", value: pdnStats.total_visitas + pdnStats.total_gerados + pdnStats.total_assinados, color: "text-green-600", bg: "bg-green-50" },
     { icon: "📋", label: "Propostas PDN", value: pdnStats.total_gerados + pdnStats.total_assinados, color: "text-purple-600", bg: "bg-purple-50" },
-    { icon: "💰", label: "VGV Gerado", value: `R$ ${(pdnStats.vgv_gerado / 1000).toFixed(0)}k`, color: "text-emerald-600", bg: "bg-emerald-50", isVgv: true },
-    { icon: "🏆", label: "VGV Assinado", value: `R$ ${(pdnStats.vgv_assinado / 1000).toFixed(0)}k`, color: "text-blue-700", bg: "bg-blue-50", isVgv: true, highlight: true },
+    { icon: "💰", label: "VGV Gerado", value: formatBRLCompact(pdnStats.vgv_gerado), color: "text-emerald-600", bg: "bg-emerald-50", isVgv: true },
+    { icon: "🏆", label: "VGV Assinado", value: formatBRLCompact(pdnStats.vgv_assinado), color: "text-blue-700", bg: "bg-blue-50", isVgv: true, highlight: true },
     { icon: "🎯", label: "Atingimento", value: `${atingimentoPct}%`, color: atingimentoColor, bg: atingimentoPct >= 50 ? "bg-green-50" : "bg-red-50", highlight: true },
   ];
 
