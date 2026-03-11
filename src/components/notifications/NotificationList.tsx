@@ -100,13 +100,13 @@ function getNotificationRoute(n: Notification): string | null {
 
   // Pipeline visita_realizada → pipeline lead
   if (tipo === "pipeline" && categoria === "visita_realizada") {
-    if (d.lead_id) return `/pipeline?lead=${d.lead_id}`;
-    return "/pipeline";
+    if (d.lead_id) return `/pipeline-leads?lead=${d.lead_id}`;
+    return "/pipeline-leads";
   }
 
-  // Propostas / vendas / negócios → meus-negocios
+  // Propostas / vendas / negócios
   if (["propostas", "proposta_assinada", "vendas", "negocio_fechado"].includes(tipo)) {
-    return "/meus-negocios";
+    return "/pipeline-negocios";
   }
 
   // Performance / conquistas
