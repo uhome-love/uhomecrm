@@ -886,11 +886,15 @@ function EmpreendimentoCard({
   override: EmpreendimentoOverride | null;
   onEditOverride: () => void;
 }) {
+  const [vitrineOpen, setVitrineOpen] = useState(false);
+
   // Merge: override takes priority over Jetimob data
   const hasOverride = !!override;
   const images = override?.fotos?.length ? override.fotos : (imovelData ? getImages(imovelData) : []);
-  const price = override?.valor_venda ?? (imovelData ? getPrice(imovelData) : 0);
+  const priceMin = override?.valor_min ?? override?.valor_venda ?? (imovelData ? getPrice(imovelData) : 0);
+  const priceMax = override?.valor_max ?? 0;
   const bairro = override?.bairro || imovelData?.bairro || imovelData?.endereco_bairro || "";
+  const tipologias = override?.tipologias?.length ? override.tipologias : [];
   const area = override?.area_privativa ?? (imovelData?.area_privativa || imovelData?.area_total || 0);
   const dorms = override?.dormitorios ?? (imovelData?.dormitorios || 0);
   const suites = override?.suites ?? (imovelData?.suites || 0);
@@ -957,8 +961,26 @@ function EmpreendimentoCard({
             </Badge>
           </div>
 
-          {/* Specs */}
-          {hasData && (
+          {/* Tipologias */}
+          {tipologias.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Plantas disponíveis</p>
+              <div className="flex flex-wrap gap-1.5">
+                {tipologias.map((t, i) => (
+                  <Badge key={i} variant="outline" className="text-[10px] gap-1 font-semibold">
+                    <BedDouble className="h-3 w-3" />
+                    {t.dorms} dorm{t.dorms > 1 ? "s" : ""}
+                    {(t.area_min || t.area_max) && (
+                      <span className="text-muted-foreground font-normal">
+                        · {t.area_min && t.area_max ? `${t.area_min}–${t.area_max}m²` : t.area_min ? `${t.area_min}m²` : `${t.area_max}m²`}
+                      </span>
+                    )}
+                    {t.suites ? <span className="text-muted-foreground font-normal">· {t.suites} suíte{t.suites > 1 ? "s" : ""}</span> : null}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ) : hasData && (
             <div className="flex flex-wrap gap-2">
               {area > 0 && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -981,12 +1003,30 @@ function EmpreendimentoCard({
             </div>
           )}
 
-          {/* Price */}
+          {/* Vagas (when tipologias exist) */}
+          {tipologias.length > 0 && vagas > 0 && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              🚗 <span className="font-semibold text-foreground">{vagas} vaga{vagas > 1 ? "s" : ""}</span>
+            </div>
+          )}
+
+          {/* Price Range */}
           <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl px-3 py-2">
-            <p className="text-[10px] text-muted-foreground font-medium">A partir de</p>
-            <p className="text-lg font-black text-primary tracking-tight">
-              {loading && !hasOverride ? "Carregando..." : formatPrice(price)}
-            </p>
+            {priceMax > 0 && priceMin > 0 ? (
+              <>
+                <p className="text-[10px] text-muted-foreground font-medium">Faixa de valores</p>
+                <p className="text-lg font-black text-primary tracking-tight">
+                  {loading && !hasOverride ? "Carregando..." : `${formatBRLCompact(priceMin)} — ${formatBRLCompact(priceMax)}`}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[10px] text-muted-foreground font-medium">A partir de</p>
+                <p className="text-lg font-black text-primary tracking-tight">
+                  {loading && !hasOverride ? "Carregando..." : formatPrice(priceMin)}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Status */}
@@ -1002,6 +1042,17 @@ function EmpreendimentoCard({
               )}
             </div>
           )}
+
+          {/* Vitrine Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setVitrineOpen(true)}
+            className="w-full gap-2 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Criar Vitrine & Enviar WhatsApp
+          </Button>
 
           {/* Separator */}
           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
@@ -1023,6 +1074,15 @@ function EmpreendimentoCard({
           </div>
         </CardContent>
       </Card>
+
+      {/* Vitrine Dialog */}
+      <CriarVitrineDialog
+        open={vitrineOpen}
+        onOpenChange={setVitrineOpen}
+        config={config}
+        override={override}
+        imovelData={imovelData}
+      />
     </motion.div>
   );
 }
