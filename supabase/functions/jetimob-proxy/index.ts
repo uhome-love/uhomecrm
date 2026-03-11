@@ -93,8 +93,39 @@ serve(async (req) => {
         );
       }
 
-      const data = await response.json();
-      return new Response(JSON.stringify(data), {
+      const raw = await response.json();
+      console.log("Jetimob get_imovel raw keys:", JSON.stringify(Object.keys(raw)), "codigo:", codigo);
+
+      // Normalize: extract the actual property object from various response formats
+      let imovel: any = null;
+      if (Array.isArray(raw?.data) && raw.data.length > 0) {
+        imovel = raw.data[0];
+      } else if (raw?.imovel) {
+        imovel = raw.imovel;
+      } else if (raw?.codigo) {
+        imovel = raw;
+      }
+
+      if (imovel) {
+        // Normalize images into a flat array of URLs
+        const fotos: string[] = [];
+        if (imovel.foto_principal) fotos.push(imovel.foto_principal);
+        if (imovel.foto_destaque) fotos.push(imovel.foto_destaque);
+        // Handle various image array formats
+        const imgArrays = [imovel.imagens, imovel.fotos, imovel.galeria, imovel.photos, imovel.images];
+        for (const arr of imgArrays) {
+          if (Array.isArray(arr)) {
+            for (const item of arr) {
+              const url = typeof item === "string" ? item : (item?.url || item?.arquivo || item?.link || item?.src || "");
+              if (url && !fotos.includes(url)) fotos.push(url);
+            }
+          }
+        }
+        imovel._fotos_normalized = fotos;
+        console.log("Jetimob imovel normalized:", codigo, "fotos:", fotos.length, "keys:", JSON.stringify(Object.keys(imovel)).substring(0, 200));
+      }
+
+      return new Response(JSON.stringify({ imovel, not_found: !imovel }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

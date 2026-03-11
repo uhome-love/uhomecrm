@@ -142,13 +142,23 @@ function formatPrice(v: number): string {
 }
 
 function getImages(item: JetimobImovel): string[] {
+  // Use normalized photos from edge function if available
+  if ((item as any)._fotos_normalized?.length) {
+    return (item as any)._fotos_normalized.slice(0, 8);
+  }
   const imgs: string[] = [];
   if (item.foto_principal) imgs.push(item.foto_principal);
   if (item.imagens) {
-    for (const i of item.imagens) if (i.url && !imgs.includes(i.url)) imgs.push(i.url);
+    for (const i of item.imagens) {
+      const url = typeof i === "string" ? i : (i.url || "");
+      if (url && !imgs.includes(url)) imgs.push(url);
+    }
   }
   if (item.fotos) {
-    for (const f of item.fotos) if (f.url && !imgs.includes(f.url)) imgs.push(f.url);
+    for (const f of item.fotos) {
+      const url = typeof f === "string" ? f : (f.url || "");
+      if (url && !imgs.includes(url)) imgs.push(url);
+    }
   }
   return imgs.slice(0, 8);
 }
@@ -564,12 +574,17 @@ export default function AnunciosNoAr() {
             const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
               body: { action: "get_imovel", codigo },
             });
-            if (!error && data) {
-              // Jetimob API may return { data: [...] } or the object directly
-              const imovel = Array.isArray(data.data) ? data.data[0] : data.imovel || data;
-              if (imovel && typeof imovel === "object") {
-                results[codigo] = imovel;
-              }
+            if (error) {
+              console.warn(`Jetimob error for ${codigo}:`, error);
+              return;
+            }
+            // Edge function now returns { imovel, not_found }
+            const imovel = data?.imovel;
+            if (imovel && typeof imovel === "object" && !data?.not_found) {
+              results[codigo] = imovel;
+              console.log(`✅ Loaded ${codigo}:`, Object.keys(imovel).join(", "));
+            } else {
+              console.warn(`⚠️ Imóvel ${codigo} not found`);
             }
           } catch (e) {
             console.warn(`Failed to fetch ${codigo}:`, e);
