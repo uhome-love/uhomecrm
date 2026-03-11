@@ -228,15 +228,24 @@ export default function CheckpointGerente() {
     const mesInicio = `${mesAtual}-01`;
     const mesFim = format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), "yyyy-MM-dd");
 
+    // Resolve profile IDs for team members (negocios.corretor_id = profiles.id)
+    const { data: teamProfiles } = await supabase
+      .from("profiles")
+      .select("id, user_id")
+      .in("user_id", teamUserIds);
+    const teamProfileIds = (teamProfiles || []).map(p => p.id).filter(Boolean);
+
     const [{ count: ligR }, { count: vmR }, { count: vrR }, { data: negocios }, { data: metasSalvas }] = await Promise.all([
       supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("created_at", `${mesInicio}T00:00:00`).lte("created_at", `${mesFim}T23:59:59`),
       supabase.from("visitas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim),
       supabase.from("visitas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim).eq("status", "realizada"),
-      supabase.from("negocios").select("vgv_estimado, vgv_final, fase, data_assinatura").in("corretor_id", teamUserIds).in("fase", ["assinado", "vendido"]).gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim),
+      teamProfileIds.length > 0
+        ? supabase.from("negocios").select("vgv_estimado, vgv_final, fase, data_assinatura").in("corretor_id", teamProfileIds).in("fase", ["assinado", "vendido"]).gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim)
+        : Promise.resolve({ data: [] }),
       supabase.from("ceo_metas_mensais").select("*").eq("gerente_id", user.id).eq("mes", mesAtual).maybeSingle(),
     ]);
 
-    const vgvReal = (negocios || []).reduce((s, n) => s + Number(n.vgv_final || n.vgv_estimado || 0), 0);
+    const vgvReal = (negocios || []).reduce((s: number, n: any) => s + Number(n.vgv_final || n.vgv_estimado || 0), 0);
 
     setMetasMes({
       ligacoes_meta: (metasSalvas as any)?.meta_ligacoes || 680,
