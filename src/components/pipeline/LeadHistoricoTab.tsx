@@ -7,7 +7,7 @@ import {
   Plus, Pin, PinOff, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDateSafe, parseDateTimeSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";

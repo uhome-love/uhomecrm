@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Bot, MessageSquare, ShieldQuestion, Send, FileText, Sparkles, Phone, CalendarCheck, RefreshCw, Clock, Target, Flame, Snowflake, Sun, ThermometerSun, Lightbulb, ClipboardList } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { formatDistanceToNow, differenceInDays, differenceInHours } from "date-fns";
+import { formatDistanceToNowSafe, differenceInDaysSafe, differenceInHoursSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 
 interface Props {

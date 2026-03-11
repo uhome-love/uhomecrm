@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Clock, User, CheckCircle2, XCircle, AlertCircle, Eye } from "lucide-react";
-import { format } from "date-fns";
+import { formatDateSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 
 interface Visita {
