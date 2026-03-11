@@ -313,6 +313,7 @@ export function AppSidebar() {
           {
             label: "Gestão de Leads",
             items: [
+              { title: "Anúncios no Ar", url: "/anuncios", icon: Radio },
               { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
               { title: "Pipeline de Leads", url: "/pipeline-leads", icon: Kanban },
               { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
