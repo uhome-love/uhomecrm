@@ -238,12 +238,15 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             )
           )}
 
-          {/* Row 4: VGV with quick-fill */}
+          {/* Row 4: VGV with quick-fill — show half if partnership */}
           <div className="flex items-center gap-2">
             {negocio.vgv_estimado ? (
               <span className="text-[14px] font-extrabold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
                 <TrendingUp className="h-3.5 w-3.5" />
-                {formatVGV(negocio.vgv_estimado)}
+                {parceriaInfo?.isParceria
+                  ? `${formatVGV(negocio.vgv_estimado / 2)} (50%)`
+                  : formatVGV(negocio.vgv_estimado)
+                }
               </span>
             ) : (
               <button
@@ -256,10 +259,10 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           </div>
 
           {/* Partnership badge */}
-          {parceriaLabel && (
+          {parceriaInfo && (
             <div className="flex items-center gap-1">
               <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                <Handshake className="h-3 w-3" /> {parceriaLabel}
+                <Handshake className="h-3 w-3" /> 🤝 {parceriaInfo.label}
               </span>
             </div>
           )}
