@@ -474,8 +474,6 @@ function EditableFieldMappingTable({ categoria, title }: { categoria: string; ti
 }
 
 export default function IntegracaoJetimob() {
-  const [syncing, setSyncing] = useState(false);
-
   const { data: stats } = useQuery({
     queryKey: ["integracao-stats"],
     queryFn: async () => {
@@ -508,19 +506,6 @@ export default function IntegracaoJetimob() {
     },
   });
 
-  const handleManualSync = async () => {
-    setSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("jetimob-sync", { body: {} });
-      if (error) throw error;
-      toast.success(`Sync concluído: ${data?.synced ?? 0} novos, ${data?.skipped ?? 0} ignorados`);
-    } catch (err: any) {
-      toast.error("Erro no sync: " + (err.message || "desconhecido"));
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   const leadOk = leadMappings.filter((m: any) => m.status === "ok").length;
   const leadTotal = leadMappings.length;
   const imovelOk = imovelMappings.filter((m: any) => m.status === "ok").length;
@@ -528,20 +513,14 @@ export default function IntegracaoJetimob() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
-            <Zap className="h-6 w-6 text-primary" />
-            Integração Jetimob ↔ uHome Sales
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Mapeamento editável de campos — clique no lápis para alterar qualquer campo
-          </p>
-        </div>
-        <Button onClick={handleManualSync} disabled={syncing} variant="outline" className="gap-2">
-          <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Sincronizando..." : "Sync Manual"}
-        </Button>
+      <div>
+        <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
+          <Zap className="h-6 w-6 text-primary" />
+          Integração Jetimob ↔ uHome Sales
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Mapeamento editável de campos — os leads entram automaticamente via webhook do Jetimob e são distribuídos pela roleta
+        </p>
       </div>
 
       {/* Stats cards */}
