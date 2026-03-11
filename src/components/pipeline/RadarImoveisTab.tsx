@@ -157,8 +157,7 @@ function scoreMatch(profile: RadarProfile, imovel: ImovelResult): number {
    ═══════════════════════════════════════════ */
 
 export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, currentProfile, onUpdate }: Props) {
-  let nav: ReturnType<typeof useNavigate> | null = null;
-  try { nav = useNavigate(); } catch { /* outside Router context */ }
+  const navigate = useNavigate();
 
   // Safely parse bairros (could be JSON string from DB)
   const safeBairros = (() => {
