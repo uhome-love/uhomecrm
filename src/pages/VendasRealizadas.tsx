@@ -299,7 +299,7 @@ export default function VendasRealizadas() {
             { icon: Trophy, label: "Vendas", value: totalVendas, format: (v: number) => String(v), color: "hsl(160, 60%, 42%)", emoji: "🏆" },
             { icon: TrendingUp, label: "VGV Total", value: totalVGV, format: formatCurrency, color: "hsl(142, 70%, 45%)", emoji: "💰" },
             { icon: DollarSign, label: "Ticket Médio", value: ticketMedio, format: formatCurrency, color: "hsl(210, 70%, 55%)", emoji: "📊" },
-            { icon: Star, label: "Comissão Aprox.", value: comissaoCorretor32, format: formatCurrency, color: "hsl(45, 90%, 50%)", emoji: "⭐", sub: `32%-36% corretor` },
+            { icon: Star, label: "Corretagem (5%)", value: totalCorretagem, format: formatCurrency, color: "hsl(45, 90%, 50%)", emoji: "⭐", sub: `5% do VGV total` },
           ].map((kpi, i) => (
             <motion.div key={kpi.label} whileHover={{ y: -2 }} transition={{ duration: 0.15 }}
               className="rounded-2xl p-4 bg-card border border-border/60 hover:shadow-lg transition-shadow relative overflow-hidden">
