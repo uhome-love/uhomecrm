@@ -630,6 +630,23 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </p>
               )}
             </TabsContent>
+
+            {/* ===== TAB: RADAR IMÓVEIS ===== */}
+            <TabsContent value="radar" className="mt-0">
+              <RadarImoveisTab
+                leadId={lead.id}
+                leadNome={lead.nome}
+                leadTelefone={lead.telefone}
+                currentProfile={{
+                  radar_quartos: (lead as any).radar_quartos,
+                  radar_valor_max: (lead as any).radar_valor_max,
+                  radar_tipologia: (lead as any).radar_tipologia,
+                  radar_bairros: (lead as any).radar_bairros,
+                  radar_status_imovel: (lead as any).radar_status_imovel,
+                }}
+                onUpdate={onUpdate}
+              />
+            </TabsContent>
           </ScrollArea>
         </Tabs>
 
