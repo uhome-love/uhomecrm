@@ -391,6 +391,30 @@ export function useGerenteDashboard(period: Period) {
     staleTime: 60_000,
   });
 
+  // ── Negócios por fase (proposta, negociacao, documentacao) ──
+  const { data: negociosPorFase } = useQuery({
+    queryKey: ["gerente-negocios-por-fase", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("negocios")
+        .select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at, unidade, proposta_valor")
+        .eq("gerente_id", user!.id)
+        .in("fase", ["proposta", "negociacao", "documentacao"])
+        .order("updated_at", { ascending: false })
+        .limit(30);
+      if (!data) return { proposta: [], negociacao: [], documentacao: [] };
+      const corrIds = [...new Set(data.map(n => n.corretor_id).filter(Boolean))];
+      const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds as string[]) : { data: [] };
+      const nameMap = Object.fromEntries((profs || []).map(p => [p.user_id, p.nome]));
+      const map = (n: any) => ({ id: n.id, nome_cliente: n.nome_cliente || "Cliente", empreendimento: n.empreendimento || "—", vgv: Number(n.vgv_estimado || 0), fase: n.fase, corretor_nome: n.corretor_id ? (nameMap[n.corretor_id] || "Corretor") : "—", unidade: n.unidade || "", proposta_valor: Number(n.proposta_valor || 0) });
+      return {
+        proposta: data.filter(n => n.fase === "proposta").map(map),
+        negociacao: data.filter(n => n.fase === "negociacao").map(map),
+        documentacao: data.filter(n => n.fase === "documentacao").map(map),
+      };
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
   // ── Agenda de Hoje ──
   const { data: agendaHoje } = useQuery({
     queryKey: ["gerente-agenda-v2", user?.id],
@@ -478,6 +502,7 @@ export function useGerenteDashboard(period: Period) {
     funnel: funnel || [],
     negociosAcao: negociosAcao || [],
     negociosQuentes: negociosQuentes || [],
+    negociosPorFase: negociosPorFase || { proposta: [], negociacao: [], documentacao: [] },
     agendaHoje: agendaHoje || [],
     oaResumo: oaResumo || { leadsDisponiveis: 0, tentativasHoje: 0, aproveitados: 0, taxa: 0, corretoresAtivos: 0, corretoresParados: 0, tempoMedioMinutos: 0, taxaPorCorretor: [] },
     alertasOp,

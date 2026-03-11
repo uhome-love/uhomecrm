@@ -56,13 +56,13 @@ export default function GerenteDashboard() {
   const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>("dia");
-  const [negTab, setNegTab] = useState<"quentes" | "acao">("quentes");
+  const [negFaseTab, setNegFaseTab] = useState<"proposta" | "negociacao" | "documentacao">("proposta");
   const [drawerCorretor, setDrawerCorretor] = useState<CorretorDrawerData | null>(null);
   const [lastUpdate] = useState(() => format(new Date(), "HH:mm"));
 
   const {
     user, profile, teamUserIds, kpis: k, kpisLoading, ranking,
-    radarAlerts, funnel, negociosAcao, negociosQuentes, agendaHoje, oaResumo, alertasOp,
+    radarAlerts, funnel, negociosAcao, negociosQuentes, negociosPorFase, agendaHoje, oaResumo, alertasOp,
     startTs, endTs,
   } = useGerenteDashboard(period);
 
@@ -178,26 +178,58 @@ export default function GerenteDashboard() {
       {/* ═══ 3. RADAR + AGENDA — side by side ═══ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {/* Radar do Gerente */}
-          <Card className="border-border/60 overflow-hidden" style={{ borderLeft: "4px solid hsl(var(--destructive))" }}>
+          {/* Negócios em Andamento — 3 tabs */}
+          <Card className="border-border/60 overflow-hidden" style={{ borderLeft: "4px solid hsl(45, 90%, 50%)" }}>
             <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <h2 className="text-sm font-bold text-foreground">Radar do Gerente</h2>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-amber-500" />
+                  <h2 className="text-sm font-bold text-foreground">Negócios</h2>
+                </div>
+                <button className="text-[10px] text-primary hover:underline font-medium flex items-center gap-1" onClick={() => navigate("/pipeline-negocios")}>
+                  Pipeline <ArrowRight className="h-3 w-3" />
+                </button>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { label: "Leads sem contato", count: radarLeadsSemContato?.count || 0, icon: "🔴", route: "/pipeline-leads", color: "bg-destructive/10 text-destructive border-destructive/20" },
-                  { label: "Leads sem tarefa", count: radarLeadsSemTarefa?.count || 0, icon: "📝", route: "/pipeline-leads", color: "bg-amber-500/10 text-amber-700 border-amber-500/20" },
-                  { label: "Visitas pendentes", count: radarVisitasPendentes?.count || 0, icon: "📅", route: "/agenda-visitas", color: "bg-orange-500/10 text-orange-700 border-orange-500/20" },
-                ].map(item => (
-                  <motion.button key={item.label} whileHover={{ scale: 1.03 }} onClick={() => navigate(item.route)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${item.color}`}>
-                    <span className="text-2xl font-black">{item.count}</span>
-                    <span className="text-[10px] font-medium text-center leading-tight">{item.label}</span>
-                  </motion.button>
+              {/* Tabs */}
+              <div className="flex bg-accent/50 rounded-lg p-0.5 mb-3">
+                {([
+                  { key: "proposta" as const, label: "📋 Proposta", count: negociosPorFase.proposta.length },
+                  { key: "negociacao" as const, label: "🤝 Negociação", count: negociosPorFase.negociacao.length },
+                  { key: "documentacao" as const, label: "📄 Contrato", count: negociosPorFase.documentacao.length },
+                ]).map(t => (
+                  <button key={t.key}
+                    className={`flex-1 text-[10px] font-medium px-2 py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ${negFaseTab === t.key ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+                    onClick={() => setNegFaseTab(t.key)}>
+                    {t.label} {t.count > 0 && <span className="text-[9px] font-bold bg-primary/10 text-primary px-1 rounded">{t.count}</span>}
+                  </button>
                 ))}
               </div>
+              {/* Content */}
+              {(() => {
+                const items = negociosPorFase[negFaseTab];
+                if (items.length === 0) return (
+                  <div className="text-center py-4 text-muted-foreground text-xs">Nenhum negócio nesta fase</div>
+                );
+                return (
+                  <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
+                    {items.slice(0, 5).map((n: any) => (
+                      <div key={n.id} onClick={() => navigate("/pipeline-negocios")}
+                        className="flex items-center gap-2.5 p-2 rounded-lg bg-accent/30 border border-border/30 hover:bg-accent/50 cursor-pointer transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">{n.nome_cliente}</p>
+                          <p className="text-[9px] text-muted-foreground truncate">{n.empreendimento} · {n.corretor_nome?.split(" ")[0]}</p>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-500 shrink-0">{formatCurrency(n.vgv)}</span>
+                      </div>
+                    ))}
+                    {items.length > 5 && (
+                      <button className="text-[10px] text-primary hover:underline font-medium w-full text-center pt-1" onClick={() => navigate("/pipeline-negocios")}>
+                        +{items.length - 5} mais →
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
 
@@ -310,65 +342,6 @@ export default function GerenteDashboard() {
         </motion.div>
       )}
 
-      {/* ═══ 5. NEGÓCIOS (2 tabs) ═══ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
-        <Card className="border-border/60">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <h2 className="text-sm font-bold text-foreground">💼 Negócios</h2>
-                <div className="flex bg-accent/50 rounded-lg p-0.5">
-                  <button
-                    className={`text-[11px] font-medium px-3 py-1 rounded-md transition-all ${negTab === "quentes" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
-                    onClick={() => setNegTab("quentes")}>
-                    🔥 Próximos de Fechamento
-                  </button>
-                  <button
-                    className={`text-[11px] font-medium px-3 py-1 rounded-md transition-all ${negTab === "acao" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
-                    onClick={() => setNegTab("acao")}>
-                    ⚠️ Pedem Ação
-                  </button>
-                </div>
-              </div>
-              <button className="text-[10px] text-primary hover:underline font-medium flex items-center gap-1" onClick={() => navigate("/pipeline-negocios")}>
-                Ver pipeline <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
-
-            {negTab === "quentes" ? (
-              negociosQuentes.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">Nenhum negócio próximo de fechamento</p>
-              ) : (
-                <div className="space-y-2">
-                  {negociosQuentes.map(n => (
-                    <NegocioRow key={n.id} nome={n.nome_cliente} empreendimento={n.empreendimento} vgv={n.vgv}
-                      fase={n.fase} corretor={n.corretor_nome} faseLabels={faseLabels} faseColors={faseColors}
-                      rightLabel={n.horas_desde_update < 1 ? "agora" : n.horas_desde_update < 24 ? `${n.horas_desde_update}h atrás` : `${Math.floor(n.horas_desde_update / 24)}d atrás`}
-                      unidade={n.unidade} proposta={n.proposta_valor}
-                      onClick={() => navigate("/pipeline-negocios")} />
-                  ))}
-                </div>
-              )
-            ) : (
-              negociosAcao.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-muted-foreground text-sm">Nenhum negócio precisa de ação agora 🎯</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {negociosAcao.map(n => (
-                    <NegocioRow key={n.id} nome={n.nome_cliente} empreendimento={n.empreendimento} vgv={n.vgv}
-                      fase={n.fase} corretor={n.corretor_nome} faseLabels={faseLabels} faseColors={faseColors}
-                      rightLabel={n.dias_parado >= 2 ? `${n.dias_parado}d parado` : "atualizado hoje"}
-                      rightDanger={n.dias_parado >= 2} unidade={n.unidade} proposta={n.proposta_valor}
-                      onClick={() => navigate("/pipeline-negocios")} />
-                  ))}
-                </div>
-              )
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
 
       {/* ═══ 6. RANKING DO TIME ═══ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}>
