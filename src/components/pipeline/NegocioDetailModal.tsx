@@ -196,6 +196,35 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
       }
       setAtividades((atvsRes.data || []) as NegocioAtividade[]);
       setTarefas((tasksRes.data || []) as NegocioTarefa[]);
+
+      // Load pagadoria status
+      const { data: pagData } = await supabase
+        .from("pagadoria_solicitacoes")
+        .select("status")
+        .eq("negocio_id", negocio.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setPagadoriaStatus(pagData?.status || null);
+
+      // Load lead history from pipeline
+      const pipelineLeadId = negRes.data?.pipeline_lead_id;
+      if (pipelineLeadId) {
+        const [histRes, stagesRes] = await Promise.all([
+          supabase.from("pipeline_historico").select("*").eq("pipeline_lead_id", pipelineLeadId).order("created_at", { ascending: true }).limit(30),
+          supabase.from("pipeline_stages").select("id, nome").eq("pipeline_tipo", "leads"),
+        ]);
+        const stageMap = new Map((stagesRes.data || []).map((s: any) => [s.id, s.nome]));
+        setLeadHistory((histRes.data || []).map((h: any) => ({
+          tipo: "transicao",
+          observacao: h.observacao,
+          created_at: h.created_at,
+          stage_nome: stageMap.get(h.stage_novo_id) || "—",
+        })));
+      } else {
+        setLeadHistory([]);
+      }
+
       setLoading(false);
     };
     load();
