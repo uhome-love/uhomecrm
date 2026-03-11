@@ -1143,6 +1143,8 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SolicitarPagadoriaDialog open={pagadoriaOpen} onOpenChange={setPagadoriaOpen} negocio={fullNeg} />
     </>
   );
 }
