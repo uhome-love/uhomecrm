@@ -29,7 +29,7 @@ export default function RoleProtectedRoute({ children, allowedRoles }: RoleProte
   if (!hasAccess) {
     if (isAdmin) return <Navigate to="/" replace />;
     if (isBackoffice) return <Navigate to="/backoffice" replace />;
-    if (isGestor) return <Navigate to="/checkpoint" replace />;
+    if (isGestor) return <Navigate to="/central-do-gerente" replace />;
     if (isCorretor) return <Navigate to="/corretor" replace />;
     return <Navigate to="/" replace />;
   }

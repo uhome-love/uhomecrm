@@ -382,9 +382,9 @@ export function AppSidebar() {
           label: "Gestão Comercial",
           items: [
             { title: "Agenda de Tarefas", url: "/minhas-tarefas", icon: ListTodo },
-            { title: "Pipeline de Leads", url: "/pipeline", icon: Kanban },
+            { title: "Pipeline de Leads", url: "/pipeline-leads", icon: Kanban },
             { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
-            { title: "Pipeline Negócios", url: "/meus-negocios", icon: Briefcase },
+            { title: "Pipeline Negócios", url: "/pipeline-negocios", icon: Briefcase },
             { title: "Pós-Vendas", url: "/pos-vendas", icon: PackageCheck },
           ],
         },

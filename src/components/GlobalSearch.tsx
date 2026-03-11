@@ -29,7 +29,7 @@ interface SearchResult {
 }
 
 const QUICK_ACTIONS = [
-  { label: "Pipeline de Leads", url: "/pipeline", icon: Kanban },
+  { label: "Pipeline de Leads", url: "/pipeline-leads", icon: Kanban },
   { label: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
   { label: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
   { label: "Meu Time", url: "/meu-time", icon: Users },
