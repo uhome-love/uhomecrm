@@ -24,6 +24,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import PulseFeed from "@/components/pulse/PulseFeed";
+import LeadsDistribuidosPanel from "@/components/distribuicao/LeadsDistribuidosPanel";
 
 // ── Animated counter ──
 function AnimatedNumber({ value, duration = 0.6 }: { value: number; duration?: number }) {

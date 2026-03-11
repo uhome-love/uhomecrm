@@ -15,6 +15,7 @@ import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
+import LeadsDistribuidosPanel from "@/components/distribuicao/LeadsDistribuidosPanel";
 
 // ─── Greeting ───
 function getGreeting() {
