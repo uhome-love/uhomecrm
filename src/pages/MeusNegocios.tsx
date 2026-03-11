@@ -1026,6 +1026,24 @@ export default function MeusNegocios() {
           onConfirm={handleTransitionConfirm}
         />
       )}
+
+      {/* Delete confirmation dialog (CEO only) */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(o) => { if (!o) setDeleteConfirmId(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base text-red-500">🗑️ Excluir Negócio</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja excluir este negócio permanentemente? Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
+            <Button variant="destructive" size="sm" onClick={() => { if (deleteConfirmId) { handleDeleteNegocio(deleteConfirmId); setDeleteConfirmId(null); } }}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
