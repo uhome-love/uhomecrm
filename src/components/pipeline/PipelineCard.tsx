@@ -178,6 +178,7 @@ interface PipelineCardProps {
   stages: PipelineStage[];
   segmentos: PipelineSegmento[];
   corretorNome?: string;
+  corretorAvatar?: string;
   gerenteNome?: string;
   parceiroNome?: string;
   onDragStart: () => void;
