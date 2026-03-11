@@ -62,7 +62,7 @@ export default function GerenteDashboard() {
 
   const {
     user, profile, teamUserIds, kpis: k, kpisLoading, ranking,
-    radarAlerts, funnel, negociosAcao, negociosQuentes, agendaHoje, oaResumo, alertasOp,
+    radarAlerts, funnel, negociosAcao, negociosQuentes, negociosPorFase, agendaHoje, oaResumo, alertasOp,
     startTs, endTs,
   } = useGerenteDashboard(period);
 
