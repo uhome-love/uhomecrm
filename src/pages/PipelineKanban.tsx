@@ -493,11 +493,12 @@ export default function PipelineKanban() {
       {/* Content area — kanban + side panel */}
       <div className="flex-1 min-h-0 overflow-hidden flex">
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
+          <ErrorBoundary onError={(err) => console.error("[PipelineBoard] Render crash:", err.message, err.stack)}>
           <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
             {activeTab === "kanban" ? (
               <PipelineBoard
-                stages={pipeline.stages}
-                leads={filteredLeads}
+                stages={pipeline.stages || []}
+                leads={filteredLeads || []}
                 segmentos={pipeline.segmentos}
                 corretorNomes={pipeline.corretorNomes}
                 corretorAvatars={pipeline.corretorAvatars}
