@@ -934,7 +934,7 @@ export default function MelnickDay() {
             <Button
               size="sm"
               className="gap-1.5 text-xs"
-              onClick={() => setShowVitrineDialog(true)}
+              onClick={() => { setVitrineLink(null); setShowVitrineDialog(true); }}
             >
               <Link2 className="h-3 w-3" /> Criar Vitrine
             </Button>
