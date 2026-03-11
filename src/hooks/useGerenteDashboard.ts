@@ -177,7 +177,7 @@ export function useGerenteDashboard(period: Period) {
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds),
       ]);
 
-      const { data: negocios } = await supabase.from("negocios").select("fase, vgv_estimado").eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato")');
+      const { data: negocios } = await supabase.from("negocios").select("fase, vgv_estimado").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato")');
       const negociosAtivos = negocios?.length || 0;
       const vgvTotal = (negocios || []).reduce((s, n) => s + Number(n.vgv_estimado || 0), 0);
       const lig = ligacoes || 0;
