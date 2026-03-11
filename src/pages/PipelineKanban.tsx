@@ -89,6 +89,7 @@ function ForecastInline({ leads, stages, expanded, onToggle }: {
 }
 
 export default function PipelineKanban() {
+  const queryClient = useQueryClient();
   const pipeline = usePipeline();
   const { isGestor, isAdmin, isCorretor } = useUserRole();
   const { user: authUser } = useAuth();
