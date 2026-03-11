@@ -985,7 +985,7 @@ export default function MelnickDay() {
                       precoDe: emp.precoDe,
                       precoPor: emp.precoPor,
                       descontoMax: emp.descontoMax,
-                      imagem: emp.imagem,
+                      imagens: emp.imagens,
                       condicoes: emp.condicoes,
                       segmento: emp.segmento,
                       m2: emp.m2,
