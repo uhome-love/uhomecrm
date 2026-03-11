@@ -358,6 +358,15 @@ const PipelineCard = memo(function PipelineCard({
           )}
         </div>
 
+        {/* Partnership badge */}
+        {parceiroNome && (
+          <div className="flex items-center gap-1 pt-0.5">
+            <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+              <Handshake className="h-3 w-3" /> Parceria: {parceiroNome.split(" ").slice(0, 2).join(" ")}
+            </span>
+          </div>
+        )}
+
         {/* Negócio criado badge */}
         {lead.negocio_id && (
           <div className="flex items-center gap-1 pt-0.5">

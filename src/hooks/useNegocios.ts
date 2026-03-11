@@ -113,7 +113,36 @@ export function useNegocios() {
       return;
     }
 
-    const rows = (data || []) as Negocio[];
+    let rows = (data || []) as Negocio[];
+
+    // For corretores: also fetch partner negocios via pipeline_parcerias
+    if (!isAdmin && !isGestor) {
+      const { data: partnerships } = await supabase
+        .from("pipeline_parcerias")
+        .select("pipeline_lead_id")
+        .or(`corretor_principal_id.eq.${user.id},corretor_parceiro_id.eq.${user.id}`)
+        .eq("status", "ativa");
+
+      const partnerLeadIds = (partnerships || []).map(p => p.pipeline_lead_id).filter(Boolean);
+      if (partnerLeadIds.length > 0) {
+        const existingIds = new Set(rows.map(n => n.id));
+        const { data: partnerNegocios } = await supabase
+          .from("negocios")
+          .select("id, lead_id, visita_id, pipeline_lead_id, corretor_id, gerente_id, nome_cliente, telefone, empreendimento, fase, vgv_estimado, vgv_final, observacoes, origem, status, fase_changed_at, created_at, updated_at")
+          .eq("status", "ativo")
+          .in("pipeline_lead_id", partnerLeadIds);
+
+        if (partnerNegocios) {
+          for (const pn of partnerNegocios as Negocio[]) {
+            if (!existingIds.has(pn.id)) {
+              rows.push(pn);
+              existingIds.add(pn.id);
+            }
+          }
+        }
+      }
+    }
+
     setNegocios(rows);
 
     // Load corretor info (profiles + team_members for equipe)

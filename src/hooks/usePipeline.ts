@@ -140,6 +140,17 @@ export function usePipeline(pipelineTipo: string = "leads") {
       }
     }
 
+    // Load partnership lead IDs for corretores (leads where user is a partner)
+    let partnerLeadIds: string[] = [];
+    if (!isAdmin && !isGestor) {
+      const { data: partnerships } = await supabase
+        .from("pipeline_parcerias")
+        .select("pipeline_lead_id")
+        .or(`corretor_principal_id.eq.${user.id},corretor_parceiro_id.eq.${user.id}`)
+        .eq("status", "ativa");
+      partnerLeadIds = (partnerships || []).map(p => p.pipeline_lead_id).filter(Boolean);
+    }
+
     const allRows: PipelineLead[] = [];
     let from = 0;
 
@@ -170,6 +181,19 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
       if (batch.length < pageSize) break;
       from += pageSize;
+    }
+
+    // For corretores: also fetch partner leads that may belong to other corretores
+    if (!isAdmin && !isGestor && partnerLeadIds.length > 0) {
+      const existingIds = new Set(allRows.map(l => l.id));
+      const missingIds = partnerLeadIds.filter(id => !existingIds.has(id));
+      if (missingIds.length > 0) {
+        const { data: partnerLeads } = await supabase
+          .from("pipeline_leads")
+          .select(selectFields)
+          .in("id", missingIds);
+        if (partnerLeads) allRows.push(...(partnerLeads as PipelineLead[]));
+      }
     }
 
     // Deduplicate leads by id (in case of duplicate rows)
