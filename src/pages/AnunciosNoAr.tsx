@@ -655,14 +655,49 @@ function EditOverrideModal({
             <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={2} placeholder="Breve descrição do empreendimento..." className="text-sm" />
           </div>
 
-          {/* Fotos — multi upload */}
+          {/* Fotos — multi upload with drag reorder */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5 text-primary" /> Fotos para Slide</Label>
+            <Label className="text-xs font-semibold flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5 text-primary" /> Fotos para Slide (arraste para reordenar)</Label>
             {fotosArray.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {fotosArray.map((url, i) => (
-                  <div key={i} className="relative group/foto">
+                  <div
+                    key={`${url}-${i}`}
+                    draggable
+                    onDragStart={e => { e.dataTransfer.setData("text/plain", String(i)); e.dataTransfer.effectAllowed = "move"; }}
+                    onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                    onDrop={e => {
+                      e.preventDefault();
+                      const from = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                      if (isNaN(from) || from === i) return;
+                      const arr = [...fotosArray];
+                      const [moved] = arr.splice(from, 1);
+                      arr.splice(i, 0, moved);
+                      setFotosText(arr.join("\n"));
+                    }}
+                    className="relative group/foto cursor-grab active:cursor-grabbing"
+                  >
                     <img src={url} alt="" className="h-16 w-24 rounded-lg object-cover border border-border/40" />
+                    {/* Position badge */}
+                    <span className="absolute top-0.5 left-0.5 h-4 min-w-[16px] px-0.5 rounded bg-foreground/70 text-background text-[9px] font-bold flex items-center justify-center">{i + 1}</span>
+                    {/* Grip icon */}
+                    <span className="absolute bottom-0.5 left-0.5 opacity-0 group-hover/foto:opacity-80 transition-opacity">
+                      <GripVertical className="h-3.5 w-3.5 text-background drop-shadow" />
+                    </span>
+                    {/* Arrow buttons */}
+                    {i > 0 && (
+                      <button
+                        onClick={e2 => { e2.stopPropagation(); const arr = [...fotosArray]; [arr[i-1], arr[i]] = [arr[i], arr[i-1]]; setFotosText(arr.join("\n")); }}
+                        className="absolute top-0.5 right-6 h-5 w-5 rounded-full bg-background/80 border border-border flex items-center justify-center opacity-0 group-hover/foto:opacity-100 transition-opacity"
+                      ><ArrowLeft className="h-2.5 w-2.5" /></button>
+                    )}
+                    {i < fotosArray.length - 1 && (
+                      <button
+                        onClick={e2 => { e2.stopPropagation(); const arr = [...fotosArray]; [arr[i], arr[i+1]] = [arr[i+1], arr[i]]; setFotosText(arr.join("\n")); }}
+                        className="absolute top-0.5 right-[1px] h-5 w-5 rounded-full bg-background/80 border border-border flex items-center justify-center opacity-0 group-hover/foto:opacity-100 transition-opacity"
+                      ><ArrowRight className="h-2.5 w-2.5" /></button>
+                    )}
+                    {/* Delete */}
                     <button
                       onClick={() => setFotosText(prev => prev.split("\n").filter((_, idx) => idx !== i).join("\n"))}
                       className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover/foto:opacity-100 transition-opacity"
