@@ -138,8 +138,8 @@ export default function RankingGestaoLeadsTab({ period }: { period: "hoje" | "se
                 <tr className="border-b border-border text-xs text-muted-foreground">
                   <th className="py-2 px-3 text-left w-10">#</th>
                   <th className="py-2 px-3 text-left">Corretor</th>
-                  <th className="py-2 px-3 text-center">Tentativas</th>
-                  <th className="py-2 px-3 text-center">Responderam</th>
+                  <th className="py-2 px-3 text-center">Contatos</th>
+                  <th className="py-2 px-3 text-center">Qualificados</th>
                   <th className="py-2 px-3 text-center">Visitas</th>
                   <th className="py-2 px-3 text-center">Propostas</th>
                   <th className="py-2 px-3 text-center">Pts</th>
