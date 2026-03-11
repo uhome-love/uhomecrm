@@ -206,6 +206,22 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
     window.open(getWhatsAppUrl(card.telefone, msg), "_blank");
   };
 
+  const approveGoal = async (card: CorretorCard) => {
+    if (!card.goal_id || !user) return;
+    const { error } = await supabase
+      .from("corretor_daily_goals")
+      .update({
+        status: "aprovado",
+        aprovado_por: user.id,
+        meta_ligacoes_aprovada: card.meta_ligacoes,
+        meta_aproveitados_aprovada: card.meta_aproveitados,
+      })
+      .eq("id", card.goal_id);
+    if (error) { toast.error("Erro ao aprovar"); return; }
+    setCards(prev => prev.map(c => c.user_id === card.user_id ? { ...c, goal_status: "aprovado" } : c));
+    toast.success(`✅ Meta de ${card.nome.split(" ")[0]} aprovada!`);
+  };
+
   const nudgeAllBelowTarget = () => {
     const below = cards.filter(c => { if (["ausente", "atestado", "folga"].includes(c.presenca)) return false; return c.meta_ligacoes > 0 && c.res_ligacoes < c.meta_ligacoes * 0.5; });
     if (below.length === 0) { toast.info("Todos acima de 50% da meta!"); return; }
