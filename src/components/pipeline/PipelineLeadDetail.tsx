@@ -345,8 +345,57 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
         </div>
 
-        {/* ════════════ ZONA 2 — PRÓXIMA TAREFA (indicador compacto) ════════════ */}
-        <div className="shrink-0 border-b border-border/50 bg-accent/20 px-6 py-2.5">
+        {/* ════════════ ZONA 2 — ALERTAS + PRÓXIMA TAREFA ════════════ */}
+        <div className="shrink-0 border-b border-border/50 bg-accent/20 px-6 py-2.5 space-y-2">
+          {/* Alert: Overdue tasks */}
+          {overdueTasks > 0 && (() => {
+            const overdueList = leadData.tarefas.filter(t => t.status === "pendente" && t.vence_em && new Date(t.vence_em + "T12:00:00") < new Date());
+            const firstOverdue = overdueList[0];
+            const overdueDate = firstOverdue?.vence_em ? format(new Date(firstOverdue.vence_em + "T12:00:00"), "dd/MM", { locale: ptBR }) : "";
+            return (
+              <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300/50 dark:border-red-600/30 rounded-lg px-3 py-2">
+                <span className="text-base shrink-0">🔴</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-semibold text-red-700 dark:text-red-400">
+                    {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
+                  </span>
+                  <p className="text-[10px] text-red-600 dark:text-red-400/80 truncate">
+                    {firstOverdue?.descricao || firstOverdue?.titulo} · venceu {overdueDate}
+                  </p>
+                </div>
+                <Button variant="default" size="sm" className="h-7 text-xs px-3 gap-1 bg-red-500 hover:bg-red-600 text-white shrink-0" onClick={() => setActiveTab("tarefas")}>
+                  <AlertTriangle className="h-3 w-3" /> Resolver
+                </Button>
+              </div>
+            );
+          })()}
+
+          {/* Alert: No contact for 24h+ and no tasks */}
+          {!nextTask && (() => {
+            const lastContact = (lead as any).ultima_acao_at;
+            const hoursSince = lastContact ? differenceInHours(new Date(), new Date(lastContact)) : 999;
+            if (leadData.atividades.length === 0 || hoursSince > 24) {
+              const severity = hoursSince > 48 ? "red" : "amber";
+              const bgCls = severity === "red" ? "bg-red-50 dark:bg-red-900/20 border-red-300/50 dark:border-red-600/30" : "bg-amber-50 dark:bg-amber-900/20 border-amber-300/50 dark:border-amber-600/30";
+              const textCls = severity === "red" ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400";
+              const btnCls = severity === "red" ? "bg-red-500 hover:bg-red-600" : "bg-amber-500 hover:bg-amber-600";
+              return (
+                <div className={`flex items-center gap-2 border rounded-lg px-3 py-2 ${bgCls}`}>
+                  <span className="text-base shrink-0">{severity === "red" ? "🔴" : "🟡"}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-xs font-semibold ${textCls}`}>Sem contato registrado</span>
+                    <p className={`text-[10px] ${textCls} opacity-80`}>Registre uma atividade ou ligue para o lead.</p>
+                  </div>
+                  <Button variant="default" size="sm" className={`h-7 text-xs px-3 gap-1 ${btnCls} text-white shrink-0`} onClick={() => setActiveTab("historico")}>
+                    <Plus className="h-3 w-3" /> Registrar contato
+                  </Button>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Next task indicator OR missing task alert */}
           {nextTask ? (
             <div className="flex items-center gap-2 flex-wrap">
               <ClipboardList className="h-4 w-4 text-primary shrink-0" />
