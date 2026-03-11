@@ -74,6 +74,7 @@ const RoletaLeads = lazy(() => import("./pages/RoletaLeads"));
 const ImoveisPage = lazy(() => import("./pages/ImoveisPage"));
 const VitrinePage = lazy(() => import("./pages/VitrinePage"));
 const PosVendas = lazy(() => import("./pages/PosVendas"));
+const MelnickDay = lazy(() => import("./pages/MelnickDay"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
