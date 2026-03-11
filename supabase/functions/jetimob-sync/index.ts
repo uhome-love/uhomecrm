@@ -291,91 +291,92 @@ serve(async (req) => {
         const jetimobId = buildJetimobId(lead);
         const phone = lead.phones?.[0] || lead.phone || null;
 
-        // Check if already exists by ID or phone
-        if (existingIds.has(jetimobId) || (phone && existingPhones.has(phone))) {
-          // ── DEDUP: lead already exists ──
-          // Only notify if there's a GENUINE new campaign/empreendimento change
-          if (phone) {
-            const { data: existingLead } = await adminClient
-              .from("pipeline_leads")
-              .select("id, corretor_id, nome, empreendimento, origem_detalhe, telefone, observacoes")
-              .eq("telefone", phone)
-              .not("corretor_id", "is", null)
-              .limit(1)
-              .maybeSingle();
+        const idExists = existingIds.has(jetimobId);
+        const phoneExists = phone && existingPhones.has(phone);
 
-            if (existingLead?.corretor_id) {
-              const nome = lead.full_name || lead.name || lead.nome || "Lead";
-              const msg = lead.message || "";
-              const campanhaNome = extractCampanha(msg);
-              const origemText = campanhaNome || msg || lead.source || lead.origin || "";
-              let newEmp = campanhaNome ? normalizeEmpreendimento(campanhaNome) || campanhaNome : null;
-              if (!newEmp) newEmp = normalizeEmpreendimento(origemText) || null;
-              const canalOrigem = detectCanal(msg, lead.source, lead.origin);
+        // Case 1: Exact same jetimob entry (same phone + campaign + created_at) — skip silently
+        if (idExists) {
+          skipped++;
+          continue;
+        }
 
-              // ── ALWAYS notify owner when a recurring lead comes in ──
-              // Even if same empreendimento — the fact they regenerated is valuable
-              const todayStamp = new Date().toISOString().slice(0, 10);
-              const alreadyProcessedToday = existingLead.observacoes?.includes(`[NOVO INTERESSE ${todayStamp}]`);
+        // Case 2: NEW jetimob_lead_id but phone already exists — TRUE re-entry (new form submission)
+        // This is the ONLY case where we notify the corretor
+        if (phoneExists) {
+          const { data: existingLead } = await adminClient
+            .from("pipeline_leads")
+            .select("id, corretor_id, nome, empreendimento, origem_detalhe, telefone, observacoes")
+            .eq("telefone", phone)
+            .not("corretor_id", "is", null)
+            .limit(1)
+            .maybeSingle();
 
-              if (!alreadyProcessedToday) {
-                const interestLabel = newEmp || existingLead.empreendimento || "mesmo imóvel";
-                // Update lead with new interest info
-                const updatePayload: Record<string, any> = {
-                  updated_at: new Date().toISOString(),
-                  observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (${canalOrigem})${msg ? ` — "${msg}"` : ""}`,
-                };
-                // If there IS a new empreendimento, update it
-                if (newEmp && newEmp.toLowerCase().trim() !== (existingLead.empreendimento || "").toLowerCase().trim()) {
-                  updatePayload.empreendimento = newEmp;
-                }
-                await adminClient.from("pipeline_leads").update(updatePayload).eq("id", existingLead.id);
+          if (existingLead?.corretor_id) {
+            const nome = lead.full_name || lead.name || lead.nome || "Lead";
+            const msg = lead.message || "";
+            const campanhaNome = extractCampanha(msg);
+            const origemText = campanhaNome || msg || lead.source || lead.origin || "";
+            let newEmp = campanhaNome ? normalizeEmpreendimento(campanhaNome) || campanhaNome : null;
+            if (!newEmp) newEmp = normalizeEmpreendimento(origemText) || null;
+            const canalOrigem = detectCanal(msg, lead.source, lead.origin);
 
-                await adminClient.from("notifications").insert({
-                  user_id: existingLead.corretor_id,
-                  tipo: "lead",
-                  categoria: "lead_retorno",
-                  titulo: `🔄 Lead reativado! ${existingLead.nome || nome}`,
-                  mensagem: `${existingLead.nome || nome} demonstrou novo interesse em ${interestLabel} (${canalOrigem}). Entre em contato!`,
-                  dados: { pipeline_lead_id: existingLead.id, lead_nome: existingLead.nome || nome, novo_empreendimento: interestLabel, empreendimento: interestLabel, canal: canalOrigem },
-                  agrupamento_key: `lead_retorno_${existingLead.id}_${todayStamp}`,
-                }).then(r => { if (r.error) console.warn("notification dedup insert:", r.error.message); });
+            const todayStamp = new Date().toISOString().slice(0, 10);
+            const alreadyProcessedToday = existingLead.observacoes?.includes(`[NOVO INTERESSE ${todayStamp}]`);
 
-                // Create follow-up task
-                await adminClient.from("pipeline_tarefas").insert({
-                  pipeline_lead_id: existingLead.id,
-                  tipo: "retornar_cliente",
-                  titulo: `Lead ${existingLead.nome || nome} reativado — ${interestLabel}`,
-                  descricao: `Novo interesse via ${canalOrigem}. Faça contato imediato!`,
-                  status: "pendente",
-                  vence_em: todayStamp,
-                  hora_vencimento: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(11, 16),
-                  created_by: existingLead.corretor_id,
-                }).then(r => { if (r.error) console.warn("pipeline_tarefas dedup insert:", r.error.message); });
-
-                try {
-                  await fetch(`${supabaseUrl}/functions/v1/send-push`, {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      user_id: existingLead.corretor_id,
-                      title: "🔄 Lead reativado!",
-                      body: `${existingLead.nome || nome} — ${interestLabel} (${canalOrigem})`,
-                      url: "/pipeline",
-                    }),
-                  });
-                } catch (e) { console.warn("Push dedup error:", e); }
-
-                console.log(`DEDUP: Lead ${phone} — recurring interest in ${interestLabel}, notified corretor ${existingLead.corretor_id}`);
-              } else {
-                // Already processed today — just update timestamp
-                await adminClient.from("pipeline_leads").update({
-                  updated_at: new Date().toISOString(),
-                }).eq("id", existingLead.id);
-                console.log(`DEDUP: Lead ${phone} — already notified today, skipping`);
+            if (!alreadyProcessedToday) {
+              const interestLabel = newEmp || existingLead.empreendimento || "mesmo imóvel";
+              const updatePayload: Record<string, any> = {
+                updated_at: new Date().toISOString(),
+                observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (${canalOrigem})${msg ? ` — "${msg}"` : ""}`,
+              };
+              if (newEmp && newEmp.toLowerCase().trim() !== (existingLead.empreendimento || "").toLowerCase().trim()) {
+                updatePayload.empreendimento = newEmp;
               }
+              await adminClient.from("pipeline_leads").update(updatePayload).eq("id", existingLead.id);
+
+              await adminClient.from("notifications").insert({
+                user_id: existingLead.corretor_id,
+                tipo: "lead",
+                categoria: "lead_retorno",
+                titulo: `🔄 Lead reativado! ${existingLead.nome || nome}`,
+                mensagem: `${existingLead.nome || nome} demonstrou novo interesse em ${interestLabel} (${canalOrigem}). Entre em contato!`,
+                dados: { pipeline_lead_id: existingLead.id, lead_nome: existingLead.nome || nome, novo_empreendimento: interestLabel, empreendimento: interestLabel, canal: canalOrigem },
+                agrupamento_key: `lead_retorno_${existingLead.id}_${todayStamp}`,
+              }).then(r => { if (r.error) console.warn("notification dedup insert:", r.error.message); });
+
+              // Create follow-up task
+              await adminClient.from("pipeline_tarefas").insert({
+                pipeline_lead_id: existingLead.id,
+                tipo: "retornar_cliente",
+                titulo: `Lead ${existingLead.nome || nome} reativado — ${interestLabel}`,
+                descricao: `Novo interesse via ${canalOrigem}. Faça contato imediato!`,
+                status: "pendente",
+                vence_em: todayStamp,
+                hora_vencimento: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(11, 16),
+                created_by: existingLead.corretor_id,
+              }).then(r => { if (r.error) console.warn("pipeline_tarefas dedup insert:", r.error.message); });
+
+              try {
+                await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    user_id: existingLead.corretor_id,
+                    title: "🔄 Lead reativado!",
+                    body: `${existingLead.nome || nome} — ${interestLabel} (${canalOrigem})`,
+                    url: `/pipeline-kanban?lead=${existingLead.id}`,
+                  }),
+                });
+              } catch (e) { console.warn("Push dedup error:", e); }
+
+              console.log(`DEDUP: Lead ${phone} — NEW form submission (${jetimobId}), notified corretor ${existingLead.corretor_id}`);
+            } else {
+              console.log(`DEDUP: Lead ${phone} — already notified today, skipping`);
             }
           }
+
+          // Mark this jetimob ID as processed to avoid re-processing
+          existingIds.add(jetimobId);
           skipped++;
           continue;
         }
