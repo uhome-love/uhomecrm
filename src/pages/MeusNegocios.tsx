@@ -896,10 +896,12 @@ export default function MeusNegocios() {
                       corretorInfo={negocio.corretor_id ? corretorInfoMap[negocio.corretor_id] : undefined}
                       showCorretor={isAdmin || isGestor}
                       paradoInfo={paradoMap.get(negocio.id)}
+                      nextTask={taskMap[negocio.id] || null}
                       onDragStart={() => { dragNegocioId.current = negocio.id; }}
                       onClick={() => setSelectedNegocio(negocio)}
                       onMoveFase={requestMoveFase}
                       onUpdateNegocio={updateNegocio}
+                      onTaskSaved={loadTasks}
                     />
                   ))}
                 </div>
