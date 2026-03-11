@@ -205,6 +205,26 @@ export default function PipelineKanban() {
     );
   }
 
+  // Show error state with retry
+  if (pipeline.error || !pipeline.stages || pipeline.stages.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <span className="text-destructive font-semibold">Erro ao carregar o Pipeline</span>
+        <span className="text-sm text-muted-foreground">
+          {pipeline.error || "Nenhuma etapa foi encontrada. Tente recarregar."}
+        </span>
+        <div className="flex gap-2">
+          <button onClick={() => pipeline.reload()} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
+            Tentar novamente
+          </button>
+          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-muted text-muted-foreground rounded-md text-sm">
+            Recarregar página
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const isKanbanOrIntel = activeTab === "kanban" || activeTab === "inteligencia";
 
   return (
@@ -214,7 +234,7 @@ export default function PipelineKanban() {
         <span className="text-sm text-muted-foreground">Tente recarregar a página (Ctrl+F5)</span>
         <button onClick={() => window.location.reload()} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">Recarregar</button>
       </div>
-    }>
+    } onError={(err) => console.error("[PipelineKanban] Render crash:", err.message, err.stack)}>
     <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
       {/* Controls — fixed top area */}
       <div className="shrink-0 space-y-1 pb-1">
@@ -480,11 +500,12 @@ export default function PipelineKanban() {
       {/* Content area — kanban + side panel */}
       <div className="flex-1 min-h-0 overflow-hidden flex">
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
+          <ErrorBoundary onError={(err) => console.error("[PipelineBoard] Render crash:", err.message, err.stack)}>
           <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
             {activeTab === "kanban" ? (
               <PipelineBoard
-                stages={pipeline.stages}
-                leads={filteredLeads}
+                stages={pipeline.stages || []}
+                leads={filteredLeads || []}
                 segmentos={pipeline.segmentos}
                 corretorNomes={pipeline.corretorNomes}
                 corretorAvatars={pipeline.corretorAvatars}
@@ -530,6 +551,7 @@ export default function PipelineKanban() {
               />
             ) : null}
           </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
 

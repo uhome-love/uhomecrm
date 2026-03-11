@@ -67,6 +67,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const [corretorNomes, setCorretorNomes] = useState<Record<string, string>>({});
   const [corretorAvatars, setCorretorAvatars] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadStages = useCallback(async () => {
     try {
@@ -249,7 +250,12 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
+    setError(null);
     Promise.all([loadStages(), loadSegmentos(), loadLeads()])
+      .catch((err) => {
+        console.error("[usePipeline] Init error:", err);
+        setError(err?.message || "Erro ao carregar pipeline");
+      })
       .finally(() => setLoading(false));
   }, [user, loadStages, loadSegmentos, loadLeads]);
 
@@ -536,11 +542,15 @@ export function usePipeline(pipelineTipo: string = "leads") {
     corretorNomes,
     corretorAvatars,
     loading,
+    error,
     moveLead,
     addLead,
     updateLead,
     deleteLead,
     getLeadsByStage,
-    reload: loadLeads,
+    reload: useCallback(async () => {
+      setError(null);
+      await Promise.all([loadStages(), loadSegmentos(), loadLeads()]);
+    }, [loadStages, loadSegmentos, loadLeads]),
   };
 }
