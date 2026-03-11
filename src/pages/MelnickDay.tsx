@@ -415,18 +415,10 @@ function EmpreendimentoCard({ emp, segKey, selected, onToggle }: { emp: Empreend
         </button>
       </div>
 
-      {emp.imagem ? (
-        <div className="relative h-32 overflow-hidden bg-muted cursor-pointer" onClick={onToggle}>
-          <img src={emp.imagem} alt={emp.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-          {desconto && (
-            <span className="absolute bottom-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
-              -{typeof desconto === "string" && desconto.startsWith("-") ? desconto.slice(1) : desconto}
-            </span>
-          )}
-          <Badge className="absolute bottom-2 left-2 text-[9px] py-0" variant="secondary">{emp.status}</Badge>
-        </div>
+      {emp.imagens && emp.imagens.length > 0 ? (
+        <ImageSlider images={emp.imagens} alt={emp.nome} onToggle={onToggle} desconto={desconto} status={emp.status} />
       ) : (
-        <div className="relative h-20 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center cursor-pointer" onClick={onToggle}>
+        <div className="relative h-32 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center cursor-pointer" onClick={onToggle}>
           <Building2 className="h-8 w-8 text-muted-foreground/30" />
           {desconto && (
             <span className="absolute bottom-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
