@@ -48,11 +48,7 @@ function getInitials(nome: string) {
   return nome.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 }
 
-function fmtVgv(v: number) {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
-  return `R$ ${v.toLocaleString("pt-BR")}`;
-}
+const fmtVgv = formatBRLCompact;
 
 interface Props {
   team: TeamMember[];

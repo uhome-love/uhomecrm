@@ -148,10 +148,7 @@ export default function MetasMensaisProgress() {
     load();
   };
 
-  const formatCurrency = (v: number) =>
-    v >= 1_000_000
-      ? `R$ ${(v / 1_000_000).toFixed(1)}M`
-      : `R$ ${(v / 1_000).toFixed(0)}k`;
+  const formatCurrency = formatBRLCompact;
 
   // No meta yet — show creation form
   if (!loading && !data) {

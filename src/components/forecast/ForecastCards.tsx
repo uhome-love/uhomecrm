@@ -1,4 +1,5 @@
 import { Target, FileText, ShoppingCart, DollarSign } from "lucide-react";
+import { formatBRLCompact } from "@/lib/utils";
 
 interface Props {
   visitas: number;
@@ -7,11 +8,7 @@ interface Props {
   vgv: number;
 }
 
-const fmtCurrency = (v: number) => {
-  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-};
+const fmtCurrency = formatBRLCompact;
 
 const cards = (p: Props) => [
   { label: "Visitas Realizadas", value: String(p.visitas), icon: Target, color: "text-primary" },

@@ -34,11 +34,7 @@ const FRASES = [
   "Quem mede, melhora. Quem acompanha, transforma.",
 ];
 
-function formatCurrency(v: number) {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
-  return `R$ ${v.toFixed(0)}`;
-}
+const formatCurrency = formatBRLCompact;
 
 function Variation({ current, previous, suffix = "" }: { current: number; previous: number; suffix?: string }) {
   if (previous === 0) return null;

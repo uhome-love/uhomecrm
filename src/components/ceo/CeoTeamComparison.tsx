@@ -19,11 +19,8 @@ const COLORS = [
   "hsl(280 67% 55%)",
 ];
 
-const fmtCurrency = (v: number) => {
-  if (Math.abs(v) >= 1_000_000) return `R$${(v / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(v) >= 1_000) return `R$${(v / 1_000).toFixed(0)}k`;
-  return `R$${v.toLocaleString("pt-BR")}`;
-};
+import { formatBRLCompact } from "@/lib/utils";
+const fmtCurrency = formatBRLCompact;
 
 interface MetricRow {
   key: string;

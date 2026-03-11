@@ -24,11 +24,7 @@ const STAGE_PROBABILITY: Record<string, number> = {
 
 const EXCLUDED_TYPES = ["venda", "descarte", "caiu"];
 
-function formatCurrency(value: number) {
-  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
-  if (value >= 1_000) return `R$ ${value.toLocaleString("pt-BR")}`;
-  return `R$ ${value}`;
-}
+const formatCurrency = (v: number) => v >= 100_000 ? formatBRLCompact(v) : formatBRL(v);
 
 interface Props {
   leads: PipelineLead[];

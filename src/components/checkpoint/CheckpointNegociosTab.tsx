@@ -40,11 +40,7 @@ const FASE_CONFIG: Record<string, { label: string; color: string; bg: string }> 
   vendido: { label: "Vendido", color: "text-green-700", bg: "bg-green-100" },
 };
 
-const fmtCurrency = (v: number) => {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
-  return `R$ ${v.toLocaleString("pt-BR")}`;
-};
+const fmtCurrency = formatBRLCompact;
 
 interface Props {
   teamUserIds: string[];

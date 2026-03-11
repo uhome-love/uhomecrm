@@ -22,11 +22,7 @@ function getPeriodRange(period: Period) {
   return { start: s, end: e, startTs: `${s}T00:00:00-03:00`, endTs: `${e}T23:59:59.999-03:00` };
 }
 
-export function formatCurrency(v: number) {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
-  return `R$ ${v.toFixed(0)}`;
-}
+export const formatCurrency = formatBRLCompact;
 
 export function getInitials(name: string) {
   return name.split(" ").map(w => w[0]).filter(Boolean).join("").slice(0, 2).toUpperCase();

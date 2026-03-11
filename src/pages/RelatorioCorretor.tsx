@@ -402,7 +402,7 @@ export default function RelatorioCorretor() {
   };
 
   const pct = (real: number, meta: number) => meta > 0 ? Math.round((real / meta) * 100) : 0;
-  const fmtVgv = (v: number) => v >= 1_000_000 ? `R$ ${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `R$ ${(v / 1_000).toFixed(0)}k` : `R$ ${v}`;
+  const fmtVgv = formatBRLCompact;
 
   const metricRows = [
     { label: "Ligações", ...metricas.ligacoes, fmt: (v: number) => String(v) },

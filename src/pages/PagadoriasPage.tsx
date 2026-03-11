@@ -169,7 +169,7 @@ export default function PagadoriasPage() {
     return true;
   });
 
-  const fmtR = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+  const fmtR = (v: number) => formatBRL(v, 2);
   const fmtVgv = (v: number | null) => v === null ? "Acima" : `Até ${fmtR(v)}`;
 
   const handleSave = async () => {

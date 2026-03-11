@@ -4,11 +4,8 @@ import ForecastCards from "./ForecastCards";
 import IaCoreAction from "@/components/IaCoreAction";
 import { AlertTriangle, TrendingUp, Crown, BarChart3, Info } from "lucide-react";
 
-const fmtCurrency = (v: number) => {
-  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
-  return `R$ ${v.toLocaleString("pt-BR")}`;
-};
+import { formatBRLCompact } from "@/lib/utils";
+const fmtCurrency = formatBRLCompact;
 
 export default function CeoForecastPanel() {
   const { gerentes, consolidado, loading } = useForecast();

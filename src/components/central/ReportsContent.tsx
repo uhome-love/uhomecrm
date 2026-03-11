@@ -14,11 +14,7 @@ import { toast } from "sonner";
 
 type ReportType = "funil" | "forecast" | "completo";
 
-function fmtCurrency(v: number) {
-  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(1).replace(".", ",")}K`;
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
+const fmtCurrency = formatBRLCompact;
 
 export default function ReportsContent() {
   const { user } = useAuth();

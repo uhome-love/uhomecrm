@@ -19,16 +19,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, formatBRL, formatBRLCompact } from "@/lib/utils";
 
-function formatCurrency(value: number) {
-  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
-  return `R$ ${value.toLocaleString("pt-BR")}`;
-}
-
-function formatCurrencyFull(value: number) {
-  return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
+const formatCurrency = formatBRLCompact;
+const formatCurrencyFull = (v: number) => formatBRL(v);
 
 function getInitials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase()).join("");
