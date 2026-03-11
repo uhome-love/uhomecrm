@@ -134,6 +134,7 @@ export default function CeoCheckpointViewer() {
 
       const lines = team.map(t => {
         const l = linesMap.get(t.id);
+        const oa = oaStatsByMemberId[t.id];
         return {
           corretor_id: t.id,
           corretor_nome: t.nome,
@@ -142,8 +143,8 @@ export default function CeoCheckpointViewer() {
           meta_visitas_marcadas: l?.meta_visitas_marcadas ?? 0,
           meta_presenca: l?.meta_presenca ?? "sim",
           obs_gerente: l?.obs_gerente ?? "",
-          real_ligacoes: l?.real_ligacoes ?? null,
-          real_leads: l?.real_leads ?? null,
+          real_ligacoes: oa ? oa.ligacoes : (l?.real_ligacoes ?? null),
+          real_leads: oa ? oa.leads : (l?.real_leads ?? null),
           real_visitas_marcadas: l?.real_visitas_marcadas ?? null,
           real_visitas_realizadas: l?.real_visitas_realizadas ?? null,
           real_propostas: l?.real_propostas ?? null,
