@@ -6,6 +6,7 @@ import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import type { PipelineStage } from "@/hooks/usePipeline";
 import { useMemo as useMemoReact } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Lazy load heavy tab components
 const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
@@ -88,6 +89,7 @@ function ForecastInline({ leads, stages, expanded, onToggle }: {
 }
 
 export default function PipelineKanban() {
+  const queryClient = useQueryClient();
   const pipeline = usePipeline();
   const { isGestor, isAdmin, isCorretor } = useUserRole();
   const { user: authUser } = useAuth();
@@ -573,7 +575,14 @@ export default function PipelineKanban() {
           segmentos={pipeline.segmentos}
           corretorNomes={pipeline.corretorNomes}
           open={!!selectedLead}
-          onOpenChange={(open) => !open && setSelectedLead(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedLead(null);
+              // Refresh card statuses after editing lead details
+              queryClient.invalidateQueries({ queryKey: ["pipeline-tarefas-map"] });
+              pipeline.reload();
+            }
+          }}
           onUpdate={pipeline.updateLead}
           onMove={pipeline.moveLead}
           onDelete={pipeline.deleteLead}

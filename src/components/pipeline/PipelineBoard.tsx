@@ -231,8 +231,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
   // Fetch next pending task per lead for all visible leads
   const leadIds = useMemo(() => leads.map(l => l.id), [leads]);
-  const { data: tarefasMap = {} } = useQuery({
-    queryKey: ["pipeline-tarefas-map", leadIds.length],
+  const leadIdsKey = useMemo(() => leadIds.slice().sort().join(","), [leadIds]);
+  const { data: tarefasMap = {}, refetch: refetchTarefas } = useQuery({
+    queryKey: ["pipeline-tarefas-map", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return {};
       // Batch fetch in chunks of 200
@@ -258,7 +259,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       return map;
     },
     enabled: leadIds.length > 0,
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   // Filter stages: hide "Convertido" from corretores (only visible to gerente/CEO)
