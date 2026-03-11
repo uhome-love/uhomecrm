@@ -253,7 +253,7 @@ function EditableRow({ mapping, onSave, onDelete, categoria }: { mapping: FieldM
           <Select value={draft.uhome_table} onValueChange={(v) => setDraft({ ...draft, uhome_table: v })}>
             <SelectTrigger className="h-8 text-xs min-w-[170px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {UHOME_TABLES.map((t) => (
+              {tableOpts.map((t) => (
                 <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
               ))}
             </SelectContent>
