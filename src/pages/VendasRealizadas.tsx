@@ -119,12 +119,33 @@ export default function VendasRealizadas() {
 
       if (!isAdmin && !isGestor && profileId) {
         query = query.eq("corretor_id", profileId);
-      } else if (isGestor && profileId) {
-        query = query.eq("gerente_id", profileId);
+      } else if (isGestor && !isAdmin) {
+        // Gestor: get team member profile IDs
+        const { data: teamMembers } = await supabase.from("team_members").select("user_id").eq("gerente_id", user!.id);
+        if (teamMembers && teamMembers.length > 0) {
+          const tmUserIds = teamMembers.map(tm => tm.user_id);
+          const { data: teamProfiles } = await supabase.from("profiles").select("id").in("user_id", tmUserIds);
+          const teamProfileIds = (teamProfiles || []).map(p => p.id);
+          if (profileId) teamProfileIds.push(profileId);
+          if (teamProfileIds.length > 0) {
+            query = query.in("corretor_id", teamProfileIds);
+          }
+        }
       }
 
       const { data: vendas } = await query;
       const rows = (vendas || []) as VendaRow[];
+
+      // Load partnerships to mark VGV splits
+      const leadIds = rows.map(v => (v as any).pipeline_lead_id).filter(Boolean);
+      let parceriaSet = new Set<string>(); // set of pipeline_lead_ids that have partnerships
+      if (leadIds.length > 0) {
+        const { data: parcerias } = await supabase.from("pipeline_parcerias")
+          .select("pipeline_lead_id")
+          .eq("status", "ativa")
+          .in("pipeline_lead_id", leadIds);
+        (parcerias || []).forEach(p => parceriaSet.add(p.pipeline_lead_id));
+      }
 
       // Load profiles for corretores
       const ids = [...new Set(rows.map(v => v.corretor_id).filter(Boolean))] as string[];
@@ -149,7 +170,7 @@ export default function VendasRealizadas() {
         });
       }
 
-      return { vendas: rows, profiles: profileMap, annualVgvByCorretor };
+      return { vendas: rows, profiles: profileMap, annualVgvByCorretor, parceriaSet: [...parceriaSet] };
     },
   });
 
