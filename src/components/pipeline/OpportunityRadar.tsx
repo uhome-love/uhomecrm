@@ -367,7 +367,7 @@ interface RadarCardProps {
 function RadarCard({ item, borderColor, corretorNomes, onSelectLead, formatVGV, formatSla }: RadarCardProps) {
   const { lead, score, stage, scoreReasons, slaStatus, slaMinutes, hoursInStage } = item;
   const seg = SEGMENTOS_MAP[lead.empreendimento || ""];
-  const timeAgo = formatDistanceToNow(new Date(lead.stage_changed_at), { addSuffix: true, locale: ptBR });
+  const timeAgo = formatDistanceToNowSafe(lead.stage_changed_at, { addSuffix: true, locale: ptBR, fallback: "data inválida" });
 
   const scoreColor = score >= 70 ? "text-red-600" : score >= 50 ? "text-amber-600" : "text-muted-foreground";
   const scoreBg = score >= 70 ? "bg-red-500/10" : score >= 50 ? "bg-amber-500/10" : "bg-muted";

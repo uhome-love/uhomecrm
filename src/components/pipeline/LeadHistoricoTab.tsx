@@ -314,7 +314,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold">{nota.autor_nome || "Usuário"}</span>
               <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">{format(new Date(nota.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                <span className="text-xs text-muted-foreground">{formatDateSafe(nota.created_at, "dd/MM HH:mm", { locale: ptBR, fallback: "Data inválida" })}</span>
                 <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onToggleFixar(nota.id, nota.fixada)}>
                   {nota.fixada ? <PinOff className="h-3 w-3 text-amber-500" /> : <Pin className="h-3 w-3 text-muted-foreground" />}
                 </Button>

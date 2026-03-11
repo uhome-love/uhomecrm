@@ -90,7 +90,7 @@ export default function OpportunityVisitasTab({ pipelineLeadId }: { pipelineLead
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">
-                    {format(new Date(v.data_visita + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                    {formatDateSafe(v.data_visita, "dd/MM/yyyy", { locale: ptBR, dateOnly: true, fallback: "Data inválida" })}
                     {v.hora_visita && <span className="text-muted-foreground font-normal"> às {v.hora_visita.slice(0, 5)}</span>}
                   </p>
                   {v.empreendimento && (

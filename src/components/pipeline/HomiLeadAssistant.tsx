@@ -97,10 +97,10 @@ export default function HomiLeadAssistant({
   // Briefing
   const briefing = useMemo(() => {
     if (!history) return null;
-    const diasComo = createdAt ? differenceInDays(new Date(), new Date(createdAt)) : 0;
-    const horasUltima = history.ultimaAtividade ? differenceInHours(new Date(), new Date(history.ultimaAtividade)) : null;
+    const diasComo = differenceInDaysSafe(createdAt) ?? 0;
+    const horasUltima = differenceInHoursSafe(history.ultimaAtividade);
     const tempoUltima = history.ultimaAtividade
-      ? formatDistanceToNow(new Date(history.ultimaAtividade), { locale: ptBR, addSuffix: true })
+      ? formatDistanceToNowSafe(history.ultimaAtividade, { locale: ptBR, addSuffix: true, fallback: "nunca" })
       : "nunca";
 
     return {

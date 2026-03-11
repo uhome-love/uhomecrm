@@ -548,7 +548,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   <Brain className="h-4 w-4" /> Inteligência do Lead
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <InsightItem icon={Clock} label="Sem contato" value={lastActivity ? formatDistanceToNow(new Date(lastActivity.created_at), { locale: ptBR }) : "Nenhum"} alert={!lastActivity || differenceInHours(new Date(), new Date(lastActivity.created_at)) > 48} />
+                  <InsightItem
+                    icon={Clock}
+                    label="Sem contato"
+                    value={lastActivity ? formatDistanceToNowSafe(lastActivity.created_at, { locale: ptBR, fallback: "Nenhum" }) : "Nenhum"}
+                    alert={!lastActivity || (differenceInHoursSafe(lastActivity.created_at) ?? 999) > 48}
+                  />
                   <InsightItem icon={Phone} label="Tentativas" value={`${leadData.atividades.length}`} />
                   <InsightItem icon={Clock} label="Nesta etapa" value={hoursInStage < 24 ? `${hoursInStage}h` : `${Math.round(hoursInStage / 24)}d`} alert={hoursInStage > 72} />
                   <InsightItem icon={AlertTriangle} label="Atrasadas" value={overdueTasks > 0 ? `${overdueTasks}` : "0"} alert={overdueTasks > 0} />
