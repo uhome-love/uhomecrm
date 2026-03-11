@@ -69,24 +69,28 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const [loading, setLoading] = useState(true);
 
   const loadStages = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("pipeline_stages")
-      .select("id, nome, tipo, cor, ordem, pipeline_tipo, ativo")
-      .eq("ativo", true)
-      .order("ordem");
-    if (error) {
-      console.error("Error loading stages:", error);
-      return;
+    try {
+      const { data, error } = await supabase
+        .from("pipeline_stages")
+        .select("id, nome, tipo, cor, ordem, pipeline_tipo, ativo")
+        .eq("ativo", true)
+        .order("ordem");
+      if (error) {
+        console.error("Error loading stages:", error);
+        return;
+      }
+      const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
+      setStages(filtered.map((s: any) => ({
+        id: s.id,
+        nome: s.nome,
+        tipo: s.tipo,
+        cor: s.cor,
+        ordem: s.ordem,
+        pipeline_tipo: s.pipeline_tipo || pipelineTipo,
+      })));
+    } catch (err) {
+      console.error("[usePipeline] loadStages crash:", err);
     }
-    const filtered = (data || [] as any[]).filter((s: any) => s.pipeline_tipo === pipelineTipo);
-    setStages(filtered.map((s: any) => ({
-      id: s.id,
-      nome: s.nome,
-      tipo: s.tipo,
-      cor: s.cor,
-      ordem: s.ordem,
-      pipeline_tipo: s.pipeline_tipo || pipelineTipo,
-    })));
   }, [pipelineTipo]);
 
   const loadSegmentos = useCallback(async () => {
