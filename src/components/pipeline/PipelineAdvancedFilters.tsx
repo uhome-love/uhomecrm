@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { SlidersHorizontal, X, Save, Star, CalendarIcon, Trash2 } from "lucide-react";
 import { format, differenceInHours, differenceInDays, startOfDay, startOfWeek, startOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, differenceInDaysSafe, differenceInHoursSafe, parseDateTimeSafe } from "@/lib/utils";
 import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 
@@ -97,7 +97,7 @@ const PRESETS: SavedFilter[] = [
 // Calculated temperature (mirrors PipelineCard logic)
 function getCalcTemp(lead: PipelineLead): string {
   const refDate = lead.updated_at || lead.created_at;
-  const hours = differenceInHours(new Date(), new Date(refDate));
+  const hours = differenceInHoursSafe(refDate) ?? Number.POSITIVE_INFINITY;
   const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
   if (hours < 2 || isIndicacao) return "quente";
   if (hours < 24) return "morno";
@@ -159,8 +159,8 @@ export function applyFilters(
   if (filters.diasSemAcao) {
     const minDays = parseInt(filters.diasSemAcao);
     result = result.filter(l => {
-      const days = differenceInDays(new Date(), new Date(l.stage_changed_at));
-      return days >= minDays;
+      const days = differenceInDaysSafe(l.stage_changed_at);
+      return days !== null && days >= minDays;
     });
   }
 

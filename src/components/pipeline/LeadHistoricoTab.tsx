@@ -7,7 +7,7 @@ import {
   Plus, Pin, PinOff, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDateSafe, parseDateTimeSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,7 +106,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
     items.push({ title: "🔄 Lead distribuído", date: lead.distribuido_em, icon: ArrowRight, color: "bg-blue-100 text-blue-600" });
   }
 
-  items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  items.sort((a, b) => (parseDateTimeSafe(b.date)?.getTime() ?? 0) - (parseDateTimeSafe(a.date)?.getTime() ?? 0));
   return items;
 }
 
@@ -282,7 +282,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               <div className="pt-0.5">
                 <p className="text-sm font-medium text-foreground">{item.title}</p>
                 {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
-                <p className="text-xs text-muted-foreground/60">{format(new Date(item.date), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
+                <p className="text-xs text-muted-foreground/60">{formatDateSafe(item.date, "dd/MM 'às' HH:mm", { locale: ptBR, fallback: "Data inválida" })}</p>
               </div>
             </div>
           ))}
@@ -292,7 +292,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             </div>
             <div className="pt-0.5">
               <p className="text-sm font-medium text-foreground">Lead entrou no pipeline</p>
-              <p className="text-xs text-muted-foreground/60">{format(new Date(lead.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}</p>
+              <p className="text-xs text-muted-foreground/60">{formatDateSafe(lead.created_at, "dd/MM 'às' HH:mm", { locale: ptBR, fallback: "Data inválida" })}</p>
             </div>
           </div>
         </div>
@@ -314,7 +314,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold">{nota.autor_nome || "Usuário"}</span>
               <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">{format(new Date(nota.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                <span className="text-xs text-muted-foreground">{formatDateSafe(nota.created_at, "dd/MM HH:mm", { locale: ptBR, fallback: "Data inválida" })}</span>
                 <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => onToggleFixar(nota.id, nota.fixada)}>
                   {nota.fixada ? <PinOff className="h-3 w-3 text-amber-500" /> : <Pin className="h-3 w-3 text-muted-foreground" />}
                 </Button>

@@ -35,9 +35,9 @@ import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import QuickActionMenu from "./QuickActionMenu";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
-import { format, formatDistanceToNow, differenceInHours, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
 
 interface Props {
   lead: PipelineLead;
@@ -102,12 +102,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
 
-  // Insights
-  const hoursInStage = differenceInHours(new Date(), new Date(lead.stage_changed_at));
-  const daysSinceCreation = differenceInDays(new Date(), new Date(lead.created_at));
+  const hoursInStage = differenceInHoursSafe(lead.stage_changed_at) ?? 0;
+  const daysSinceCreation = differenceInDaysSafe(lead.created_at) ?? 0;
   const lastActivity = leadData.atividades[0];
   const pendingTasks = leadData.tarefas.filter(t => t.status === "pendente").length;
-  const overdueTasks = leadData.tarefas.filter(t => t.status === "pendente" && t.vence_em && new Date(t.vence_em + "T12:00:00") < new Date()).length;
+  const overdueTasks = leadData.tarefas.filter(t => {
+    const dueDate = parseDateBRTSafe(t.vence_em);
+    return t.status === "pendente" && !!dueDate && dueDate < new Date();
+  }).length;
 
   // Attempt counter (Melhoria 9)
   const callAttempts = useMemo(() => {
@@ -131,9 +133,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const nextTask = useMemo(() => {
     const pending = leadData.tarefas.filter(t => t.status === "pendente");
     pending.sort((a, b) => {
-      if (!a.vence_em) return 1;
-      if (!b.vence_em) return -1;
-      return new Date(a.vence_em).getTime() - new Date(b.vence_em).getTime();
+      const aTime = parseDateBRTSafe(a.vence_em)?.getTime() ?? Number.POSITIVE_INFINITY;
+      const bTime = parseDateBRTSafe(b.vence_em)?.getTime() ?? Number.POSITIVE_INFINITY;
+      return aTime - bTime;
     });
     return pending[0] || null;
   }, [leadData.tarefas]);
@@ -349,9 +351,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <div className="shrink-0 border-b border-border/50 bg-accent/20 px-6 py-2.5 space-y-2">
           {/* Alert: Overdue tasks */}
           {overdueTasks > 0 && (() => {
-            const overdueList = leadData.tarefas.filter(t => t.status === "pendente" && t.vence_em && new Date(t.vence_em + "T12:00:00") < new Date());
+            const overdueList = leadData.tarefas.filter(t => {
+              const dueDate = parseDateBRTSafe(t.vence_em);
+              return t.status === "pendente" && !!dueDate && dueDate < new Date();
+            });
             const firstOverdue = overdueList[0];
-            const overdueDate = firstOverdue?.vence_em ? format(new Date(firstOverdue.vence_em + "T12:00:00"), "dd/MM", { locale: ptBR }) : "";
+            const overdueDate = formatDateSafe(firstOverdue?.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "data inválida" });
             return (
               <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300/50 dark:border-red-600/30 rounded-lg px-3 py-2">
                 <span className="text-base shrink-0">🔴</span>
@@ -373,7 +378,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           {/* Alert: No contact for 24h+ and no tasks */}
           {!nextTask && (() => {
             const lastContact = (lead as any).ultima_acao_at;
-            const hoursSince = lastContact ? differenceInHours(new Date(), new Date(lastContact)) : 999;
+            const hoursSince = differenceInHoursSafe(lastContact) ?? 999;
             if (leadData.atividades.length === 0 || hoursSince > 24) {
               const severity = hoursSince > 48 ? "red" : "amber";
               const bgCls = severity === "red" ? "bg-red-50 dark:bg-red-900/20 border-red-300/50 dark:border-red-600/30" : "bg-amber-50 dark:bg-amber-900/20 border-amber-300/50 dark:border-amber-600/30";
@@ -402,7 +407,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <span className="text-xs font-semibold text-foreground">Próxima tarefa:</span>
               <span className="text-xs text-muted-foreground">
                 {nextTask.descricao || nextTask.titulo}
-                {nextTask.vence_em && ` · ${format(new Date(nextTask.vence_em + "T00:00:00"), "dd/MM", { locale: ptBR })}`}
+                {nextTask.vence_em && ` · ${formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "data inválida" })}`}
                 {(nextTask as any).hora_vencimento && ` ${(nextTask as any).hora_vencimento.slice(0, 5)}`}
               </span>
               <div className="ml-auto flex items-center gap-1">
@@ -543,7 +548,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   <Brain className="h-4 w-4" /> Inteligência do Lead
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <InsightItem icon={Clock} label="Sem contato" value={lastActivity ? formatDistanceToNow(new Date(lastActivity.created_at), { locale: ptBR }) : "Nenhum"} alert={!lastActivity || differenceInHours(new Date(), new Date(lastActivity.created_at)) > 48} />
+                  <InsightItem
+                    icon={Clock}
+                    label="Sem contato"
+                    value={lastActivity ? formatDistanceToNowSafe(lastActivity.created_at, { locale: ptBR, fallback: "Nenhum" }) : "Nenhum"}
+                    alert={!lastActivity || (differenceInHoursSafe(lastActivity.created_at) ?? 999) > 48}
+                  />
                   <InsightItem icon={Phone} label="Tentativas" value={`${leadData.atividades.length}`} />
                   <InsightItem icon={Clock} label="Nesta etapa" value={hoursInStage < 24 ? `${hoursInStage}h` : `${Math.round(hoursInStage / 24)}d`} alert={hoursInStage > 72} />
                   <InsightItem icon={AlertTriangle} label="Atrasadas" value={overdueTasks > 0 ? `${overdueTasks}` : "0"} alert={overdueTasks > 0} />

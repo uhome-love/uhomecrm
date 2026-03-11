@@ -1,8 +1,22 @@
+import { differenceInDays, differenceInHours, format, formatDistanceToNow } from "date-fns";
+import { differenceInMinutes } from "date-fns";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+function parseDateValue(value: string | Date | null | undefined, dateOnly = false): Date | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (!value) return null;
+
+  const normalized = dateOnly && !value.includes("T") ? `${value}T12:00:00` : value;
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 /**
@@ -26,8 +40,53 @@ export function dateToBRT(date: Date): string {
  * For full ISO strings (with T), returns normal Date parse.
  */
 export function parseDateBRT(dateStr: string): Date {
-  if (!dateStr) return new Date();
-  if (dateStr.includes("T")) return new Date(dateStr);
-  // "YYYY-MM-DD" → treat as noon to avoid timezone day shift
-  return new Date(dateStr + "T12:00:00");
+  return parseDateBRTSafe(dateStr) ?? new Date();
+}
+
+export function parseDateBRTSafe(dateStr?: string | null): Date | null {
+  return parseDateValue(dateStr, true);
+}
+
+export function parseDateTimeSafe(dateStr?: string | null): Date | null {
+  return parseDateValue(dateStr, false);
+}
+
+export function isValidDateValue(value: string | Date | null | undefined, dateOnly = false): boolean {
+  return parseDateValue(value, dateOnly) !== null;
+}
+
+export function formatDateSafe(
+  value: string | Date | null | undefined,
+  pattern: string,
+  options?: { fallback?: string; dateOnly?: boolean; [key: string]: unknown },
+): string {
+  const { fallback = "—", dateOnly = false, ...formatOptions } = options || {};
+  const parsed = parseDateValue(value, dateOnly);
+  return parsed ? format(parsed, pattern, formatOptions as Parameters<typeof format>[2]) : fallback;
+}
+
+export function formatDistanceToNowSafe(
+  value: string | Date | null | undefined,
+  options?: { fallback?: string; dateOnly?: boolean; [key: string]: unknown },
+): string {
+  const { fallback = "—", dateOnly = false, ...distanceOptions } = options || {};
+  const parsed = parseDateValue(value, dateOnly);
+  return parsed
+    ? formatDistanceToNow(parsed, distanceOptions as Parameters<typeof formatDistanceToNow>[1])
+    : fallback;
+}
+
+export function differenceInHoursSafe(value: string | Date | null | undefined, dateOnly = false): number | null {
+  const parsed = parseDateValue(value, dateOnly);
+  return parsed ? differenceInHours(new Date(), parsed) : null;
+}
+
+export function differenceInDaysSafe(value: string | Date | null | undefined, dateOnly = false): number | null {
+  const parsed = parseDateValue(value, dateOnly);
+  return parsed ? differenceInDays(new Date(), parsed) : null;
+}
+
+export function differenceInMinutesSafe(value: string | Date | null | undefined, dateOnly = false): number | null {
+  const parsed = parseDateValue(value, dateOnly);
+  return parsed ? differenceInMinutes(new Date(), parsed) : null;
 }

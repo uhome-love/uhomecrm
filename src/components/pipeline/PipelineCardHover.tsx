@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { differenceInHours } from "date-fns";
+import { differenceInHoursSafe } from "@/lib/utils";
 import { toast } from "sonner";
 
 // Activity type icons
@@ -34,7 +34,7 @@ interface CalcTemp {
 
 function getCalcTemp(lead: PipelineLead): CalcTemp {
   const refDate = lead.updated_at || lead.created_at;
-  const hours = differenceInHours(new Date(), new Date(refDate));
+  const hours = differenceInHoursSafe(refDate) ?? Number.POSITIVE_INFINITY;
   const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
 
   if (hours < 2 || isIndicacao) {

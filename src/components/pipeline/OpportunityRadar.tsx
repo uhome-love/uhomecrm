@@ -11,7 +11,7 @@ import {
   Phone, ArrowUpRight, RefreshCw, ChevronDown, ChevronUp,
   AlertTriangle,
 } from "lucide-react";
-import { differenceInHours, differenceInDays, formatDistanceToNow } from "date-fns";
+import { differenceInHoursSafe, formatDistanceToNowSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { getSlaStatus } from "@/lib/leadScoring";
 
@@ -70,8 +70,7 @@ function computeRadarScore(lead: PipelineLead, stage: PipelineStage): { score: n
   // Próxima ação defined
   if (lead.proxima_acao) { score += 5; reasons.push("Próxima ação definida (+5)"); }
 
-  // Recency bonus
-  const hoursIn = differenceInHours(new Date(), new Date(lead.stage_changed_at));
+  const hoursIn = differenceInHoursSafe(lead.stage_changed_at) ?? Number.POSITIVE_INFINITY;
   if (hoursIn < 2) { score += 10; reasons.push("Movimentação < 2h (+10)"); }
   else if (hoursIn < 24) { score += 5; reasons.push("Movimentação < 24h (+5)"); }
 
@@ -98,7 +97,7 @@ export default function OpportunityRadar({ leads, stages, corretorNomes, onSelec
       if (!stage || ["venda", "descarte"].includes(stage.tipo)) continue;
 
       const { score, reasons } = computeRadarScore(lead, stage);
-      const hoursInStage = differenceInHours(now, new Date(lead.stage_changed_at));
+      const hoursInStage = differenceInHoursSafe(lead.stage_changed_at) ?? Number.POSITIVE_INFINITY;
       const sla = getSlaStatus(stage.tipo, lead.stage_changed_at);
 
       let category: "hot" | "warm" | "reengage";
@@ -367,7 +366,7 @@ interface RadarCardProps {
 function RadarCard({ item, borderColor, corretorNomes, onSelectLead, formatVGV, formatSla }: RadarCardProps) {
   const { lead, score, stage, scoreReasons, slaStatus, slaMinutes, hoursInStage } = item;
   const seg = SEGMENTOS_MAP[lead.empreendimento || ""];
-  const timeAgo = formatDistanceToNow(new Date(lead.stage_changed_at), { addSuffix: true, locale: ptBR });
+  const timeAgo = formatDistanceToNowSafe(lead.stage_changed_at, { addSuffix: true, locale: ptBR, fallback: "data inválida" });
 
   const scoreColor = score >= 70 ? "text-red-600" : score >= 50 ? "text-amber-600" : "text-muted-foreground";
   const scoreBg = score >= 70 ? "bg-red-500/10" : score >= 50 ? "bg-amber-500/10" : "bg-muted";

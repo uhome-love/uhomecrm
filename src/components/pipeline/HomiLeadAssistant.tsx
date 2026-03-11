@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Bot, MessageSquare, ShieldQuestion, Send, FileText, Sparkles, Phone, CalendarCheck, RefreshCw, Clock, Target, Flame, Snowflake, Sun, ThermometerSun, Lightbulb, ClipboardList } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { formatDistanceToNow, differenceInDays, differenceInHours } from "date-fns";
+import { formatDistanceToNowSafe, differenceInDaysSafe, differenceInHoursSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 
 interface Props {
@@ -97,10 +97,10 @@ export default function HomiLeadAssistant({
   // Briefing
   const briefing = useMemo(() => {
     if (!history) return null;
-    const diasComo = createdAt ? differenceInDays(new Date(), new Date(createdAt)) : 0;
-    const horasUltima = history.ultimaAtividade ? differenceInHours(new Date(), new Date(history.ultimaAtividade)) : null;
+    const diasComo = differenceInDaysSafe(createdAt) ?? 0;
+    const horasUltima = differenceInHoursSafe(history.ultimaAtividade);
     const tempoUltima = history.ultimaAtividade
-      ? formatDistanceToNow(new Date(history.ultimaAtividade), { locale: ptBR, addSuffix: true })
+      ? formatDistanceToNowSafe(history.ultimaAtividade, { locale: ptBR, addSuffix: true, fallback: "nunca" })
       : "nunca";
 
     return {

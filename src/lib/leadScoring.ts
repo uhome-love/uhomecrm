@@ -1,4 +1,4 @@
-import { differenceInHours, differenceInMinutes } from "date-fns";
+import { differenceInHoursSafe, differenceInMinutesSafe } from "@/lib/utils";
 
 export interface LeadScoreResult {
   score: number; // 0-100
@@ -26,7 +26,7 @@ export function getSlaStatus(stageType: string, stageChangedAt: string): {
   slaLabel: string;
 } {
   const sla = STAGE_SLA[stageType] || STAGE_SLA.atendimento;
-  const mins = differenceInMinutes(new Date(), new Date(stageChangedAt));
+  const mins = differenceInMinutesSafe(stageChangedAt) ?? 0;
 
   if (mins >= sla.danger) {
     return { status: "breach", minutesRemaining: sla.danger - mins, slaLabel: sla.label };
@@ -79,8 +79,7 @@ export function calculateLeadScore(lead: {
     score += 10; factors.push("+Indicação");
   }
 
-  // Penalizar leads velhos sem movimento
-  const hoursInStage = differenceInHours(new Date(), new Date(lead.stage_changed_at));
+  const hoursInStage = differenceInHoursSafe(lead.stage_changed_at) ?? 0;
   if (hoursInStage > 48) { score -= 15; factors.push("-Parado 48h+"); }
   else if (hoursInStage > 24) { score -= 10; factors.push("-Parado 24h+"); }
   else if (hoursInStage > 4) { score -= 5; factors.push("-Parado 4h+"); }
