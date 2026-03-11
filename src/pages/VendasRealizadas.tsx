@@ -155,6 +155,7 @@ export default function VendasRealizadas() {
 
   const vendas = data?.vendas || [];
   const profiles = data?.profiles || {};
+  const annualVgvByCorretor = data?.annualVgvByCorretor || {};
 
   const filtered = useMemo(() => {
     if (!search.trim()) return vendas;
@@ -171,10 +172,33 @@ export default function VendasRealizadas() {
   const totalVendas = filtered.length;
   const ticketMedio = totalVendas > 0 ? totalVGV / totalVendas : 0;
 
-  // Commissions
-  const comissaoCorretor32 = totalVGV * 0.0032; // 0.32% do VGV (32% da comissão de ~1%)
-  const comissaoCorretor36 = totalVGV * 0.0036;
-  const comissaoGerente = totalVGV * 0.0015; // 15% da comissão
+  // Commission logic:
+  // Corretagem = VGV × 5%
+  // Corretor tier based on annual VGV: <1.5M = 32%, >=1.5M = 34%, >=3M = 36%
+  // Gerente = Corretagem × 15%
+  function getCorretorTier(annualVgv: number): { pct: number; label: string } {
+    if (annualVgv >= 3_000_000) return { pct: 0.36, label: "36%" };
+    if (annualVgv >= 1_500_000) return { pct: 0.34, label: "34%" };
+    return { pct: 0.32, label: "32%" };
+  }
+
+  function calcComissaoCorretor(vgv: number, annualVgv: number): number {
+    const corretagem = vgv * 0.05;
+    const tier = getCorretorTier(annualVgv);
+    return corretagem * tier.pct;
+  }
+
+  function calcComissaoGerente(vgv: number): number {
+    return vgv * 0.05 * 0.15;
+  }
+
+  // Total commissions for summary
+  // For per-corretor, use their annual VGV tier; for aggregate, show range
+  const totalCorretagem = totalVGV * 0.05;
+  const comissaoCorretor32 = totalCorretagem * 0.32;
+  const comissaoCorretor34 = totalCorretagem * 0.34;
+  const comissaoCorretor36 = totalCorretagem * 0.36;
+  const comissaoGerente = totalCorretagem * 0.15;
 
   // Rankings by corretor
   const corretorRanking = useMemo(() => {
