@@ -543,12 +543,27 @@ export default function MelnickDay() {
   const segKeys = Object.keys(SEGMENTOS);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("mcmv");
+  const [selectedEmps, setSelectedEmps] = useState<Set<string>>(new Set());
+  const [showVitrineDialog, setShowVitrineDialog] = useState(false);
+  const [vitrineTitle, setVitrineTitle] = useState("Ofertas Melnick Day 2026");
+  const [vitrineMsg, setVitrineMsg] = useState("");
+  const [creatingVitrine, setCreatingVitrine] = useState(false);
+  const [vitrineLink, setVitrineLink] = useState<string | null>(null);
 
-  const filteredEmpreendimentos = (emps: Empreendimento[]) => {
-    if (!search.trim()) return emps;
-    const q = search.toLowerCase();
-    return emps.filter((e) => e.nome.toLowerCase().includes(q) || e.bairro.toLowerCase().includes(q));
+  const toggleEmp = (empName: string) => {
+    setSelectedEmps((prev) => {
+      const next = new Set(prev);
+      if (next.has(empName)) next.delete(empName);
+      else next.add(empName);
+      return next;
+    });
   };
+
+  const allEmps = segKeys.flatMap((k) =>
+    SEGMENTOS[k].empreendimentos.map((emp) => ({ ...emp, segmento: SEGMENTOS[k].label }))
+  );
+
+  const selectedEmpData = allEmps.filter((emp) => selectedEmps.has(emp.nome));
 
   return (
     <div className="space-y-5 pb-24">
