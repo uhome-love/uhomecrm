@@ -239,8 +239,8 @@ export function AppSidebar() {
           {
             label: "Visão Geral",
             items: [
-              { title: "Painel da Equipe", url: "/meu-time", icon: Users },
-{ title: "Central do Gerente", url: "/checkpoint", icon: ClipboardCheck },
+              { title: "Meu Time", url: "/meu-time", icon: Users },
+              { title: "Central do Gerente", url: "/central-do-gerente", icon: ClipboardCheck },
             ],
           },
           {
