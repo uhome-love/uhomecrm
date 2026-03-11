@@ -117,6 +117,22 @@ type JetimobImovel = {
   descricao?: string;
 };
 
+type EmpreendimentoOverride = {
+  id: string;
+  codigo: string;
+  nome: string | null;
+  bairro: string | null;
+  area_privativa: number | null;
+  dormitorios: number | null;
+  suites: number | null;
+  vagas: number | null;
+  valor_venda: number | null;
+  status_obra: string | null;
+  previsao_entrega: string | null;
+  descricao: string | null;
+  fotos: string[];
+};
+
 type Material = {
   id: string;
   empreendimento_codigo: string;
