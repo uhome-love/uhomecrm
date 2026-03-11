@@ -194,7 +194,7 @@ const PipelineCard = memo(function PipelineCard({
   onDragStart, onClick, onMoveLead, onTransferred, stageIndexMap, proximaTarefa,
 }: PipelineCardProps) {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isGestor } = useUserRole();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<Date>();
   const [scheduleTime, setScheduleTime] = useState("10:00");
@@ -542,7 +542,7 @@ const PipelineCard = memo(function PipelineCard({
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setComunicacaoOpen(true); }}>
               <Send className="h-3.5 w-3.5 mr-2" /> Central de comunicação
             </DropdownMenuItem>
-            {(isAdmin || lead.corretor_id === user?.id) && (
+            {(isAdmin || isGestor || lead.corretor_id === user?.id) && (
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setTransferOpen(true); }}>
                 <ArrowRightLeft className="h-3.5 w-3.5 mr-2" /> Repassar lead
               </DropdownMenuItem>
