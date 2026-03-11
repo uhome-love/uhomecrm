@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Target, ClipboardList, CheckCircle2, BarChart2, AlertCircle, Loader2, Pencil, Save } from "lucide-react";
 import { format, subDays, getDaysInMonth, getDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import CheckpointTableTab from "@/components/checkpoint/CheckpointTableTab";
+import CheckpointCards from "@/components/checkpoint/CheckpointCards";
 import AproveitadosTab from "@/components/checkpoint/AproveitadosTab";
 import RelatoriosTab from "@/components/checkpoint/RelatoriosTab";
 
@@ -485,25 +485,7 @@ export default function CheckpointGerente() {
         )}
 
         {activeTab === "checkpoint" && (
-          <CheckpointTableTab
-            rows={rows}
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-            dateFmt={dateFmt}
-            checkpointStatus={checkpointStatus}
-            totalLig={totalLig}
-            totalAprov={totalAprov}
-            totalVm={totalVm}
-            presentes={presentes}
-            syncing={syncing}
-            saving={saving}
-            onSync={syncOA}
-            onCopyYesterday={copyFromYesterday}
-            onZero={zeroResults}
-            onSave={saveCheckpoint}
-            onPublish={publish}
-            onUpdateRow={updateRow}
-          />
+          <CheckpointCards teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
         )}
 
 
