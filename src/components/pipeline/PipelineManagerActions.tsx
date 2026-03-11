@@ -60,12 +60,26 @@ export default function PipelineManagerActions({ leads, corretorNomes }: Props) 
   }, [leads]);
 
   const leadsParadosByCorretor = useMemo(() => {
-    const now = new Date();
     const map = new Map<string, PipelineLead[]>();
     for (const l of leads) {
       if (!l.corretor_id) continue;
-      const last = (l as any).ultimo_contato || l.updated_at || l.created_at;
-      if (last && differenceInHours(now, new Date(last)) > 3) {
+      const ultimaAcao = (l as any).ultima_acao_at;
+      const proximaAcao = (l as any).data_proxima_acao;
+      
+      // Lead is "parado" only if it has NO future task AND (no history OR history > 48h old)
+      const hasFutureTask = proximaAcao && new Date(proximaAcao) >= new Date(new Date().toDateString());
+      if (hasFutureTask) continue; // has a task scheduled → not parado
+      
+      const hasHistory = !!ultimaAcao;
+      if (!hasHistory) {
+        // No history at all → parado (unless brand new < 2h)
+        const hoursInSystem = differenceInHours(new Date(), new Date(l.created_at));
+        if (hoursInSystem < 2) continue;
+        const arr = map.get(l.corretor_id) || [];
+        arr.push(l);
+        map.set(l.corretor_id, arr);
+      } else if (differenceInHours(new Date(), new Date(ultimaAcao)) > 48) {
+        // Has history but it's stale (>48h) and no future task
         const arr = map.get(l.corretor_id) || [];
         arr.push(l);
         map.set(l.corretor_id, arr);
