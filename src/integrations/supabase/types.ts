@@ -1825,6 +1825,54 @@ export type Database = {
         }
         Relationships: []
       }
+      integracao_field_mappings: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          id: string
+          jetimob_description: string | null
+          jetimob_field: string
+          notes: string | null
+          ordem: number
+          status: string
+          transform: string | null
+          uhome_field: string
+          uhome_table: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          id?: string
+          jetimob_description?: string | null
+          jetimob_field: string
+          notes?: string | null
+          ordem?: number
+          status?: string
+          transform?: string | null
+          uhome_field?: string
+          uhome_table?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          id?: string
+          jetimob_description?: string | null
+          jetimob_field?: string
+          notes?: string | null
+          ordem?: number
+          status?: string
+          transform?: string | null
+          uhome_field?: string
+          uhome_table?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       integration_settings: {
         Row: {
           id: string
