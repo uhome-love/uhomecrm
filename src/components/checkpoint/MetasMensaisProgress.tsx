@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
+import { formatBRLCompact } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { Target, TrendingUp, Pencil, Check, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
