@@ -167,7 +167,7 @@ export default function PipelineKanban() {
   }, [pipeline.corretorNomes]);
 
   const filaCeoCount = useMemo(() =>
-    pipeline.leads.filter(l => l.aceite_status === "pendente_distribuicao").length,
+    pipeline.leads.filter(l => !l.corretor_id).length,
     [pipeline.leads]
   );
 
