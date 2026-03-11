@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Building2, MapPin, BedDouble, Maximize2, Tag, Loader2, Download,
   Upload, Trash2, Image as ImageIcon, Video, FileText, ChevronLeft, ChevronRight,
-  Radio, Megaphone, Eye, DollarSign, Sparkles, ChevronDown, Pencil, Save, X
+  Radio, Megaphone, Eye, DollarSign, Sparkles, ChevronDown, Pencil, Save, X, Plus, Send, Link2, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
