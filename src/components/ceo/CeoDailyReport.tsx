@@ -35,19 +35,24 @@ export default function CeoDailyReport({ teams, corretoresRank, kpis, totalLeads
     if (!reportRef.current) return;
     setDownloading(true);
     try {
-      const html2pdf = (await import("html2pdf.js")).default;
-      await html2pdf()
+      const mod = await import("html2pdf.js");
+      const html2pdfFn = mod.default || mod;
+      const worker = html2pdfFn();
+      await worker
         .set({
           margin: [8, 8, 8, 8],
           filename: `relatorio-diario-${hojeShort}.pdf`,
           image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
         })
-        .from(reportRef.current)
+        .from(reportRef.current.cloneNode(true))
         .save();
     } catch (e) {
       console.error("PDF error:", e);
+      const { toast } = await import("sonner");
+      toast.error("Erro ao gerar PDF. Tente novamente.");
     } finally {
       setDownloading(false);
     }
