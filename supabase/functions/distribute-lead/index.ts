@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
       // Distribute leads one by one with global balancing
       let dispatched = 0;
       let failed = 0;
-      const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string }> = [];
+      const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string; leadsHoje?: number; totalAtivos?: number }> = [];
 
       for (const lead of leads) {
         const segmentoId = await resolveSegmento(supabase, lead.empreendimento);
