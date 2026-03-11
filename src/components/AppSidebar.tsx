@@ -303,6 +303,16 @@ export function AppSidebar() {
       return {
         topItem: { title: "Dashboard", url: "/gerente/dashboard", icon: Home },
         groups: [
+          ...(melnickDayItem.length > 0 ? [{
+            label: "Destaque",
+            items: melnickDayItem,
+          }] : []),
+          {
+            label: "Visão Geral",
+            items: [
+              { title: "Central do Gerente", url: "/central-do-gerente", icon: ClipboardCheck },
+            ],
+          },
           {
             label: "Gestão de Leads",
             items: [
