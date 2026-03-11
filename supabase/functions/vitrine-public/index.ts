@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       // Handle Melnick Day vitrines (data stored in dados_custom)
+      console.log(`Vitrine tipo="${vitrine.tipo}", has dados_custom=${!!vitrine.dados_custom}`);
       if (vitrine.tipo === "melnick_day" && vitrine.dados_custom) {
         const customData = vitrine.dados_custom as any[];
         const imoveis = customData.map((item: any, idx: number) => ({
