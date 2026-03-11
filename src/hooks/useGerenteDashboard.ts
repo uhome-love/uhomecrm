@@ -359,7 +359,7 @@ export function useGerenteDashboard(period: Period) {
         } as NegocioAcao;
       });
     },
-    enabled: !!user,
+    enabled: !!user && !!profileId,
     staleTime: 60_000,
   });
 
