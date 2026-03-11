@@ -1480,9 +1480,12 @@ export type Database = {
           previsao_entrega: string | null
           status_obra: string | null
           suites: number | null
+          tipologias: Json | null
           updated_at: string | null
           updated_by: string | null
           vagas: number | null
+          valor_max: number | null
+          valor_min: number | null
           valor_venda: number | null
         }
         Insert: {
@@ -1498,9 +1501,12 @@ export type Database = {
           previsao_entrega?: string | null
           status_obra?: string | null
           suites?: number | null
+          tipologias?: Json | null
           updated_at?: string | null
           updated_by?: string | null
           vagas?: number | null
+          valor_max?: number | null
+          valor_min?: number | null
           valor_venda?: number | null
         }
         Update: {
@@ -1516,9 +1522,12 @@ export type Database = {
           previsao_entrega?: string | null
           status_obra?: string | null
           suites?: number | null
+          tipologias?: Json | null
           updated_at?: string | null
           updated_by?: string | null
           vagas?: number | null
+          valor_max?: number | null
+          valor_min?: number | null
           valor_venda?: number | null
         }
         Relationships: []
