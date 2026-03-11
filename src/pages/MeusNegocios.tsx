@@ -863,7 +863,7 @@ export default function MeusNegocios() {
                 >
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="h-2.5 w-2.5 rounded-full shadow-lg" style={{ backgroundColor: fase.cor, boxShadow: `0 0 8px ${fase.cor}80` }} />
-                    <span className="text-xs font-bold text-white/90">{fase.icon} {fase.label}</span>
+                    <span className="text-sm font-bold text-white/90">{fase.icon} {fase.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold text-white/80" style={{ background: `${fase.cor}20` }}>
