@@ -596,11 +596,11 @@ export default function MeusNegocios() {
     }
   }, [negocios]);
 
-  const executeMoveFase = useCallback(async (negocioId: string, novaFase: string) => {
+  const executeMoveFase = useCallback(async (negocioId: string, novaFase: string, dataAssinatura?: string) => {
     const negocio = negocios.find(n => n.id === negocioId);
     if (!negocio) return;
 
-    await moveFase(negocioId, novaFase);
+    await moveFase(negocioId, novaFase, dataAssinatura);
 
     if (novaFase === "assinado") {
       await onNegocioAssinado({
@@ -611,6 +611,7 @@ export default function MeusNegocios() {
         empreendimento: negocio.empreendimento || undefined,
         corretorId: negocio.corretor_id || user?.id || "",
         vgvFinal: negocio.vgv_estimado || undefined,
+        dataAssinatura,
       });
       setCelebrationData({
         nomeCliente: negocio.nome_cliente,
