@@ -120,6 +120,8 @@ export interface NegocioQuente {
   corretor_nome: string;
   updated_at: string;
   horas_desde_update: number;
+  unidade: string;
+  proposta_valor: number;
 }
 
 const FASE_PRIORITY: Record<string, number> = { assinado: 6, documentacao: 5, negociacao: 4, proposta: 3, gerado: 2, visita: 1 };
