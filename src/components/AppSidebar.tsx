@@ -339,7 +339,6 @@ export function AppSidebar() {
             label: "Ferramentas",
             items: [
               { title: "HOMI Gerente", url: "/homi-gerente", icon: Bot },
-              { title: "Base HOMI", url: "/homi/base-conhecimento", icon: Brain },
               { title: "Imóveis", url: "/imoveis", icon: Building2 },
               { title: "Academia", url: "/academia/gerenciar", icon: Award },
               { title: "Templates", url: "/templates-comunicacao", icon: MessageSquare },
