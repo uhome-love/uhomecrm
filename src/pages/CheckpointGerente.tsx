@@ -339,7 +339,7 @@ export default function CheckpointGerente() {
   return (
     <div className="min-h-screen bg-muted/30 pb-12">
       <div className="bg-card border-b border-border px-6 py-5">
-        <h1 className="text-2xl font-bold text-foreground">Checkpoint do <span className="text-primary">Gerente</span></h1>
+        <h1 className="text-2xl font-bold text-foreground">Central do <span className="text-primary">Gerente</span></h1>
         <p className="text-sm text-muted-foreground mt-0.5">Gestão diária do time comercial com metas, resultados e IA</p>
       </div>
 
