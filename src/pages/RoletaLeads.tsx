@@ -97,7 +97,10 @@ function CeoView() {
         <TabsList className="bg-muted/50">
           <TabsTrigger value="gestao">Gestão da Roleta</TabsTrigger>
           <TabsTrigger value="roletagens" className="gap-1.5">
-            Roletagens
+            Histórico Roletagens
+          </TabsTrigger>
+          <TabsTrigger value="perdidos" className="gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5" /> Leads Perdidos
           </TabsTrigger>
         </TabsList>
 
