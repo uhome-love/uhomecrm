@@ -3096,6 +3096,89 @@ export type Database = {
           },
         ]
       }
+      pagadoria_solicitacoes: {
+        Row: {
+          comprovante_residencia_url: string | null
+          contrato_pdf_url: string | null
+          cpf: string | null
+          cpf_url: string | null
+          created_at: string
+          email: string | null
+          empreendimento: string | null
+          ficha_construtora_url: string | null
+          id: string
+          negocio_id: string
+          nome_cliente: string
+          obs_backoffice: string | null
+          observacoes: string | null
+          percentual_comissao: number | null
+          rg: string | null
+          rg_url: string | null
+          solicitante_id: string
+          status: string
+          telefone: string | null
+          unidade: string | null
+          updated_at: string
+          vgv_contrato: number | null
+        }
+        Insert: {
+          comprovante_residencia_url?: string | null
+          contrato_pdf_url?: string | null
+          cpf?: string | null
+          cpf_url?: string | null
+          created_at?: string
+          email?: string | null
+          empreendimento?: string | null
+          ficha_construtora_url?: string | null
+          id?: string
+          negocio_id: string
+          nome_cliente: string
+          obs_backoffice?: string | null
+          observacoes?: string | null
+          percentual_comissao?: number | null
+          rg?: string | null
+          rg_url?: string | null
+          solicitante_id: string
+          status?: string
+          telefone?: string | null
+          unidade?: string | null
+          updated_at?: string
+          vgv_contrato?: number | null
+        }
+        Update: {
+          comprovante_residencia_url?: string | null
+          contrato_pdf_url?: string | null
+          cpf?: string | null
+          cpf_url?: string | null
+          created_at?: string
+          email?: string | null
+          empreendimento?: string | null
+          ficha_construtora_url?: string | null
+          id?: string
+          negocio_id?: string
+          nome_cliente?: string
+          obs_backoffice?: string | null
+          observacoes?: string | null
+          percentual_comissao?: number | null
+          rg?: string | null
+          rg_url?: string | null
+          solicitante_id?: string
+          status?: string
+          telefone?: string | null
+          unidade?: string | null
+          updated_at?: string
+          vgv_contrato?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagadoria_solicitacoes_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pagadorias: {
         Row: {
           cliente_cpf: string | null
