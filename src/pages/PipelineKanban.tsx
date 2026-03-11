@@ -574,7 +574,14 @@ export default function PipelineKanban() {
           segmentos={pipeline.segmentos}
           corretorNomes={pipeline.corretorNomes}
           open={!!selectedLead}
-          onOpenChange={(open) => !open && setSelectedLead(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedLead(null);
+              // Refresh card statuses after editing lead details
+              queryClient.invalidateQueries({ queryKey: ["pipeline-tarefas-map"] });
+              pipeline.reload();
+            }
+          }}
           onUpdate={pipeline.updateLead}
           onMove={pipeline.moveLead}
           onDelete={pipeline.deleteLead}
