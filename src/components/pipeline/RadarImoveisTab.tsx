@@ -225,7 +225,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, curren
       if (statusImovel === "pronto") params.status = "pronto";
 
       const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
-        body: { ...params, limit: 50 },
+        body: { action: "list_imoveis", ...params, pageSize: 50 },
       });
 
       if (error) throw error;
