@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { differenceInHours } from "date-fns";
+import { differenceInHoursSafe } from "@/lib/utils";
 import { toast } from "sonner";
 
 // Activity type icons

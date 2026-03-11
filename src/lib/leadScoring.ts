@@ -1,4 +1,4 @@
-import { differenceInHours, differenceInMinutes } from "date-fns";
+import { differenceInHoursSafe, differenceInMinutesSafe } from "@/lib/utils";
 
 export interface LeadScoreResult {
   score: number; // 0-100

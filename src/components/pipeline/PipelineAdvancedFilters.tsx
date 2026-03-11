@@ -14,8 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { SlidersHorizontal, X, Save, Star, CalendarIcon, Trash2 } from "lucide-react";
 import { format, differenceInHours, differenceInDays, startOfDay, startOfWeek, startOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
+import { cn, differenceInDaysSafe, differenceInHoursSafe, parseDateTimeSafe } from "@/lib/utils";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 
 export interface PipelineFilters {
