@@ -145,12 +145,13 @@ export default function GerenteDashboard() {
         </div>
       )}
 
-      {/* ═══ 2. KPI CARDS — 5 columns ═══ */}
+      {/* ═══ 2. KPI CARDS — 6 columns ═══ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
             { icon: Phone, label: "Ligações", value: k.ligacoes, sub: `Meta: ${k.metaTime} · ${ligPct}%`, color: "hsl(var(--primary))", showProgress: true, pct: ligPct },
             { icon: Users, label: "Leads", value: k.totalLeads ?? 0, sub: `ativos no pipeline`, color: "hsl(210, 80%, 55%)" },
+            { icon: Send, label: "Distribuídos", value: null, sub: "", color: "hsl(25, 90%, 55%)", isDistribution: true },
             { icon: CalendarDays, label: "Visitas Marcadas", value: k.visitasMarcadas ?? k.visitasHoje, sub: `${periodLabels[period].toLowerCase()}`, color: "hsl(var(--warning))" },
             { icon: MapPin, label: "Visitas Realizadas", value: k.visitasRealizadas ?? 0, sub: `${periodLabels[period].toLowerCase()}`, color: "hsl(160, 60%, 42%)" },
             { icon: Briefcase, label: "Negócios Ativos", value: k.negociosAtivos, sub: `VGV: ${formatCurrency(k.vgvTotal)}`, color: "hsl(270, 60%, 55%)" },
@@ -161,14 +162,20 @@ export default function GerenteDashboard() {
                 <kpi.icon className="h-4 w-4" style={{ color: kpi.color }} />
                 <span className="text-[11px] font-medium text-muted-foreground">{kpi.label}</span>
               </div>
-              <p className="text-3xl font-black leading-none" style={{ color: kpi.color }}>
-                <AnimatedNumber value={typeof kpi.value === "number" ? kpi.value : 0} />
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1">{kpi.sub}</p>
-              {kpi.showProgress && (
-                <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.3, duration: 0.6 }} style={{ transformOrigin: "left" }}>
-                  <Progress value={kpi.pct} className="h-1 mt-2" />
-                </motion.div>
+              {(kpi as any).isDistribution ? (
+                <LeadsDistribuidosPanel teamUserIds={teamUserIds} period={period === "dia" ? "dia" : period === "semana" ? "semana" : "mes"} compact showPeriodSelector={false} />
+              ) : (
+                <>
+                  <p className="text-3xl font-black leading-none" style={{ color: kpi.color }}>
+                    <AnimatedNumber value={typeof kpi.value === "number" ? kpi.value : 0} />
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{kpi.sub}</p>
+                  {kpi.showProgress && (
+                    <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.3, duration: 0.6 }} style={{ transformOrigin: "left" }}>
+                      <Progress value={kpi.pct} className="h-1 mt-2" />
+                    </motion.div>
+                  )}
+                </>
               )}
             </motion.div>
           ))}
