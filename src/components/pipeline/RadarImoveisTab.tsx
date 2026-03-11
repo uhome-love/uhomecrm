@@ -564,7 +564,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, curren
                 size="sm"
                 variant="outline"
                 className="gap-1.5"
-                onClick={() => nav?.(`/melnick-day`)}
+                onClick={() => navigate(`/melnick-day`)}
               >
                 <Sparkles className="h-3.5 w-3.5" /> MeDay
               </Button>
