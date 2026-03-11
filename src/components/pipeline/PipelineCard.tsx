@@ -66,6 +66,18 @@ const TIPO_LABELS: Record<string, string> = {
   retornar_cliente: "Retornar", outro: "Tarefa",
 };
 
+function toValidDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function toValidDateFromYMD(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 // Status indicator + task status line
 function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_em: string | null; hora_vencimento: string | null } | null) {
   const now = new Date();
@@ -73,12 +85,21 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
 
   // Check task status
   if (proximaTarefa?.vence_em) {
-    const d = new Date(proximaTarefa.vence_em + "T12:00:00");
+    const d = toValidDateFromYMD(proximaTarefa.vence_em);
     const hora = proximaTarefa.hora_vencimento?.slice(0, 5) || "";
     const label = TIPO_LABELS[proximaTarefa.tipo] || proximaTarefa.tipo;
 
+    if (!d) {
+      return {
+        indicator: "🟡",
+        indicatorCls: "text-amber-500",
+        text: `🟡 Próximo: ${label} ${hora}`.trim(),
+        textCls: "text-amber-600 dark:text-amber-400 font-semibold",
+        borderCls: "border-l-amber-400",
+      };
+    }
+
     if (d < todayStart) {
-      // Overdue
       const dateLabel = isYesterdayFn(d) ? "ontem" : format(d, "dd/MM");
       return {
         indicator: "🔴",
@@ -88,6 +109,7 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
         borderCls: "border-l-destructive",
       };
     }
+
     if (isTodayFn(d)) {
       return {
         indicator: "🟡",
@@ -97,7 +119,7 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
         borderCls: "border-l-amber-400",
       };
     }
-    // Future
+
     const dateLabel = isTomorrowFn(d) ? "amanhã" : format(d, "dd/MM");
     return {
       indicator: "✅",
@@ -109,11 +131,12 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
   }
 
   // No task — check contact status
-  const lastContact = (lead as any).ultima_acao_at;
-  if (!lastContact) {
-    // Check if new lead (< 2h in stage)
-    const hoursInStage = differenceInHours(now, new Date(lead.stage_changed_at));
-    if (hoursInStage < 2) {
+  const lastContactDate = toValidDate((lead as any).ultima_acao_at);
+  if (!lastContactDate) {
+    const stageDate = toValidDate(lead.stage_changed_at);
+    const hoursInStage = stageDate ? differenceInHours(now, stageDate) : 999;
+
+    if (Number.isFinite(hoursInStage) && hoursInStage < 2) {
       return {
         indicator: null,
         indicatorCls: "",
@@ -122,6 +145,7 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
         borderCls: "border-l-blue-400",
       };
     }
+
     return {
       indicator: "🟡",
       indicatorCls: "text-amber-500",
@@ -131,7 +155,17 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
     };
   }
 
-  const hoursSinceContact = differenceInHours(now, new Date(lastContact));
+  const hoursSinceContact = differenceInHours(now, lastContactDate);
+  if (!Number.isFinite(hoursSinceContact)) {
+    return {
+      indicator: "🟡",
+      indicatorCls: "text-amber-500",
+      text: "🟡 Sem contato · Aguardando ação",
+      textCls: "text-amber-600 dark:text-amber-400 font-semibold",
+      borderCls: "border-l-amber-400",
+    };
+  }
+
   if (hoursSinceContact > 48) {
     return {
       indicator: "🔴",
@@ -141,6 +175,7 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
       borderCls: "border-l-destructive",
     };
   }
+
   if (hoursSinceContact > 24) {
     return {
       indicator: "🟡",
@@ -152,11 +187,6 @@ function getCardStatus(lead: PipelineLead, proximaTarefa: { tipo: string; vence_
   }
 
   // Recent contact, no task → DESATUALIZADO
-  const contactLabel = isTodayFn(new Date(lastContact))
-    ? `hoje ${format(new Date(lastContact), "HH:mm")}`
-    : isYesterdayFn(new Date(lastContact))
-    ? "ontem"
-    : format(new Date(lastContact), "dd/MM");
   return {
     indicator: "⚠️",
     indicatorCls: "text-amber-500",
