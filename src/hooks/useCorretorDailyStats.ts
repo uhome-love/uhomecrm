@@ -140,11 +140,15 @@ export interface CorretorGoals {
   meta_aproveitados: number;
   meta_visitas_marcadas: number;
   observacao: string | null;
+  status: string;
+  meta_ligacoes_aprovada: number | null;
+  meta_aproveitados_aprovada: number | null;
+  feedback_gerente: string | null;
+  aprovado_por: string | null;
 }
 
 export function useCorretorDailyGoals() {
   const { user } = useAuth();
-  // Use BRT date consistently with daily stats
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   const { data: goals, isLoading, refetch } = useQuery({
@@ -174,7 +178,7 @@ export function useCorretorDailyGoals() {
       meta_aproveitados: metaAproveitados,
       meta_visitas_marcadas: metaVisitasMarcadas,
       observacao: observacao || null,
-      status: "ativo",
+      status: "pendente",
     };
 
     let error;
@@ -184,7 +188,6 @@ export function useCorretorDailyGoals() {
         .update(payload)
         .eq("id", goals.id));
     } else {
-      // Try upsert to handle race conditions (duplicate key)
       ({ error } = await supabase
         .from("corretor_daily_goals")
         .upsert(payload, { onConflict: "corretor_id,data" }));
