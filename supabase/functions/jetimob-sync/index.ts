@@ -262,7 +262,7 @@ serve(async (req) => {
     }
     const novoLeadStageId = stageData.id;
 
-    // Deduplication: check existing jetimob_lead_ids
+    // Deduplication: check existing jetimob_lead_ids in BOTH pipeline_leads AND jetimob_processed
     const jetimobIds = apiLeads.map(buildJetimobId).filter((id: string) => id && id.length > 2);
     
     // Also deduplicate by phone number to catch leads with old "undefined" IDs
@@ -270,17 +270,29 @@ serve(async (req) => {
       .map((l: any) => l.phones?.[0] || l.phone || null)
       .filter(Boolean);
 
-    const [existingByJetimob, existingByPhone] = await Promise.all([
+    const [existingByJetimob, existingByPhone, processedByJetimob, processedByPhone] = await Promise.all([
       jetimobIds.length > 0
         ? adminClient.from("pipeline_leads").select("jetimob_lead_id").in("jetimob_lead_id", jetimobIds)
         : Promise.resolve({ data: [] }),
       phones.length > 0
         ? adminClient.from("pipeline_leads").select("telefone").in("telefone", phones)
         : Promise.resolve({ data: [] }),
+      jetimobIds.length > 0
+        ? adminClient.from("jetimob_processed").select("jetimob_lead_id").in("jetimob_lead_id", jetimobIds)
+        : Promise.resolve({ data: [] }),
+      phones.length > 0
+        ? adminClient.from("jetimob_processed").select("telefone").in("telefone", phones)
+        : Promise.resolve({ data: [] }),
     ]);
 
-    const existingIds = new Set((existingByJetimob.data || []).map((l: any) => l.jetimob_lead_id));
-    const existingPhones = new Set((existingByPhone.data || []).map((l: any) => l.telefone));
+    const existingIds = new Set([
+      ...(existingByJetimob.data || []).map((l: any) => l.jetimob_lead_id),
+      ...(processedByJetimob.data || []).map((l: any) => l.jetimob_lead_id),
+    ]);
+    const existingPhones = new Set([
+      ...(existingByPhone.data || []).map((l: any) => l.telefone),
+      ...(processedByPhone.data || []).map((l: any) => l.telefone),
+    ]);
 
     let synced = 0;
     let skipped = 0;
