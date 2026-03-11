@@ -574,12 +574,17 @@ export default function AnunciosNoAr() {
             const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
               body: { action: "get_imovel", codigo },
             });
-            if (!error && data) {
-              // Jetimob API may return { data: [...] } or the object directly
-              const imovel = Array.isArray(data.data) ? data.data[0] : data.imovel || data;
-              if (imovel && typeof imovel === "object") {
-                results[codigo] = imovel;
-              }
+            if (error) {
+              console.warn(`Jetimob error for ${codigo}:`, error);
+              return;
+            }
+            // Edge function now returns { imovel, not_found }
+            const imovel = data?.imovel;
+            if (imovel && typeof imovel === "object" && !data?.not_found) {
+              results[codigo] = imovel;
+              console.log(`✅ Loaded ${codigo}:`, Object.keys(imovel).join(", "));
+            } else {
+              console.warn(`⚠️ Imóvel ${codigo} not found`);
             }
           } catch (e) {
             console.warn(`Failed to fetch ${codigo}:`, e);
