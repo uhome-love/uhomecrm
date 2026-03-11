@@ -503,6 +503,9 @@ export default function VendasRealizadas() {
                             )}
                             <td className="py-3 px-3 text-right">
                               <span className="text-sm font-black text-emerald-500">{formatCurrency(vgv)}</span>
+                              {v.pipeline_lead_id && parceriaLeadIds.has(v.pipeline_lead_id) && (
+                                <p className="text-[9px] font-bold text-violet-500 mt-0.5">🤝 Parceria 50%</p>
+                              )}
                             </td>
                             <td className="py-3 px-3 text-center">
                               <span className="text-xs text-muted-foreground">
