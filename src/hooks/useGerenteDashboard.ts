@@ -311,7 +311,7 @@ export function useGerenteDashboard(period: Period) {
       if (teamUserIds.length === 0) return [];
       const { data: stages } = await supabase.from("pipeline_stages").select("id, tipo, nome, ordem").eq("ativo", true).eq("pipeline_tipo", "leads").order("ordem");
       const { data: leads } = await supabase.from("pipeline_leads").select("stage_id").in("corretor_id", teamUserIds);
-      const { data: negocios } = await supabase.from("negocios").select("fase").eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato")');
+      const { data: negocios } = await supabase.from("negocios").select("fase").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato")');
 
       const stageCounts: Record<string, number> = {};
       (leads || []).forEach(l => { stageCounts[l.stage_id] = (stageCounts[l.stage_id] || 0) + 1; });
