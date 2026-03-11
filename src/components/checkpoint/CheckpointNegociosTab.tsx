@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Briefcase, AlertTriangle, Clock, TrendingUp, ArrowRight, User, Building2, DollarSign } from "lucide-react";
 import { formatDistanceToNow, differenceInDays, format } from "date-fns";
+import { formatBRLCompact } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 
 interface Negocio {
