@@ -479,6 +479,7 @@ export default function PipelineKanban() {
                 leads={filteredLeads}
                 segmentos={pipeline.segmentos}
                 corretorNomes={pipeline.corretorNomes}
+                corretorAvatars={pipeline.corretorAvatars}
                 parcerias={parcerias}
                 onMoveLead={pipeline.moveLead}
                 onSelectLead={selectionMode ? (lead) => toggleLeadSelection(lead.id) : setSelectedLead}

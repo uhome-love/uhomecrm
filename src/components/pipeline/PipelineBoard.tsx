@@ -17,6 +17,7 @@ interface PipelineBoardProps {
   leads: PipelineLead[];
   segmentos: PipelineSegmento[];
   corretorNomes: Record<string, string>;
+  corretorAvatars?: Record<string, string>;
   parcerias: Record<string, string>;
   onMoveLead: (leadId: string, newStageId: string, observacao?: string) => void;
   onSelectLead: (lead: PipelineLead) => void;
@@ -94,7 +95,7 @@ const INITIAL_RENDER = 15;
 const LOAD_MORE_BATCH = 20;
 
 const VirtualizedCardList = memo(function VirtualizedCardList({
-  stageLeads, stage, stages, segmentos, corretorNomes, parcerias,
+  stageLeads, stage, stages, segmentos, corretorNomes, corretorAvatars, parcerias,
   selectionMode, selectedLeads, arrivedLeadId,
   onToggleSelect, onSelectLead, onMoveLead, onTransferred, stageIndexMap, handleDragStart,
   tarefasMap,
@@ -104,6 +105,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   stages: PipelineStage[];
   segmentos: PipelineSegmento[];
   corretorNomes: Record<string, string>;
+  corretorAvatars?: Record<string, string>;
   parcerias: Record<string, string>;
   selectionMode?: boolean;
   selectedLeads?: Set<string>;
@@ -185,6 +187,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
                 stages={stages}
                 segmentos={segmentos}
                 corretorNome={lead.corretor_id ? corretorNomes[lead.corretor_id] : undefined}
+                corretorAvatar={lead.corretor_id ? corretorAvatars?.[lead.corretor_id] : undefined}
                 gerenteNome={lead.gerente_id ? corretorNomes[lead.gerente_id] : undefined}
                 parceiroNome={parcerias[lead.id]}
                 onDragStart={() => !selectionMode && handleDragStart(lead.id)}
@@ -210,7 +213,7 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
   );
 });
 
-export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect }: PipelineBoardProps) {
+export default function PipelineBoard({ stages, leads, segmentos, corretorNomes, corretorAvatars, parcerias, onMoveLead, onSelectLead, onTransferred, selectionMode, selectedLeads, onToggleSelect }: PipelineBoardProps) {
   const { isGestor, isAdmin } = useUserRole();
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [flashStage, setFlashStage] = useState<string | null>(null);
@@ -751,6 +754,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   stages={stages}
                   segmentos={segmentos}
                   corretorNomes={corretorNomes}
+                  corretorAvatars={corretorAvatars}
                   parcerias={parcerias}
                   selectionMode={selectionMode}
                   selectedLeads={selectedLeads}
