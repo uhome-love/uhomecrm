@@ -3,14 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Building2, Phone, MessageSquare, Copy, ExternalLink, MapPin,
   Maximize2, Tag, Clock, ChevronDown, ChevronUp, Sparkles,
   Trophy, Plane, Users, Target, Star, TrendingUp, ShieldCheck,
-  Car, FileText, Zap, ArrowRight, Gift, Search, DollarSign, Home
+  Car, FileText, Zap, ArrowRight, Gift, Search, DollarSign, Home,
+  Share2, Link2, Loader2, CheckSquare, Send
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ═══════════════════════════════════════════
    DATA — Empreendimentos
