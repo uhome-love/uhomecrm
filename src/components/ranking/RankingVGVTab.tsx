@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { AvatarImage, AvatarFallback, Avatar } from "@/components/ui/avatar";
 import { DollarSign, FileText, ShoppingBag, Loader2 } from "lucide-react";
-import { getLevel } from "@/lib/gamification";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
