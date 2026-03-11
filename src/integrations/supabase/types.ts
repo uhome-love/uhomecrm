@@ -5639,7 +5639,6 @@ export type Database = {
           corretor_id: string
           corretor_nome: string
           pontos_total: number
-          propostas: number
           qualificados: number
           visitas_marcadas: number
           visitas_realizadas: number
