@@ -485,25 +485,7 @@ export default function CheckpointGerente() {
         )}
 
         {activeTab === "checkpoint" && (
-          <CheckpointTableTab
-            rows={rows}
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-            dateFmt={dateFmt}
-            checkpointStatus={checkpointStatus}
-            totalLig={totalLig}
-            totalAprov={totalAprov}
-            totalVm={totalVm}
-            presentes={presentes}
-            syncing={syncing}
-            saving={saving}
-            onSync={syncOA}
-            onCopyYesterday={copyFromYesterday}
-            onZero={zeroResults}
-            onSave={saveCheckpoint}
-            onPublish={publish}
-            onUpdateRow={updateRow}
-          />
+          <CheckpointCards teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
         )}
 
 
