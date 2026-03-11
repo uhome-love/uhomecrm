@@ -111,7 +111,7 @@ export default function VendasRealizadas() {
       }
 
       let query = supabase.from("negocios")
-        .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at")
+        .select("id, nome_cliente, empreendimento, unidade, vgv_final, vgv_estimado, data_assinatura, corretor_id, gerente_id, fase, created_at, pipeline_lead_id")
         .in("fase", ["assinado", "vendido"])
         .gte("data_assinatura", dateRange.start)
         .lte("data_assinatura", dateRange.end)
