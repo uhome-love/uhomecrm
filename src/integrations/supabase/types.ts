@@ -334,6 +334,45 @@ export type Database = {
           },
         ]
       }
+      anuncio_materiais: {
+        Row: {
+          created_at: string
+          empreendimento_codigo: string
+          empreendimento_nome: string
+          id: string
+          mime_type: string | null
+          nome_arquivo: string
+          segmento: string
+          tipo: string
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          empreendimento_codigo: string
+          empreendimento_nome: string
+          id?: string
+          mime_type?: string | null
+          nome_arquivo: string
+          segmento: string
+          tipo?: string
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          empreendimento_codigo?: string
+          empreendimento_nome?: string
+          id?: string
+          mime_type?: string | null
+          nome_arquivo?: string
+          segmento?: string
+          tipo?: string
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           acao: string
