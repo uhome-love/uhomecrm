@@ -151,6 +151,8 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
         res_propostas: s?.res_propostas ?? 0,
         obs_gerente: s?.obs_gerente ?? "", obs_dia: s?.obs_dia ?? "",
         status_online: prof?.status_online || (isOnline ? "online" : null),
+        goal_status: g?.status || null,
+        goal_id: g?.id || null,
       };
     });
 
