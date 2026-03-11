@@ -410,8 +410,12 @@ const PipelineCard = memo(function PipelineCard({
             {status.text || "✅ Em dia"}
           </p>
           {(() => {
-            const days = differenceInDays(new Date(), new Date(lead.stage_changed_at));
-            if (days < 1) return null;
+            const stageChangedDate = toValidDate(lead.stage_changed_at);
+            if (!stageChangedDate) return null;
+
+            const days = differenceInDays(new Date(), stageChangedDate);
+            if (!Number.isFinite(days) || days < 1) return null;
+
             return (
               <span className={cn(
                 "text-[9px] font-semibold shrink-0 px-1.5 py-0.5 rounded-md",

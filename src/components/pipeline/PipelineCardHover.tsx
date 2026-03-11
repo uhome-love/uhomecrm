@@ -225,12 +225,17 @@ const PipelineCardHover = memo(function PipelineCardHover({ lead, children, onOp
                   <div className="space-y-1">
                     {hoverData.atividades.map((a, i) => {
                       const Icon = ACTIVITY_ICONS[a.tipo] || FileText;
+                      const activityDate = new Date(a.created_at);
+                      const activityTimeAgo = Number.isNaN(activityDate.getTime())
+                        ? "agora"
+                        : formatDistanceToNow(activityDate, { addSuffix: false, locale: ptBR });
+
                       return (
                         <div key={i} className="flex items-center gap-1.5">
                           <Icon className="h-3 w-3 text-muted-foreground/60 shrink-0" />
                           <span className="text-[11px] text-foreground truncate flex-1">{a.titulo}</span>
                           <span className="text-[9px] text-muted-foreground/60 shrink-0">
-                            {formatDistanceToNow(new Date(a.created_at), { addSuffix: false, locale: ptBR })}
+                            {activityTimeAgo}
                           </span>
                         </div>
                       );
