@@ -267,6 +267,33 @@ serve(async (req) => {
       });
     }
 
+    if (action === "get_imoveis_by_codigos") {
+      const codigos = Array.isArray(body?.codigos)
+        ? body.codigos.map((c: any) => String(c || "").trim()).filter(Boolean)
+        : [];
+
+      if (!codigos.length) {
+        return new Response(
+          JSON.stringify({ error: "Lista de códigos é obrigatória" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+      const imoveis: Record<string, any> = {};
+
+      for (const requestedCodigo of codigos) {
+        const matched = catalogItems.find((item: any) => isCodigoMatch(item, requestedCodigo)) || null;
+        imoveis[requestedCodigo] = matched
+          ? { ...matched, _fotos_normalized: normalizeImages(matched, requestedCodigo) }
+          : null;
+      }
+
+      return new Response(JSON.stringify({ imoveis }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "list_leads") {
       const JETIMOB_LEADS_URL_KEY = Deno.env.get("JETIMOB_LEADS_URL_KEY");
       if (!JETIMOB_LEADS_URL_KEY) throw new Error("JETIMOB_LEADS_URL_KEY is not configured");

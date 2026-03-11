@@ -574,35 +574,26 @@ export default function AnunciosNoAr() {
     async function fetchAll() {
       setLoading(true);
       const codigos = SEGMENTOS.flatMap(s => s.empreendimentos.map(e => e.codigo));
-      const results: Record<string, JetimobImovel> = {};
 
-      await Promise.all(
-        codigos.map(async (codigo) => {
-          try {
-            const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
-              body: { action: "get_imovel", codigo },
-            });
-            if (error) {
-              console.warn(`Jetimob error for ${codigo}:`, error);
-              return;
-            }
-            // Edge function now returns { imovel, not_found }
-            const imovel = data?.imovel;
-            if (imovel && typeof imovel === "object" && !data?.not_found) {
-              results[codigo] = imovel;
-              console.log(`✅ Loaded ${codigo}:`, Object.keys(imovel).join(", "));
-            } else {
-              console.warn(`⚠️ Imóvel ${codigo} not found`);
-            }
-          } catch (e) {
-            console.warn(`Failed to fetch ${codigo}:`, e);
-          }
-        })
-      );
+      try {
+        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+          body: { action: "get_imoveis_by_codigos", codigos },
+        });
 
-      if (!cancelled) {
-        setImoveis(results);
-        setLoading(false);
+        if (error) throw error;
+
+        const mapped = (data?.imoveis || {}) as Record<string, JetimobImovel | null>;
+        const filtered = Object.fromEntries(
+          Object.entries(mapped).filter(([, value]) => value && typeof value === "object")
+        ) as Record<string, JetimobImovel>;
+
+        if (!cancelled) {
+          setImoveis(filtered);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.warn("Falha ao buscar imóveis em lote:", e);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchAll();
