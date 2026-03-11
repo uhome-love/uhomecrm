@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Building2, MapPin, BedDouble, Maximize2, Tag, Loader2, Download,
   Upload, Trash2, Image as ImageIcon, Video, FileText, ChevronLeft, ChevronRight,
-  Radio, Megaphone, Eye, DollarSign, Sparkles
+  Radio, Megaphone, Eye, DollarSign, Sparkles, ChevronDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -563,8 +564,12 @@ export default function AnunciosNoAr() {
             const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
               body: { action: "get_imovel", codigo },
             });
-            if (!error && data?.imovel) {
-              results[codigo] = data.imovel;
+            if (!error && data) {
+              // Jetimob API may return { data: [...] } or the object directly
+              const imovel = Array.isArray(data.data) ? data.data[0] : data.imovel || data;
+              if (imovel && typeof imovel === "object") {
+                results[codigo] = imovel;
+              }
             }
           } catch (e) {
             console.warn(`Failed to fetch ${codigo}:`, e);
@@ -644,54 +649,61 @@ export default function AnunciosNoAr() {
 
       {/* ─── SEGMENTS ─── */}
       {SEGMENTOS.map(seg => (
-        <section key={seg.key} id={`seg-${seg.key}`} className="space-y-4">
-          {/* Segment header */}
-          <div className={cn(
-            "rounded-xl p-4 bg-gradient-to-r text-white relative overflow-hidden",
-            seg.gradient
-          )}>
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-50" />
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{seg.emoji}</span>
-                <div>
-                  <h2 className="text-lg font-black tracking-tight">{seg.label}</h2>
-                  <p className="text-xs text-white/70 font-medium">
-                    {seg.empreendimentos.length} empreendimento{seg.empreendimentos.length !== 1 ? "s" : ""} com anúncio ativo
-                  </p>
+        <Collapsible key={seg.key} defaultOpen asChild>
+          <section id={`seg-${seg.key}`} className="space-y-4">
+            {/* Segment header */}
+            <CollapsibleTrigger asChild>
+              <div className={cn(
+                "rounded-xl p-4 bg-gradient-to-r text-white relative overflow-hidden cursor-pointer hover:opacity-95 transition-opacity",
+                seg.gradient
+              )}>
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-50" />
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{seg.emoji}</span>
+                    <div>
+                      <h2 className="text-lg font-black tracking-tight">{seg.label}</h2>
+                      <p className="text-xs text-white/70 font-medium">
+                        {seg.empreendimentos.length} empreendimento{seg.empreendimentos.length !== 1 ? "s" : ""} com anúncio ativo
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-white/20 text-white border-white/30 text-xs font-bold px-3">
+                      <Megaphone className="h-3.5 w-3.5 mr-1" /> NO AR
+                    </Badge>
+                    <ChevronDown className="h-5 w-5 text-white/70 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-white/20 text-white border-white/30 text-xs font-bold px-3">
-                  <Megaphone className="h-3.5 w-3.5 mr-1" /> NO AR
-                </Badge>
-              </div>
-            </div>
-          </div>
+            </CollapsibleTrigger>
 
-          {/* Cards grid */}
-          <div className={cn(
-            "grid gap-4",
-            seg.empreendimentos.length === 1
-              ? "grid-cols-1 max-w-lg"
-              : seg.empreendimentos.length === 2
-                ? "grid-cols-1 md:grid-cols-2"
-                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-          )}>
-            {seg.empreendimentos.map(emp => (
-              <EmpreendimentoCard
-                key={emp.codigo}
-                config={emp}
-                segmento={seg}
-                imovelData={imoveis[emp.codigo] || null}
-                loading={loading}
-                materiais={materiais}
-                canUpload={canUpload}
-                onRefreshMateriais={fetchMateriais}
-              />
-            ))}
-          </div>
-        </section>
+            {/* Cards grid */}
+            <CollapsibleContent>
+              <div className={cn(
+                "grid gap-4 pt-1",
+                seg.empreendimentos.length === 1
+                  ? "grid-cols-1 max-w-lg"
+                  : seg.empreendimentos.length === 2
+                    ? "grid-cols-1 md:grid-cols-2"
+                    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+              )}>
+                {seg.empreendimentos.map(emp => (
+                  <EmpreendimentoCard
+                    key={emp.codigo}
+                    config={emp}
+                    segmento={seg}
+                    imovelData={imoveis[emp.codigo] || null}
+                    loading={loading}
+                    materiais={materiais}
+                    canUpload={canUpload}
+                    onRefreshMateriais={fetchMateriais}
+                  />
+                ))}
+              </div>
+            </CollapsibleContent>
+          </section>
+        </Collapsible>
       ))}
     </div>
   );
