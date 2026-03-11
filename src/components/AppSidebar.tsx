@@ -299,14 +299,9 @@ export function AppSidebar() {
 
     // ── Gestor ──
     if (isGestor) {
-      const melnickDayItem: NavItem[] = new Date() <= new Date("2026-03-31T23:59:59") ? [{ title: "Melnick Day", url: "/melnick-day", icon: Zap }] : [];
       return {
         topItem: { title: "Dashboard", url: "/gerente/dashboard", icon: Home },
         groups: [
-          ...(melnickDayItem.length > 0 ? [{
-            label: "Destaque",
-            items: melnickDayItem,
-          }] : []),
           {
             label: "Visão Geral",
             items: [
