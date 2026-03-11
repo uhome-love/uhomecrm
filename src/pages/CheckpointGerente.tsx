@@ -73,7 +73,7 @@ export default function CheckpointGerente() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<"visao_geral" | "checkpoint" | "aproveitados" | "relatorios">("visao_geral");
+  const [activeTab, setActiveTab] = useState<"visao_geral" | "checkpoint" | "relatorios">("visao_geral");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [checkpointStatus, setCheckpointStatus] = useState<"aberto" | "publicado">("aberto");
   const [rows, setRows] = useState<CheckpointRow[]>([]);
@@ -354,7 +354,6 @@ export default function CheckpointGerente() {
   const tabs = [
     { key: "visao_geral" as const, icon: <Target size={15} />, label: "Visão Geral" },
     { key: "checkpoint" as const, icon: <ClipboardList size={15} />, label: "Checkpoint" },
-    { key: "aproveitados" as const, icon: <CheckCircle2 size={15} />, label: "Aproveitados" },
     { key: "relatorios" as const, icon: <BarChart2 size={15} />, label: "Relatórios" },
   ];
 
@@ -366,19 +365,6 @@ export default function CheckpointGerente() {
       </div>
 
       <div className="max-w-screen-xl mx-auto px-4 mt-5 space-y-4">
-        {pendentes.length > 0 && (
-          <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
-            <AlertCircle className="text-amber-500 mt-0.5 shrink-0" size={18} />
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                📋 {rows.length - pendentes.length}/{rows.length} corretores com resultados preenchidos
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                <span className="font-medium">Pendentes:</span> {pendentes.join(", ")}
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* METAS DO MÊS */}
         <div className="bg-card border border-border rounded-xl p-5">
@@ -488,10 +474,6 @@ export default function CheckpointGerente() {
           <CheckpointCards teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
         )}
 
-
-        {activeTab === "aproveitados" && (
-          <AproveitadosTab teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
-        )}
 
         {activeTab === "relatorios" && (
           <RelatoriosTab teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
