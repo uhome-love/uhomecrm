@@ -208,7 +208,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, curren
       radar_valor_max: valorMax ? parseFloat(valorMax) : null,
       radar_tipologia: tipologia,
       radar_bairros: selectedBairros,
-      radar_status_imovel: statusImovel || null,
+      radar_status_imovel: statusImovel === "qualquer" ? null : statusImovel,
       radar_atualizado_em: new Date().toISOString(),
     });
     toast.success("Perfil de interesse salvo!");
