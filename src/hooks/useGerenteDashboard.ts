@@ -269,7 +269,7 @@ export function useGerenteDashboard(period: Period) {
       if (stageIds.length > 0) {
         const cutoff = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
         const { count } = await supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).in("stage_id", stageIds).lt("created_at", cutoff);
-        if ((count || 0) > 0) alerts.push({ id: "leads_sem_contato", type: "danger", icon: "🔴", label: "leads sem contato", count: count || 0, route: "/pipeline" });
+        if ((count || 0) > 0) alerts.push({ id: "leads_sem_contato", type: "danger", icon: "🔴", label: "leads sem contato", count: count || 0, route: "/pipeline-leads" });
       }
 
       const cutoff48h = new Date(now.getTime() - 48 * 3600 * 1000).toISOString();
