@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Phone, Award, MapPin, Target, AlertTriangle, TrendingDown, ArrowDown, Trophy } from "lucide-react";
 import { format, subDays } from "date-fns";
+import { formatBRLCompact } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 
