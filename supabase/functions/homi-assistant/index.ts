@@ -170,8 +170,8 @@ serve(async (req) => {
 
   try {
     const { acao, empreendimento, situacao, mensagem_cliente, objetivo, role, lead_context } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
     const infoEmpreendimento = EMPREENDIMENTOS_INFO[empreendimento] || "Empreendimento da UHome. Use técnicas de qualificação e convite para visita.";
 
