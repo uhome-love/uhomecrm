@@ -176,6 +176,7 @@ const App = () => (
             <Route path="/pos-vendas" element={<ProtectedPage><PosVendas /></ProtectedPage>} />
             <Route path="/imoveis" element={<ProtectedPage><ImoveisPage /></ProtectedPage>} />
             <Route path="/melnick-day" element={<ProtectedPage><MelnickDay /></ProtectedPage>} />
+            <Route path="/anuncios" element={<ProtectedPage><AnunciosNoAr /></ProtectedPage>} />
 
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><BuscaLeads /></ProtectedPage>} />
