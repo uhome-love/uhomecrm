@@ -236,6 +236,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
         setCorretorAvatars(avatarMap);
       }
     }
+
+    } catch (err) {
+      console.error("[usePipeline] loadLeads crash:", err);
+      toast.error("Erro ao carregar leads. Tente recarregar a página.");
+    }
   }, [user, isGestor, isAdmin]);
 
   useEffect(() => {
