@@ -105,7 +105,7 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
     const q3: any = supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`);
     const q4: any = supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).eq("data_visita", dateStr);
     const q5: any = supabase.from("checkpoint_diario").select("*").eq("data", dateStr).in("corretor_id", teamUserIds);
-    const q6: any = supabase.from("corretor_daily_goals").select("corretor_id, meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").in("corretor_id", teamUserIds).eq("data", dateStr);
+    const q6: any = supabase.from("corretor_daily_goals").select("id, corretor_id, meta_ligacoes, meta_aproveitados, meta_visitas_marcadas, status").in("corretor_id", teamUserIds).eq("data", dateStr);
     const q7: any = supabase.from("corretor_disponibilidade").select("user_id, status").in("user_id", teamUserIds);
 
     const [r1, r2, r3, r4, r5, r6, r7] = await Promise.all([q1, q2, q3, q4, q5, q6, q7]);
