@@ -383,20 +383,31 @@ export default function CheckpointGerente() {
 
         {/* METAS DO MÊS */}
         <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Target size={18} className="text-primary" />
-            <span className="font-semibold text-foreground">Metas do Mês —</span>
-            <span className="text-primary font-semibold">
-              {format(new Date(), "MMMM/yyyy", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())}
-            </span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Target size={18} className="text-primary" />
+              <span className="font-semibold text-foreground">Metas do Mês —</span>
+              <span className="text-primary font-semibold">
+                {format(new Date(), "MMMM/yyyy", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())}
+              </span>
+            </div>
+            {editingMetas ? (
+              <button onClick={saveMetasMes} disabled={savingMetas} className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
+                <Save size={14} /> {savingMetas ? "Salvando..." : "Salvar Metas"}
+              </button>
+            ) : (
+              <button onClick={() => setEditingMetas(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <Pencil size={13} /> Editar Metas
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {([
-              { label: "Ligações", atual: metasMes.ligacoes_realizado, meta: metasMes.ligacoes_meta, cor: "bg-blue-500", money: false },
-              { label: "VGV Assinado", atual: metasMes.vgv_realizado, meta: metasMes.vgv_meta, cor: "bg-emerald-500", money: true },
-              { label: "Visitas Marcadas", atual: metasMes.visitas_marcadas_realizado, meta: metasMes.visitas_marcadas_meta, cor: "bg-amber-500", money: false },
-              { label: "Visitas Realizadas", atual: metasMes.visitas_realizadas_realizado, meta: metasMes.visitas_realizadas_meta, cor: "bg-purple-500", money: false },
-            ]).map(({ label, atual, meta, cor, money }) => {
+              { label: "Ligações", atual: metasMes.ligacoes_realizado, meta: metasMes.ligacoes_meta, cor: "bg-blue-500", money: false, metaKey: "ligacoes_meta" as const },
+              { label: "VGV Assinado", atual: metasMes.vgv_realizado, meta: metasMes.vgv_meta, cor: "bg-emerald-500", money: true, metaKey: "vgv_meta" as const },
+              { label: "Visitas Marcadas", atual: metasMes.visitas_marcadas_realizado, meta: metasMes.visitas_marcadas_meta, cor: "bg-amber-500", money: false, metaKey: "visitas_marcadas_meta" as const },
+              { label: "Visitas Realizadas", atual: metasMes.visitas_realizadas_realizado, meta: metasMes.visitas_realizadas_meta, cor: "bg-purple-500", money: false, metaKey: "visitas_realizadas_meta" as const },
+            ]).map(({ label, atual, meta, cor, money, metaKey }) => {
               const p = pct(atual, meta);
               const icon = p >= 100 ? "🏆" : p < 20 ? "❌" : p < 50 ? "⚠️" : "";
               const textColor = p >= 100 ? "text-green-600" : p < 20 ? "text-red-500" : p < 50 ? "text-amber-500" : "text-green-500";
@@ -411,9 +422,21 @@ export default function CheckpointGerente() {
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className={`h-full ${cor} rounded-full transition-all`} style={{ width: `${Math.min(p, 100)}%` }} />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {money ? `${fmtR(atual)} / ${fmtR(meta)}` : `${fmt(atual)} / ${fmt(meta)}`}
-                  </p>
+                  {editingMetas ? (
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs text-muted-foreground">{money ? fmtR(atual) : fmt(atual)} /</span>
+                      <input
+                        type="number"
+                        value={meta}
+                        onChange={(e) => setMetasMes(prev => ({ ...prev, [metaKey]: Number(e.target.value) }))}
+                        className="w-20 text-xs border border-border rounded px-1.5 py-0.5 bg-background text-foreground"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {money ? `${fmtR(atual)} / ${fmtR(meta)}` : `${fmt(atual)} / ${fmt(meta)}`}
+                    </p>
+                  )}
                 </div>
               );
             })}
