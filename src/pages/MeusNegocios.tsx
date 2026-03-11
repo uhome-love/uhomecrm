@@ -383,6 +383,14 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
               <DropdownMenuItem className="gap-2 cursor-pointer text-xs text-red-500" onClick={() => setQuedaPopup(true)}>
                 <XCircle className="h-3.5 w-3.5" /> Caiu negócio
               </DropdownMenuItem>
+              {cardIsAdmin && onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="gap-2 cursor-pointer text-xs text-red-600 font-bold" onClick={() => onDelete(negocio.id)}>
+                    <X className="h-3.5 w-3.5" /> 🗑️ Excluir negócio
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
