@@ -307,6 +307,9 @@ serve(async (req) => {
                 : [];
 
           console.log("Jetimob search fallback for", requestedCodigo, "term", term, "returned", searchItems.length, "items");
+          if (searchItems.length > 0 && searchItems.length <= 10) {
+            console.log("Search items codigos:", searchItems.slice(0, 5).map((i: any) => ({ codigo: i.codigo, ref: i.referencia, id: i.id_imovel || i.id })));
+          }
           imovel = searchItems.find((item: any) => isCodigoMatch(item, requestedCodigo)) || null;
           if (imovel) break;
         }
