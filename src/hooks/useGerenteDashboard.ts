@@ -416,7 +416,7 @@ export function useGerenteDashboard(period: Period) {
         documentacao: data.filter(n => n.fase === "documentacao").map(map),
       };
     },
-    enabled: !!user,
+    enabled: !!user && !!profileId,
     staleTime: 60_000,
   });
   // ── Agenda de Hoje ──
