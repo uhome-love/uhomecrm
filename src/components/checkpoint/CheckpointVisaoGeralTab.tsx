@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Phone, UserCheck, MapPin, Users, TrendingUp, Briefcase, BarChart3, Eye } from "lucide-react";
-import { format } from "date-fns";
+import { Phone, UserCheck, MapPin, Users, TrendingUp, Briefcase, BarChart3, Eye, CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, subDays, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Props {
   teamUserIds: string[];
