@@ -178,7 +178,7 @@ export function useNegocios() {
     return () => { supabase.removeChannel(channel); };
   }, [user, loadNegocios]);
 
-  const moveFase = useCallback(async (negocioId: string, novaFase: string) => {
+  const moveFase = useCallback(async (negocioId: string, novaFase: string, dataAssinatura?: string) => {
     const negocio = negocios.find(n => n.id === negocioId);
     if (!negocio || negocio.fase === novaFase) return;
 
@@ -187,9 +187,15 @@ export function useNegocios() {
       n.id === negocioId ? { ...n, fase: novaFase, fase_changed_at: new Date().toISOString() } : n
     ));
 
+    const updatePayload: Record<string, any> = { fase: novaFase, updated_at: new Date().toISOString() };
+    // Always set data_assinatura when moving to assinado
+    if (novaFase === "assinado") {
+      updatePayload.data_assinatura = dataAssinatura || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    }
+
     const { error } = await supabase
       .from("negocios")
-      .update({ fase: novaFase, updated_at: new Date().toISOString() } as any)
+      .update(updatePayload as any)
       .eq("id", negocioId);
 
     if (error) {

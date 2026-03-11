@@ -286,7 +286,8 @@ export default function FaseTransitionModal({ open, onOpenChange, targetFase, ne
               <div><Label className="text-xs">Observações</Label><Textarea value={assObs} onChange={e => setAssObs(e.target.value)} className="text-xs h-20" placeholder="Observações importantes sobre a assinatura..." /></div>
             </div>
             <DialogFooter>
-              <Button size="sm" onClick={handleConfirm} className="text-xs gap-1 bg-emerald-600 hover:bg-emerald-700">✅ Confirmar Assinatura 🎉</Button>
+              <Button size="sm" onClick={handleConfirm} className="text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" disabled={!assDataAssinatura}>✅ Confirmar Assinatura 🎉</Button>
+              {!assDataAssinatura && <p className="text-[10px] text-destructive">Data de assinatura obrigatória</p>}
             </DialogFooter>
           </>
         );

@@ -175,8 +175,11 @@ export function useLeadProgression() {
     empreendimento?: string;
     corretorId: string;
     vgvFinal?: number;
+    dataAssinatura?: string;
   }) => {
     if (!user) return;
+
+    const dataAss = params.dataAssinatura || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
     // Create pos_vendas entry
     await supabase.from("pos_vendas").insert({
@@ -185,7 +188,7 @@ export function useLeadProgression() {
       corretor_id: params.corretorId,
       nome_cliente: params.nomeCliente,
       empreendimento: params.empreendimento || null,
-      data_assinatura: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+      data_assinatura: dataAss,
       vgv_final: params.vgvFinal || null,
     } as any);
 
