@@ -78,6 +78,19 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [empreendimentoSearch, setEmpreendimentoSearch] = useState("");
   const [empreendimentoOpen, setEmpreendimentoOpen] = useState(false);
   const [savingEmpreendimento, setSavingEmpreendimento] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editName, setEditName] = useState(lead.nome);
+
+  const handleSaveName = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === lead.nome) { setEditingName(false); return; }
+    setSaving(true);
+    try {
+      await onUpdate(lead.id, { nome: trimmed } as any);
+      toast.success("Nome atualizado!");
+      setEditingName(false);
+    } finally { setSaving(false); }
+  };
 
   // Edit states
   const [editingCommercial, setEditingCommercial] = useState(false);
@@ -172,7 +185,24 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             {/* Row 1: Name + Stage badge + Temp + Days */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <h2 className="text-xl font-bold text-foreground truncate">{lead.nome}</h2>
+                {editingName ? (
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") { setEditingName(false); setEditName(lead.nome); } }}
+                      className="h-8 text-lg font-bold w-48"
+                      autoFocus
+                      disabled={saving}
+                    />
+                    <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={saving} className="h-7 px-2 text-xs">
+                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "✓"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingName(false); setEditName(lead.nome); }} className="h-7 px-2 text-xs">✕</Button>
+                  </div>
+                ) : (
+                  <h2 className="text-xl font-bold text-foreground truncate cursor-pointer hover:underline" onClick={() => { setEditName(lead.nome); setEditingName(true); }} title="Clique para editar o nome">{lead.nome}</h2>
+                )}
 
                 {/* Stage badge — click to change */}
                 <Popover>
