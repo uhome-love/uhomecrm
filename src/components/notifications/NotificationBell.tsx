@@ -49,13 +49,11 @@ export default function NotificationBell() {
             compact
           />
         </div>
-        {notifications.length > 20 && (
-          <div className="border-t border-border px-4 py-2">
-            <a href="/notificacoes" className="text-xs text-primary hover:underline">
-              Ver todas as notificações
-            </a>
-          </div>
-        )}
+        <div className="border-t border-border px-4 py-2">
+          <a href="/notificacoes" className="text-xs text-primary hover:underline">
+            Ver todas as notificações
+          </a>
+        </div>
       </PopoverContent>
     </Popover>
   );
