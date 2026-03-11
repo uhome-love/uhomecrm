@@ -189,7 +189,7 @@ export default function OpportunityPropostasTab({ pipelineLeadId, valorEstimado,
                     {c.percentual}%
                     {c.valor_comissao ? ` • R$ ${c.valor_comissao.toLocaleString("pt-BR")}` : ""}
                     {" • "}
-                    {format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                    {(() => { try { const d = new Date(c.created_at); return Number.isNaN(d.getTime()) ? "—" : format(d, "dd/MM/yyyy", { locale: ptBR }); } catch { return "—"; } })()}
                   </p>
                 </div>
               </div>

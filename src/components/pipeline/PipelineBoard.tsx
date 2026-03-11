@@ -59,9 +59,10 @@ function getStageAlerts(leads: PipelineLead[]) {
 function getAvgTimeLabel(leads: PipelineLead[]) {
   if (leads.length === 0) return null;
   const now = Date.now();
-  const totalHours = leads.reduce((sum, l) =>
-    sum + (now - new Date(l.stage_changed_at).getTime()) / 3600000, 0
-  );
+  const totalHours = leads.reduce((sum, l) => {
+    const t = new Date(l.stage_changed_at).getTime();
+    return Number.isNaN(t) ? sum : sum + (now - t) / 3600000;
+  }, 0);
   const avg = totalHours / leads.length;
   if (avg < 1) return "<1h";
   if (avg < 24) return `${Math.round(avg)}h`;
