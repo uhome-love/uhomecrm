@@ -142,7 +142,7 @@ serve(async (req) => {
           console.log("Jetimob search fallback for", codigo, "returned", searchItems.length, "items");
           // Find exact match by codigo
           const codigoNorm = String(codigo).toUpperCase().trim();
-          imovel = searchItems.find((item: any) => String(item.codigo || "").toUpperCase().trim() === codigoNorm) || searchItems[0] || null;
+          imovel = searchItems.find((item: any) => String(item.codigo || "").toUpperCase().trim() === codigoNorm) || null;
         }
       }
 
