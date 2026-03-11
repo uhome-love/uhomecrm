@@ -78,11 +78,11 @@ export default function RankingVGVTab({ period }: { period: "hoje" | "semana" | 
   }, [sorted]);
 
   const podiumEntries: PodiumEntry[] = useMemo(() => {
-    return sorted.slice(0, 3).map(c => ({
+    return sorted.filter(c => c.real_vgv_assinado > 0).slice(0, 3).map(c => ({
       id: c.corretor_id,
       nome: c.corretor_nome,
       value: fmtBRL(c.real_vgv_assinado),
-      points: c.score,
+      points: c.real_vgv_assinado,
       avatarGamificadoUrl: avatarMap[c.corretor_id]?.gamificado || null,
       avatarUrl: avatarMap[c.corretor_id]?.avatar || null,
       isMe: c.corretor_id === user?.id,
