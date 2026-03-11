@@ -174,7 +174,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, curren
   const [valorMax, setValorMax] = useState<string>(currentProfile?.radar_valor_max ? String(currentProfile.radar_valor_max) : "");
   const [tipologia, setTipologia] = useState(currentProfile?.radar_tipologia || "apartamento");
   const [selectedBairros, setSelectedBairros] = useState<string[]>(safeBairros);
-  const [statusImovel, setStatusImovel] = useState(currentProfile?.radar_status_imovel || "");
+  const [statusImovel, setStatusImovel] = useState(currentProfile?.radar_status_imovel || "qualquer");
   const [bairroSearch, setBairroSearch] = useState("");
 
   // Results state
