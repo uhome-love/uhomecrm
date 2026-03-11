@@ -170,12 +170,32 @@ function StatusIcon({ status }: { status: string }) {
   return <AlertTriangle className="h-4 w-4 text-destructive" />;
 }
 
-// ── Helper: get field options by category ──
-function getJetimobFields(cat: string) {
-  return cat === "imoveis" ? JETIMOB_IMOVEL_FIELDS : JETIMOB_LEAD_FIELDS;
+// ── Helper: get field options by category, ensuring current value is always included ──
+function ensureValueInOptions(options: { value: string; label: string }[], currentValue: string) {
+  if (!currentValue) return options;
+  const exists = options.some((o) => o.value === currentValue);
+  if (exists) return options;
+  return [{ value: currentValue, label: `${currentValue} (atual)` }, ...options];
 }
-function getUhomeFields(cat: string) {
-  return cat === "imoveis" ? UHOME_IMOVEL_FIELDS : UHOME_LEAD_FIELDS;
+
+function getJetimobFields(cat: string, currentValue?: string) {
+  const base = cat === "imoveis" ? JETIMOB_IMOVEL_FIELDS : JETIMOB_LEAD_FIELDS;
+  return currentValue ? ensureValueInOptions(base, currentValue) : base;
+}
+function getUhomeFields(cat: string, currentValue?: string) {
+  const base = cat === "imoveis" ? UHOME_IMOVEL_FIELDS : UHOME_LEAD_FIELDS;
+  return currentValue ? ensureValueInOptions(base, currentValue) : base;
+}
+function getTableOptions(currentValue?: string) {
+  const base = [
+    { value: "pipeline_leads", label: "pipeline_leads" },
+    { value: "jetimob-proxy", label: "jetimob-proxy (API)" },
+    { value: "empreendimento_overrides", label: "empreendimento_overrides" },
+    { value: "distribuicao_historico", label: "distribuicao_historico" },
+    { value: "jetimob_processed", label: "jetimob_processed" },
+    { value: "—", label: "— (nenhuma)" },
+  ];
+  return currentValue ? ensureValueInOptions(base, currentValue) : base;
 }
 
 // ── Editable Row ──
