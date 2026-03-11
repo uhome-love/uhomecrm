@@ -253,28 +253,28 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
         corDestaque="text-amber-500"
         criterios={[
           {
-            label: "Prospecção",
+            label: "Prospecção (OA)",
             peso: `${PESO_PROSPECCAO}%`,
-            desc: "Avalia atividade comercial: ligações realizadas, leads aproveitados e taxa de conversão nas sessões de prospecção.",
+            desc: "Pontos acumulados na Arena de Ligação: ligações realizadas + leads aproveitados + taxa de conversão.",
           },
           {
             label: "Gestão de Leads",
             peso: `${PESO_GESTAO}%`,
-            desc: "Avalia qualidade do atendimento: tentativas de contato, leads que responderam, visitas marcadas e propostas enviadas.",
+            desc: "Transições de etapa no pipeline: Contato Iniciado (×5) + Qualificação (×10) + V.Marcada (×30) + V.Realizada (×50) + Proposta (×80).",
           },
           {
             label: "Vendas (VGV)",
             peso: `${PESO_VENDAS}%`,
-            desc: "O pilar mais importante. VGV assinado e negócios fechados — quem vende mais, pontua mais.",
+            desc: "O pilar mais importante. Baseado no VGV assinado no período — quem vende mais, pontua mais.",
           },
           {
             label: "Eficiência Comercial",
             peso: `${PESO_EFICIENCIA}%`,
-            desc: "Bônus por qualidade de conversão: taxa lead→visita e taxa visita→negócio. Premia qualidade, não volume.",
+            desc: "Taxa Ligação→Visita (40%) + Taxa Visita→Negócio (60%). Premia qualidade de conversão, não volume.",
           },
           {
             label: "Cálculo da Nota",
-            desc: `Cada pilar é normalizado de 0 a 100 (relativo ao melhor do time). Nota final = (Prospecção×${PESO_PROSPECCAO} + Gestão×${PESO_GESTAO} + Vendas×${PESO_VENDAS} + Eficiência×${PESO_EFICIENCIA}) ÷ ${TOTAL_PESO}.`,
+            desc: `Cada pilar é normalizado de 0 a 100 (relativo ao melhor do time). Nota final = (Prospecção×${PESO_PROSPECCAO} + Gestão×${PESO_GESTAO} + Vendas×${PESO_VENDAS} + Eficiência×${PESO_EFICIENCIA}) ÷ ${TOTAL_PESO}. O 1º em cada pilar sempre recebe 100 naquele pilar.`,
           },
         ]}
       />

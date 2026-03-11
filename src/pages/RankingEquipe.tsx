@@ -20,7 +20,7 @@ const periodLabels: Record<Period, string> = {
 const explanations = {
   "oferta-ativa": {
     titulo: "Como funciona o Ranking de Prospecção?",
-    descricao: "Avalia o nível de atividade na geração de oportunidades (Peso: 20%)",
+    descricao: "Avalia o nível de atividade na geração de oportunidades (Peso: 20% no Ranking Geral)",
     corDestaque: "text-blue-600",
     criterios: [
       { label: "Ligações Realizadas", desc: "Cada tentativa de contato telefônico na Arena de Ligação conta como atividade de prospecção." },
@@ -31,35 +31,36 @@ const explanations = {
   },
   gestao: {
     titulo: "Como funciona o Ranking de Gestão de Leads?",
-    descricao: "Avalia a qualidade do atendimento e evolução do funil (Peso: 30%)",
+    descricao: "Avalia a qualidade do atendimento e evolução do lead no funil (Peso: 30% no Ranking Geral)",
     corDestaque: "text-purple-600",
     criterios: [
-      { label: "Tentativas de Contato", desc: "Número total de tentativas registradas no pipeline — demonstra proatividade." },
-      { label: "Leads que Responderam", desc: "Quantos leads efetivamente interagiram após o contato do corretor." },
-      { label: "Visitas Marcadas", desc: "Leads que evoluíram para uma visita agendada — indicador de avanço no funil." },
-      { label: "Visitas Realizadas", desc: "Visitas efetivamente realizadas — confirmação de engajamento do lead." },
-      { label: "Propostas Enviadas", desc: "Quantas propostas foram geradas — estágio avançado de negociação." },
-      { label: "Pontuação", desc: "Soma ponderada: tentativas(1pt) + responderam(3pts) + visitas(5pts) + propostas(8pts). Premia quem trabalha bem o funil." },
+      { label: "Contato Iniciado", peso: "5 pts", desc: "Lead avançou para a fase 'Contato Iniciado' no pipeline. Mostra proatividade no primeiro contato." },
+      { label: "Qualificação", peso: "10 pts", desc: "Lead foi qualificado — corretor validou interesse e perfil do lead." },
+      { label: "Visita Marcada", peso: "30 pts", desc: "Lead evoluiu para uma visita agendada — indicador forte de avanço no funil." },
+      { label: "Visita Realizada", peso: "50 pts", desc: "Visita efetivamente realizada — confirmação de engajamento do lead." },
+      { label: "Proposta / Negociação", peso: "80 pts", desc: "Lead chegou à fase de proposta ou negociação — estágio avançado de conversão." },
+      { label: "Cálculo", desc: "Total = (Contatos × 5) + (Qualificados × 10) + (V. Marcadas × 30) + (V. Realizadas × 50) + (Propostas × 80). Quem mais evolui leads no funil, mais pontua." },
     ],
   },
   vgv: {
     titulo: "Como funciona o Ranking de Vendas (VGV)?",
-    descricao: "O ranking mais importante — mede resultado final em vendas (Peso: 40%)",
+    descricao: "O ranking mais importante — mede resultado final em vendas (Peso: 40% no Ranking Geral)",
     corDestaque: "text-emerald-600",
     criterios: [
-      { label: "VGV Assinado", desc: "Volume Geral de Vendas efetivamente assinado — o fator mais determinante." },
-      { label: "Negócios Fechados", desc: "Número de negócios levados até a assinatura no período." },
-      { label: "Pontuação", desc: "Proporcional ao volume vendido. Quem vende mais, pontua mais. Garante que vendas são o fator mais relevante." },
+      { label: "VGV Assinado", desc: "Volume Geral de Vendas efetivamente assinado — o fator mais determinante do ranking." },
+      { label: "Propostas", desc: "Número de propostas geradas no período — mostra capacidade de gerar negócios." },
+      { label: "VGV em Proposta", desc: "Volume total de negócios em fase de proposta/negociação — potencial de fechamento." },
+      { label: "Ordenação", desc: "O ranking é ordenado pelo VGV Assinado. Quem vendeu mais, lidera." },
     ],
   },
   eficiencia: {
     titulo: "Como funciona o Ranking de Eficiência?",
-    descricao: "Avalia a eficiência ao longo do funil — premia qualidade, não volume (Peso: 10%)",
+    descricao: "Avalia a eficiência de conversão ao longo do funil — premia qualidade, não volume (Peso: 10% no Ranking Geral)",
     corDestaque: "text-amber-600",
     criterios: [
-      { label: "Taxa Lead → Visita", desc: "Percentual de leads que evoluem para visita agendada. Mede capacidade de engajar." },
-      { label: "Taxa Visita → Negócio", desc: "Percentual de visitas que geram propostas ou vendas. Mede poder de conversão." },
-      { label: "Pontuação", desc: "Corretores com maior eficiência recebem bônus. Premia qualidade de conversão, não apenas volume." },
+      { label: "Taxa Ligação → Visita", peso: "40%", desc: "Percentual de visitas realizadas sobre total de ligações. Mede capacidade de transformar contatos em visitas." },
+      { label: "Taxa Visita → Negócio", peso: "60%", desc: "Percentual de propostas e vendas sobre total de visitas realizadas. Mede poder de conversão presencial." },
+      { label: "Cálculo", desc: "Score = (Taxa Lig→Visita × 40%) + (Taxa Visita→Negócio × 60%), normalizado em relação ao melhor do time." },
     ],
   },
 };

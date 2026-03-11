@@ -133,58 +133,81 @@ export default function RankingGestaoLeadsTab({ period }: { period: "hoje" | "se
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground">
-                  <th className="py-2 px-3 text-left w-10">#</th>
-                  <th className="py-2 px-3 text-left">Corretor</th>
-                  <th className="py-2 px-3 text-center">Contatos</th>
-                  <th className="py-2 px-3 text-center">Qualificados</th>
-                  <th className="py-2 px-3 text-center">Visitas</th>
-                  <th className="py-2 px-3 text-center">Propostas</th>
-                  <th className="py-2 px-3 text-center">Pts</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ranking.map((r, i) => {
-                  const isMe = r.corretor_id === user?.id;
-                  const level = getLevel(Number(r.pontos_total));
-                  const av = avatarMap[r.corretor_id];
-                  const imgSrc = av?.gamificado || av?.avatar;
-                  return (
-                    <tr
-                      key={r.corretor_id}
-                      className={`border-b border-border transition-colors ${isMe ? "bg-primary/5 border-l-2 border-l-primary" : i % 2 ? "bg-muted/5" : ""}`}
-                    >
-                      <td className="py-2.5 px-3">
-                        {i < 3 ? <span className="text-base">{medals[i]}</span> : <span className="text-sm text-muted-foreground font-bold">{i + 1}</span>}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full shrink-0 overflow-hidden flex items-center justify-center" style={{ background: "#F3F4F6" }}>
-                            {imgSrc ? (
-                              <img src={imgSrc} alt={r.corretor_nome} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-[10px] font-bold text-gray-500">{getInitials(r.corretor_nome)}</span>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <span className="font-medium truncate block">{r.corretor_nome}</span>
-                            <span className={`text-[10px] font-semibold ${level.color}`}>{level.emoji} {level.label}</span>
-                          </div>
-                          {isMe && <span className="text-[10px] text-primary font-medium">← você</span>}
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 text-center">{r.contatos}</td>
-                      <td className="py-2.5 px-3 text-center text-emerald-600 font-semibold">{r.qualificados}</td>
-                      <td className="py-2.5 px-3 text-center">{r.visitas_marcadas}</td>
-                      <td className="py-2.5 px-3 text-center text-purple-600 font-semibold">{r.propostas}</td>
-                      <td className="py-2.5 px-3 text-center font-bold text-primary">{r.pontos_total}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+             <table className="w-full text-sm">
+               <thead>
+                 <tr className="border-b border-border text-xs text-muted-foreground">
+                   <th className="py-2 px-3 text-left w-10">#</th>
+                   <th className="py-2 px-3 text-left">Corretor</th>
+                   <th className="py-2 px-3 text-center" title="Contato Iniciado (×5pts)">Contatos</th>
+                   <th className="py-2 px-3 text-center" title="Qualificação (×10pts)">Qualif.</th>
+                   <th className="py-2 px-3 text-center" title="Visita Marcada (×30pts)">V.Marc</th>
+                   <th className="py-2 px-3 text-center" title="Visita Realizada (×50pts)">V.Real</th>
+                   <th className="py-2 px-3 text-center" title="Proposta/Negociação (×80pts)">Prop.</th>
+                   <th className="py-2 px-3 text-center">Total Pts</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 {ranking.map((r, i) => {
+                   const isMe = r.corretor_id === user?.id;
+                   const level = getLevel(Number(r.pontos_total));
+                   const av = avatarMap[r.corretor_id];
+                   const imgSrc = av?.gamificado || av?.avatar;
+                   // Show how points were calculated
+                   const ptsContatos = Number(r.contatos) * 5;
+                   const ptsQualif = Number(r.qualificados) * 10;
+                   const ptsVM = Number(r.visitas_marcadas) * 30;
+                   const ptsVR = Number(r.visitas_realizadas) * 50;
+                   const ptsProp = Number(r.propostas) * 80;
+                   return (
+                     <tr
+                       key={r.corretor_id}
+                       className={`border-b border-border transition-colors ${isMe ? "bg-primary/5 border-l-2 border-l-primary" : i % 2 ? "bg-muted/5" : ""}`}
+                     >
+                       <td className="py-2.5 px-3">
+                         {i < 3 ? <span className="text-base">{medals[i]}</span> : <span className="text-sm text-muted-foreground font-bold">{i + 1}</span>}
+                       </td>
+                       <td className="py-2.5 px-3">
+                         <div className="flex items-center gap-2">
+                           <div className="h-8 w-8 rounded-full shrink-0 overflow-hidden flex items-center justify-center bg-accent">
+                             {imgSrc ? (
+                               <img src={imgSrc} alt={r.corretor_nome} className="w-full h-full object-cover" />
+                             ) : (
+                               <span className="text-[10px] font-bold text-muted-foreground">{getInitials(r.corretor_nome)}</span>
+                             )}
+                           </div>
+                           <div className="min-w-0">
+                             <span className="font-medium truncate block">{r.corretor_nome}</span>
+                             <span className={`text-[10px] font-semibold ${level.color}`}>{level.emoji} {level.label}</span>
+                           </div>
+                           {isMe && <span className="text-[10px] text-primary font-medium">← você</span>}
+                         </div>
+                       </td>
+                       <td className="py-2.5 px-3 text-center">
+                         <span className="block">{r.contatos}</span>
+                         <span className="text-[9px] text-muted-foreground">{ptsContatos}pts</span>
+                       </td>
+                       <td className="py-2.5 px-3 text-center">
+                         <span className="block text-emerald-600 font-semibold">{r.qualificados}</span>
+                         <span className="text-[9px] text-muted-foreground">{ptsQualif}pts</span>
+                       </td>
+                       <td className="py-2.5 px-3 text-center">
+                         <span className="block">{r.visitas_marcadas}</span>
+                         <span className="text-[9px] text-muted-foreground">{ptsVM}pts</span>
+                       </td>
+                       <td className="py-2.5 px-3 text-center">
+                         <span className="block font-semibold">{r.visitas_realizadas}</span>
+                         <span className="text-[9px] text-muted-foreground">{ptsVR}pts</span>
+                       </td>
+                       <td className="py-2.5 px-3 text-center">
+                         <span className="block text-purple-600 font-semibold">{r.propostas}</span>
+                         <span className="text-[9px] text-muted-foreground">{ptsProp}pts</span>
+                       </td>
+                       <td className="py-2.5 px-3 text-center font-bold text-primary text-lg">{r.pontos_total}</td>
+                     </tr>
+                   );
+                 })}
+               </tbody>
+             </table>
           </div>
         </CardContent>
       </Card>
