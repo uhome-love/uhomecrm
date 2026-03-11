@@ -78,6 +78,19 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [empreendimentoSearch, setEmpreendimentoSearch] = useState("");
   const [empreendimentoOpen, setEmpreendimentoOpen] = useState(false);
   const [savingEmpreendimento, setSavingEmpreendimento] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editName, setEditName] = useState(lead.nome);
+
+  const handleSaveName = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === lead.nome) { setEditingName(false); return; }
+    setSaving(true);
+    try {
+      await onUpdate(lead.id, { nome: trimmed } as any);
+      toast.success("Nome atualizado!");
+      setEditingName(false);
+    } finally { setSaving(false); }
+  };
 
   // Edit states
   const [editingCommercial, setEditingCommercial] = useState(false);
