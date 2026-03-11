@@ -93,22 +93,39 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, pipeline_lead_id, pipeline_lead_ids, janela } = body;
-    console.log(`Action: ${action}, Lead: ${pipeline_lead_id}, Leads: ${pipeline_lead_ids?.length || 0}`);
+    const {
+      action,
+      pipeline_lead_id,
+      pipeline_lead_ids,
+      janela,
+      lead_id,
+      leadId,
+      lead_ids,
+      leadIds,
+      selected_lead_ids,
+      selectedLeadIds,
+    } = body;
+
+    const singleLeadId = pipeline_lead_id || lead_id || leadId || null;
+    const batchLeadIdsRaw = pipeline_lead_ids || lead_ids || leadIds || selected_lead_ids || selectedLeadIds || [];
+    const batchLeadIds: string[] = Array.isArray(batchLeadIdsRaw)
+      ? [...new Set(batchLeadIdsRaw.map((id: any) => String(id || "").trim()).filter(Boolean))]
+      : [];
+
+    console.log(`Action: ${action}, Lead: ${singleLeadId}, Leads: ${batchLeadIds.length}`);
 
     // ─── Accept / Reject ───
     if (action === "aceitar" || action === "rejeitar") {
       return await handleAcceptReject(supabase, body, userId!, supabaseUrl, serviceKey);
     }
 
-    // ─── Batch dispatch (CEO Fila) ───
-    if (action === "dispatch_batch") {
-      const leadIds: string[] = pipeline_lead_ids || [];
+    // ─── Batch dispatch (CEO Fila + backward-compatible aliases) ───
+    if (action === "dispatch_batch" || action === "dispatch_fila_ceo") {
+      const leadIds: string[] = batchLeadIds.length
+        ? batchLeadIds
+        : (singleLeadId ? [singleLeadId] : []);
       const targetJanela = janela || getCurrentJanela();
       
-      if (leadIds.length === 0) {
-        return jsonResponse({ success: false, reason: "no_leads", dispatched: 0 });
-      }
 
       // Load all leads
       const { data: leadsData } = await supabase
