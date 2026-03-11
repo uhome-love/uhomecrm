@@ -204,7 +204,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
         <div className="px-4 pt-3.5 pb-2.5 space-y-2" onClick={onClick}>
           {/* Row 1: Nome + Days badge */}
           <div className="flex items-center justify-between">
-            <p className="text-[15px] font-bold text-white truncate flex-1">{negocio.nome_cliente}</p>
+            <p className="text-[13px] font-bold text-white truncate flex-1">{negocio.nome_cliente}</p>
             <span className={`text-[11px] font-bold ml-2 shrink-0 px-2 py-0.5 rounded-full ${
               daysInFase <= 3 ? "bg-emerald-500/15 text-emerald-400" : daysInFase <= 7 ? "bg-amber-500/15 text-amber-400" : "bg-red-500/15 text-red-400"
             }`}>
