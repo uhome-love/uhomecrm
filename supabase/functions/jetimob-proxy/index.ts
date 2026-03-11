@@ -260,6 +260,12 @@ serve(async (req) => {
         // For non-filtered requests, return API pagination directly
         const rawTotal = rawData?.total || rawData?.totalResults || rawData?.total_results || items.length;
         console.log("Jetimob raw items:", items.length, "rawTotal:", rawTotal);
+        // Log first item keys for debugging
+        if (items.length > 0) console.log("Jetimob list first item keys:", JSON.stringify(Object.keys(items[0])).substring(0, 400));
+        // Normalize images on each item
+        for (const item of items) {
+          item._fotos_normalized = normalizeImages(item);
+        }
         
         return new Response(JSON.stringify({ 
           data: items, 
