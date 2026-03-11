@@ -79,6 +79,8 @@ export interface NegocioAcao {
   corretor_nome: string;
   dias_parado: number;
   updated_at: string;
+  unidade: string;
+  proposta_valor: number;
 }
 
 export interface VisitaHoje {
