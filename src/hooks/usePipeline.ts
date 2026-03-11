@@ -65,6 +65,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const [leads, setLeads] = useState<PipelineLead[]>([]);
   const [segmentos, setSegmentos] = useState<PipelineSegmento[]>([]);
   const [corretorNomes, setCorretorNomes] = useState<Record<string, string>>({});
+  const [corretorAvatars, setCorretorAvatars] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const loadStages = useCallback(async () => {
