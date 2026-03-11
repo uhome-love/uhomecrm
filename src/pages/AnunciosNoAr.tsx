@@ -250,6 +250,7 @@ function MaterialSection({
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [uploadTipo, setUploadTipo] = useState("criativo");
+  const [uploadNome, setUploadNome] = useState("");
 
   const myMateriais = materiais.filter(m => m.empreendimento_codigo === empreendimentoCodigo);
 
