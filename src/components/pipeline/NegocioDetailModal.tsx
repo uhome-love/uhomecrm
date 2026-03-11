@@ -569,7 +569,27 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 <CalendarDays className="h-3.5 w-3.5" /> 📅 Reunião
               </Button>
 
-              {/* + Ação dropdown */}
+              {/* Solicitar Pagadoria — only shows on "documentacao" phase */}
+              {(fullNeg.fase === "documentacao" || fullNeg.fase === "assinado") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "py-2 px-4 text-xs gap-1.5 rounded-full",
+                    pagadoriaStatus === "pronto"
+                      ? "border-emerald-300 text-emerald-600"
+                      : pagadoriaStatus
+                      ? "border-blue-300 text-blue-600"
+                      : "border-purple-300 text-purple-600 hover:bg-purple-50"
+                  )}
+                  onClick={() => setPagadoriaOpen(true)}
+                  disabled={!!pagadoriaStatus}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  {pagadoriaStatus === "pronto" ? "✅ Pagadoria pronta" : pagadoriaStatus === "producao" ? "⚙️ Em produção" : pagadoriaStatus === "enviado" ? "📩 Solicitada" : "📋 Solicitar Pagadoria"}
+                </Button>
+              )}
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full">
