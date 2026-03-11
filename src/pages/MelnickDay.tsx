@@ -111,7 +111,7 @@ const SEGMENTOS: Record<string, {
       { nome: "Grand Park Lindóia", bairro: "São Sebastião", metragens: "56 a 81 m²", dorms: "2 e 3 dorms", status: "Pronto", precoDe: "R$ 622.810", precoPor: "R$ 485.792", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122658/Camada-933.png"] },
       { nome: "Vida Viva Linked", bairro: "Teresópolis", metragens: "55 e 67 m²", dorms: "2 e 3 dorms", status: "Pronto", precoDe: "R$ 656.978", precoPor: "R$ 499.303", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122656/Camada-932.png"] },
       { nome: "Grand Park Moinhos", bairro: "Canoas", metragens: "56 a 87 m²", dorms: "2 e 3 dorms", status: "Em obras", precoDe: "R$ 546.932", precoPor: "R$ 464.892", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2022/06/31110805/Fotomontagem.webp"] },
-      { nome: "High Garden Iguatemi", bairro: "Boa Vista", metragens: "102 a 125 m²", dorms: "Até 3 suítes", status: "Em obras", precoDe: "R$ 1.649.477", precoPor: "R$ 1.232.604", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122629/Camada-7.png"] },
+      { nome: "High Garden Iguatemi", bairro: "Boa Vista", metragens: "102 a 125 m²", dorms: "Até 3 suítes", status: "Entrega 2029", precoDe: "R$ 1.649.477", precoPor: "R$ 1.099.722", descontoMax: "-8%", m2: "R$ 10.770/m²", condicoes: "Stand de Vendas", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122629/Camada-7.png"] },
     ],
   },
   alto: {
