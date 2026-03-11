@@ -93,6 +93,9 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
   const [contVgv, setContVgv] = useState(negocio.vgv_estimado ? String(negocio.vgv_estimado) : "");
   const [contTipo, setContTipo] = useState("digital");
 
+  // Inline task editing
+  const [editingTask, setEditingTask] = useState(false);
+  const [taskText, setTaskText] = useState("");
   const whatsappUrl = negocio.telefone ? `https://wa.me/${negocio.telefone.replace(/\D/g, "")}` : null;
 
   const handleLigarRegistro = async () => {
