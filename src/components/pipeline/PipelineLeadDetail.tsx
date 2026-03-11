@@ -407,7 +407,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <span className="text-xs font-semibold text-foreground">Próxima tarefa:</span>
               <span className="text-xs text-muted-foreground">
                 {nextTask.descricao || nextTask.titulo}
-                {nextTask.vence_em && ` · ${format(new Date(nextTask.vence_em + "T00:00:00"), "dd/MM", { locale: ptBR })}`}
+                {nextTask.vence_em && ` · ${formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "data inválida" })}`}
                 {(nextTask as any).hora_vencimento && ` ${(nextTask as any).hora_vencimento.slice(0, 5)}`}
               </span>
               <div className="ml-auto flex items-center gap-1">
