@@ -148,11 +148,11 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
       className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-1.5 scrollbar-thin"
     >
       {stageLeads.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center mb-2">
-            <span className="text-muted-foreground/40 text-sm">+</span>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center mb-2 border border-border/30">
+            <span className="text-muted-foreground/30 text-lg">+</span>
           </div>
-          <span className="text-[11px] text-muted-foreground/50">Arraste leads aqui</span>
+          <span className="text-[11px] text-muted-foreground/40 font-medium">Arraste leads aqui</span>
         </div>
       )}
       {visibleLeads.map((lead) => {
