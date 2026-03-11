@@ -323,26 +323,35 @@ export default function GerenteDashboard() {
                   Ver pipeline <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {negociosQuentes.map(n => (
                   <motion.div key={n.id} whileHover={{ scale: 1.005 }}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-border/40 hover:bg-accent/40 transition-colors cursor-pointer"
+                    className="p-3.5 rounded-xl border border-border/40 hover:bg-accent/40 transition-colors cursor-pointer"
                     onClick={() => navigate("/meus-negocios")}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground truncate">{n.nome_cliente}</p>
-                        <Badge variant="outline" className={`text-[10px] shrink-0 ${faseColors[n.fase] || "text-muted-foreground"}`}>
-                          {faseLabels[n.fase] || n.fase}
-                        </Badge>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-semibold text-foreground truncate">{n.nome_cliente}</p>
+                          <Badge variant="outline" className={`text-[10px] shrink-0 ${faseColors[n.fase] || "text-muted-foreground"}`}>
+                            {faseLabels[n.fase] || n.fase}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{n.empreendimento}</span>
+                          {n.unidade && <><span className="text-border">·</span><span>Un. {n.unidade}</span></>}
+                          <span className="text-border">·</span>
+                          <span className="font-semibold text-foreground">{formatCurrency(n.vgv)}</span>
+                          {n.proposta_valor > 0 && <><span className="text-border">·</span><span>Proposta: {formatCurrency(n.proposta_valor)}</span></>}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
+                          <span className="px-1.5 py-0.5 rounded bg-accent/60 font-medium">👤 {n.corretor_nome}</span>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {n.empreendimento} · {n.corretor_nome} · <span className="font-semibold">{formatCurrency(n.vgv)}</span>
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-[10px] text-muted-foreground">
-                        {n.horas_desde_update < 1 ? "agora" : n.horas_desde_update < 24 ? `${n.horas_desde_update}h atrás` : `${Math.floor(n.horas_desde_update / 24)}d atrás`}
-                      </span>
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] text-muted-foreground">
+                          {n.horas_desde_update < 1 ? "agora" : n.horas_desde_update < 24 ? `${n.horas_desde_update}h atrás` : `${Math.floor(n.horas_desde_update / 24)}d atrás`}
+                        </span>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
@@ -368,28 +377,39 @@ export default function GerenteDashboard() {
                 <Button variant="outline" size="sm" className="mt-3 text-xs" onClick={() => navigate("/agenda-visitas")}>Ver agenda</Button>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {negociosAcao.map(n => (
                   <motion.div key={n.id} whileHover={{ scale: 1.005 }}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-border/40 hover:bg-accent/40 transition-colors cursor-pointer"
+                    className="p-3.5 rounded-xl border border-border/40 hover:bg-accent/40 transition-colors cursor-pointer"
                     onClick={() => navigate("/meus-negocios")}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground truncate">{n.nome_cliente}</p>
-                        <Badge variant="outline" className={`text-[10px] shrink-0 ${faseColors[n.fase] || "text-muted-foreground"}`}>
-                          {faseLabels[n.fase] || n.fase}
-                        </Badge>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-semibold text-foreground truncate">{n.nome_cliente}</p>
+                          <Badge variant="outline" className={`text-[10px] shrink-0 ${faseColors[n.fase] || "text-muted-foreground"}`}>
+                            {faseLabels[n.fase] || n.fase}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{n.empreendimento}</span>
+                          {n.unidade && <><span className="text-border">·</span><span>Un. {n.unidade}</span></>}
+                          <span className="text-border">·</span>
+                          <span className="font-semibold text-foreground">{formatCurrency(n.vgv)}</span>
+                          {n.proposta_valor > 0 && <><span className="text-border">·</span><span>Proposta: {formatCurrency(n.proposta_valor)}</span></>}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
+                          <span className="px-1.5 py-0.5 rounded bg-accent/60 font-medium">👤 {n.corretor_nome}</span>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-muted-foreground truncate">{n.empreendimento} · {n.corretor_nome} · {formatCurrency(n.vgv)}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      {n.dias_parado >= 2 ? (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: "hsl(var(--danger-50))", color: "hsl(var(--danger-500))" }}>
-                          {n.dias_parado}d parado
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">atualizado hoje</span>
-                      )}
+                      <div className="text-right shrink-0">
+                        {n.dias_parado >= 2 ? (
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: "hsl(var(--danger-50))", color: "hsl(var(--danger-500))" }}>
+                            {n.dias_parado}d parado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">atualizado hoje</span>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
                 ))}
