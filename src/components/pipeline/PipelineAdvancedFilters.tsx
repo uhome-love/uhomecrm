@@ -96,7 +96,7 @@ const PRESETS: SavedFilter[] = [
 // Calculated temperature (mirrors PipelineCard logic)
 function getCalcTemp(lead: PipelineLead): string {
   const refDate = lead.updated_at || lead.created_at;
-  const hours = differenceInHours(new Date(), new Date(refDate));
+  const hours = differenceInHoursSafe(refDate) ?? Number.POSITIVE_INFINITY;
   const isIndicacao = (lead.origem || "").toLowerCase().includes("indicaç") || (lead.origem || "").toLowerCase().includes("indicac");
   if (hours < 2 || isIndicacao) return "quente";
   if (hours < 24) return "morno";
