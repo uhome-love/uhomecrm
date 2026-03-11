@@ -199,9 +199,14 @@ export default function RoletagensTab({ view = "all" }: { view?: "all" | "roleta
     (r.aceite_status === "pendente" && r.aceite_expira_em && new Date(r.aceite_expira_em) < new Date())
   );
 
+  const showAll = view === "all";
+  const showRoletagens = showAll || view === "roletagens";
+  const showPerdidos = showAll || view === "perdidos";
+
   return (
     <div className="space-y-4">
       {/* Summary cards */}
+      {showAll && (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/10">
           <CardContent className="p-3 text-center">
@@ -228,6 +233,7 @@ export default function RoletagensTab({ view = "all" }: { view?: "all" | "roleta
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Refresh */}
       <div className="flex justify-end">
