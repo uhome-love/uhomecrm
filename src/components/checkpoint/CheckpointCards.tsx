@@ -30,6 +30,8 @@ interface CorretorCard {
   obs_gerente: string;
   obs_dia: string;
   status_online: string | null;
+  goal_status: string | null;
+  goal_id: string | null;
 }
 
 interface Props {
