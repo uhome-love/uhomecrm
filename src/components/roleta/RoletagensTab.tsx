@@ -81,7 +81,7 @@ function getStatusConfig(status: string, expiresAt: string | null) {
   return { label: status, color: "bg-muted text-muted-foreground", icon: Clock };
 }
 
-export default function RoletagensTab() {
+export default function RoletagensTab({ view = "all" }: { view?: "all" | "roletagens" | "perdidos" }) {
   const [roletagens, setRoletagens] = useState<Roletagem[]>([]);
   const [leadsPerdidos, setLeadsPerdidos] = useState<LeadPerdido[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,9 +199,14 @@ export default function RoletagensTab() {
     (r.aceite_status === "pendente" && r.aceite_expira_em && new Date(r.aceite_expira_em) < new Date())
   );
 
+  const showAll = view === "all";
+  const showRoletagens = showAll || view === "roletagens";
+  const showPerdidos = showAll || view === "perdidos";
+
   return (
     <div className="space-y-4">
       {/* Summary cards */}
+      {showAll && (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/10">
           <CardContent className="p-3 text-center">
@@ -228,6 +233,7 @@ export default function RoletagensTab() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Refresh */}
       <div className="flex justify-end">
@@ -237,7 +243,7 @@ export default function RoletagensTab() {
       </div>
 
       {/* Leads aguardando aceite (highlight) */}
-      {pendentes.length > 0 && (
+      {showRoletagens && pendentes.length > 0 && (
         <Card className="border-amber-400/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -291,7 +297,10 @@ export default function RoletagensTab() {
       )}
 
       {/* Leads Perdidos por Timeout */}
-      {leadsPerdidos.length > 0 && (
+      {showPerdidos && leadsPerdidos.length === 0 && view === "perdidos" && (
+        <p className="text-sm text-muted-foreground text-center py-6">Nenhum lead perdido por timeout registrado.</p>
+      )}
+      {showPerdidos && leadsPerdidos.length > 0 && (
         <Card className="border-orange-400/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -347,7 +356,7 @@ export default function RoletagensTab() {
         </Card>
       )}
 
-      {/* All roletagens table */}
+      {showRoletagens && (
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Histórico de Roletagens</CardTitle>
@@ -426,6 +435,7 @@ export default function RoletagensTab() {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
