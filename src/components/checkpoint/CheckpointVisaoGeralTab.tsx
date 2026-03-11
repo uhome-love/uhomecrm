@@ -156,8 +156,10 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
       .sort((a, b) => b.diasParado - a.diasParado);
     setNegociosParados(parados);
 
-    // Leads sem contato
-    setLeadsSemContato((leadsPendentes || []).length);
+    // Leads sem contato (filter by stage_id → tipo in novo_lead/sem_contato)
+    const semContatoStageIds = new Set(Object.entries(stageMap).filter(([_, tipo]) => tipo === "novo_lead" || tipo === "sem_contato").map(([id]) => id));
+    const leadsSemContatoList = (leadsPendentes || []).filter((l: any) => semContatoStageIds.has(l.stage_id));
+    setLeadsSemContato(leadsSemContatoList.length);
 
     // Build Alerts
     const newAlerts: Alert[] = [];
