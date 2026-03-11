@@ -129,11 +129,15 @@ const FASE_PRIORITY: Record<string, number> = { assinado: 6, documentacao: 5, ne
 export function useGerenteDashboard(period: Period) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<{ nome?: string; avatar_url?: string; avatar_gamificado_url?: string } | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("nome, avatar_url, avatar_gamificado_url").eq("user_id", user.id).maybeSingle().then(({ data }) => {
-      if (data) setProfile(data);
+    supabase.from("profiles").select("id, nome, avatar_url, avatar_gamificado_url").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data) {
+        setProfile(data);
+        setProfileId(data.id);
+      }
     });
   }, [user]);
 
