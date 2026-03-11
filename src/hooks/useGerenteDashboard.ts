@@ -238,7 +238,8 @@ export function useGerenteDashboard(period: Period) {
         const hasVisit = todayVisitSet.has(uid);
 
         let activityStatus: CorretorRow["activityStatus"] = "offline";
-        if (disp === "disponivel" || disp === "pausa") {
+        const isOnline = disp === "na_empresa" || disp === "em_pausa" || disp === "em_visita" || disp === "disponivel";
+        if (isOnline) {
           if (todayCalls >= 10 || hasVisit) activityStatus = "produzindo";
           else if (todayCalls >= 1) activityStatus = "baixa";
           else activityStatus = "sem_atividade";
