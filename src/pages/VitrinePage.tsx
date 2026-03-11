@@ -20,10 +20,19 @@ interface VitrineImovel {
   fotos: string[];
   empreendimento: string | null;
   descricao: string | null;
+  // Melnick Day extras
+  precoDe?: string | null;
+  precoPor?: string | null;
+  descontoMax?: string | null;
+  status?: string | null;
+  metragens?: string | null;
+  dorms?: string | null;
+  condicoes?: string | null;
+  segmento?: string | null;
 }
 
 interface VitrineData {
-  vitrine: { id: string; titulo: string; mensagem: string | null; created_at: string };
+  vitrine: { id: string; titulo: string; mensagem: string | null; created_at: string; tipo?: string };
   corretor: { nome: string; telefone: string | null; avatar_url: string | null } | null;
   imoveis: VitrineImovel[];
 }
