@@ -381,7 +381,7 @@ export default function GerenteDashboard() {
                 {negociosAcao.map(n => (
                   <motion.div key={n.id} whileHover={{ scale: 1.005 }}
                     className="p-3.5 rounded-xl border border-border/40 hover:bg-accent/40 transition-colors cursor-pointer"
-                    onClick={() => navigate("/meus-negocios")}>
+                    onClick={() => navigate("/pipeline-negocios")}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">

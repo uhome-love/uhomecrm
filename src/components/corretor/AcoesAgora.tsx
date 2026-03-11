@@ -76,7 +76,7 @@ export default function AcoesAgora({ followUps, visitasHoje, newLeadsCount, onSt
                 <Phone className="h-4 w-4 text-emerald-600" />
                 <span className="text-xs font-medium text-foreground">{followUps.length} follow-up{followUps.length > 1 ? "s" : ""} pendente{followUps.length > 1 ? "s" : ""}</span>
               </div>
-              <Button size="sm" variant="ghost" className="h-7 text-[10px] gap-1 text-emerald-600" onClick={() => navigate("/pipeline")}>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] gap-1 text-emerald-600" onClick={() => navigate("/pipeline-leads")}>
                 Ver <ArrowRight className="h-3 w-3" />
               </Button>
             </div>

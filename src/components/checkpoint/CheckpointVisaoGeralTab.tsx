@@ -242,8 +242,8 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
         <MiniCard icon={<Phone size={16} />} label={isToday ? "Ligações Hoje" : `Ligações`} value={totalOA.ligacoes} accent="text-blue-600 bg-blue-500/10" onClick={() => navigate("/oferta-ativa")} />
         <MiniCard icon={<UserCheck size={16} />} label="Aproveitados" value={totalOA.aproveitados} sub={`${taxa}%`} accent="text-emerald-600 bg-emerald-500/10" />
-        <MiniCard icon={<Users size={16} />} label="Leads" value={totalLeads} accent="text-primary bg-primary/10" onClick={() => navigate("/pipeline")} />
-        <MiniCard icon={<Briefcase size={16} />} label="Negócios" value={totalNegCount} sub={fmtCurrency(totalVGV)} accent="text-amber-600 bg-amber-500/10" onClick={() => navigate("/negocios")} />
+        <MiniCard icon={<Users size={16} />} label="Leads" value={totalLeads} accent="text-primary bg-primary/10" onClick={() => navigate("/pipeline-leads")} />
+        <MiniCard icon={<Briefcase size={16} />} label="Negócios" value={totalNegCount} sub={fmtCurrency(totalVGV)} accent="text-amber-600 bg-amber-500/10" onClick={() => navigate("/pipeline-negocios")} />
         <MiniCard icon={<MapPin size={16} />} label="Visitas" value={totalVisitasHoje} sub={`${visitasRealizadas} realiz.`} accent="text-purple-600 bg-purple-500/10" onClick={() => navigate("/agenda-visitas")} />
       </div>
 

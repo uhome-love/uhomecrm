@@ -886,7 +886,7 @@ export default function MelnickDay() {
             <Button variant="outline" size="sm" className="gap-1.5 text-xs justify-start" onClick={() => navigate("/oferta-ativa")}>
               <Phone className="h-3.5 w-3.5" /> Iniciar Oferta Ativa
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs justify-start" onClick={() => navigate("/pipeline")}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs justify-start" onClick={() => navigate("/pipeline-leads")}>
               <Target className="h-3.5 w-3.5" /> Abrir Pipeline
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5 text-xs justify-start" onClick={() => navigate("/visitas")}>

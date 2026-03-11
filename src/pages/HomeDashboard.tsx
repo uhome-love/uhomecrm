@@ -651,7 +651,7 @@ export default function HomeDashboard() {
 
             {/* Checkpoint do Dia */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-border bg-card" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-              <SectionHeader icon={ClipboardCheck} title="Checkpoint Hoje" action={{ label: "Ver checkpoint", onClick: () => navigate("/checkpoint") }} />
+              <SectionHeader icon={ClipboardCheck} title="Checkpoint Hoje" action={{ label: "Ver central", onClick: () => navigate("/central-do-gerente") }} />
               <div className="p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <div className="text-center rounded-lg bg-primary/10 p-2">

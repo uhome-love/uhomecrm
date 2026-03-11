@@ -121,7 +121,7 @@ export default function SessionSummaryScreen({ stats, homiMessage, onNewSession,
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate("/pipeline")}
+            onClick={() => navigate("/pipeline-leads")}
             className="gap-2 border-white/20 text-white bg-white/5 hover:bg-white/10 rounded-xl px-6 h-11"
           >
             📋 Ver pipeline
