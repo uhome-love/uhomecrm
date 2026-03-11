@@ -860,6 +860,183 @@ export default function MelnickDay() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── FLOATING SELECTION BAR ── */}
+      {selectedEmps.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-foreground text-background rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 max-w-lg w-[calc(100%-2rem)] animate-in slide-in-from-bottom-4">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-primary-foreground">{selectedEmps.size}</span>
+            </div>
+            <span className="text-sm font-medium truncate">
+              {selectedEmps.size === 1 ? "1 oferta selecionada" : `${selectedEmps.size} ofertas selecionadas`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="gap-1.5 text-xs"
+              onClick={() => {
+                // Generate WhatsApp message with all selected
+                let msg = `🔥 *Melnick Day 2026* — Ofertas selecionadas:\n\n`;
+                selectedEmpData.forEach((emp) => {
+                  msg += `🏠 *${emp.nome}* — ${emp.bairro}\n`;
+                  msg += `📐 ${emp.metragens} · ${emp.dorms}\n`;
+                  if (emp.precoPor) msg += `💰 ${emp.precoPor}`;
+                  if (emp.precoDe) msg += ` (era ${emp.precoDe})`;
+                  msg += `\n\n`;
+                });
+                msg += `📅 Condições válidas até 21/03!\nMe chama para saber mais! 😊`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+              }}
+            >
+              <Send className="h-3 w-3" /> WhatsApp
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => setShowVitrineDialog(true)}
+            >
+              <Link2 className="h-3 w-3" /> Criar Vitrine
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── VITRINE CREATION DIALOG ── */}
+      <Dialog open={showVitrineDialog} onOpenChange={setShowVitrineDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-primary" />
+              Criar Vitrine Melnick Day
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Título da vitrine</label>
+              <Input
+                value={vitrineTitle}
+                onChange={(e) => setVitrineTitle(e.target.value)}
+                placeholder="Ex: Ofertas exclusivas para você"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Mensagem personalizada (opcional)</label>
+              <Textarea
+                value={vitrineMsg}
+                onChange={(e) => setVitrineMsg(e.target.value)}
+                placeholder="Ex: Oi João, separei essas ofertas especiais do Melnick Day pensando no seu perfil..."
+                rows={3}
+              />
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+              <p className="text-xs font-semibold text-foreground">{selectedEmps.size} ofertas selecionadas:</p>
+              <div className="flex flex-wrap gap-1">
+                {selectedEmpData.slice(0, 8).map((emp) => (
+                  <Badge key={emp.nome} variant="secondary" className="text-[10px]">{emp.nome}</Badge>
+                ))}
+                {selectedEmpData.length > 8 && (
+                  <Badge variant="outline" className="text-[10px]">+{selectedEmpData.length - 8}</Badge>
+                )}
+              </div>
+            </div>
+
+            {vitrineLink && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-2">
+                <p className="text-xs font-semibold text-emerald-700">✅ Vitrine criada!</p>
+                <div className="flex items-center gap-2">
+                  <Input value={vitrineLink} readOnly className="text-xs h-8 flex-1" />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-2"
+                    onClick={() => {
+                      navigator.clipboard.writeText(vitrineLink);
+                      toast.success("Link copiado!");
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`${vitrineMsg || vitrineTitle}\n\nConfira as ofertas: ${vitrineLink}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button size="sm" className="w-full gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white mt-1">
+                    <Phone className="h-3.5 w-3.5" /> Enviar via WhatsApp
+                  </Button>
+                </a>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            {!vitrineLink && (
+              <Button
+                onClick={async () => {
+                  setCreatingVitrine(true);
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) {
+                      toast.error("Faça login para criar uma vitrine");
+                      return;
+                    }
+
+                    const dadosCustom = selectedEmpData.map((emp) => ({
+                      nome: emp.nome,
+                      bairro: emp.bairro,
+                      metragens: emp.metragens,
+                      dorms: emp.dorms,
+                      status: emp.status,
+                      precoDe: emp.precoDe,
+                      precoPor: emp.precoPor,
+                      descontoMax: emp.descontoMax,
+                      imagem: emp.imagem,
+                      condicoes: emp.condicoes,
+                      segmento: emp.segmento,
+                      m2: emp.m2,
+                    }));
+
+                    const { data, error } = await supabase
+                      .from("vitrines")
+                      .insert({
+                        created_by: user.id,
+                        titulo: vitrineTitle,
+                        mensagem_corretor: vitrineMsg || null,
+                        tipo: "melnick_day",
+                        dados_custom: dadosCustom as any,
+                      })
+                      .select("id")
+                      .single();
+
+                    if (error) throw error;
+                    const link = `${window.location.origin}/vitrine/${data.id}`;
+                    setVitrineLink(link);
+                    navigator.clipboard.writeText(link);
+                    toast.success("Vitrine criada! Link copiado.");
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Erro ao criar vitrine");
+                  } finally {
+                    setCreatingVitrine(false);
+                  }
+                }}
+                disabled={creatingVitrine || selectedEmps.size === 0}
+                className="gap-1.5"
+              >
+                {creatingVitrine ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Link2 className="h-4 w-4" />
+                )}
+                Gerar Link da Vitrine
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
