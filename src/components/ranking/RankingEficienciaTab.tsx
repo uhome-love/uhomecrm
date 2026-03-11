@@ -56,30 +56,30 @@ export default function RankingEficienciaTab({ period }: { period: "hoje" | "sem
   // Compute efficiency scores
   const sorted = useMemo<EficienciaEntry[]>(() => {
     const entries: EficienciaEntry[] = allCorretores.map(c => {
-      const leads = c.real_ligacoes || 1; // avoid div by 0
+      const ligacoes = c.real_ligacoes;
       const visitas = c.real_visitas_realizadas;
-      const negocios = c.real_vgv_assinado > 0 ? 1 : 0; // simplify: has sale = 1 negocio
       const propostas = c.real_propostas;
+      const negocios = c.real_vgv_assinado > 0 ? 1 : 0;
 
-      const taxa_lead_visita = leads > 0 ? (visitas / leads) * 100 : 0;
+      const taxa_lead_visita = ligacoes > 0 ? (visitas / ligacoes) * 100 : 0;
       const taxa_visita_negocio = visitas > 0 ? ((propostas + negocios) / visitas) * 100 : 0;
 
-      // Score: weighted average of both rates, normalized
-      const score = Math.round(taxa_lead_visita * 0.4 + taxa_visita_negocio * 0.6);
+      // Weighted average: 40% lig→visita + 60% visita→negócio
+      const rawScore = taxa_lead_visita * 0.4 + taxa_visita_negocio * 0.6;
 
       return {
         corretor_id: c.corretor_id,
         nome: c.corretor_nome,
         visitas,
         negocios: propostas + negocios,
-        leads,
+        leads: ligacoes,
         taxa_lead_visita: Math.round(taxa_lead_visita * 10) / 10,
         taxa_visita_negocio: Math.round(taxa_visita_negocio * 10) / 10,
-        score: Math.min(100, score),
+        score: rawScore,
       };
     });
 
-    // Normalize scores relative to best
+    // Normalize scores relative to best (0-100)
     const maxScore = Math.max(...entries.map(e => e.score), 1);
     entries.forEach(e => { e.score = Math.round((e.score / maxScore) * 100); });
 
