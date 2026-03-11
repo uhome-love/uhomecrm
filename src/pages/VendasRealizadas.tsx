@@ -177,6 +177,7 @@ export default function VendasRealizadas() {
   const vendas = data?.vendas || [];
   const profiles = data?.profiles || {};
   const annualVgvByCorretor = data?.annualVgvByCorretor || {};
+  const parceriaLeadIds = new Set(data?.parceriaSet || []);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return vendas;
