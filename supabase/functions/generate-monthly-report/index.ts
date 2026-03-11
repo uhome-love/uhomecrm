@@ -268,11 +268,11 @@ ESTRUTURA OBRIGATÓRIA:
 
 Use emojis, seja direto e objetivo. Dados concretos.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "Você é o HOMI CEO, assistente estratégico da Uhome Sales. Gere relatórios executivos profissionais em markdown para apresentação em reunião de diretoria." },
           { role: "user", content: aiPrompt },

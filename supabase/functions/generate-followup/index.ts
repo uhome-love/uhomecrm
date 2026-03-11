@@ -100,11 +100,11 @@ Classifique a prioridade em 5 níveis:
         `ID: ${l.id} | Nome: ${l.nome} | Interesse: ${l.interesse} | Origem: ${l.origem} | Último contato: ${l.ultimoContato} | Status: ${l.status} | Tem telefone: ${l.temTelefone ? "sim" : "não"} | Tem email: ${l.temEmail ? "sim" : "não"}`
       ).join("\n");
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "gpt-4o-mini",
           messages: [
             { role: "system", content: "Você é um assistente de vendas imobiliárias brasileiro especialista em classificação de leads." },
             { role: "user", content: `Classifique cada lead em 5 níveis de prioridade.
