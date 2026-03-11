@@ -287,6 +287,7 @@ function MaterialSection({
       toast.error("Erro ao enviar: " + (err.message || "tente novamente"));
     } finally {
       setUploading(false);
+      setUploadNome("");
       e.target.value = "";
     }
   };
