@@ -3,7 +3,7 @@ import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/useP
 import { Phone, MessageCircle, Zap, Calendar, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft, Eye, MapPin, PhoneCall, Send, FileText, Mail, MoreVertical, ArrowRight, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserRole } from "@/hooks/useUserRole";
-import { differenceInHours } from "date-fns";
+import { differenceInHours, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -374,10 +374,26 @@ const PipelineCard = memo(function PipelineCard({
           </div>
         )}
 
-        {/* Line 3: Task status */}
-        <p className={cn("text-[11px] truncate pt-0.5 font-medium", status.text ? status.textCls : "text-muted-foreground")}>
-          {status.text || "✅ Em dia"}
-        </p>
+        {/* Line 3: Task status + days in stage */}
+        <div className="flex items-center justify-between gap-1 pt-0.5">
+          <p className={cn("text-[11px] truncate font-medium", status.text ? status.textCls : "text-muted-foreground")}>
+            {status.text || "✅ Em dia"}
+          </p>
+          {(() => {
+            const days = differenceInDays(new Date(), new Date(lead.stage_changed_at));
+            if (days < 1) return null;
+            return (
+              <span className={cn(
+                "text-[9px] font-semibold shrink-0 px-1.5 py-0.5 rounded-md",
+                days >= 7 ? "text-destructive bg-destructive/10" :
+                days >= 3 ? "text-amber-600 dark:text-amber-400 bg-amber-500/10" :
+                "text-muted-foreground bg-muted/50"
+              )}>
+                {days}d na etapa
+              </span>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Create Negócio button — only on Visita Realizada without linked deal */}
