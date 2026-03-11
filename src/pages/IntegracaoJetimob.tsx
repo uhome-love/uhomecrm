@@ -593,40 +593,7 @@ export default function IntegracaoJetimob() {
         </TabsContent>
 
         <TabsContent value="empreendimentos">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Normalização de Empreendimentos</CardTitle>
-              <CardDescription>Como nomes de campanha do Jetimob são traduzidos para empreendimentos no uHome</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Nome Jetimob</th>
-                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground w-8"><ArrowRight className="h-3.5 w-3.5" /></th>
-                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Nome uHome</th>
-                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Segmento</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {EMPREENDIMENTO_MAPPINGS.map((e, i) => (
-                      <tr key={i} className="border-b last:border-0">
-                        <td className="px-4 py-2.5 font-mono text-xs">{e.jetimobName}</td>
-                        <td className="px-4 py-2.5"><ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /></td>
-                        <td className="px-4 py-2.5 font-medium">{e.uhomeName}</td>
-                        <td className="px-4 py-2.5">
-                          <Badge variant={e.segmento === "MCMV" ? "default" : e.segmento === "Altíssimo" ? "secondary" : "outline"}>
-                            {e.segmento}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+          <CampaignMapPanel />
         </TabsContent>
 
         <TabsContent value="dedup">
