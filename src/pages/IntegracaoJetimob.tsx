@@ -407,7 +407,7 @@ function EditableFieldMappingTable({ categoria, title }: { categoria: string; ti
                   <tr className="border-b bg-accent/10">
                     <td className="px-3 py-2">
                       <Select value={newRow.status} onValueChange={(v) => setNewRow({ ...newRow, status: v })}>
-                        <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="ok">✅ Mapeado</SelectItem>
                           <SelectItem value="warning">⚠️ Parcial</SelectItem>
@@ -416,12 +416,41 @@ function EditableFieldMappingTable({ categoria, title }: { categoria: string; ti
                       </Select>
                     </td>
                     <td className="px-3 py-2">
-                      <Input className="h-8 text-xs font-mono" placeholder="Campo Jetimob" value={newRow.jetimob_field} onChange={(e) => setNewRow({ ...newRow, jetimob_field: e.target.value })} />
+                      <Select value={newRow.jetimob_field} onValueChange={(v) => setNewRow({ ...newRow, jetimob_field: v })}>
+                        <SelectTrigger className="h-8 text-xs font-mono min-w-[220px]">
+                          <SelectValue placeholder="Selecione campo Jetimob" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {getJetimobFields(categoria).map((f) => (
+                            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Input className="h-7 text-xs mt-1" placeholder="Descrição" value={newRow.jetimob_description} onChange={(e) => setNewRow({ ...newRow, jetimob_description: e.target.value })} />
                     </td>
                     <td className="px-3 py-2"><ArrowRight className="h-3.5 w-3.5 text-muted-foreground" /></td>
-                    <td className="px-3 py-2"><Input className="h-8 text-xs font-mono" placeholder="Campo uHome" value={newRow.uhome_field} onChange={(e) => setNewRow({ ...newRow, uhome_field: e.target.value })} /></td>
-                    <td className="px-3 py-2"><Input className="h-8 text-xs" placeholder="Tabela" value={newRow.uhome_table} onChange={(e) => setNewRow({ ...newRow, uhome_table: e.target.value })} /></td>
+                    <td className="px-3 py-2">
+                      <Select value={newRow.uhome_field} onValueChange={(v) => setNewRow({ ...newRow, uhome_field: v })}>
+                        <SelectTrigger className="h-8 text-xs font-mono min-w-[220px]">
+                          <SelectValue placeholder="Selecione campo uHome" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {getUhomeFields(categoria).map((f) => (
+                            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Select value={newRow.uhome_table} onValueChange={(v) => setNewRow({ ...newRow, uhome_table: v })}>
+                        <SelectTrigger className="h-8 text-xs min-w-[170px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {UHOME_TABLES.map((t) => (
+                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
                     <td className="px-3 py-2"><Input className="h-8 text-xs" placeholder="Transformação" value={newRow.transform} onChange={(e) => setNewRow({ ...newRow, transform: e.target.value })} /></td>
                     <td className="px-3 py-2"><Input className="h-8 text-xs" placeholder="Notas" value={newRow.notes} onChange={(e) => setNewRow({ ...newRow, notes: e.target.value })} /></td>
                     <td className="px-3 py-2">
@@ -433,7 +462,7 @@ function EditableFieldMappingTable({ categoria, title }: { categoria: string; ti
                   </tr>
                 )}
                 {mappings.map((m) => (
-                  <EditableRow key={m.id} mapping={m} onSave={handleSave} onDelete={handleDelete} />
+                  <EditableRow key={m.id} mapping={m} onSave={handleSave} onDelete={handleDelete} categoria={categoria} />
                 ))}
               </tbody>
             </table>
