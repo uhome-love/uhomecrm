@@ -432,6 +432,7 @@ export default function RoletagensTab({ view = "all" }: { view?: "all" | "roleta
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
