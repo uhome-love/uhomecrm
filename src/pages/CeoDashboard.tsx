@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Loader2, Clock, RefreshCw, CheckCircle2, XCircle, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown, Rocket, Inbox, CalendarRange, Send } from "lucide-react";
+import { Loader2, Clock, RefreshCw, CheckCircle2, XCircle, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown, Rocket, Inbox, CalendarRange, Send, Building2 } from "lucide-react";
 import { format, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
