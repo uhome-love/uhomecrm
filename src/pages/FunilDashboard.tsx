@@ -14,14 +14,11 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, sub
 import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
+import { formatBRLCompact } from "@/lib/utils";
 
 type PeriodoTipo = "semanal" | "mensal";
 
-function fmtCurrency(v: number) {
-  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(1).replace(".", ",")}K`;
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
+const fmtCurrency = formatBRLCompact;
 function fmtPct(v: number) {
   if (!isFinite(v) || isNaN(v)) return "—";
   return `${v.toFixed(1)}%`;

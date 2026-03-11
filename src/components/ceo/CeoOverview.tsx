@@ -5,13 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Phone, MapPin, Target, FileText, DollarSign, TrendingUp, Zap, BarChart3, Activity, AlertTriangle, CheckCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import SaudeOperacao from "./SaudeOperacao";
-import { cn } from "@/lib/utils";
+import { cn, formatBRLCompact } from "@/lib/utils";
 
-const fmtCurrency = (v: number) => {
-  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(2).replace(".", ",")}M`;
-  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(1).replace(".", ",")}K`;
-  return `R$ ${v.toLocaleString("pt-BR")}`;
-};
+const fmtCurrency = formatBRLCompact;
 
 const progressColor = (p: number) =>
   p >= 70 ? "bg-success" : p >= 30 ? "bg-warning" : "bg-destructive";

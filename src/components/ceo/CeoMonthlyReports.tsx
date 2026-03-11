@@ -7,12 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, FileText, Download, Copy, RefreshCw, Sparkles, TrendingUp, TrendingDown, Minus, Calendar } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { formatBRLCompact } from "@/lib/utils";
 
-function fmtCurrency(v: number) {
-  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
-  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(1).replace(".", ",")}K`;
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
+const fmtCurrency = formatBRLCompact;
 
 function VariacaoIcon({ v }: { v: number }) {
   if (v > 0) return <TrendingUp className="h-3.5 w-3.5 text-success inline" />;
