@@ -26,7 +26,7 @@ export function getSlaStatus(stageType: string, stageChangedAt: string): {
   slaLabel: string;
 } {
   const sla = STAGE_SLA[stageType] || STAGE_SLA.atendimento;
-  const mins = differenceInMinutes(new Date(), new Date(stageChangedAt));
+  const mins = differenceInMinutesSafe(stageChangedAt) ?? 0;
 
   if (mins >= sla.danger) {
     return { status: "breach", minutesRemaining: sla.danger - mins, slaLabel: sla.label };
