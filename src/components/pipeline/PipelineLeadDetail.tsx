@@ -394,7 +394,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 <MapPin className="h-3.5 w-3.5 mr-1" /> 📊 Visitas
               </TabsTrigger>
               <TabsTrigger value="inteligencia" className="text-sm h-7 data-[state=active]:shadow-sm">
-                <Brain className="h-3.5 w-3.5 mr-1" /> 🧠 Inteligência
+                <Brain className="h-3.5 w-3.5 mr-1" /> 🧠
+              </TabsTrigger>
+              <TabsTrigger value="radar" className="text-sm h-7 data-[state=active]:shadow-sm">
+                <Building2 className="h-3.5 w-3.5 mr-1" /> 📡 Radar
               </TabsTrigger>
             </TabsList>
             <Button
