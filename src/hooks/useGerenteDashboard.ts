@@ -163,9 +163,9 @@ export function useGerenteDashboard(period: Period) {
 
   // ── KPIs ──
   const { data: kpis, isLoading: kpisLoading } = useQuery({
-    queryKey: ["gerente-kpis-v2", user?.id, period, teamUserIds.join(",")],
+    queryKey: ["gerente-kpis-v2", user?.id, profileId, period, teamUserIds.join(",")],
     queryFn: async () => {
-      if (teamUserIds.length === 0) return { ligacoes: 0, metaTime: 0, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, visitasMarcadas: 0, visitasRealizadas: 0, totalLeads: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", count: 0 } };
+      if (teamUserIds.length === 0 || !profileId) return { ligacoes: 0, metaTime: 0, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, visitasMarcadas: 0, visitasRealizadas: 0, totalLeads: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", count: 0 } };
 
       const [{ count: ligacoes }, { count: aproveitados }, { count: visitasHoje }, { count: visitasSemana }, { count: visitasMarcadas }, { count: visitasRealizadas }, { count: totalLeads }] = await Promise.all([
         supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
