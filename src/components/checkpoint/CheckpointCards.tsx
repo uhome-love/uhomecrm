@@ -45,7 +45,7 @@ const PRESENCA_OPTIONS = [
   { value: "folga", label: "Folga", icon: "🏖️" },
 ];
 
-function MiniRing({ value, max, size = 36, strokeWidth = 3, color = "hsl(var(--primary))" }: {
+function MiniRing({ value, max, size = 52, strokeWidth = 4, color = "hsl(var(--primary))" }: {
   value: number; max: number; size?: number; strokeWidth?: number; color?: string;
 }) {
   const radius = (size - strokeWidth) / 2;
@@ -60,7 +60,7 @@ function MiniRing({ value, max, size = 36, strokeWidth = 3, color = "hsl(var(--p
         <circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} className="transition-all duration-500" />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[10px] font-extrabold text-foreground leading-none">{value}</span>
+        <span className="text-sm font-extrabold text-foreground leading-none">{value}</span>
       </div>
     </div>
   );
@@ -305,7 +305,7 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
       </div>
 
       {/* Compact Corretor Cards - 3-4 columns */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {cards.map(card => {
           const isAbsent = ["ausente", "atestado", "folga"].includes(card.presenca);
           const status = getStatusSemaphore(card);
@@ -314,12 +314,19 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
 
           if (isAbsent) {
             return (
-              <div key={card.user_id} className="bg-card border border-border rounded-lg p-2.5 opacity-40">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground">
-                    {card.nome.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
+              <div key={card.user_id} className="bg-card border border-border rounded-xl p-4 opacity-40">
+                <div className="flex items-center gap-3">
+                  {card.avatar_url ? (
+                    <img src={card.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                      {card.nome.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">{card.nome.split(" ").slice(0, 2).join(" ")}</span>
+                    <p className="text-xs text-muted-foreground">{PRESENCA_OPTIONS.find(o => o.value === card.presenca)?.icon} {PRESENCA_OPTIONS.find(o => o.value === card.presenca)?.label}</p>
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground truncate">{card.nome.split(" ")[0]}</span>
                 </div>
               </div>
             );
@@ -327,61 +334,61 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
 
           return (
             <div key={card.user_id} className={cn(
-              "bg-card border rounded-lg p-2.5 transition-all hover:shadow-sm",
-              status.emoji === "🚨" ? "border-destructive/30" : status.emoji === "⚠️" ? "border-amber-300" : "border-border"
+              "bg-card border rounded-xl p-4 transition-all hover:shadow-md",
+              status.emoji === "🚨" ? "border-destructive/40" : status.emoji === "⚠️" ? "border-amber-400/60" : "border-border"
             )}>
-              {/* Header compacto */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 min-w-0">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className="relative shrink-0">
                     {card.avatar_url ? (
-                      <img src={card.avatar_url} alt="" className="h-6 w-6 rounded-full object-cover" />
+                      <img src={card.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
                     ) : (
-                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold text-primary">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                         {card.nome.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
                       </div>
                     )}
-                    <span className={cn("absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-card", status.color)} />
+                    <span className={cn("absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card", status.color)} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-foreground truncate">{card.nome.split(" ").slice(0, 2).join(" ")}</p>
-                    <p className="text-[8px] text-muted-foreground">{status.emoji} {status.label}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{card.nome.split(" ").slice(0, 2).join(" ")}</p>
+                    <p className="text-xs text-muted-foreground">{status.emoji} {status.label}</p>
                   </div>
                 </div>
                 {card.telefone && (
-                  <button onClick={() => nudgeWhatsApp(card)} className="h-5 w-5 flex items-center justify-center rounded text-emerald-600 hover:bg-emerald-50 transition-colors">
-                    <MessageSquare size={10} />
+                  <button onClick={() => nudgeWhatsApp(card)} className="h-7 w-7 flex items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-500/10 transition-colors">
+                    <MessageSquare size={14} />
                   </button>
                 )}
               </div>
 
-              {/* Mini rings - side by side */}
-              <div className="flex items-center justify-around mb-2">
-                <div className="flex flex-col items-center">
+              {/* Rings */}
+              <div className="flex items-center justify-around mb-3">
+                <div className="flex flex-col items-center gap-1">
                   <MiniRing value={card.res_ligacoes} max={card.meta_ligacoes} color={ligColor} />
-                  <span className="text-[7px] text-muted-foreground mt-0.5">Lig</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">Ligações</span>
                 </div>
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center gap-1">
                   <MiniRing value={card.res_aproveitados} max={card.meta_aproveitados}
                     color={card.res_aproveitados >= card.meta_aproveitados ? "hsl(160,60%,42%)" : "hsl(231,100%,65%)"} />
-                  <span className="text-[7px] text-muted-foreground mt-0.5">Aprov</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">Aprov</span>
                 </div>
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center gap-1">
                   <MiniRing value={card.res_visitas_marcadas} max={card.meta_visitas_marcar}
                     color={card.res_visitas_marcadas >= card.meta_visitas_marcar ? "hsl(160,60%,42%)" : "hsl(280,60%,55%)"} />
-                  <span className="text-[7px] text-muted-foreground mt-0.5">Vis</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">Visitas</span>
                 </div>
               </div>
 
-              {/* Metas inline */}
-              <div className="flex items-center gap-1 mb-1.5">
-                <span className="text-[7px] text-muted-foreground uppercase font-semibold">Meta:</span>
+              {/* Metas */}
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wide">Meta:</span>
                 <input type="number" min={0} value={card.meta_ligacoes || ""} onChange={e => updateCard(card.user_id, "meta_ligacoes", parseInt(e.target.value) || 0)}
-                  className="w-8 text-center text-[9px] border border-border rounded py-0 bg-background text-foreground" title="Ligações" />
+                  className="w-10 text-center text-xs border border-border rounded-md py-0.5 bg-background text-foreground" title="Ligações" />
                 <input type="number" min={0} value={card.meta_aproveitados || ""} onChange={e => updateCard(card.user_id, "meta_aproveitados", parseInt(e.target.value) || 0)}
-                  className="w-8 text-center text-[9px] border border-border rounded py-0 bg-background text-foreground" title="Aproveit." />
+                  className="w-10 text-center text-xs border border-border rounded-md py-0.5 bg-background text-foreground" title="Aproveit." />
                 <input type="number" min={0} value={card.meta_visitas_marcar || ""} onChange={e => updateCard(card.user_id, "meta_visitas_marcar", parseInt(e.target.value) || 0)}
-                  className="w-8 text-center text-[9px] border border-border rounded py-0 bg-background text-foreground" title="Visitas" />
+                  className="w-10 text-center text-xs border border-border rounded-md py-0.5 bg-background text-foreground" title="Visitas" />
               </div>
 
               {/* Feedback */}
@@ -389,11 +396,11 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
                 <textarea value={card.obs_gerente} onChange={e => updateCard(card.user_id, "obs_gerente", e.target.value)}
                   onBlur={() => setEditingObs(null)} autoFocus rows={1}
                   placeholder="Feedback..."
-                  className="w-full text-[9px] border border-primary/30 rounded py-1 px-1.5 focus:outline-none resize-none bg-background text-foreground" />
+                  className="w-full text-xs border border-primary/30 rounded-lg py-1.5 px-2 focus:outline-none resize-none bg-background text-foreground" />
               ) : (
                 <button onClick={() => setEditingObs(card.user_id)}
-                  className="w-full flex items-center gap-1 text-[9px] border border-border rounded py-1 px-1.5 hover:border-primary/30 text-left truncate">
-                  <Pencil size={7} className="text-muted-foreground shrink-0" />
+                  className="w-full flex items-center gap-1.5 text-xs border border-border rounded-lg py-1.5 px-2 hover:border-primary/30 text-left truncate transition-colors">
+                  <Pencil size={10} className="text-muted-foreground shrink-0" />
                   <span className={card.obs_gerente ? "text-foreground truncate" : "text-muted-foreground truncate"}>
                     {card.obs_gerente || "Feedback..."}
                   </span>
