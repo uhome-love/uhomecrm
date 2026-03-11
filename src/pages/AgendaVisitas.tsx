@@ -619,10 +619,6 @@ export default function AgendaVisitas() {
         )}
 
 
-        <Button variant="outline" size="sm" className="h-9 text-xs gap-1" onClick={() => setSortOrder(s => s === "asc" ? "desc" : "asc")}>
-          <ArrowUpDown className="h-3.5 w-3.5" />
-          {sortOrder === "asc" ? "↑ Próxima" : "↓ Recente"}
-        </Button>
 
         <div className="relative flex-1 min-w-[160px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
