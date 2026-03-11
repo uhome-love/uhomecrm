@@ -67,6 +67,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const [corretorNomes, setCorretorNomes] = useState<Record<string, string>>({});
   const [corretorAvatars, setCorretorAvatars] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadStages = useCallback(async () => {
     try {
