@@ -544,7 +544,7 @@ export default function MeusNegocios() {
   useEffect(() => { loadTasks(); }, [loadTasks]);
 
   // Load partnerships for negocios
-  const [parceriaMap, setParceriaMap] = useState<Record<string, string>>({});
+  const [parceriaMap, setParceriaMap] = useState<Record<string, { label: string; isParceria: boolean }>>({});
   useEffect(() => {
     if (!negocios.length) return;
     const leadIds = negocios.map(n => n.pipeline_lead_id).filter(Boolean) as string[];
@@ -562,13 +562,14 @@ export default function MeusNegocios() {
       const nameMap: Record<string, string> = {};
       (profiles || []).forEach((p: any) => { if (p.user_id && p.nome) nameMap[p.user_id] = p.nome; });
       (members || []).forEach((m: any) => { if (m.user_id && m.nome) nameMap[m.user_id] = m.nome; });
-      const result: Record<string, string> = {};
-      // For each negocio's lead, show the partner name (the other person)
+      const result: Record<string, { label: string; isParceria: boolean }> = {};
       data.forEach(p => {
         const parceiroNome = nameMap[p.corretor_parceiro_id] || "Parceiro";
         const principalNome = nameMap[p.corretor_principal_id] || "Principal";
-        // Show both names: "Fulano ↔ Ciclano"
-        result[p.pipeline_lead_id] = `${principalNome.split(" ")[0]} ↔ ${parceiroNome.split(" ")[0]}`;
+        result[p.pipeline_lead_id] = {
+          label: `${principalNome.split(" ")[0]} ↔ ${parceiroNome.split(" ")[0]}`,
+          isParceria: true,
+        };
       });
       setParceriaMap(result);
     })();
