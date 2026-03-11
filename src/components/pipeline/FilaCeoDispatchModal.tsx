@@ -74,8 +74,9 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
     if (!open) return;
     setLoading(true);
     supabase.from("pipeline_leads")
-      .select("id, nome, empreendimento, telefone, origem")
+      .select("id, nome, empreendimento, telefone, origem, aceite_status")
       .is("corretor_id", null)
+      .in("aceite_status", ["pendente_distribuicao", "pendente"])
       .order("created_at", { ascending: true })
       .then(({ data }) => {
         setLeads(data || []);
