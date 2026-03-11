@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
-import { todayBRT } from "@/lib/utils";
+import { todayBRT, formatBRLCompact } from "@/lib/utils";
 
 export type Period = "dia" | "semana" | "mes";
 export const periodLabels: Record<Period, string> = { dia: "Hoje", semana: "Esta Semana", mes: "Este Mês" };
