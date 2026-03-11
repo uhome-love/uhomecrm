@@ -57,6 +57,7 @@ const AceiteLeads = lazy(() => import("./pages/AceiteLeads"));
 // Backoffice pages
 const BackofficeDashboard = lazy(() => import("./pages/BackofficeDashboard"));
 const PagadoriasPage = lazy(() => import("./pages/PagadoriasPage"));
+const PagadoriaSolicitacoes = lazy(() => import("./pages/PagadoriaSolicitacoes"));
 const ComissoesPage = lazy(() => import("./pages/ComissoesPage"));
 const MarketingCentral = lazy(() => import("./pages/MarketingCentral"));
 const HomiAna = lazy(() => import("./pages/HomiAna"));
