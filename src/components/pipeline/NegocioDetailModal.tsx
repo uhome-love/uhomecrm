@@ -848,6 +848,31 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
                 )}
               </TabsContent>
 
+              {/* ── TAB JORNADA (Lead History) ── */}
+              <TabsContent value="jornada" className="space-y-3 mt-4">
+                <h3 className="text-sm font-bold">🗺️ Jornada do Lead no Pipeline</h3>
+                {leadHistory.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8">Sem histórico de pipeline vinculado a este negócio.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
+                    {leadHistory.map((h, i) => (
+                      <div key={i} className="flex items-start gap-3 px-3 py-2 rounded-lg border border-border/50 bg-muted/20">
+                        <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <span className="text-[10px]">📍</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-foreground">→ {h.stage_nome}</p>
+                          {h.observacao && <p className="text-[11px] text-muted-foreground mt-0.5">{h.observacao}</p>}
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {format(new Date(h.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
               {/* ── TAB IMÓVEL DE INTERESSE ── */}
               <TabsContent value="imovel" className="space-y-4 mt-4">
                 <h3 className="text-sm font-bold flex items-center gap-2">
