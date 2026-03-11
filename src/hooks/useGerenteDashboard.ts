@@ -199,7 +199,7 @@ export function useGerenteDashboard(period: Period) {
         melhorStreak: topStreakId ? { nome: teamNameMap[topStreakId[0]]?.split(" ")[0] || "Corretor", count: topStreakId[1] } : { nome: "-", count: 0 },
       };
     },
-    enabled: !!user && teamUserIds.length > 0,
+    enabled: !!user && !!profileId && teamUserIds.length > 0,
     staleTime: 30_000,
   });
 
