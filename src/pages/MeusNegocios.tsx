@@ -201,11 +201,11 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
         <div className="h-[2px] rounded-t-xl" style={{ background: `linear-gradient(90deg, transparent, ${faseInfo?.cor || "#6B7280"}, transparent)` }} />
 
         {/* Body - click opens modal */}
-        <div className="px-3.5 pt-3 pb-2 space-y-1.5" onClick={onClick}>
+        <div className="px-4 pt-3.5 pb-2.5 space-y-2" onClick={onClick}>
           {/* Row 1: Nome + Days badge */}
           <div className="flex items-center justify-between">
-            <p className="text-[13px] font-bold text-white truncate flex-1">{negocio.nome_cliente}</p>
-            <span className={`text-[10px] font-bold ml-2 shrink-0 px-1.5 py-0.5 rounded-full ${
+            <p className="text-sm font-bold text-foreground truncate flex-1">{negocio.nome_cliente}</p>
+            <span className={`text-[11px] font-bold ml-2 shrink-0 px-2 py-0.5 rounded-full ${
               daysInFase <= 3 ? "bg-emerald-500/15 text-emerald-400" : daysInFase <= 7 ? "bg-amber-500/15 text-amber-400" : "bg-red-500/15 text-red-400"
             }`}>
               {daysInFase}d
@@ -213,7 +213,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           </div>
 
           {/* Row 2: Imóvel */}
-          <p className="text-[11px] text-white/50 truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {negocio.empreendimento || <span className="italic text-amber-400/70">🏠 Sem imóvel</span>}
           </p>
 
@@ -221,33 +221,33 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {showCorretor && (
             corretorInfo ? (
               <div className="flex items-center gap-1.5">
-                <Avatar className="h-4 w-4">
+                <Avatar className="h-5 w-5">
                   <AvatarImage src={corretorInfo.avatar_gamificado_url || corretorInfo.avatar_url || undefined} className="object-cover" />
-                  <AvatarFallback className="text-[7px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
+                  <AvatarFallback className="text-[8px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
                 </Avatar>
-                <span className="text-[10px] text-white/40 truncate">{corretorInfo.nome?.split(" ")[0]}</span>
+                <span className="text-[11px] text-muted-foreground truncate">{corretorInfo.nome?.split(" ")[0]}</span>
                 {corretorInfo.equipe && (
-                  <Badge variant="outline" className="text-[8px] px-1 py-0 h-3.5 border-white/10 text-white/30">
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-border/40 text-muted-foreground">
                     {corretorInfo.equipe}
                   </Badge>
                 )}
               </div>
             ) : (
-              <p className="text-[10px] text-white/30 italic">Sem corretor</p>
+              <p className="text-[11px] text-muted-foreground italic">Sem corretor</p>
             )
           )}
 
           {/* Row 4: VGV with quick-fill */}
           <div className="flex items-center gap-2">
             {negocio.vgv_estimado ? (
-              <span className="text-sm font-bold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
-                <TrendingUp className="h-3 w-3" />
+              <span className="text-[15px] font-extrabold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
+                <TrendingUp className="h-3.5 w-3.5" />
                 {formatVGV(negocio.vgv_estimado)}
               </span>
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); setQuickVgvId(negocio.id); setQuickVgvValue(""); }}
-                className="text-[11px] text-amber-400/80 font-medium hover:text-amber-300 transition-colors flex items-center gap-1"
+                className="text-xs text-amber-400/80 font-semibold hover:text-amber-300 transition-colors flex items-center gap-1"
               >
                 ⚠️ Preencher VGV
               </button>
