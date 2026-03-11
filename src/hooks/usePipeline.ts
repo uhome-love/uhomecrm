@@ -542,6 +542,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
     corretorNomes,
     corretorAvatars,
     loading,
+    error,
     moveLead,
     addLead,
     updateLead,
