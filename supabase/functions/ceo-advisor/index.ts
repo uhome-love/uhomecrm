@@ -53,14 +53,14 @@ REGRAS:
 - Métricas importantes: ligações, visitas marcadas, visitas realizadas, propostas, VGV gerado, VGV assinado.
 - Score de 0-100 considera: ligações (10%), visitas marcadas (15%), visitas realizadas (25%), propostas (25%), VGV assinado (25%).`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Analise os seguintes dados consolidados e gere o relatório CEO Advisor:\n\n${JSON.stringify(data, null, 2)}` },
