@@ -104,15 +104,18 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
     });
     setOaData(oa);
 
-    // Process Pipeline (FIXED: use etapa)
+    // Process Pipeline (FIXED: use stage_id → stageMap lookup)
+    const descarteStageIds = new Set(Object.entries(stageMap).filter(([_, tipo]) => tipo === "descarte").map(([id]) => id));
     const pipeline: Record<string, Record<string, number>> = {};
     teamUserIds.forEach(uid => {
       pipeline[uid] = {};
       PIPELINE_STAGES.forEach(s => { pipeline[uid][s.key] = 0; });
     });
     (pipelineLeads || []).forEach((l: any) => {
-      if (pipeline[l.corretor_id] && l.etapa) {
-        pipeline[l.corretor_id][l.etapa] = (pipeline[l.corretor_id][l.etapa] || 0) + 1;
+      if (descarteStageIds.has(l.stage_id)) return; // skip descarte
+      const tipo = stageMap[l.stage_id];
+      if (pipeline[l.corretor_id] && tipo) {
+        pipeline[l.corretor_id][tipo] = (pipeline[l.corretor_id][tipo] || 0) + 1;
       }
     });
     setPipelineData(pipeline);
