@@ -133,9 +133,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const nextTask = useMemo(() => {
     const pending = leadData.tarefas.filter(t => t.status === "pendente");
     pending.sort((a, b) => {
-      if (!a.vence_em) return 1;
-      if (!b.vence_em) return -1;
-      return new Date(a.vence_em).getTime() - new Date(b.vence_em).getTime();
+      const aTime = parseDateBRTSafe(a.vence_em)?.getTime() ?? Number.POSITIVE_INFINITY;
+      const bTime = parseDateBRTSafe(b.vence_em)?.getTime() ?? Number.POSITIVE_INFINITY;
+      return aTime - bTime;
     });
     return pending[0] || null;
   }, [leadData.tarefas]);
