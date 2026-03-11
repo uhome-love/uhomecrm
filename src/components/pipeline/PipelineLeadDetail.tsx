@@ -37,6 +37,7 @@ import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
 
 interface Props {
