@@ -213,7 +213,7 @@ export function useGerenteDashboard(period: Period) {
         supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, pontos").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("corretor_id").eq("gerente_id", user!.id).gte("data_visita", start).lte("data_visita", end),
         supabase.from("corretor_disponibilidade").select("user_id, status").in("user_id", teamUserIds),
-        supabase.from("negocios").select("corretor_id").eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato")'),
+        supabase.from("negocios").select("corretor_id").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato")'),
       ]);
 
       // Also get today's calls for activity status
