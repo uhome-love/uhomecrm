@@ -323,13 +323,13 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: true, dispatched, failed });
     }
 
-    // ─── Single lead distribution (from jetimob-sync) ───
+    // ─── Single lead distribution (from jetimob-sync + backward-compatible aliases) ───
     if (action === "distribute_single" || !action) {
-      if (!pipeline_lead_id) {
+      if (!singleLeadId) {
         return jsonResponse({ error: "pipeline_lead_id required" }, 400);
       }
 
-      const result = await distributeSingleLead(supabase, supabaseUrl, serviceKey, pipeline_lead_id, janela);
+      const result = await distributeSingleLead(supabase, supabaseUrl, serviceKey, singleLeadId, janela);
       return jsonResponse(result);
     }
 

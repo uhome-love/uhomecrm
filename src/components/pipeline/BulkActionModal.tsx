@@ -119,19 +119,29 @@ export default function BulkActionModal({ open, onOpenChange, selectedLeadIds, o
 
         toast.success(`✅ ${dispatched} leads enviados para Oferta Ativa!${failed > 0 ? ` ${failed} falharam.` : ""}`);
       } else {
-        for (const leadId of selectedLeadIds) {
-          try {
-            const { error } = await supabase.functions.invoke("distribute-lead", {
-              body: {
-                action: "distribute_single",
-                pipeline_lead_id: leadId,
-                janela: selectedDestino,
-              },
-            });
-            if (error) { failed++; continue; }
-            dispatched++;
-          } catch {
-            failed++;
+        const { data: result, error } = await supabase.functions.invoke("distribute-lead", {
+          body: {
+            action: "dispatch_batch",
+            pipeline_lead_ids: selectedLeadIds,
+            janela: selectedDestino,
+          },
+        });
+
+        if (error) {
+          failed = selectedLeadIds.length;
+        } else {
+          const payload = (result || {}) as {
+            success?: boolean;
+            dispatched?: number;
+            failed?: number;
+            reason?: string;
+          };
+
+          dispatched = payload.dispatched ?? 0;
+          failed = payload.failed ?? Math.max(selectedLeadIds.length - dispatched, 0);
+
+          if (payload.success === false && dispatched === 0 && failed === 0) {
+            failed = selectedLeadIds.length;
           }
         }
 
