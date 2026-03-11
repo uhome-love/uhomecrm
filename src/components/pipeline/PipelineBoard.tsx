@@ -701,7 +701,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                 className={`flex flex-col shrink-0 h-full rounded-xl transition-all duration-200 ${
                   isDragOver
                     ? "ring-2 ring-primary/50 shadow-xl shadow-primary/10 scale-[1.01]"
-                    : ""
+                    : "shadow-sm"
                 }`}
                 style={{
                   width: `${getColumnWidth()}px`,
@@ -715,31 +715,31 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
-                {/* Column header — colored */}
+                {/* Column header */}
                 <div
-                  className="shrink-0 px-2.5 py-2.5 rounded-t-xl"
-                  style={{ background: stageBg.headerBg, borderBottom: `2px solid ${stage.cor}40` }}
+                  className="shrink-0 px-3 py-3 rounded-t-xl"
+                  style={{ background: stageBg.headerBg, borderBottom: `2px solid ${stage.cor}50` }}
                 >
                   <div className="flex items-center gap-1.5 justify-between">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <div className="h-full w-1 rounded-full shrink-0 self-stretch" style={{ backgroundColor: stage.cor }} />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="h-5 w-1 rounded-full shrink-0" style={{ backgroundColor: stage.cor }} />
                       <span className="text-sm shrink-0">{PIPELINE_STAGE_EMOJIS[stage.nome] || "📍"}</span>
                       <span className="text-xs font-bold text-foreground truncate">{stage.nome}</span>
-                      <span className="text-xs font-bold text-muted-foreground">{stageLeads.length}</span>
+                      <span className="text-xs font-black text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-md">{stageLeads.length}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       {totalVGV > 0 && (
-                        <span className="text-[10px] font-semibold text-foreground">
+                        <span className="text-[10px] font-bold text-foreground bg-muted/30 px-1.5 py-0.5 rounded-md">
                           {formatVGV(totalVGV)}
                         </span>
                       )}
                       {avgTime && (
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-[10px] font-medium text-muted-foreground">
                           {avgTime}
                         </span>
                       )}
                       {alerts.semCorretor > 0 && (
-                        <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                        <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400">
                           👤{alerts.semCorretor}
                         </span>
                       )}
