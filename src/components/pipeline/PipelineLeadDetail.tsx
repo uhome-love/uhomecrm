@@ -351,9 +351,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         <div className="shrink-0 border-b border-border/50 bg-accent/20 px-6 py-2.5 space-y-2">
           {/* Alert: Overdue tasks */}
           {overdueTasks > 0 && (() => {
-            const overdueList = leadData.tarefas.filter(t => t.status === "pendente" && t.vence_em && new Date(t.vence_em + "T12:00:00") < new Date());
+            const overdueList = leadData.tarefas.filter(t => {
+              const dueDate = parseDateBRTSafe(t.vence_em);
+              return t.status === "pendente" && !!dueDate && dueDate < new Date();
+            });
             const firstOverdue = overdueList[0];
-            const overdueDate = firstOverdue?.vence_em ? format(new Date(firstOverdue.vence_em + "T12:00:00"), "dd/MM", { locale: ptBR }) : "";
+            const overdueDate = formatDateSafe(firstOverdue?.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "data inválida" });
             return (
               <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300/50 dark:border-red-600/30 rounded-lg px-3 py-2">
                 <span className="text-base shrink-0">🔴</span>
