@@ -54,15 +54,15 @@ Regras:
 - O nome do corretor é: ${corretor_nome || "Corretor"}
 - Retorne APENAS a mensagem personalizada, sem explicações`;
 
-    // Use Lovable AI proxy
-    const aiResponse = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    // Use OpenAI API directly
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+        Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: "Personalize esta mensagem para o lead." },
