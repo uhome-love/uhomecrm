@@ -460,6 +460,14 @@ serve(async (req) => {
           synced++;
           if (phone) existingPhones.add(phone);
 
+          // Persist in jetimob_processed for dedup protection even after deletion
+          await adminClient.from("jetimob_processed").upsert({
+            jetimob_lead_id: jetimobId,
+            telefone: phone,
+          }, { onConflict: "jetimob_lead_id" }).then(r => {
+            if (r.error) console.warn("jetimob_processed insert:", r.error.message);
+          });
+
           // Auto-distribute via distribute-lead edge function (fire and forget)
           if (insertedLead?.id) {
             try {
