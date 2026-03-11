@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import {
   Phone, UserCheck, MapPin, CalendarIcon, ChevronLeft, ChevronRight,
-  MessageSquare, Save, Lock, Pencil, Send,
+  MessageSquare, Save, Lock, Pencil, Send, CheckCircle2,
 } from "lucide-react";
 
 interface CorretorCard {
