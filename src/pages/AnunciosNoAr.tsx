@@ -117,6 +117,13 @@ type JetimobImovel = {
   descricao?: string;
 };
 
+type Tipologia = {
+  dorms: number;
+  area_min?: number;
+  area_max?: number;
+  suites?: number;
+};
+
 type EmpreendimentoOverride = {
   id: string;
   codigo: string;
@@ -127,6 +134,9 @@ type EmpreendimentoOverride = {
   suites: number | null;
   vagas: number | null;
   valor_venda: number | null;
+  valor_min: number | null;
+  valor_max: number | null;
+  tipologias: Tipologia[];
   status_obra: string | null;
   previsao_entrega: string | null;
   descricao: string | null;
