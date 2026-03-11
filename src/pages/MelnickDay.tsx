@@ -366,32 +366,77 @@ function CountdownTimer() {
   );
 }
 
-function EmpreendimentoCard({ emp }: { emp: Empreendimento }) {
+function EmpreendimentoCard({ emp, segKey, selected, onToggle }: { emp: Empreendimento; segKey: string; selected: boolean; onToggle: () => void }) {
   const desconto = emp.descontoMax || calcDesconto(emp.precoDe, emp.precoPor);
+  
+  const gerarMsgWhatsApp = () => {
+    let msg = `🏠 *${emp.nome}* — Melnick Day 2026\n`;
+    msg += `📍 ${emp.bairro}\n`;
+    msg += `📐 ${emp.metragens} · ${emp.dorms}\n`;
+    if (emp.precoDe && emp.precoPor) msg += `💰 De ~${emp.precoDe}~ por *${emp.precoPor}*\n`;
+    else if (emp.precoPor) msg += `💰 *${emp.precoPor}*\n`;
+    if (desconto) msg += `🔥 Desconto de até ${typeof desconto === "string" && desconto.startsWith("-") ? desconto.slice(1) : desconto}\n`;
+    msg += `📅 Condições exclusivas até 21/03!\n`;
+    msg += `\nQuer saber mais? Me chama! 😊`;
+    return msg;
+  };
+
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 border-border/50 group cursor-pointer">
+    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-200 border-border/50 group relative ${selected ? "ring-2 ring-primary border-primary" : ""}`}>
+      {/* Selection checkbox */}
+      <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggle}
+          className="bg-white/90 border-2"
+        />
+      </div>
+      
+      {/* Share button */}
+      <div className="absolute top-2 right-2 z-10 flex gap-1" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={() => {
+            const msg = gerarMsgWhatsApp();
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+          }}
+          className="bg-emerald-500 text-white rounded-full p-1.5 shadow-lg hover:bg-emerald-600 transition-colors"
+          title="Enviar por WhatsApp"
+        >
+          <Phone className="h-3 w-3" />
+        </button>
+        <button
+          onClick={() => {
+            copyToClipboard(gerarMsgWhatsApp());
+          }}
+          className="bg-white/90 text-slate-700 rounded-full p-1.5 shadow-lg hover:bg-white transition-colors"
+          title="Copiar mensagem"
+        >
+          <Copy className="h-3 w-3" />
+        </button>
+      </div>
+
       {emp.imagem ? (
-        <div className="relative h-32 overflow-hidden bg-muted">
+        <div className="relative h-32 overflow-hidden bg-muted cursor-pointer" onClick={onToggle}>
           <img src={emp.imagem} alt={emp.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
           {desconto && (
-            <span className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
+            <span className="absolute bottom-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
               -{typeof desconto === "string" && desconto.startsWith("-") ? desconto.slice(1) : desconto}
             </span>
           )}
-          <Badge className="absolute top-2 left-2 text-[9px] py-0" variant="secondary">{emp.status}</Badge>
+          <Badge className="absolute bottom-2 left-2 text-[9px] py-0" variant="secondary">{emp.status}</Badge>
         </div>
       ) : (
-        <div className="relative h-20 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+        <div className="relative h-20 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center cursor-pointer" onClick={onToggle}>
           <Building2 className="h-8 w-8 text-muted-foreground/30" />
           {desconto && (
-            <span className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="absolute bottom-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
               -{typeof desconto === "string" && desconto.startsWith("-") ? desconto.slice(1) : desconto}
             </span>
           )}
-          <Badge className="absolute top-2 left-2 text-[9px] py-0" variant="secondary">{emp.status}</Badge>
+          <Badge className="absolute bottom-2 left-2 text-[9px] py-0" variant="secondary">{emp.status}</Badge>
         </div>
       )}
-      <CardContent className="p-3 space-y-1">
+      <CardContent className="p-3 space-y-1 cursor-pointer" onClick={onToggle}>
         <h4 className="font-bold text-sm text-foreground leading-tight truncate">{emp.nome}</h4>
         <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
           <MapPin className="h-3 w-3 shrink-0" /> {emp.bairro}
