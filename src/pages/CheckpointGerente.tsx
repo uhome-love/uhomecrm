@@ -228,23 +228,44 @@ export default function CheckpointGerente() {
     const mesInicio = `${mesAtual}-01`;
     const mesFim = format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), "yyyy-MM-dd");
 
-    const [{ count: ligR }, { count: vmR }, { count: vrR }, { data: negocios }] = await Promise.all([
+    const [{ count: ligR }, { count: vmR }, { count: vrR }, { data: negocios }, { data: metasSalvas }] = await Promise.all([
       supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("created_at", `${mesInicio}T00:00:00`).lte("created_at", `${mesFim}T23:59:59`),
       supabase.from("visitas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim),
       supabase.from("visitas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim).eq("status", "realizada"),
-      supabase.from("negocios").select("vgv_estimado, vgv_final, fase, data_assinatura").eq("gerente_id", user.id).in("fase", ["assinado", "vendido"]).gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim),
+      supabase.from("negocios").select("vgv_estimado, vgv_final, fase, data_assinatura").in("corretor_id", teamUserIds).in("fase", ["assinado", "vendido"]).gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim),
+      supabase.from("ceo_metas_mensais").select("*").eq("gerente_id", user.id).eq("mes", mesAtual).maybeSingle(),
     ]);
 
     const vgvReal = (negocios || []).reduce((s, n) => s + Number(n.vgv_final || n.vgv_estimado || 0), 0);
 
-    setMetasMes(prev => ({
-      ...prev,
+    setMetasMes({
+      ligacoes_meta: (metasSalvas as any)?.meta_ligacoes || 680,
       ligacoes_realizado: ligR || 0,
-      visitas_marcadas_realizado: vmR || 0,
-      visitas_realizadas_realizado: vrR || 0,
+      vgv_meta: (metasSalvas as any)?.meta_vgv_assinado || 3_000_000,
       vgv_realizado: vgvReal,
-    }));
+      visitas_marcadas_meta: (metasSalvas as any)?.meta_visitas_marcadas || 200,
+      visitas_marcadas_realizado: vmR || 0,
+      visitas_realizadas_meta: (metasSalvas as any)?.meta_visitas_realizadas || 100,
+      visitas_realizadas_realizado: vrR || 0,
+    });
   }, [user, teamUserIds]);
+
+  const saveMetasMes = async () => {
+    if (!user) return;
+    setSavingMetas(true);
+    const mesAtual = format(new Date(), "yyyy-MM");
+    const { error } = await supabase.from("ceo_metas_mensais").upsert({
+      gerente_id: user.id,
+      mes: mesAtual,
+      meta_ligacoes: metasMes.ligacoes_meta,
+      meta_vgv_assinado: metasMes.vgv_meta,
+      meta_visitas_marcadas: metasMes.visitas_marcadas_meta,
+      meta_visitas_realizadas: metasMes.visitas_realizadas_meta,
+    }, { onConflict: "gerente_id,mes" });
+    setSavingMetas(false);
+    if (error) toast({ title: "Erro ao salvar metas", variant: "destructive" });
+    else { toast({ title: "✅ Metas salvas!" }); setEditingMetas(false); }
+  };
 
   // ─── ACTIONS ───
   const syncOA = async () => { setSyncing(true); await loadCheckpoint(); setSyncing(false); toast({ title: "✅ Sincronizado!", description: "Dados da Oferta Ativa e Visitas atualizados." }); };
