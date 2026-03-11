@@ -230,60 +230,87 @@ export default function GerenteDashboard() {
         </motion.div>
       )}
 
-      {/* ═══ 4. FUNIL COMERCIAL ═══ */}
-      {funnel.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="border-border/60">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold text-foreground">📊 Funil Comercial da Equipe</h2>
-                <p className="text-[10px] text-muted-foreground">{funnel[0]?.count || 0} leads totais → {funnel[funnel.length - 1]?.count || 0} assinados</p>
-              </div>
-              <div className="space-y-0">
-                {funnel.map((stage, i) => {
-                  const maxCount = Math.max(...funnel.map(s => s.count), 1);
-                  const barW = Math.max(8, (stage.count / maxCount) * 100);
-                  const stageColors = [
-                    "hsl(var(--primary-500))", "hsl(210, 50%, 55%)", "hsl(220, 55%, 50%)",
-                    "hsl(45, 80%, 50%)", "hsl(30, 75%, 50%)", "hsl(180, 60%, 45%)",
-                    "hsl(150, 60%, 45%)", "hsl(260, 55%, 55%)", "hsl(35, 80%, 50%)",
-                    "hsl(145, 65%, 40%)",
-                  ];
-                  return (
-                    <div key={stage.key}>
-                      {/* Conversion arrow between stages */}
-                      {i > 0 && (
-                        <div className="flex items-center gap-2 py-1 pl-2">
-                          <ChevronDown className="h-3 w-3 text-muted-foreground/50" />
-                          <span className={`text-[10px] font-semibold ${stage.pct >= 50 ? "text-emerald-600" : stage.pct >= 20 ? "text-amber-600" : "text-red-500"}`}>
-                            ↓ {stage.pct}%
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-3 group">
-                        <div className="w-[110px] shrink-0 text-right">
-                          <p className="text-[11px] text-muted-foreground leading-tight">{stage.label}</p>
-                        </div>
-                        <div className="flex-1 h-7 bg-accent/30 rounded-lg overflow-hidden relative">
+      {/* ═══ 4. FUNIL COMERCIAL HORIZONTAL ═══ */}
+      {funnel.length > 0 && (() => {
+        const maxCount = Math.max(...funnel.map(s => s.count), 1);
+        const funnelColors = [
+          { bg: "from-violet-500 to-violet-600", light: "bg-violet-500/10", text: "text-violet-600", border: "border-violet-500/20", ring: "ring-violet-400/30" },
+          { bg: "from-slate-400 to-slate-500", light: "bg-slate-500/10", text: "text-slate-600", border: "border-slate-500/20", ring: "ring-slate-400/30" },
+          { bg: "from-blue-500 to-blue-600", light: "bg-blue-500/10", text: "text-blue-600", border: "border-blue-500/20", ring: "ring-blue-400/30" },
+          { bg: "from-amber-400 to-amber-500", light: "bg-amber-500/10", text: "text-amber-600", border: "border-amber-500/20", ring: "ring-amber-400/30" },
+          { bg: "from-orange-400 to-orange-500", light: "bg-orange-500/10", text: "text-orange-600", border: "border-orange-500/20", ring: "ring-orange-400/30" },
+          { bg: "from-cyan-500 to-cyan-600", light: "bg-cyan-500/10", text: "text-cyan-600", border: "border-cyan-500/20", ring: "ring-cyan-400/30" },
+          { bg: "from-teal-500 to-teal-600", light: "bg-teal-500/10", text: "text-teal-600", border: "border-teal-500/20", ring: "ring-teal-400/30" },
+          { bg: "from-indigo-500 to-indigo-600", light: "bg-indigo-500/10", text: "text-indigo-600", border: "border-indigo-500/20", ring: "ring-indigo-400/30" },
+          { bg: "from-yellow-500 to-amber-600", light: "bg-yellow-500/10", text: "text-yellow-700", border: "border-yellow-500/20", ring: "ring-yellow-400/30" },
+          { bg: "from-emerald-500 to-emerald-600", light: "bg-emerald-500/10", text: "text-emerald-600", border: "border-emerald-500/20", ring: "ring-emerald-400/30" },
+        ];
+        return (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="border-border/60 overflow-hidden">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-sm font-bold text-foreground">📊 Funil Comercial da Equipe</h2>
+                  <p className="text-[10px] text-muted-foreground">{funnel[0]?.count || 0} leads totais → {funnel[funnel.length - 1]?.count || 0} assinados</p>
+                </div>
+
+                {/* Horizontal funnel */}
+                <div className="overflow-x-auto -mx-1 px-1 pb-2">
+                  <div className="flex items-stretch gap-0 min-w-max">
+                    {funnel.map((stage, i) => {
+                      const colors = funnelColors[i % funnelColors.length];
+                      const heightPct = Math.max(30, (stage.count / maxCount) * 100);
+                      const convColor = stage.pct >= 50 ? "text-emerald-600 bg-emerald-500/10" : stage.pct >= 20 ? "text-amber-600 bg-amber-500/10" : "text-red-500 bg-red-500/10";
+
+                      return (
+                        <div key={stage.key} className="flex items-stretch">
+                          {/* Stage card */}
                           <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${barW}%` }}
-                            transition={{ delay: 0.15 + i * 0.05, duration: 0.5, ease: "easeOut" }}
-                            className="h-full rounded-lg flex items-center px-2 min-w-[32px]"
-                            style={{ background: stageColors[i % stageColors.length] + "cc" }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.08 + i * 0.04, duration: 0.35, ease: "easeOut" }}
+                            className="flex flex-col items-center w-[90px]"
                           >
-                            <span className="text-[11px] font-bold text-white drop-shadow-sm">{stage.count}</span>
+                            {/* Visual bar (inverted: tallest = most leads) */}
+                            <div className="relative flex flex-col items-center justify-end h-[110px] w-full mb-2">
+                              <motion.div
+                                initial={{ height: 0 }}
+                                animate={{ height: `${heightPct}%` }}
+                                transition={{ delay: 0.15 + i * 0.05, duration: 0.5, ease: "easeOut" }}
+                                className={`w-12 rounded-t-xl bg-gradient-to-t ${colors.bg} shadow-sm relative group cursor-default`}
+                              >
+                                {/* Count bubble on top */}
+                                <div className={`absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full ${colors.light} ${colors.text} text-xs font-bold whitespace-nowrap ring-1 ${colors.ring}`}>
+                                  <AnimatedNumber value={stage.count} />
+                                </div>
+                              </motion.div>
+                            </div>
+
+                            {/* Label */}
+                            <p className="text-[10px] font-medium text-muted-foreground text-center leading-tight h-7 flex items-center">
+                              {stage.label}
+                            </p>
                           </motion.div>
+
+                          {/* Conversion arrow between stages */}
+                          {i < funnel.length - 1 && (
+                            <div className="flex flex-col items-center justify-center w-[38px] -mt-4">
+                              <ArrowRight className="h-3 w-3 text-muted-foreground/40 mb-0.5" />
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${convColor}`}>
+                                {funnel[i + 1]?.pct ?? 0}%
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        );
+      })()}
 
       {/* ═══ 4.5 NEGÓCIOS QUENTES ═══ */}
       {negociosQuentes.length > 0 && (
