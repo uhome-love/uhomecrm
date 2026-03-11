@@ -51,9 +51,16 @@ function extractCodigoNumber(value: unknown): string {
 function isCodigoMatch(item: any, requestedCodigo: string): boolean {
   const requestedNorm = normalizeCodigoValue(requestedCodigo);
   const requestedNum = extractCodigoNumber(requestedCodigo);
-  const candidates = [item?.codigo, item?.codigo_imovel, item?.referencia, item?.id_imovel];
+  const candidates = [
+    item?.codigo,
+    item?.codigo_imovel,
+    item?.referencia,
+    item?.id_imovel,
+    item?.id,
+    item?.slug,
+  ];
 
-  return candidates.some((candidate) => {
+  const directMatch = candidates.some((candidate) => {
     const candidateNorm = normalizeCodigoValue(candidate);
     if (!candidateNorm) return false;
     if (candidateNorm === requestedNorm) return true;
@@ -61,6 +68,14 @@ function isCodigoMatch(item: any, requestedCodigo: string): boolean {
     const candidateNum = extractCodigoNumber(candidate);
     return !!requestedNum && !!candidateNum && candidateNum === requestedNum;
   });
+
+  if (directMatch) return true;
+
+  // Last-resort fuzzy match on metadata strings (avoids returning first random item)
+  const meta = normalizeCodigoValue(
+    [item?.titulo_anuncio, item?.url, item?.link, item?.referencia_externa].filter(Boolean).join(" ")
+  );
+  return !!requestedNum && !!meta && meta.includes(requestedNum);
 }
 
 /** Extract and normalize all image URLs from a Jetimob imovel object */
