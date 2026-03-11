@@ -209,9 +209,13 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
             </p>
           )}
 
-          {isConcluida && tarefa.concluida_em && (
-            <span className="text-xs text-green-600">✅ {format(new Date(tarefa.concluida_em), "dd/MM 'às' HH:mm", { locale: ptBR })}</span>
-          )}
+          {isConcluida && tarefa.concluida_em && (() => {
+            try {
+              const d = new Date(tarefa.concluida_em);
+              if (Number.isNaN(d.getTime())) return <span className="text-xs text-green-600">✅ Concluída</span>;
+              return <span className="text-xs text-green-600">✅ {format(d, "dd/MM 'às' HH:mm", { locale: ptBR })}</span>;
+            } catch { return <span className="text-xs text-green-600">✅ Concluída</span>; }
+          })()}
 
           {!isConcluida && (
             <div className="flex items-center gap-1 pt-1 flex-wrap">

@@ -37,6 +37,7 @@ import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
 
 interface Props {
@@ -156,6 +157,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
+        <ErrorBoundary fallback={
+          <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
+            <span className="text-destructive font-semibold">Erro ao carregar detalhes do lead</span>
+            <span className="text-sm text-muted-foreground text-center">Ocorreu um erro inesperado. Feche e tente abrir novamente.</span>
+            <button onClick={() => onOpenChange(false)} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">Fechar</button>
+          </div>
+        }>
 
         {/* ════════════ ZONA 1 — HEADER FIXO ════════════ */}
         <div className="shrink-0 border-b border-border/50 bg-card">
@@ -750,6 +758,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </ScrollArea>
           </div>
         )}
+        </ErrorBoundary>
       </SheetContent>
 
       <PartnershipDialog open={partnerOpen} onOpenChange={setPartnerOpen} leadId={lead.id} leadNome={lead.nome} corretorPrincipalId={lead.corretor_id} />
