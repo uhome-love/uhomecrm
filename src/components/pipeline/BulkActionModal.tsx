@@ -123,9 +123,8 @@ export default function BulkActionModal({ open, onOpenChange, selectedLeadIds, o
           try {
             const { error } = await supabase.functions.invoke("distribute-lead", {
               body: {
-                action: "dispatch_fila_ceo",
-                lead_id: leadId,
-                segmento_id: null,
+                action: "distribute_single",
+                pipeline_lead_id: leadId,
                 janela: selectedDestino,
               },
             });
