@@ -533,47 +533,6 @@ export default function AgendaVisitas() {
         )}
       </div>
 
-      {/* ─── TEAM VIEW (Visitas do Time) ─── */}
-      {agendaTipo === "lead" && leadSubTab === "time" ? (
-        <VisitasEquipe />
-      ) : (
-      <>
-      {/* ─── PENDING ALERT ─── */}
-      {pendingCount > 0 && (
-        <div
-          className={cn(
-            "w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all",
-            pendingOnly
-              ? "bg-red-100 border-red-400 border-l-4"
-              : "bg-red-50 border-red-300 border-l-4 border-l-red-500"
-          )}
-        >
-          <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
-          <div className="flex-1">
-            <span className="text-sm font-semibold text-red-700">
-              ⚠️ {pendingCount} visita{pendingCount > 1 ? "s" : ""} sem atualização de status
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {isAdmin && (
-              <button
-                onClick={(e) => { e.stopPropagation(); openCobranca(); }}
-                className="text-xs font-semibold text-red-700 bg-red-200 hover:bg-red-300 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1"
-              >
-                <MessageCircle className="h-3.5 w-3.5" /> Cobrar todos
-              </button>
-            )}
-            <button
-              onClick={() => { setPendingOnly(!pendingOnly); setStatusFilter("all"); }}
-              className="text-xs font-semibold text-red-600 underline"
-            >
-              {pendingOnly ? "Mostrar todas ←" : "Resolver agora →"}
-            </button>
-          </div>
-        </div>
-      )}
-
-
       {/* ─── TEAM TABS (CEO/Admin) ─── */}
       {isAdmin && (
         <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
@@ -605,55 +564,6 @@ export default function AgendaVisitas() {
           })}
         </div>
       )}
-
-      {/* ─── FILTERS ROW ─── */}
-      <div className="flex flex-wrap items-center gap-2">
-        {(isAdmin || isGestor) && corretores.length > 1 && (
-          <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-            <SelectTrigger className="h-9 w-[160px] text-xs">
-              <SelectValue placeholder="Todos corretores" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos corretores</SelectItem>
-              {corretores.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-        {empreendimentos.length > 1 && (
-          <Select value={empreendimentoFilter} onValueChange={setEmpreendimentoFilter}>
-            <SelectTrigger className="h-9 w-[160px] text-xs">
-              <SelectValue placeholder="Todos empreend." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos empreend.</SelectItem>
-              {empreendimentos.map(e => (
-                <SelectItem key={e} value={e}>{e}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-
-
-        <div className="relative flex-1 min-w-[160px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar cliente, corretor..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="text-xs h-9 pl-9"
-          />
-        </div>
-
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAll} className="h-9 text-xs gap-1 text-destructive">
-            <X className="h-3.5 w-3.5" /> Limpar
-          </Button>
-        )}
-      </div>
 
       {/* ─── STATUS CHIPS ─── */}
       <div className="flex flex-wrap items-center gap-1.5">
