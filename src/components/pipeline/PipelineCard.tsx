@@ -472,29 +472,29 @@ const PipelineCard = memo(function PipelineCard({
         </div>
       )}
 
-      <div className="h-px bg-border/40" />
+      <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
 
       {/* Line 4: Action buttons + 3-dot menu */}
-      <div data-actions-area className="px-2 py-1.5 flex items-center justify-between">
+      <div data-actions-area className="px-2.5 py-1.5 flex items-center justify-between">
         <div className="flex items-center gap-0.5">
           {lead.telefone && (
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-[11px] px-2 gap-1 font-medium hover:bg-accent"
+              className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-foreground/80 hover:bg-accent hover:text-foreground rounded-lg"
               onClick={handleCall}
             >
-              <Phone className="h-3 w-3" /> Ligar
+              <Phone className="h-3.5 w-3.5" /> Ligar
             </Button>
           )}
 
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 text-[11px] px-2 gap-1 font-medium text-green-600 dark:text-green-400 hover:bg-green-500/10"
+            className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
             onClick={handleWhatsApp}
           >
-            <MessageCircle className="h-3 w-3" /> WhatsApp
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
           </Button>
 
           <QuickActionMenu
@@ -506,9 +506,9 @@ const PipelineCard = memo(function PipelineCard({
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-[11px] px-2 gap-1 font-medium text-primary hover:bg-primary/10"
+              className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-primary hover:bg-primary/10 rounded-lg"
             >
-              <Zap className="h-3 w-3" /> Ação
+              <Zap className="h-3.5 w-3.5" /> Ação
             </Button>
           </QuickActionMenu>
         </div>
