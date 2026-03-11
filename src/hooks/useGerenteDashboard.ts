@@ -283,7 +283,7 @@ export function useGerenteDashboard(period: Period) {
       }
 
       const cutoff48h = new Date(now.getTime() - 48 * 3600 * 1000).toISOString();
-      const { count: negParados } = await supabase.from("negocios").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")').lt("updated_at", cutoff48h);
+      const { count: negParados } = await supabase.from("negocios").select("id", { count: "exact", head: true }).eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")').lt("updated_at", cutoff48h);
       if ((negParados || 0) > 0) alerts.push({ id: "negocios_parados", type: "warning", icon: "💼", label: "negócios sem atualização >48h", count: negParados || 0, route: "/pipeline-negocios" });
 
       const { data: tentHoje } = await supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`);
