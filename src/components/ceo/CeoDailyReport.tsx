@@ -36,7 +36,7 @@ export default function CeoDailyReport({ teams, corretoresRank, kpis, totalLeads
     setDownloading(true);
     try {
       const mod = await import("html2pdf.js");
-      const html2pdfFn = mod.default || mod;
+      const html2pdfFn = (mod.default || mod) as () => import("html2pdf.js").Html2PdfInstance;
       const worker = html2pdfFn();
       await worker
         .set({
