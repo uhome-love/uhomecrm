@@ -461,100 +461,77 @@ export default function AgendaVisitas() {
         </Button>
       </div>
 
-      {/* ─── TIPO TABS (Lead / Negócio) ─── */}
-      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
-        <button
-          onClick={() => setAgendaTipo("lead")}
-          className={cn(
-            "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
-            agendaTipo === "lead"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          🏠 Visitas de Leads <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{leadCount}</Badge>
-        </button>
-        <button
-          onClick={() => setAgendaTipo("negocio")}
-          className={cn(
-            "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
-            agendaTipo === "negocio"
-              ? "bg-amber-600 text-white shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          💼 Reuniões de Negócios <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{negocioCount}</Badge>
-        </button>
+      {/* ─── TIPO TABS + FILTERS (inline) ─── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+          <button
+            onClick={() => setAgendaTipo("lead")}
+            className={cn(
+              "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+              agendaTipo === "lead"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            🏠 Visitas de Leads <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{leadCount}</Badge>
+          </button>
+          <button
+            onClick={() => setAgendaTipo("negocio")}
+            className={cn(
+              "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+              agendaTipo === "negocio"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            💼 Reuniões de Negócios <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{negocioCount}</Badge>
+          </button>
+        </div>
+
+        {(isAdmin || isGestor) && corretores.length > 1 && (
+          <Select value={corretorFilter} onValueChange={setCorretorFilter}>
+            <SelectTrigger className="h-9 w-[160px] text-xs">
+              <SelectValue placeholder="Todos corretores" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos corretores</SelectItem>
+              {corretores.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {empreendimentos.length > 1 && (
+          <Select value={empreendimentoFilter} onValueChange={setEmpreendimentoFilter}>
+            <SelectTrigger className="h-9 w-[160px] text-xs">
+              <SelectValue placeholder="Todos empreend." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos empreend.</SelectItem>
+              {empreendimentos.map(e => (
+                <SelectItem key={e} value={e}>{e}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        <div className="relative flex-1 min-w-[160px] max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente, corretor..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="text-xs h-9 pl-9"
+          />
+        </div>
+
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearAll} className="h-9 text-xs gap-1 text-destructive">
+            <X className="h-3.5 w-3.5" /> Limpar
+          </Button>
+        )}
       </div>
-
-      {/* Sub-tab: Minhas vs Time (for all roles with leads tab) */}
-      {agendaTipo === "lead" && (
-        <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 w-fit">
-          <button
-            onClick={() => setLeadSubTab("minhas")}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
-              leadSubTab === "minhas"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            📋 Minhas Visitas
-          </button>
-          <button
-            onClick={() => setLeadSubTab("time")}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
-              leadSubTab === "time"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Users2 className="h-3.5 w-3.5" /> Visitas do Time
-          </button>
-        </div>
-      )}
-
-      {/* ─── TEAM VIEW (Visitas do Time) ─── */}
-      {agendaTipo === "lead" && leadSubTab === "time" ? (
-        <VisitasEquipe />
-      ) : (
-      <>
-      {/* ─── PENDING ALERT ─── */}
-      {pendingCount > 0 && (
-        <div
-          className={cn(
-            "w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all",
-            pendingOnly
-              ? "bg-red-100 border-red-400 border-l-4"
-              : "bg-red-50 border-red-300 border-l-4 border-l-red-500"
-          )}
-        >
-          <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
-          <div className="flex-1">
-            <span className="text-sm font-semibold text-red-700">
-              ⚠️ {pendingCount} visita{pendingCount > 1 ? "s" : ""} sem atualização de status
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {isAdmin && (
-              <button
-                onClick={(e) => { e.stopPropagation(); openCobranca(); }}
-                className="text-xs font-semibold text-red-700 bg-red-200 hover:bg-red-300 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1"
-              >
-                <MessageCircle className="h-3.5 w-3.5" /> Cobrar todos
-              </button>
-            )}
-            <button
-              onClick={() => { setPendingOnly(!pendingOnly); setStatusFilter("all"); }}
-              className="text-xs font-semibold text-red-600 underline"
-            >
-              {pendingOnly ? "Mostrar todas ←" : "Resolver agora →"}
-            </button>
-          </div>
-        </div>
-      )}
-
 
       {/* ─── TEAM TABS (CEO/Admin) ─── */}
       {isAdmin && (
@@ -587,55 +564,6 @@ export default function AgendaVisitas() {
           })}
         </div>
       )}
-
-      {/* ─── FILTERS ROW ─── */}
-      <div className="flex flex-wrap items-center gap-2">
-        {(isAdmin || isGestor) && corretores.length > 1 && (
-          <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-            <SelectTrigger className="h-9 w-[160px] text-xs">
-              <SelectValue placeholder="Todos corretores" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos corretores</SelectItem>
-              {corretores.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-        {empreendimentos.length > 1 && (
-          <Select value={empreendimentoFilter} onValueChange={setEmpreendimentoFilter}>
-            <SelectTrigger className="h-9 w-[160px] text-xs">
-              <SelectValue placeholder="Todos empreend." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos empreend.</SelectItem>
-              {empreendimentos.map(e => (
-                <SelectItem key={e} value={e}>{e}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-
-
-        <div className="relative flex-1 min-w-[160px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar cliente, corretor..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="text-xs h-9 pl-9"
-          />
-        </div>
-
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAll} className="h-9 text-xs gap-1 text-destructive">
-            <X className="h-3.5 w-3.5" /> Limpar
-          </Button>
-        )}
-      </div>
 
       {/* ─── STATUS CHIPS ─── */}
       <div className="flex flex-wrap items-center gap-1.5">
@@ -690,6 +618,11 @@ export default function AgendaVisitas() {
           {(isAdmin || isGestor) && (
             <TabsTrigger value="por-corretor" className="gap-1.5 text-xs h-8 px-3">
               <Users className="h-3.5 w-3.5" /> Por Corretor
+            </TabsTrigger>
+          )}
+          {pendingCount > 0 && (
+            <TabsTrigger value="alertas" className="gap-1.5 text-xs h-8 px-3 text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" /> Alertas <Badge variant="destructive" className="text-[10px] ml-0.5 px-1.5 py-0">{pendingCount}</Badge>
             </TabsTrigger>
           )}
           <TabsTrigger value="performance" className="gap-1.5 text-xs h-8 px-3">
@@ -834,9 +767,37 @@ export default function AgendaVisitas() {
         <TabsContent value="performance" className="mt-3">
           <VisitasPerformance visitas={visitas} showCorretor={isAdmin || isGestor} />
         </TabsContent>
+
+        {/* ─── ALERTAS TAB ─── */}
+        <TabsContent value="alertas" className="mt-3 space-y-4">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <h3 className="text-sm font-bold text-destructive">
+                  {pendingCount} visita{pendingCount > 1 ? "s" : ""} sem atualização de status
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <Button variant="outline" size="sm" className="text-xs gap-1 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={openCobranca}>
+                    <MessageCircle className="h-3.5 w-3.5" /> Cobrar todos
+                  </Button>
+                )}
+              </div>
+            </div>
+            <VisitasList
+              visitas={pendingVisitas}
+              onUpdateStatus={handleUpdateStatus}
+              onEdit={handleEdit}
+              onDelete={deleteVisita}
+              showCorretor={isAdmin || isGestor}
+              showTeam={isAdmin}
+              mode="past"
+            />
+          </div>
+        </TabsContent>
       </Tabs>
-      </>
-      )}
 
       {/* ─── TYPE SELECTOR ─── */}
       <VisitaTypeSelector
