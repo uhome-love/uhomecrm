@@ -18,8 +18,8 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiKey) throw new Error("OPENAI_API_KEY not configured");
 
     // Auth check
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -29,114 +29,162 @@ serve(async (req) => {
     if (authError || !user) throw new Error("Unauthorized");
 
     const body = await req.json();
-    // Support both: prompt-based (new) and photo_url-based (legacy)
     const prompt = body.prompt;
     const photo_url = body.photo_url;
 
     if (!prompt && !photo_url) throw new Error("prompt or photo_url is required");
 
-    console.log("Generating chibi avatar for user:", user.id);
+    console.log("Generating avatar for user:", user.id);
 
-    let aiBody: any;
+    let imageBase64: string;
+    let imageMimeType = "png";
 
-    if (prompt) {
-      // New prompt-based generation (no photo needed)
-      aiBody = {
-        model: "google/gemini-3-pro-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        modalities: ["image", "text"],
-      };
-    } else {
-      // Legacy photo-based generation
-      aiBody = {
-        model: "google/gemini-3-pro-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Transform this person's photo into a 3D chibi vinyl toy character figure.
+    if (photo_url) {
+      // Photo-based: Use GPT-4o to describe the person, then DALL-E 3 to generate chibi
+      console.log("Photo-based generation: analyzing photo with GPT-4o-mini...");
+
+      const visionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Analyze this person's photo and provide a detailed physical description. Include: 
+- Hair color, style, length
+- Skin tone
+- Eye color
+- Facial features (shape, distinctive features)
+- Any glasses, facial hair, or accessories
+- Estimated age range
+- Gender presentation
+Be very specific and detailed. Only describe physical appearance, nothing else.`,
+                },
+                {
+                  type: "image_url",
+                  image_url: { url: photo_url },
+                },
+              ],
+            },
+          ],
+          max_tokens: 500,
+        }),
+      });
+
+      if (!visionResponse.ok) {
+        const errText = await visionResponse.text();
+        console.error("Vision API error:", visionResponse.status, errText);
+        throw new Error("Failed to analyze photo");
+      }
+
+      const visionData = await visionResponse.json();
+      const description = visionData.choices?.[0]?.message?.content || "";
+      console.log("Photo description:", description.slice(0, 200));
+
+      // Generate chibi avatar with DALL-E 3 based on description
+      const dallePrompt = `Create a 3D chibi vinyl toy character figure based on this person's description:
+${description}
 
 Style requirements:
 - Chibi proportions: oversized head (about 1/2 of total height), small rounded body
 - Matte plastic toy appearance, like a collectible designer vinyl figure
 - Soft studio lighting on a pure white background
 - No shadows, no floor reflection
-
-Character details:
-- Keep the person's exact likeness: hair color/style, skin tone, eye color, facial features
 - Outfit: elegant navy blue business suit with subtle details
 - Face: cute chibi style with expressive large eyes and a warm friendly smile
 - Full body visible, centered composition
+- High detail, clean render, professional product photography style
+- Square image on solid white background`;
 
-Quality: High detail, clean render, professional product photography style.
-Output a square image on a solid white background.`,
-              },
-              {
-                type: "image_url",
-                image_url: { url: photo_url },
-              },
-            ],
-          },
-        ],
-        modalities: ["image", "text"],
-      };
-    }
+      const dalleResponse = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          prompt: dallePrompt,
+          n: 1,
+          size: "1024x1024",
+          response_format: "b64_json",
+          quality: "standard",
+        }),
+      });
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(aiBody),
-    });
-
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errText);
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Tente novamente em alguns minutos." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (!dalleResponse.ok) {
+        const errText = await dalleResponse.text();
+        console.error("DALL-E error:", dalleResponse.status, errText);
+        if (dalleResponse.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Tente novamente em alguns minutos." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (dalleResponse.status === 402) {
+          return new Response(JSON.stringify({ error: "Créditos OpenAI insuficientes." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw new Error("DALL-E generation failed: " + errText);
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes para gerar avatar." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+
+      const dalleData = await dalleResponse.json();
+      imageBase64 = dalleData.data?.[0]?.b64_json;
+      if (!imageBase64) throw new Error("DALL-E did not return an image");
+
+    } else {
+      // Prompt-based generation with DALL-E 3
+      console.log("Prompt-based generation with DALL-E 3...");
+
+      const dalleResponse = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          prompt: prompt,
+          n: 1,
+          size: "1024x1024",
+          response_format: "b64_json",
+          quality: "standard",
+        }),
+      });
+
+      if (!dalleResponse.ok) {
+        const errText = await dalleResponse.text();
+        console.error("DALL-E error:", dalleResponse.status, errText);
+        if (dalleResponse.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Tente novamente em alguns minutos." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw new Error("DALL-E generation failed: " + errText);
       }
-      throw new Error("AI generation failed: " + errText);
+
+      const dalleData = await dalleResponse.json();
+      imageBase64 = dalleData.data?.[0]?.b64_json;
+      if (!imageBase64) throw new Error("DALL-E did not return an image");
     }
 
-    const aiData = await aiResponse.json();
-    const imageData = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Decode base64 and upload
+    const imageBytes = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
 
-    if (!imageData) {
-      console.error("No image in AI response:", JSON.stringify(aiData).slice(0, 500));
-      throw new Error("AI did not return an image");
-    }
-
-    // Extract base64 data
-    const base64Match = imageData.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/);
-    if (!base64Match) throw new Error("Invalid image format from AI");
-
-    const imageExt = base64Match[1] === "jpeg" ? "jpg" : base64Match[1];
-    const imageBytes = Uint8Array.from(atob(base64Match[2]), (c) => c.charCodeAt(0));
-
-    // Upload to storage
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    const filePath = `${user.id}/avatar-gamificado.${imageExt}`;
+    const filePath = `${user.id}/avatar-gamificado.png`;
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("avatars")
       .upload(filePath, imageBytes, {
-        contentType: `image/${base64Match[1]}`,
+        contentType: "image/png",
         upsert: true,
       });
 
@@ -167,7 +215,7 @@ Output a square image on a solid white background.`,
       throw new Error("Failed to update profile");
     }
 
-    console.log("Chibi avatar generated successfully for user:", user.id);
+    console.log("Avatar generated successfully for user:", user.id);
 
     return new Response(JSON.stringify({ url: avatarUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
