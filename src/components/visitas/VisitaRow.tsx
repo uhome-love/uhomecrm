@@ -109,15 +109,15 @@ function parseNegocioMeta(obs: string | null) {
 /** Column header for the list view */
 export function VisitaRowHeader({ showCorretor, showTeam }: { showCorretor?: boolean; showTeam?: boolean }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border-b border-border/60 bg-muted/30 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-      <span className="w-12 text-center shrink-0">Hora</span>
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/50 bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
+      <span className="w-14 text-center shrink-0">Hora</span>
       <span className="w-1 shrink-0" />
-      <span style={{ width: "clamp(90px, 15%, 160px)" }} className="shrink-0">Cliente</span>
-      <span style={{ width: "clamp(80px, 13%, 140px)" }} className="shrink-0 hidden md:block">Produto</span>
+      <span style={{ width: "clamp(100px, 16%, 180px)" }} className="shrink-0">Cliente</span>
+      <span style={{ width: "clamp(90px, 14%, 150px)" }} className="shrink-0 hidden md:block">Produto</span>
       <span style={{ width: "clamp(70px, 10%, 110px)" }} className="shrink-0 hidden md:block">Local</span>
-      {showCorretor && <span style={{ width: "clamp(80px, 12%, 130px)" }} className="shrink-0 hidden lg:block">Corretor</span>}
+      {showCorretor && <span style={{ width: "clamp(90px, 13%, 140px)" }} className="shrink-0 hidden lg:block">Corretor</span>}
       {showTeam && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Time</span>}
-      {(showCorretor || showTeam) && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Responsável</span>}
+      {(showCorretor || showTeam) && <span style={{ width: "clamp(80px, 10%, 110px)" }} className="shrink-0 hidden lg:block">Responsável</span>}
       <span className="flex-1" />
       <span className="text-right shrink-0">Status / Ações</span>
       <span className="w-7 shrink-0" />
