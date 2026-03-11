@@ -312,15 +312,17 @@ const PipelineCard = memo(function PipelineCard({
       onDragEnd={(e) => e.preventDefault()}
       onClick={handleCardClick}
       className={cn(
-        "group relative rounded-lg border-l-[3px] border border-border/60 bg-card cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-150 select-none overflow-hidden",
+        "group relative rounded-xl border-l-[3px] border border-border/40 bg-card cursor-grab active:cursor-grabbing",
+        "hover:shadow-lg hover:shadow-primary/5 hover:border-border/60 hover:-translate-y-[1px]",
+        "transition-all duration-200 select-none overflow-hidden",
         status.borderCls
       )}
     >
       {/* Content */}
-      <div className="px-3 pt-2.5 pb-2 space-y-1">
+      <div className="px-3 pt-3 pb-2 space-y-1.5">
         {/* Line 1: Name + status indicator */}
         <div className="flex items-center justify-between gap-1">
-          <span className="text-sm font-semibold text-foreground truncate leading-tight">
+          <span className="text-[13px] font-bold text-foreground truncate leading-tight tracking-tight">
             {cleanName(lead.nome)}
           </span>
           {status.indicator && (
@@ -333,24 +335,24 @@ const PipelineCard = memo(function PipelineCard({
         {/* Line 2: Corretor (for managers) + Empreendimento · Phone · Origin badge */}
         {corretorNome && (
           <div className="text-[11px] text-muted-foreground truncate leading-tight flex items-center gap-1.5">
-            <Avatar className="h-4 w-4 shrink-0">
+            <Avatar className="h-4 w-4 shrink-0 ring-1 ring-primary/20">
               <AvatarImage src={corretorAvatar} className="object-cover" />
-              <AvatarFallback className="text-[7px] bg-primary/10 text-primary font-semibold">{corretorNome[0]}</AvatarFallback>
+              <AvatarFallback className="text-[7px] bg-primary/15 text-primary font-bold">{corretorNome[0]}</AvatarFallback>
             </Avatar>
-            <span className="text-[10px] font-medium text-primary truncate">{corretorNome.split(" ").slice(0, 2).join(" ")}</span>
+            <span className="text-[11px] font-semibold text-primary truncate">{corretorNome.split(" ").slice(0, 2).join(" ")}</span>
           </div>
         )}
         <div className="text-xs text-muted-foreground truncate leading-tight flex items-center gap-1">
           <span className="truncate">
             {displayEmpreendimento ? (
-              <span className="font-medium text-foreground/70">{displayEmpreendimento}</span>
+              <span className="font-semibold text-foreground/80">{displayEmpreendimento}</span>
             ) : (
               <span className="text-amber-500/80 font-medium">🏠 Sem empreend.</span>
             )}
-            {lead.telefone && <span> · {formatPhone(lead.telefone)}</span>}
+            {lead.telefone && <span className="text-muted-foreground"> · {formatPhone(lead.telefone)}</span>}
           </span>
           {lead.origem?.toLowerCase().includes("oferta") && (
-            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-purple-500/15 text-purple-500 dark:text-purple-400 border border-purple-500/20">
+            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-violet-500/15 text-violet-500 dark:text-violet-400 border border-violet-500/20">
               OA
             </span>
           )}
@@ -359,12 +361,12 @@ const PipelineCard = memo(function PipelineCard({
         {/* Negócio criado badge */}
         {lead.negocio_id && (
           <div className="flex items-center gap-1 pt-0.5">
-            <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">✅ Negócio criado</span>
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md">✅ Negócio criado</span>
           </div>
         )}
 
-        {/* Line 3: Task status — always show something */}
-        <p className={cn("text-[11px] truncate pt-0.5", status.text ? status.textCls : "text-muted-foreground")}>
+        {/* Line 3: Task status */}
+        <p className={cn("text-[11px] truncate pt-0.5 font-medium", status.text ? status.textCls : "text-muted-foreground")}>
           {status.text || "✅ Em dia"}
         </p>
       </div>
@@ -470,29 +472,29 @@ const PipelineCard = memo(function PipelineCard({
         </div>
       )}
 
-      <div className="h-px bg-border/40" />
+      <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
 
       {/* Line 4: Action buttons + 3-dot menu */}
-      <div data-actions-area className="px-2 py-1.5 flex items-center justify-between">
+      <div data-actions-area className="px-2.5 py-1.5 flex items-center justify-between">
         <div className="flex items-center gap-0.5">
           {lead.telefone && (
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-[11px] px-2 gap-1 font-medium hover:bg-accent"
+              className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-foreground/80 hover:bg-accent hover:text-foreground rounded-lg"
               onClick={handleCall}
             >
-              <Phone className="h-3 w-3" /> Ligar
+              <Phone className="h-3.5 w-3.5" /> Ligar
             </Button>
           )}
 
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 text-[11px] px-2 gap-1 font-medium text-green-600 dark:text-green-400 hover:bg-green-500/10"
+            className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
             onClick={handleWhatsApp}
           >
-            <MessageCircle className="h-3 w-3" /> WhatsApp
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
           </Button>
 
           <QuickActionMenu
@@ -504,9 +506,9 @@ const PipelineCard = memo(function PipelineCard({
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-[11px] px-2 gap-1 font-medium text-primary hover:bg-primary/10"
+              className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-primary hover:bg-primary/10 rounded-lg"
             >
-              <Zap className="h-3 w-3" /> Ação
+              <Zap className="h-3.5 w-3.5" /> Ação
             </Button>
           </QuickActionMenu>
         </div>
