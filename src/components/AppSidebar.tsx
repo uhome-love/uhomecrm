@@ -417,7 +417,6 @@ export function AppSidebar() {
           label: "Ferramentas",
           items: [
             { title: "Imóveis", url: "/imoveis", icon: Home },
-            { title: "Melnick Day", url: "/melnick-day", icon: Zap },
             { title: "HOMI Assistente", url: "/homi", icon: Bot },
             { title: "Academia", url: "/academia", icon: GraduationCap },
             { title: "Meus Scripts", url: "/scripts", icon: FileEdit },
