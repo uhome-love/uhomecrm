@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInHours } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { todayBRT } from "@/lib/utils";
 
 export type Period = "dia" | "semana" | "mes";
@@ -51,6 +51,7 @@ export interface CorretorRow {
   negocios: number;
   pontos: number;
   status: "online" | "paused" | "offline";
+  activityStatus: "produzindo" | "baixa" | "sem_atividade" | "offline";
 }
 
 export interface RadarAlert {
@@ -97,13 +98,29 @@ export interface OAResumo {
   taxa: number;
   corretoresAtivos: number;
   corretoresParados: number;
+  tempoMedioMinutos: number;
+  taxaPorCorretor: { nome: string; taxa: number }[];
 }
 
 export interface AlertaOp {
   icon: string;
   msg: string;
   count: number;
+  route: string;
 }
+
+export interface NegocioQuente {
+  id: string;
+  nome_cliente: string;
+  empreendimento: string;
+  vgv: number;
+  fase: string;
+  corretor_nome: string;
+  updated_at: string;
+  horas_desde_update: number;
+}
+
+const FASE_PRIORITY: Record<string, number> = { assinado: 6, documentacao: 5, negociacao: 4, proposta: 3, gerado: 2, visita: 1 };
 
 export function useGerenteDashboard(period: Period) {
   const { user } = useAuth();
@@ -157,7 +174,6 @@ export function useGerenteDashboard(period: Period) {
       const metaPorCorretor = period === "dia" ? 30 : period === "semana" ? 150 : 600;
       const metaTime = teamUserIds.length * metaPorCorretor;
 
-      // Best streak
       const { data: streakData } = await supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs);
       const streakCounts: Record<string, number> = {};
       (streakData || []).forEach(s => { streakCounts[s.corretor_id] = (streakCounts[s.corretor_id] || 0) + 1; });
@@ -186,6 +202,15 @@ export function useGerenteDashboard(period: Period) {
         supabase.from("negocios").select("corretor_id").eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato")'),
       ]);
 
+      // Also get today's calls for activity status
+      const todayStr = todayBRT();
+      const { data: todayCalls } = await supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${todayStr}T00:00:00`).lte("created_at", `${todayStr}T23:59:59`);
+      const todayCallCounts: Record<string, number> = {};
+      (todayCalls || []).forEach(t => { todayCallCounts[t.corretor_id] = (todayCallCounts[t.corretor_id] || 0) + 1; });
+
+      const { data: todayVisitas } = await supabase.from("visitas").select("corretor_id").eq("gerente_id", user!.id).eq("data_visita", todayStr).eq("status", "realizada");
+      const todayVisitSet = new Set((todayVisitas || []).map(v => v.corretor_id).filter(Boolean));
+
       const profileMap = Object.fromEntries((profiles || []).map(p => [p.user_id, p]));
       const dispMap = Object.fromEntries((disps || []).map(d => [d.user_id, d.status]));
 
@@ -199,6 +224,16 @@ export function useGerenteDashboard(period: Period) {
         const p = profileMap[uid];
         const s = stats[uid];
         const disp = dispMap[uid];
+        const todayCalls = todayCallCounts[uid] || 0;
+        const hasVisit = todayVisitSet.has(uid);
+
+        let activityStatus: CorretorRow["activityStatus"] = "offline";
+        if (disp === "disponivel" || disp === "pausa") {
+          if (todayCalls >= 10 || hasVisit) activityStatus = "produzindo";
+          else if (todayCalls >= 1) activityStatus = "baixa";
+          else activityStatus = "sem_atividade";
+        }
+
         return {
           user_id: uid,
           nome: p?.nome || teamMembers?.find(t => t.user_id === uid)?.nome || "Corretor",
@@ -207,6 +242,7 @@ export function useGerenteDashboard(period: Period) {
           ligacoes: s.lig, aproveitados: s.apr, taxa: s.lig > 0 ? Math.round((s.apr / s.lig) * 100) : 0,
           visitas: s.vis, negocios: s.neg, pontos: s.pts,
           status: disp === "disponivel" ? "online" : disp === "pausa" ? "paused" : "offline",
+          activityStatus,
         };
       });
       return rows.sort((a, b) => b.pontos - a.pontos);
@@ -224,7 +260,6 @@ export function useGerenteDashboard(period: Period) {
       const now = new Date();
       const alerts: RadarAlert[] = [];
 
-      // Leads sem contato (stage = novo_lead or sem_contato, created > 15min ago)
       const { data: stages } = await supabase.from("pipeline_stages").select("id, tipo").eq("ativo", true).eq("pipeline_tipo", "leads").in("tipo", ["novo_lead", "sem_contato"]);
       const stageIds = (stages || []).map(s => s.id);
       if (stageIds.length > 0) {
@@ -233,20 +268,21 @@ export function useGerenteDashboard(period: Period) {
         if ((count || 0) > 0) alerts.push({ id: "leads_sem_contato", type: "danger", icon: "🔴", label: "leads sem contato", count: count || 0, route: "/pipeline" });
       }
 
-      // Negócios sem atualização > 48h
       const cutoff48h = new Date(now.getTime() - 48 * 3600 * 1000).toISOString();
       const { count: negParados } = await supabase.from("negocios").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")').lt("updated_at", cutoff48h);
-      if ((negParados || 0) > 0) alerts.push({ id: "negocios_parados", type: "warning", icon: "⚠️", label: "negócios parados >48h", count: negParados || 0, route: "/meus-negocios" });
+      if ((negParados || 0) > 0) alerts.push({ id: "negocios_parados", type: "warning", icon: "💼", label: "negócios sem atualização >48h", count: negParados || 0, route: "/meus-negocios" });
 
-      // Corretores sem ligação hoje
       const { data: tentHoje } = await supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`);
       const comLigacao = new Set((tentHoje || []).map(t => t.corretor_id));
       const semLigacao = teamUserIds.filter(id => !comLigacao.has(id)).length;
-      if (semLigacao > 0) alerts.push({ id: "sem_ligacao", type: "warning", icon: "📵", label: "corretores sem ligação hoje", count: semLigacao, route: "/checkpoint" });
+      if (semLigacao > 0) alerts.push({ id: "sem_ligacao", type: "warning", icon: "🚫", label: "corretores sem ligação hoje", count: semLigacao, route: "/checkpoint" });
 
-      // Visitas pendentes de atualização
       const { count: visitasPendentes } = await supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today).eq("status", "marcada");
       if ((visitasPendentes || 0) > 0) alerts.push({ id: "visitas_pendentes", type: "info", icon: "📅", label: "visitas pendentes de status", count: visitasPendentes || 0, route: "/agenda-visitas" });
+
+      // Leads sem tarefa
+      const { count: leadsSemTarefa } = await supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).is("prioridade_lead", null);
+      if ((leadsSemTarefa || 0) > 0) alerts.push({ id: "leads_sem_tarefa", type: "info", icon: "📝", label: "leads sem tarefa", count: leadsSemTarefa || 0, route: "/pipeline" });
 
       return alerts;
     },
@@ -270,7 +306,6 @@ export function useGerenteDashboard(period: Period) {
         .filter(s => s.tipo !== "descarte" && s.tipo !== "convertido")
         .map(s => ({ key: s.tipo, label: s.nome, count: stageCounts[s.id] || 0, pct: 0 }));
 
-      // Add negócios stages
       const negFases = ["proposta", "negociacao", "assinado"];
       const negCounts: Record<string, number> = {};
       (negocios || []).forEach(n => { negCounts[n.fase] = (negCounts[n.fase] || 0) + 1; });
@@ -278,7 +313,6 @@ export function useGerenteDashboard(period: Period) {
       funnelStages.push({ key: "proposta", label: "Proposta", count: negCounts["proposta"] || 0, pct: 0 });
       funnelStages.push({ key: "assinado", label: "Assinado", count: (negCounts["assinado"] || 0) + (negCounts["vendido"] || 0), pct: 0 });
 
-      // Calculate conversion %
       for (let i = 1; i < funnelStages.length; i++) {
         funnelStages[i].pct = funnelStages[i - 1].count > 0 ? Math.round((funnelStages[i].count / funnelStages[i - 1].count) * 100) : 0;
       }
@@ -303,16 +337,43 @@ export function useGerenteDashboard(period: Period) {
       return data.map(n => {
         const dias = Math.floor((Date.now() - new Date(n.updated_at).getTime()) / 86400000);
         return {
-          id: n.id,
-          nome_cliente: n.nome_cliente || "Cliente",
-          empreendimento: n.empreendimento || "—",
-          vgv: Number(n.vgv_estimado || 0),
-          fase: n.fase,
+          id: n.id, nome_cliente: n.nome_cliente || "Cliente", empreendimento: n.empreendimento || "—",
+          vgv: Number(n.vgv_estimado || 0), fase: n.fase,
           corretor_nome: n.corretor_id ? (nameMap[n.corretor_id]?.split(" ")[0] || "Corretor") : "—",
-          dias_parado: dias,
-          updated_at: n.updated_at,
+          dias_parado: dias, updated_at: n.updated_at,
         } as NegocioAcao;
       });
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  // ── Negócios Quentes (mais avançados) ──
+  const { data: negociosQuentes } = useQuery({
+    queryKey: ["gerente-negocios-quentes", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("negocios").select("id, nome_cliente, empreendimento, vgv_estimado, fase, corretor_id, updated_at").eq("gerente_id", user!.id).not("fase", "in", '("perdido","cancelado","distrato","assinado","vendido")');
+      if (!data || data.length === 0) return [];
+      const corrIds = [...new Set(data.map(n => n.corretor_id).filter(Boolean))];
+      const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds as string[]) : { data: [] };
+      const nameMap = Object.fromEntries((profs || []).map(p => [p.user_id, p.nome]));
+
+      return data
+        .map(n => ({
+          id: n.id, nome_cliente: n.nome_cliente || "Cliente", empreendimento: n.empreendimento || "—",
+          vgv: Number(n.vgv_estimado || 0), fase: n.fase,
+          corretor_nome: n.corretor_id ? (nameMap[n.corretor_id]?.split(" ")[0] || "Corretor") : "—",
+          updated_at: n.updated_at,
+          horas_desde_update: Math.round((Date.now() - new Date(n.updated_at).getTime()) / 3600000),
+        }))
+        .sort((a, b) => {
+          const pA = FASE_PRIORITY[a.fase] || 0;
+          const pB = FASE_PRIORITY[b.fase] || 0;
+          if (pB !== pA) return pB - pA;
+          if (b.vgv !== a.vgv) return b.vgv - a.vgv;
+          return a.horas_desde_update - b.horas_desde_update;
+        })
+        .slice(0, 5) as NegocioQuente[];
     },
     enabled: !!user,
     staleTime: 60_000,
@@ -333,13 +394,43 @@ export function useGerenteDashboard(period: Period) {
   const { data: oaResumo } = useQuery({
     queryKey: ["gerente-oa-v2", user?.id, teamUserIds.join(",")],
     queryFn: async () => {
-      if (teamUserIds.length === 0) return { leadsDisponiveis: 0, tentativasHoje: 0, aproveitados: 0, taxa: 0, corretoresAtivos: 0, corretoresParados: 0 } as OAResumo;
+      if (teamUserIds.length === 0) return { leadsDisponiveis: 0, tentativasHoje: 0, aproveitados: 0, taxa: 0, corretoresAtivos: 0, corretoresParados: 0, tempoMedioMinutos: 0, taxaPorCorretor: [] } as OAResumo;
 
-      const [{ count: totalLeads }, { count: tentHoje }, { count: aprHoje }] = await Promise.all([
+      const [{ count: totalLeads }, { data: tentHojeData }] = await Promise.all([
         supabase.from("oferta_ativa_leads").select("id", { count: "exact", head: true }).eq("status", "disponivel"),
-        supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`),
-        supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).eq("resultado", "com_interesse").gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`),
+        supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, created_at").in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`),
       ]);
+
+      const tentHoje = tentHojeData || [];
+      const aprHoje = tentHoje.filter(t => t.resultado === "com_interesse").length;
+
+      // Tempo médio entre tentativas (proxy para tempo de resposta)
+      const corrTimestamps: Record<string, number[]> = {};
+      tentHoje.forEach(t => {
+        if (!corrTimestamps[t.corretor_id]) corrTimestamps[t.corretor_id] = [];
+        corrTimestamps[t.corretor_id].push(new Date(t.created_at).getTime());
+      });
+      let totalIntervals = 0; let intervalCount = 0;
+      Object.values(corrTimestamps).forEach(ts => {
+        ts.sort((a, b) => a - b);
+        for (let i = 1; i < ts.length; i++) {
+          totalIntervals += ts[i] - ts[i - 1];
+          intervalCount++;
+        }
+      });
+      const tempoMedioMinutos = intervalCount > 0 ? Math.round(totalIntervals / intervalCount / 60000) : 0;
+
+      // Taxa por corretor
+      const corrStats: Record<string, { lig: number; apr: number }> = {};
+      tentHoje.forEach(t => {
+        if (!corrStats[t.corretor_id]) corrStats[t.corretor_id] = { lig: 0, apr: 0 };
+        corrStats[t.corretor_id].lig++;
+        if (t.resultado === "com_interesse") corrStats[t.corretor_id].apr++;
+      });
+      const taxaPorCorretor = Object.entries(corrStats)
+        .map(([id, s]) => ({ nome: teamNameMap[id]?.split(" ")[0] || "Corretor", taxa: s.lig > 0 ? Math.round((s.apr / s.lig) * 100) : 0 }))
+        .sort((a, b) => b.taxa - a.taxa)
+        .slice(0, 5);
 
       const { data: disps } = await supabase.from("corretor_disponibilidade").select("user_id, status, updated_at").in("user_id", teamUserIds);
       const ativos = (disps || []).filter(d => d.status === "disponivel").length;
@@ -349,9 +440,8 @@ export function useGerenteDashboard(period: Period) {
         return mins > 20;
       }).length;
 
-      const t = tentHoje || 0;
-      const a = aprHoje || 0;
-      return { leadsDisponiveis: totalLeads || 0, tentativasHoje: t, aproveitados: a, taxa: t > 0 ? Math.round((a / t) * 100) : 0, corretoresAtivos: ativos, corretoresParados: parados } as OAResumo;
+      const t = tentHoje.length;
+      return { leadsDisponiveis: totalLeads || 0, tentativasHoje: t, aproveitados: aprHoje, taxa: t > 0 ? Math.round((aprHoje / t) * 100) : 0, corretoresAtivos: ativos, corretoresParados: parados, tempoMedioMinutos, taxaPorCorretor } as OAResumo;
     },
     enabled: !!user && teamUserIds.length > 0,
     staleTime: 30_000,
@@ -362,7 +452,7 @@ export function useGerenteDashboard(period: Period) {
     const alerts: AlertaOp[] = [];
     const radar = radarAlerts || [];
     radar.forEach(r => {
-      alerts.push({ icon: r.icon, msg: `${r.count} ${r.label}`, count: r.count });
+      alerts.push({ icon: r.icon, msg: `${r.count} ${r.label}`, count: r.count, route: r.route });
     });
     return alerts;
   }, [radarAlerts]);
@@ -375,8 +465,9 @@ export function useGerenteDashboard(period: Period) {
     radarAlerts: radarAlerts || [],
     funnel: funnel || [],
     negociosAcao: negociosAcao || [],
+    negociosQuentes: negociosQuentes || [],
     agendaHoje: agendaHoje || [],
-    oaResumo: oaResumo || { leadsDisponiveis: 0, tentativasHoje: 0, aproveitados: 0, taxa: 0, corretoresAtivos: 0, corretoresParados: 0 },
+    oaResumo: oaResumo || { leadsDisponiveis: 0, tentativasHoje: 0, aproveitados: 0, taxa: 0, corretoresAtivos: 0, corretoresParados: 0, tempoMedioMinutos: 0, taxaPorCorretor: [] },
     alertasOp,
     today, start, end, startTs, endTs,
   };

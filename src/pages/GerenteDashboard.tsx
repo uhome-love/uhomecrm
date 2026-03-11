@@ -1,18 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useGerenteDashboard, Period, periodLabels, formatCurrency, getInitials, hashColor } from "@/hooks/useGerenteDashboard";
 import type { CorretorRow } from "@/hooks/useGerenteDashboard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { todayBRT } from "@/lib/utils";
 import {
   Phone, CheckCircle, CalendarDays, Building2, Flame,
   Trophy, ArrowRight, Clock, Loader2, Send, RefreshCw,
-  AlertTriangle, Zap, Target, Eye, MessageCircle,
+  AlertTriangle, Zap, Target, Eye, MessageCircle, ChevronDown,
+  TrendingUp,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,31 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import PulseFeed from "@/components/pulse/PulseFeed";
-import { useEffect } from "react";
+
+// ── Animated counter ──
+function AnimatedNumber({ value, duration = 0.6 }: { value: number; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const prevValue = useRef(0);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const from = prevValue.current;
+    const to = value;
+    prevValue.current = value;
+    if (from === to) { node.textContent = String(to); return; }
+    const start = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min((now - start) / (duration * 1000), 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      node.textContent = String(Math.round(from + (to - from) * eased));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [value, duration]);
+
+  return <span ref={ref}>{value}</span>;
+}
 
 interface CorretorDrawerData { user_id: string; nome: string; avatar_url: string | null; }
 
@@ -36,7 +61,7 @@ export default function GerenteDashboard() {
 
   const {
     user, profile, teamUserIds, kpis: k, kpisLoading, ranking,
-    radarAlerts, funnel, negociosAcao, agendaHoje, oaResumo, alertasOp,
+    radarAlerts, funnel, negociosAcao, negociosQuentes, agendaHoje, oaResumo, alertasOp,
     startTs, endTs,
   } = useGerenteDashboard(period);
 
@@ -67,6 +92,13 @@ export default function GerenteDashboard() {
   const statusIcons: Record<string, string> = { marcada: "🟡", confirmada: "🟢", realizada: "✅", no_show: "🔴", reagendada: "🔄", cancelada: "⬛" };
   const faseLabels: Record<string, string> = { visita: "Visita", gerado: "Gerado", proposta: "Proposta", negociacao: "Negociação", documentacao: "Documentação", assinado: "Assinado" };
   const faseColors: Record<string, string> = { visita: "text-blue-600", gerado: "text-indigo-600", proposta: "text-amber-600", negociacao: "text-orange-600", documentacao: "text-purple-600", assinado: "text-emerald-600" };
+
+  const activityStatusConfig: Record<string, { label: string; dot: string; bg: string; text: string }> = {
+    produzindo: { label: "Produzindo", dot: "bg-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-600" },
+    baixa: { label: "Baixa atividade", dot: "bg-amber-400", bg: "bg-amber-500/10", text: "text-amber-600" },
+    sem_atividade: { label: "Sem atividade", dot: "bg-red-400", bg: "bg-red-500/10", text: "text-red-600" },
+    offline: { label: "Offline", dot: "bg-gray-400", bg: "bg-gray-500/10", text: "text-gray-500" },
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto">
@@ -102,7 +134,6 @@ export default function GerenteDashboard() {
         </div>
       </motion.div>
 
-      {/* Empty state */}
       {teamUserIds.length === 0 && !kpisLoading && (
         <div className="rounded-xl border border-border/60 bg-muted/30 p-4 flex items-center gap-3">
           <span className="text-2xl">📋</span>
@@ -116,62 +147,59 @@ export default function GerenteDashboard() {
       {/* ═══ 2. KPI CARDS ═══ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {/* Ligações */}
-          <div className="rounded-2xl p-4 bg-card border border-border/60 hover:-translate-y-0.5 hover:shadow-md transition-all">
+          <motion.div whileHover={{ y: -2, boxShadow: "0 8px 25px -5px hsl(var(--primary-500) / 0.15)" }} className="rounded-2xl p-4 bg-card border border-border/60 transition-all">
             <div className="flex items-center gap-1.5 mb-2">
               <Phone className="h-4 w-4" style={{ color: "hsl(var(--primary-500))" }} />
               <span className="text-xs font-medium text-muted-foreground">Ligações</span>
             </div>
-            <p className="text-3xl font-black" style={{ color: "hsl(var(--primary-500))" }}>{k.ligacoes}</p>
+            <p className="text-3xl font-black" style={{ color: "hsl(var(--primary-500))" }}><AnimatedNumber value={k.ligacoes} /></p>
             <p className="text-xs text-muted-foreground mt-0.5">Meta: {k.metaTime} · {ligPct}%</p>
-            <Progress value={ligPct} className="h-1 mt-2" />
-          </div>
+            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.3, duration: 0.6 }} style={{ transformOrigin: "left" }}>
+              <Progress value={ligPct} className="h-1.5 mt-2" />
+            </motion.div>
+          </motion.div>
 
-          {/* Aproveitados */}
-          <div className="rounded-2xl p-4 bg-card border border-border/60 hover:-translate-y-0.5 hover:shadow-md transition-all">
+          <motion.div whileHover={{ y: -2, boxShadow: "0 8px 25px -5px hsl(var(--success-500) / 0.15)" }} className="rounded-2xl p-4 bg-card border border-border/60 transition-all">
             <div className="flex items-center gap-1.5 mb-2">
               <CheckCircle className="h-4 w-4" style={{ color: "hsl(var(--success-500))" }} />
               <span className="text-xs font-medium text-muted-foreground">Aproveitados</span>
             </div>
-            <p className="text-3xl font-black" style={{ color: "hsl(var(--success-500))" }}>{k.aproveitados}</p>
+            <p className="text-3xl font-black" style={{ color: "hsl(var(--success-500))" }}><AnimatedNumber value={k.aproveitados} /></p>
             <p className="text-xs text-muted-foreground">{k.taxa}% conversão</p>
-          </div>
+          </motion.div>
 
-          {/* Visitas */}
-          <div className="rounded-2xl p-4 bg-card border border-border/60 hover:-translate-y-0.5 hover:shadow-md transition-all">
+          <motion.div whileHover={{ y: -2, boxShadow: "0 8px 25px -5px hsl(var(--warning-500) / 0.15)" }} className="rounded-2xl p-4 bg-card border border-border/60 transition-all">
             <div className="flex items-center gap-1.5 mb-2">
               <CalendarDays className="h-4 w-4" style={{ color: "hsl(var(--warning-500))" }} />
               <span className="text-xs font-medium text-muted-foreground">Visitas</span>
             </div>
-            <p className="text-3xl font-black" style={{ color: "hsl(var(--warning-500))" }}>{k.visitasHoje}</p>
+            <p className="text-3xl font-black" style={{ color: "hsl(var(--warning-500))" }}><AnimatedNumber value={k.visitasHoje} /></p>
             <p className="text-xs text-muted-foreground">Hoje: {k.visitasHoje} · Semana: {k.visitasSemana}</p>
-          </div>
+          </motion.div>
 
-          {/* Negócios */}
-          <div className="rounded-2xl p-4 bg-card border border-border/60 hover:-translate-y-0.5 hover:shadow-md transition-all">
+          <motion.div whileHover={{ y: -2, boxShadow: "0 8px 25px -5px hsl(var(--purple-500) / 0.15)" }} className="rounded-2xl p-4 bg-card border border-border/60 transition-all">
             <div className="flex items-center gap-1.5 mb-2">
               <Building2 className="h-4 w-4" style={{ color: "hsl(var(--purple-500))" }} />
               <span className="text-xs font-medium text-muted-foreground">Negócios</span>
             </div>
-            <p className="text-3xl font-black" style={{ color: "hsl(var(--purple-500))" }}>{k.negociosAtivos}</p>
+            <p className="text-3xl font-black" style={{ color: "hsl(var(--purple-500))" }}><AnimatedNumber value={k.negociosAtivos} /></p>
             <p className="text-xs text-muted-foreground">Pipeline: {formatCurrency(k.vgvTotal)}</p>
-          </div>
+          </motion.div>
 
-          {/* Melhor Streak */}
-          <div className="rounded-2xl p-4 bg-card border border-border/60 hover:-translate-y-0.5 hover:shadow-md transition-all">
+          <motion.div whileHover={{ y: -2, boxShadow: "0 8px 25px -5px rgba(249,115,22,0.15)" }} className="rounded-2xl p-4 bg-card border border-border/60 transition-all">
             <div className="flex items-center gap-1.5 mb-2">
               <Flame className="h-4 w-4 text-orange-500" />
               <span className="text-xs font-medium text-muted-foreground">Melhor Streak</span>
             </div>
             {k.melhorStreak.count > 0 ? (
               <>
-                <p className="text-3xl font-black text-orange-500">{k.melhorStreak.count}🔥</p>
+                <p className="text-3xl font-black text-orange-500"><AnimatedNumber value={k.melhorStreak.count} />🔥</p>
                 <p className="text-xs text-muted-foreground truncate">{k.melhorStreak.nome}</p>
               </>
             ) : (
               <p className="text-3xl font-black text-orange-500">🏆</p>
             )}
-          </div>
+          </motion.div>
         </div>
       </motion.div>
 
@@ -186,7 +214,7 @@ export default function GerenteDashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 {radarAlerts.map(alert => (
-                  <button key={alert.id} onClick={() => navigate(alert.route)}
+                  <motion.button key={alert.id} whileHover={{ scale: 1.02 }} onClick={() => navigate(alert.route)}
                     className="flex items-center gap-2.5 p-3 rounded-xl text-left transition-all hover:bg-accent/60 border border-border/40 hover:border-border">
                     <span className="text-lg">{alert.icon}</span>
                     <div className="flex-1 min-w-0">
@@ -194,7 +222,7 @@ export default function GerenteDashboard() {
                       <p className="text-[11px] text-muted-foreground truncate">{alert.label}</p>
                     </div>
                     <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </CardContent>
@@ -207,23 +235,90 @@ export default function GerenteDashboard() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card className="border-border/60">
             <CardContent className="p-5">
-              <h2 className="text-sm font-bold text-foreground mb-4">📊 Funil Comercial da Equipe</h2>
-              <div className="flex items-end gap-1 overflow-x-auto pb-2">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-bold text-foreground">📊 Funil Comercial da Equipe</h2>
+                <p className="text-[10px] text-muted-foreground">{funnel[0]?.count || 0} leads totais → {funnel[funnel.length - 1]?.count || 0} assinados</p>
+              </div>
+              <div className="space-y-0">
                 {funnel.map((stage, i) => {
                   const maxCount = Math.max(...funnel.map(s => s.count), 1);
-                  const barH = Math.max(24, (stage.count / maxCount) * 100);
+                  const barW = Math.max(8, (stage.count / maxCount) * 100);
+                  const stageColors = [
+                    "hsl(var(--primary-500))", "hsl(210, 50%, 55%)", "hsl(220, 55%, 50%)",
+                    "hsl(45, 80%, 50%)", "hsl(30, 75%, 50%)", "hsl(180, 60%, 45%)",
+                    "hsl(150, 60%, 45%)", "hsl(260, 55%, 55%)", "hsl(35, 80%, 50%)",
+                    "hsl(145, 65%, 40%)",
+                  ];
                   return (
-                    <div key={stage.key} className="flex flex-col items-center flex-1 min-w-[60px]">
-                      <p className="text-sm font-black text-foreground">{stage.count}</p>
-                      {i > 0 && stage.pct > 0 && <p className="text-[9px] text-muted-foreground mb-1">{stage.pct}%</p>}
-                      <div className="w-full rounded-t-lg transition-all" style={{
-                        height: `${barH}px`,
-                        background: `hsl(var(--primary-500) / ${0.2 + (i / funnel.length) * 0.8})`,
-                      }} />
-                      <p className="text-[10px] text-muted-foreground mt-1.5 text-center leading-tight">{stage.label}</p>
+                    <div key={stage.key}>
+                      {/* Conversion arrow between stages */}
+                      {i > 0 && (
+                        <div className="flex items-center gap-2 py-1 pl-2">
+                          <ChevronDown className="h-3 w-3 text-muted-foreground/50" />
+                          <span className={`text-[10px] font-semibold ${stage.pct >= 50 ? "text-emerald-600" : stage.pct >= 20 ? "text-amber-600" : "text-red-500"}`}>
+                            ↓ {stage.pct}%
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 group">
+                        <div className="w-[110px] shrink-0 text-right">
+                          <p className="text-[11px] text-muted-foreground leading-tight">{stage.label}</p>
+                        </div>
+                        <div className="flex-1 h-7 bg-accent/30 rounded-lg overflow-hidden relative">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${barW}%` }}
+                            transition={{ delay: 0.15 + i * 0.05, duration: 0.5, ease: "easeOut" }}
+                            className="h-full rounded-lg flex items-center px-2 min-w-[32px]"
+                            style={{ background: stageColors[i % stageColors.length] + "cc" }}
+                          >
+                            <span className="text-[11px] font-bold text-white drop-shadow-sm">{stage.count}</span>
+                          </motion.div>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* ═══ 4.5 NEGÓCIOS QUENTES ═══ */}
+      {negociosQuentes.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }}>
+          <Card className="border-border/60" style={{ borderLeft: "4px solid hsl(var(--warning-500))" }}>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-foreground">🔥 Negócios Próximos de Fechamento</h2>
+                <button className="text-xs text-primary hover:underline font-medium flex items-center gap-1" onClick={() => navigate("/meus-negocios")}>
+                  Ver pipeline <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                {negociosQuentes.map(n => (
+                  <motion.div key={n.id} whileHover={{ scale: 1.005 }}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-border/40 hover:bg-accent/40 transition-colors cursor-pointer"
+                    onClick={() => navigate("/meus-negocios")}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground truncate">{n.nome_cliente}</p>
+                        <Badge variant="outline" className={`text-[10px] shrink-0 ${faseColors[n.fase] || "text-muted-foreground"}`}>
+                          {faseLabels[n.fase] || n.fase}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {n.empreendimento} · {n.corretor_nome} · <span className="font-semibold">{formatCurrency(n.vgv)}</span>
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] text-muted-foreground">
+                        {n.horas_desde_update < 1 ? "agora" : n.horas_desde_update < 24 ? `${n.horas_desde_update}h atrás` : `${Math.floor(n.horas_desde_update / 24)}d atrás`}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -235,7 +330,7 @@ export default function GerenteDashboard() {
         <Card className="border-border/60">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-foreground">🔥 Negócios que Pedem Ação</h2>
+              <h2 className="text-sm font-bold text-foreground">⚠️ Negócios que Pedem Ação</h2>
               <button className="text-xs text-primary hover:underline font-medium flex items-center gap-1" onClick={() => navigate("/meus-negocios")}>
                 Ver pipeline <ArrowRight className="h-3 w-3" />
               </button>
@@ -248,7 +343,9 @@ export default function GerenteDashboard() {
             ) : (
               <div className="space-y-2">
                 {negociosAcao.map(n => (
-                  <div key={n.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/40 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => navigate("/meus-negocios")}>
+                  <motion.div key={n.id} whileHover={{ scale: 1.005 }}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-border/40 hover:bg-accent/40 transition-colors cursor-pointer"
+                    onClick={() => navigate("/meus-negocios")}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-foreground truncate">{n.nome_cliente}</p>
@@ -267,7 +364,7 @@ export default function GerenteDashboard() {
                         <span className="text-[10px] text-muted-foreground">atualizado hoje</span>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -342,41 +439,42 @@ export default function GerenteDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ranking.map((r, i) => (
-                    <tr key={r.user_id} className="border-b border-border/20 hover:bg-accent/50 cursor-pointer transition-colors"
-                      onClick={() => setDrawerCorretor({ user_id: r.user_id, nome: r.nome, avatar_url: r.avatar_url })}>
-                      <td className="py-2.5 px-2 font-bold">
-                        {i === 0 ? "👑" : i === 1 ? "🥈" : i === 2 ? "🥉" : <span className="text-muted-foreground">{i + 1}</span>}
-                      </td>
-                      <td className="py-2.5 px-2">
-                        <div className="flex items-center gap-2">
-                          {(r.avatar_gamificado_url || r.avatar_url) ? (
-                            <img src={r.avatar_gamificado_url || r.avatar_url!} alt={r.nome} className="h-8 w-8 rounded-full object-cover" />
-                          ) : (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full text-white font-bold text-xs" style={{ background: hashColor(r.nome) }}>
-                              {getInitials(r.nome)}
-                            </div>
-                          )}
-                          <span className="font-medium text-foreground truncate max-w-[110px]">{r.nome.split(" ")[0]}</span>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-2 text-center font-bold" style={{ color: "hsl(var(--primary-500))" }}>{r.ligacoes}</td>
-                      <td className="py-2.5 px-2 text-center font-bold" style={{ color: "hsl(var(--success-500))" }}>{r.aproveitados}</td>
-                      <td className="py-2.5 px-2 text-center font-semibold" style={{ color: "hsl(var(--purple-500))" }}>{r.taxa}%</td>
-                      <td className="py-2.5 px-2 text-center font-semibold" style={{ color: "hsl(var(--warning-500))" }}>{r.visitas}</td>
-                      <td className="py-2.5 px-2 text-center font-semibold" style={{ color: "hsl(var(--purple-500))" }}>{r.negocios}</td>
-                      <td className="py-2.5 px-2 text-center font-black" style={{ color: "hsl(var(--primary-600))" }}>{r.pontos}</td>
-                      <td className="py-2.5 px-2 text-center">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                          r.status === "online" ? "bg-emerald-500/10 text-emerald-600" :
-                          r.status === "paused" ? "bg-amber-500/10 text-amber-600" : "bg-red-500/10 text-red-600"
-                        }`}>
-                          <span className={`inline-block h-1.5 w-1.5 rounded-full ${r.status === "online" ? "bg-emerald-500" : r.status === "paused" ? "bg-amber-400" : "bg-red-400"}`} />
-                          {r.status === "online" ? "Ativo" : r.status === "paused" ? "Parado" : "Ausente"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {ranking.map((r, i) => {
+                    const aStatus = activityStatusConfig[r.activityStatus];
+                    return (
+                      <motion.tr key={r.user_id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.02 * i }}
+                        className="border-b border-border/20 hover:bg-accent/50 cursor-pointer transition-colors"
+                        onClick={() => setDrawerCorretor({ user_id: r.user_id, nome: r.nome, avatar_url: r.avatar_url })}>
+                        <td className="py-2.5 px-2 font-bold">
+                          {i === 0 ? "👑" : i === 1 ? "🥈" : i === 2 ? "🥉" : <span className="text-muted-foreground">{i + 1}</span>}
+                        </td>
+                        <td className="py-2.5 px-2">
+                          <div className="flex items-center gap-2">
+                            {(r.avatar_gamificado_url || r.avatar_url) ? (
+                              <img src={r.avatar_gamificado_url || r.avatar_url!} alt={r.nome} className="h-8 w-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full text-white font-bold text-xs" style={{ background: hashColor(r.nome) }}>
+                                {getInitials(r.nome)}
+                              </div>
+                            )}
+                            <span className="font-medium text-foreground truncate max-w-[110px]">{r.nome.split(" ")[0]}</span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-2 text-center font-bold" style={{ color: "hsl(var(--primary-500))" }}>{r.ligacoes}</td>
+                        <td className="py-2.5 px-2 text-center font-bold" style={{ color: "hsl(var(--success-500))" }}>{r.aproveitados}</td>
+                        <td className="py-2.5 px-2 text-center font-semibold" style={{ color: "hsl(var(--purple-500))" }}>{r.taxa}%</td>
+                        <td className="py-2.5 px-2 text-center font-semibold" style={{ color: "hsl(var(--warning-500))" }}>{r.visitas}</td>
+                        <td className="py-2.5 px-2 text-center font-semibold" style={{ color: "hsl(var(--purple-500))" }}>{r.negocios}</td>
+                        <td className="py-2.5 px-2 text-center font-black" style={{ color: "hsl(var(--primary-600))" }}>{r.pontos}</td>
+                        <td className="py-2.5 px-2 text-center">
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${aStatus.bg} ${aStatus.text}`}>
+                            <span className={`inline-block h-1.5 w-1.5 rounded-full ${aStatus.dot}`} />
+                            {aStatus.label}
+                          </span>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
                   {ranking.length === 0 && (
                     <tr><td colSpan={9} className="py-8 text-center text-muted-foreground text-sm">Nenhum corretor ativo no período</td></tr>
                   )}
@@ -397,7 +495,7 @@ export default function GerenteDashboard() {
                 Abrir OA <ArrowRight className="h-3 w-3" />
               </button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
               {[
                 { label: "Leads disponíveis", value: oaResumo.leadsDisponiveis, color: "hsl(var(--primary-500))" },
                 { label: "Tentativas hoje", value: oaResumo.tentativasHoje, color: "hsl(var(--primary-500))" },
@@ -405,11 +503,13 @@ export default function GerenteDashboard() {
                 { label: "Conversão", value: `${oaResumo.taxa}%`, color: "hsl(var(--success-500))" },
                 { label: "Corretores ativos", value: oaResumo.corretoresAtivos, color: "hsl(var(--primary-500))" },
                 { label: "Parados >20min", value: oaResumo.corretoresParados, color: oaResumo.corretoresParados > 0 ? "hsl(var(--danger-500))" : "hsl(var(--success-500))" },
+                { label: "Tempo médio", value: `${oaResumo.tempoMedioMinutos}min`, color: "hsl(var(--warning-500))" },
+                { label: "Top conversão", value: oaResumo.taxaPorCorretor[0] ? `${oaResumo.taxaPorCorretor[0].nome} ${oaResumo.taxaPorCorretor[0].taxa}%` : "—", color: "hsl(var(--success-500))" },
               ].map(item => (
-                <div key={item.label} className="rounded-xl p-3 bg-accent/30 border border-border/30 text-center">
-                  <p className="text-xl font-black" style={{ color: item.color }}>{item.value}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{item.label}</p>
-                </div>
+                <motion.div key={item.label} whileHover={{ scale: 1.03 }} className="rounded-xl p-3 bg-accent/30 border border-border/30 text-center">
+                  <p className="text-lg font-black truncate" style={{ color: item.color }}>{item.value}</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">{item.label}</p>
+                </motion.div>
               ))}
             </div>
           </CardContent>
@@ -424,10 +524,12 @@ export default function GerenteDashboard() {
               <h2 className="text-sm font-bold text-foreground mb-3">⚡ Alertas Operacionais</h2>
               <div className="space-y-1.5">
                 {alertasOp.map((a, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground py-1.5 px-2 rounded-lg hover:bg-accent/40">
+                  <motion.button key={i} whileHover={{ x: 4 }} onClick={() => navigate(a.route)}
+                    className="flex items-center gap-2 text-sm text-muted-foreground py-1.5 px-2 rounded-lg hover:bg-accent/40 w-full text-left transition-colors">
                     <span>{a.icon}</span>
-                    <span className="text-foreground font-medium">{a.msg}</span>
-                  </div>
+                    <span className="text-foreground font-medium flex-1">{a.msg}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  </motion.button>
                 ))}
               </div>
             </CardContent>
@@ -449,11 +551,12 @@ export default function GerenteDashboard() {
             { emoji: "📊", label: "Relatórios 1:1", desc: "Reuniões individuais", to: "/relatorios" },
             { emoji: "🤖", label: "HOMI Gerente", desc: "IA para gestão", to: "/homi-gerente" },
           ].map(item => (
-            <button key={item.label} className="rounded-xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent/50 cursor-pointer border border-border/60"
+            <motion.button key={item.label} whileHover={{ y: -2 }}
+              className="rounded-xl p-4 text-left transition-all duration-200 hover:bg-accent/50 cursor-pointer border border-border/60"
               onClick={() => navigate(item.to)}>
               <p className="text-sm font-semibold text-foreground">{item.emoji} {item.label}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
-            </button>
+            </motion.button>
           ))}
         </div>
       </motion.div>
