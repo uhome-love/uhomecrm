@@ -123,64 +123,87 @@ serve(async (req) => {
     const { action, codigo, broker_id } = body;
 
     if (action === "get_imovel") {
-      // Try direct codigo endpoint first
-      const directUrl = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/codigo/${codigo}?v=6`;
-      const response = await fetch(directUrl, { headers: { "Accept": "application/json" } });
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Jetimob API error:", response.status, text);
-        if (response.status === 404) {
-          return new Response(
-            JSON.stringify({ data: null, not_found: true }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+      const requestedCodigo = String(codigo || "").trim();
+      if (!requestedCodigo) {
         return new Response(
-          JSON.stringify({ error: `Erro ao buscar imóvel: ${response.status}` }),
-          { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Código do imóvel é obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      const raw = await response.json();
-      console.log("Jetimob get_imovel raw keys:", JSON.stringify(Object.keys(raw)), "codigo:", codigo);
-
-      // Normalize: extract the actual property object from various response formats
-      let imovel: any = null;
-      if (Array.isArray(raw?.data) && raw.data.length > 0) {
-        imovel = raw.data[0];
-      } else if (raw?.imovel) {
-        imovel = raw.imovel;
-      } else if (raw?.codigo) {
-        imovel = raw;
+      const requestedCodigoNum = extractCodigoNumber(requestedCodigo);
+      const directCandidates = [requestedCodigo];
+      if (requestedCodigoNum && requestedCodigoNum !== requestedCodigo) {
+        directCandidates.push(requestedCodigoNum);
       }
 
-      // If data array was empty, try searching via list endpoint with codigo as search term
+      let imovel: any = null;
+
+      // 1) Try direct codigo endpoint with both full code and numeric-only fallback
+      for (const directCandidate of directCandidates) {
+        const directUrl = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/codigo/${encodeURIComponent(directCandidate)}?v=6`;
+        const response = await fetch(directUrl, { headers: { "Accept": "application/json" } });
+
+        if (!response.ok) {
+          if (response.status === 404) continue;
+          const text = await response.text();
+          console.error("Jetimob API error:", response.status, text);
+          return new Response(
+            JSON.stringify({ error: `Erro ao buscar imóvel: ${response.status}` }),
+            { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const raw = await response.json();
+        console.log("Jetimob get_imovel raw keys:", JSON.stringify(Object.keys(raw)), "codigo:", requestedCodigo, "candidate:", directCandidate);
+
+        const directItems = Array.isArray(raw?.data)
+          ? raw.data
+          : raw?.imovel
+            ? [raw.imovel]
+            : raw?.codigo || raw?.id_imovel
+              ? [raw]
+              : [];
+
+        imovel = directItems.find((item: any) => isCodigoMatch(item, requestedCodigo)) || null;
+        if (imovel) break;
+      }
+
+      // 2) Search fallback using full code and numeric-only term
       if (!imovel) {
-        console.log("Jetimob get_imovel: direct lookup empty, trying search for codigo:", codigo);
-        const searchUrl = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/todos?v=6&search=${encodeURIComponent(codigo)}&pageSize=10`;
-        const searchResp = await fetch(searchUrl, { headers: { "Accept": "application/json" } });
-        if (searchResp.ok) {
+        const searchTerms = [requestedCodigo, requestedCodigoNum].filter((term, idx, arr) => !!term && arr.indexOf(term) === idx);
+
+        for (const term of searchTerms) {
+          console.log("Jetimob get_imovel: direct lookup empty, trying search for term:", term, "original codigo:", requestedCodigo);
+          const searchUrl = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/todos?v=6&search=${encodeURIComponent(term)}&pageSize=50`;
+          const searchResp = await fetch(searchUrl, { headers: { "Accept": "application/json" } });
+          if (!searchResp.ok) continue;
+
           const searchRaw = await searchResp.json();
-          const searchItems = Array.isArray(searchRaw?.data) ? searchRaw.data 
-            : Array.isArray(searchRaw?.result) ? searchRaw.result 
-            : Array.isArray(searchRaw) ? searchRaw : [];
-          console.log("Jetimob search fallback for", codigo, "returned", searchItems.length, "items");
-          // Find exact match by codigo
-          const codigoNorm = String(codigo).toUpperCase().trim();
-          imovel = searchItems.find((item: any) => String(item.codigo || "").toUpperCase().trim() === codigoNorm) || null;
+          const searchItems = Array.isArray(searchRaw?.data)
+            ? searchRaw.data
+            : Array.isArray(searchRaw?.result)
+              ? searchRaw.result
+              : Array.isArray(searchRaw)
+                ? searchRaw
+                : [];
+
+          console.log("Jetimob search fallback for", requestedCodigo, "term", term, "returned", searchItems.length, "items");
+          imovel = searchItems.find((item: any) => isCodigoMatch(item, requestedCodigo)) || null;
+          if (imovel) break;
         }
       }
 
       if (imovel) {
+        console.log("Jetimob get_imovel matched:", requestedCodigo, "->", imovel.codigo || imovel.id_imovel || "(sem codigo)");
         // Log ALL keys for debugging image issues
-        console.log("Jetimob imovel keys:", codigo, JSON.stringify(Object.keys(imovel)).substring(0, 500));
-        
-        const fotos = normalizeImages(imovel, codigo);
+        console.log("Jetimob imovel keys:", requestedCodigo, JSON.stringify(Object.keys(imovel)).substring(0, 500));
+
+        const fotos = normalizeImages(imovel, requestedCodigo);
         imovel._fotos_normalized = fotos;
-        console.log("Jetimob imovel normalized:", codigo, "fotos:", fotos.length);
+        console.log("Jetimob imovel normalized:", requestedCodigo, "fotos:", fotos.length);
       } else {
-        console.log("Jetimob imovel NOT FOUND for codigo:", codigo);
+        console.log("Jetimob imovel NOT FOUND for codigo:", requestedCodigo);
       }
 
       return new Response(JSON.stringify({ imovel, not_found: !imovel }), {
