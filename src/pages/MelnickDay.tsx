@@ -139,7 +139,7 @@ const SEGMENTOS: Record<string, {
       { nome: "Jazz Nova York", bairro: "Auxiliadora", metragens: "118 m²", dorms: "3 suítes", status: "Em obras", precoDe: "R$ 2.065.289", precoPor: "R$ 1.628.005", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122628/Camada-6.png" },
       { nome: "GO Moinhos", bairro: "Moinhos de Vento", metragens: "106 m²", dorms: "3 dorms", status: "Em obras", precoDe: "R$ 1.890.885", precoPor: "R$ 1.543.682", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122621/Camada-1.png" },
       { nome: "Mirá - Zuckhan", bairro: "Petrópolis", metragens: "155 a 313 m²", dorms: "3 suítes", status: "2027", precoDe: "R$ 2.604.000", precoPor: "R$ 2.300.000", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122641/Camada-18.png" },
-      { nome: "Season - TGD", bairro: "Rio Branco", metragens: "118 a 122 m²", dorms: "3 suítes", status: "2027", precoDe: "R$ 1.804.946", precoPor: "R$ 1.534.204" },
+      { nome: "Season - TGD", bairro: "Rio Branco", metragens: "118 a 122 m²", dorms: "3 suítes", status: "2027", precoDe: "R$ 1.804.946", precoPor: "R$ 1.534.204", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2025/09/14132308/EDU_04_Conceitual_B_EF.jpg" },
     ],
   },
   altissimo: {
