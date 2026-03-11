@@ -467,45 +467,53 @@ function EditOverrideModal({
 }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
-  const [bairro, setBairro] = useState(override?.bairro || "");
-  const [area, setArea] = useState(override?.area_privativa?.toString() || "");
-  const [dorms, setDorms] = useState(override?.dormitorios?.toString() || "");
-  const [suitesVal, setSuitesVal] = useState(override?.suites?.toString() || "");
-  const [vagasVal, setVagasVal] = useState(override?.vagas?.toString() || "");
-  const [valor, setValor] = useState(override?.valor_venda?.toString() || "");
-  const [statusObra, setStatusObra] = useState(override?.status_obra || "");
-  const [previsaoEntrega, setPrevisaoEntrega] = useState(override?.previsao_entrega || "");
-  const [descricao, setDescricao] = useState(override?.descricao || "");
-  const [fotosText, setFotosText] = useState((override?.fotos || []).join("\n"));
+  const [bairro, setBairro] = useState("");
+  const [valorMin, setValorMin] = useState("");
+  const [valorMax, setValorMax] = useState("");
+  const [vagasVal, setVagasVal] = useState("");
+  const [statusObra, setStatusObra] = useState("");
+  const [previsaoEntrega, setPrevisaoEntrega] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [fotosText, setFotosText] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [tipologias, setTipologias] = useState<Tipologia[]>([]);
 
   useEffect(() => {
     if (open) {
       setBairro(override?.bairro || "");
-      setArea(override?.area_privativa?.toString() || "");
-      setDorms(override?.dormitorios?.toString() || "");
-      setSuitesVal(override?.suites?.toString() || "");
+      setValorMin(override?.valor_min?.toString() || override?.valor_venda?.toString() || "");
+      setValorMax(override?.valor_max?.toString() || "");
       setVagasVal(override?.vagas?.toString() || "");
-      setValor(override?.valor_venda?.toString() || "");
       setStatusObra(override?.status_obra || "");
       setPrevisaoEntrega(override?.previsao_entrega || "");
       setDescricao(override?.descricao || "");
       setFotosText((override?.fotos || []).join("\n"));
+      setTipologias(override?.tipologias?.length ? override.tipologias : [{ dorms: 2 }]);
     }
   }, [open, override]);
 
+  const addTipologia = () => setTipologias(prev => [...prev, { dorms: 1 }]);
+  const removeTipologia = (idx: number) => setTipologias(prev => prev.filter((_, i) => i !== idx));
+  const updateTipologia = (idx: number, field: keyof Tipologia, val: string) => {
+    setTipologias(prev => prev.map((t, i) => i === idx ? { ...t, [field]: val ? Number(val) : undefined } : t));
+  };
+
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `empreendimentos/${config.codigo}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("anuncio-materiais").upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from("anuncio-materiais").getPublicUrl(path);
-      setFotosText(prev => prev ? prev + "\n" + publicUrl : publicUrl);
-      toast.success("Imagem enviada!");
+      const newUrls: string[] = [];
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `empreendimentos/${config.codigo}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+        const { error } = await supabase.storage.from("anuncio-materiais").upload(path, file, { upsert: true });
+        if (error) throw error;
+        const { data: { publicUrl } } = supabase.storage.from("anuncio-materiais").getPublicUrl(path);
+        newUrls.push(publicUrl);
+      }
+      setFotosText(prev => prev ? prev + "\n" + newUrls.join("\n") : newUrls.join("\n"));
+      toast.success(`${newUrls.length} imagem(ns) enviada(s)!`);
     } catch (err: any) {
       toast.error("Erro ao enviar imagem: " + (err.message || ""));
     } finally {
@@ -519,15 +527,18 @@ function EditOverrideModal({
     setSaving(true);
     try {
       const fotos = fotosText.split("\n").map(s => s.trim()).filter(Boolean);
-      const payload = {
+      const payload: any = {
         codigo: config.codigo,
         nome: config.nome,
         bairro: bairro || null,
-        area_privativa: area ? parseFloat(area) : null,
-        dormitorios: dorms ? parseInt(dorms) : null,
-        suites: suitesVal ? parseInt(suitesVal) : null,
+        area_privativa: tipologias[0]?.area_min || null,
+        dormitorios: tipologias.length > 0 ? Math.max(...tipologias.map(t => t.dorms)) : null,
+        suites: tipologias[0]?.suites || null,
         vagas: vagasVal ? parseInt(vagasVal) : null,
-        valor_venda: valor ? parseFloat(valor) : null,
+        valor_venda: valorMin ? parseFloat(valorMin) : null,
+        valor_min: valorMin ? parseFloat(valorMin) : null,
+        valor_max: valorMax ? parseFloat(valorMax) : null,
+        tipologias: tipologias.filter(t => t.dorms > 0),
         status_obra: statusObra || null,
         previsao_entrega: previsaoEntrega || null,
         descricao: descricao || null,
@@ -554,68 +565,127 @@ function EditOverrideModal({
     }
   }
 
+  const fotosArray = fotosText.split("\n").map(s => s.trim()).filter(Boolean);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="h-4 w-4 text-primary" />
             Personalizar — {config.nome}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Bairro</Label>
-              <Input value={bairro} onChange={e => setBairro(e.target.value)} placeholder="Ex: Bela Vista" className="h-8 text-xs" />
-            </div>
-            <div>
-              <Label className="text-xs">Valor (R$)</Label>
-              <Input type="number" value={valor} onChange={e => setValor(e.target.value)} placeholder="450000" className="h-8 text-xs" />
+        <div className="space-y-4">
+          {/* Bairro */}
+          <div>
+            <Label className="text-xs font-semibold">Bairro</Label>
+            <Input value={bairro} onChange={e => setBairro(e.target.value)} placeholder="Ex: Bela Vista" className="h-9 text-sm" />
+          </div>
+
+          {/* Faixa de Preço */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold flex items-center gap-1"><DollarSign className="h-3.5 w-3.5 text-primary" /> Faixa de Valor</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">A partir de (R$)</Label>
+                <Input type="number" value={valorMin} onChange={e => setValorMin(e.target.value)} placeholder="240000" className="h-9 text-sm" />
+                {valorMin && <p className="text-[10px] text-muted-foreground mt-0.5">{formatBRL(Number(valorMin))}</p>}
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Até (R$)</Label>
+                <Input type="number" value={valorMax} onChange={e => setValorMax(e.target.value)} placeholder="450000" className="h-9 text-sm" />
+                {valorMax && <p className="text-[10px] text-muted-foreground mt-0.5">{formatBRL(Number(valorMax))}</p>}
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            <div>
-              <Label className="text-xs">Área m²</Label>
-              <Input type="number" value={area} onChange={e => setArea(e.target.value)} className="h-8 text-xs" />
+
+          {/* Tipologias (Plantas) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold flex items-center gap-1"><BedDouble className="h-3.5 w-3.5 text-primary" /> Tipologias (Plantas)</Label>
+              <Button type="button" size="sm" variant="ghost" onClick={addTipologia} className="h-7 text-xs gap-1">
+                <Plus className="h-3 w-3" /> Adicionar
+              </Button>
             </div>
-            <div>
-              <Label className="text-xs">Dorms</Label>
-              <Input type="number" value={dorms} onChange={e => setDorms(e.target.value)} className="h-8 text-xs" />
-            </div>
-            <div>
-              <Label className="text-xs">Suítes</Label>
-              <Input type="number" value={suitesVal} onChange={e => setSuitesVal(e.target.value)} className="h-8 text-xs" />
-            </div>
+            {tipologias.map((tip, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-end rounded-lg border border-border/50 p-2 bg-muted/20">
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Dorms</Label>
+                  <Input type="number" value={tip.dorms} onChange={e => updateTipologia(idx, "dorms", e.target.value)} className="h-8 text-xs" min={0} />
+                </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Área mín m²</Label>
+                  <Input type="number" value={tip.area_min ?? ""} onChange={e => updateTipologia(idx, "area_min", e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Área máx m²</Label>
+                  <Input type="number" value={tip.area_max ?? ""} onChange={e => updateTipologia(idx, "area_max", e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Suítes</Label>
+                  <Input type="number" value={tip.suites ?? ""} onChange={e => updateTipologia(idx, "suites", e.target.value)} className="h-8 text-xs" />
+                </div>
+                <Button type="button" size="sm" variant="ghost" onClick={() => removeTipologia(idx)} className="h-8 w-8 p-0 text-destructive hover:text-destructive" disabled={tipologias.length <= 1}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Vagas + Status */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <Label className="text-xs">Vagas</Label>
-              <Input type="number" value={vagasVal} onChange={e => setVagasVal(e.target.value)} className="h-8 text-xs" />
+              <Input type="number" value={vagasVal} onChange={e => setVagasVal(e.target.value)} className="h-9 text-sm" />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Status da Obra</Label>
-              <Input value={statusObra} onChange={e => setStatusObra(e.target.value)} placeholder="Em construção" className="h-8 text-xs" />
+              <Input value={statusObra} onChange={e => setStatusObra(e.target.value)} placeholder="Em construção" className="h-9 text-sm" />
             </div>
             <div>
               <Label className="text-xs">Previsão Entrega</Label>
-              <Input value={previsaoEntrega} onChange={e => setPrevisaoEntrega(e.target.value)} placeholder="Dez/2027" className="h-8 text-xs" />
+              <Input value={previsaoEntrega} onChange={e => setPrevisaoEntrega(e.target.value)} placeholder="Dez/2027" className="h-9 text-sm" />
             </div>
           </div>
+
+          {/* Descrição */}
           <div>
             <Label className="text-xs">Descrição</Label>
-            <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={2} placeholder="Breve descrição..." className="text-xs" />
+            <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={2} placeholder="Breve descrição do empreendimento..." className="text-sm" />
           </div>
-          <div>
-            <Label className="text-xs">Fotos (URLs, uma por linha)</Label>
-            <Textarea value={fotosText} onChange={e => setFotosText(e.target.value)} rows={3} placeholder="https://..." className="text-xs font-mono" />
-            <label className="cursor-pointer mt-1 inline-block">
-              <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-              <span className="inline-flex items-center gap-1 text-[10px] text-primary font-bold hover:underline">
-                {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                {uploading ? "Enviando..." : "Fazer upload de imagem"}
-              </span>
+
+          {/* Fotos — multi upload */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5 text-primary" /> Fotos para Slide</Label>
+            {fotosArray.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {fotosArray.map((url, i) => (
+                  <div key={i} className="relative group/foto">
+                    <img src={url} alt="" className="h-16 w-24 rounded-lg object-cover border border-border/40" />
+                    <button
+                      onClick={() => setFotosText(prev => prev.split("\n").filter((_, idx) => idx !== i).join("\n"))}
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover/foto:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="cursor-pointer">
+              <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageUpload} disabled={uploading} />
+              <div className={cn(
+                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all border border-dashed w-fit",
+                uploading
+                  ? "bg-muted/50 text-muted-foreground border-border cursor-wait"
+                  : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+              )}>
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                {uploading ? "Enviando..." : "Upload de imagens (múltiplas)"}
+              </div>
             </label>
+            <Textarea value={fotosText} onChange={e => setFotosText(e.target.value)} rows={2} placeholder="Ou cole URLs, uma por linha..." className="text-xs font-mono" />
           </div>
         </div>
         <DialogFooter>
@@ -627,6 +697,165 @@ function EditOverrideModal({
             Salvar
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   CREATE VITRINE DIALOG
+   ═══════════════════════════════════════════════ */
+
+function CriarVitrineDialog({
+  open,
+  onOpenChange,
+  config,
+  override,
+  imovelData,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  config: AnuncioConfig;
+  override: EmpreendimentoOverride | null;
+  imovelData: JetimobImovel | null;
+}) {
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const [titulo, setTitulo] = useState("");
+  const [leadNome, setLeadNome] = useState("");
+  const [leadTel, setLeadTel] = useState("");
+  const [mensagem, setMensagem] = useState("");
+  const [vitrineUrl, setVitrineUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setTitulo(`${config.nome} — Vitrine Exclusiva`);
+      setLeadNome("");
+      setLeadTel("");
+      setMensagem("");
+      setVitrineUrl(null);
+    }
+  }, [open, config.nome]);
+
+  async function handleCreate() {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const images = override?.fotos?.length ? override.fotos : (imovelData ? getImages(imovelData) : []);
+      const price = override?.valor_min ?? override?.valor_venda ?? (imovelData ? getPrice(imovelData) : 0);
+      const bairro = override?.bairro || imovelData?.bairro || imovelData?.endereco_bairro || "";
+
+      const dadosCustom = [{
+        nome: config.nome,
+        codigo: config.codigo,
+        bairro,
+        valor_venda: price,
+        valor_min: override?.valor_min || price,
+        valor_max: override?.valor_max || null,
+        tipologias: override?.tipologias || [],
+        area_privativa: override?.area_privativa || imovelData?.area_privativa || 0,
+        dormitorios: override?.dormitorios || imovelData?.dormitorios || 0,
+        suites: override?.suites || imovelData?.suites || 0,
+        vagas: override?.vagas || imovelData?.vagas || 0,
+        status_obra: override?.status_obra || imovelData?.status_obra || "",
+        previsao_entrega: override?.previsao_entrega || imovelData?.previsao_entrega || "",
+        descricao: override?.descricao || imovelData?.descricao || "",
+        fotos: images,
+      }];
+
+      const { data, error } = await supabase.from("vitrines").insert({
+        titulo: titulo || config.nome,
+        created_by: user.id,
+        tipo: "anuncio",
+        imovel_ids: [config.codigo],
+        dados_custom: dadosCustom,
+        lead_nome: leadNome || null,
+        lead_telefone: leadTel || null,
+        mensagem_corretor: mensagem || null,
+      }).select("id").single();
+
+      if (error) throw error;
+
+      const url = `${window.location.origin}/vitrine/${data.id}`;
+      setVitrineUrl(url);
+      toast.success("Vitrine criada!");
+    } catch (err: any) {
+      toast.error("Erro: " + (err.message || "Falha ao criar vitrine"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function shareWhatsApp() {
+    if (!vitrineUrl) return;
+    const text = `Olá${leadNome ? ` ${leadNome}` : ""}! 🏡\n\nPreparei uma vitrine exclusiva do *${config.nome}* para você:\n\n${vitrineUrl}\n\n${mensagem || "Qualquer dúvida, estou à disposição!"}`;
+    const encoded = encodeURIComponent(text);
+    const whatsUrl = leadTel
+      ? `https://wa.me/55${leadTel.replace(/\D/g, "")}?text=${encoded}`
+      : `https://wa.me/?text=${encoded}`;
+    window.open(whatsUrl, "_blank");
+  }
+
+  function copyLink() {
+    if (!vitrineUrl) return;
+    navigator.clipboard.writeText(vitrineUrl);
+    toast.success("Link copiado!");
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Criar Vitrine — {config.nome}
+          </DialogTitle>
+        </DialogHeader>
+
+        {!vitrineUrl ? (
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Título da Vitrine</Label>
+              <Input value={titulo} onChange={e => setTitulo(e.target.value)} className="h-9 text-sm" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Nome do Cliente (opcional)</Label>
+                <Input value={leadNome} onChange={e => setLeadNome(e.target.value)} placeholder="João" className="h-9 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">WhatsApp (opcional)</Label>
+                <Input value={leadTel} onChange={e => setLeadTel(e.target.value)} placeholder="51999999999" className="h-9 text-sm" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Mensagem personalizada</Label>
+              <Textarea value={mensagem} onChange={e => setMensagem(e.target.value)} rows={2} placeholder="Qualquer dúvida, estou à disposição!" className="text-sm" />
+            </div>
+            <Button onClick={handleCreate} disabled={saving} className="w-full gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {saving ? "Criando..." : "Criar Vitrine"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-success/30 bg-success/5 p-4 text-center space-y-2">
+              <p className="text-sm font-bold text-success">✅ Vitrine criada com sucesso!</p>
+              <p className="text-xs text-muted-foreground break-all font-mono bg-muted/30 rounded-lg p-2">{vitrineUrl}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={shareWhatsApp} className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700">
+                <Send className="h-4 w-4" /> Enviar via WhatsApp
+              </Button>
+              <Button onClick={copyLink} variant="outline" className="gap-2">
+                <Link2 className="h-4 w-4" /> Copiar
+              </Button>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => window.open(vitrineUrl, "_blank")} className="w-full gap-2 text-xs">
+              <ExternalLink className="h-3.5 w-3.5" /> Visualizar vitrine
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
