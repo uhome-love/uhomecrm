@@ -403,7 +403,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
   };
 
   // Custom list result handler — records in pipeline history, handles descarte_oa
-  const handleCustomListResult = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => {
+  const handleCustomListResult = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, proximaAcao?: ProximaAcao) => {
     if (!lead || submitting) return;
     // Ensure actionTaken is set even if user didn't click "Ligar" first
     const effectiveAction = actionTaken || "ligacao";
