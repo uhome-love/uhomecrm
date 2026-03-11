@@ -61,9 +61,9 @@ const SEGMENTOS: Record<string, {
     ],
     metodologia: "NÃO REPRESADO — Vendas a partir de 05/03 até 18/03. A cada 4 vendas Open = 1 viagem sorteada entre os corretores.",
     empreendimentos: [
-      { nome: "Open Major", bairro: "Marechal Rondon", metragens: "43 m²", dorms: "2 dorms", status: "Em obras", precoPor: "R$ 235.505", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122722/open-major.png" },
-      { nome: "Open Alto Ipiranga", bairro: "Jardim Carvalho", metragens: "42 m²", dorms: "2 dorms", status: "Em obras", precoPor: "R$ 271.310", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122643/Camada-20.png" },
-      { nome: "Open Bosque", bairro: "Passo d'Areia", metragens: "31 a 63 m²", dorms: "Até 3 dorms", status: "Em obras", precoPor: "R$ 240.582", imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122725/Retangulo-2.png" },
+      { nome: "Open Major", bairro: "Marechal Rondon", metragens: "43 m²", dorms: "2 dorms", status: "Em obras", precoPor: "R$ 235.505", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122722/open-major.png"] },
+      { nome: "Open Alto Ipiranga", bairro: "Jardim Carvalho", metragens: "42 m²", dorms: "2 dorms", status: "Em obras", precoPor: "R$ 271.310", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122643/Camada-20.png"] },
+      { nome: "Open Bosque", bairro: "Passo d'Areia", metragens: "31 a 63 m²", dorms: "Até 3 dorms", status: "Em obras", precoPor: "R$ 240.582", imagens: ["https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122725/Retangulo-2.png"] },
     ],
   },
   compactos: {
