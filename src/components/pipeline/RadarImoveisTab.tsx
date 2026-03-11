@@ -157,13 +157,24 @@ function scoreMatch(profile: RadarProfile, imovel: ImovelResult): number {
    ═══════════════════════════════════════════ */
 
 export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, currentProfile, onUpdate }: Props) {
-  const navigate = useNavigate();
+  let nav: ReturnType<typeof useNavigate> | null = null;
+  try { nav = useNavigate(); } catch { /* outside Router context */ }
+
+  // Safely parse bairros (could be JSON string from DB)
+  const safeBairros = (() => {
+    const raw = currentProfile?.radar_bairros;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+      try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+    }
+    return [];
+  })();
 
   // Profile state
-  const [quartos, setQuartos] = useState<string>(String(currentProfile?.radar_quartos || ""));
-  const [valorMax, setValorMax] = useState<string>(String(currentProfile?.radar_valor_max || ""));
+  const [quartos, setQuartos] = useState<string>(currentProfile?.radar_quartos ? String(currentProfile.radar_quartos) : "");
+  const [valorMax, setValorMax] = useState<string>(currentProfile?.radar_valor_max ? String(currentProfile.radar_valor_max) : "");
   const [tipologia, setTipologia] = useState(currentProfile?.radar_tipologia || "apartamento");
-  const [selectedBairros, setSelectedBairros] = useState<string[]>(currentProfile?.radar_bairros || []);
+  const [selectedBairros, setSelectedBairros] = useState<string[]>(safeBairros);
   const [statusImovel, setStatusImovel] = useState(currentProfile?.radar_status_imovel || "");
   const [bairroSearch, setBairroSearch] = useState("");
 
