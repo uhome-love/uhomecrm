@@ -573,19 +573,25 @@ export default function AnunciosNoAr() {
     let cancelled = false;
 
     async function fetchImovelByCodigo(codigo: string): Promise<JetimobImovel | null> {
-      const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
-        body: { action: "get_imovel", codigo },
-      });
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+          body: { action: "get_imovel", codigo },
+        });
+        clearTimeout(timer);
 
-      if (error) return null;
-      const imovel = (data as { imovel?: JetimobImovel | null } | null)?.imovel;
-      return imovel && typeof imovel === "object" ? imovel : null;
+        if (error) return null;
+        const imovel = (data as { imovel?: JetimobImovel | null } | null)?.imovel;
+        return imovel && typeof imovel === "object" ? imovel : null;
+      } catch {
+        return null;
+      }
     }
 
     async function fetchAll() {
       setLoading(true);
       const codigos = SEGMENTOS.flatMap((s) => s.empreendimentos.map((e) => e.codigo));
-      const timeoutMs = 15000;
 
       try {
         const batchPromise = supabase.functions.invoke("jetimob-proxy", {
@@ -593,7 +599,7 @@ export default function AnunciosNoAr() {
         });
 
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error("timeout_imoveis_batch")), timeoutMs);
+          setTimeout(() => reject(new Error("timeout_imoveis_batch")), 12000);
         });
 
         const { data, error } = (await Promise.race([batchPromise, timeoutPromise])) as Awaited<typeof batchPromise>;
@@ -606,12 +612,23 @@ export default function AnunciosNoAr() {
 
         if (!cancelled) {
           setImoveis(filtered);
+          setLoading(false);
         }
       } catch (batchError) {
-        console.warn("Falha no carregamento em lote dos imóveis, tentando fallback por código:", batchError);
+        console.warn("Falha no batch, tentando fallback individual:", batchError);
+        // Immediately stop loading so cards render with basic info
+        if (!cancelled) setLoading(false);
 
+        // Fallback: fetch individually in parallel with short timeout
         try {
-          const settled = await Promise.allSettled(codigos.map((codigo) => fetchImovelByCodigo(codigo)));
+          const settled = await Promise.allSettled(
+            codigos.map((codigo) =>
+              Promise.race([
+                fetchImovelByCodigo(codigo),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+              ])
+            )
+          );
           const fallbackMap: Record<string, JetimobImovel> = {};
 
           settled.forEach((result, index) => {
@@ -620,24 +637,11 @@ export default function AnunciosNoAr() {
             }
           });
 
-          if (!cancelled) {
+          if (!cancelled && Object.keys(fallbackMap).length > 0) {
             setImoveis(fallbackMap);
-
-            if (Object.keys(fallbackMap).length === 0) {
-              toast.error("Não foi possível carregar os imóveis agora. Tente novamente em instantes.");
-            } else {
-              toast.warning("Dados carregados parcialmente. Alguns imóveis podem ficar sem detalhes.");
-            }
           }
         } catch (fallbackError) {
           console.warn("Fallback por código também falhou:", fallbackError);
-          if (!cancelled) {
-            toast.error("Falha ao carregar anúncios no momento. Atualize a página para tentar novamente.");
-          }
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
         }
       }
     }
