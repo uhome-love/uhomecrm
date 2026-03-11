@@ -12,6 +12,7 @@ import AproveitadosTab from "@/components/checkpoint/AproveitadosTab";
 import RelatoriosTab from "@/components/checkpoint/RelatoriosTab";
 import CoachIATab from "@/components/checkpoint/CoachIATab";
 import CheckpointNegociosTab from "@/components/checkpoint/CheckpointNegociosTab";
+import CheckpointVisaoGeralTab from "@/components/checkpoint/CheckpointVisaoGeralTab";
 import CeoCheckpointViewer from "@/components/ceo/CeoCheckpointViewer";
 
 // ─── TYPES ───
@@ -72,7 +73,7 @@ export default function CheckpointGerente() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<"checkpoint" | "negocios" | "aproveitados" | "relatorios" | "coach">("checkpoint");
+  const [activeTab, setActiveTab] = useState<"visao_geral" | "checkpoint" | "negocios" | "aproveitados" | "relatorios" | "coach">("visao_geral");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [checkpointStatus, setCheckpointStatus] = useState<"aberto" | "publicado">("aberto");
   const [rows, setRows] = useState<CheckpointRow[]>([]);
@@ -328,6 +329,7 @@ export default function CheckpointGerente() {
   }
 
   const tabs = [
+    { key: "visao_geral" as const, icon: <Target size={15} />, label: "Visão Geral" },
     { key: "checkpoint" as const, icon: <ClipboardList size={15} />, label: "Checkpoint" },
     { key: "negocios" as const, icon: <Briefcase size={15} />, label: "Negócios" },
     { key: "aproveitados" as const, icon: <CheckCircle2 size={15} />, label: "Aproveitados" },
@@ -433,6 +435,10 @@ export default function CheckpointGerente() {
             </button>
           ))}
         </div>
+
+        {activeTab === "visao_geral" && (
+          <CheckpointVisaoGeralTab teamUserIds={teamUserIds} teamNameMap={teamNameMap} />
+        )}
 
         {activeTab === "checkpoint" && (
           <CheckpointTableTab
