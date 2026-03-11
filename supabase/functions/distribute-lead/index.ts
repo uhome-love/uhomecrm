@@ -274,9 +274,9 @@ Deno.serve(async (req) => {
           user_id: chosen.authUserId,
           tipo: "lead",
           categoria: "lead_novo",
-          titulo: "🚨 Novo Lead!",
-          mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` (${lead.empreendimento})` : ""}. Aceite em 10 minutos!`,
-          dados: { pipeline_lead_id: lead.id, empreendimento: lead.empreendimento, telefone: lead.telefone },
+          titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
+          mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}${lead.origem ? ` (${lead.origem})` : ""}. Aceite em 10 minutos!`,
+          dados: { pipeline_lead_id: lead.id, lead_nome: lead.nome, empreendimento: lead.empreendimento, telefone: lead.telefone, origem: lead.origem, campanha: lead.origem_detalhe },
           agrupamento_key: `lead_novo_${lead.id}`,
         }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
 
