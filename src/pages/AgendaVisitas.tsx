@@ -194,6 +194,9 @@ export default function AgendaVisitas() {
   const [agendaTipo, setAgendaTipo] = useState<"lead" | "negocio">("lead");
   const [leadSubTab, setLeadSubTab] = useState<"minhas" | "time">("minhas");
   const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [anterioresPeriodo, setAnterioresPeriodo] = useState<string>("mes-atual");
+  const [anterioresCustomFrom, setAnterioresCustomFrom] = useState<Date | undefined>();
+  const [anterioresCustomTo, setAnterioresCustomTo] = useState<Date | undefined>();
 
   const { visitas: allVisitas, isLoading, createVisita, updateVisita, updateStatus, deleteVisita } = useVisitas();
 
