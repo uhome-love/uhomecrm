@@ -319,308 +319,382 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
     staleTime: 60_000,
   });
 
+  // Elapsed timer
+  const [elapsed, setElapsed] = useState("00:00:00");
+  useEffect(() => {
+    const start = new Date();
+    start.setHours(8, 0, 0, 0);
+    const tick = () => {
+      const diff = Math.max(0, Math.floor((Date.now() - start.getTime()) / 1000));
+      const h = String(Math.floor(diff / 3600)).padStart(2, "0");
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+      const s = String(diff % 60).padStart(2, "0");
+      setElapsed(`${h}:${m}:${s}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
   if (isLoading || (teamOnly && !teamMemberUserIds)) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground animate-pulse">Carregando arena...</p>
+        </div>
       </div>
     );
   }
 
   if (teamOnly && teamMemberUserIds && teamMemberUserIds.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-12 text-center text-muted-foreground">
-          <Users className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">Nenhum corretor vinculado</p>
-          <p className="text-sm mt-1">Vincule corretores ao seu time em "Meu Time" para ver a performance aqui.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!liveData || liveData.totalCorretores === 0) {
-    // Show day summary even when empty
-    const activeIds = new Set(liveData?.corretores.map(c => c.corretor_id) || []);
-    const naoIniciaram = allTeamCorretores.filter(c => !activeIds.has(c.id));
-    const hasAnySummary = liveData && liveData.totalTentativas > 0;
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-3 w-3">
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-muted-foreground/40" />
-          </span>
-          <span className="text-xs font-medium text-muted-foreground">
-            {teamOnly ? "Minha equipe · " : ""}Última atualização · {format(now, "HH:mm:ss")}
-          </span>
-        </div>
-
-        {/* Day Summary */}
-        {hasAnySummary && (
-          <div className="grid grid-cols-3 gap-3">
-            <Card>
-              <CardContent className="p-3 text-center">
-                <Phone className="h-4 w-4 text-primary mx-auto mb-1" />
-                <p className="text-2xl font-bold text-foreground">{liveData.totalTentativas}</p>
-                <p className="text-[10px] text-muted-foreground">Tentativas hoje</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <ThumbsUp className="h-4 w-4 text-emerald-600 mx-auto mb-1" />
-                <p className="text-2xl font-bold text-emerald-600">{liveData.totalAproveitados}</p>
-                <p className="text-[10px] text-muted-foreground">Aproveitados</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <TrendingUp className="h-4 w-4 text-purple-600 mx-auto mb-1" />
-                <p className="text-2xl font-bold text-purple-600">{liveData.taxaConversao}%</p>
-                <p className="text-[10px] text-muted-foreground">Taxa Conversão</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Corretores that dialed today (but are now inactive) */}
-        {liveData && liveData.corretores.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" /> Corretores que discaram hoje
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-xs text-muted-foreground">
-                    <th className="py-2 px-3 text-left">Corretor</th>
-                    {!teamOnly && <th className="py-2 px-3 text-left">Time</th>}
-                    <th className="py-2 px-3 text-center">📞</th>
-                    <th className="py-2 px-3 text-center">✅</th>
-                    <th className="py-2 px-3 text-center">Último contato</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {liveData.corretores.map(c => (
-                    <tr key={c.corretor_id} className="border-b border-border">
-                      <td className="py-2.5 px-3 font-medium">{c.nome}</td>
-                      {!teamOnly && (
-                        <td className="py-2.5 px-3">
-                          <span className="text-[10px] text-muted-foreground">{corretorTeamMap[c.corretor_id] || "—"}</span>
-                        </td>
-                      )}
-                      <td className="py-2.5 px-3 text-center font-semibold">{c.tentativas}</td>
-                      <td className="py-2.5 px-3 text-center font-semibold text-emerald-600">{c.aproveitados}</td>
-                      <td className="py-2.5 px-3 text-center text-xs text-muted-foreground">
-                        {c.ultima_tentativa ? format(new Date(c.ultima_tentativa), "HH:mm") : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Corretores that haven't started */}
-        {naoIniciaram.length > 0 && (
-          <Card className="border-amber-500/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
-                <AlertTriangle className="h-4 w-4" /> ⚠️ Ainda não iniciaram hoje ({naoIniciaram.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {naoIniciaram.map(c => (
-                  <Badge key={c.id} variant="outline" className="text-xs text-amber-700 border-amber-500/30 bg-amber-500/5">
-                    {c.nome}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Truly empty state */}
-        {!hasAnySummary && naoIniciaram.length === 0 && (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <Activity className="h-10 w-10 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">Sem atividade hoje</p>
-              <p className="text-sm mt-1">Nenhum corretor começou a discar ainda.</p>
-            </CardContent>
-          </Card>
-        )}
+      <div className="rounded-2xl border border-border/50 p-12 text-center" style={{ background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%)" }}>
+        <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
+        <p className="font-bold text-foreground">Nenhum corretor vinculado</p>
+        <p className="text-sm text-muted-foreground mt-1">Vincule corretores ao seu time em "Meu Time".</p>
       </div>
     );
   }
 
-  const STATUS_INDICATOR: Record<string, { label: string; color: string; pulse: boolean }> = {
-    discando: { label: "Discando", color: "bg-emerald-500", pulse: true },
-    ativo: { label: "Ativo", color: "bg-blue-500", pulse: false },
-    parado: { label: "Parado", color: "bg-red-500", pulse: false },
+  const STATUS_CONFIG: Record<string, { label: string; color: string; glow: string; pulse: boolean; emoji: string }> = {
+    discando: { label: "Discando", color: "bg-emerald-500", glow: "shadow-emerald-500/50", pulse: true, emoji: "🔥" },
+    ativo: { label: "Ativo", color: "bg-blue-500", glow: "shadow-blue-500/40", pulse: false, emoji: "⚡" },
+    parado: { label: "Parado", color: "bg-red-500", glow: "shadow-red-500/30", pulse: false, emoji: "💤" },
   };
 
+  // Use liveData or empty defaults
+  const data_ = liveData || { corretores: [], listaProgress: [], totalTentativas: 0, totalAproveitados: 0, taxaConversao: 0, corretoresAtivos: 0, corretoresParados: 0, totalCorretores: 0 };
+  const activeIds = new Set(data_.corretores.map(c => c.corretor_id));
+  const naoIniciaram = allTeamCorretores.filter(c => !activeIds.has(c.id));
+
+  const kpis = [
+    { icon: Phone, label: "Tentativas", value: data_.totalTentativas, color: "from-violet-500/20 to-violet-600/5", iconColor: "text-violet-400", valueColor: "text-violet-300", border: "border-violet-500/20" },
+    { icon: ThumbsUp, label: "Aproveitados", value: data_.totalAproveitados, color: "from-emerald-500/20 to-emerald-600/5", iconColor: "text-emerald-400", valueColor: "text-emerald-300", border: "border-emerald-500/20" },
+    { icon: Target, label: "Conversão", value: `${data_.taxaConversao}%`, color: "from-amber-500/20 to-amber-600/5", iconColor: "text-amber-400", valueColor: "text-amber-300", border: "border-amber-500/20" },
+    { icon: Users, label: "Corretores", value: data_.corretoresAtivos, extra: `/${data_.totalCorretores}`, color: "from-blue-500/20 to-blue-600/5", iconColor: "text-blue-400", valueColor: "text-blue-300", border: "border-blue-500/20" },
+  ];
+
   return (
-    <div className="space-y-4">
-      {/* Live indicator */}
-      <div className="flex items-center gap-2">
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-        </span>
-        <span className="text-xs font-medium text-muted-foreground">
-          {teamOnly ? "Minha equipe · " : ""}Tempo real · {format(now, "HH:mm:ss")}
-        </span>
-      </div>
+    <div className="space-y-5">
+      {/* ═══ Arena Header ═══ */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl p-5"
+        style={{ background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(220 30% 8%) 100%)", border: "1px solid hsl(var(--border))" }}
+      >
+        {/* Animated background particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-primary/10"
+              style={{ width: 4 + i * 3, height: 4 + i * 3, left: `${15 + i * 14}%`, top: `${20 + (i % 3) * 25}%` }}
+              animate={{ y: [0, -15, 0], opacity: [0.3, 0.7, 0.3] }}
+              transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
+            />
+          ))}
+        </div>
 
-      {/* KPI Cards */}
+        <div className="relative flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <motion.div
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute inset-0 rounded-full bg-emerald-500/30 blur-sm"
+              />
+              <div className="relative h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                <Zap className="h-5 w-5 text-emerald-400" />
+              </div>
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-foreground tracking-tight flex items-center gap-2">
+                Arena Live
+                <motion.span
+                  animate={{ opacity: [1, 0.4, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> AO VIVO
+                </motion.span>
+              </h2>
+              <p className="text-xs text-muted-foreground">{teamOnly ? "Minha equipe" : "Todos os times"} · Tempo real</p>
+            </div>
+          </div>
+
+          {/* Timer */}
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/50 border border-border/50">
+            <Timer className="h-4 w-4 text-muted-foreground" />
+            <span className="font-mono text-lg font-bold text-foreground tracking-wider">{elapsed}</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ═══ KPI Cards ═══ */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Phone className="h-4 w-4 text-primary" />
-              <span className="text-xs text-muted-foreground">Tentativas</span>
+        {kpis.map((kpi, i) => (
+          <motion.div
+            key={kpi.label}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: i * 0.08, duration: 0.4 }}
+          >
+            <div
+              className={`relative overflow-hidden rounded-xl p-4 border ${kpi.border} bg-gradient-to-br ${kpi.color}`}
+              style={{ backdropFilter: "blur(10px)" }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <kpi.icon className={`h-4 w-4 ${kpi.iconColor}`} />
+                <span className="text-[11px] font-medium text-muted-foreground">{kpi.label}</span>
+              </div>
+              <motion.p
+                key={String(kpi.value)}
+                initial={{ scale: 1.2, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className={`text-3xl font-black ${kpi.valueColor}`}
+              >
+                {kpi.value}
+                {"extra" in kpi && <span className="text-sm font-normal text-muted-foreground">{(kpi as any).extra}</span>}
+              </motion.p>
             </div>
-            <p className="text-2xl font-bold text-foreground">{liveData.totalTentativas}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <ThumbsUp className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs text-muted-foreground">Aproveitados</span>
-            </div>
-            <p className="text-2xl font-bold text-emerald-600">{liveData.totalAproveitados}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-purple-600" />
-              <span className="text-xs text-muted-foreground">Taxa Conversão</span>
-            </div>
-            <p className="text-2xl font-bold text-purple-600">{liveData.taxaConversao}%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="h-4 w-4 text-blue-600" />
-              <span className="text-xs text-muted-foreground">Corretores</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">
-              {liveData.corretoresAtivos}
-              <span className="text-sm font-normal text-muted-foreground">/{liveData.totalCorretores}</span>
-            </p>
-          </CardContent>
-        </Card>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Alerts */}
-      {liveData.corretoresParados > 0 && (
-        <Card className="border-amber-500/30 bg-amber-500/5">
-          <CardContent className="p-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-            <p className="text-xs text-amber-700 font-medium">
-              {liveData.corretoresParados} corretor(es) parado(s) há mais de 20 minutos
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* ═══ Parado Alert ═══ */}
+      <AnimatePresence>
+        {data_.corretoresParados > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <motion.div animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}>
+                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+              </motion.div>
+              <p className="text-sm font-semibold text-amber-300">
+                {data_.corretoresParados} corretor(es) parado(s) há mais de 20 minutos
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Corretores Live */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Zap className="h-4 w-4 text-primary" /> Corretores — Visão Live
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs text-muted-foreground">
-                <th className="py-2 px-3 text-left">Status</th>
-                <th className="py-2 px-3 text-left">Corretor</th>
-                <th className="py-2 px-3 text-center">📞</th>
-                <th className="py-2 px-3 text-center">✅</th>
-                <th className="py-2 px-3 text-center">Taxa</th>
-                <th className="py-2 px-3 text-center">Última</th>
-              </tr>
-            </thead>
-            <tbody>
-              {liveData.corretores.map(c => {
-                const ind = STATUS_INDICATOR[c.status];
+      {/* ═══ Corretores Live Grid ═══ */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Flame className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-bold text-foreground">Corretores na Arena</h3>
+          <span className="text-[10px] text-muted-foreground ml-auto">{data_.corretores.length} ativos</span>
+        </div>
+
+        {data_.corretores.length === 0 && naoIniciaram.length === 0 ? (
+          <div className="rounded-xl border border-border/50 p-10 text-center" style={{ background: "hsl(var(--card))" }}>
+            <Activity className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+            <p className="font-semibold text-foreground">Sem atividade hoje</p>
+            <p className="text-xs text-muted-foreground mt-1">Nenhum corretor começou a discar ainda.</p>
+          </div>
+        ) : (
+          <div className="grid gap-2.5">
+            <AnimatePresence>
+              {data_.corretores.map((c, i) => {
+                const cfg = STATUS_CONFIG[c.status];
                 const taxa = c.tentativas > 0 ? Math.round((c.aproveitados / c.tentativas) * 100) : 0;
+                const isHot = c.status === "discando";
+                const isIdle = c.status === "parado" && c.minutos_parado > 20;
+
                 return (
-                  <tr key={c.corretor_id} className={`border-b border-border ${c.status === "parado" && c.minutos_parado > 20 ? "bg-amber-500/5" : ""}`}>
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="relative flex h-2.5 w-2.5 shrink-0">
-                          {ind.pulse && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${ind.color} opacity-75`} />}
-                          <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${ind.color}`} />
-                        </span>
-                        <span className="text-[10px] font-medium text-muted-foreground">{ind.label}</span>
+                  <motion.div
+                    key={c.corretor_id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    layout
+                    className={`relative overflow-hidden rounded-xl border p-3.5 transition-all ${
+                      isHot ? "border-emerald-500/30 bg-emerald-500/5" :
+                      isIdle ? "border-amber-500/20 bg-amber-500/5" :
+                      "border-border/50 bg-card"
+                    }`}
+                  >
+                    {/* Glow for active */}
+                    {isHot && (
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-transparent to-emerald-500/5 pointer-events-none"
+                        animate={{ opacity: [0.3, 0.7, 0.3] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                    )}
+
+                    <div className="relative flex items-center gap-3">
+                      {/* Status indicator */}
+                      <div className="flex flex-col items-center gap-1 min-w-[48px]">
+                        <div className="relative">
+                          {cfg.pulse && (
+                            <motion.span
+                              className={`absolute inset-0 rounded-full ${cfg.color} blur-sm`}
+                              animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                            />
+                          )}
+                          <span className={`relative flex h-3 w-3 rounded-full ${cfg.color} shadow-lg ${cfg.glow}`} />
+                        </div>
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{cfg.label}</span>
                       </div>
-                    </td>
-                    <td className="py-2.5 px-3 font-medium">{c.nome}</td>
-                    <td className="py-2.5 px-3 text-center font-semibold">{c.tentativas}</td>
-                    <td className="py-2.5 px-3 text-center font-semibold text-emerald-600">{c.aproveitados}</td>
-                    <td className="py-2.5 px-3 text-center">
-                      <Badge variant="outline" className={`text-[10px] h-5 ${taxa >= 15 ? "text-emerald-600 border-emerald-500/30" : taxa >= 8 ? "text-blue-600 border-blue-500/30" : "text-muted-foreground"}`}>
-                        {taxa}%
-                      </Badge>
-                    </td>
-                    <td className="py-2.5 px-3 text-center text-xs text-muted-foreground">
-                      {c.ultima_tentativa ? (
-                        c.minutos_parado <= 1 ? "agora" :
-                        c.minutos_parado < 60 ? `${c.minutos_parado}min` :
-                        format(new Date(c.ultima_tentativa), "HH:mm")
-                      ) : "—"}
-                    </td>
-                  </tr>
+
+                      {/* Name + emoji */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate">
+                          {cfg.emoji} {c.nome}
+                        </p>
+                        {!teamOnly && corretorTeamMap[c.corretor_id] && (
+                          <p className="text-[10px] text-muted-foreground">{corretorTeamMap[c.corretor_id]}</p>
+                        )}
+                      </div>
+
+                      {/* Stats */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-center">
+                          <motion.p
+                            key={c.tentativas}
+                            initial={{ scale: 1.3 }}
+                            animate={{ scale: 1 }}
+                            className="text-lg font-black text-foreground leading-none"
+                          >
+                            {c.tentativas}
+                          </motion.p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">📞 Liga</p>
+                        </div>
+                        <div className="text-center">
+                          <motion.p
+                            key={c.aproveitados}
+                            initial={{ scale: 1.3 }}
+                            animate={{ scale: 1 }}
+                            className="text-lg font-black text-emerald-400 leading-none"
+                          >
+                            {c.aproveitados}
+                          </motion.p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">✅ Aprov</p>
+                        </div>
+                        <div className="text-center min-w-[40px]">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-bold h-5 px-1.5 ${
+                              taxa >= 15 ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10" :
+                              taxa >= 8 ? "text-blue-400 border-blue-500/40 bg-blue-500/10" :
+                              "text-muted-foreground border-border/50"
+                            }`}
+                          >
+                            {taxa}%
+                          </Badge>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">Taxa</p>
+                        </div>
+                        <div className="text-center min-w-[36px]">
+                          <p className="text-xs font-semibold text-muted-foreground leading-none">
+                            {c.ultima_tentativa ? (
+                              c.minutos_parado <= 1 ? (
+                                <motion.span animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 1, repeat: Infinity }} className="text-emerald-400">agora</motion.span>
+                              ) :
+                              c.minutos_parado < 60 ? `${c.minutos_parado}m` :
+                              format(new Date(c.ultima_tentativa), "HH:mm")
+                            ) : "—"}
+                          </p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">Última</p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
                 );
               })}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
 
-      {/* Lista Progress */}
-      {liveData.listaProgress.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary" /> Progresso das Listas Ativas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {liveData.listaProgress.map(lp => (
-              <div key={lp.lista_id} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{lp.nome}</p>
-                    <p className="text-[10px] text-muted-foreground">{lp.empreendimento}</p>
+      {/* ═══ Não Iniciaram ═══ */}
+      {naoIniciaram.length > 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+          <div className="rounded-xl border border-amber-500/15 bg-amber-500/5 p-4">
+            <div className="flex items-center gap-2 mb-2.5">
+              <AlertTriangle className="h-4 w-4 text-amber-400" />
+              <p className="text-xs font-bold text-amber-300">Ainda não iniciaram ({naoIniciaram.length})</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {naoIniciaram.map(c => (
+                <span key={c.id} className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300/80 border border-amber-500/15">
+                  💤 {c.nome}
+                </span>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ═══ Lista Progress ═══ */}
+      {data_.listaProgress.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">Progresso das Listas</h3>
+          </div>
+          <div className="grid gap-3">
+            {data_.listaProgress.map((lp, i) => {
+              const pct = lp.percent_complete;
+              return (
+                <motion.div
+                  key={lp.lista_id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="rounded-xl border border-border/50 bg-card p-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-bold text-foreground">{lp.nome}</p>
+                      <p className="text-[10px] text-muted-foreground">{lp.empreendimento}</p>
+                    </div>
+                    <div className={`text-sm font-black px-2.5 py-0.5 rounded-lg ${
+                      pct >= 80 ? "text-emerald-400 bg-emerald-500/15" :
+                      pct >= 40 ? "text-blue-400 bg-blue-500/15" :
+                      "text-muted-foreground bg-muted/50"
+                    }`}>
+                      {pct}%
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {lp.percent_complete}%
-                  </Badge>
-                </div>
-                <Progress value={lp.percent_complete} className="h-2" />
-                <div className="flex gap-3 text-[10px] text-muted-foreground">
-                  <span>📞 {lp.na_fila} na fila</span>
-                  <span>⏳ {lp.em_cooldown} cooldown</span>
-                  <span className="text-emerald-600">✅ {lp.aproveitados} aprov.</span>
-                  <span>❌ {lp.descartados} desc.</span>
-                  <span className="ml-auto font-medium">{lp.total} total</span>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+
+                  {/* Animated progress bar */}
+                  <div className="h-2 rounded-full bg-muted/50 overflow-hidden mb-2.5">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className={`h-full rounded-full ${
+                        pct >= 80 ? "bg-gradient-to-r from-emerald-500 to-emerald-400" :
+                        pct >= 40 ? "bg-gradient-to-r from-blue-500 to-blue-400" :
+                        "bg-gradient-to-r from-violet-500 to-violet-400"
+                      }`}
+                      style={{ boxShadow: pct >= 80 ? "0 0 8px rgba(52,211,153,0.4)" : pct >= 40 ? "0 0 8px rgba(96,165,250,0.4)" : "none" }}
+                    />
+                  </div>
+
+                  <div className="flex gap-3 text-[10px] font-medium text-muted-foreground">
+                    <span>📞 {lp.na_fila} fila</span>
+                    <span>⏳ {lp.em_cooldown} cool</span>
+                    <span className="text-emerald-400">✅ {lp.aproveitados}</span>
+                    <span className="text-red-400">❌ {lp.descartados}</span>
+                    <span className="ml-auto font-bold text-foreground">{lp.total} total</span>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
       )}
     </div>
   );
