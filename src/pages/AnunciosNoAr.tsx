@@ -571,33 +571,81 @@ export default function AnunciosNoAr() {
   // Fetch all imóveis from Jetimob
   useEffect(() => {
     let cancelled = false;
+
+    async function fetchImovelByCodigo(codigo: string): Promise<JetimobImovel | null> {
+      const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+        body: { action: "get_imovel", codigo },
+      });
+
+      if (error) return null;
+      const imovel = (data as { imovel?: JetimobImovel | null } | null)?.imovel;
+      return imovel && typeof imovel === "object" ? imovel : null;
+    }
+
     async function fetchAll() {
       setLoading(true);
-      const codigos = SEGMENTOS.flatMap(s => s.empreendimentos.map(e => e.codigo));
+      const codigos = SEGMENTOS.flatMap((s) => s.empreendimentos.map((e) => e.codigo));
+      const timeoutMs = 15000;
 
       try {
-        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+        const batchPromise = supabase.functions.invoke("jetimob-proxy", {
           body: { action: "get_imoveis_by_codigos", codigos },
         });
 
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("timeout_imoveis_batch")), timeoutMs);
+        });
+
+        const { data, error } = (await Promise.race([batchPromise, timeoutPromise])) as Awaited<typeof batchPromise>;
         if (error) throw error;
 
-        const mapped = (data?.imoveis || {}) as Record<string, JetimobImovel | null>;
+        const mapped = (data as { imoveis?: Record<string, JetimobImovel | null> } | null)?.imoveis || {};
         const filtered = Object.fromEntries(
           Object.entries(mapped).filter(([, value]) => value && typeof value === "object")
         ) as Record<string, JetimobImovel>;
 
         if (!cancelled) {
           setImoveis(filtered);
+        }
+      } catch (batchError) {
+        console.warn("Falha no carregamento em lote dos imóveis, tentando fallback por código:", batchError);
+
+        try {
+          const settled = await Promise.allSettled(codigos.map((codigo) => fetchImovelByCodigo(codigo)));
+          const fallbackMap: Record<string, JetimobImovel> = {};
+
+          settled.forEach((result, index) => {
+            if (result.status === "fulfilled" && result.value) {
+              fallbackMap[codigos[index]] = result.value;
+            }
+          });
+
+          if (!cancelled) {
+            setImoveis(fallbackMap);
+
+            if (Object.keys(fallbackMap).length === 0) {
+              toast.error("Não foi possível carregar os imóveis agora. Tente novamente em instantes.");
+            } else {
+              toast.warning("Dados carregados parcialmente. Alguns imóveis podem ficar sem detalhes.");
+            }
+          }
+        } catch (fallbackError) {
+          console.warn("Fallback por código também falhou:", fallbackError);
+          if (!cancelled) {
+            toast.error("Falha ao carregar anúncios no momento. Atualize a página para tentar novamente.");
+          }
+        }
+      } finally {
+        if (!cancelled) {
           setLoading(false);
         }
-      } catch (e) {
-        console.warn("Falha ao buscar imóveis em lote:", e);
-        if (!cancelled) setLoading(false);
       }
     }
+
     fetchAll();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Fetch materials

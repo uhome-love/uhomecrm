@@ -145,38 +145,57 @@ async function findImoveisByCodigos(apiKey: string, codigos: string[]): Promise<
   const pending = new Set(wanted);
   const found = new Map<string, any>();
 
-  const batchSize = 200;
-  const maxPages = 20;
+  const catalogItems = await fetchJetimobCatalog(apiKey);
 
-  for (let page = 1; page <= maxPages && pending.size > 0; page++) {
-    const url = `https://api.jetimob.com/webservice/${apiKey}/imoveis/todos?v=6&page=${page}&pageSize=${batchSize}`;
-    const response = await fetch(url, { headers: { "Accept": "application/json" } });
-    if (!response.ok) break;
-
-    const raw = await response.json();
-    const items = Array.isArray(raw?.data)
-      ? raw.data
-      : Array.isArray(raw?.result)
-        ? raw.result
-        : Array.isArray(raw)
-          ? raw
-          : [];
-
-    if (!items.length) break;
-
-    for (const item of items) {
-      for (const codigo of Array.from(pending)) {
-        if (isCodigoMatch(item, codigo)) {
-          found.set(codigo, item);
-          pending.delete(codigo);
-        }
+  for (const item of catalogItems) {
+    for (const codigo of Array.from(pending)) {
+      if (isCodigoMatch(item, codigo)) {
+        found.set(codigo, item);
+        pending.delete(codigo);
       }
-      if (pending.size === 0) break;
     }
 
-    const rawTotal = raw?.total || raw?.totalResults || raw?.total_results || 0;
-    if (items.length < batchSize || (rawTotal > 0 && page * batchSize >= rawTotal)) break;
+    if (pending.size === 0) break;
   }
+
+  if (pending.size > 0) {
+    for (const codigo of Array.from(pending)) {
+      const searchTerms = [codigo, extractCodigoNumber(codigo)]
+        .map((term) => String(term || "").trim())
+        .filter((term, idx, arr) => !!term && arr.indexOf(term) === idx);
+
+      let matched: any = null;
+
+      for (const term of searchTerms) {
+        const searchUrl = `https://api.jetimob.com/webservice/${apiKey}/imoveis/todos?v=6&search=${encodeURIComponent(term)}&pageSize=50`;
+        const response = await fetch(searchUrl, { headers: { "Accept": "application/json" } });
+        if (!response.ok) continue;
+
+        const raw = await response.json();
+        const items = Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw?.result)
+            ? raw.result
+            : Array.isArray(raw)
+              ? raw
+              : [];
+
+        matched = items.find((item: any) => isCodigoMatch(item, codigo)) || null;
+        if (matched) break;
+      }
+
+      if (matched) {
+        found.set(codigo, matched);
+        pending.delete(codigo);
+      }
+    }
+  }
+
+  console.log("findImoveisByCodigos:", {
+    requested: wanted.length,
+    found: found.size,
+    missing: pending.size,
+  });
 
   const out: Record<string, any | null> = {};
   for (const codigo of wanted) out[codigo] = found.get(codigo) || null;
