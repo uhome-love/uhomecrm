@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { Target, ClipboardList, CheckCircle2, BarChart2, AlertCircle, Loader2, Briefcase, Pencil, Save } from "lucide-react";
+import { Target, ClipboardList, CheckCircle2, BarChart2, AlertCircle, Loader2, Pencil, Save } from "lucide-react";
 import { format, subDays, getDaysInMonth, getDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import CheckpointTableTab from "@/components/checkpoint/CheckpointTableTab";
