@@ -116,8 +116,8 @@ serve(async (req) => {
 
   try {
     const { messages, role, module, context } = await req.json();
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const userRole = role === "admin" ? "ceo" : (role || "gestor");
     const roleFormat = userRole === "ceo" ? CEO_FORMAT : GERENTE_FORMAT;
