@@ -370,6 +370,7 @@ export default function CheckpointGerente() {
   const tabs = [
     { key: "visao_geral" as const, icon: <Target size={15} />, label: "Visão Geral" },
     { key: "checkpoint" as const, icon: <ClipboardList size={15} />, label: "Checkpoint" },
+    { key: "distribuicao" as const, icon: <Send size={15} />, label: "Leads Distribuídos" },
     { key: "relatorios" as const, icon: <BarChart2 size={15} />, label: "Relatórios" },
   ];
 
