@@ -223,10 +223,47 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
   };
 
   const nudgeAllBelowTarget = () => {
-    const below = cards.filter(c => { if (["ausente", "atestado", "folga"].includes(c.presenca)) return false; return c.meta_ligacoes > 0 && c.res_ligacoes < c.meta_ligacoes * 0.5; });
-    if (below.length === 0) { toast.info("Todos acima de 50% da meta!"); return; }
-    below.forEach(c => { if (c.telefone) nudgeWhatsApp(c); });
-    toast.success(`📢 Cobrança enviada para ${below.length} corretores`);
+    const dateFmt = format(selectedDate, "dd/MM/yyyy");
+    const presAtivos = cards.filter(c => !["ausente", "atestado", "folga"].includes(c.presenca));
+    const ausentes = cards.filter(c => ["ausente", "atestado", "folga"].includes(c.presenca));
+
+    let msg = `📊 *CHECKPOINT ${dateFmt}*\n\n`;
+    msg += `👥 Presentes: ${presAtivos.length}/${cards.length}\n`;
+    msg += `📞 Ligações: ${totalLig} | ✅ Aproveitados: ${totalAprov} | 📍 Visitas: ${totalVM}\n`;
+    msg += `📈 Meta geral: ${pctGeral}%\n\n`;
+
+    // Sorted by performance: best first
+    const sorted = [...presAtivos].sort((a, b) => {
+      const pA = a.meta_ligacoes > 0 ? a.res_ligacoes / a.meta_ligacoes : 0;
+      const pB = b.meta_ligacoes > 0 ? b.res_ligacoes / b.meta_ligacoes : 0;
+      return pB - pA;
+    });
+
+    sorted.forEach(c => {
+      const pctLig = c.meta_ligacoes > 0 ? Math.round((c.res_ligacoes / c.meta_ligacoes) * 100) : 0;
+      const emoji = pctLig >= 80 ? "🟢" : pctLig >= 50 ? "🟡" : pctLig > 0 ? "🔴" : "⚫";
+      const firstName = c.nome.split(" ")[0];
+      msg += `${emoji} *${firstName}*: ${c.res_ligacoes}/${c.meta_ligacoes} lig (${pctLig}%) · ${c.res_aproveitados} aprov · ${c.res_visitas_marcadas} vis\n`;
+    });
+
+    if (ausentes.length > 0) {
+      msg += `\n🚫 Ausentes: ${ausentes.map(c => c.nome.split(" ")[0]).join(", ")}`;
+    }
+
+    msg += `\n\n💪 Bora time! Foco nas metas!`;
+
+    navigator.clipboard.writeText(msg).then(() => {
+      toast.success("📋 Mensagem copiada! Cole no grupo do WhatsApp.", { duration: 4000 });
+    }).catch(() => {
+      // Fallback
+      const ta = document.createElement("textarea");
+      ta.value = msg;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      toast.success("📋 Mensagem copiada! Cole no grupo do WhatsApp.", { duration: 4000 });
+    });
   };
 
   if (loading) {
