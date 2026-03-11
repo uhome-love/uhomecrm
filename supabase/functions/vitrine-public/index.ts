@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
           vagas: null,
           banheiros: null,
           valor: item.precoPor ? parseFloat(item.precoPor.replace(/[^0-9.,]/g, "").replace(/\./g, "").replace(",", ".")) : null,
-          fotos: item.imagem ? [item.imagem] : [],
+          fotos: item.imagens && item.imagens.length > 0 ? item.imagens : (item.imagem ? [item.imagem] : []),
           empreendimento: item.nome,
           descricao: `${item.metragens} · ${item.dorms} · ${item.status}`,
           // Melnick Day extras
