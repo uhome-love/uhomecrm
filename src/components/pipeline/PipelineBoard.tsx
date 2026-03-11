@@ -45,7 +45,9 @@ function getStageAlerts(leads: PipelineLead[]) {
   const now = Date.now();
   for (const l of leads) {
     if (!l.corretor_id) { semCorretor++; continue; }
-    const mins = (now - new Date(l.stage_changed_at).getTime()) / 60000;
+    const t = new Date(l.stage_changed_at).getTime();
+    if (Number.isNaN(t)) continue;
+    const mins = (now - t) / 60000;
     if (mins >= 120) dangers++;
     else if (mins >= 30) warnings++;
   }
