@@ -240,14 +240,14 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* Row 4: VGV with quick-fill */}
           <div className="flex items-center gap-2">
             {negocio.vgv_estimado ? (
-              <span className="text-[15px] font-extrabold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
-                <TrendingUp className="h-3.5 w-3.5" />
+              <span className="text-[16px] font-extrabold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
+                <TrendingUp className="h-4 w-4" />
                 {formatVGV(negocio.vgv_estimado)}
               </span>
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); setQuickVgvId(negocio.id); setQuickVgvValue(""); }}
-                className="text-xs text-amber-400/80 font-semibold hover:text-amber-300 transition-colors flex items-center gap-1"
+                className="text-[13px] text-amber-400/90 font-bold hover:text-amber-300 transition-colors flex items-center gap-1"
               >
                 ⚠️ Preencher VGV
               </button>
