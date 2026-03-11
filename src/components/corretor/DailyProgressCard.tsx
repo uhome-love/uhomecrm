@@ -94,7 +94,7 @@ export default function DailyProgressCard({ progress, goals, saveGoals, variant 
         </div>
         <div className="flex gap-2">
           <Button size="sm" className={`${variant === "full" ? "col-span-3" : "flex-1"} h-7 text-xs rounded-lg`} onClick={handleSave}>
-            Salvar{variant === "full" ? " Meta do Dia" : ""}
+            Enviar para aprovação
           </Button>
           {goals && (
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditing(false)}>Cancelar</Button>
