@@ -425,12 +425,25 @@ serve(async (req) => {
         const email = lead.emails?.[0] || lead.email || null;
         const msg = lead.message || "";
         const campanhaNome = extractCampanha(msg);
+        const leadCampaignId = lead.campaign_id ? String(lead.campaign_id) : null;
 
-        // Resolve empreendimento: campanha name → normalize from origem/message/source
-        const origemText = campanhaNome || msg || lead.source || lead.origin || "";
-        let empreendimento = campanhaNome ? normalizeEmpreendimento(campanhaNome) || campanhaNome : null;
+        // Resolve empreendimento: 1) campaign_id via jetimob_campaign_map → 2) keyword matching
+        let empreendimento: string | null = null;
+        let segmentoFromCampaignMap: string | null = null;
+
+        if (leadCampaignId && campaignIdMap.has(leadCampaignId)) {
+          const mapped = campaignIdMap.get(leadCampaignId)!;
+          empreendimento = mapped.empreendimento;
+          segmentoFromCampaignMap = mapped.segmento;
+          console.log(`CAMPAIGN MAP: campaign_id ${leadCampaignId} → ${empreendimento} (${segmentoFromCampaignMap})`);
+        }
+
         if (!empreendimento) {
-          empreendimento = normalizeEmpreendimento(origemText) || normalizeEmpreendimento(lead.source) || normalizeEmpreendimento(lead.origin) || null;
+          const origemText = campanhaNome || msg || lead.source || lead.origin || "";
+          empreendimento = campanhaNome ? normalizeEmpreendimento(campanhaNome) || campanhaNome : null;
+          if (!empreendimento) {
+            empreendimento = normalizeEmpreendimento(origemText) || normalizeEmpreendimento(lead.source) || normalizeEmpreendimento(lead.origin) || null;
+          }
         }
         // Fallback: leads without empreendimento go to "Avulso" so distribution doesn't fail
         if (!empreendimento) {
@@ -443,17 +456,21 @@ serve(async (req) => {
           prioridadeLead = "alta";
         }
 
-        // Resolve segmento from empreendimento
-        // For campaign-specific segments (e.g. "Melnick Day Compactos" → Investimento),
-        // try the full campanha name first before falling back to empreendimento
-        let segmentoId = campanhaNome ? resolveSegmentoId(campanhaNome) : null;
+        // Resolve segmento: 1) from campaign map segmento name → 2) from roleta_campanhas
+        let segmentoId: string | null = null;
+        if (segmentoFromCampaignMap) {
+          segmentoId = segmentoNameToId.get(segmentoFromCampaignMap.toLowerCase().trim()) || null;
+        }
+        if (!segmentoId && campanhaNome) {
+          segmentoId = resolveSegmentoId(campanhaNome);
+        }
         if (!segmentoId) {
           segmentoId = resolveSegmentoId(empreendimento);
         }
 
         // origem = channel (TikTok, Meta Ads, etc.) — detected from message/source
         const canalOrigem = detectCanal(msg, lead.source, lead.origin);
-        // origem_detalhe = full campaign name from the form (e.g. "Melnick Day Compactos (Video Gabriel)")
+        // origem_detalhe = full campaign name from the form
         const campanhaDetalhe = campanhaNome || null;
 
         const { data: insertedLead, error: insertError } = await adminClient
