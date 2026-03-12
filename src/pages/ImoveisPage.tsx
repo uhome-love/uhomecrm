@@ -702,10 +702,7 @@ export default function ImoveisPage() {
 
   const getPreco = (item: any): string => {
     const venda = getNum(item, "valor_venda", "preco_venda", "valor", "price");
-    const locacao = getNum(item, "valor_locacao", "preco_locacao", "valor_aluguel");
-    if (contrato === "locacao" && locacao) return fmtBRL(locacao);
     if (venda) return fmtBRL(venda);
-    if (locacao) return fmtBRL(locacao);
     return "Consultar";
   };
 
