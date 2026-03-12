@@ -196,11 +196,12 @@ serve(async (req) => {
             return p.replace(/\D/g, "");
           };
 
-          // Paginate Jetimob API
-          let allApiLeads: any[] = [];
+          // Paginate Jetimob API — only build phone→campaign map, don't store full objects
+          const phoneToApi = new Map<string, { campaign_id: string; msg: string }>();
           let page = 1;
           const perPage = 200;
-          while (true) {
+          const MAX_PAGES = 10; // ~2000 leads max to stay within compute limits
+          while (page <= MAX_PAGES) {
             const apiResp = await fetch(
               `https://api.jetimob.com/leads/${JETIMOB_LEADS_URL_KEY}?page=${page}&per_page=${perPage}`,
               { method: "GET", headers: { "Authorization-Key": JETIMOB_LEADS_PRIVATE_KEY } }
@@ -208,21 +209,17 @@ serve(async (req) => {
             if (!apiResp.ok) break;
             const apiData = await apiResp.json();
             const batch = Array.isArray(apiData?.result) ? apiData.result : Array.isArray(apiData) ? apiData : [];
-            allApiLeads.push(...batch);
-            console.log(`Backfill: page ${page} fetched ${batch.length} leads (total so far: ${allApiLeads.length})`);
+            // Index directly without storing full objects
+            for (const al of batch) {
+              const rawPhone = al.phones?.[0] || al.phone;
+              const cid = al.campaign_id ? String(al.campaign_id) : null;
+              if (rawPhone && cid) {
+                phoneToApi.set(normalizePhone(rawPhone), { campaign_id: cid, msg: al.message || "" });
+              }
+            }
+            console.log(`Backfill: page ${page} indexed ${batch.length} leads (map size: ${phoneToApi.size})`);
             if (batch.length < perPage) break;
             page++;
-            if (page > 50) break; // safety limit
-          }
-
-          // Build normalized phone → campaign_id map from API
-          const phoneToApi = new Map<string, { campaign_id: string; msg: string }>();
-          for (const al of allApiLeads) {
-            const rawPhone = al.phones?.[0] || al.phone;
-            const cid = al.campaign_id ? String(al.campaign_id) : null;
-            if (rawPhone && cid) {
-              phoneToApi.set(normalizePhone(rawPhone), { campaign_id: cid, msg: al.message || "" });
-            }
           }
           console.log(`Backfill: ${phoneToApi.size} API leads with campaign_id mapped by phone`);
 
