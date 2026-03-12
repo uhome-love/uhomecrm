@@ -838,8 +838,8 @@ function CriarVitrineDialog({
   }
 
   function copyLink() {
-    if (!vitrineUrl) return;
-    navigator.clipboard.writeText(vitrineUrl);
+    if (!vitrineDirectUrl) return;
+    navigator.clipboard.writeText(vitrineDirectUrl);
     toast.success("Link copiado!");
   }
 
