@@ -163,6 +163,11 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
             <span className="opacity-60">📞</span> {v.telefone}
           </p>
         )}
+        {v.observacoes && !isNegocio && (
+          <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5 italic max-w-[180px]" title={v.observacoes}>
+            💬 {v.observacoes}
+          </p>
+        )}
       </div>
 
       {/* Produto (Empreendimento) */}
