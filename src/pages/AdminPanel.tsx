@@ -204,7 +204,13 @@ export default function AdminPanel() {
       resetForm();
       fetchUsers();
     } catch (err: any) {
-      toast.error(err?.message || "Erro ao criar usuário.");
+      const message = err?.message || "Erro ao criar usuário.";
+      const normalizedMessage = String(message).toLowerCase();
+      if (normalizedMessage.includes("already been registered") || normalizedMessage.includes("já está cadastrado")) {
+        toast.error("Este e-mail já está cadastrado. Edite o usuário existente.");
+      } else {
+        toast.error(message);
+      }
     } finally { setCreating(false); }
   }, [lookupId, newEmail, newNome, newSenha, newRole, selectedGerente, fetchUsers]);
 
