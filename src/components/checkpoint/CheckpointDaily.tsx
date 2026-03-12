@@ -159,8 +159,11 @@ export default function CheckpointDaily() {
     const { data: team } = await supabase.from("team_members").select("*").eq("gerente_id", user.id).eq("status", "ativo").order("nome");
     const members = (team || []) as TeamMember[];
 
-    // Fetch OA stats for linked members
-    const oaStats = await fetchOAStats(members, date);
+    // Fetch OA stats and visitas stats for linked members
+    const [oaStats, visitasStats] = await Promise.all([
+      fetchOAStats(members, date),
+      fetchVisitasStats(members, date),
+    ]);
 
     // Fetch corretor daily goals for linked members (today first, fallback to most recent)
     const linkedMembers = members.filter(m => m.user_id);
