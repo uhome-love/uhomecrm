@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
   <!-- Redirect to SPA -->
   <meta http-equiv="refresh" content="0;url=${esc(spaUrl)}" />
   <link rel="canonical" href="${esc(spaUrl)}" />
+  <script>window.location.replace("${spaUrl}");</script>
 </head>
 <body>
   <p>Redirecionando para <a href="${esc(spaUrl)}">${esc(ogTitle)}</a>...</p>
@@ -144,6 +145,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/html; charset=utf-8",
+        "Content-Security-Policy": "",
         "Cache-Control": "public, max-age=3600",
       },
     });
