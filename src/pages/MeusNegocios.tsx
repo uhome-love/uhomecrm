@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import PeriodBadge from "@/components/PeriodBadge";
 import { formatBRLCompact } from "@/lib/utils";
 import { useNegocios, NEGOCIOS_FASES, type Negocio, type CorretorInfo } from "@/hooks/useNegocios";
 import { useLeadProgression } from "@/hooks/useLeadProgression";
