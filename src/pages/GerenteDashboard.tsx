@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useGerenteDashboard, Period, periodLabels, formatCurrency, getInitials, hashColor } from "@/hooks/useGerenteDashboard";
+import { useDateFilter } from "@/contexts/DateFilterContext";
+import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
 import type { CorretorRow } from "@/hooks/useGerenteDashboard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
