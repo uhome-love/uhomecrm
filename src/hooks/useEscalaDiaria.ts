@@ -143,6 +143,17 @@ export function useEscalaDiaria(data: string) {
           .delete()
           .eq("id", existing.id);
         if (error) throw error;
+
+        // If no more approved entries for this corretor, deactivate roleta
+        const remaining = escala.filter(
+          e => e.corretor_id === corretorUserId && e.id !== existing.id && e.aprovacao_status === "aprovado"
+        );
+        if (remaining.length === 0) {
+          await supabase
+            .from("corretor_disponibilidade")
+            .update({ na_roleta: false, updated_at: new Date().toISOString() })
+            .eq("user_id", corretorUserId);
+        }
       } else {
         const { error } = await supabase
           .from("distribuicao_escala")
@@ -158,9 +169,30 @@ export function useEscalaDiaria(data: string) {
             toast.info("Corretor já está na escala para este segmento.");
           } else throw error;
         }
+
+        // Activate corretor na roleta + ensure disponibilidade row exists
+        const { data: dispRow } = await supabase
+          .from("corretor_disponibilidade")
+          .select("id")
+          .eq("user_id", corretorUserId)
+          .maybeSingle();
+
+        if (dispRow) {
+          await supabase
+            .from("corretor_disponibilidade")
+            .update({ na_roleta: true, updated_at: new Date().toISOString() })
+            .eq("user_id", corretorUserId);
+        } else {
+          await supabase
+            .from("corretor_disponibilidade")
+            .insert({ user_id: corretorUserId, na_roleta: true, status: "na_empresa", segmentos: [] });
+        }
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: qKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qKey });
+      qc.invalidateQueries({ queryKey: ["escala-disponibilidades"] });
+    },
     onError: () => toast.error("Erro ao atualizar escala"),
   });
 
