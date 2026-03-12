@@ -13,6 +13,7 @@ import { Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble,
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { getVitrineShareUrl } from "@/lib/vitrineUrl";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -538,7 +539,7 @@ export default function ImoveisPage() {
                       .select("id")
                       .single();
                     if (error) throw error;
-                    const link = `https://uhomesales.com/vitrine/${data.id}`;
+                    const link = getVitrineShareUrl(data.id);
                     setVitrineLink(link);
                     navigator.clipboard.writeText(link);
                     toast.success("Vitrine criada! Link copiado.");

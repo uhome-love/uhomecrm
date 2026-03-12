@@ -8,6 +8,7 @@ import { Loader2, Upload, Trash2, Plus, X, Palette, MapPin, FileText, Video, Ima
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
+import { getVitrineShareUrl } from "@/lib/vitrineUrl";
 
 interface LandingOverride {
   id?: string;
@@ -157,7 +158,7 @@ export default function LandingPageEditor({ open, onOpenChange, codigo, nome, ex
         vitrineId = data.id;
       }
 
-      const url = `https://uhomesales.com/vitrine/${vitrineId}`;
+      const url = getVitrineShareUrl(vitrineId);
       setGeneratedUrl(url);
       toast.success("Landing page gerada com sucesso!");
     } catch (err: any) {

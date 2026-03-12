@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { cn, formatBRL, formatBRLCompact } from "@/lib/utils";
+import { getVitrineShareUrl } from "@/lib/vitrineUrl";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingPageEditor from "@/components/landing/LandingPageEditor";
 
@@ -813,7 +814,7 @@ function CriarVitrineDialog({
 
       if (error) throw error;
 
-      const url = `https://uhomesales.com/vitrine/${data.id}`;
+      const url = getVitrineShareUrl(data.id);
       setVitrineUrl(url);
       toast.success("Vitrine criada!");
     } catch (err: any) {
@@ -944,7 +945,7 @@ function EmpreendimentoCard({
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setLandingUrl(`${window.location.origin}/vitrine/${data.id}`);
+          setLandingUrl(getVitrineShareUrl(data.id));
         }
       });
   }, [config.codigo, user, landingRefreshKey]);
