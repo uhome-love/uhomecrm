@@ -107,3 +107,9 @@ verify_jwt = false
 
 [functions.receive-landing-lead]
 verify_jwt = false
+
+[functions.typesense-admin]
+verify_jwt = false
+
+[functions.typesense-search]
+verify_jwt = false
