@@ -957,7 +957,7 @@ export default function ImoveisPage() {
                   try {
                     const { data, error } = await supabase.from("vitrines").insert({ created_by: user.id, titulo: "Seleção de Imóveis", tipo: "property_selection", imovel_ids: [...selectedIds] as any }).select("id").single();
                     if (error) throw error;
-                    const link = getVitrineShareUrl(data.id);
+                    const link = getVitrinePublicUrl(data.id);
                     setVitrineLink(link); navigator.clipboard.writeText(link); toast.success("Vitrine criada! Link copiado.");
                   } catch { toast.error("Erro ao criar vitrine"); } finally { setCreatingVitrine(false); }
                 }} className="gap-1.5">
