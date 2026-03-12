@@ -265,6 +265,7 @@ export default function PipelineKanban() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          <PeriodBadge className="text-[10px] shrink-0" />
 
           {isKanbanOrIntel && (
             <>
