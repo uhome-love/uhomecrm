@@ -141,16 +141,16 @@ Deno.serve(async (req) => {
     // Priority 1: property_code → empreendimento_overrides or jetimob lookup
     if (propertyCode) {
       const cleanCode = propertyCode.replace(/-UH$/i, "").trim();
+      const codeWithSuffix = cleanCode.includes("-") ? cleanCode : `${cleanCode}-UH`;
       // Try empreendimento_overrides
       const { data: overrideRow } = await supabase
         .from("empreendimento_overrides")
-        .select("nome_exibicao, segmento")
-        .or(`codigo.eq.${propertyCode},codigo.eq.${cleanCode}-UH`)
+        .select("nome")
+        .or(`codigo.eq.${codeWithSuffix},codigo.eq.${cleanCode}`)
         .limit(1)
         .maybeSingle();
       if (overrideRow) {
-        empreendimento = overrideRow.nome_exibicao;
-        if (overrideRow.segmento) segmentoFromMap = overrideRow.segmento;
+        empreendimento = overrideRow.nome;
       }
 
       // Also try roleta_campanhas by empreendimento code pattern
