@@ -7,42 +7,43 @@ const corsHeaders = {
 };
 
 async function fetchImovelFromJetimob(apiKey: string, codigo: string) {
-  const url = `https://api.jetimob.com/webservice/${apiKey}/imoveis/codigo/${codigo}?v=6`;
-  console.log(`Fetching imovel codigo=${codigo}`);
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) {
-    console.warn(`Jetimob ${res.status} for codigo ${codigo}`);
-    return null;
-  }
-  const data = await res.json();
-  const item = data?.result || data?.data || data;
-  if (!item || (!item.id && !item.codigo && !item.id_imovel)) {
-    console.warn(`Empty result for codigo ${codigo}`);
-    return null;
-  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const url = `https://api.jetimob.com/webservice/${apiKey}/imoveis/codigo/${codigo}?v=6`;
+    const res = await fetch(url, { headers: { Accept: "application/json" }, signal: controller.signal });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const item = data?.result || data?.data || data;
+    if (!item || (!item.id && !item.codigo && !item.id_imovel)) return null;
 
-  const imgArr = item.imagens || item.fotos || [];
-  const fotos = imgArr.slice(0, 10).map((f: any) => f.link || f.link_thumb || f.url).filter(Boolean);
+    const imgArr = item.imagens || item.fotos || [];
+    const fotos = imgArr.slice(0, 10).map((f: any) => f.link || f.link_thumb || f.url).filter(Boolean);
 
-  return {
-    id: item.id_imovel || item.id || codigo,
-    codigo: item.codigo || codigo,
-    titulo: item.titulo_anuncio || item.titulo || item.descricao_curta || `Imóvel ${codigo}`,
-    endereco: item.endereco?.logradouro
-      ? `${item.endereco.logradouro}${item.endereco.bairro ? `, ${item.endereco.bairro}` : ""}${item.endereco.cidade ? ` — ${item.endereco.cidade}` : ""}`
-      : (item.bairro ? `${item.bairro}${item.cidade ? ` — ${item.cidade}` : ""}` : null),
-    bairro: item.endereco?.bairro || item.bairro || null,
-    cidade: item.endereco?.cidade || item.cidade || null,
-    area: item.area_privativa || item.area_util || item.area_total || item.area || null,
-    quartos: item.dormitorios || item.quartos || null,
-    suites: item.suites || null,
-    vagas: item.garagens || item.vagas || null,
-    banheiros: item.banheiros || null,
-    valor: item.valor_venda || item.valor || null,
-    fotos,
-    empreendimento: item.empreendimento?.nome || item.empreendimento || null,
-    descricao: item.descricao_curta || item.titulo || null,
-  };
+    return {
+      id: item.id_imovel || item.id || codigo,
+      codigo: item.codigo || codigo,
+      titulo: item.titulo_anuncio || item.titulo || item.descricao_curta || `Imóvel ${codigo}`,
+      endereco: item.endereco?.logradouro
+        ? `${item.endereco.logradouro}${item.endereco.bairro ? `, ${item.endereco.bairro}` : ""}${item.endereco.cidade ? ` — ${item.endereco.cidade}` : ""}`
+        : (item.bairro ? `${item.bairro}${item.cidade ? ` — ${item.cidade}` : ""}` : null),
+      bairro: item.endereco?.bairro || item.bairro || null,
+      cidade: item.endereco?.cidade || item.cidade || null,
+      area: item.area_privativa || item.area_util || item.area_total || item.area || null,
+      quartos: item.dormitorios || item.quartos || null,
+      suites: item.suites || null,
+      vagas: item.garagens || item.vagas || null,
+      banheiros: item.banheiros || null,
+      valor: item.valor_venda || item.valor || null,
+      fotos,
+      empreendimento: item.empreendimento?.nome || item.empreendimento || null,
+      descricao: item.descricao_curta || item.titulo || null,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -59,7 +60,6 @@ Deno.serve(async (req) => {
     const { action, vitrine_id, imovel_ids } = body;
 
     const JETIMOB_API_KEY = Deno.env.get("JETIMOB_API_KEY");
-    console.log(`Action: ${action}, JETIMOB_API_KEY present: ${!!JETIMOB_API_KEY}`);
 
     if (action === "get_vitrine") {
       if (!vitrine_id) {
@@ -73,7 +73,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (error || !vitrine) {
-        console.error("Vitrine not found:", error);
         return jsonResponse({ error: "Vitrine não encontrada" }, 404);
       }
 
@@ -81,20 +80,33 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Vitrine expirada" }, 410);
       }
 
-      // Increment views
-      await supabase.from("vitrines")
+      // Increment views (non-blocking)
+      supabase.from("vitrines")
         .update({ visualizacoes: (vitrine.visualizacoes || 0) + 1 })
-        .eq("id", vitrine_id);
+        .eq("id", vitrine_id)
+        .then(() => {});
 
-      // Get corretor info
-      const { data: corretor } = await supabase
-        .from("profiles")
-        .select("nome, telefone, avatar_url")
-        .eq("user_id", vitrine.created_by)
-        .maybeSingle();
+      // Get corretor info in parallel with override lookup
+      const ids = (vitrine.imovel_ids as string[]) || [];
 
-      // Handle Melnick Day vitrines (data stored in dados_custom)
-      console.log(`Vitrine tipo="${vitrine.tipo}", has dados_custom=${!!vitrine.dados_custom}`);
+      const [corretorResult, overrideResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("nome, telefone, avatar_url")
+          .eq("user_id", vitrine.created_by)
+          .maybeSingle(),
+        ids.length > 0
+          ? supabase
+              .from("empreendimento_overrides")
+              .select("nome, diferenciais, plantas, video_url, mapa_url, cor_primaria, landing_titulo, landing_subtitulo, descricao, fotos, bairro, valor_min, valor_max, tipologias, status_obra, previsao_entrega, vagas, area_privativa, dormitorios, suites")
+              .in("codigo", ids)
+          : Promise.resolve({ data: null }),
+      ]);
+
+      const corretor = corretorResult.data;
+      const overrideRows = overrideResult.data;
+
+      // Handle Melnick Day vitrines
       if (vitrine.tipo === "melnick_day" && vitrine.dados_custom) {
         const customData = vitrine.dados_custom as any[];
         const imoveis = customData.map((item: any, idx: number) => ({
@@ -103,115 +115,96 @@ Deno.serve(async (req) => {
           endereco: item.bairro ? `${item.bairro} — Porto Alegre` : null,
           bairro: item.bairro || null,
           cidade: "Porto Alegre",
-          area: null,
-          quartos: null,
-          suites: null,
-          vagas: null,
-          banheiros: null,
+          area: null, quartos: null, suites: null, vagas: null, banheiros: null,
           valor: item.precoPor ? parseFloat(item.precoPor.replace(/[^0-9.,]/g, "").replace(/\./g, "").replace(",", ".")) : null,
-          fotos: item.imagens && item.imagens.length > 0 ? item.imagens : (item.imagem ? [item.imagem] : []),
+          fotos: item.imagens?.length > 0 ? item.imagens : (item.imagem ? [item.imagem] : []),
           empreendimento: item.nome,
           descricao: `${item.metragens} · ${item.dorms} · ${item.status}`,
-          precoDe: item.precoDe || null,
-          precoPor: item.precoPor || null,
-          descontoMax: item.descontoMax || null,
-          status: item.status || null,
-          metragens: item.metragens || null,
-          dorms: item.dorms || null,
-          condicoes: item.condicoes || null,
-          segmento: item.segmento || null,
+          precoDe: item.precoDe || null, precoPor: item.precoPor || null,
+          descontoMax: item.descontoMax || null, status: item.status || null,
+          metragens: item.metragens || null, dorms: item.dorms || null,
+          condicoes: item.condicoes || null, segmento: item.segmento || null,
         }));
 
         return jsonResponse({
-          vitrine: {
-            id: vitrine.id,
-            titulo: vitrine.titulo,
-            mensagem: vitrine.mensagem_corretor,
-            created_at: vitrine.created_at,
-            tipo: "melnick_day",
-          },
-          corretor: corretor ? {
-            nome: corretor.nome,
-            telefone: corretor.telefone,
-            avatar_url: corretor.avatar_url,
-          } : null,
+          vitrine: { id: vitrine.id, titulo: vitrine.titulo, mensagem: vitrine.mensagem_corretor, created_at: vitrine.created_at, tipo: "melnick_day" },
+          corretor: corretor ? { nome: corretor.nome, telefone: corretor.telefone, avatar_url: corretor.avatar_url } : null,
           imoveis,
         });
       }
 
-      // Standard Jetimob vitrine
-      let imoveis: any[] = [];
-      const ids = (vitrine.imovel_ids as string[]) || [];
-      console.log(`Vitrine ${vitrine_id} has ${ids.length} imovel_ids:`, ids);
+      // Build landing data from overrides
+      let landingData: any = null;
+      let overrideFotos: string[] = [];
 
-      if (JETIMOB_API_KEY && ids.length > 0) {
+      if (overrideRows && overrideRows.length > 0) {
+        const ov = overrideRows[0];
+        overrideFotos = ov.fotos || [];
+        landingData = {
+          diferenciais: ov.diferenciais || [],
+          plantas: ov.plantas || [],
+          video_url: ov.video_url || null,
+          mapa_url: ov.mapa_url || null,
+          cor_primaria: ov.cor_primaria || "#1e3a5f",
+          landing_titulo: ov.landing_titulo || null,
+          landing_subtitulo: ov.landing_subtitulo || null,
+          descricao: ov.descricao || null,
+          fotos: overrideFotos,
+          bairro: ov.bairro || null,
+          valor_min: ov.valor_min || null,
+          valor_max: ov.valor_max || null,
+          tipologias: ov.tipologias || [],
+          status_obra: ov.status_obra || null,
+          previsao_entrega: ov.previsao_entrega || null,
+          vagas: ov.vagas || null,
+        };
+      }
+
+      // For "anuncio" type vitrines with complete override data, skip Jetimob entirely
+      const hasCompleteOverride = landingData && overrideFotos.length >= 3 && landingData.descricao;
+      
+      let imoveis: any[] = [];
+
+      if (hasCompleteOverride) {
+        // Build a synthetic imovel from override data — NO Jetimob call needed
+        const ov = overrideRows![0];
+        imoveis = [{
+          id: ids[0] || 1,
+          codigo: ids[0] || "",
+          titulo: ov.landing_titulo || ov.nome || vitrine.titulo,
+          endereco: ov.bairro ? `${ov.bairro} — Porto Alegre` : null,
+          bairro: ov.bairro || null,
+          cidade: "Porto Alegre",
+          area: ov.area_privativa || null,
+          quartos: ov.dormitorios || null,
+          suites: ov.suites || null,
+          vagas: ov.vagas || null,
+          banheiros: null,
+          valor: ov.valor_min || null,
+          fotos: overrideFotos,
+          empreendimento: ov.nome || vitrine.titulo,
+          descricao: ov.descricao || null,
+        }];
+      } else if (JETIMOB_API_KEY && ids.length > 0) {
+        // Only call Jetimob if we don't have complete override data
         const results = await Promise.allSettled(
           ids.map(id => fetchImovelFromJetimob(JETIMOB_API_KEY, String(id)))
         );
         for (const r of results) {
           if (r.status === "fulfilled" && r.value) {
             imoveis.push(r.value);
-          } else if (r.status === "rejected") {
-            console.error("Fetch failed:", r.reason);
           }
         }
-        console.log(`Fetched ${imoveis.length} imoveis successfully`);
-      }
 
-      // Fetch landing page overrides for each empreendimento
-      const empreendimentoNames = imoveis.map((i: any) => i.empreendimento).filter(Boolean);
-      let landingData: any = null;
-
-      if (empreendimentoNames.length > 0 || ids.length > 0) {
-        // Try to find override by imovel codigo
-        const codigosToSearch = ids.length > 0 ? ids : [];
-        if (codigosToSearch.length > 0) {
-          const { data: overrideRows } = await supabase
-            .from("empreendimento_overrides")
-            .select("diferenciais, plantas, video_url, mapa_url, cor_primaria, landing_titulo, landing_subtitulo, descricao, fotos, bairro, valor_min, valor_max, tipologias, status_obra, previsao_entrega, vagas")
-            .in("codigo", codigosToSearch);
-
-          if (overrideRows && overrideRows.length > 0) {
-            const ov = overrideRows[0];
-            landingData = {
-              diferenciais: ov.diferenciais || [],
-              plantas: ov.plantas || [],
-              video_url: ov.video_url || null,
-              mapa_url: ov.mapa_url || null,
-              cor_primaria: ov.cor_primaria || "#1e3a5f",
-              landing_titulo: ov.landing_titulo || null,
-              landing_subtitulo: ov.landing_subtitulo || null,
-              descricao: ov.descricao || null,
-              fotos: ov.fotos || [],
-              bairro: ov.bairro || null,
-              valor_min: ov.valor_min || null,
-              valor_max: ov.valor_max || null,
-              tipologias: ov.tipologias || [],
-              status_obra: ov.status_obra || null,
-              previsao_entrega: ov.previsao_entrega || null,
-              vagas: ov.vagas || null,
-            };
-
-            // Merge override photos with imovel photos
-            if (landingData.fotos.length > 0 && imoveis.length > 0) {
-              imoveis[0].fotos = [...landingData.fotos, ...imoveis[0].fotos.filter((f: string) => !landingData.fotos.includes(f))];
-            }
-          }
+        // Merge override photos with imovel photos
+        if (overrideFotos.length > 0 && imoveis.length > 0) {
+          imoveis[0].fotos = [...overrideFotos, ...imoveis[0].fotos.filter((f: string) => !overrideFotos.includes(f))];
         }
       }
 
       return jsonResponse({
-        vitrine: {
-          id: vitrine.id,
-          titulo: vitrine.titulo,
-          mensagem: vitrine.mensagem_corretor,
-          created_at: vitrine.created_at,
-        },
-        corretor: corretor ? {
-          nome: corretor.nome,
-          telefone: corretor.telefone,
-          avatar_url: corretor.avatar_url,
-        } : null,
+        vitrine: { id: vitrine.id, titulo: vitrine.titulo, mensagem: vitrine.mensagem_corretor, created_at: vitrine.created_at, tipo: vitrine.tipo },
+        corretor: corretor ? { nome: corretor.nome, telefone: corretor.telefone, avatar_url: corretor.avatar_url } : null,
         imoveis,
         landing: landingData,
       });
