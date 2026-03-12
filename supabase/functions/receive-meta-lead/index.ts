@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+    console.log("META-LEAD RAW BODY:", JSON.stringify(body));
 
     // ── Auth: simple secret or Authorization header ──
     const webhookSecret = Deno.env.get("META_WEBHOOK_SECRET");
@@ -63,17 +64,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Parse fields (support both flat JSON and Meta Ads field_data) ──
-    let name = body.name || body.full_name || body.nome || "";
-    let email = body.email || "";
-    let phone = body.phone || body.telefone || "";
-    let campaignId = body.campaign_id || "";
-    let campaignName = body.campaign_name || body.campanha || "";
-    let message = body.message || body.mensagem || "";
-    let platform = body.platform || body.source || "meta_ads";
-    let formName = body.form_name || body.formulario || "";
-    let adName = body.ad_name || "";
-    let adsetName = body.adset_name || "";
+    // ── Parse fields (support flat JSON, Meta Ads field_data, and nested formats) ──
+    let name = body.name || body.full_name || body.nome || body.Nome || body.NOME || "";
+    let email = body.email || body.Email || body.EMAIL || "";
+    let phone = body.phone || body.telefone || body.Telefone || body.TELEFONE || body.cel || body.celular || body.Celular || body.whatsapp || body.Whatsapp || "";
+    let campaignId = body.campaign_id || body.campaignId || body.CampaignId || "";
+    let campaignName = body.campaign_name || body.campaignName || body.campanha || body.Campanha || "";
+    let message = body.message || body.mensagem || body.Mensagem || body.observacao || "";
+    let platform = body.platform || body.source || body.origem || "meta_ads";
+    let formName = body.form_name || body.formName || body.formulario || body.Formulario || "";
+    let adName = body.ad_name || body.adName || "";
+    let adsetName = body.adset_name || body.adsetName || "";
 
     // Meta Ads native format: field_data array
     if (body.field_data && Array.isArray(body.field_data)) {
@@ -81,19 +82,32 @@ Deno.serve(async (req) => {
         const val = Array.isArray(field.values) ? field.values[0] : field.values;
         if (!val) continue;
         const fn = (field.name || "").toLowerCase();
-        if (fn.includes("full_name") || fn.includes("nome")) name = val;
+        if (fn.includes("full_name") || fn.includes("nome") || fn === "name") name = val;
         else if (fn.includes("email")) email = val;
-        else if (fn.includes("phone") || fn.includes("telefone")) phone = val;
+        else if (fn.includes("phone") || fn.includes("telefone") || fn.includes("cel") || fn.includes("whatsapp")) phone = val;
       }
       campaignId = body.campaign_id || campaignId;
       campaignName = body.campaign_name || campaignName;
       formName = body.form_name || formName;
     }
 
+    // Try to extract from nested objects (Make.com sometimes nests data)
+    if (!name && !phone && typeof body === "object") {
+      for (const key of Object.keys(body)) {
+        const val = body[key];
+        if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+          if (!name) name = val.name || val.full_name || val.nome || val.Nome || "";
+          if (!phone) phone = val.phone || val.telefone || val.Telefone || val.celular || val.whatsapp || "";
+          if (!email) email = val.email || val.Email || "";
+        }
+      }
+    }
+
     const telefone = normalizePhone(phone);
     if (!name && !telefone) {
+      console.error("META-LEAD VALIDATION FAIL — no name or phone found in body:", JSON.stringify(body));
       return new Response(
-        JSON.stringify({ error: "Nome ou telefone obrigatório" }),
+        JSON.stringify({ error: "Nome ou telefone obrigatório", received_keys: Object.keys(body) }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
