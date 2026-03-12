@@ -274,7 +274,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => {
+  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean) => {
     if (!lead || !actionTaken || submitting) return;
     setSubmitting(true);
     try {
@@ -353,7 +353,24 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           toast("Próximo! 💪", { duration: 1500 });
         } else if (resultado === "sem_interesse") {
           setStreak(0);
-          toast("👋 Sem interesse — lead removido da fila", { duration: 2000 });
+          if (retirarDoSistema) {
+            // Delete lead from all tables
+            try {
+              const phone = lead.telefone?.replace(/\D/g, "") || "";
+              // Delete from oferta_ativa_leads
+              await supabase.from("oferta_ativa_leads").delete().eq("id", lead.id);
+              // Delete from pipeline_leads by phone match
+              if (phone.length >= 8) {
+                await supabase.from("pipeline_leads").delete().ilike("telefone", `%${phone.slice(-8)}`);
+              }
+              toast("🚫 Lead excluído permanentemente do sistema", { duration: 3000 });
+            } catch (e) {
+              console.error("[Retirar do sistema] Erro:", e);
+              toast.error("Erro ao excluir lead do sistema");
+            }
+          } else {
+            toast("👋 Sem interesse — lead removido da fila", { duration: 2000 });
+          }
         } else if (resultado === "numero_errado") {
           toast("❌ Número errado — removido", { duration: 2000 });
         }

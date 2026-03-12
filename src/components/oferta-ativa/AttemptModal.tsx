@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => Promise<void> | void;
+  onSubmit: (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean) => Promise<void> | void;
   leadName: string;
   callDuration?: number; // seconds
 }
@@ -48,6 +48,7 @@ const QUICK_FEEDBACKS: Record<string, string[]> = {
     "Sem condições financeiras no momento",
     "Pediu para não ligar mais",
     "Disse que preencheu formulário por engano",
+    "🚫 Retirar do sistema — não quer ser mais contatado",
   ],
   com_interesse: [
     "Muito interessado, quer receber material completo",
@@ -71,6 +72,10 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
   const [interesseTipo, setInteresseTipo] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showRetirarConfirm, setShowRetirarConfirm] = useState(false);
+
+  const RETIRAR_FEEDBACK = "🚫 Retirar do sistema — não quer ser mais contatado";
+  const isRetirar = feedback === RETIRAR_FEEDBACK;
 
   // Keyboard shortcuts: 1-4 for results, Enter to submit
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -96,18 +101,26 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
     }
   }, [open, handleKeyDown]);
 
+  const confirmedRetirar = useRef(false);
+
   const handleSubmit = async () => {
     if (!resultado || submitting) return;
     if (feedback.trim().length < 10) { toast.error("Feedback mínimo de 10 caracteres"); return; }
     if (resultado === "com_interesse" && !interesseTipo) { toast.error("Selecione o tipo de interesse"); return; }
+    // If "retirar do sistema" selected, show confirmation first
+    if (isRetirar && !confirmedRetirar.current) {
+      setShowRetirarConfirm(true);
+      return;
+    }
     setSubmitting(true);
     try {
       const isVisita = interesseTipo === "visita_marcada" || visitaMarcada;
-      await onSubmit(resultado, feedback.trim(), isVisita, resultado === "com_interesse" ? interesseTipo : undefined);
+      await onSubmit(resultado, feedback.trim(), isVisita, resultado === "com_interesse" ? interesseTipo : undefined, isRetirar);
       setResultado("");
       setFeedback("");
       setVisitaMarcada(false);
       setInteresseTipo("");
+      confirmedRetirar.current = false;
     } catch (err: any) {
       console.error("Erro no submit do modal:", err);
       toast.error("Erro ao registrar. Tente novamente.");
@@ -242,8 +255,13 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
             {resultado === "numero_errado" && (
               <p className="text-[10px] text-red-600 bg-red-500/10 rounded px-2 py-1">Lead removido permanentemente. 0 pts.</p>
             )}
-            {resultado === "sem_interesse" && (
+            {resultado === "sem_interesse" && !isRetirar && (
               <p className="text-[10px] text-amber-600 bg-amber-500/10 rounded px-2 py-1">Lead removido da fila. +1 pt.</p>
+            )}
+            {isRetirar && (
+              <p className="text-[10px] text-red-600 bg-red-500/10 rounded px-2 py-1 font-semibold">
+                ⚠️ O lead será EXCLUÍDO permanentemente do sistema e não poderá mais ser contatado.
+              </p>
             )}
           </div>
 
@@ -285,6 +303,31 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
             <AlertDialogCancel onClick={() => setShowExitConfirm(false)}>Voltar e registrar</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setShowExitConfirm(false); onClose(); }} className="bg-destructive hover:bg-destructive/90">
               Sair sem registrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Retirar do sistema confirmation */}
+      <AlertDialog open={showRetirarConfirm} onOpenChange={setShowRetirarConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>🚫 Excluir lead permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O lead <strong>{leadName}</strong> será excluído do sistema e não poderá mais ser contatado por nenhum corretor. Essa ação é <strong>irreversível</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowRetirarConfirm(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowRetirarConfirm(false);
+                confirmedRetirar.current = true;
+                handleSubmit();
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Sim, excluir permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

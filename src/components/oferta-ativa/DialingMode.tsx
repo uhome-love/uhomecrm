@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Phone, MessageCircle, Mail, Copy, User, Building2, Calendar, History, ChevronRight, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { createVisitaFromOA } from "@/hooks/useVisitas";
 import AttemptModal from "./AttemptModal";
@@ -91,9 +92,23 @@ export default function DialingMode({ lista, onBack }: Props) {
     setShowModal(true);
   };
 
-  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean) => {
+  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean) => {
     if (!lead || !actionTaken) return;
     await registrar(lead, actionTaken, resultado, feedback, lista, undefined, visitaMarcada);
+
+    // If "retirar do sistema", delete lead permanently
+    if (retirarDoSistema && resultado === "sem_interesse") {
+      try {
+        const phone = lead.telefone?.replace(/\D/g, "") || "";
+        await supabase.from("oferta_ativa_leads").delete().eq("id", lead.id);
+        if (phone.length >= 8) {
+          await supabase.from("pipeline_leads").delete().ilike("telefone", `%${phone.slice(-8)}`);
+        }
+        toast("🚫 Lead excluído permanentemente do sistema", { duration: 3000 });
+      } catch (e) {
+        console.error("[Retirar do sistema] Erro:", e);
+      }
+    }
 
     if (visitaMarcada && user) {
       createVisitaFromOA({
