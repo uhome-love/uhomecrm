@@ -1170,8 +1170,8 @@ function EmpreendimentoCard({
               </Button>
             )}
 
-            {/* Everyone: view landing if exists */}
-            {landingUrl && (
+            {/* Admin only: view landing if exists */}
+            {isAdmin && landingUrl && (
               <Button
                 size="sm"
                 variant="outline"
