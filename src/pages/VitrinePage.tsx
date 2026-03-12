@@ -288,9 +288,24 @@ export default function VitrinePage() {
       )}`
     : null;
 
+  // Build area label from tipologias or fallback to imovel
+  const areaLabel = (() => {
+    if (tipologias.length > 0) {
+      const areas = tipologias
+        .flatMap(t => [t.area_min, t.area_max].filter(Boolean))
+        .map(Number)
+        .filter(n => n > 0);
+      if (areas.length > 0) {
+        const unique = [...new Set(areas)].sort((a, b) => a - b);
+        return unique.join(", ") + " m²";
+      }
+    }
+    return imovel?.area ? `${imovel.area}m²` : null;
+  })();
+
   const specs = [
     tipologias.length > 0 && { icon: BedDouble, label: tipologias.map(t => `${t.dorms} dorm${t.dorms > 1 ? "s" : ""}`).join(", ") },
-    imovel?.area && { icon: Ruler, label: `${imovel.area}m²` },
+    areaLabel && { icon: Ruler, label: areaLabel },
     imovel?.suites && { icon: Home, label: `${imovel.suites} suíte${imovel.suites > 1 ? "s" : ""}` },
     vagas > 0 && { icon: Car, label: `${vagas} vaga${vagas > 1 ? "s" : ""}` },
   ].filter(Boolean) as { icon: any; label: string }[];
