@@ -157,7 +157,7 @@ export default function LandingPageEditor({ open, onOpenChange, codigo, nome, ex
         vitrineId = data.id;
       }
 
-      const url = `${window.location.origin}/vitrine/${vitrineId}`;
+      const url = `https://uhomesales.com/vitrine/${vitrineId}`;
       setGeneratedUrl(url);
       toast.success("Landing page gerada com sucesso!");
     } catch (err: any) {
