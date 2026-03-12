@@ -145,6 +145,81 @@ serve(async (req) => {
       );
     }
 
+    // --- Backfill: resolve empreendimento for leads with campanha_id via jetimob_campaign_map ---
+    if (body.backfill_campaign) {
+      const { data: campaignMap } = await adminClient
+        .from("jetimob_campaign_map")
+        .select("campaign_id, empreendimento, segmento");
+      
+      const cMap = new Map<string, { empreendimento: string; segmento: string | null }>();
+      for (const row of campaignMap || []) {
+        if (row.campaign_id && row.empreendimento) {
+          cMap.set(String(row.campaign_id), { empreendimento: row.empreendimento, segmento: row.segmento });
+        }
+      }
+
+      // Load pipeline_segmentos for segment resolution
+      const { data: pSegs } = await adminClient.from("pipeline_segmentos").select("id, nome");
+      const segNameToId = new Map<string, string>();
+      for (const s of pSegs || []) segNameToId.set(s.nome.toLowerCase().trim(), s.id);
+
+      // Fetch leads with campanha_id set but no empreendimento
+      const { data: leadsToFix } = await adminClient
+        .from("pipeline_leads")
+        .select("id, campanha_id")
+        .not("campanha_id", "is", null)
+        .or("empreendimento.is.null,empreendimento.eq.")
+        .limit(2000);
+
+      let fixed = 0;
+      for (const lead of leadsToFix || []) {
+        const mapped = cMap.get(String(lead.campanha_id));
+        if (mapped) {
+          const update: Record<string, any> = { empreendimento: mapped.empreendimento };
+          if (mapped.segmento) {
+            const segId = segNameToId.get(mapped.segmento.toLowerCase().trim());
+            if (segId) update.segmento_id = segId;
+          }
+          await adminClient.from("pipeline_leads").update(update).eq("id", lead.id);
+          fixed++;
+        }
+      }
+
+      // Also try to resolve leads that have jetimob_lead_id (campaign_id is embedded)
+      const { data: leadsWithJetimob } = await adminClient
+        .from("pipeline_leads")
+        .select("id, jetimob_lead_id")
+        .not("jetimob_lead_id", "is", null)
+        .or("empreendimento.is.null,empreendimento.eq.")
+        .limit(2000);
+
+      for (const lead of leadsWithJetimob || []) {
+        // jetimob_lead_id format: phone_campaignId_createdAt
+        const parts = (lead.jetimob_lead_id || "").split("_");
+        if (parts.length >= 2) {
+          const extractedCampaignId = parts[1];
+          const mapped = cMap.get(extractedCampaignId);
+          if (mapped) {
+            const update: Record<string, any> = { 
+              empreendimento: mapped.empreendimento,
+              campanha_id: extractedCampaignId,
+            };
+            if (mapped.segmento) {
+              const segId = segNameToId.get(mapped.segmento.toLowerCase().trim());
+              if (segId) update.segmento_id = segId;
+            }
+            await adminClient.from("pipeline_leads").update(update).eq("id", lead.id);
+            fixed++;
+          }
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ fixed, message: `${fixed} leads corrigidos via campaign mapping` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // --- Main sync flow ---
     const JETIMOB_LEADS_URL_KEY = Deno.env.get("JETIMOB_LEADS_URL_KEY");
     const JETIMOB_LEADS_PRIVATE_KEY = Deno.env.get("JETIMOB_LEADS_PRIVATE_KEY");
