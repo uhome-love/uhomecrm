@@ -139,11 +139,14 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     const lig = ligacoes || 0;
     const aprov = aproveitados || 0;
 
-    // Visitas
-    const { data: visitas } = await supabase.from("visitas").select("id, status").gte("data_visita", r.start).lte("data_visita", r.end);
-    const visitasMarcadas = visitas?.length || 0;
-    const visitasRealizadas = visitas?.filter(v => v.status === "realizada").length || 0;
-    const noShows = visitas?.filter(v => v.status === "no_show").length || 0;
+    // Visitas — marcadas = created in period, realizadas = data_visita in period + status realizada
+    const [{ count: visitasMarcadasCount }, { data: visitasRealizadasData }] = await Promise.all([
+      supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs),
+      supabase.from("visitas").select("id, status").gte("data_visita", r.start).lte("data_visita", r.end),
+    ]);
+    const visitasMarcadas = visitasMarcadasCount || 0;
+    const visitasRealizadas = visitasRealizadasData?.filter(v => v.status === "realizada").length || 0;
+    const noShows = visitasRealizadasData?.filter(v => v.status === "no_show").length || 0;
 
     // Negocios — all created in period
     const { data: negocios } = await supabase.from("negocios").select("id, fase, status, vgv_estimado, vgv_final").gte("created_at", startTs).lte("created_at", endTs);
