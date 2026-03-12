@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { DateFilterProvider } from "@/contexts/DateFilterContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import AppLayout from "@/components/AppLayout";
@@ -133,6 +134,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <DateFilterProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
@@ -220,6 +222,7 @@ const App = () => (
             <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
           </Routes>
         </BrowserRouter>
+        </DateFilterProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
