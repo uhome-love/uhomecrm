@@ -44,7 +44,7 @@ const SCHEMA = {
     { name: "previsao_entrega", type: "string" as const, optional: true as const },
     { name: "valor_condominio", type: "float" as const, optional: true as const },
     { name: "is_uhome", type: "bool" as const, optional: true as const, facet: true as const },
-    { name: "data_atualizacao", type: "int64" as const, optional: true as const },
+    { name: "data_atualizacao", type: "int64" as const },
   ],
   default_sorting_field: "data_atualizacao",
   token_separators: ["-", "/"],
