@@ -102,5 +102,8 @@ verify_jwt = false
 [functions.receive-meta-lead]
 verify_jwt = false
 
+[functions.receive-tiktok-lead]
+verify_jwt = false
+
 [functions.receive-landing-lead]
 verify_jwt = false
