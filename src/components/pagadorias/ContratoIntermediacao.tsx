@@ -239,21 +239,22 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
         <div
           ref={contractRef}
           style={{
-            fontFamily: "Calibri, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-            fontSize: "11px",
-            lineHeight: "1.6",
-            color: "#000",
+            fontFamily: "'Georgia', 'Times New Roman', 'Calibri', serif",
+            fontSize: "13px",
+            lineHeight: "1.7",
+            color: "#1a1a1a",
             background: "#fff",
-            padding: "10px",
+            padding: "16px 20px",
+            letterSpacing: "0.01em",
           }}
         >
           {/* LOGO */}
-          <div style={{ textAlign: "center", marginBottom: "24px" }}>
-            <img src="/logo-uhome.svg" alt="UHome" style={{ height: "55px" }} crossOrigin="anonymous" />
+          <div style={{ textAlign: "center", marginBottom: "28px" }}>
+            <img src="/images/uhome-logo-horizontal-azul.png" alt="UHome" style={{ height: "64px" }} crossOrigin="anonymous" />
           </div>
 
           {/* TITLE */}
-          <p style={{ textAlign: "center", fontSize: "13px", fontWeight: "bold", marginBottom: "24px", textDecoration: "underline" }}>
+          <p style={{ textAlign: "center", fontSize: "15px", fontWeight: "bold", marginBottom: "28px", textDecoration: "underline", letterSpacing: "0.04em" }}>
             INSTRUMENTO PARTICULAR DE INTERMEDIAÇÃO IMOBILIÁRIA
           </p>
 
