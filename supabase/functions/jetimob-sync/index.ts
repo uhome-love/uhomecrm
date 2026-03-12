@@ -206,11 +206,23 @@ serve(async (req) => {
     // Load empreendimento → pipeline_segmento mapping
     // roleta_campanhas uses roleta_segmentos IDs, but pipeline_leads FK references pipeline_segmentos
     // We resolve by matching segment names between the two tables
-    const [campanhasRes, roletaSegsRes, pipelineSegsRes] = await Promise.all([
+    const [campanhasRes, roletaSegsRes, pipelineSegsRes, campaignMapRes] = await Promise.all([
       adminClient.from("roleta_campanhas").select("empreendimento, segmento_id").eq("ativo", true),
       adminClient.from("roleta_segmentos").select("id, nome"),
       adminClient.from("pipeline_segmentos").select("id, nome"),
+      adminClient.from("jetimob_campaign_map").select("campaign_id, empreendimento, segmento"),
     ]);
+
+    // Build campaign_id → { empreendimento, segmento } map from jetimob_campaign_map
+    const campaignIdMap = new Map<string, { empreendimento: string; segmento: string | null }>();
+    for (const row of campaignMapRes.data || []) {
+      if (row.campaign_id && row.empreendimento) {
+        campaignIdMap.set(String(row.campaign_id), {
+          empreendimento: row.empreendimento,
+          segmento: row.segmento || null,
+        });
+      }
+    }
 
     // Build roleta_segmento_id → pipeline_segmento_id mapping
     const roletaToPipeline = new Map<string, string>();
@@ -230,6 +242,12 @@ serve(async (req) => {
           empToSegmento.set(c.empreendimento.toLowerCase().trim(), pipelineSegId);
         }
       }
+    }
+
+    // Build segmento name → pipeline_segmento_id mapping (for jetimob_campaign_map.segmento)
+    const segmentoNameToId = new Map<string, string>();
+    for (const ps of pipelineSegsRes.data || []) {
+      segmentoNameToId.set(ps.nome.toLowerCase().trim(), ps.id);
     }
 
     // Helper: resolve segmento from empreendimento name
