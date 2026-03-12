@@ -258,7 +258,8 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
       <section className="max-w-6xl mx-auto px-4 sm:px-8 pb-16">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {imoveis.map((item, idx) => {
-            const seg = (item as any).segmento || "medio";
+            const rawSeg = ((item as any).segmento || "").toLowerCase();
+            const seg = rawSeg.includes("mcmv") || rawSeg.includes("open") ? "mcmv" : rawSeg.includes("alto") ? "alto" : "medio";
             const colors = segmentoColors[seg] || segmentoColors.medio;
             const fotos = item.fotos || [];
             const currentImg = imgIdx[idx] || 0;
