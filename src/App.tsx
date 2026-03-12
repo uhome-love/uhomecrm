@@ -81,6 +81,12 @@ const AnunciosNoAr = lazy(() => import("./pages/AnunciosNoAr"));
 const IntegracaoJetimob = lazy(() => import("./pages/IntegracaoJetimob"));
 const CadastrosPage = lazy(() => import("./pages/CadastrosPage"));
 
+// RH pages
+const RhDashboard = lazy(() => import("./pages/RhDashboard"));
+const RhRecrutamento = lazy(() => import("./pages/RhRecrutamento"));
+const RhConversas = lazy(() => import("./pages/RhConversas"));
+const RhSalaReuniao = lazy(() => import("./pages/RhSalaReuniao"));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
