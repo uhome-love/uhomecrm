@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => Promise<void> | void;
+  onSubmit: (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean) => Promise<void> | void;
   leadName: string;
   callDuration?: number; // seconds
 }
