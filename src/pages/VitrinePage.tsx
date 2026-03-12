@@ -47,6 +47,15 @@ interface LandingData {
   landing_titulo?: string | null;
   landing_subtitulo?: string | null;
   descricao?: string | null;
+  fotos?: string[];
+  bairro?: string | null;
+  valor_min?: number | null;
+  valor_max?: number | null;
+  tipologias?: { dorms: number; area_min?: number; area_max?: number; suites?: number }[];
+  status_obra?: string | null;
+  previsao_entrega?: string | null;
+  vagas?: number | null;
+}
   bairro?: string | null;
   valor_min?: number | null;
   valor_max?: number | null;
