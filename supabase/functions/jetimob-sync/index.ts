@@ -185,46 +185,19 @@ serve(async (req) => {
         }
       }
 
-      // Phase 2: fetch leads from Jetimob API, match by phone (normalized), and resolve campaign_id
+      // Phase 2: match orphan leads against Jetimob API by phone
+      // Strategy: load orphan phones first (small), then stream API pages one-by-one
       const JETIMOB_LEADS_URL_KEY = Deno.env.get("JETIMOB_LEADS_URL_KEY");
       const JETIMOB_LEADS_PRIVATE_KEY = Deno.env.get("JETIMOB_LEADS_PRIVATE_KEY");
+      const normalizePhone = (p: string | null | undefined): string => {
+        if (!p) return "";
+        return p.replace(/\D/g, "");
+      };
+
       if (JETIMOB_LEADS_URL_KEY && JETIMOB_LEADS_PRIVATE_KEY) {
         try {
-          // Helper: strip all non-digits from phone
-          const normalizePhone = (p: string | null | undefined): string => {
-            if (!p) return "";
-            return p.replace(/\D/g, "");
-          };
-
-          // Paginate Jetimob API — only build phone→campaign map, don't store full objects
-          const phoneToApi = new Map<string, { campaign_id: string; msg: string }>();
-          let page = 1;
-          const perPage = 200;
-          const MAX_PAGES = 10; // ~2000 leads max to stay within compute limits
-          while (page <= MAX_PAGES) {
-            const apiResp = await fetch(
-              `https://api.jetimob.com/leads/${JETIMOB_LEADS_URL_KEY}?page=${page}&per_page=${perPage}`,
-              { method: "GET", headers: { "Authorization-Key": JETIMOB_LEADS_PRIVATE_KEY } }
-            );
-            if (!apiResp.ok) break;
-            const apiData = await apiResp.json();
-            const batch = Array.isArray(apiData?.result) ? apiData.result : Array.isArray(apiData) ? apiData : [];
-            // Index directly without storing full objects
-            for (const al of batch) {
-              const rawPhone = al.phones?.[0] || al.phone;
-              const cid = al.campaign_id ? String(al.campaign_id) : null;
-              if (rawPhone && cid) {
-                phoneToApi.set(normalizePhone(rawPhone), { campaign_id: cid, msg: al.message || "" });
-              }
-            }
-            console.log(`Backfill: page ${page} indexed ${batch.length} leads (map size: ${phoneToApi.size})`);
-            if (batch.length < perPage) break;
-            page++;
-          }
-          console.log(`Backfill: ${phoneToApi.size} API leads with campaign_id mapped by phone`);
-
-          // Fetch ALL leads without empreendimento in batches
-          let allOrphanLeads: any[] = [];
+          // Step A: Load orphan leads (only id + phone) into a Map keyed by normalized phone
+          const orphanByPhone = new Map<string, string[]>(); // normalized phone → lead ids
           let from = 0;
           const batchSize = 1000;
           while (true) {
@@ -234,31 +207,70 @@ serve(async (req) => {
               .not("telefone", "is", null)
               .or("empreendimento.is.null,empreendimento.eq.,empreendimento.eq.Avulso")
               .range(from, from + batchSize - 1);
-            allOrphanLeads.push(...(batch || []));
+            for (const lead of batch || []) {
+              const norm = normalizePhone(lead.telefone);
+              if (norm) {
+                const existing = orphanByPhone.get(norm) || [];
+                existing.push(lead.id);
+                orphanByPhone.set(norm, existing);
+              }
+            }
             if (!batch || batch.length < batchSize) break;
             from += batchSize;
           }
-          console.log(`Backfill: ${allOrphanLeads.length} orphan leads to process`);
+          console.log(`Backfill: ${orphanByPhone.size} unique orphan phones loaded`);
 
-          for (const lead of allOrphanLeads) {
-            if (!lead.telefone) continue;
-            const normalized = normalizePhone(lead.telefone);
-            if (!normalized) continue;
-            const apiMatch = phoneToApi.get(normalized);
-            if (apiMatch) {
-              const mapped = cMap.get(apiMatch.campaign_id);
-              if (mapped) {
-                const update: Record<string, any> = { 
+          if (orphanByPhone.size > 0) {
+            // Step B: Stream API pages, match against orphans, update DB, then discard page
+            let page = 1;
+            const MAX_PAGES = 3; // each page ~17k leads; 3 pages = ~51k, enough for recent leads
+            while (page <= MAX_PAGES && orphanByPhone.size > 0) {
+              const apiResp = await fetch(
+                `https://api.jetimob.com/leads/${JETIMOB_LEADS_URL_KEY}?page=${page}`,
+                { method: "GET", headers: { "Authorization-Key": JETIMOB_LEADS_PRIVATE_KEY } }
+              );
+              if (!apiResp.ok) {
+                console.warn(`Backfill: API page ${page} failed with status ${apiResp.status}`);
+                await apiResp.text(); // consume body
+                break;
+              }
+              const apiData = await apiResp.json();
+              const batch = Array.isArray(apiData?.result) ? apiData.result : Array.isArray(apiData) ? apiData : [];
+              console.log(`Backfill: page ${page} has ${batch.length} API leads`);
+
+              if (batch.length === 0) break;
+
+              // Match and update inline
+              let pageFixed = 0;
+              for (const al of batch) {
+                const rawPhone = al.phones?.[0] || al.phone;
+                const cid = al.campaign_id ? String(al.campaign_id) : null;
+                if (!rawPhone || !cid) continue;
+                const norm = normalizePhone(rawPhone);
+                const leadIds = orphanByPhone.get(norm);
+                if (!leadIds) continue;
+
+                const mapped = cMap.get(cid);
+                if (!mapped) continue;
+
+                const update: Record<string, any> = {
                   empreendimento: mapped.empreendimento,
-                  campanha_id: apiMatch.campaign_id,
+                  campanha_id: cid,
                 };
                 if (mapped.segmento) {
                   const segId = segNameToId.get(mapped.segmento.toLowerCase().trim());
                   if (segId) update.segmento_id = segId;
                 }
-                await adminClient.from("pipeline_leads").update(update).eq("id", lead.id);
-                fixed++;
+
+                for (const lid of leadIds) {
+                  await adminClient.from("pipeline_leads").update(update).eq("id", lid);
+                  fixed++;
+                  pageFixed++;
+                }
+                orphanByPhone.delete(norm); // resolved, no need to check again
               }
+              console.log(`Backfill: page ${page} resolved ${pageFixed} leads (remaining orphans: ${orphanByPhone.size})`);
+              page++;
             }
           }
         } catch (apiErr) {
