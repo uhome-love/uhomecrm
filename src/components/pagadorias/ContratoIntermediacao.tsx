@@ -517,7 +517,7 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
 
           {/* ── TESTEMUNHAS ── */}
           <div style={{ marginTop: "50px" }}>
-            <p style={{ marginBottom: "8px", fontWeight: "bold" }}>Testemunhas:</p>
+            <p style={{ marginBottom: "8px", fontWeight: "bold", fontSize: "13px" }}>Testemunhas:</p>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
                 <tr>
