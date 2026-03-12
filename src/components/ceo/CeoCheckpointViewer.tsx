@@ -399,11 +399,20 @@ export default function CeoCheckpointViewer() {
                         <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${st.cls}`}>{st.label}</span>
                       </td>
                       <td className="px-2 py-2 text-center">{g.totals.presentes}/{g.totals.total}</td>
-                      <td className="px-2 py-2 text-center">{g.totals.real_ligacoes}/{g.totals.meta_ligacoes}</td>
-                      <td className="px-2 py-2 text-center">{g.totals.real_leads}/{g.totals.meta_leads}</td>
-                      <td className="px-2 py-2 text-center">{g.totals.real_visitas_marcadas}/{g.totals.meta_visitas_marcadas}</td>
-                      <td className="px-2 py-2 text-center">{g.totals.real_visitas_realizadas}</td>
-                      <td className="px-2 py-2 text-center">{g.totals.real_propostas}</td>
+                      <td className="px-2 py-2 text-center">
+                        <span className="font-bold text-foreground">{g.totals.real_ligacoes}</span>
+                        <span className="text-muted-foreground text-[10px] block">de {g.totals.meta_ligacoes}</span>
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        <span className="font-bold text-foreground">{g.totals.real_leads}</span>
+                        <span className="text-muted-foreground text-[10px] block">de {g.totals.meta_leads}</span>
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        <span className="font-bold text-foreground">{g.totals.real_visitas_marcadas}</span>
+                        <span className="text-muted-foreground text-[10px] block">de {g.totals.meta_visitas_marcadas}</span>
+                      </td>
+                      <td className="px-2 py-2 text-center font-bold">{g.totals.real_visitas_realizadas}</td>
+                      <td className="px-2 py-2 text-center font-bold">{g.totals.real_propostas}</td>
                       <td className="px-2 py-2 text-center">
                         <span className={`font-semibold ${pctColor(ligPct)}`}>{ligPct}%</span>
                       </td>
