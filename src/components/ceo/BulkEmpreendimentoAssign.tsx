@@ -39,7 +39,6 @@ export default function BulkEmpreendimentoAssign({ open, onOpenChange, onComplet
   const [search, setSearch] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("__all__");
   const [autoResolving, setAutoResolving] = useState(false);
-  const [filterOrigem, setFilterOrigem] = useState("__all__");
 
   const { data: leads = [], isLoading, refetch } = useQuery({
     queryKey: ["leads-sem-empreendimento"],
