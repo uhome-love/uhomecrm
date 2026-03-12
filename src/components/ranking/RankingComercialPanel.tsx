@@ -3,6 +3,9 @@ import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
+import { useDateFilter } from "@/contexts/DateFilterContext";
+import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
+import PeriodBadge from "@/components/PeriodBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Medal, TrendingUp, Users, Target, BarChart3, Sparkles } from "lucide-react";
@@ -11,7 +14,6 @@ import IaCoreAction from "@/components/IaCoreAction";
 import { getLevel } from "@/lib/gamification";
 
 type RankMetric = "score" | "vgv_assinado" | "vgv_gerado" | "visitas_realizadas" | "propostas";
-type PeriodOption = "dia" | "semana" | "mes" | "trimestre";
 
 const metricLabels: Record<RankMetric, string> = {
   score: "Score Geral",
@@ -21,13 +23,6 @@ const metricLabels: Record<RankMetric, string> = {
   propostas: "Propostas",
 };
 
-const periodLabels: Record<PeriodOption, string> = {
-  dia: "Hoje",
-  semana: "Semana",
-  mes: "Mês",
-  trimestre: "Trimestre",
-};
-
 const medals = ["🥇", "🥈", "🥉"];
 const medalBg = [
   "border-warning/40 bg-gradient-to-r from-warning/10 to-warning/5",
@@ -35,10 +30,19 @@ const medalBg = [
   "border-orange-400/30 bg-gradient-to-r from-orange-50 to-orange-50/50 dark:from-orange-900/10 dark:to-orange-900/5",
 ];
 
+// Map global period to CeoPeriod
+function toCeoPeriod(gp: string): CeoPeriod {
+  if (gp === "hoje" || gp === "ontem") return "dia";
+  if (gp === "semana") return "semana";
+  if (gp === "ultimos_30d") return "mes";
+  if (gp === "custom") return "custom";
+  return "mes";
+}
+
 export default function RankingComercialPanel() {
   const { isAdmin, isGestor, isCorretor } = useUserRole();
   const { user } = useAuth();
-  const [period, setPeriod] = useState<PeriodOption>("semana");
+  const { period: globalPeriod, range } = useDateFilter();
   const [metric, setMetric] = useState<RankMetric>("vgv_assinado");
   const [corretorGerenteId, setCorretorGerenteId] = useState<string | undefined>();
 
@@ -59,7 +63,8 @@ export default function RankingComercialPanel() {
   }, [isCorretor, user?.id]);
 
   const filterGerenteId = isAdmin ? undefined : isCorretor ? corretorGerenteId : user?.id;
-  const { gerentes, allCorretores, loading } = useCeoData(period as CeoPeriod, undefined, undefined, filterGerenteId);
+  const ceoPeriod = toCeoPeriod(globalPeriod);
+  const { gerentes, allCorretores, loading } = useCeoData(ceoPeriod, range.start, range.end, filterGerenteId);
 
   // Sort corretores by selected metric
   const sortedCorretores = useMemo(() => {
@@ -121,8 +126,8 @@ export default function RankingComercialPanel() {
     const teams = sortedTimes.map((t, i) =>
       `${i + 1}. Equipe ${t.gerente_nome} — Score: ${t.totals.score}, VGV Assinado: R$ ${t.totals.real_vgv_assinado.toLocaleString("pt-BR")}, Visitas: ${t.totals.real_visitas_realizadas}, Propostas: ${t.totals.real_propostas}`
     ).join("\n");
-    return `Período: ${periodLabels[period]}\n\nRanking de Times:\n${teams}\n\nTop 5 Corretores:\n${top5}`;
-  }, [sortedCorretores, sortedTimes, period]);
+    return `Período: ${globalPeriod}\n\nRanking de Times:\n${teams}\n\nTop 5 Corretores:\n${top5}`;
+  }, [sortedCorretores, sortedTimes, globalPeriod]);
 
   return (
     <div className="space-y-6">
@@ -132,22 +137,14 @@ export default function RankingComercialPanel() {
           <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
             <Trophy className="h-6 w-6 text-warning" />
             Ranking Comercial (VGV)
+            <PeriodBadge className="ml-2" />
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isAdmin ? "Visão completa da empresa" : "Ranking da sua equipe"}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodOption)}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(periodLabels).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <GlobalDateFilterBar />
           <Select value={metric} onValueChange={(v) => setMetric(v as RankMetric)}>
             <SelectTrigger className="w-48">
               <SelectValue />

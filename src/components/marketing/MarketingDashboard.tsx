@@ -1,4 +1,6 @@
 import { useState, useRef } from "react";
+import PeriodBadge from "@/components/PeriodBadge";
+import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
 import { useMarketing, getCanalLabel } from "@/hooks/useMarketing";
 import { useMetaAdsSync } from "@/hooks/useMetaAdsSync";
 import IaCoreAction from "@/components/IaCoreAction";
@@ -171,8 +173,10 @@ export default function MarketingDashboard() {
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
             Inteligência de Marketing
+            <PeriodBadge className="ml-2" />
           </h2>
           <p className="text-xs text-muted-foreground mt-1">Análise de campanhas, portais e canais de marketing</p>
+          <GlobalDateFilterBar className="mt-2" />
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import PeriodBadge from "@/components/PeriodBadge";
 import { formatBRLCompact } from "@/lib/utils";
 import { useNegocios, NEGOCIOS_FASES, type Negocio, type CorretorInfo } from "@/hooks/useNegocios";
 import { useLeadProgression } from "@/hooks/useLeadProgression";
@@ -798,6 +799,7 @@ export default function MeusNegocios() {
               <Briefcase className="h-4 w-4 text-white" />
             </div>
             <h1 className="text-lg font-bold text-white">Pipeline Negócios</h1>
+            <PeriodBadge className="text-[10px]" />
             <Button size="sm" className="gap-1 h-7 text-xs rounded-lg" onClick={() => setAddNegocioOpen(true)}
               style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))", color: "#fff", border: "none" }}
             >

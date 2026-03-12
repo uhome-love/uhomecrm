@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useGerenteDashboard, Period, periodLabels, formatCurrency, getInitials, hashColor } from "@/hooks/useGerenteDashboard";
+import { useDateFilter } from "@/contexts/DateFilterContext";
+import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
 import type { CorretorRow } from "@/hooks/useGerenteDashboard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +58,9 @@ interface CorretorDrawerData { user_id: string; nome: string; avatar_url: string
 export default function GerenteDashboard() {
   const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<Period>("dia");
+  const { period: globalPeriod, range } = useDateFilter();
+  // Map global period to gerente period
+  const period: Period = globalPeriod === "semana" ? "semana" : globalPeriod === "mes" || globalPeriod === "ultimos_30d" ? "mes" : "dia";
   const [negFaseTab, setNegFaseTab] = useState<"proposta" | "negociacao" | "documentacao">("proposta");
   const [drawerCorretor, setDrawerCorretor] = useState<CorretorDrawerData | null>(null);
   const [lastUpdate] = useState(() => format(new Date(), "HH:mm"));
@@ -120,16 +124,7 @@ export default function GerenteDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-white/5 rounded-full p-0.5 gap-0.5">
-            {(["dia", "semana", "mes"] as Period[]).map(p => (
-              <button key={p} className="text-xs px-4 py-1.5 rounded-full font-semibold transition-all duration-200"
-                style={{
-                  background: period === p ? "hsl(var(--primary))" : "transparent",
-                  color: period === p ? "#FFFFFF" : "#94A3B8",
-                }}
-                onClick={() => setPeriod(p)}>{periodLabels[p]}</button>
-            ))}
-          </div>
+          <GlobalDateFilterBar variant="header" />
           <span className="text-[10px] text-slate-500 flex items-center gap-1 shrink-0">
             <RefreshCw className="h-3 w-3" /> {lastUpdate}
           </span>

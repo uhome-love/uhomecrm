@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from "react";
+import PeriodBadge from "@/components/PeriodBadge";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
@@ -264,6 +265,7 @@ export default function PipelineKanban() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          <PeriodBadge className="text-[10px] shrink-0" />
 
           {isKanbanOrIntel && (
             <>
