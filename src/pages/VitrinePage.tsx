@@ -218,45 +218,60 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100">
       {/* Header */}
       <header className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-amber-500/10" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-16 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
-            <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 rounded-full px-5 py-2">
+        {/* Navy gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0c1d3a] via-[#142d54] to-[#0f2847]" />
+        {/* Subtle golden accent */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(212,175,55,0.08)_0%,transparent_60%)]" />
+        
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-12 sm:py-20 relative z-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-5">
+            <div className="inline-flex items-center gap-2.5 bg-white/10 backdrop-blur-sm border border-white/15 rounded-full px-6 py-2.5 shadow-lg">
               <Star className="h-4 w-4 text-amber-400" />
-              <span className="text-amber-300 text-sm font-bold tracking-wider uppercase">Melnick Day 2026</span>
+              <span className="text-white/90 text-sm font-bold tracking-[0.2em] uppercase">Seleção Melnick Day 2026</span>
               <Star className="h-4 w-4 text-amber-400" />
             </div>
-            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg">
               {vitrine.titulo}
             </h1>
             {vitrine.mensagem && (
-              <p className="text-white/60 text-base sm:text-lg max-w-2xl mx-auto">{vitrine.mensagem}</p>
+              <p className="text-white/60 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">{vitrine.mensagem}</p>
             )}
             {corretor && (
-              <div className="flex items-center justify-center gap-3 pt-2">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                transition={{ delay: 0.3 }}
+                className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/10"
+              >
                 {corretor.avatar_url ? (
-                  <img src={corretor.avatar_url} alt={corretor.nome} className="w-10 h-10 rounded-full border-2 border-amber-500/50 object-cover" />
+                  <img src={corretor.avatar_url} alt={corretor.nome} className="w-10 h-10 rounded-full border-2 border-amber-400/60 object-cover shadow-md" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center text-amber-300 font-bold border-2 border-amber-500/50">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold border-2 border-amber-400/60 shadow-md">
                     {corretor.nome.charAt(0)}
                   </div>
                 )}
                 <div className="text-left">
-                  <p className="text-white/40 text-[10px] uppercase tracking-[0.2em]">Seleção por</p>
+                  <p className="text-white/50 text-[10px] uppercase tracking-[0.2em] font-medium">Seleção por</p>
                   <p className="text-white font-semibold text-sm">{corretor.nome}</p>
                 </div>
-              </div>
+              </motion.div>
             )}
           </motion.div>
+        </div>
+        {/* Curved bottom edge */}
+        <div className="absolute bottom-0 left-0 right-0 h-8">
+          <svg viewBox="0 0 1440 32" fill="none" className="w-full h-full" preserveAspectRatio="none">
+            <path d="M0 32V0C240 28 480 32 720 32C960 32 1200 28 1440 0V32H0Z" className="fill-slate-50" />
+          </svg>
         </div>
       </header>
 
       {/* Cards Grid */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-8 pb-16">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-14">
+        <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
           {imoveis.map((item, idx) => {
             const rawSeg = ((item as any).segmento || "").toLowerCase();
             const seg = rawSeg.includes("mcmv") || rawSeg.includes("open") ? "mcmv" : rawSeg.includes("alto") ? "alto" : "medio";
@@ -267,11 +282,11 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
             return (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-2xl overflow-hidden shadow-xl shadow-black/20 border border-white/10 flex flex-col"
+                transition={{ delay: idx * 0.08, type: "spring", stiffness: 100 }}
+                className="bg-white rounded-2xl overflow-hidden shadow-lg shadow-slate-200/80 border border-slate-100 flex flex-col hover:shadow-xl hover:shadow-slate-300/60 hover:-translate-y-1 transition-all duration-300"
               >
                 {/* Image carousel */}
                 <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden group">
@@ -282,38 +297,38 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
                         <>
                           <button
                             onClick={() => setImgIdx(p => ({ ...p, [idx]: (currentImg - 1 + fotos.length) % fotos.length }))}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm text-slate-700 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => setImgIdx(p => ({ ...p, [idx]: (currentImg + 1) % fotos.length }))}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm text-slate-700 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                           >
                             <ChevronRight className="h-4 w-4" />
                           </button>
-                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5">
                             {fotos.slice(0, 6).map((_, i) => (
-                              <div key={i} className={`h-1.5 rounded-full transition-all ${i === currentImg ? "w-4 bg-white" : "w-1.5 bg-white/50"}`} />
+                              <div key={i} className={`h-1.5 rounded-full transition-all shadow-sm ${i === currentImg ? "w-5 bg-white" : "w-1.5 bg-white/60"}`} />
                             ))}
                           </div>
                         </>
                       )}
                     </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
                       <Building2 className="h-12 w-12 text-slate-300" />
                     </div>
                   )}
 
                   {/* Segmento badge */}
-                  <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${colors.badge}`}>
+                  <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${colors.badge}`}>
                     {seg === "mcmv" ? "MCMV" : seg === "alto" ? "Alto Padrão" : "Médio Padrão"}
                   </div>
 
                   {/* Discount badge */}
                   {(item as any).descontoMax && (
-                    <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
+                    <div className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-md">
                       Até {(item as any).descontoMax} OFF
                     </div>
                   )}
@@ -322,10 +337,10 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
                 {/* Content */}
                 <div className="p-5 flex-1 flex flex-col gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 leading-tight">{item.empreendimento || item.titulo}</h3>
+                    <h3 className="text-lg font-extrabold text-[#0c1d3a] leading-tight">{item.empreendimento || item.titulo}</h3>
                     {item.bairro && (
-                      <p className="text-slate-500 text-xs flex items-center gap-1 mt-1">
-                        <MapPin className="h-3 w-3" /> {item.bairro}
+                      <p className="text-slate-500 text-xs flex items-center gap-1 mt-1.5">
+                        <MapPin className="h-3 w-3 text-[#1e3a5f]" /> {item.bairro}
                       </p>
                     )}
                   </div>
@@ -333,13 +348,13 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
                   {/* Specs */}
                   <div className="flex flex-wrap gap-1.5">
                     {(item as any).metragens && (
-                      <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{(item as any).metragens}</span>
+                      <span className="text-[11px] bg-[#0c1d3a]/5 text-[#1e3a5f] px-2.5 py-1 rounded-lg font-medium">{(item as any).metragens}</span>
                     )}
                     {(item as any).dorms && (
-                      <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{(item as any).dorms}</span>
+                      <span className="text-[11px] bg-[#0c1d3a]/5 text-[#1e3a5f] px-2.5 py-1 rounded-lg font-medium">{(item as any).dorms}</span>
                     )}
                     {(item as any).status && (
-                      <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{(item as any).status}</span>
+                      <span className="text-[11px] bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg font-medium">{(item as any).status}</span>
                     )}
                   </div>
 
@@ -349,8 +364,8 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
                       <p className="text-xs text-slate-400 line-through">De {(item as any).precoDe}</p>
                     )}
                     {(item as any).precoPor && (
-                      <p className="text-xl font-black text-slate-900">
-                        Por <span className="text-emerald-600">{(item as any).precoPor}</span>
+                      <p className="text-xl font-black text-[#0c1d3a]">
+                        Por <span className="text-[#1e6b3a]">{(item as any).precoPor}</span>
                       </p>
                     )}
                   </div>
@@ -361,9 +376,9 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
                       href={`${whatsappBase}?text=${encodeURIComponent(`Olá ${corretor!.nome}! Tenho interesse no ${item.empreendimento || item.titulo} - Melnick Day 2026`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+                      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-r from-[#0c1d3a] to-[#1e3a5f] hover:from-[#142d54] hover:to-[#264b6e] text-white font-semibold text-sm transition-all shadow-md hover:shadow-lg"
                     >
-                      <Phone className="h-4 w-4" />
+                      <MessageCircle className="h-4 w-4" />
                       Quero saber mais
                     </a>
                   )}
@@ -376,17 +391,19 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
 
       {/* Footer CTA */}
       {whatsappBase && corretor && (
-        <section className="py-12 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/20 border-t border-amber-500/20">
-          <div className="max-w-2xl mx-auto px-4 text-center space-y-4">
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0c1d3a] via-[#142d54] to-[#0f2847]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(212,175,55,0.1)_0%,transparent_60%)]" />
+          <div className="max-w-2xl mx-auto px-4 py-14 text-center space-y-5 relative z-10">
             <h2 className="text-2xl sm:text-3xl font-black text-white">Gostou das ofertas?</h2>
-            <p className="text-white/60">Fale agora com {corretor.nome} e aproveite as condições do Melnick Day!</p>
+            <p className="text-white/60 text-base">Fale agora com {corretor.nome} e aproveite as condições exclusivas do Melnick Day!</p>
             <a
               href={`${whatsappBase}?text=${encodeURIComponent(`Olá ${corretor.nome}! Vi as ofertas do Melnick Day 2026 e quero mais informações!`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-4 rounded-full transition-all shadow-xl hover:shadow-2xl hover:scale-105 text-lg"
+              className="inline-flex items-center gap-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-[#0c1d3a] font-bold px-8 py-4 rounded-full transition-all shadow-xl hover:shadow-2xl hover:scale-105 text-lg"
             >
-              <Phone className="h-5 w-5" />
+              <MessageCircle className="h-5 w-5" />
               Falar pelo WhatsApp
               <ArrowRight className="h-5 w-5" />
             </a>
@@ -395,12 +412,12 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
       )}
 
       {/* Footer */}
-      <footer className="py-6 border-t border-white/5">
+      <footer className="py-6 bg-[#0c1d3a] border-t border-white/5">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-sm text-white/30">
-            Seleção personalizada por <span className="font-medium text-white/50">{corretor?.nome || "UHome"}</span>
+          <p className="text-sm text-white/40">
+            Seleção personalizada por <span className="font-semibold text-white/70">{corretor?.nome || "UHome"}</span>
           </p>
-          <p className="text-xs text-white/20 mt-1">UHome Sales • Melnick Day 2026</p>
+          <p className="text-xs text-white/25 mt-1">UHome Sales • Melnick Day 2026</p>
         </div>
       </footer>
     </div>
