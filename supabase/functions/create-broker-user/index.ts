@@ -79,10 +79,10 @@ serve(async (req) => {
       }
 
       const validRoles = ["corretor", "gestor", "backoffice"];
-      const assignedRole = validRoles.includes(role) ? role : "corretor";
-
-      // Create auth user
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+      // Gestores can only create corretores
+      const assignedRole = isGestor && !isAdmin ? "corretor" : (validRoles.includes(role) ? role : "corretor");
+      // If gestor is creating, auto-assign themselves as gerente
+      const effectiveGerenteId = (isGestor && !isAdmin && !gerente_id) ? caller.id : gerente_id;
         email,
         password: senha,
         email_confirm: true,
