@@ -879,7 +879,7 @@ function CriarVitrineDialog({
           <div className="space-y-4">
             <div className="rounded-xl border border-success/30 bg-success/5 p-4 text-center space-y-2">
               <p className="text-sm font-bold text-success">✅ Vitrine criada com sucesso!</p>
-              <p className="text-xs text-muted-foreground break-all font-mono bg-muted/30 rounded-lg p-2">{vitrineDirectUrl}</p>
+              <p className="text-xs text-muted-foreground break-all font-mono bg-muted/30 rounded-lg p-2">{vitrineUrl}</p>
             </div>
             <div className="flex gap-2">
               <Button onClick={shareWhatsApp} className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700">
