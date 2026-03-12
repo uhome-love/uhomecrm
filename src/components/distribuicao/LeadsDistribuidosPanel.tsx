@@ -47,11 +47,27 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
   const period = externalPeriod ?? internalPeriod;
   const { start, end } = useMemo(() => getPeriodRange(period), [period]);
 
-  // Fetch distribution history
+  // Fetch actual distributed leads from pipeline_leads (source of truth)
   const { data, isLoading } = useQuery({
     queryKey: ["distribuicao-leads", teamUserIds?.join(",") ?? "all", period],
     queryFn: async () => {
+      // Get leads distributed in the period (roleta_distribuido_em is the real distribution timestamp)
       let query = supabase
+        .from("pipeline_leads")
+        .select("id, nome, telefone, empreendimento, corretor_id, aceite_status, distribuido_em, aceito_em, created_at")
+        .not("distribuido_em", "is", null)
+        .gte("distribuido_em", start)
+        .lte("distribuido_em", end)
+        .order("distribuido_em", { ascending: false });
+
+      if (teamUserIds && teamUserIds.length > 0) {
+        query = query.in("corretor_id", teamUserIds);
+      }
+
+      const { data: leadsData } = await query;
+
+      // Also fetch distribution history for tempo_resposta data
+      let histQuery = supabase
         .from("distribuicao_historico")
         .select("id, corretor_id, acao, tempo_resposta_seg, created_at, pipeline_lead_id")
         .gte("created_at", start)
@@ -59,35 +75,27 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
         .order("created_at", { ascending: false });
 
       if (teamUserIds && teamUserIds.length > 0) {
-        query = query.in("corretor_id", teamUserIds);
+        histQuery = histQuery.in("corretor_id", teamUserIds);
       }
 
-      const { data: historico } = await query;
+      const { data: histData } = await histQuery;
 
       // Get profiles for names/avatars
-      const corretorIds = [...new Set((historico || []).map(h => h.corretor_id))];
+      const corretorIds = [...new Set((leadsData || []).map(l => l.corretor_id).filter(Boolean))];
       let profiles: any[] = [];
       if (corretorIds.length > 0) {
         const { data: p } = await supabase.from("profiles").select("user_id, nome, avatar_url, avatar_gamificado_url").in("user_id", corretorIds);
         profiles = p || [];
       }
 
-      // Get lead details for the table view
-      const leadIds = [...new Set((historico || []).map(h => h.pipeline_lead_id).filter(Boolean))];
-      let leads: any[] = [];
-      if (leadIds.length > 0) {
-        const { data: l } = await supabase.from("pipeline_leads").select("id, nome, telefone, empreendimento, created_at").in("id", leadIds);
-        leads = l || [];
-      }
-
-      return { historico: historico || [], profiles, leads };
+      return { leads: leadsData || [], historico: histData || [], profiles };
     },
     staleTime: 30_000,
   });
 
+  const distributedLeads = data?.leads || [];
   const historico = data?.historico || [];
   const profiles = data?.profiles || [];
-  const leads = data?.leads || [];
 
   const profileMap = useMemo(() => {
     const m: Record<string, any> = {};
@@ -95,24 +103,35 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
     return m;
   }, [profiles]);
 
-  const leadMap = useMemo(() => {
-    const m: Record<string, any> = {};
-    leads.forEach(l => { m[l.id] = l; });
+  // Build tempo map from historico (best response time per lead for the actual corretor)
+  const tempoMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    historico.forEach(h => {
+      if (h.tempo_resposta_seg && h.tempo_resposta_seg > 0) {
+        const key = h.pipeline_lead_id;
+        if (!m[key] || h.tempo_resposta_seg < m[key]) {
+          m[key] = h.tempo_resposta_seg;
+        }
+      }
+    });
     return m;
-  }, [leads]);
+  }, [historico]);
 
-  // Aggregate per corretor
+  // Aggregate per corretor using actual pipeline data
   const corretorStats = useMemo(() => {
     const stats: Record<string, { distribuidos: number; aceitos: number; rejeitados: number; pendentes: number; tempos: number[] }> = {};
 
-    historico.forEach(h => {
-      if (!stats[h.corretor_id]) stats[h.corretor_id] = { distribuidos: 0, aceitos: 0, rejeitados: 0, pendentes: 0, tempos: [] };
-      const s = stats[h.corretor_id];
+    distributedLeads.forEach(l => {
+      const cid = l.corretor_id;
+      if (!cid) return;
+      if (!stats[cid]) stats[cid] = { distribuidos: 0, aceitos: 0, rejeitados: 0, pendentes: 0, tempos: [] };
+      const s = stats[cid];
       s.distribuidos++;
-      if (h.acao === "aceito" || h.acao === "aceite") s.aceitos++;
-      else if (h.acao === "rejeitado" || h.acao === "recusado" || h.acao === "devolvido") s.rejeitados++;
+      if (l.aceite_status === "aceito") s.aceitos++;
+      else if (l.aceite_status === "rejeitado" || l.aceite_status === "devolvido") s.rejeitados++;
       else s.pendentes++;
-      if (h.tempo_resposta_seg && h.tempo_resposta_seg > 0) s.tempos.push(h.tempo_resposta_seg);
+      const tempo = tempoMap[l.id];
+      if (tempo) s.tempos.push(tempo);
     });
 
     return Object.entries(stats)
@@ -123,14 +142,14 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
         return { corretor_id, nome, avatar, ...s, tempoMedio };
       })
       .sort((a, b) => b.distribuidos - a.distribuidos);
-  }, [historico, profileMap, teamNameMap]);
+  }, [distributedLeads, profileMap, teamNameMap, tempoMap]);
 
   // Totals
   const totals = useMemo(() => ({
-    distribuidos: historico.length,
-    aceitos: historico.filter(h => h.acao === "aceito" || h.acao === "aceite").length,
-    rejeitados: historico.filter(h => h.acao === "rejeitado" || h.acao === "recusado" || h.acao === "devolvido").length,
-  }), [historico]);
+    distribuidos: distributedLeads.length,
+    aceitos: distributedLeads.filter(l => l.aceite_status === "aceito").length,
+    rejeitados: distributedLeads.filter(l => l.aceite_status === "rejeitado" || l.aceite_status === "devolvido").length,
+  }), [distributedLeads]);
 
   // Daily chart data
   const dailyData = useMemo(() => {
@@ -142,8 +161,8 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
 
     const dayCounts: Record<string, number> = {};
     interval.forEach(d => { dayCounts[format(d, "yyyy-MM-dd")] = 0; });
-    historico.forEach(h => {
-      const day = h.created_at?.slice(0, 10);
+    distributedLeads.forEach(l => {
+      const day = l.distribuido_em?.slice(0, 10);
       if (day && dayCounts[day] !== undefined) dayCounts[day]++;
     });
 
@@ -152,7 +171,7 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
       label: format(parseISO(date), "dd/MM"),
       count,
     }));
-  }, [historico, period]);
+  }, [distributedLeads, period]);
 
   const maxDayCount = Math.max(...dailyData.map(d => d.count), 1);
 
@@ -286,9 +305,9 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
               <div className="flex items-center gap-2 mb-3">
                 <Users className="h-4 w-4 text-blue-500" />
                 <p className="text-xs font-semibold text-foreground">Leads Distribuídos</p>
-                <Badge variant="outline" className="text-[10px]">{historico.length}</Badge>
+                <Badge variant="outline" className="text-[10px]">{distributedLeads.length}</Badge>
               </div>
-              {historico.length === 0 ? (
+              {distributedLeads.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">Nenhum lead distribuído no período</p>
               ) : (
                 <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
@@ -304,36 +323,34 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
                       </tr>
                     </thead>
                     <tbody>
-                      {historico.slice(0, 50).map(h => {
-                        const lead = leadMap[h.pipeline_lead_id];
-                        const profile = profileMap[h.corretor_id];
-                        const nome = lead?.nome || "—";
-                        const emp = lead?.empreendimento || "—";
-                        const corretorNome = profile?.nome || teamNameMap?.[h.corretor_id] || "—";
-                        const isAceito = h.acao === "aceito" || h.acao === "aceite";
-                        const isRejeitado = h.acao === "rejeitado" || h.acao === "recusado" || h.acao === "devolvido";
+                      {distributedLeads.slice(0, 50).map(l => {
+                        const profile = profileMap[l.corretor_id || ""];
+                        const corretorNome = profile?.nome || teamNameMap?.[l.corretor_id || ""] || "—";
+                        const isAceito = l.aceite_status === "aceito";
+                        const isRejeitado = l.aceite_status === "rejeitado" || l.aceite_status === "devolvido";
+                        const tempo = tempoMap[l.id] || null;
 
                         return (
-                          <tr key={h.id} className="border-b border-border/30 hover:bg-accent/20">
-                            <td className="py-1.5 px-2 font-medium text-foreground">{nome}</td>
-                            <td className="py-1.5 px-2 text-muted-foreground">{emp}</td>
+                          <tr key={l.id} className="border-b border-border/30 hover:bg-accent/20">
+                            <td className="py-1.5 px-2 font-medium text-foreground">{l.nome || "—"}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{l.empreendimento || "—"}</td>
                             <td className="py-1.5 px-2 text-foreground">{corretorNome.split(" ")[0]}</td>
                             <td className="py-1.5 px-2">
                               <Badge variant="outline" className={`text-[9px] ${isAceito ? "border-emerald-300 text-emerald-600" : isRejeitado ? "border-destructive/30 text-destructive" : "border-amber-300 text-amber-600"}`}>
                                 {isAceito ? "✓ Aceito" : isRejeitado ? "✗ Rejeitado" : "⏳ Pendente"}
                               </Badge>
                             </td>
-                            <td className="py-1.5 px-2 text-muted-foreground">{formatTempo(h.tempo_resposta_seg)}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{formatTempo(tempo)}</td>
                             <td className="py-1.5 px-2 text-muted-foreground">
-                              {h.created_at ? format(new Date(h.created_at), "dd/MM HH:mm") : "—"}
+                              {l.distribuido_em ? format(new Date(l.distribuido_em), "dd/MM HH:mm") : "—"}
                             </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
-                  {historico.length > 50 && (
-                    <p className="text-[10px] text-muted-foreground text-center py-2">Mostrando 50 de {historico.length} registros</p>
+                  {distributedLeads.length > 50 && (
+                    <p className="text-[10px] text-muted-foreground text-center py-2">Mostrando 50 de {distributedLeads.length} registros</p>
                   )}
                 </div>
               )}
