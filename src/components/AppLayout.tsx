@@ -75,7 +75,7 @@ function ArenaAutoCollapse({ isSession }: { isSession: boolean }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
-  const { isAdmin, isGestor, isBackoffice } = useUserRole();
+  const { isAdmin, isGestor, isBackoffice, isRh } = useUserRole();
   const navigate = useNavigate();
   const [nome, setNome] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
