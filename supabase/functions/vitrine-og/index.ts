@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     let ogTitle = vitrine.titulo || "Vitrine de Imóveis";
     let ogDescription = vitrine.mensagem_corretor || "Confira esta seleção exclusiva de imóveis";
-    let ogImage = "https://uhomeia.lovable.app/og-image.png";
+    let ogImage = "https://uhomesales.com/og-image.png";
 
     if (vitrine.tipo === "melnick_day" && vitrine.dados_custom) {
       const custom = vitrine.dados_custom as any[];

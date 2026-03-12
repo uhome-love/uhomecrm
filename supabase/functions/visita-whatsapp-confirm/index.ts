@@ -102,7 +102,7 @@ serve(async (req) => {
 
       // Build confirmation link if token available
       const confirmLink = visita.confirmation_token
-        ? `\n\nPara confirmar, reagendar ou cancelar sua visita, acesse:\nhttps://uhomeia.lovable.app/visita/${visita.confirmation_token}`
+        ? `\n\nPara confirmar, reagendar ou cancelar sua visita, acesse:\nhttps://uhomesales.com/visita/${visita.confirmation_token}`
         : "";
 
       const message = `Olá ${visita.nome_cliente || ""}! 👋 Sua visita ao ${visita.empreendimento || "empreendimento"} está confirmada para ${formatDate(visita.data_visita)} às ${formatTime(visita.hora_visita)}. Seu corretor ${corretorNome} estará te esperando.${confirmLink}\nQualquer dúvida é só responder esta mensagem. Até lá! 🏠`;

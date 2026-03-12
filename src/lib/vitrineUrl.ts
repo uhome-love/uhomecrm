@@ -1,4 +1,4 @@
-const APP_DOMAIN = "https://uhomeia.lovable.app";
+const APP_DOMAIN = "https://uhomesales.com";
 
 /**
  * Generates the shareable vitrine URL that includes Open Graph meta tags
