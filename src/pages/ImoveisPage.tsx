@@ -14,13 +14,15 @@ import {
   Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath,
   Maximize, MapPin, Car, Megaphone, ChevronsUpDown, Check, UserCircle, Phone,
   Mail, X, Share2, CheckSquare, Square, Link2, Copy, CalendarClock,
-  LayoutGrid, List, Star, SlidersHorizontal, ChevronDown, Heart, DollarSign, Zap
+  LayoutGrid, List, Star, SlidersHorizontal, ChevronDown, Heart, DollarSign, Zap,
+  Sparkles, Brain, ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import { useTypesenseSearch, buildFilterBy, buildSortBy } from "@/hooks/useTypesenseSearch";
+import { useAISearch, type AIPropertyResult } from "@/hooks/useAISearch";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
