@@ -743,7 +743,7 @@ export default function ImoveisPage() {
   if (campanhaAtiva) activeFilters.push({ key: "campanha", label: "Campanha", onRemove: () => { setCampanhaAtiva(false); fetchImoveis(1, false, uhomeOnly); } });
 
   const clearAllFilters = () => {
-    setTipo(""); setBairro(""); setDormitorios(""); setSuitesFilter(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false); setSearch("");
+    setTipo(""); setBairro(""); setDormitorios(""); setSuitesFilter(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false); setSearch(""); setUhomeOnly(false); setCampanhaAtiva(false);
   };
 
   // ── Render ──
