@@ -449,10 +449,10 @@ serve(async (req) => {
     }
 
     if (action === "list_imoveis") {
-      const { page = 1, pageSize = 20, search, contrato, tipo, cidade, bairro, dormitorios, valor_min, valor_max, search_uhome, somente_obras } = body;
+      const { page = 1, pageSize = 20, search, contrato, tipo, cidade, bairro, dormitorios, suites, vagas, area_min, area_max, valor_min, valor_max, search_uhome, somente_obras } = body;
 
       // Determine if we have active filters that require client-side post-filtering
-      const hasLocalFilters = !!(bairro || valor_min || valor_max || dormitorios || tipo || somente_obras);
+      const hasLocalFilters = !!(bairro || valor_min || valor_max || dormitorios || suites || vagas || area_min || area_max || tipo || somente_obras);
       
       // Build base URL
       const baseParams = new URLSearchParams({ v: "6" });
