@@ -437,7 +437,7 @@ export default function CheckpointDaily() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, date, fetchOAStats]);
+  }, [user, date, fetchOAStats, fetchVisitasStats]);
 
   const updateLine = (idx: number, field: keyof CheckpointLine, value: any) => {
     setLines((prev) => {
