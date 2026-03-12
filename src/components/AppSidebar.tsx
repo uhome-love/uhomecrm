@@ -293,6 +293,14 @@ export function AppSidebar() {
             ],
           },
           {
+            label: "RH & Recepção",
+            items: [
+              { title: "Recrutamento", url: "/rh/recrutamento", icon: Users },
+              { title: "Conversas 1:1", url: "/rh/conversas", icon: MessageSquare },
+              { title: "Sala de Reunião", url: "/rh/sala-reuniao", icon: CalendarDays },
+            ],
+          },
+          {
             label: "Ferramentas",
             items: [
               { title: "HOMI CEO", url: "/homi-ceo", icon: Bot },
