@@ -622,8 +622,8 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
           <div className="rounded-xl border border-amber-500/15 bg-amber-500/5 p-4">
             <div className="flex items-center gap-2 mb-2.5">
-              <AlertTriangle className="h-4 w-4 text-amber-400" />
-              <p className="text-xs font-bold text-amber-300">Ainda não iniciaram ({naoIniciaram.length})</p>
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <p className="text-xs font-bold text-amber-700 dark:text-amber-300">Ainda não iniciaram ({naoIniciaram.length})</p>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {naoIniciaram.map(c => (
