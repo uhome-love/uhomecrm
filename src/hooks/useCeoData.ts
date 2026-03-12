@@ -160,18 +160,18 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
       agg.real_propostas += l.real_propostas ?? 0;
     }
 
-    // VGV from negocios (source of truth) — use data_assinatura for assinado, created_at for others
+    // VGV from negocios (source of truth) — use data_assinatura for assinado/vendido, created_at for others
     const mesKey = dateRange.start.slice(0, 7);
     
-    // Fetch assinado deals by data_assinatura (source of truth for VGV)
-    let negAssinadoQuery = supabase.from("negocios").select("gerente_id, corretor_id, vgv_estimado, vgv_final, fase, nome_cliente")
-      .eq("fase", "assinado")
+    // Fetch assinado+vendido deals by data_assinatura (source of truth for VGV)
+    let negAssinadoQuery = supabase.from("negocios").select("id, gerente_id, corretor_id, vgv_estimado, vgv_final, fase, nome_cliente, pipeline_lead_id")
+      .in("fase", ["assinado", "vendido"])
       .gte("data_assinatura", dateRange.start)
       .lte("data_assinatura", dateRange.end);
     if (filterGerenteId) negAssinadoQuery = negAssinadoQuery.eq("gerente_id", filterGerenteId);
     
     // Fetch proposal/negotiation deals by created_at
-    let negPropostaQuery = supabase.from("negocios").select("gerente_id, corretor_id, vgv_estimado, vgv_final, fase, nome_cliente")
+    let negPropostaQuery = supabase.from("negocios").select("id, gerente_id, corretor_id, vgv_estimado, vgv_final, fase, nome_cliente, pipeline_lead_id")
       .in("fase", ["proposta", "negociacao", "documentacao"])
       .gte("created_at", `${mesKey}-01`)
       .lt("created_at", `${mesKey}-32`);
@@ -180,17 +180,65 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     const [{ data: pdnsAssinado }, { data: pdnsProposta }] = await Promise.all([negAssinadoQuery, negPropostaQuery]);
     const pdns = [...(pdnsAssinado || []), ...(pdnsProposta || [])];
 
-    // Build mapping: profiles.id → team_members.id via user_id
-    const negCorretorIds = [...new Set((pdns || []).map(p => p.corretor_id).filter(Boolean))] as string[];
-    // Build mapping: profiles.id → auth.user_id for VGV assignment to canonical corretor ID
-    const profileIdToAuthId = new Map<string, string>();
-    
-    if (negCorretorIds.length > 0) {
-      const { data: cProfiles } = await supabase.from("profiles").select("id, user_id").in("id", negCorretorIds);
-      (cProfiles || []).forEach(p => {
-        if (p.user_id) profileIdToAuthId.set(p.id, p.user_id);
+    // Load partnerships for split VGV calculation
+    const pipelineLeadIdsForParcerias = pdns.map(p => p.pipeline_lead_id).filter(Boolean) as string[];
+    let parceriaMap = new Map<string, { principal_id: string; parceiro_id: string; divisao_principal: number; divisao_parceiro: number }>();
+    if (pipelineLeadIdsForParcerias.length > 0) {
+      const { data: parcerias } = await supabase.from("pipeline_parcerias")
+        .select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id, divisao_principal, divisao_parceiro")
+        .eq("status", "ativa")
+        .in("pipeline_lead_id", pipelineLeadIdsForParcerias);
+      (parcerias || []).forEach(p => {
+        parceriaMap.set(p.pipeline_lead_id, {
+          principal_id: p.corretor_principal_id,
+          parceiro_id: p.corretor_parceiro_id,
+          divisao_principal: p.divisao_principal || 50,
+          divisao_parceiro: p.divisao_parceiro || 50,
+        });
       });
     }
+
+    // Build mapping: profiles.id → team_members.id via user_id
+    const negCorretorIds = [...new Set((pdns || []).map(p => p.corretor_id).filter(Boolean))] as string[];
+    // Also include partnership user IDs for profile resolution
+    const parceriaUserIds = [...parceriaMap.values()].flatMap(p => [p.principal_id, p.parceiro_id]);
+    const allCorretorIdsForProfiles = [...new Set([...negCorretorIds, ...parceriaUserIds])];
+    
+    // Build mapping: profiles.id → auth.user_id for VGV assignment to canonical corretor ID
+    const profileIdToAuthId = new Map<string, string>();
+    // Also build auth.user_id → profiles.id for partnership resolution
+    const authIdToProfileId = new Map<string, string>();
+    
+    if (allCorretorIdsForProfiles.length > 0) {
+      // Query by both id and user_id to handle both profile IDs and auth user IDs
+      const { data: cProfiles } = await supabase.from("profiles").select("id, user_id").in("id", allCorretorIdsForProfiles);
+      (cProfiles || []).forEach(p => {
+        if (p.user_id) {
+          profileIdToAuthId.set(p.id, p.user_id);
+          authIdToProfileId.set(p.user_id, p.id);
+        }
+      });
+      // Also check by user_id for partnership IDs that might be auth user IDs
+      const missingIds = allCorretorIdsForProfiles.filter(id => !profileIdToAuthId.has(id));
+      if (missingIds.length > 0) {
+        const { data: cProfiles2 } = await supabase.from("profiles").select("id, user_id").in("user_id", missingIds);
+        (cProfiles2 || []).forEach(p => {
+          if (p.user_id) {
+            profileIdToAuthId.set(p.id, p.user_id);
+            authIdToProfileId.set(p.user_id, p.id);
+          }
+        });
+      }
+    }
+
+    // Helper to resolve any ID (profile or auth) to canonical auth user_id
+    const resolveToAuthId = (id: string): string | null => {
+      // If it's a profile.id, map to auth user_id
+      if (profileIdToAuthId.has(id)) return profileIdToAuthId.get(id)!;
+      // If it's already an auth user_id (check if it maps to a corretor in our map)
+      if (corretorAggMap.has(id)) return id;
+      return null;
+    };
 
     // Build VGV + Propostas per gerente from negocios (single source of truth)
     const pdnByGerente = new Map<string, { gerado: number; assinado: number; propostas_count: number }>();
@@ -199,18 +247,43 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
       if (!gId) continue;
       const curr = pdnByGerente.get(gId) || { gerado: 0, assinado: 0, propostas_count: 0 };
       const fase = p.fase || "";
-      if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") { curr.gerado += Number(p.vgv_estimado || 0); curr.propostas_count++; }
-      if (fase === "assinado") curr.assinado += Number(p.vgv_final || p.vgv_estimado || 0);
+      const vgv = Number(p.vgv_final || p.vgv_estimado || 0);
+      if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") { curr.gerado += vgv; curr.propostas_count++; }
+      if (fase === "assinado" || fase === "vendido") curr.assinado += vgv;
       pdnByGerente.set(gId, curr);
 
-      // Assign VGV to corretor using profiles.id → auth.user_id mapping
-      if (p.corretor_id) {
+      // Assign VGV to corretor(s) — handle partnership splits
+      const parceria = p.pipeline_lead_id ? parceriaMap.get(p.pipeline_lead_id) : undefined;
+      
+      if (parceria) {
+        // Split VGV between partners
+        const principalAuthId = resolveToAuthId(parceria.principal_id);
+        const parceiroAuthId = resolveToAuthId(parceria.parceiro_id);
+        const vgvPrincipal = vgv * (parceria.divisao_principal / 100);
+        const vgvParceiro = vgv * (parceria.divisao_parceiro / 100);
+
+        if (principalAuthId) {
+          const agg = corretorAggMap.get(principalAuthId);
+          if (agg) {
+            if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") agg.real_vgv_gerado += vgvPrincipal;
+            if (fase === "assinado" || fase === "vendido") agg.real_vgv_assinado += vgvPrincipal;
+          }
+        }
+        if (parceiroAuthId) {
+          const agg = corretorAggMap.get(parceiroAuthId);
+          if (agg) {
+            if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") agg.real_vgv_gerado += vgvParceiro;
+            if (fase === "assinado" || fase === "vendido") agg.real_vgv_assinado += vgvParceiro;
+          }
+        }
+      } else if (p.corretor_id) {
+        // No partnership — assign full VGV to single corretor
         const authUserId = profileIdToAuthId.get(p.corretor_id);
         if (authUserId) {
           const agg = corretorAggMap.get(authUserId);
           if (agg) {
-            if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") agg.real_vgv_gerado += Number(p.vgv_estimado || 0);
-            if (fase === "assinado") agg.real_vgv_assinado += Number(p.vgv_final || p.vgv_estimado || 0);
+            if (fase === "proposta" || fase === "negociacao" || fase === "documentacao") agg.real_vgv_gerado += vgv;
+            if (fase === "assinado" || fase === "vendido") agg.real_vgv_assinado += vgv;
           }
         }
       }
