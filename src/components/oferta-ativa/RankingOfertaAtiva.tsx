@@ -28,14 +28,35 @@ export default function RankingOfertaAtiva() {
   const [teamFilter, setTeamFilter] = useState<string>("todos");
   const { ranking, totalTentativas, isLoading } = useOARanking(period);
 
-  // Fetch gerente info for each corretor to get team names
+  // Fetch gerente info + profiles (avatar, gamification) for each corretor
   const corretorIds = useMemo(() => ranking.map(r => r.corretor_id), [ranking]);
+
+  const { data: profileMap = {} } = useQuery({
+    queryKey: ["oa-ranking-profiles", corretorIds],
+    queryFn: async () => {
+      if (corretorIds.length === 0) return {};
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, nome, avatar_url, avatar_gamificado_url, pontos_gamificacao")
+        .in("user_id", corretorIds);
+      const map: Record<string, { avatar_url: string | null; avatar_gamificado_url: string | null; pontos: number }> = {};
+      for (const p of profiles || []) {
+        map[p.user_id] = {
+          avatar_url: p.avatar_gamificado_url || p.avatar_url || null,
+          avatar_gamificado_url: p.avatar_gamificado_url || null,
+          pontos: p.pontos_gamificacao || 0,
+        };
+      }
+      return map;
+    },
+    enabled: corretorIds.length > 0,
+    staleTime: 60_000,
+  });
 
   const { data: teamMap = {} } = useQuery({
     queryKey: ["oa-ranking-teams", corretorIds],
     queryFn: async () => {
       if (corretorIds.length === 0) return {};
-      // Get team_members to find gerente_id for each corretor
       const { data: members } = await supabase
         .from("team_members")
         .select("user_id, gerente_id")
@@ -44,7 +65,6 @@ export default function RankingOfertaAtiva() {
 
       const gerenteIds = [...new Set((members || []).map(m => m.gerente_id).filter(Boolean))];
       
-      // Get gerente names
       const gerenteNameMap: Record<string, string> = {};
       if (gerenteIds.length > 0) {
         const { data: profiles } = await supabase
