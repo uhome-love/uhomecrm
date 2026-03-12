@@ -870,6 +870,62 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
       <PartnershipDialog open={partnerOpen} onOpenChange={setPartnerOpen} leadId={lead.id} leadNome={lead.nome} corretorPrincipalId={lead.corretor_id} />
       <CentralComunicacao open={comunicacaoOpen} onOpenChange={setComunicacaoOpen} leadId={lead.id} leadNome={lead.nome} leadTelefone={lead.telefone} leadEmpreendimento={lead.empreendimento} />
+
+      {/* Dialog Inativar Lead */}
+      <Dialog open={inativarOpen} onOpenChange={setInativarOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-destructive" /> Inativar Lead
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Selecione o motivo para inativar <strong>{lead.nome}</strong>. O lead será movido para descarte.
+            </p>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Motivo *</Label>
+              <Select value={inativarMotivo} onValueChange={setInativarMotivo}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motivo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Contato errado">📵 Contato errado</SelectItem>
+                  <SelectItem value="Não quer mais contato">🚫 Não quer mais contato</SelectItem>
+                  <SelectItem value="Solicitou retirada do nome">🗑️ Solicitou retirada do nome</SelectItem>
+                  <SelectItem value="outro">✏️ Outro motivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {inativarMotivo === "outro" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Descreva o motivo</Label>
+                <Textarea
+                  value={inativarObs}
+                  onChange={e => setInativarObs(e.target.value)}
+                  placeholder="Descreva o motivo da inativação..."
+                  className="resize-none"
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setInativarOpen(false)} disabled={inativando}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleInativar}
+              disabled={inativando || !inativarMotivo || (inativarMotivo === "outro" && !inativarObs.trim())}
+              className="gap-2"
+            >
+              {inativando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
+              Confirmar Inativação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
