@@ -613,6 +613,54 @@ serve(async (req) => {
         console.log(`After somente_obras filter:`, items.length);
       }
 
+      // Suítes filter (minimum)
+      if (suites && suites !== "all") {
+        const minSuites = Number(suites);
+        if (minSuites > 0) {
+          items = items.filter((item: any) => {
+            const s = Number(item.suites || 0);
+            return s >= minSuites;
+          });
+          console.log(`After suites filter >=${minSuites}:`, items.length);
+        }
+      }
+
+      // Vagas filter (minimum)
+      if (vagas && vagas !== "all") {
+        const minVagas = Number(vagas);
+        if (minVagas > 0) {
+          items = items.filter((item: any) => {
+            const v = Number(item.garagens || item.vagas || 0);
+            return v >= minVagas;
+          });
+          console.log(`After vagas filter >=${minVagas}:`, items.length);
+        }
+      }
+
+      // Área mínima
+      if (area_min) {
+        const min = Number(area_min);
+        if (min > 0) {
+          items = items.filter((item: any) => {
+            const area = Number(item.area_privativa || item.area_util || item.area_total || 0);
+            return area >= min;
+          });
+          console.log(`After area_min filter >=${min}:`, items.length);
+        }
+      }
+
+      // Área máxima
+      if (area_max) {
+        const max = Number(area_max);
+        if (max > 0) {
+          items = items.filter((item: any) => {
+            const area = Number(item.area_privativa || item.area_util || item.area_total || 0);
+            return area > 0 && area <= max;
+          });
+          console.log(`After area_max filter <=${max}:`, items.length);
+        }
+      }
+
       // ─── Pagination on filtered results ───
       const totalFiltered = items.length;
       const totalPagesCalc = Math.ceil(totalFiltered / pageSize) || 1;
