@@ -133,8 +133,6 @@ export default function RhRecrutamento() {
         })}
       </div>
 
-      {/* Agenda de Entrevistas */}
-      <AgendaEntrevistas candidatos={candidatos} onKanbanUpdate={fetchCandidatos} />
 
       {/* Add Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
