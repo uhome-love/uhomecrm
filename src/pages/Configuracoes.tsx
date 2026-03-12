@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
 import AvatarGeneratorModal from "@/components/AvatarGeneratorModal";
-import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Sparkles, Upload } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Sparkles, Upload, CreditCard, BadgeCheck } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import RoletaCampanhasPanel from "@/components/settings/RoletaCampanhasPanel";
