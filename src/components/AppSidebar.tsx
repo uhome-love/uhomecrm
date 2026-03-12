@@ -283,6 +283,7 @@ export function AppSidebar() {
             label: "Financeiro",
             items: [
               { title: "Pagadorias", url: "/backoffice/pagadorias", icon: FileBarChart },
+              { title: "Cadastros", url: "/backoffice/cadastros", icon: Users },
             ],
           },
           {
@@ -376,6 +377,7 @@ export function AppSidebar() {
             items: [
               { title: "Pagadorias", url: "/backoffice/pagadorias", icon: FileBarChart },
               { title: "Solicitações", url: "/backoffice/solicitacoes-pagadoria", icon: ListChecks },
+              { title: "Cadastros", url: "/backoffice/cadastros", icon: Users },
             ],
           },
           {

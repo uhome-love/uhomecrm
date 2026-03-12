@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import AvatarUpload from "@/components/AvatarUpload";
 import AvatarGeneratorModal from "@/components/AvatarGeneratorModal";
-import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Sparkles, Upload } from "lucide-react";
+import { Loader2, Save, Lock, User, Mail, Phone, Volume2, PartyPopper, Sparkles, Upload, CreditCard, BadgeCheck } from "lucide-react";
 import NotificationPreferences from "@/components/notifications/NotificationPreferences";
 import MetaAdsSettings from "@/components/marketing/MetaAdsSettings";
 import RoletaCampanhasPanel from "@/components/settings/RoletaCampanhasPanel";
@@ -35,6 +35,8 @@ export default function Configuracoes() {
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [cargo, setCargo] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [creci, setCreci] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
 
@@ -57,7 +59,7 @@ export default function Configuracoes() {
     setLoading(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("nome, email, telefone, cargo, avatar_url, avatar_preview_url")
+      .select("nome, email, telefone, cargo, cpf, creci, avatar_url, avatar_preview_url")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -70,6 +72,8 @@ export default function Configuracoes() {
       setEmail(data.email || user.email || "");
       setTelefone(data.telefone || "");
       setCargo(data.cargo || "");
+      setCpf(data.cpf || "");
+      setCreci(data.creci || "");
       setAvatarUrl(data.avatar_url);
       setAvatarPreviewUrl(data.avatar_preview_url);
     }
@@ -140,6 +144,8 @@ export default function Configuracoes() {
       .update({
         nome: nome.trim(),
         telefone: telefone.trim(),
+        cpf: cpf.trim() || null,
+        creci: creci.trim() || null,
       })
       .eq("user_id", user.id);
 
@@ -334,6 +340,30 @@ export default function Configuracoes() {
                     {cargo || "—"}
                   </span>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cpf" className="flex items-center gap-1.5 text-xs">
+                  <CreditCard className="h-3.5 w-3.5" /> CPF
+                </Label>
+                <Input
+                  id="cpf"
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                  placeholder="000.000.000-00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="creci" className="flex items-center gap-1.5 text-xs">
+                  <BadgeCheck className="h-3.5 w-3.5" /> CRECI
+                </Label>
+                <Input
+                  id="creci"
+                  value={creci}
+                  onChange={(e) => setCreci(e.target.value)}
+                  placeholder="CRECI/RS 00000"
+                />
               </div>
             </div>
 
