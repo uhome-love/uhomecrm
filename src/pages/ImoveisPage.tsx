@@ -481,11 +481,13 @@ export default function ImoveisPage() {
     setLoading(true);
     try {
       if (campanha) {
-        const results = await Promise.all(
-          CAMPANHA_CODES.map((c) => supabase.functions.invoke("jetimob-proxy", { body: { action: "get_imovel", codigo: c.codigo } }))
-        );
-        const items = results.map((r) => r.data?.data || r.data).filter((d) => d && !d.not_found);
-        setImoveis(items);
+        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+          body: { action: "get_imoveis_by_codigos", codigos: CAMPANHA_CODES.map(c => c.codigo) }
+        });
+        if (error) { toast.error("Erro ao buscar imóveis da campanha"); return; }
+        const imoveisMap = data?.imoveis || {};
+        const items = Object.values(imoveisMap).filter((d: any) => d && !d.not_found);
+        setImoveis(items as any[]);
         setTotal(items.length);
         setTotalPages(1);
         setPage(1);
