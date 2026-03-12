@@ -359,6 +359,11 @@ function SinglePropertyView({ imovel, corretor, vitrine, onOpenLightbox, whatsap
             {corretor && <p className="text-sm text-slate-400 mt-2">— {corretor.nome}</p>}
           </motion.div>
         )}
+        {/* Lead Capture Form */}
+        <LeadCaptureForm
+          empreendimento={imovel.empreendimento || imovel.titulo || vitrine.titulo}
+          source="vitrine_melnick_day"
+        />
       </div>
 
       {/* ─── CTA Footer ─── */}
