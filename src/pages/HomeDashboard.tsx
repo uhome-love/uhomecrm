@@ -59,24 +59,26 @@ const getPeriodRange = (period: Period) => {
 
 export default function HomeDashboard() {
   const { user } = useAuth();
-  const { isAdmin, isGestor, isBackoffice, loading: roleLoading } = useUserRole();
+  const { isAdmin, isGestor, isBackoffice, isRh, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const [nome, setNome] = useState("");
   const [period, setPeriod] = useState<Period>("semana");
 
-  // Route by role: admin→/ceo, gestor→/gerente/dashboard, backoffice→/backoffice, corretor→/corretor
+  // Route by role: admin→/ceo, gestor→/gerente/dashboard, backoffice→/backoffice, rh→/rh, corretor→/corretor
   useEffect(() => {
     if (roleLoading) return;
     if (isAdmin) {
       navigate("/ceo", { replace: true });
     } else if (isBackoffice) {
       navigate("/backoffice", { replace: true });
+    } else if (isRh) {
+      navigate("/rh", { replace: true });
     } else if (isGestor) {
       navigate("/gerente/dashboard", { replace: true });
     } else {
       navigate("/corretor", { replace: true });
     }
-  }, [isAdmin, isGestor, isBackoffice, roleLoading, navigate]);
+  }, [isAdmin, isGestor, isBackoffice, isRh, roleLoading, navigate]);
 
 
 
