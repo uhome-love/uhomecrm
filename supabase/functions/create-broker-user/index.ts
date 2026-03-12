@@ -28,13 +28,16 @@ serve(async (req) => {
     const { data: { user: caller } } = await anonClient.auth.getUser(token);
     if (!caller) throw new Error("Não autorizado");
 
-    const { data: roleCheck } = await supabase
+    const { data: callerRoles } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id)
-      .eq("role", "admin")
-      .single();
-    if (!roleCheck) throw new Error("Apenas administradores podem criar usuários");
+      .eq("user_id", caller.id);
+    
+    const callerRoleList = (callerRoles || []).map((r: any) => r.role);
+    const isAdmin = callerRoleList.includes("admin");
+    const isGestor = callerRoleList.includes("gestor");
+    
+    if (!isAdmin && !isGestor) throw new Error("Apenas administradores e gerentes podem criar usuários");
 
     if (action === "lookup_broker") {
       // Search leads API for broker info
