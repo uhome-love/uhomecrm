@@ -523,15 +523,15 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
                 <tr>
                   <td style={{ width: "50%", verticalAlign: "top", paddingRight: "20px" }}>
                     <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
-                    <p style={{ fontSize: "10px" }}>01. ___________________________</p>
-                    <p style={{ fontSize: "10px" }}>Nome: Ana Paula Silveira</p>
-                    <p style={{ fontSize: "10px" }}>E-mail: anapsilveiram@gmail.com</p>
+                    <p style={{ fontSize: "11px" }}>01. ___________________________</p>
+                    <p style={{ fontSize: "11px" }}>Nome: Ana Paula Silveira</p>
+                    <p style={{ fontSize: "11px" }}>E-mail: anapsilveiram@gmail.com</p>
                   </td>
                   <td style={{ width: "50%", verticalAlign: "top", paddingLeft: "20px" }}>
                     <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
-                    <p style={{ fontSize: "10px" }}>02. ___________________________</p>
-                    <p style={{ fontSize: "10px" }}>Nome: Bruno Schuler</p>
-                    <p style={{ fontSize: "10px" }}>E-mail: bruno@uhome.imb.br</p>
+                    <p style={{ fontSize: "11px" }}>02. ___________________________</p>
+                    <p style={{ fontSize: "11px" }}>Nome: Bruno Schuler</p>
+                    <p style={{ fontSize: "11px" }}>E-mail: bruno@uhome.imb.br</p>
                   </td>
                 </tr>
               </tbody>
