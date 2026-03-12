@@ -323,9 +323,10 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         const tent = (allTent || []).filter(t => t.corretor_id === uid);
         const lig = tent.length;
         const aprov = tent.filter(t => t.resultado === "com_interesse").length;
-        const vis = (allVis || []).filter(v => v.corretor_id === uid);
-        const vm = vis.length;
-        const vr = vis.filter(v => v.status === "realizada").length;
+        const visMarcadas = (allVisMarcadas || []).filter(v => v.corretor_id === uid);
+        const visRealizadas = (allVisRealizadas || []).filter(v => v.corretor_id === uid);
+        const vm = visMarcadas.length;
+        const vr = visRealizadas.filter(v => v.status === "realizada").length;
         const neg = (allNeg || []).filter(n => n.corretor_id === uid);
         const prop = neg.filter(n => n.fase === "proposta" || n.fase === "negociacao").length;
         const vgv = neg.reduce((s, n) => s + (n.vgv_estimado || 0), 0);
