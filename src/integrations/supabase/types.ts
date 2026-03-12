@@ -1471,12 +1471,18 @@ export type Database = {
           area_privativa: number | null
           bairro: string | null
           codigo: string
+          cor_primaria: string | null
           created_at: string | null
           descricao: string | null
+          diferenciais: string[] | null
           dormitorios: number | null
           fotos: string[] | null
           id: string
+          landing_subtitulo: string | null
+          landing_titulo: string | null
+          mapa_url: string | null
           nome: string | null
+          plantas: string[] | null
           previsao_entrega: string | null
           status_obra: string | null
           suites: number | null
@@ -1487,17 +1493,24 @@ export type Database = {
           valor_max: number | null
           valor_min: number | null
           valor_venda: number | null
+          video_url: string | null
         }
         Insert: {
           area_privativa?: number | null
           bairro?: string | null
           codigo: string
+          cor_primaria?: string | null
           created_at?: string | null
           descricao?: string | null
+          diferenciais?: string[] | null
           dormitorios?: number | null
           fotos?: string[] | null
           id?: string
+          landing_subtitulo?: string | null
+          landing_titulo?: string | null
+          mapa_url?: string | null
           nome?: string | null
+          plantas?: string[] | null
           previsao_entrega?: string | null
           status_obra?: string | null
           suites?: number | null
@@ -1508,17 +1521,24 @@ export type Database = {
           valor_max?: number | null
           valor_min?: number | null
           valor_venda?: number | null
+          video_url?: string | null
         }
         Update: {
           area_privativa?: number | null
           bairro?: string | null
           codigo?: string
+          cor_primaria?: string | null
           created_at?: string | null
           descricao?: string | null
+          diferenciais?: string[] | null
           dormitorios?: number | null
           fotos?: string[] | null
           id?: string
+          landing_subtitulo?: string | null
+          landing_titulo?: string | null
+          mapa_url?: string | null
           nome?: string | null
+          plantas?: string[] | null
           previsao_entrega?: string | null
           status_obra?: string | null
           suites?: number | null
@@ -1529,6 +1549,7 @@ export type Database = {
           valor_max?: number | null
           valor_min?: number | null
           valor_venda?: number | null
+          video_url?: string | null
         }
         Relationships: []
       }
