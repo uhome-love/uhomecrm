@@ -124,27 +124,25 @@ serve(async (req) => {
         .upsert({ user_id: newUser.user.id, role: assignedRole }, { onConflict: "user_id,role" });
 
       // Link to manager's team (only for corretores)
-      if (gerente_id && assignedRole === "corretor") {
+      if (effectiveGerenteId && assignedRole === "corretor") {
         // Check if there's an existing team_member with same name to link
         const { data: existingMember } = await supabase
           .from("team_members")
           .select("id")
-          .eq("gerente_id", gerente_id)
+          .eq("gerente_id", effectiveGerenteId)
           .ilike("nome", nome.trim())
           .is("user_id", null)
           .maybeSingle();
 
         if (existingMember) {
-          // Link existing manual entry to the new user
           await supabase
             .from("team_members")
             .update({ user_id: newUser.user.id, status: "ativo" })
             .eq("id", existingMember.id);
         } else {
-          // Create new team member entry
           const { error: teamError } = await supabase
             .from("team_members")
-            .insert({ gerente_id, nome, status: "ativo", user_id: newUser.user.id });
+            .insert({ gerente_id: effectiveGerenteId, nome, status: "ativo", user_id: newUser.user.id });
           if (teamError) {
             console.error("Team member insert error:", teamError);
           }
