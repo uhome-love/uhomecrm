@@ -852,17 +852,7 @@ export default function ImoveisPage() {
 
           {/* Row 2: Filter chips */}
           <div className="pb-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-            {/* Contrato */}
-            <div className="flex items-center rounded-full border border-border overflow-hidden shrink-0">
-              {["venda", "locacao"].map(c => (
-                <button key={c} onClick={() => setContrato(c)} className={cn(
-                  "px-3 py-1.5 text-xs font-medium transition-all",
-                  contrato === c ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"
-                )}>
-                  {c === "venda" ? "Comprar" : "Alugar"}
-                </button>
-              ))}
-            </div>
+            {/* Contrato: uHome só trabalha com venda */}
 
             {/* Preço */}
             <FilterChip
