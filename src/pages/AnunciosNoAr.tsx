@@ -806,7 +806,7 @@ function CriarVitrineDialog({
       const { data, error } = await supabase.from("vitrines").insert({
         titulo: titulo || config.nome,
         created_by: user.id,
-        tipo: "anuncio",
+        tipo: "product_page",
         imovel_ids: [config.codigo],
         dados_custom: dadosCustom,
         lead_nome: leadNome || null,
@@ -942,7 +942,7 @@ function EmpreendimentoCard({
     supabase
       .from("vitrines")
       .select("id")
-      .eq("tipo", "anuncio")
+      .eq("tipo", "product_page")
       .contains("imovel_ids", [config.codigo])
       .order("created_at", { ascending: false })
       .limit(1)

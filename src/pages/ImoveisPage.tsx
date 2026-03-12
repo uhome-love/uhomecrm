@@ -954,7 +954,7 @@ export default function ImoveisPage() {
                   if (!user) return;
                   setCreatingVitrine(true);
                   try {
-                    const { data, error } = await supabase.from("vitrines").insert({ created_by: user.id, titulo: "Seleção de Imóveis", imovel_ids: [...selectedIds] as any }).select("id").single();
+                    const { data, error } = await supabase.from("vitrines").insert({ created_by: user.id, titulo: "Seleção de Imóveis", tipo: "property_selection", imovel_ids: [...selectedIds] as any }).select("id").single();
                     if (error) throw error;
                     const link = getVitrineShareUrl(data.id);
                     setVitrineLink(link); navigator.clipboard.writeText(link); toast.success("Vitrine criada! Link copiado.");

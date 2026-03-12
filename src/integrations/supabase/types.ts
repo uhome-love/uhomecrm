@@ -5700,45 +5700,63 @@ export type Database = {
       }
       vitrines: {
         Row: {
+          cliques_whatsapp: number | null
           created_at: string | null
           created_by: string
           dados_custom: Json | null
           expires_at: string | null
+          hero_url: string | null
           id: string
           imovel_ids: Json
           lead_nome: string | null
           lead_telefone: string | null
           mensagem_corretor: string | null
+          slug: string | null
+          subtitulo: string | null
+          tema_visual: string | null
           tipo: string
           titulo: string
+          updated_at: string | null
           visualizacoes: number | null
         }
         Insert: {
+          cliques_whatsapp?: number | null
           created_at?: string | null
           created_by: string
           dados_custom?: Json | null
           expires_at?: string | null
+          hero_url?: string | null
           id?: string
           imovel_ids?: Json
           lead_nome?: string | null
           lead_telefone?: string | null
           mensagem_corretor?: string | null
+          slug?: string | null
+          subtitulo?: string | null
+          tema_visual?: string | null
           tipo?: string
           titulo?: string
+          updated_at?: string | null
           visualizacoes?: number | null
         }
         Update: {
+          cliques_whatsapp?: number | null
           created_at?: string | null
           created_by?: string
           dados_custom?: Json | null
           expires_at?: string | null
+          hero_url?: string | null
           id?: string
           imovel_ids?: Json
           lead_nome?: string | null
           lead_telefone?: string | null
           mensagem_corretor?: string | null
+          slug?: string | null
+          subtitulo?: string | null
+          tema_visual?: string | null
           tipo?: string
           titulo?: string
+          updated_at?: string | null
           visualizacoes?: number | null
         }
         Relationships: []

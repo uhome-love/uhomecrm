@@ -129,7 +129,7 @@ export default function LandingPageEditor({ open, onOpenChange, codigo, nome, ex
         .from("vitrines")
         .select("id")
         .eq("created_by", user.id)
-        .eq("tipo", "anuncio")
+        .eq("tipo", "product_page")
         .contains("imovel_ids", [codigo])
         .order("created_at", { ascending: false })
         .limit(1)
@@ -149,7 +149,7 @@ export default function LandingPageEditor({ open, onOpenChange, codigo, nome, ex
         const { data, error } = await supabase.from("vitrines").insert({
           titulo: titulo.trim() || `${nome} — Landing Page`,
           created_by: user.id,
-          tipo: "anuncio",
+          tipo: "product_page",
           imovel_ids: [codigo],
           mensagem_corretor: null,
         }).select("id").single();
