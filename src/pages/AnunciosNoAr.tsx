@@ -97,27 +97,6 @@ const SEGMENTOS: SegmentoConfig[] = [
    TYPES
    ═══════════════════════════════════════════════ */
 
-type JetimobImovel = {
-  codigo: string;
-  nome?: string;
-  bairro?: string;
-  endereco_bairro?: string;
-  area_total?: number;
-  area_privativa?: number;
-  dormitorios?: number;
-  suites?: number;
-  vagas?: number;
-  valor_venda?: number;
-  preco_venda?: number;
-  valor?: number;
-  status_obra?: string;
-  previsao_entrega?: string;
-  imagens?: { url: string; descricao?: string }[];
-  fotos?: { url: string }[];
-  foto_principal?: string;
-  descricao?: string;
-};
-
 type Tipologia = {
   dorms: number;
   area_min?: number;
