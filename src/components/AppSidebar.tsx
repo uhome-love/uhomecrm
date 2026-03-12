@@ -407,7 +407,7 @@ export function AppSidebar() {
           {
             label: "Recrutamento",
             items: [
-              { title: "Kanban Candidatos", url: "/rh/recrutamento", icon: Users },
+              { title: "Candidatos", url: "/rh/recrutamento", icon: Users },
             ],
           },
           {
