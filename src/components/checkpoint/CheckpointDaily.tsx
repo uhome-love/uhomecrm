@@ -230,6 +230,7 @@ export default function CheckpointDaily() {
     for (const m of members) {
       const existing = linesMap.get(m.id);
       const oa = oaStats[m.id];
+      const vis = visitasStats[m.id];
       const cGoal = goalsMap[m.id];
       if (existing) {
         // Always sync metas from corretor goals when available
@@ -258,7 +259,8 @@ export default function CheckpointDaily() {
           obs_gerente: existing.obs_gerente ?? "",
           real_ligacoes: oa ? oa.ligacoes : existing.real_ligacoes,
           real_presenca: existing.real_presenca,
-          real_visitas_marcadas: existing.real_visitas_marcadas, real_visitas_realizadas: existing.real_visitas_realizadas,
+          real_visitas_marcadas: vis ? vis.marcadas : existing.real_visitas_marcadas,
+          real_visitas_realizadas: vis ? vis.realizadas : existing.real_visitas_realizadas,
           real_propostas: existing.real_propostas,
           real_leads: oa ? oa.leads : existing.real_leads,
           obs_dia: existing.obs_dia, status_dia: existing.status_dia,
@@ -280,7 +282,8 @@ export default function CheckpointDaily() {
           obs_gerente: "", 
           real_ligacoes: oa ? oa.ligacoes : null, 
           real_presenca: null,
-          real_visitas_marcadas: null, real_visitas_realizadas: null,
+          real_visitas_marcadas: vis ? vis.marcadas : null,
+          real_visitas_realizadas: vis ? vis.realizadas : null,
           real_propostas: null,
           real_leads: oa ? oa.leads : null, 
           obs_dia: null, status_dia: null,
