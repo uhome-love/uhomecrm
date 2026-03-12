@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     return new Response("Missing vitrine id", { status: 400 });
   }
 
-  const spaUrl = `https://uhomesales.com/vitrine/${vitrineId}`;
+  const spaUrl = `https://uhomeia.lovable.app/vitrine/${vitrineId}`;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

@@ -450,6 +450,9 @@ export default function ImoveisPage() {
   const [bairroOpen, setBairroOpen] = useState(false);
   const [bairroSearch, setBairroSearch] = useState("");
   const [dormitorios, setDormitorios] = useState("");
+  const [suites, setSuites] = useState("");
+  const [vagas, setVagas] = useState("");
+  const [areaRange, setAreaRange] = useState<[number, number]>([0, 500]);
   const [valorRange, setValorRange] = useState<[number, number]>([0, 5_000_000]);
   const [somenteObras, setSomenteObras] = useState(false);
 
@@ -478,11 +481,13 @@ export default function ImoveisPage() {
     setLoading(true);
     try {
       if (campanha) {
-        const results = await Promise.all(
-          CAMPANHA_CODES.map((c) => supabase.functions.invoke("jetimob-proxy", { body: { action: "get_imovel", codigo: c.codigo } }))
-        );
-        const items = results.map((r) => r.data?.data || r.data).filter((d) => d && !d.not_found);
-        setImoveis(items);
+        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
+          body: { action: "get_imoveis_by_codigos", codigos: CAMPANHA_CODES.map(c => c.codigo) }
+        });
+        if (error) { toast.error("Erro ao buscar imóveis da campanha"); return; }
+        const imoveisMap = data?.imoveis || {};
+        const items = Object.values(imoveisMap).filter((d: any) => d && !d.not_found);
+        setImoveis(items as any[]);
         setTotal(items.length);
         setTotalPages(1);
         setPage(1);
@@ -499,6 +504,10 @@ export default function ImoveisPage() {
             bairro: bairro || undefined,
             search_uhome: uhome ? true : undefined,
             dormitorios: dormitorios && dormitorios !== "all" ? dormitorios : undefined,
+            suites: suites && suites !== "all" ? suites : undefined,
+            vagas: vagas && vagas !== "all" ? vagas : undefined,
+            area_min: areaRange[0] > 0 ? String(areaRange[0]) : undefined,
+            area_max: areaRange[1] < 500 ? String(areaRange[1]) : undefined,
             valor_min: valorMin, valor_max: valorMax,
             somente_obras: somenteObras || undefined,
           },
@@ -511,7 +520,7 @@ export default function ImoveisPage() {
         setPage(pageNum);
       }
     } catch { toast.error("Erro de conexão"); } finally { setLoading(false); }
-  }, [search, contrato, tipo, bairro, dormitorios, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
+  }, [search, contrato, tipo, bairro, dormitorios, suites, vagas, areaRange, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
 
   const mounted = useRef(false);
   useEffect(() => {
@@ -554,6 +563,9 @@ export default function ImoveisPage() {
     tipo && tipo !== "all",
     bairro,
     dormitorios && dormitorios !== "all",
+    suites && suites !== "all",
+    vagas && vagas !== "all",
+    areaRange[0] > 0 || areaRange[1] < 500,
     valorRange[0] > 0 || valorRange[1] < 5_000_000,
     somenteObras,
   ].filter(Boolean).length;
@@ -677,7 +689,7 @@ export default function ImoveisPage() {
         {/* Filters panel */}
         {!campanhaAtiva && !uhomeOnly && filtersOpen && (
           <Card className="p-4 mb-4 space-y-4 border-border/50">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <div className="space-y-1">
                 <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Tipo</label>
                 <Select value={tipo} onValueChange={setTipo}>
@@ -745,7 +757,47 @@ export default function ImoveisPage() {
                 </Select>
               </div>
 
-              <div className="space-y-1 col-span-2">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Suítes</label>
+                <Select value={suites} onValueChange={setSuites}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="1">1+</SelectItem>
+                    <SelectItem value="2">2+</SelectItem>
+                    <SelectItem value="3">3+</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Vagas</label>
+                <Select value={vagas} onValueChange={setVagas}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="1">1+</SelectItem>
+                    <SelectItem value="2">2+</SelectItem>
+                    <SelectItem value="3">3+</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Área: {areaRange[0]}m² — {areaRange[1] >= 500 ? "500+" : areaRange[1]}m²
+                </label>
+                <Slider
+                  min={0} max={500} step={10}
+                  value={areaRange}
+                  onValueChange={(v) => setAreaRange(v as [number, number])}
+                  className="mt-3"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div className="space-y-1">
                 <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   Valor: {fmtCompact(valorRange[0])} — {valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}
                 </label>
@@ -770,7 +822,7 @@ export default function ImoveisPage() {
               </Button>
               {activeFilterCount > 0 && (
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => {
-                  setTipo(""); setBairro(""); setDormitorios(""); setValorRange([0, 5_000_000]); setSomenteObras(false);
+                  setTipo(""); setBairro(""); setDormitorios(""); setSuites(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false);
                 }}>
                   <X className="h-3 w-3 mr-1" /> Limpar filtros
                 </Button>

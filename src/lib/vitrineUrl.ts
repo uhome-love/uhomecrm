@@ -1,3 +1,5 @@
+const APP_DOMAIN = "https://uhomeia.lovable.app";
+
 /**
  * Generates the shareable vitrine URL that includes Open Graph meta tags
  * for rich WhatsApp/social media previews with property images.
@@ -12,5 +14,5 @@ export function getVitrineShareUrl(vitrineId: string): string {
  * Direct SPA URL for the vitrine (no OG preview).
  */
 export function getVitrineDirectUrl(vitrineId: string): string {
-  return `https://uhomesales.com/vitrine/${vitrineId}`;
+  return `${APP_DOMAIN}/vitrine/${vitrineId}`;
 }

@@ -449,10 +449,10 @@ serve(async (req) => {
     }
 
     if (action === "list_imoveis") {
-      const { page = 1, pageSize = 20, search, contrato, tipo, cidade, bairro, dormitorios, valor_min, valor_max, search_uhome, somente_obras } = body;
+      const { page = 1, pageSize = 20, search, contrato, tipo, cidade, bairro, dormitorios, suites, vagas, area_min, area_max, valor_min, valor_max, search_uhome, somente_obras } = body;
 
       // Determine if we have active filters that require client-side post-filtering
-      const hasLocalFilters = !!(bairro || valor_min || valor_max || dormitorios || tipo || somente_obras);
+      const hasLocalFilters = !!(bairro || valor_min || valor_max || dormitorios || suites || vagas || area_min || area_max || tipo || somente_obras);
       
       // Build base URL
       const baseParams = new URLSearchParams({ v: "6" });
@@ -611,6 +611,54 @@ serve(async (req) => {
           return situacao.includes("obra") || situacao.includes("constru") || situacao.includes("planta") || situacao.includes("lancamento");
         });
         console.log(`After somente_obras filter:`, items.length);
+      }
+
+      // Suítes filter (minimum)
+      if (suites && suites !== "all") {
+        const minSuites = Number(suites);
+        if (minSuites > 0) {
+          items = items.filter((item: any) => {
+            const s = Number(item.suites || 0);
+            return s >= minSuites;
+          });
+          console.log(`After suites filter >=${minSuites}:`, items.length);
+        }
+      }
+
+      // Vagas filter (minimum)
+      if (vagas && vagas !== "all") {
+        const minVagas = Number(vagas);
+        if (minVagas > 0) {
+          items = items.filter((item: any) => {
+            const v = Number(item.garagens || item.vagas || 0);
+            return v >= minVagas;
+          });
+          console.log(`After vagas filter >=${minVagas}:`, items.length);
+        }
+      }
+
+      // Área mínima
+      if (area_min) {
+        const min = Number(area_min);
+        if (min > 0) {
+          items = items.filter((item: any) => {
+            const area = Number(item.area_privativa || item.area_util || item.area_total || 0);
+            return area >= min;
+          });
+          console.log(`After area_min filter >=${min}:`, items.length);
+        }
+      }
+
+      // Área máxima
+      if (area_max) {
+        const max = Number(area_max);
+        if (max > 0) {
+          items = items.filter((item: any) => {
+            const area = Number(item.area_privativa || item.area_util || item.area_total || 0);
+            return area > 0 && area <= max;
+          });
+          console.log(`After area_max filter <=${max}:`, items.length);
+        }
       }
 
       // ─── Pagination on filtered results ───
