@@ -1481,6 +1481,19 @@ export default function AnunciosNoAr() {
                     loading={loading}
                     materiais={materiais}
                     canUpload={canUpload}
+                    isAdmin={isAdmin}
+                    onRefreshMateriais={fetchMateriais}
+                    override={overrides[emp.codigo] || null}
+                    onEditOverride={() => setEditingCodigo(emp.codigo)}
+                    onEditLanding={() => setLandingCodigo(emp.codigo)}
+                  />
+                    key={emp.codigo}
+                    config={emp}
+                    segmento={seg}
+                    imovelData={imoveis[emp.codigo] || null}
+                    loading={loading}
+                    materiais={materiais}
+                    canUpload={canUpload}
                     onRefreshMateriais={fetchMateriais}
                     override={overrides[emp.codigo] || null}
                     onEditOverride={() => setEditingCodigo(emp.codigo)}
