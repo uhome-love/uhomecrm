@@ -286,6 +286,12 @@ export function AppSidebar() {
             ],
           },
           {
+            label: "Operacional",
+            items: [
+              { title: "Tarefas & Marketing", url: "/backoffice/tarefas", icon: ClipboardCheck },
+            ],
+          },
+          {
             label: "Ferramentas",
             items: [
               { title: "HOMI CEO", url: "/homi-ceo", icon: Bot },
