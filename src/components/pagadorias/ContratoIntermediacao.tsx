@@ -239,6 +239,19 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
               <div><Label className="text-xs">Gerente - E-mail</Label><Input value={data.gerente_email} onChange={e => onDataChange({ ...data, gerente_email: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Data de assinatura</Label><Input type="date" value={data.data_assinatura} onChange={e => onDataChange({ ...data, data_assinatura: e.target.value })} className="h-8 text-sm" /></div>
             </div>
+            </div>
+
+            <p className="text-sm font-semibold text-muted-foreground mt-4">👥 Testemunhas (não podem ser contratados)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Testemunha 1 - Nome</Label><Input value={testemunha1Nome} onChange={e => setTestemunha1Nome(e.target.value)} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Testemunha 1 - CPF</Label><Input value={testemunha1Cpf} onChange={e => setTestemunha1Cpf(e.target.value)} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Testemunha 1 - E-mail</Label><Input value={testemunha1Email} onChange={e => setTestemunha1Email(e.target.value)} className="h-8 text-sm" /></div>
+              <div />
+              <div><Label className="text-xs">Testemunha 2 - Nome</Label><Input value={testemunha2Nome} onChange={e => setTestemunha2Nome(e.target.value)} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Testemunha 2 - CPF</Label><Input value={testemunha2Cpf} onChange={e => setTestemunha2Cpf(e.target.value)} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Testemunha 2 - E-mail</Label><Input value={testemunha2Email} onChange={e => setTestemunha2Email(e.target.value)} className="h-8 text-sm" /></div>
+            </div>
+
             <Button size="sm" onClick={() => setEditing(false)}>Aplicar alterações</Button>
           </div>
         )}
