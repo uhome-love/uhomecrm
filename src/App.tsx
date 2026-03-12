@@ -133,6 +133,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <DateFilterProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
