@@ -730,6 +730,7 @@ export default function ImoveisPage() {
 
   // Active filter tags
   const activeFilters: { key: string; label: string; onRemove: () => void }[] = [];
+  if (search) activeFilters.push({ key: "search", label: `"${search}"`, onRemove: () => { setSearch(""); setTimeout(() => fetchImoveis(1, campanhaAtiva, uhomeOnly), 50); } });
   if (tipo && tipo !== "all") activeFilters.push({ key: "tipo", label: tipo.charAt(0).toUpperCase() + tipo.slice(1), onRemove: () => setTipo("") });
   if (bairro) activeFilters.push({ key: "bairro", label: bairro, onRemove: () => setBairro("") });
   if (dormitorios && dormitorios !== "all") activeFilters.push({ key: "dorms", label: `${dormitorios}+ dorm`, onRemove: () => setDormitorios("") });
@@ -738,10 +739,11 @@ export default function ImoveisPage() {
   if (valorRange[0] > 0 || valorRange[1] < 5_000_000) activeFilters.push({ key: "valor", label: `${fmtCompact(valorRange[0])} — ${valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}`, onRemove: () => setValorRange([0, 5_000_000]) });
   if (areaRange[0] > 0 || areaRange[1] < 500) activeFilters.push({ key: "area", label: `${areaRange[0]}m² — ${areaRange[1] >= 500 ? "500+" : areaRange[1]}m²`, onRemove: () => setAreaRange([0, 500]) });
   if (somenteObras) activeFilters.push({ key: "obras", label: "Em obras", onRemove: () => setSomenteObras(false) });
-  if (search) activeFilters.push({ key: "search", label: `"${search}"`, onRemove: () => { setSearch(""); setTimeout(() => fetchImoveis(1, campanhaAtiva, uhomeOnly), 50); } });
+  if (uhomeOnly) activeFilters.push({ key: "uhome", label: "uHome", onRemove: () => { setUhomeOnly(false); fetchImoveis(1, false, false); } });
+  if (campanhaAtiva) activeFilters.push({ key: "campanha", label: "Campanha", onRemove: () => { setCampanhaAtiva(false); fetchImoveis(1, false, uhomeOnly); } });
 
   const clearAllFilters = () => {
-    setTipo(""); setBairro(""); setDormitorios(""); setSuitesFilter(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false); setSearch("");
+    setTipo(""); setBairro(""); setDormitorios(""); setSuitesFilter(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false); setSearch(""); setUhomeOnly(false); setCampanhaAtiva(false);
   };
 
   // ── Render ──
@@ -764,13 +766,24 @@ export default function ImoveisPage() {
                 onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className="pl-10 h-10 text-sm bg-muted/50 border-border/60 rounded-full focus-visible:ring-primary/30 focus-visible:bg-background"
+                className="pl-10 pr-20 h-10 text-sm bg-muted/50 border-border/60 rounded-full focus-visible:ring-primary/30 focus-visible:bg-background"
               />
-              {search && (
-                <button onClick={() => { setSearch(""); setSuggestions([]); setShowSuggestions(false); setTimeout(() => fetchImoveis(1, campanhaAtiva, uhomeOnly), 50); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {search && (
+                  <button onClick={() => { setSearch(""); setSuggestions([]); setShowSuggestions(false); setTimeout(() => fetchImoveis(1, campanhaAtiva, uhomeOnly), 50); }} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted/50">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <Button
+                  onClick={handleSearch}
+                  size="sm"
+                  className="h-7 px-3 rounded-full text-xs gap-1"
+                  disabled={loading}
+                >
+                  {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                  Buscar
+                </Button>
+              </div>
               {/* Autocomplete dropdown */}
               {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1.5 bg-background border border-border rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto">

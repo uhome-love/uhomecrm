@@ -40,6 +40,13 @@ export function buildFilterBy(filters: {
 }): string {
   const parts: string[] = [];
 
+  // Filter by contrato: ensure we only show properties with the relevant price > 0
+  if (filters.contrato === "locacao") {
+    parts.push(`valor_locacao:>0`);
+  } else if (filters.contrato === "venda") {
+    parts.push(`valor_venda:>0`);
+  }
+
   if (filters.bairro) {
     parts.push(`bairro:=${filters.bairro}`);
   }
