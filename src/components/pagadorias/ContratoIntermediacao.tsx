@@ -504,10 +504,10 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             ]).map((c, i) => (
               <div key={`contratante-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
-                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "0px" }}>
+                <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "0px" }}>
                   <b>CONTRATANTE:</b>
                 </p>
-                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "3px" }}>
+                <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "3px" }}>
                   {(c as any).nome || "_______________"}
                 </p>
               </div>
@@ -517,7 +517,7 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             {contratadosList.map((c, i) => (
               <div key={`contratado-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
-                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "3px" }}>
+                <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "3px" }}>
                   <b>CONTRATADO — {c.assinaturaTipo}:</b> {c.nome}
                 </p>
               </div>
@@ -525,34 +525,36 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
 
             {/* UHOME / IMOBILIÁRIA */}
             <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
-            <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "0px" }}>
+            <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "0px" }}>
               <b>CONTRATADO:</b>
             </p>
-            <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "0px" }}>
+            <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "0px" }}>
               <b>IMOBILIÁRIA:</b>
             </p>
-            <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "3px" }}>
+            <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "3px" }}>
               UHOME NEGÓCIOS IMOBILIÁRIOS
             </p>
           </div>
 
           {/* ── TESTEMUNHAS ── */}
           <div style={{ marginTop: "50px" }}>
-            <p style={{ marginBottom: "8px", fontWeight: "bold", fontSize: "13px" }}>Testemunhas:</p>
+            <p style={{ marginBottom: "8px", fontWeight: "bold", fontSize: "14px" }}>Testemunhas:</p>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
                 <tr>
                   <td style={{ width: "50%", verticalAlign: "top", paddingRight: "20px" }}>
                     <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
-                    <p style={{ fontSize: "11px" }}>01. ___________________________</p>
-                    <p style={{ fontSize: "11px" }}>Nome: Ana Paula Silveira</p>
-                    <p style={{ fontSize: "11px" }}>E-mail: anapsilveiram@gmail.com</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>01. ___________________________</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>Nome: {testemunha1Nome || "________________________________"}</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>CPF: {testemunha1Cpf || "___.___.___-__"}</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>E-mail: {testemunha1Email || "________________________________"}</p>
                   </td>
                   <td style={{ width: "50%", verticalAlign: "top", paddingLeft: "20px" }}>
                     <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
-                    <p style={{ fontSize: "11px" }}>02. ___________________________</p>
-                    <p style={{ fontSize: "11px" }}>Nome: Bruno Schuler</p>
-                    <p style={{ fontSize: "11px" }}>E-mail: bruno@uhome.imb.br</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>02. ___________________________</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>Nome: {testemunha2Nome || "________________________________"}</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>CPF: {testemunha2Cpf || "___.___.___-__"}</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>E-mail: {testemunha2Email || "________________________________"}</p>
                   </td>
                 </tr>
               </tbody>
