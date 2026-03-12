@@ -3796,8 +3796,12 @@ export type Database = {
           aceite_expira_em: string | null
           aceite_status: string
           aceito_em: string | null
+          anuncio: string | null
           bairro_regiao: string | null
+          campanha: string | null
+          campanha_id: string | null
           complexidade_score: number
+          conjunto_anuncio: string | null
           corretor_id: string | null
           created_at: string
           created_by: string | null
@@ -3807,6 +3811,7 @@ export type Database = {
           empreendimento: string | null
           escalation_level: number | null
           forma_pagamento: string | null
+          formulario: string | null
           gerente_id: string | null
           hora_proxima_acao: string | null
           id: string
@@ -3826,6 +3831,7 @@ export type Database = {
           ordem_no_stage: number
           origem: string | null
           origem_detalhe: string | null
+          plataforma: string | null
           primeiro_contato_em: string | null
           prioridade_acao: string | null
           prioridade_lead: string
@@ -3851,8 +3857,12 @@ export type Database = {
           aceite_expira_em?: string | null
           aceite_status?: string
           aceito_em?: string | null
+          anuncio?: string | null
           bairro_regiao?: string | null
+          campanha?: string | null
+          campanha_id?: string | null
           complexidade_score?: number
+          conjunto_anuncio?: string | null
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3862,6 +3872,7 @@ export type Database = {
           empreendimento?: string | null
           escalation_level?: number | null
           forma_pagamento?: string | null
+          formulario?: string | null
           gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
@@ -3881,6 +3892,7 @@ export type Database = {
           ordem_no_stage?: number
           origem?: string | null
           origem_detalhe?: string | null
+          plataforma?: string | null
           primeiro_contato_em?: string | null
           prioridade_acao?: string | null
           prioridade_lead?: string
@@ -3906,8 +3918,12 @@ export type Database = {
           aceite_expira_em?: string | null
           aceite_status?: string
           aceito_em?: string | null
+          anuncio?: string | null
           bairro_regiao?: string | null
+          campanha?: string | null
+          campanha_id?: string | null
           complexidade_score?: number
+          conjunto_anuncio?: string | null
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -3917,6 +3933,7 @@ export type Database = {
           empreendimento?: string | null
           escalation_level?: number | null
           forma_pagamento?: string | null
+          formulario?: string | null
           gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
@@ -3936,6 +3953,7 @@ export type Database = {
           ordem_no_stage?: number
           origem?: string | null
           origem_detalhe?: string | null
+          plataforma?: string | null
           primeiro_contato_em?: string | null
           prioridade_acao?: string | null
           prioridade_lead?: string
