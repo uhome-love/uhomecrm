@@ -425,7 +425,7 @@ export default function AdminPanel() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium">Tipo de Usuário</Label>
-                <Select value={newRole} onValueChange={(v) => setNewRole(v as "corretor" | "gestor" | "backoffice")}>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as "corretor" | "gestor" | "backoffice" | "rh")}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -433,6 +433,7 @@ export default function AdminPanel() {
                     <SelectItem value="corretor">👤 Corretor</SelectItem>
                     <SelectItem value="gestor">📊 Gerente</SelectItem>
                     <SelectItem value="backoffice">🗂️ Backoffice</SelectItem>
+                    <SelectItem value="rh">💙 RH</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
