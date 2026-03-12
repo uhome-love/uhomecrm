@@ -386,7 +386,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       .lte("created_at", endTs);
     setTotalLeadsPeriodo(leadsCount || 0);
 
-    // Presentes hoje: status ativo atual OU checkpoint presença hoje
+    // Presentes hoje: corretor_disponibilidade uses auth.user_id, checkpoint_diario uses profiles.id
+    // We need to resolve both to auth.user_id to avoid double-counting
     const [{ data: dispRows }, { data: checkPresentes }] = await Promise.all([
       supabase
         .from("corretor_disponibilidade")
@@ -400,7 +401,13 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     ]);
     const dispIds = new Set<string>();
     (dispRows || []).forEach(r => dispIds.add(r.user_id));
-    (checkPresentes || []).forEach(c => dispIds.add(c.corretor_id));
+    
+    // Resolve checkpoint_diario.corretor_id (profiles.id) to auth.user_id
+    const checkProfileIds = (checkPresentes || []).map(c => c.corretor_id).filter(Boolean);
+    if (checkProfileIds.length > 0) {
+      const { data: checkProfs } = await supabase.from("profiles").select("id, user_id").in("id", checkProfileIds);
+      (checkProfs || []).forEach(p => { if (p.user_id) dispIds.add(p.user_id); });
+    }
     setPresentesHoje(dispIds.size);
 
     // Metas do dia (sum of all corretor daily goals for today)
