@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     return new Response("Missing vitrine id", { status: 400 });
   }
 
-  const spaUrl = `https://uhomeia.lovable.app/vitrine/${vitrineId}`;
+  const spaUrl = `https://uhomesales.com/vitrine/${vitrineId}`;
   const userAgent = req.headers.get("user-agent") || "";
   const isBot = BOT_UA.test(userAgent);
 
