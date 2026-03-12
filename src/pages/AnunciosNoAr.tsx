@@ -806,7 +806,7 @@ function CriarVitrineDialog({
       const { data, error } = await supabase.from("vitrines").insert({
         titulo: titulo || config.nome,
         created_by: user.id,
-        tipo: "anuncio",
+        tipo: "product_page",
         imovel_ids: [config.codigo],
         dados_custom: dadosCustom,
         lead_nome: leadNome || null,
