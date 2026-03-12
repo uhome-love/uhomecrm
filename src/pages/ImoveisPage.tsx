@@ -1085,8 +1085,12 @@ export default function ImoveisPage() {
       </div>
 
       {/* ── Main content ── */}
-      <div className="flex-1 max-w-[1400px] mx-auto w-full px-4 md:px-6 py-4">
-        {/* Vitrine bar */}
+      <div className={cn("flex-1 w-full", viewMode === "map" ? "flex overflow-hidden" : "max-w-[1400px] mx-auto px-4 md:px-6 py-4")}>
+        {viewMode === "map" ? (
+          <>
+            {/* Map split view */}
+            <div className="w-1/2 h-[calc(100vh-120px)] overflow-y-auto px-4 py-4 space-y-3">
+              {/* Vitrine bar in map mode */}
         {selectMode && selectedIds.size > 0 && (
           <Card className="p-3 mb-4 flex items-center justify-between bg-primary/5 border-primary/20 flex-wrap gap-2">
             <span className="text-sm font-medium">{selectedIds.size} imóvel(is) selecionado(s)</span>
