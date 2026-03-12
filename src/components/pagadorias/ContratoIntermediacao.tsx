@@ -72,21 +72,29 @@ function fmtDateShort(dateStr: string) {
   return d.toLocaleDateString("pt-BR");
 }
 
-// Inline styles matching the real document (Calibri 11px, justified)
+// Inline styles — Calibri 14px, justified
 const S = {
-  p: { textAlign: "justify" as const, marginBottom: "12px", textIndent: "0", lineHeight: "1.7", fontSize: "13px" },
-  pIndent: { textAlign: "justify" as const, marginBottom: "8px", marginLeft: "24px", lineHeight: "1.7", fontSize: "13px" },
-  th: { border: "1px solid #222", padding: "6px 10px", textAlign: "center" as const, fontWeight: "bold" as const, fontSize: "11px", background: "#f0f0f0", letterSpacing: "0.02em" },
-  thLeft: { border: "1px solid #222", padding: "6px 10px", textAlign: "left" as const, fontWeight: "bold" as const, fontSize: "11px", background: "#f0f0f0", letterSpacing: "0.02em" },
-  td: { border: "1px solid #222", padding: "6px 10px", textAlign: "center" as const, fontSize: "11px" },
-  tdLeft: { border: "1px solid #222", padding: "6px 10px", textAlign: "left" as const, fontSize: "11px" },
-  tdBold: { border: "1px solid #222", padding: "6px 10px", textAlign: "center" as const, fontSize: "11px", fontWeight: "bold" as const },
+  p: { textAlign: "justify" as const, marginBottom: "12px", textIndent: "0", lineHeight: "1.8", fontSize: "14px" },
+  pIndent: { textAlign: "justify" as const, marginBottom: "8px", marginLeft: "24px", lineHeight: "1.8", fontSize: "14px" },
+  th: { border: "1px solid #222", padding: "6px 10px", textAlign: "center" as const, fontWeight: "bold" as const, fontSize: "12px", background: "#f0f0f0", letterSpacing: "0.02em" },
+  thLeft: { border: "1px solid #222", padding: "6px 10px", textAlign: "left" as const, fontWeight: "bold" as const, fontSize: "12px", background: "#f0f0f0", letterSpacing: "0.02em" },
+  td: { border: "1px solid #222", padding: "6px 10px", textAlign: "center" as const, fontSize: "12px" },
+  tdLeft: { border: "1px solid #222", padding: "6px 10px", textAlign: "left" as const, fontSize: "12px" },
+  tdBold: { border: "1px solid #222", padding: "6px 10px", textAlign: "center" as const, fontSize: "12px", fontWeight: "bold" as const },
 };
 
 export default function ContratoIntermediacao({ open, onOpenChange, data, onDataChange, onGenerated }: Props) {
   const [editing, setEditing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const contractRef = useRef<HTMLDivElement>(null);
+
+  // Testemunhas editáveis
+  const [testemunha1Nome, setTestemunha1Nome] = useState("");
+  const [testemunha1Email, setTestemunha1Email] = useState("");
+  const [testemunha1Cpf, setTestemunha1Cpf] = useState("");
+  const [testemunha2Nome, setTestemunha2Nome] = useState("");
+  const [testemunha2Email, setTestemunha2Email] = useState("");
+  const [testemunha2Cpf, setTestemunha2Cpf] = useState("");
 
   const parcelas = data.parcelas.length > 0 ? data.parcelas : [{ numero: 1, data: data.data_venda, valor: data.comissao_total }];
 
@@ -231,6 +239,18 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
               <div><Label className="text-xs">Gerente - E-mail</Label><Input value={data.gerente_email} onChange={e => onDataChange({ ...data, gerente_email: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Data de assinatura</Label><Input type="date" value={data.data_assinatura} onChange={e => onDataChange({ ...data, data_assinatura: e.target.value })} className="h-8 text-sm" /></div>
             </div>
+
+            <p className="text-sm font-semibold text-muted-foreground mt-4">👥 Testemunhas (não podem ser contratados)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Testemunha 1 - Nome</Label><Input value={testemunha1Nome} onChange={e => setTestemunha1Nome(e.target.value)} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Testemunha 1 - CPF</Label><Input value={testemunha1Cpf} onChange={e => setTestemunha1Cpf(e.target.value)} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Testemunha 1 - E-mail</Label><Input value={testemunha1Email} onChange={e => setTestemunha1Email(e.target.value)} className="h-8 text-sm" /></div>
+              <div />
+              <div><Label className="text-xs">Testemunha 2 - Nome</Label><Input value={testemunha2Nome} onChange={e => setTestemunha2Nome(e.target.value)} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Testemunha 2 - CPF</Label><Input value={testemunha2Cpf} onChange={e => setTestemunha2Cpf(e.target.value)} className="h-8 text-sm" /></div>
+              <div><Label className="text-xs">Testemunha 2 - E-mail</Label><Input value={testemunha2Email} onChange={e => setTestemunha2Email(e.target.value)} className="h-8 text-sm" /></div>
+            </div>
+
             <Button size="sm" onClick={() => setEditing(false)}>Aplicar alterações</Button>
           </div>
         )}
@@ -239,9 +259,9 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
         <div
           ref={contractRef}
           style={{
-            fontFamily: "'Georgia', 'Times New Roman', 'Calibri', serif",
-            fontSize: "13px",
-            lineHeight: "1.7",
+            fontFamily: "'Calibri', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+            fontSize: "14px",
+            lineHeight: "1.8",
             color: "#1a1a1a",
             background: "#fff",
             padding: "16px 20px",
@@ -249,12 +269,12 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
           }}
         >
           {/* LOGO */}
-          <div style={{ textAlign: "center", marginBottom: "28px" }}>
-            <img src="/images/uhome-logo-horizontal-azul.png" alt="UHome" style={{ height: "64px" }} crossOrigin="anonymous" />
+          <div style={{ textAlign: "center", marginBottom: "28px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <img src="/images/uhome-logo-horizontal-azul.png" alt="UHome" style={{ height: "64px", display: "block", margin: "0 auto" }} crossOrigin="anonymous" />
           </div>
 
           {/* TITLE */}
-          <p style={{ textAlign: "center", fontSize: "15px", fontWeight: "bold", marginBottom: "28px", textDecoration: "underline", letterSpacing: "0.04em" }}>
+          <p style={{ textAlign: "center", fontSize: "16px", fontWeight: "bold", marginBottom: "28px", textDecoration: "underline", letterSpacing: "0.04em" }}>
             INSTRUMENTO PARTICULAR DE INTERMEDIAÇÃO IMOBILIÁRIA
           </p>
 
@@ -483,10 +503,10 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             ]).map((c, i) => (
               <div key={`contratante-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
-                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "0px" }}>
+                <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "0px" }}>
                   <b>CONTRATANTE:</b>
                 </p>
-                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "3px" }}>
+                <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "3px" }}>
                   {(c as any).nome || "_______________"}
                 </p>
               </div>
@@ -496,7 +516,7 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             {contratadosList.map((c, i) => (
               <div key={`contratado-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
-                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "3px" }}>
+                <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "3px" }}>
                   <b>CONTRATADO — {c.assinaturaTipo}:</b> {c.nome}
                 </p>
               </div>
@@ -504,34 +524,36 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
 
             {/* UHOME / IMOBILIÁRIA */}
             <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
-            <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "0px" }}>
+            <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "0px" }}>
               <b>CONTRATADO:</b>
             </p>
-            <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "0px" }}>
+            <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "0px" }}>
               <b>IMOBILIÁRIA:</b>
             </p>
-            <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "3px" }}>
+            <p style={{ textAlign: "center", fontSize: "13px", marginBottom: "3px" }}>
               UHOME NEGÓCIOS IMOBILIÁRIOS
             </p>
           </div>
 
           {/* ── TESTEMUNHAS ── */}
           <div style={{ marginTop: "50px" }}>
-            <p style={{ marginBottom: "8px", fontWeight: "bold", fontSize: "13px" }}>Testemunhas:</p>
+            <p style={{ marginBottom: "8px", fontWeight: "bold", fontSize: "14px" }}>Testemunhas:</p>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
                 <tr>
                   <td style={{ width: "50%", verticalAlign: "top", paddingRight: "20px" }}>
                     <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
-                    <p style={{ fontSize: "11px" }}>01. ___________________________</p>
-                    <p style={{ fontSize: "11px" }}>Nome: Ana Paula Silveira</p>
-                    <p style={{ fontSize: "11px" }}>E-mail: anapsilveiram@gmail.com</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>01. ___________________________</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>Nome: {testemunha1Nome || "________________________________"}</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>CPF: {testemunha1Cpf || "___.___.___-__"}</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>E-mail: {testemunha1Email || "________________________________"}</p>
                   </td>
                   <td style={{ width: "50%", verticalAlign: "top", paddingLeft: "20px" }}>
                     <div style={{ borderTop: "1px solid #000", marginTop: "30px", marginBottom: "5px" }} />
-                    <p style={{ fontSize: "11px" }}>02. ___________________________</p>
-                    <p style={{ fontSize: "11px" }}>Nome: Bruno Schuler</p>
-                    <p style={{ fontSize: "11px" }}>E-mail: bruno@uhome.imb.br</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>02. ___________________________</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>Nome: {testemunha2Nome || "________________________________"}</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>CPF: {testemunha2Cpf || "___.___.___-__"}</p>
+                    <p style={{ fontSize: "12px", marginBottom: "2px" }}>E-mail: {testemunha2Email || "________________________________"}</p>
                   </td>
                 </tr>
               </tbody>
