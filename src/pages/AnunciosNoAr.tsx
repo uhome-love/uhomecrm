@@ -1401,7 +1401,6 @@ export default function AnunciosNoAr() {
                     key={emp.codigo}
                     config={emp}
                     segmento={seg}
-                    imovelData={imoveis[emp.codigo] || null}
                     loading={loading}
                     materiais={materiais}
                     canUpload={canUpload}
