@@ -230,6 +230,44 @@ serve(async (req) => {
       });
     }
 
+    // ═══ INDEX BATCH (upsert without dropping) ═══
+    if (action === "index_batch") {
+      const JETIMOB_API_KEY = Deno.env.get("JETIMOB_API_KEY");
+      if (!JETIMOB_API_KEY) throw new Error("JETIMOB_API_KEY not configured");
+
+      const pageNum = body.page || 1;
+      const pageSize = body.pageSize || 200;
+      const url = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/todos?v=6&page=${pageNum}&pageSize=${pageSize}`;
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error(`Jetimob fetch failed: ${response.status}`);
+      const raw = await response.json();
+      const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw?.result) ? raw.result : Array.isArray(raw) ? raw : [];
+      const total = raw?.total || raw?.totalResults || 0;
+
+      if (items.length === 0) {
+        return new Response(JSON.stringify({ success: true, indexed: 0, page: pageNum, total, done: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const docs = items.map(mapImovelToDocument);
+      const jsonl = docs.map(d => JSON.stringify(d)).join("\n");
+      const resp = await fetch(`https://${TYPESENSE_HOST}/collections/${COLLECTION_NAME}/documents/import?action=upsert`, {
+        method: "POST",
+        headers: { "X-TYPESENSE-API-KEY": TYPESENSE_ADMIN_API_KEY, "Content-Type": "text/plain" },
+        body: jsonl,
+      });
+      const resultText = await resp.text();
+      const results = resultText.split("\n").filter(Boolean).map(l => JSON.parse(l));
+      const indexed = results.filter(r => r.success).length;
+      const errors = results.filter(r => !r.success).length;
+      const hasMore = items.length >= pageSize;
+
+      return new Response(JSON.stringify({ success: true, indexed, errors, page: pageNum, total, hasMore }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ═══ COLLECTION STATS ═══
     if (action === "stats") {
       const result = await typesenseFetch(TYPESENSE_HOST, TYPESENSE_ADMIN_API_KEY, `/collections/${COLLECTION_NAME}`);
