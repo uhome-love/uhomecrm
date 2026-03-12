@@ -797,13 +797,11 @@ function CriarVitrineDialog({
   onOpenChange,
   config,
   override,
-  imovelData,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   config: AnuncioConfig;
   override: EmpreendimentoOverride | null;
-  imovelData: JetimobImovel | null;
 }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
