@@ -198,185 +198,269 @@ function CorretorCard({ corretor, nome, cor, whatsappLink }: {
   );
 }
 
-/* ═══════════ MELNICK DAY SHOWCASE ═══════════ */
+/* ═══════════ MELNICK DAY SHOWCASE — PREMIUM LIGHT ═══════════ */
 function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
   vitrine: VitrineData["vitrine"];
   corretor: VitrineData["corretor"];
   imoveis: VitrineImovel[];
 }) {
   const [imgIdx, setImgIdx] = useState<Record<number, number>>({});
-  const cor = "#1a1a2e";
 
   const whatsappBase = corretor?.telefone
     ? `https://wa.me/55${corretor.telefone.replace(/\D/g, "")}`
     : null;
 
-  const segmentoColors: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-    mcmv: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", badge: "bg-emerald-100 text-emerald-800" },
-    medio: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", badge: "bg-blue-100 text-blue-800" },
-    alto: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", badge: "bg-amber-100 text-amber-800" },
+  const segmentoLabel = (item: VitrineImovel) => {
+    const raw = ((item as any).segmento || "").toLowerCase();
+    if (raw.includes("mcmv") || raw.includes("open")) return { label: "MCMV", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0" };
+    if (raw.includes("alto")) return { label: "Alto Padrão", color: "#b45309", bg: "#fffbeb", border: "#fde68a" };
+    return { label: "Médio Padrão", color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" };
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100">
-      {/* Header */}
+    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 40%, #f1f5f9 100%)" }}>
+      {/* ═══════ HERO HEADER ═══════ */}
       <header className="relative overflow-hidden">
-        {/* Navy gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0c1d3a] via-[#142d54] to-[#0f2847]" />
-        {/* Subtle golden accent */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(212,175,55,0.08)_0%,transparent_60%)]" />
-        
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-12 sm:py-20 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-5">
-            <div className="inline-flex items-center gap-2.5 bg-white/10 backdrop-blur-sm border border-white/15 rounded-full px-6 py-2.5 shadow-lg">
-              <Star className="h-4 w-4 text-amber-400" />
-              <span className="text-white/90 text-sm font-bold tracking-[0.2em] uppercase">Seleção Melnick Day 2026</span>
-              <Star className="h-4 w-4 text-amber-400" />
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight drop-shadow-lg">
+        {/* Animated gradient mesh background */}
+        <div className="absolute inset-0" style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #1e40af 70%, #3b82f6 100%)",
+        }} />
+        {/* Sparkle overlay */}
+        <div className="absolute inset-0" style={{
+          background: "radial-gradient(ellipse at 30% 20%, rgba(251,191,36,0.15) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(59,130,246,0.2) 0%, transparent 50%)",
+        }} />
+        {/* Geometric accent lines */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 40px, white 40px, white 41px)",
+        }} />
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-12 pb-16 sm:pt-16 sm:pb-24 relative z-10">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="text-center space-y-6">
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className="inline-flex items-center gap-2.5 rounded-full px-6 py-2.5"
+              style={{
+                background: "linear-gradient(135deg, rgba(251,191,36,0.25), rgba(245,158,11,0.15))",
+                border: "1px solid rgba(251,191,36,0.4)",
+                boxShadow: "0 0 30px rgba(251,191,36,0.15)",
+              }}
+            >
+              <Star className="h-4 w-4 text-amber-300" fill="currentColor" />
+              <span className="text-amber-100 text-xs sm:text-sm font-bold tracking-[0.25em] uppercase">Seleção Melnick Day 2026</span>
+              <Star className="h-4 w-4 text-amber-300" fill="currentColor" />
+            </motion.div>
+
+            {/* Title */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.05]" style={{
+              textShadow: "0 4px 30px rgba(0,0,0,0.3)",
+            }}>
               {vitrine.titulo}
             </h1>
+
             {vitrine.mensagem && (
-              <p className="text-white/60 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">{vitrine.mensagem}</p>
+              <p className="text-blue-100/70 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">{vitrine.mensagem}</p>
             )}
+
+            {/* Corretor avatar badge */}
             {corretor && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }} 
-                animate={{ opacity: 1, scale: 1 }} 
-                transition={{ delay: 0.3 }}
-                className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/10"
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="inline-flex items-center gap-3.5 rounded-full px-5 py-3"
+                style={{
+                  background: "rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(20px)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                }}
               >
                 {corretor.avatar_url ? (
-                  <img src={corretor.avatar_url} alt={corretor.nome} className="w-10 h-10 rounded-full border-2 border-amber-400/60 object-cover shadow-md" />
+                  <img src={corretor.avatar_url} alt={corretor.nome}
+                    className="w-12 h-12 rounded-full object-cover"
+                    style={{ border: "3px solid rgba(251,191,36,0.7)", boxShadow: "0 0 20px rgba(251,191,36,0.3)" }}
+                  />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold border-2 border-amber-400/60 shadow-md">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                    style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", border: "3px solid rgba(251,191,36,0.7)" }}>
                     {corretor.nome.charAt(0)}
                   </div>
                 )}
                 <div className="text-left">
                   <p className="text-white/50 text-[10px] uppercase tracking-[0.2em] font-medium">Seleção por</p>
-                  <p className="text-white font-semibold text-sm">{corretor.nome}</p>
+                  <p className="text-white font-bold text-sm">{corretor.nome}</p>
                 </div>
               </motion.div>
             )}
           </motion.div>
         </div>
-        {/* Curved bottom edge */}
-        <div className="absolute bottom-0 left-0 right-0 h-8">
-          <svg viewBox="0 0 1440 32" fill="none" className="w-full h-full" preserveAspectRatio="none">
-            <path d="M0 32V0C240 28 480 32 720 32C960 32 1200 28 1440 0V32H0Z" className="fill-slate-50" />
+
+        {/* Smooth wave separator */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 60" fill="none" className="w-full" preserveAspectRatio="none">
+            <path d="M0 60V20C180 45 360 55 540 50C720 45 900 30 1080 25C1200 22 1320 25 1440 30V60H0Z" fill="white" />
           </svg>
         </div>
       </header>
 
-      {/* Cards Grid */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-14">
-        <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+      {/* ═══════ PROPERTY CARDS ═══════ */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-16">
+        {/* Section subtitle */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-10 sm:mb-14"
+        >
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-blue-600/60 mb-2">Oportunidades exclusivas</p>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-800">
+            {imoveis.length} empreendimento{imoveis.length !== 1 ? "s" : ""} selecionado{imoveis.length !== 1 ? "s" : ""}
+          </h2>
+          <div className="mt-4 mx-auto w-16 h-1 rounded-full" style={{ background: "linear-gradient(90deg, #3b82f6, #f59e0b)" }} />
+        </motion.div>
+
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {imoveis.map((item, idx) => {
-            const rawSeg = ((item as any).segmento || "").toLowerCase();
-            const seg = rawSeg.includes("mcmv") || rawSeg.includes("open") ? "mcmv" : rawSeg.includes("alto") ? "alto" : "medio";
-            const colors = segmentoColors[seg] || segmentoColors.medio;
+            const seg = segmentoLabel(item);
             const fotos = item.fotos || [];
             const currentImg = imgIdx[idx] || 0;
 
             return (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.08, type: "spring", stiffness: 100 }}
-                className="bg-white rounded-2xl overflow-hidden shadow-lg shadow-slate-200/80 border border-slate-100 flex flex-col hover:shadow-xl hover:shadow-slate-300/60 hover:-translate-y-1 transition-all duration-300"
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ delay: idx * 0.1, type: "spring", stiffness: 80, damping: 20 }}
+                className="group bg-white rounded-3xl overflow-hidden flex flex-col"
+                style={{
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+                  border: "1px solid rgba(226,232,240,0.8)",
+                  transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = "0 20px 60px rgba(30,64,175,0.12), 0 8px 20px rgba(0,0,0,0.08)";
+                  e.currentTarget.style.transform = "translateY(-6px)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
               >
-                {/* Image carousel */}
-                <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden group">
+                {/* Image */}
+                <div className="relative aspect-[16/10] bg-slate-50 overflow-hidden">
                   {fotos.length > 0 ? (
                     <>
-                      <img src={fotos[currentImg]} alt={item.empreendimento || ""} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                      <img src={fotos[currentImg]} alt={item.empreendimento || ""} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                      {/* Gradient overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       {fotos.length > 1 && (
                         <>
                           <button
                             onClick={() => setImgIdx(p => ({ ...p, [idx]: (currentImg - 1 + fotos.length) % fotos.length }))}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm text-slate-700 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                            className="absolute left-2.5 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm text-slate-700 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-white hover:scale-110"
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => setImgIdx(p => ({ ...p, [idx]: (currentImg + 1) % fotos.length }))}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm text-slate-700 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm text-slate-700 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-white hover:scale-110"
                           >
                             <ChevronRight className="h-4 w-4" />
                           </button>
-                          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5">
+                          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                             {fotos.slice(0, 6).map((_, i) => (
-                              <div key={i} className={`h-1.5 rounded-full transition-all shadow-sm ${i === currentImg ? "w-5 bg-white" : "w-1.5 bg-white/60"}`} />
+                              <button
+                                key={i}
+                                onClick={() => setImgIdx(p => ({ ...p, [idx]: i }))}
+                                className={`rounded-full transition-all shadow-sm ${i === currentImg ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/50 hover:bg-white/80"}`}
+                              />
                             ))}
                           </div>
                         </>
                       )}
                     </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                      <Building2 className="h-12 w-12 text-slate-300" />
+                    <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #f1f5f9, #e2e8f0)" }}>
+                      <Building2 className="h-14 w-14 text-slate-300" />
                     </div>
                   )}
 
-                  {/* Segmento badge */}
-                  <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${colors.badge}`}>
-                    {seg === "mcmv" ? "MCMV" : seg === "alto" ? "Alto Padrão" : "Médio Padrão"}
+                  {/* Badges */}
+                  <div className="absolute top-3 left-3 flex gap-2">
+                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm"
+                      style={{ background: seg.bg, color: seg.color, border: `1px solid ${seg.border}` }}>
+                      {seg.label}
+                    </span>
                   </div>
-
-                  {/* Discount badge */}
                   {(item as any).descontoMax && (
-                    <div className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-md">
-                      Até {(item as any).descontoMax} OFF
+                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-bold text-white shadow-lg"
+                      style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)" }}>
+                      🔥 Até {(item as any).descontoMax} OFF
                     </div>
                   )}
                 </div>
 
                 {/* Content */}
-                <div className="p-5 flex-1 flex flex-col gap-3">
+                <div className="p-6 flex-1 flex flex-col gap-3">
                   <div>
-                    <h3 className="text-lg font-extrabold text-[#0c1d3a] leading-tight">{item.empreendimento || item.titulo}</h3>
+                    <h3 className="text-xl font-extrabold text-slate-800 leading-tight tracking-tight">{item.empreendimento || item.titulo}</h3>
                     {item.bairro && (
-                      <p className="text-slate-500 text-xs flex items-center gap-1 mt-1.5">
-                        <MapPin className="h-3 w-3 text-[#1e3a5f]" /> {item.bairro}
+                      <p className="text-slate-500 text-xs flex items-center gap-1.5 mt-2 font-medium">
+                        <MapPin className="h-3.5 w-3.5 text-blue-500" /> {item.bairro}
                       </p>
                     )}
                   </div>
 
-                  {/* Specs */}
-                  <div className="flex flex-wrap gap-1.5">
+                  {/* Specs pills */}
+                  <div className="flex flex-wrap gap-1.5 mt-1">
                     {(item as any).metragens && (
-                      <span className="text-[11px] bg-[#0c1d3a]/5 text-[#1e3a5f] px-2.5 py-1 rounded-lg font-medium">{(item as any).metragens}</span>
+                      <span className="text-[11px] bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-semibold border border-blue-100">
+                        📐 {(item as any).metragens}
+                      </span>
                     )}
                     {(item as any).dorms && (
-                      <span className="text-[11px] bg-[#0c1d3a]/5 text-[#1e3a5f] px-2.5 py-1 rounded-lg font-medium">{(item as any).dorms}</span>
+                      <span className="text-[11px] bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-semibold border border-violet-100">
+                        🛏 {(item as any).dorms}
+                      </span>
                     )}
                     {(item as any).status && (
-                      <span className="text-[11px] bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg font-medium">{(item as any).status}</span>
+                      <span className="text-[11px] bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg font-semibold border border-amber-100">
+                        🏗 {(item as any).status}
+                      </span>
                     )}
                   </div>
 
                   {/* Prices */}
-                  <div className="mt-auto pt-3 border-t border-slate-100">
+                  <div className="mt-auto pt-4 border-t border-slate-100">
                     {(item as any).precoDe && (
-                      <p className="text-xs text-slate-400 line-through">De {(item as any).precoDe}</p>
+                      <p className="text-xs text-slate-400 line-through font-medium">De {(item as any).precoDe}</p>
                     )}
                     {(item as any).precoPor && (
-                      <p className="text-xl font-black text-[#0c1d3a]">
-                        Por <span className="text-[#1e6b3a]">{(item as any).precoPor}</span>
+                      <p className="text-2xl font-black mt-0.5">
+                        <span className="text-slate-400 text-base font-bold">Por </span>
+                        <span style={{ color: "#059669" }}>{(item as any).precoPor}</span>
                       </p>
+                    )}
+                    {(item as any).condicoes && (
+                      <p className="text-[11px] text-slate-500 mt-1 font-medium">{(item as any).condicoes}</p>
                     )}
                   </div>
 
-                  {/* WhatsApp CTA */}
+                  {/* CTA */}
                   {whatsappBase && (
                     <a
                       href={`${whatsappBase}?text=${encodeURIComponent(`Olá ${corretor!.nome}! Tenho interesse no ${item.empreendimento || item.titulo} - Melnick Day 2026`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-r from-[#0c1d3a] to-[#1e3a5f] hover:from-[#142d54] hover:to-[#264b6e] text-white font-semibold text-sm transition-all shadow-md hover:shadow-lg"
+                      className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+                      style={{
+                        background: "linear-gradient(135deg, #1e40af, #3b82f6)",
+                        boxShadow: "0 6px 20px rgba(59,130,246,0.35)",
+                      }}
                     >
                       <MessageCircle className="h-4 w-4" />
                       Quero saber mais
@@ -389,35 +473,94 @@ function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
         </div>
       </section>
 
-      {/* Footer CTA */}
+      {/* ═══════ CORRETOR CTA SECTION ═══════ */}
       {whatsappBase && corretor && (
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0c1d3a] via-[#142d54] to-[#0f2847]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(212,175,55,0.1)_0%,transparent_60%)]" />
-          <div className="max-w-2xl mx-auto px-4 py-14 text-center space-y-5 relative z-10">
-            <h2 className="text-2xl sm:text-3xl font-black text-white">Gostou das ofertas?</h2>
-            <p className="text-white/60 text-base">Fale agora com {corretor.nome} e aproveite as condições exclusivas do Melnick Day!</p>
-            <a
-              href={`${whatsappBase}?text=${encodeURIComponent(`Olá ${corretor.nome}! Vi as ofertas do Melnick Day 2026 e quero mais informações!`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-[#0c1d3a] font-bold px-8 py-4 rounded-full transition-all shadow-xl hover:shadow-2xl hover:scale-105 text-lg"
+        <section className="relative overflow-hidden py-16 sm:py-20">
+          {/* Light gradient background */}
+          <div className="absolute inset-0" style={{
+            background: "linear-gradient(135deg, #eff6ff 0%, #f0f9ff 30%, #fefce8 70%, #fffbeb 100%)",
+          }} />
+          {/* Subtle pattern */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: "radial-gradient(circle at 2px 2px, #1e40af 1px, transparent 0)",
+            backgroundSize: "40px 40px",
+          }} />
+
+          <div className="max-w-2xl mx-auto px-4 text-center space-y-6 relative z-10">
+            {/* Corretor avatar large */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="flex justify-center"
             >
-              <MessageCircle className="h-5 w-5" />
-              Falar pelo WhatsApp
-              <ArrowRight className="h-5 w-5" />
-            </a>
+              {corretor.avatar_url ? (
+                <img src={corretor.avatar_url} alt={corretor.nome}
+                  className="w-20 h-20 rounded-full object-cover"
+                  style={{
+                    border: "4px solid white",
+                    boxShadow: "0 0 0 3px #3b82f6, 0 10px 40px rgba(59,130,246,0.2)",
+                  }}
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full flex items-center justify-center text-white font-black text-2xl"
+                  style={{
+                    background: "linear-gradient(135deg, #1e40af, #3b82f6)",
+                    border: "4px solid white",
+                    boxShadow: "0 0 0 3px #3b82f6, 0 10px 40px rgba(59,130,246,0.2)",
+                  }}>
+                  {corretor.nome.charAt(0)}
+                </div>
+              )}
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-800">
+                Gostou de alguma oferta?
+              </h2>
+              <p className="text-slate-500 text-base mt-2">
+                Fale agora com <span className="font-bold text-blue-600">{corretor.nome}</span> e aproveite as condições exclusivas do Melnick Day!
+              </p>
+            </motion.div>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-2">
+              <a
+                href={`${whatsappBase}?text=${encodeURIComponent(`Olá ${corretor.nome}! Vi as ofertas do Melnick Day 2026 e quero mais informações!`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 font-bold px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 text-base text-white"
+                style={{
+                  background: "linear-gradient(135deg, #16a34a, #22c55e)",
+                  boxShadow: "0 10px 30px rgba(34,197,94,0.35)",
+                }}
+              >
+                <MessageCircle className="h-5 w-5" />
+                Falar pelo WhatsApp
+                <ArrowRight className="h-5 w-5" />
+              </a>
+
+              {corretor.telefone && (
+                <a
+                  href={`tel:+55${corretor.telefone.replace(/\D/g, "")}`}
+                  className="inline-flex items-center gap-2 font-semibold px-6 py-3.5 rounded-full border-2 border-blue-200 text-blue-700 bg-white hover:bg-blue-50 transition-all text-sm"
+                  style={{ boxShadow: "0 4px 12px rgba(59,130,246,0.1)" }}
+                >
+                  <Phone className="h-4 w-4" />
+                  Ligar agora
+                </a>
+              )}
+            </div>
           </div>
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="py-6 bg-[#0c1d3a] border-t border-white/5">
+      {/* ═══════ FOOTER ═══════ */}
+      <footer className="py-8 border-t border-slate-100 bg-white">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-sm text-white/40">
-            Seleção personalizada por <span className="font-semibold text-white/70">{corretor?.nome || "UHome"}</span>
+          <p className="text-sm text-slate-400">
+            Seleção personalizada por <span className="font-semibold text-slate-600">{corretor?.nome || "UHome"}</span>
           </p>
-          <p className="text-xs text-white/25 mt-1">UHome Sales • Melnick Day 2026</p>
+          <p className="text-xs text-slate-300 mt-1">UHome Sales • Melnick Day 2026</p>
         </div>
       </footer>
     </div>
