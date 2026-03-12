@@ -232,6 +232,10 @@ function CeoView() {
           </div>
         </TabsContent>
 
+        <TabsContent value="leads">
+          <LeadsGeradosTab />
+        </TabsContent>
+
         <TabsContent value="roletagens">
           <RoletagensTab view="roletagens" />
         </TabsContent>
