@@ -474,10 +474,10 @@ export default function ImoveisPage() {
 
   // Filters — reactive (auto-apply on change)
   const [contrato, setContrato] = useState("venda");
-  const [tipo, setTipo] = useState("");
-  const [bairro, setBairro] = useState("");
+  const [tipo, setTipo] = useState<string[]>([]);
+  const [bairro, setBairro] = useState<string[]>([]);
   const [bairroSearch, setBairroSearch] = useState("");
-  const [dormitorios, setDormitorios] = useState("");
+  const [dormitorios, setDormitorios] = useState<string[]>([]);
   const [suitesFilter, setSuitesFilter] = useState("");
   const [vagas, setVagas] = useState("");
   const [areaRange, setAreaRange] = useState<[number, number]>([0, 500]);

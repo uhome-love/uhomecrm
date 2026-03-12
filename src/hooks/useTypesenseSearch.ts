@@ -28,9 +28,9 @@ interface Suggestion {
  */
 export function buildFilterBy(filters: {
   contrato?: string;
-  tipo?: string;
-  bairro?: string;
-  dormitorios?: string;
+  tipo?: string | string[];
+  bairro?: string | string[];
+  dormitorios?: string | string[];
   suites?: string;
   vagas?: string;
   valorRange?: [number, number];
@@ -47,15 +47,30 @@ export function buildFilterBy(filters: {
     parts.push(`valor_venda:>0`);
   }
 
-  if (filters.bairro) {
-    parts.push(`bairro:=${filters.bairro}`);
+  // Multi-select bairro
+  const bairros = Array.isArray(filters.bairro) ? filters.bairro : (filters.bairro ? [filters.bairro] : []);
+  if (bairros.length === 1) {
+    parts.push(`bairro:=${bairros[0]}`);
+  } else if (bairros.length > 1) {
+    parts.push(`bairro:[${bairros.join(",")}]`);
   }
-  if (filters.tipo && filters.tipo !== "all") {
-    parts.push(`tipo:=${filters.tipo}`);
+
+  // Multi-select tipo
+  const tipos = Array.isArray(filters.tipo) ? filters.tipo.filter(t => t && t !== "all") : (filters.tipo && filters.tipo !== "all" ? [filters.tipo] : []);
+  if (tipos.length === 1) {
+    parts.push(`tipo:=${tipos[0]}`);
+  } else if (tipos.length > 1) {
+    parts.push(`tipo:[${tipos.join(",")}]`);
   }
-  if (filters.dormitorios && filters.dormitorios !== "all") {
-    parts.push(`dormitorios:>=${filters.dormitorios}`);
+
+  // Multi-select dormitorios — use the minimum value as >=
+  const dorms = Array.isArray(filters.dormitorios) ? filters.dormitorios.filter(d => d && d !== "all") : (filters.dormitorios && filters.dormitorios !== "all" ? [filters.dormitorios] : []);
+  if (dorms.length === 1) {
+    parts.push(`dormitorios:>=${dorms[0]}`);
+  } else if (dorms.length > 1) {
+    parts.push(`dormitorios:[${dorms.join(",")}]`);
   }
+
   if (filters.suites && filters.suites !== "all") {
     parts.push(`suites:>=${filters.suites}`);
   }
