@@ -72,6 +72,8 @@ export default function Configuracoes() {
       setEmail(data.email || user.email || "");
       setTelefone(data.telefone || "");
       setCargo(data.cargo || "");
+      setCpf(data.cpf || "");
+      setCreci(data.creci || "");
       setAvatarUrl(data.avatar_url);
       setAvatarPreviewUrl(data.avatar_preview_url);
     }
