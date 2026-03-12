@@ -14,12 +14,13 @@ import {
   Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath,
   Maximize, MapPin, Car, Megaphone, ChevronsUpDown, Check, UserCircle, Phone,
   Mail, X, Share2, CheckSquare, Square, Link2, Copy, CalendarClock,
-  LayoutGrid, List, Star, SlidersHorizontal, ChevronDown, Heart, DollarSign
+  LayoutGrid, List, Star, SlidersHorizontal, ChevronDown, Heart, DollarSign, Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { getVitrineShareUrl } from "@/lib/vitrineUrl";
+import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
+import { useTypesenseSearch, buildFilterBy, buildSortBy } from "@/hooks/useTypesenseSearch";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
