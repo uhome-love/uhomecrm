@@ -520,7 +520,7 @@ export default function ImoveisPage() {
         setPage(pageNum);
       }
     } catch { toast.error("Erro de conexão"); } finally { setLoading(false); }
-  }, [search, contrato, tipo, bairro, dormitorios, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
+  }, [search, contrato, tipo, bairro, dormitorios, suites, vagas, areaRange, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
 
   const mounted = useRef(false);
   useEffect(() => {
