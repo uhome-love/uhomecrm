@@ -825,9 +825,9 @@ function CriarVitrineDialog({
     if (!user) return;
     setSaving(true);
     try {
-      const images = override?.fotos?.length ? override.fotos : (imovelData ? getImages(imovelData) : []);
-      const price = override?.valor_min ?? override?.valor_venda ?? (imovelData ? getPrice(imovelData) : 0);
-      const bairro = override?.bairro || imovelData?.bairro || imovelData?.endereco_bairro || "";
+      const images = override?.fotos || [];
+      const price = override?.valor_min ?? override?.valor_venda ?? 0;
+      const bairro = override?.bairro || "";
 
       const dadosCustom = [{
         nome: config.nome,
@@ -837,13 +837,13 @@ function CriarVitrineDialog({
         valor_min: override?.valor_min || price,
         valor_max: override?.valor_max || null,
         tipologias: override?.tipologias || [],
-        area_privativa: override?.area_privativa || imovelData?.area_privativa || 0,
-        dormitorios: override?.dormitorios || imovelData?.dormitorios || 0,
-        suites: override?.suites || imovelData?.suites || 0,
-        vagas: override?.vagas || imovelData?.vagas || 0,
-        status_obra: override?.status_obra || imovelData?.status_obra || "",
-        previsao_entrega: override?.previsao_entrega || imovelData?.previsao_entrega || "",
-        descricao: override?.descricao || imovelData?.descricao || "",
+        area_privativa: override?.area_privativa || 0,
+        dormitorios: override?.dormitorios || 0,
+        suites: override?.suites || 0,
+        vagas: override?.vagas || 0,
+        status_obra: override?.status_obra || "",
+        previsao_entrega: override?.previsao_entrega || "",
+        descricao: override?.descricao || "",
         fotos: images,
       }];
 
