@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Medal, Phone, ThumbsUp, TrendingUp, Loader2, Flame, Filter } from "lucide-react";
+import { getLevel } from "@/lib/gamification";
 
 const TEAM_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   default: { bg: "rgba(107,114,128,0.15)", text: "#9CA3AF", border: "rgba(107,114,128,0.3)" },
@@ -27,14 +28,33 @@ export default function RankingOfertaAtiva() {
   const [teamFilter, setTeamFilter] = useState<string>("todos");
   const { ranking, totalTentativas, isLoading } = useOARanking(period);
 
-  // Fetch gerente info for each corretor to get team names
+  // Fetch gerente info + profiles (avatar, gamification) for each corretor
   const corretorIds = useMemo(() => ranking.map(r => r.corretor_id), [ranking]);
+
+  const { data: profileMap = {} } = useQuery({
+    queryKey: ["oa-ranking-profiles", corretorIds],
+    queryFn: async () => {
+      if (corretorIds.length === 0) return {};
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, nome, avatar_url, avatar_gamificado_url")
+        .in("user_id", corretorIds);
+      const map: Record<string, { avatar_url: string | null }> = {};
+      for (const p of profiles || []) {
+        map[p.user_id] = {
+          avatar_url: p.avatar_gamificado_url || p.avatar_url || null,
+        };
+      }
+      return map;
+    },
+    enabled: corretorIds.length > 0,
+    staleTime: 60_000,
+  });
 
   const { data: teamMap = {} } = useQuery({
     queryKey: ["oa-ranking-teams", corretorIds],
     queryFn: async () => {
       if (corretorIds.length === 0) return {};
-      // Get team_members to find gerente_id for each corretor
       const { data: members } = await supabase
         .from("team_members")
         .select("user_id, gerente_id")
@@ -43,7 +63,6 @@ export default function RankingOfertaAtiva() {
 
       const gerenteIds = [...new Set((members || []).map(m => m.gerente_id).filter(Boolean))];
       
-      // Get gerente names
       const gerenteNameMap: Record<string, string> = {};
       if (gerenteIds.length > 0) {
         const { data: profiles } = await supabase
@@ -258,14 +277,11 @@ export default function RankingOfertaAtiva() {
                 <tr style={{ background: "#0A0F1E", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                   <th className="py-2.5 px-3 text-left w-10" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>#</th>
                   <th className="py-2.5 px-3 text-left" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Corretor</th>
-                  <th className="py-2.5 px-3 text-left" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Time</th>
-                  <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Pts</th>
-                  <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Tent.</th>
+                  <th className="py-2.5 px-3 text-left" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Título</th>
+                  <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Ligações</th>
                   <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Aprov.</th>
                   <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Taxa</th>
-                  <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>📞</th>
-                  <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>💬</th>
-                  <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>✉️</th>
+                  <th className="py-2.5 px-3 text-center" style={{ color: "#6B7280", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>Pts</th>
                 </tr>
               </thead>
               <tbody>
@@ -275,8 +291,8 @@ export default function RankingOfertaAtiva() {
                   const isTop1 = i === 0;
                   const isTop2 = i === 1;
                   const isTop3 = i === 2;
-                  const team = teamMap[r.corretor_id];
-                  const tc = team ? (teamColorMap[team] || TEAM_COLORS.default) : TEAM_COLORS.default;
+                  const profile = profileMap[r.corretor_id];
+                  const level = getLevel(r.pontos);
 
                   let rowStyle: React.CSSProperties = {
                     borderBottom: "1px solid rgba(255,255,255,0.04)",
@@ -296,7 +312,17 @@ export default function RankingOfertaAtiva() {
                   const posIcon = isTop1 ? "🏆" : isTop2 ? "🥈" : isTop3 ? "🥉" : null;
                   const nameColor = isMe ? "#fff" : isTop1 ? "#FBBF24" : "#D1D5DB";
                   const nameWeight = isMe || isTop1 ? 600 : 400;
-                  const numColor = (val: number) => val === 0 ? "#4B5563" : "#9CA3AF";
+
+                  // Level badge colors
+                  const levelColors: Record<string, { bg: string; text: string; border: string }> = {
+                    iniciante: { bg: "rgba(156,163,175,0.15)", text: "#9CA3AF", border: "rgba(156,163,175,0.3)" },
+                    ativo: { bg: "rgba(34,197,94,0.15)", text: "#4ADE80", border: "rgba(34,197,94,0.3)" },
+                    engajado: { bg: "rgba(249,115,22,0.15)", text: "#FB923C", border: "rgba(249,115,22,0.3)" },
+                    destaque: { bg: "rgba(245,158,11,0.15)", text: "#FBBF24", border: "rgba(245,158,11,0.3)" },
+                    elite: { bg: "rgba(59,130,246,0.15)", text: "#60A5FA", border: "rgba(59,130,246,0.3)" },
+                    lendario: { bg: "rgba(168,85,247,0.15)", text: "#C084FC", border: "rgba(168,85,247,0.3)" },
+                  };
+                  const lc = levelColors[level.id] || levelColors.iniciante;
 
                   return (
                     <tr
@@ -319,14 +345,23 @@ export default function RankingOfertaAtiva() {
                         )}
                       </td>
                       <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="flex items-center justify-center shrink-0"
-                            style={{ width: 32, height: 32, borderRadius: "50%", background: "#374151", color: "#D1D5DB", fontSize: 11, fontWeight: 700 }}
-                          >
-                            {getInitials(r.nome)}
-                          </div>
-                          <span className="truncate" style={{ color: nameColor, fontWeight: nameWeight }}>
+                        <div className="flex items-center gap-2.5">
+                          {profile?.avatar_url ? (
+                            <img
+                              src={profile.avatar_url}
+                              alt={r.nome}
+                              className="shrink-0 rounded-full object-cover"
+                              style={{ width: 36, height: 36, border: isTop1 ? "2px solid #F59E0B" : "2px solid rgba(255,255,255,0.1)" }}
+                            />
+                          ) : (
+                            <div
+                              className="flex items-center justify-center shrink-0"
+                              style={{ width: 36, height: 36, borderRadius: "50%", background: "#374151", color: "#D1D5DB", fontSize: 12, fontWeight: 700 }}
+                            >
+                              {getInitials(r.nome)}
+                            </div>
+                          )}
+                          <span className="truncate font-semibold" style={{ color: nameColor, fontWeight: nameWeight }}>
                             {r.nome}
                           </span>
                           {isMe && (
@@ -340,23 +375,18 @@ export default function RankingOfertaAtiva() {
                         </div>
                       </td>
                       <td className="py-2.5 px-3">
-                        {team ? (
-                          <span
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
-                            style={{ background: tc.bg, color: tc.text, border: `1px solid ${tc.border}` }}
-                          >
-                            {team}
-                          </span>
-                        ) : (
-                          <span className="text-[10px]" style={{ color: "#4B5563" }}>—</span>
-                        )}
+                        <span
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap inline-flex items-center gap-1"
+                          style={{ background: lc.bg, color: lc.text, border: `1px solid ${lc.border}` }}
+                        >
+                          {level.emoji} {level.label}
+                        </span>
                       </td>
-                      <td className="py-2.5 px-3 text-center font-bold" style={{ color: "#60A5FA" }}>{r.pontos}</td>
-                      <td className="py-2.5 px-3 text-center" style={{ color: numColor(r.tentativas) }}>{r.tentativas}</td>
+                      <td className="py-2.5 px-3 text-center font-bold" style={{ color: r.tentativas > 0 ? "#60A5FA" : "#4B5563" }}>{r.tentativas}</td>
                       <td className="py-2.5 px-3 text-center font-semibold" style={{ color: r.aproveitados > 0 ? "#4ADE80" : "#4B5563" }}>{r.aproveitados}</td>
                       <td className="py-2.5 px-3 text-center">
                         <span
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
                           style={{
                             color: getTaxaColor(taxa),
                             border: `1px solid ${taxa >= 15 ? "rgba(34,197,94,0.3)" : taxa >= 8 ? "rgba(251,191,36,0.3)" : "rgba(239,68,68,0.3)"}`,
@@ -365,9 +395,7 @@ export default function RankingOfertaAtiva() {
                           {taxa}%
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-center" style={{ color: numColor(r.ligacoes) }}>{r.ligacoes}</td>
-                      <td className="py-2.5 px-3 text-center" style={{ color: numColor(r.whatsapps) }}>{r.whatsapps}</td>
-                      <td className="py-2.5 px-3 text-center" style={{ color: numColor(r.emails) }}>{r.emails}</td>
+                      <td className="py-2.5 px-3 text-center font-bold" style={{ color: r.pontos > 0 ? "#F59E0B" : "#4B5563" }}>{r.pontos}</td>
                     </tr>
                   );
                 })}
