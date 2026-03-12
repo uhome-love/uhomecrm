@@ -6,6 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const BOT_UA = /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|telegram|twitterbot|linkedinbot|preview|fetch|curl|wget|python|go-http|insomnia|postman/i;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,13 +21,20 @@ Deno.serve(async (req) => {
   }
 
   const spaUrl = `https://uhomeia.lovable.app/vitrine/${vitrineId}`;
+  const userAgent = req.headers.get("user-agent") || "";
+  const isBot = BOT_UA.test(userAgent);
 
+  // For regular browsers, just redirect immediately (no HTML needed)
+  if (!isBot) {
+    return Response.redirect(spaUrl, 302);
+  }
+
+  // For bots/crawlers, serve OG meta tags
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Fetch vitrine
     const { data: vitrine } = await supabase
       .from("vitrines")
       .select("titulo, mensagem_corretor, imovel_ids, tipo, dados_custom, created_by")
@@ -38,7 +47,6 @@ Deno.serve(async (req) => {
 
     const ids = (vitrine.imovel_ids as string[]) || [];
 
-    // Get corretor name
     const { data: corretor } = await supabase
       .from("profiles")
       .select("nome")
@@ -47,9 +55,8 @@ Deno.serve(async (req) => {
 
     let ogTitle = vitrine.titulo || "Vitrine de Imóveis";
     let ogDescription = vitrine.mensagem_corretor || "Confira esta seleção exclusiva de imóveis";
-    let ogImage = "https://uhomesales.com/images/uhomesales-logo.png";
+    let ogImage = "https://uhomeia.lovable.app/og-image.png";
 
-    // Try to get image from override or Melnick Day data
     if (vitrine.tipo === "melnick_day" && vitrine.dados_custom) {
       const custom = vitrine.dados_custom as any[];
       if (custom.length > 0) {
@@ -60,7 +67,6 @@ Deno.serve(async (req) => {
         if (imgs.length > 0) ogImage = imgs[0];
       }
     } else if (ids.length > 0) {
-      // Check override photos first
       const { data: overrides } = await supabase
         .from("empreendimento_overrides")
         .select("nome, fotos, descricao, landing_titulo, bairro")
@@ -74,7 +80,6 @@ Deno.serve(async (req) => {
         if (ov.descricao) ogDescription = ov.descricao.substring(0, 155);
         if (ov.bairro) ogDescription = `${ov.bairro} — ${ogDescription}`;
       } else {
-        // Try Jetimob API for photo
         const JETIMOB_API_KEY = Deno.env.get("JETIMOB_API_KEY");
         if (JETIMOB_API_KEY) {
           try {
@@ -104,7 +109,6 @@ Deno.serve(async (req) => {
       ogDescription = `${corretor.nome} · ${ogDescription}`;
     }
 
-    // Sanitize for HTML attributes
     const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     const html = `<!DOCTYPE html>
@@ -113,8 +117,6 @@ Deno.serve(async (req) => {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${esc(ogTitle)}</title>
-
-  <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="${esc(spaUrl)}" />
   <meta property="og:title" content="${esc(ogTitle)}" />
@@ -123,20 +125,14 @@ Deno.serve(async (req) => {
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="UhomeSales" />
-
-  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${esc(ogTitle)}" />
   <meta name="twitter:description" content="${esc(ogDescription)}" />
   <meta name="twitter:image" content="${esc(ogImage)}" />
-
-  <!-- Redirect to SPA -->
-  <meta http-equiv="refresh" content="0;url=${esc(spaUrl)}" />
   <link rel="canonical" href="${esc(spaUrl)}" />
-  <script>window.location.replace("${spaUrl}");</script>
 </head>
 <body>
-  <p>Redirecionando para <a href="${esc(spaUrl)}">${esc(ogTitle)}</a>...</p>
+  <p><a href="${esc(spaUrl)}">${esc(ogTitle)}</a></p>
 </body>
 </html>`;
 
@@ -145,7 +141,6 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/html; charset=utf-8",
-        "Content-Security-Policy": "",
         "Cache-Control": "public, max-age=3600",
       },
     });
