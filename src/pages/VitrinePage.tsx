@@ -4,13 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, Phone, MapPin, BedDouble, Car, Maximize, ChevronLeft, ChevronRight,
   X, Bath, Ruler, Building2, ArrowRight, Home, Send, CheckCircle, User, Mail,
-  Play, Star, Shield, TreePine, Sparkles,
+  Play, Star, Shield, TreePine, Sparkles, MessageCircle,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatBRL } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 /* ═══════════ Types ═══════════ */
 interface VitrineImovel {
@@ -138,75 +136,65 @@ function HeroCarousel({ fotos, cor }: { fotos: string[]; cor: string }) {
   );
 }
 
-/* ═══════════ Lead Capture Form ═══════════ */
-function LeadCaptureForm({ empreendimento, source, cor }: { empreendimento: string; source: string; cor: string }) {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name && !phone) return;
-    setSending(true);
-    try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "hunbxqzhvuemgntklyzb";
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/receive-landing-lead`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, email, empreendimento, source }),
-      });
-      if (res.ok) setSent(true);
-    } catch (err) {
-      console.error("Lead submit error:", err);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (sent) {
-    return (
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="rounded-2xl p-8 text-center space-y-3"
-        style={{ backgroundColor: `${cor}15`, border: `1px solid ${cor}30` }}
-      >
-        <CheckCircle className="h-14 w-14 mx-auto" style={{ color: cor }} />
-        <h3 className="text-xl font-bold" style={{ color: cor }}>Recebemos seu interesse!</h3>
-        <p className="text-sm text-slate-500">Em breve um corretor entrará em contato com você.</p>
-      </motion.div>
-    );
-  }
-
+/* ═══════════ Corretor Card ═══════════ */
+function CorretorCard({ corretor, nome, cor, whatsappLink }: { 
+  corretor: { nome: string; telefone: string | null; avatar_url: string | null };
+  nome: string;
+  cor: string;
+  whatsappLink: string | null;
+}) {
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="relative">
-        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)}
-          className="pl-10 h-12 rounded-xl border-slate-200 bg-white" required />
-      </div>
-      <div className="relative">
-        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input placeholder="WhatsApp (DDD + número)" value={phone} onChange={e => setPhone(e.target.value)}
-          className="pl-10 h-12 rounded-xl border-slate-200 bg-white" type="tel" required />
-      </div>
-      <div className="relative">
-        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input placeholder="E-mail (opcional)" value={email} onChange={e => setEmail(e.target.value)}
-          className="pl-10 h-12 rounded-xl border-slate-200 bg-white" type="email" />
-      </div>
-      <button type="submit" disabled={sending || (!name && !phone)}
-        className="w-full h-12 rounded-xl text-white font-bold text-base shadow-lg transition-all hover:shadow-xl disabled:opacity-60"
-        style={{ backgroundColor: cor, boxShadow: `0 10px 25px -5px ${cor}40` }}
-      >
-        {sending ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : (
-          <span className="flex items-center justify-center gap-2">
-            <Send className="h-4 w-4" />
-            Quero saber mais
-          </span>
+    <div className="space-y-5">
+      {/* Corretor info */}
+      <div className="flex items-center gap-4">
+        {corretor.avatar_url ? (
+          <img src={corretor.avatar_url} alt={corretor.nome}
+            className="w-16 h-16 rounded-full border-3 object-cover shadow-lg"
+            style={{ borderColor: `${cor}40` }}
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
+            style={{ background: `linear-gradient(135deg, ${cor}, ${cor}cc)` }}>
+            {corretor.nome.charAt(0)}
+          </div>
         )}
-      </button>
-    </form>
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.15em] font-medium text-slate-400">Seleção para você</p>
+          <p className="text-lg font-bold text-slate-900">{corretor.nome}</p>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+      {/* CTA WhatsApp */}
+      {whatsappLink && (
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-3 w-full py-4 rounded-xl text-white font-bold text-base shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
+          style={{ backgroundColor: cor, boxShadow: `0 10px 25px -5px ${cor}40` }}
+        >
+          <MessageCircle className="h-5 w-5" />
+          Falar com {corretor.nome.split(" ")[0]}
+        </a>
+      )}
+
+      {corretor.telefone && (
+        <a
+          href={`tel:+55${corretor.telefone.replace(/\D/g, "")}`}
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors"
+        >
+          <Phone className="h-4 w-4" style={{ color: cor }} />
+          Ligar agora
+        </a>
+      )}
+
+      <p className="text-xs text-slate-400 text-center">
+        Atendimento personalizado para você
+      </p>
+    </div>
   );
 }
 
@@ -459,20 +447,18 @@ export default function VitrinePage() {
             )}
           </div>
 
-          {/* Right: Lead Capture */}
+          {/* Right: Corretor Card */}
           <div className="lg:col-span-2">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="sticky top-8 rounded-2xl border border-slate-200 p-6 sm:p-8 bg-gradient-to-b from-white to-slate-50/50 shadow-xl shadow-slate-200/50"
-            >
-              <div className="text-center space-y-1 mb-6">
-                <h3 className="text-xl font-bold text-slate-900">Tenho interesse!</h3>
-                <p className="text-sm text-slate-500">Preencha seus dados</p>
-              </div>
-              <LeadCaptureForm empreendimento={nome} source="vitrine_landing" cor={cor} />
-            </motion.div>
+            {corretor && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="sticky top-8 rounded-2xl border border-slate-200 p-6 sm:p-8 bg-gradient-to-b from-white to-slate-50/50 shadow-xl shadow-slate-200/50"
+              >
+                <CorretorCard corretor={corretor} nome={nome} cor={cor} whatsappLink={whatsappLink} />
+              </motion.div>
+            )}
           </div>
         </div>
       </section>
