@@ -129,7 +129,7 @@ export default function LandingPageEditor({ open, onOpenChange, codigo, nome, ex
         .from("vitrines")
         .select("id")
         .eq("created_by", user.id)
-        .eq("tipo", "anuncio")
+        .eq("tipo", "product_page")
         .contains("imovel_ids", [codigo])
         .order("created_at", { ascending: false })
         .limit(1)
