@@ -341,20 +341,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  {(() => {
-                    const descarteStage = stages.find(s => s.tipo === "descarte");
-                    if (!descarteStage || lead.stage_id === descarteStage.id) return null;
-                    return (
-                      <DropdownMenuItem className="text-amber-600" onClick={() => { onMove(lead.id, descarteStage.id, "Descartado pelo usuário"); onOpenChange(false); }}>
-                        <Ban className="h-3.5 w-3.5 mr-2" /> Descartar
-                      </DropdownMenuItem>
-                    );
-                  })()}
-                  {isAdmin && onDelete && (
-                    <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
-                      <PhoneOff className="h-3.5 w-3.5 mr-2" /> Contato errado (CEO)
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setInativarOpen(true); }}>
+                    <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
+                  </DropdownMenuItem>
                   {isAdmin && onDelete && (
                     <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
                       <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar (CEO)
