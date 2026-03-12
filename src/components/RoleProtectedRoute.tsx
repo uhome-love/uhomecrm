@@ -10,7 +10,7 @@ interface RoleProtectedRouteProps {
 
 export default function RoleProtectedRoute({ children, allowedRoles }: RoleProtectedRouteProps) {
   const { user, loading: authLoading } = useAuth();
-  const { roles, loading: roleLoading, isAdmin, isGestor, isCorretor, isBackoffice } = useUserRole();
+  const { roles, loading: roleLoading, isAdmin, isGestor, isCorretor, isBackoffice, isRh } = useUserRole();
 
   if (authLoading || roleLoading) {
     return (
