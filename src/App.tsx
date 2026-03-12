@@ -86,6 +86,7 @@ const RhDashboard = lazy(() => import("./pages/RhDashboard"));
 const RhRecrutamento = lazy(() => import("./pages/RhRecrutamento"));
 const RhConversas = lazy(() => import("./pages/RhConversas"));
 const RhSalaReuniao = lazy(() => import("./pages/RhSalaReuniao"));
+const RhEntrevistas = lazy(() => import("./pages/RhEntrevistas"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
