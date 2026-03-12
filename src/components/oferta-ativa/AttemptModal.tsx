@@ -120,6 +120,7 @@ export default function AttemptModal({ open, onClose, onSubmit, leadName, callDu
       setFeedback("");
       setVisitaMarcada(false);
       setInteresseTipo("");
+      confirmedRetirar.current = false;
     } catch (err: any) {
       console.error("Erro no submit do modal:", err);
       toast.error("Erro ao registrar. Tente novamente.");
