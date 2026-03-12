@@ -384,8 +384,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl p-5"
-        style={{ background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(220 30% 8%) 100%)", border: "1px solid hsl(var(--border))" }}
+        className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-card to-muted/80 border border-border"
       >
         {/* Animated background particles */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
