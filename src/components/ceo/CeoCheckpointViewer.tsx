@@ -92,11 +92,19 @@ export default function CeoCheckpointViewer() {
       const dayStart = `${date}T00:00:00-03:00`;
       const dayEnd = `${date}T23:59:59.999-03:00`;
       // Fetch OA tentativas and visitas in parallel batches
-      const visitasPromise = supabase
+      // V.Marc = visitas created on this date; V.Real = visitas realized on this date
+      const visitasCriadasPromise = supabase
         .from("visitas")
         .select("corretor_id, status")
         .in("corretor_id", userIds)
-        .eq("data_visita", date);
+        .gte("created_at", dayStart)
+        .lte("created_at", dayEnd);
+      const visitasRealizadasPromise = supabase
+        .from("visitas")
+        .select("corretor_id, status")
+        .in("corretor_id", userIds)
+        .eq("data_visita", date)
+        .eq("status", "realizada");
 
       for (let i = 0; i < userIds.length; i += 50) {
         const batch = userIds.slice(i, i + 50);
@@ -113,11 +121,17 @@ export default function CeoCheckpointViewer() {
         }
       }
 
-      const { data: visitas } = await visitasPromise;
-      for (const v of (visitas || [])) {
+      const [{ data: visitasCriadas }, { data: visitasRealizadas }] = await Promise.all([
+        visitasCriadasPromise,
+        visitasRealizadasPromise,
+      ]);
+      for (const v of (visitasCriadas || [])) {
         if (!visitasStatsById[v.corretor_id]) visitasStatsById[v.corretor_id] = { marcadas: 0, realizadas: 0 };
         if (v.status !== "cancelada") visitasStatsById[v.corretor_id].marcadas++;
-        if (v.status === "realizada") visitasStatsById[v.corretor_id].realizadas++;
+      }
+      for (const v of (visitasRealizadas || [])) {
+        if (!visitasStatsById[v.corretor_id]) visitasStatsById[v.corretor_id] = { marcadas: 0, realizadas: 0 };
+        visitasStatsById[v.corretor_id].realizadas++;
       }
     }
     // Map user_id -> team_member.id for OA stats and visitas stats
