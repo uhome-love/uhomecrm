@@ -496,7 +496,7 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             {contratadosList.map((c, i) => (
               <div key={`contratado-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
-                <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
+                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "3px" }}>
                   <b>CONTRATADO — {c.assinaturaTipo}:</b> {c.nome}
                 </p>
               </div>
