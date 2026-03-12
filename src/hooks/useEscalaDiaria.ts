@@ -210,8 +210,30 @@ export function useEscalaDiaria(data: string) {
         .eq("id", entryId);
       if (error) throw error;
     },
-    onSuccess: (_, vars) => {
+    onSuccess: async (_, vars) => {
+      // When approving, also activate corretor na roleta
+      if (vars.status === "aprovado") {
+        const entry = escala.find(e => e.id === vars.entryId);
+        if (entry) {
+          const { data: dispRow } = await supabase
+            .from("corretor_disponibilidade")
+            .select("id")
+            .eq("user_id", entry.corretor_id)
+            .maybeSingle();
+          if (dispRow) {
+            await supabase
+              .from("corretor_disponibilidade")
+              .update({ na_roleta: true, updated_at: new Date().toISOString() })
+              .eq("user_id", entry.corretor_id);
+          } else {
+            await supabase
+              .from("corretor_disponibilidade")
+              .insert({ user_id: entry.corretor_id, na_roleta: true, status: "na_empresa", segmentos: [] });
+          }
+        }
+      }
       qc.invalidateQueries({ queryKey: qKey });
+      qc.invalidateQueries({ queryKey: ["escala-disponibilidades"] });
       toast.success(vars.status === "aprovado" ? "Escala aprovada!" : "Escala rejeitada.");
     },
     onError: () => toast.error("Erro ao processar aprovação"),
