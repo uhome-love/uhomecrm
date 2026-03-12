@@ -14,6 +14,7 @@ import { Loader2, Clock, UserCheck, UserX, Users, Target, RotateCw, LogOut, Rock
 import { formatDistanceToNow, differenceInMinutes, format, startOfDay, subHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import RoletagensTab from "@/components/roleta/RoletagensTab";
+import LeadsGeradosTab from "@/components/roleta/LeadsGeradosTab";
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
   const [now, setNow] = useState(new Date());
