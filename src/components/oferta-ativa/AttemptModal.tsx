@@ -48,6 +48,7 @@ const QUICK_FEEDBACKS: Record<string, string[]> = {
     "Sem condições financeiras no momento",
     "Pediu para não ligar mais",
     "Disse que preencheu formulário por engano",
+    "🚫 Retirar do sistema — não quer ser mais contatado",
   ],
   com_interesse: [
     "Muito interessado, quer receber material completo",
