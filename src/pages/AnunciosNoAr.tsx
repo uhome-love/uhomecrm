@@ -835,8 +835,8 @@ function CriarVitrineDialog({
   }
 
   function copyLink() {
-    if (!vitrineDirectUrl) return;
-    navigator.clipboard.writeText(vitrineDirectUrl);
+    if (!vitrineUrl) return;
+    navigator.clipboard.writeText(vitrineUrl);
     toast.success("Link copiado!");
   }
 
