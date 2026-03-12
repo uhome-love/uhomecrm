@@ -40,7 +40,7 @@ serve(async (req) => {
     if (!isAdmin && !isGestor) throw new Error("Apenas administradores e gerentes podem criar usuários");
 
     if (action === "lookup_broker") {
-      // Search leads API for broker info
+      if (!isAdmin) throw new Error("Apenas administradores podem consultar corretores Jetimob");
       const JETIMOB_LEADS_URL_KEY = Deno.env.get("JETIMOB_LEADS_URL_KEY");
       const JETIMOB_LEADS_PRIVATE_KEY = Deno.env.get("JETIMOB_LEADS_PRIVATE_KEY");
       if (!JETIMOB_LEADS_URL_KEY || !JETIMOB_LEADS_PRIVATE_KEY) {
