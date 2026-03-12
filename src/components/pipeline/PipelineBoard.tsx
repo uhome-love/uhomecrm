@@ -263,6 +263,30 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     refetchOnWindowFocus: true,
   });
 
+  // Auto-fix: move leads with negocio_id that are stuck in non-convertido stages
+  const autoFixRan = useRef(false);
+  useEffect(() => {
+    if (autoFixRan.current || !stages.length || !leads.length) return;
+    const convertidoStage = stages.find(s => s.tipo === "convertido");
+    const descarteStage = stages.find(s => s.tipo === "descarte");
+    if (!convertidoStage) return;
+    
+    const stuckLeads = leads.filter(l => {
+      if (!l.negocio_id) return false;
+      if (l.stage_id === convertidoStage.id) return false;
+      if (descarteStage && l.stage_id === descarteStage.id) return false;
+      return true;
+    });
+
+    if (stuckLeads.length > 0) {
+      autoFixRan.current = true;
+      console.log(`[Pipeline] Auto-moving ${stuckLeads.length} leads with negócio to Convertido`);
+      Promise.all(
+        stuckLeads.map(l => onMoveLead(l.id, convertidoStage.id))
+      );
+    }
+  }, [stages, leads, onMoveLead]);
+
   // Filter stages: hide "Convertido" from corretores (only visible to gerente/CEO)
   const visibleStages = useMemo(() => {
     if (isGestor || isAdmin) return stages;
