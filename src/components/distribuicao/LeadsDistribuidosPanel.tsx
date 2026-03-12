@@ -161,8 +161,8 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
 
     const dayCounts: Record<string, number> = {};
     interval.forEach(d => { dayCounts[format(d, "yyyy-MM-dd")] = 0; });
-    historico.forEach(h => {
-      const day = h.created_at?.slice(0, 10);
+    distributedLeads.forEach(l => {
+      const day = l.distribuido_em?.slice(0, 10);
       if (day && dayCounts[day] !== undefined) dayCounts[day]++;
     });
 
@@ -171,7 +171,7 @@ export default function LeadsDistribuidosPanel({ teamUserIds, teamNameMap, perio
       label: format(parseISO(date), "dd/MM"),
       count,
     }));
-  }, [historico, period]);
+  }, [distributedLeads, period]);
 
   const maxDayCount = Math.max(...dailyData.map(d => d.count), 1);
 
