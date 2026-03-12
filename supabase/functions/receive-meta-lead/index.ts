@@ -444,6 +444,18 @@ Deno.serve(async (req) => {
 
     console.log(`META-LEAD: Created lead ${insertedLead.id} — ${name} — ${empreendimento} (campaign_id: ${campaignId}, property_code: ${propertyCode})`);
 
+    // Register in permanent dedup registry
+    const { error: registryError } = await supabase
+      .from("jetimob_processed")
+      .upsert(
+        { jetimob_lead_id: dedupRegistryId, telefone },
+        { onConflict: "jetimob_lead_id" }
+      );
+
+    if (registryError) {
+      console.warn("META-LEAD registry upsert warning:", registryError.message);
+    }
+
     // ── Auto-distribute via roleta ──
     try {
       await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
