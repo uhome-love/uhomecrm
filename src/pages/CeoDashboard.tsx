@@ -90,7 +90,6 @@ export default function CeoDashboard() {
   const { user } = useAuth();
   const { period, range } = useDateFilter();
   const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
-  const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [filaCeoCount, setFilaCeoCount] = useState(0);
   const [lastDispatch, setLastDispatch] = useState<{ at: string; count: number } | null>(null);
