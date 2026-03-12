@@ -1,13 +1,11 @@
 const APP_DOMAIN = "https://uhomesales.com";
 
 /**
- * Generates the shareable vitrine URL that includes Open Graph meta tags
- * for rich WhatsApp/social media previews with property images.
- * The OG page auto-redirects users to the SPA vitrine page.
+ * Generates the shareable vitrine URL using the approved domain.
+ * For social media / WhatsApp sharing with OG meta tags.
  */
 export function getVitrineShareUrl(vitrineId: string): string {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  return `${supabaseUrl}/functions/v1/vitrine-og?id=${vitrineId}`;
+  return `${APP_DOMAIN}/vitrine/${vitrineId}`;
 }
 
 /**
