@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { cn, formatBRL, formatBRLCompact } from "@/lib/utils";
-import { getVitrineShareUrl, getVitrineDirectUrl } from "@/lib/vitrineUrl";
+import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import { motion, AnimatePresence } from "framer-motion";
 import LandingPageEditor from "@/components/landing/LandingPageEditor";
 
@@ -764,7 +764,6 @@ function CriarVitrineDialog({
   const [leadTel, setLeadTel] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [vitrineUrl, setVitrineUrl] = useState<string | null>(null);
-  const [vitrineDirectUrl, setVitrineDirectUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -773,7 +772,6 @@ function CriarVitrineDialog({
       setLeadTel("");
       setMensagem("");
       setVitrineUrl(null);
-      setVitrineDirectUrl(null);
     }
   }, [open, config.nome]);
 
@@ -816,10 +814,8 @@ function CriarVitrineDialog({
 
       if (error) throw error;
 
-      const url = getVitrineShareUrl(data.id);
-      const directUrl = getVitrineDirectUrl(data.id);
+      const url = getVitrinePublicUrl(data.id);
       setVitrineUrl(url);
-      setVitrineDirectUrl(directUrl);
       toast.success("Vitrine criada!");
     } catch (err: any) {
       toast.error("Erro: " + (err.message || "Falha ao criar vitrine"));
@@ -839,8 +835,8 @@ function CriarVitrineDialog({
   }
 
   function copyLink() {
-    if (!vitrineDirectUrl) return;
-    navigator.clipboard.writeText(vitrineDirectUrl);
+    if (!vitrineUrl) return;
+    navigator.clipboard.writeText(vitrineUrl);
     toast.success("Link copiado!");
   }
 
@@ -883,7 +879,7 @@ function CriarVitrineDialog({
           <div className="space-y-4">
             <div className="rounded-xl border border-success/30 bg-success/5 p-4 text-center space-y-2">
               <p className="text-sm font-bold text-success">✅ Vitrine criada com sucesso!</p>
-              <p className="text-xs text-muted-foreground break-all font-mono bg-muted/30 rounded-lg p-2">{vitrineDirectUrl}</p>
+              <p className="text-xs text-muted-foreground break-all font-mono bg-muted/30 rounded-lg p-2">{vitrineUrl}</p>
             </div>
             <div className="flex gap-2">
               <Button onClick={shareWhatsApp} className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700">
@@ -893,7 +889,7 @@ function CriarVitrineDialog({
                 <Link2 className="h-4 w-4" /> Copiar
               </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => window.open(vitrineDirectUrl || vitrineUrl, "_blank")} className="w-full gap-2 text-xs">
+            <Button variant="ghost" size="sm" onClick={() => window.open(vitrineUrl!, "_blank")} className="w-full gap-2 text-xs">
               <ExternalLink className="h-3.5 w-3.5" /> Visualizar vitrine
             </Button>
           </div>
@@ -949,7 +945,7 @@ function EmpreendimentoCard({
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setLandingUrl(getVitrineShareUrl(data.id));
+          setLandingUrl(getVitrinePublicUrl(data.id));
         }
       });
   }, [config.codigo, user, landingRefreshKey]);
