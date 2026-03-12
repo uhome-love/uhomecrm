@@ -1220,7 +1220,6 @@ function EmpreendimentoCard({
         onOpenChange={setVitrineOpen}
         config={config}
         override={override}
-        imovelData={imovelData}
       />
     </motion.div>
   );
