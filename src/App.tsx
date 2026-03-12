@@ -222,6 +222,7 @@ const App = () => (
             <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
           </Routes>
         </BrowserRouter>
+        </DateFilterProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
