@@ -121,6 +121,36 @@ export default function CheckpointDaily() {
     return result;
   }, []);
 
+  // Fetch visitas stats for linked team members on a given date
+  const fetchVisitasStats = useCallback(async (members: TeamMember[], targetDate: string) => {
+    const linkedMembers = members.filter(m => m.user_id);
+    if (linkedMembers.length === 0) return {};
+
+    const userIds = linkedMembers.map(m => m.user_id!);
+    const { data: visitas } = await supabase
+      .from("visitas")
+      .select("corretor_id, status")
+      .in("corretor_id", userIds)
+      .eq("data_visita", targetDate);
+
+    // Count per corretor: marcadas = all non-cancelled, realizadas = status realizada
+    const statsById: Record<string, { marcadas: number; realizadas: number }> = {};
+    for (const v of (visitas || [])) {
+      if (!statsById[v.corretor_id]) statsById[v.corretor_id] = { marcadas: 0, realizadas: 0 };
+      if (v.status !== "cancelada") statsById[v.corretor_id].marcadas++;
+      if (v.status === "realizada") statsById[v.corretor_id].realizadas++;
+    }
+
+    // Map back to team_member.id
+    const result: Record<string, { marcadas: number; realizadas: number }> = {};
+    for (const m of linkedMembers) {
+      if (m.user_id && statsById[m.user_id]) {
+        result[m.id] = statsById[m.user_id];
+      }
+    }
+    return result;
+  }, []);
+
   const loadCheckpoint = useCallback(async () => {
     if (!user) return;
     setLoading(true);
