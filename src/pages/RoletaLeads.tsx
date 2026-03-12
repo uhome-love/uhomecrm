@@ -108,6 +108,10 @@ function CeoView() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="leads">
+          <LeadsGeradosTab />
+        </TabsContent>
+
         <TabsContent value="gestao" className="space-y-6">
           {/* Credenciamentos Pendentes */}
           <Card>
