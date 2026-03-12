@@ -477,9 +477,9 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
           >
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
               <motion.div animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}>
-                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
               </motion.div>
-              <p className="text-sm font-semibold text-amber-300">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
                 {data_.corretoresParados} corretor(es) parado(s) há mais de 20 minutos
               </p>
             </div>
