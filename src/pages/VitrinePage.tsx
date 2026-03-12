@@ -198,7 +198,215 @@ function CorretorCard({ corretor, nome, cor, whatsappLink }: {
   );
 }
 
-/* ═══════════ MAIN PAGE ═══════════ */
+/* ═══════════ MELNICK DAY SHOWCASE ═══════════ */
+function MelnickDayShowcase({ vitrine, corretor, imoveis }: {
+  vitrine: VitrineData["vitrine"];
+  corretor: VitrineData["corretor"];
+  imoveis: VitrineImovel[];
+}) {
+  const [imgIdx, setImgIdx] = useState<Record<number, number>>({});
+  const cor = "#1a1a2e";
+
+  const whatsappBase = corretor?.telefone
+    ? `https://wa.me/55${corretor.telefone.replace(/\D/g, "")}`
+    : null;
+
+  const segmentoColors: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+    mcmv: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", badge: "bg-emerald-100 text-emerald-800" },
+    medio: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", badge: "bg-blue-100 text-blue-800" },
+    alto: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", badge: "bg-amber-100 text-amber-800" },
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      {/* Header */}
+      <header className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-amber-500/10" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-16 relative z-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
+            <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 rounded-full px-5 py-2">
+              <Star className="h-4 w-4 text-amber-400" />
+              <span className="text-amber-300 text-sm font-bold tracking-wider uppercase">Melnick Day 2026</span>
+              <Star className="h-4 w-4 text-amber-400" />
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+              {vitrine.titulo}
+            </h1>
+            {vitrine.mensagem && (
+              <p className="text-white/60 text-base sm:text-lg max-w-2xl mx-auto">{vitrine.mensagem}</p>
+            )}
+            {corretor && (
+              <div className="flex items-center justify-center gap-3 pt-2">
+                {corretor.avatar_url ? (
+                  <img src={corretor.avatar_url} alt={corretor.nome} className="w-10 h-10 rounded-full border-2 border-amber-500/50 object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center text-amber-300 font-bold border-2 border-amber-500/50">
+                    {corretor.nome.charAt(0)}
+                  </div>
+                )}
+                <div className="text-left">
+                  <p className="text-white/40 text-[10px] uppercase tracking-[0.2em]">Seleção por</p>
+                  <p className="text-white font-semibold text-sm">{corretor.nome}</p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </header>
+
+      {/* Cards Grid */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-8 pb-16">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {imoveis.map((item, idx) => {
+            const seg = (item as any).segmento || "medio";
+            const colors = segmentoColors[seg] || segmentoColors.medio;
+            const fotos = item.fotos || [];
+            const currentImg = imgIdx[idx] || 0;
+
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.05 }}
+                className="bg-white rounded-2xl overflow-hidden shadow-xl shadow-black/20 border border-white/10 flex flex-col"
+              >
+                {/* Image carousel */}
+                <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden group">
+                  {fotos.length > 0 ? (
+                    <>
+                      <img src={fotos[currentImg]} alt={item.empreendimento || ""} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                      {fotos.length > 1 && (
+                        <>
+                          <button
+                            onClick={() => setImgIdx(p => ({ ...p, [idx]: (currentImg - 1 + fotos.length) % fotos.length }))}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setImgIdx(p => ({ ...p, [idx]: (currentImg + 1) % fotos.length }))}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                            {fotos.slice(0, 6).map((_, i) => (
+                              <div key={i} className={`h-1.5 rounded-full transition-all ${i === currentImg ? "w-4 bg-white" : "w-1.5 bg-white/50"}`} />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Building2 className="h-12 w-12 text-slate-300" />
+                    </div>
+                  )}
+
+                  {/* Segmento badge */}
+                  <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${colors.badge}`}>
+                    {seg === "mcmv" ? "MCMV" : seg === "alto" ? "Alto Padrão" : "Médio Padrão"}
+                  </div>
+
+                  {/* Discount badge */}
+                  {(item as any).descontoMax && (
+                    <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
+                      Até {(item as any).descontoMax} OFF
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="p-5 flex-1 flex flex-col gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 leading-tight">{item.empreendimento || item.titulo}</h3>
+                    {item.bairro && (
+                      <p className="text-slate-500 text-xs flex items-center gap-1 mt-1">
+                        <MapPin className="h-3 w-3" /> {item.bairro}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Specs */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {(item as any).metragens && (
+                      <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{(item as any).metragens}</span>
+                    )}
+                    {(item as any).dorms && (
+                      <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{(item as any).dorms}</span>
+                    )}
+                    {(item as any).status && (
+                      <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{(item as any).status}</span>
+                    )}
+                  </div>
+
+                  {/* Prices */}
+                  <div className="mt-auto pt-3 border-t border-slate-100">
+                    {(item as any).precoDe && (
+                      <p className="text-xs text-slate-400 line-through">De {(item as any).precoDe}</p>
+                    )}
+                    {(item as any).precoPor && (
+                      <p className="text-xl font-black text-slate-900">
+                        Por <span className="text-emerald-600">{(item as any).precoPor}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* WhatsApp CTA */}
+                  {whatsappBase && (
+                    <a
+                      href={`${whatsappBase}?text=${encodeURIComponent(`Olá ${corretor!.nome}! Tenho interesse no ${item.empreendimento || item.titulo} - Melnick Day 2026`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors"
+                    >
+                      <Phone className="h-4 w-4" />
+                      Quero saber mais
+                    </a>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Footer CTA */}
+      {whatsappBase && corretor && (
+        <section className="py-12 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/20 border-t border-amber-500/20">
+          <div className="max-w-2xl mx-auto px-4 text-center space-y-4">
+            <h2 className="text-2xl sm:text-3xl font-black text-white">Gostou das ofertas?</h2>
+            <p className="text-white/60">Fale agora com {corretor.nome} e aproveite as condições do Melnick Day!</p>
+            <a
+              href={`${whatsappBase}?text=${encodeURIComponent(`Olá ${corretor.nome}! Vi as ofertas do Melnick Day 2026 e quero mais informações!`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-4 rounded-full transition-all shadow-xl hover:shadow-2xl hover:scale-105 text-lg"
+            >
+              <Phone className="h-5 w-5" />
+              Falar pelo WhatsApp
+              <ArrowRight className="h-5 w-5" />
+            </a>
+          </div>
+        </section>
+      )}
+
+      {/* Footer */}
+      <footer className="py-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <p className="text-sm text-white/30">
+            Seleção personalizada por <span className="font-medium text-white/50">{corretor?.nome || "UHome"}</span>
+          </p>
+          <p className="text-xs text-white/20 mt-1">UHome Sales • Melnick Day 2026</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+
 export default function VitrinePage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<VitrineData | null>(null);
@@ -251,6 +459,12 @@ export default function VitrinePage() {
   }
 
   const { vitrine, corretor, imoveis, landing } = data;
+
+  /* ═══════════ MELNICK DAY SHOWCASE (old pattern) ═══════════ */
+  if (vitrine.tipo === "melnick_day") {
+    return <MelnickDayShowcase vitrine={vitrine} corretor={corretor} imoveis={imoveis} />;
+  }
+
   const imovel = imoveis[0] || null;
   const cor = landing?.cor_primaria || "#1e3a5f";
   const rgb = hexToRgb(cor);
@@ -276,7 +490,6 @@ export default function VitrinePage() {
       )}`
     : null;
 
-  // Build area label from tipologias or fallback to imovel
   const areaLabel = (() => {
     if (tipologias.length > 0) {
       const areas = tipologias
