@@ -144,6 +144,8 @@ export default function Configuracoes() {
       .update({
         nome: nome.trim(),
         telefone: telefone.trim(),
+        cpf: cpf.trim() || null,
+        creci: creci.trim() || null,
       })
       .eq("user_id", user.id);
 
