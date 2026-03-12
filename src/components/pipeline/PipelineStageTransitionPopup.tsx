@@ -316,12 +316,21 @@ function VisitaMarcadaForm({ lead, onConfirm, targetStageId }: { lead: PipelineL
   const [responsavel, setResponsavel] = useState("corretor");
   const [parceiro, setParceiro] = useState("");
   const [obs, setObs] = useState("");
+  const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
   const [corretores, setCorretores] = useState<{ user_id: string; nome: string }[]>([]);
+  const [empreendimentos, setEmpreendimentos] = useState<string[]>([]);
 
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from("team_members").select("user_id, nome").eq("status", "ativo");
       if (data) setCorretores(data.filter((c: any) => c.user_id));
+      
+      const { data: empData } = await supabase.from("empreendimento_overrides").select("nome, codigo");
+      if (empData) {
+        const nomes = empData.map((e: any) => e.nome || e.codigo).filter(Boolean);
+        const unique = [...new Set(nomes)] as string[];
+        setEmpreendimentos(unique.sort());
+      }
     };
     load();
   }, []);
