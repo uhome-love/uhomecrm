@@ -4936,6 +4936,78 @@ export type Database = {
         }
         Relationships: []
       }
+      rh_candidatos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string | null
+          etapa: string
+          id: string
+          nome: string
+          observacoes: string | null
+          origem: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          etapa?: string
+          id?: string
+          nome: string
+          observacoes?: string | null
+          origem?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          etapa?: string
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          origem?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rh_conversas: {
+        Row: {
+          colaborador_id: string
+          colaborador_nome: string
+          created_at: string
+          created_by: string | null
+          data_conversa: string
+          id: string
+          resumo: string | null
+          tipo: string
+        }
+        Insert: {
+          colaborador_id: string
+          colaborador_nome: string
+          created_at?: string
+          created_by?: string | null
+          data_conversa?: string
+          id?: string
+          resumo?: string | null
+          tipo?: string
+        }
+        Update: {
+          colaborador_id?: string
+          colaborador_nome?: string
+          created_at?: string
+          created_by?: string | null
+          data_conversa?: string
+          id?: string
+          resumo?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       roleta_campanhas: {
         Row: {
           ativo: boolean | null
@@ -5175,6 +5247,39 @@ export type Database = {
           faixa_preco?: string | null
           id?: string
           nome?: string
+        }
+        Relationships: []
+      }
+      sala_reuniao_reservas: {
+        Row: {
+          assunto: string | null
+          created_at: string
+          created_by: string | null
+          data: string
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          responsavel: string
+        }
+        Insert: {
+          assunto?: string | null
+          created_at?: string
+          created_by?: string | null
+          data: string
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          responsavel: string
+        }
+        Update: {
+          assunto?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          responsavel?: string
         }
         Relationships: []
       }
