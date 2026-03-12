@@ -958,6 +958,7 @@ function EmpreendimentoCard({
   loading,
   materiais,
   canUpload,
+  isAdmin,
   onRefreshMateriais,
   override,
   onEditOverride,
@@ -969,12 +970,33 @@ function EmpreendimentoCard({
   loading: boolean;
   materiais: Material[];
   canUpload: boolean;
+  isAdmin: boolean;
   onRefreshMateriais: () => void;
   override: EmpreendimentoOverride | null;
   onEditOverride: () => void;
   onEditLanding: () => void;
 }) {
+  const { user } = useAuth();
   const [vitrineOpen, setVitrineOpen] = useState(false);
+  const [landingUrl, setLandingUrl] = useState<string | null>(null);
+
+  // Check for existing landing page vitrine
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("vitrines")
+      .select("id")
+      .eq("tipo", "anuncio")
+      .contains("imovel_ids", [config.codigo])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setLandingUrl(`${window.location.origin}/vitrine/${data.id}`);
+        }
+      });
+  }, [config.codigo, user]);
 
   // Merge: override takes priority over Jetimob data
   const hasOverride = !!override;
@@ -1132,23 +1154,39 @@ function EmpreendimentoCard({
           )}
 
           {/* Landing Page + Vitrine Buttons */}
-          <div className="flex gap-2">
-            {canUpload && (
+          <div className="space-y-2">
+            {/* Admin: edit landing page */}
+            {isAdmin && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={onEditLanding}
-                className="flex-1 gap-2 text-xs font-bold border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+                className="w-full gap-2 text-xs font-bold border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
               >
-                <Eye className="h-3.5 w-3.5" />
-                Landing Page
+                <Pencil className="h-3.5 w-3.5" />
+                Editar Landing Page
               </Button>
             )}
+
+            {/* Everyone: view landing if exists */}
+            {landingUrl && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.open(landingUrl, "_blank")}
+                className="w-full gap-2 text-xs font-bold border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Ver Landing Page
+              </Button>
+            )}
+
+            {/* Vitrine button */}
             <Button
               size="sm"
               variant="outline"
               onClick={() => setVitrineOpen(true)}
-              className={cn("gap-2 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10", canUpload ? "flex-1" : "w-full")}
+              className="w-full gap-2 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10"
             >
               <Sparkles className="h-3.5 w-3.5" />
               Criar Vitrine
@@ -1443,6 +1481,7 @@ export default function AnunciosNoAr() {
                     loading={loading}
                     materiais={materiais}
                     canUpload={canUpload}
+                    isAdmin={isAdmin}
                     onRefreshMateriais={fetchMateriais}
                     override={overrides[emp.codigo] || null}
                     onEditOverride={() => setEditingCodigo(emp.codigo)}
