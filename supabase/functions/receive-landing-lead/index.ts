@@ -197,6 +197,11 @@ Deno.serve(async (req) => {
     // ── Insert ──
     const origemDetalhe = [utmSource, utmMedium, utmCampaign].filter(Boolean).join(" / ") || source;
 
+    // ── Derive campaign name from source ──
+    const isMelnickDay = source?.toLowerCase().includes("melnick_day") || source?.toLowerCase().includes("melnick-day");
+    const campanha = body.campaign_name || (isMelnickDay ? "Melnick Day - Landing Page" : source) || "Landing Page";
+    const plataforma = body.platform || (isMelnickDay ? "Landing Page Melnick Day" : "Landing Page");
+
     const { data: insertedLead, error: insertError } = await supabase
       .from("pipeline_leads")
       .insert({
@@ -208,6 +213,8 @@ Deno.serve(async (req) => {
         stage_id: stageData.id,
         origem: "Landing Page",
         origem_detalhe: origemDetalhe,
+        campanha,
+        plataforma,
         observacoes: message || null,
         corretor_id: null,
         aceite_status: "pendente_distribuicao",
