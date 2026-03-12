@@ -341,6 +341,30 @@ export default function Configuracoes() {
                   </span>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cpf" className="flex items-center gap-1.5 text-xs">
+                  <CreditCard className="h-3.5 w-3.5" /> CPF
+                </Label>
+                <Input
+                  id="cpf"
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                  placeholder="000.000.000-00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="creci" className="flex items-center gap-1.5 text-xs">
+                  <BadgeCheck className="h-3.5 w-3.5" /> CRECI
+                </Label>
+                <Input
+                  id="creci"
+                  value={creci}
+                  onChange={(e) => setCreci(e.target.value)}
+                  placeholder="CRECI/RS 00000"
+                />
+              </div>
             </div>
 
             <Button type="submit" disabled={saving} className="gap-2">

@@ -200,6 +200,7 @@ const App = () => (
             <Route path="/backoffice/marketing" element={<ProtectedPage roles={["backoffice", "admin"]}><MarketingCentral /></ProtectedPage>} />
             <Route path="/backoffice/homi-ana" element={<ProtectedPage roles={["backoffice", "admin"]}><HomiAna /></ProtectedPage>} />
             <Route path="/backoffice/tarefas" element={<ProtectedPage roles={["backoffice", "admin"]}><BackofficeCentral /></ProtectedPage>} />
+            <Route path="/backoffice/cadastros" element={<ProtectedPage roles={["backoffice", "admin"]}><CadastrosPage /></ProtectedPage>} />
             
 
             <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
