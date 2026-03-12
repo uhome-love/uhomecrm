@@ -88,10 +88,8 @@ function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor
 // ─── Main Page ───
 export default function CeoDashboard() {
   const { user } = useAuth();
-  const { period, range, setPeriod, setCustomRange, label: periodLabel } = useDateFilter();
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [datePickerFrom, setDatePickerFrom] = useState<Date | undefined>();
-  const [datePickerTo, setDatePickerTo] = useState<Date | undefined>();
+  const { period, range } = useDateFilter();
+  const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
   const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [filaCeoCount, setFilaCeoCount] = useState(0);
