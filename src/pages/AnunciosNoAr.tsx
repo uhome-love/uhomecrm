@@ -1387,7 +1387,7 @@ export default function AnunciosNoAr() {
               landing_titulo: (landingOverride as any).landing_titulo || "",
               landing_subtitulo: (landingOverride as any).landing_subtitulo || "",
             } : null}
-            onSaved={fetchOverrides}
+            onSaved={() => { fetchOverrides(); setLandingRefreshKey(k => k + 1); }}
           />
         ) : null;
       })()}
