@@ -772,7 +772,6 @@ function CriarVitrineDialog({
       setLeadTel("");
       setMensagem("");
       setVitrineUrl(null);
-      setVitrineDirectUrl(null);
     }
   }, [open, config.nome]);
 
