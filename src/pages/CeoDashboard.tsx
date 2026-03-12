@@ -279,72 +279,9 @@ export default function CeoDashboard() {
             </div>
           </div>
         </div>
-        {/* Period pills — always visible */}
+        {/* Period pills — Global Date Filter */}
         <div className="flex items-center justify-between mt-3 gap-2">
-          <div className="flex rounded-lg p-0.5 gap-1 items-center">
-            {(["hoje", "semana", "mes"] as DashPeriod[]).map(p => (
-              <button
-                key={p}
-                onClick={() => handleSelectPeriod(p)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                  period === p
-                    ? "bg-[#1e293b] text-white border border-[#3B82F6]"
-                    : "text-[#94A3B8] hover:text-white border border-transparent"
-                }`}
-              >
-                {p === "hoje" ? "Hoje" : p === "semana" ? "Semana" : "Mês"}
-              </button>
-            ))}
-            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
-                    period === "custom"
-                      ? "bg-[#1e293b] text-white border border-[#3B82F6]"
-                      : "text-[#94A3B8] hover:text-white border border-transparent"
-                  }`}
-                >
-                  <CalendarRange className="h-3 w-3" />
-                  {period === "custom" && customRange
-                    ? `${format(new Date(customRange.start + "T12:00:00"), "dd/MM")} — ${format(new Date(customRange.end + "T12:00:00"), "dd/MM")}`
-                    : "Personalizado"}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-3" align="start">
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground">Selecione o período</p>
-                  <div className="flex gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-muted-foreground">De</label>
-                      <Input
-                        type="date"
-                        className="h-8 text-xs w-36"
-                        value={datePickerFrom ? format(datePickerFrom, "yyyy-MM-dd") : ""}
-                        onChange={e => setDatePickerFrom(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-muted-foreground">Até</label>
-                      <Input
-                        type="date"
-                        className="h-8 text-xs w-36"
-                        value={datePickerTo ? format(datePickerTo, "yyyy-MM-dd") : ""}
-                        onChange={e => setDatePickerTo(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    className="w-full h-8 text-xs"
-                    disabled={!datePickerFrom || !datePickerTo}
-                    onClick={handleApplyCustomRange}
-                  >
-                    Aplicar
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+          <GlobalDateFilterBar variant="header" />
           <button onClick={reload} className="sm:hidden flex items-center gap-1 text-[10px] text-white/50 hover:text-white">
             <RefreshCw className="h-3 w-3" /> {format(lastUpdate, "HH:mm")}
           </button>
