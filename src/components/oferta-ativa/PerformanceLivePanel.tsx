@@ -372,10 +372,10 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
   const naoIniciaram = allTeamCorretores.filter(c => !activeIds.has(c.id));
 
   const kpis = [
-    { icon: Phone, label: "Tentativas", value: data_.totalTentativas, color: "from-violet-500/20 to-violet-600/5", iconColor: "text-violet-400", valueColor: "text-violet-300", border: "border-violet-500/20" },
-    { icon: ThumbsUp, label: "Aproveitados", value: data_.totalAproveitados, color: "from-emerald-500/20 to-emerald-600/5", iconColor: "text-emerald-400", valueColor: "text-emerald-300", border: "border-emerald-500/20" },
-    { icon: Target, label: "Conversão", value: `${data_.taxaConversao}%`, color: "from-amber-500/20 to-amber-600/5", iconColor: "text-amber-400", valueColor: "text-amber-300", border: "border-amber-500/20" },
-    { icon: Users, label: "Corretores", value: data_.corretoresAtivos, extra: `/${data_.totalCorretores}`, color: "from-blue-500/20 to-blue-600/5", iconColor: "text-blue-400", valueColor: "text-blue-300", border: "border-blue-500/20" },
+    { icon: Phone, label: "Tentativas", value: data_.totalTentativas, color: "from-violet-500/20 to-violet-600/5", iconColor: "text-violet-500 dark:text-violet-400", valueColor: "text-violet-700 dark:text-violet-300", border: "border-violet-500/20" },
+    { icon: ThumbsUp, label: "Aproveitados", value: data_.totalAproveitados, color: "from-emerald-500/20 to-emerald-600/5", iconColor: "text-emerald-600 dark:text-emerald-400", valueColor: "text-emerald-700 dark:text-emerald-300", border: "border-emerald-500/20" },
+    { icon: Target, label: "Conversão", value: `${data_.taxaConversao}%`, color: "from-amber-500/20 to-amber-600/5", iconColor: "text-amber-600 dark:text-amber-400", valueColor: "text-amber-700 dark:text-amber-300", border: "border-amber-500/20" },
+    { icon: Users, label: "Corretores", value: data_.corretoresAtivos, extra: `/${data_.totalCorretores}`, color: "from-blue-500/20 to-blue-600/5", iconColor: "text-blue-600 dark:text-blue-400", valueColor: "text-blue-700 dark:text-blue-300", border: "border-blue-500/20" },
   ];
 
   return (
@@ -477,9 +477,9 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
           >
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
               <motion.div animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}>
-                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
               </motion.div>
-              <p className="text-sm font-semibold text-amber-300">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
                 {data_.corretoresParados} corretor(es) parado(s) há mais de 20 minutos
               </p>
             </div>
