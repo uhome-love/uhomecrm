@@ -1294,7 +1294,7 @@ export default function ImoveisPage() {
                   <div className="flex border border-border/60 rounded-lg overflow-hidden">
                     <button onClick={() => setViewMode("grid")} className={cn("p-1.5 transition-colors", viewMode === "grid" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}><LayoutGrid className="h-4 w-4" /></button>
                     <button onClick={() => setViewMode("list")} className={cn("p-1.5 transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}><List className="h-4 w-4" /></button>
-                    <button onClick={() => setViewMode("map")} className={cn("p-1.5 transition-colors", viewMode === "map" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}><Map className="h-4 w-4" /></button>
+                    <button onClick={() => setViewMode("map")} className={cn("p-1.5 transition-colors", "bg-background text-muted-foreground hover:bg-muted")}><Map className="h-4 w-4" /></button>
                   </div>
                 </div>
               </div>
