@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     const { data: vitrine } = await supabase
       .from("vitrines")
-      .select("titulo, mensagem_corretor, imovel_ids, tipo, dados_custom, created_by")
+      .select("titulo, subtitulo, mensagem_corretor, imovel_ids, tipo, dados_custom, created_by")
       .eq("id", vitrineId)
       .maybeSingle();
 
