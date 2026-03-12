@@ -138,19 +138,44 @@ Deno.serve(async (req) => {
       if (!campaignId) campaignId = extractStr(body.campaign_id);
       if (!campaignName) campaignName = extractStr(body.campaign_name);
       if (!formName) formName = extractStr(body.form_name);
+      if (!externalLeadId) externalLeadId = extractStr(body.lead_id) || extractStr(body.leadgen_id) || extractStr(body.id);
     }
 
     // Use Meta form ID as fallback
     if (!formName && metaFormId) formName = metaFormId;
 
-    console.log("META-LEAD PARSED:", JSON.stringify({ name, phone, email, campaignId, campaignName, message, propertyCode, formName, adName, adsetName }));
-
     const telefone = normalizePhone(phone);
-    if (!name && !telefone) {
-      console.error("META-LEAD VALIDATION FAIL — no name or phone found in body:", JSON.stringify(body));
+    const isTestLead = isLikelyTestLead(name, email, message);
+
+    console.log("META-LEAD PARSED:", JSON.stringify({
+      name,
+      phone,
+      telefone,
+      email,
+      campaignId,
+      campaignName,
+      message,
+      propertyCode,
+      formName,
+      adName,
+      adsetName,
+      externalLeadId,
+      isTestLead,
+    }));
+
+    if (isTestLead) {
+      console.warn("META-LEAD IGNORED — detected test payload", JSON.stringify({ name, email, externalLeadId }));
       return new Response(
-        JSON.stringify({ error: "Nome ou telefone obrigatório", received_keys: Object.keys(body) }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: true, action: "ignored_test_payload" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!telefone) {
+      console.warn("META-LEAD IGNORED — missing/invalid phone", JSON.stringify({ name, email, campaignId, formName }));
+      return new Response(
+        JSON.stringify({ success: true, action: "ignored_missing_phone", reason: "telefone obrigatório" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
