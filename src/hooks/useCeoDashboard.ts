@@ -3,14 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from "date-fns";
 import { todayBRT, dateToBRT } from "@/lib/utils";
+import type { DateRange } from "@/contexts/DateFilterContext";
 
-export type DashPeriod = "hoje" | "semana" | "mes" | "custom";
+export type DashPeriod = "hoje" | "ontem" | "semana" | "mes" | "ultimos_30d" | "custom";
 
 function getRange(period: DashPeriod, customRange?: { start: string; end: string }) {
   if (period === "custom" && customRange) return customRange;
   const now = new Date();
   if (period === "hoje") { const t = todayBRT(); return { start: t, end: t }; }
+  if (period === "ontem") { const y = dateToBRT(subDays(now, 1)); return { start: y, end: y }; }
   if (period === "semana") return { start: dateToBRT(startOfWeek(now, { weekStartsOn: 1 })), end: dateToBRT(endOfWeek(now, { weekStartsOn: 1 })) };
+  if (period === "ultimos_30d") return { start: dateToBRT(subDays(now, 29)), end: todayBRT() };
   return { start: dateToBRT(startOfMonth(now)), end: dateToBRT(endOfMonth(now)) };
 }
 
