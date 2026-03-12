@@ -960,6 +960,7 @@ function EmpreendimentoCard({
   onRefreshMateriais,
   override,
   onEditOverride,
+  onEditLanding,
 }: {
   config: AnuncioConfig;
   segmento: SegmentoConfig;
@@ -970,6 +971,7 @@ function EmpreendimentoCard({
   onRefreshMateriais: () => void;
   override: EmpreendimentoOverride | null;
   onEditOverride: () => void;
+  onEditLanding: () => void;
 }) {
   const [vitrineOpen, setVitrineOpen] = useState(false);
 
