@@ -103,8 +103,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           admin: "Admin · 👑 CEO",
           gerente: "Gerente",
           corretor: "Corretor",
+          rh: "RH · 💚 Carol",
         };
-        setCargoLabel(labelMap[c] || "Corretor");
+        setCargoLabel(labelMap[c] || c || "Corretor");
       }
     });
   }, [user, isAdmin, isGestor, isBackoffice]);
