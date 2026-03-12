@@ -1489,6 +1489,7 @@ export default function AnunciosNoAr() {
                     override={overrides[emp.codigo] || null}
                     onEditOverride={() => setEditingCodigo(emp.codigo)}
                     onEditLanding={() => setLandingCodigo(emp.codigo)}
+                    landingRefreshKey={landingRefreshKey}
                   />
                 ))}
               </div>
