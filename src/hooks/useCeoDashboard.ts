@@ -370,34 +370,21 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       .lte("created_at", endTs);
     setTotalLeadsPeriodo(leadsCount || 0);
 
-    // Presentes hoje: disponibilidade atualizada hoje OU checkpoint presença hoje
-    const hojeStart = `${hoje}T00:00:00`;
-    const [{ count: onlineCount }, { data: checkPresentes }] = await Promise.all([
+    // Presentes hoje: status ativo atual OU checkpoint presença hoje
+    const [{ data: dispRows }, { data: checkPresentes }] = await Promise.all([
       supabase
         .from("corretor_disponibilidade")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["online", "na_empresa", "disponivel", "em_pausa", "em_visita"])
-        .gte("updated_at", hojeStart),
+        .select("user_id")
+        .in("status", ["na_empresa", "em_pausa", "em_visita"]),
       supabase
         .from("checkpoint_diario")
         .select("corretor_id")
         .eq("data", hoje)
         .in("presenca", ["presente", "home_office", "externo"]),
     ]);
-    // Merge unique corretores from both sources
     const dispIds = new Set<string>();
-    // online count is just a number, add from checkpoint
-    const checkIds = (checkPresentes || []).map(c => c.corretor_id);
-    const totalPresentes = Math.max(onlineCount || 0, checkIds.length || 0, (onlineCount || 0) + checkIds.length);
-    // For accuracy: count disponibilidade users + checkpoint users not in disponibilidade
-    // Since we can't get IDs from count query, fetch IDs too
-    const { data: dispRows } = await supabase
-      .from("corretor_disponibilidade")
-      .select("user_id")
-      .in("status", ["online", "na_empresa", "disponivel", "em_pausa", "em_visita"])
-      .gte("updated_at", hojeStart);
     (dispRows || []).forEach(r => dispIds.add(r.user_id));
-    checkIds.forEach(id => dispIds.add(id));
+    (checkPresentes || []).forEach(c => dispIds.add(c.corretor_id));
     setPresentesHoje(dispIds.size);
 
     // Metas do dia (sum of all corretor daily goals for today)
