@@ -372,13 +372,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
             {/* Row 6: Marketing Attribution — campanha, formulário, anúncio */}
             {(() => {
-              const campanha = (lead as any).campanha;
-              const campanhaId = (lead as any).campanha_id;
-              const formulario = (lead as any).formulario;
-              const conjuntoAnuncio = (lead as any).conjunto_anuncio;
-              const anuncio = (lead as any).anuncio;
-              const plataforma = (lead as any).plataforma;
-              const origemDetalhe = (lead as any).origem_detalhe;
+              const campanha = lead.campanha;
+              const campanhaId = lead.campanha_id;
+              const formulario = lead.formulario;
+              const conjuntoAnuncio = lead.conjunto_anuncio;
+              const anuncio = lead.anuncio;
+              const plataforma = lead.plataforma;
+              const origemDetalhe = lead.origem_detalhe;
               const hasAttribution = campanha || campanhaId || formulario || conjuntoAnuncio || anuncio || plataforma || origemDetalhe;
               if (!hasAttribution) return null;
               return (
