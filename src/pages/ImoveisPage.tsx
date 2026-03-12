@@ -437,6 +437,12 @@ export default function ImoveisPage() {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [sortBy, setSortBy] = useState("relevancia");
 
+  // Autocomplete
+  const [suggestions, setSuggestions] = useState<{ type: string; value: string }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   // Vitrine selection
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -477,13 +483,22 @@ export default function ImoveisPage() {
     });
   };
 
+  // Abort controller for cancelling in-flight requests
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchImoveis = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
+    // Cancel previous request
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     try {
       if (campanha) {
         const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
           body: { action: "get_imoveis_by_codigos", codigos: CAMPANHA_CODES.map(c => c.codigo) }
         });
+        if (controller.signal.aborted) return;
         if (error) { toast.error("Erro ao buscar imóveis da campanha"); return; }
         const imoveisMap = data?.imoveis || {};
         const items = Object.values(imoveisMap).filter((d: any) => d && !d.not_found);
@@ -512,6 +527,7 @@ export default function ImoveisPage() {
             somente_obras: somenteObras || undefined,
           },
         });
+        if (controller.signal.aborted) return;
         if (error) { toast.error("Erro ao buscar imóveis"); return; }
         const items = Array.isArray(data?.data) ? data.data : [];
         setImoveis(items);
@@ -519,7 +535,12 @@ export default function ImoveisPage() {
         setTotalPages(data?.totalPages || Math.ceil((data?.total || items.length) / 24));
         setPage(pageNum);
       }
-    } catch { toast.error("Erro de conexão"); } finally { setLoading(false); }
+    } catch (e: any) {
+      if (e?.name === "AbortError" || controller.signal.aborted) return;
+      toast.error("Erro de conexão");
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
   }, [search, contrato, tipo, bairro, dormitorios, suites, vagas, areaRange, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
 
   const mounted = useRef(false);
@@ -529,7 +550,38 @@ export default function ImoveisPage() {
     fetchImoveis(1, false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSearch = () => { setCampanhaAtiva(false); setUhomeOnly(false); fetchImoveis(1, false, false); };
+  const handleSearch = () => { setCampanhaAtiva(false); setUhomeOnly(false); setShowSuggestions(false); fetchImoveis(1, false, false); };
+
+  // Autocomplete with debounce
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { data } = await supabase.functions.invoke("jetimob-proxy", {
+          body: { action: "autocomplete", query: value },
+        });
+        if (data?.suggestions?.length) {
+          setSuggestions(data.suggestions);
+          setShowSuggestions(true);
+        } else {
+          setShowSuggestions(false);
+        }
+      } catch { /* ignore */ }
+    }, 300);
+  }, []);
+
+  const handleSuggestionClick = (suggestion: { type: string; value: string }) => {
+    setSearch(suggestion.value);
+    setShowSuggestions(false);
+    setCampanhaAtiva(false);
+    setUhomeOnly(false);
+    // Auto-search
+    setTimeout(() => {
+      fetchImoveis(1, false, false);
+    }, 50);
+  };
 
   const getPreco = (item: any): string => {
     const venda = getNum(item, "valor_venda", "preco_venda", "valor", "price");
@@ -603,17 +655,42 @@ export default function ImoveisPage() {
             </div>
           </div>
 
-          {/* Search bar */}
+          {/* Search bar with autocomplete */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                ref={searchInputRef}
                 placeholder="Buscar por bairro, empreendimento, código ou endereço..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 className="pl-10 h-11 text-sm bg-background border-border/80 focus-visible:ring-primary/30"
               />
+              {/* Autocomplete dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={`${s.type}-${s.value}-${i}`}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                      onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
+                    >
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded font-medium uppercase",
+                        s.type === "bairro" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
+                        s.type === "empreendimento" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
+                        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                      )}>
+                        {s.type === "bairro" ? "Bairro" : s.type === "empreendimento" ? "Empreend." : "Código"}
+                      </span>
+                      <span className="truncate">{s.value}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <Button onClick={handleSearch} disabled={loading} className="h-11 px-6 gap-2 font-semibold">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
