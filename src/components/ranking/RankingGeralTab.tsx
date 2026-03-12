@@ -1,27 +1,33 @@
 /**
- * RankingGeralTab — Single Source of Truth for the combined ranking
+ * RankingGeralTab — Gamified Combined Ranking
  * 
  * 4 Pillars with weighted scoring:
  * 1. Prospecção (20%) - ligações, aproveitados, taxa conversão OA
- * 2. Gestão de Leads (30%) - tentativas, responderam, visitas, propostas
- * 3. Vendas/VGV (40%) - VGV assinado, negócios fechados
- * 4. Eficiência Comercial (10%) - taxa lead→visita, taxa visita→negócio
+ * 2. Gestão de Leads (30%) - transitions in pipeline
+ * 3. Vendas/VGV (40%) - VGV assinado
+ * 4. Eficiência Comercial (10%) - conversion rates
+ * 
+ * Features:
+ * - Position breakdown ("why you're here")
+ * - Climb tips ("what to do to go up")
+ * - Performance badges (best of period)
+ * - Color-coded performance table
  */
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useOARanking } from "@/hooks/useOfertaAtiva";
 import { useCeoData, type CeoPeriod } from "@/hooks/useCeoData";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Loader2, Star, Phone, ClipboardList, DollarSign, Zap } from "lucide-react";
+import { Trophy, Loader2, Star, Phone, ClipboardList, DollarSign, Zap, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { getLevel } from "@/lib/gamification";
 import RankingPodium, { type PodiumEntry } from "./RankingPodium";
-import RankingExplanation from "./RankingExplanation";
-import { useEffect, useState } from "react";
+import RankingPositionCard from "./RankingPositionCard";
+import RankingPerformanceBadges, { computePerformanceBadges } from "./RankingPerformanceBadges";
+import { motion } from "framer-motion";
 
-const medals = ["👑", "🥈", "🥉"];
 const periodMap: Record<string, string> = { hoje: "dia", semana: "semana", mes: "mes", trimestre: "mes" };
 
 function getInitials(nome: string) {
@@ -42,26 +48,25 @@ interface GestaoRow {
 interface CombinedEntry {
   corretor_id: string;
   nome: string;
-  // Raw values
   oa_pts: number;
   gestao_pts: number;
   vgv_valor: number;
   eficiencia_score: number;
-  // Normalized 0-100
   oa_norm: number;
   gestao_norm: number;
   vgv_norm: number;
   eficiencia_norm: number;
-  // Final
   score_geral: number;
-  // Ranks per pillar
   oa_rank: number;
   gestao_rank: number;
   vgv_rank: number;
   eficiencia_rank: number;
+  // Extra for climb tips
+  ligacoes: number;
+  visitas: number;
+  propostas: number;
 }
 
-// New weights per spec
 const PESO_PROSPECCAO = 20;
 const PESO_GESTAO = 30;
 const PESO_VENDAS = 40;
@@ -71,6 +76,30 @@ const TOTAL_PESO = PESO_PROSPECCAO + PESO_GESTAO + PESO_VENDAS + PESO_EFICIENCIA
 function normalize(values: number[]): number[] {
   const max = Math.max(...values, 1);
   return values.map(v => (v / max) * 100);
+}
+
+/** Get performance color class based on normalized score */
+function getScoreColor(score: number): string {
+  if (score >= 80) return "text-emerald-600 dark:text-emerald-400";
+  if (score >= 60) return "text-blue-600 dark:text-blue-400";
+  if (score >= 40) return "text-amber-600 dark:text-amber-400";
+  if (score >= 20) return "text-orange-500 dark:text-orange-400";
+  return "text-muted-foreground";
+}
+
+function getScoreBg(score: number): string {
+  if (score >= 80) return "bg-emerald-50 dark:bg-emerald-900/20";
+  if (score >= 60) return "bg-blue-50 dark:bg-blue-900/20";
+  if (score >= 40) return "bg-amber-50 dark:bg-amber-900/20";
+  if (score >= 20) return "bg-orange-50 dark:bg-orange-900/20";
+  return "bg-muted/30";
+}
+
+function getNotaColor(nota: number): string {
+  if (nota >= 80) return "text-emerald-600";
+  if (nota >= 60) return "text-blue-600";
+  if (nota >= 40) return "text-amber-600";
+  return "text-red-500";
 }
 
 export default function RankingGeralTab({ period }: { period: "hoje" | "semana" | "mes" | "trimestre" }) {
@@ -147,20 +176,17 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
     const entries = Array.from(map.entries());
     if (entries.length === 0) return [];
 
-    // Compute eficiência score for each
     const eficienciaScores = entries.map(([, v]) => {
       const taxaLeadVisita = v.ligacoes > 0 ? (v.visitas / v.ligacoes) * 100 : 0;
       const taxaVisitaNeg = v.visitas > 0 ? ((v.propostas + (v.vgv > 0 ? 1 : 0)) / v.visitas) * 100 : 0;
       return taxaLeadVisita * 0.4 + taxaVisitaNeg * 0.6;
     });
 
-    // Normalize each dimension to 0-100
     const oaNorm = normalize(entries.map(([, v]) => v.oa));
     const gestaoNorm = normalize(entries.map(([, v]) => v.gestao));
     const vgvNorm = normalize(entries.map(([, v]) => v.vgv));
     const efNorm = normalize(eficienciaScores);
 
-    // Calculate ranks per dimension
     const oaSorted = [...entries].sort((a, b) => b[1].oa - a[1].oa);
     const gestaoSorted = [...entries].sort((a, b) => b[1].gestao - a[1].gestao);
     const vgvSorted = [...entries].sort((a, b) => b[1].vgv - a[1].vgv);
@@ -192,6 +218,9 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
         gestao_rank: gestaoRankMap.get(id) || 999,
         vgv_rank: vgvRankMap.get(id) || 999,
         eficiencia_rank: efRankMap.get(id) || 999,
+        ligacoes: v.ligacoes,
+        visitas: v.visitas,
+        propostas: v.propostas,
       };
     });
 
@@ -219,6 +248,48 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
     staleTime: 60_000,
   });
 
+  // Compute performance badges
+  const performanceBadges = useMemo(() => computePerformanceBadges(combined), [combined]);
+
+  // Find current user's position and compute climb tips
+  const myEntry = useMemo(() => combined.find(c => c.corretor_id === user?.id), [combined, user?.id]);
+  const myPosition = useMemo(() => {
+    const idx = combined.findIndex(c => c.corretor_id === user?.id);
+    return idx >= 0 ? idx + 1 : null;
+  }, [combined, user?.id]);
+
+  const climbTips = useMemo(() => {
+    if (!myEntry || !myPosition || myPosition <= 1) return [];
+    const above = combined[myPosition - 2]; // person above me
+    if (!above) return [];
+
+    const tips: { text: string; icon: React.ElementType }[] = [];
+    const scoreDiff = above.score_geral - myEntry.score_geral;
+
+    // Show specific actionable tips
+    if (above.oa_pts > myEntry.oa_pts) {
+      const diff = above.oa_pts - myEntry.oa_pts;
+      tips.push({ text: `+${diff} pts em prospecção`, icon: Phone });
+    }
+    if (above.vgv_valor > myEntry.vgv_valor && myEntry.vgv_valor === 0) {
+      tips.push({ text: "Fechar 1 venda", icon: DollarSign });
+    } else if (above.vgv_valor > myEntry.vgv_valor) {
+      const diff = above.vgv_valor - myEntry.vgv_valor;
+      const fmtDiff = diff >= 1_000_000 ? `R$${(diff / 1_000_000).toFixed(1)}M` : `R$${(diff / 1_000).toFixed(0)}k`;
+      tips.push({ text: `+${fmtDiff} em VGV`, icon: DollarSign });
+    }
+    if (above.visitas > myEntry.visitas) {
+      tips.push({ text: `+${above.visitas - myEntry.visitas} visita(s) realizada(s)`, icon: TrendingUp });
+    }
+    if (above.gestao_pts > myEntry.gestao_pts) {
+      const diff = above.gestao_pts - myEntry.gestao_pts;
+      tips.push({ text: `+${diff} pts em gestão`, icon: ClipboardList });
+    }
+
+    // Limit to top 3 tips
+    return tips.slice(0, 3);
+  }, [myEntry, myPosition, combined]);
+
   const podiumEntries: PodiumEntry[] = useMemo(() => {
     return combined.slice(0, 3).map(c => ({
       id: c.corretor_id,
@@ -244,65 +315,35 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
     );
   }
 
+  const totalCorretores = combined.length;
+
   return (
     <div className="space-y-4">
-      {/* Explanation */}
-      <RankingExplanation
-        titulo="Como funciona o Ranking Geral?"
-        descricao="Combina 4 pilares com pesos diferentes para uma nota final de 0 a 100"
-        corDestaque="text-amber-500"
-        criterios={[
-          {
-            label: "Prospecção (OA)",
-            peso: `${PESO_PROSPECCAO}%`,
-            desc: "Pontos acumulados na Arena de Ligação: ligações realizadas + leads aproveitados + taxa de conversão.",
-          },
-          {
-            label: "Gestão de Leads",
-            peso: `${PESO_GESTAO}%`,
-            desc: "Transições de etapa no pipeline: Contato Iniciado (×5) + Qualificação (×10) + V.Marcada (×30) + V.Realizada (×50). Pipeline encerra em Visita Realizada.",
-          },
-          {
-            label: "Vendas (VGV)",
-            peso: `${PESO_VENDAS}%`,
-            desc: "O pilar mais importante. Baseado no VGV assinado no período — quem vende mais, pontua mais.",
-          },
-          {
-            label: "Eficiência Comercial",
-            peso: `${PESO_EFICIENCIA}%`,
-            desc: "Taxa Ligação→Visita (40%) + Taxa Visita→Negócio (60%). Premia qualidade de conversão, não volume.",
-          },
-          {
-            label: "Cálculo da Nota",
-            desc: `Cada pilar é normalizado de 0 a 100 (relativo ao melhor do time). Nota final = (Prospecção×${PESO_PROSPECCAO} + Gestão×${PESO_GESTAO} + Vendas×${PESO_VENDAS} + Eficiência×${PESO_EFICIENCIA}) ÷ ${TOTAL_PESO}. O 1º em cada pilar sempre recebe 100 naquele pilar.`,
-          },
-        ]}
-      />
-
-      {/* KPI summary - 4 pillars */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 4 Pillar weight indicators - compact */}
+      <div className="grid grid-cols-4 gap-2">
         {[
-          { icon: Phone, label: "Prospecção", value: `${PESO_PROSPECCAO}%`, color: "text-blue-600", bg: "bg-blue-50" },
-          { icon: ClipboardList, label: "Gestão", value: `${PESO_GESTAO}%`, color: "text-purple-600", bg: "bg-purple-50" },
-          { icon: DollarSign, label: "Vendas", value: `${PESO_VENDAS}%`, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { icon: Zap, label: "Eficiência", value: `${PESO_EFICIENCIA}%`, color: "text-amber-600", bg: "bg-amber-50" },
+          { icon: Phone, label: "Prospecção", peso: PESO_PROSPECCAO, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
+          { icon: ClipboardList, label: "Gestão", peso: PESO_GESTAO, color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20" },
+          { icon: DollarSign, label: "Vendas", peso: PESO_VENDAS, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+          { icon: Zap, label: "Eficiência", peso: PESO_EFICIENCIA, color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
         ].map(kpi => (
-          <div key={kpi.label} className="rounded-xl p-3 bg-card border border-border">
-            <div className="flex items-center gap-2 mb-1">
-              <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${kpi.bg}`}>
-                <kpi.icon className={`h-3.5 w-3.5 ${kpi.color}`} />
-              </div>
-              <span className="text-xs text-muted-foreground">{kpi.label}</span>
+          <div key={kpi.label} className={`rounded-xl p-2.5 ${kpi.bg} border border-border`}>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <kpi.icon className={`h-3.5 w-3.5 ${kpi.color}`} />
+              <span className="text-[10px] font-medium text-muted-foreground">{kpi.label}</span>
             </div>
-            <p className={`text-3xl font-black ${kpi.color}`}>{kpi.value}</p>
+            <p className={`text-xl font-black ${kpi.color}`}>{kpi.peso}%</p>
           </div>
         ))}
       </div>
 
+      {/* Performance Badges */}
+      <RankingPerformanceBadges badges={performanceBadges} currentUserId={user?.id} />
+
       {/* Podium */}
       {podiumEntries.length >= 3 && (
         <div
-          className="rounded-[20px] overflow-hidden"
+          className="rounded-2xl overflow-hidden"
           style={{
             background: "linear-gradient(180deg, hsl(var(--accent)) 0%, hsl(var(--card)) 100%)",
             border: "1px solid hsl(var(--border))",
@@ -312,29 +353,48 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-xl overflow-hidden bg-card border border-border shadow-card">
+      {/* Position Card - "Why you're here" + "How to climb" */}
+      {myEntry && myPosition && (
+        <RankingPositionCard
+          nome={myEntry.nome}
+          posicao={myPosition}
+          scoreGeral={myEntry.score_geral}
+          pillarRanks={[
+            { label: "Prospecção", rank: myEntry.oa_rank, total: totalCorretores, icon: Phone, color: "text-blue-600" },
+            { label: "Gestão", rank: myEntry.gestao_rank, total: totalCorretores, icon: ClipboardList, color: "text-purple-600" },
+            { label: "Vendas", rank: myEntry.vgv_rank, total: totalCorretores, icon: DollarSign, color: "text-emerald-600" },
+            { label: "Eficiência", rank: myEntry.eficiencia_rank, total: totalCorretores, icon: Zap, color: "text-amber-600" },
+          ]}
+          climbTips={climbTips}
+        />
+      )}
+
+      {/* Performance Table */}
+      <div className="rounded-xl overflow-hidden bg-card border border-border">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border bg-muted/30">
                 <th className="py-2.5 px-3 text-left w-10 text-xs text-muted-foreground font-medium">#</th>
                 <th className="py-2.5 px-3 text-left text-xs text-muted-foreground font-medium">Corretor</th>
-                <th className="py-2.5 px-3 text-center text-xs text-muted-foreground font-medium">
-                  <span className="hidden sm:inline">Prospecção</span>
-                  <span className="sm:hidden">Prosp.</span>
+                <th className="py-2.5 px-2 text-center text-xs text-muted-foreground font-medium">
+                  <Phone className="h-3 w-3 inline text-blue-500 mb-0.5" />
+                  <span className="hidden sm:inline ml-1">Prosp.</span>
+                </th>
+                <th className="py-2.5 px-2 text-center text-xs text-muted-foreground font-medium">
+                  <ClipboardList className="h-3 w-3 inline text-purple-500 mb-0.5" />
+                  <span className="hidden sm:inline ml-1">Gestão</span>
+                </th>
+                <th className="py-2.5 px-2 text-center text-xs text-muted-foreground font-medium">
+                  <DollarSign className="h-3 w-3 inline text-emerald-500 mb-0.5" />
+                  <span className="hidden sm:inline ml-1">VGV</span>
+                </th>
+                <th className="py-2.5 px-2 text-center text-xs text-muted-foreground font-medium">
+                  <Zap className="h-3 w-3 inline text-amber-500 mb-0.5" />
+                  <span className="hidden sm:inline ml-1">Efic.</span>
                 </th>
                 <th className="py-2.5 px-3 text-center text-xs text-muted-foreground font-medium">
-                  <span className="hidden sm:inline">Gestão</span>
-                  <span className="sm:hidden">Gest.</span>
-                </th>
-                <th className="py-2.5 px-3 text-center text-xs text-muted-foreground font-medium">VGV</th>
-                <th className="py-2.5 px-3 text-center text-xs text-muted-foreground font-medium">
-                  <span className="hidden sm:inline">Eficiência</span>
-                  <span className="sm:hidden">Efic.</span>
-                </th>
-                <th className="py-2.5 px-3 text-center text-xs text-muted-foreground font-medium">
-                  <Star className="h-3.5 w-3.5 inline text-amber-500" /> Nota
+                  <Star className="h-3.5 w-3.5 inline text-amber-500 mb-0.5" /> Nota
                 </th>
               </tr>
             </thead>
@@ -344,14 +404,24 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
                 const level = getLevel(c.score_geral);
                 const av = avatarMap[c.corretor_id];
                 const imgSrc = av?.gamificado || av?.avatar;
+                const medals = ["👑", "🥈", "🥉"];
 
                 return (
-                  <tr
+                  <motion.tr
                     key={c.corretor_id}
-                    className={`border-b border-border transition-colors hover:bg-accent/30 ${isMe ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className={`border-b border-border transition-colors hover:bg-accent/30 ${
+                      isMe ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : ""
+                    }`}
                   >
                     <td className="py-2.5 px-3">
-                      {i < 3 ? <span className="text-base">{medals[i]}</span> : <span className="text-sm text-muted-foreground font-bold">{i + 1}</span>}
+                      {i < 3 ? (
+                        <span className="text-base">{medals[i]}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground font-bold">{i + 1}</span>
+                      )}
                     </td>
                     <td className="py-2.5 px-3">
                       <div className="flex items-center gap-2">
@@ -363,43 +433,50 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
                           )}
                         </div>
                         <div className="min-w-0">
-                          <span className="font-medium truncate block text-foreground">{c.nome}</span>
+                          <span className="font-medium truncate block text-foreground text-xs">{c.nome}</span>
                           <span className={`text-[10px] font-semibold ${level.color}`}>{level.emoji} {level.label}</span>
                         </div>
-                        {isMe && <span className="text-[10px] text-primary font-medium shrink-0">← você</span>}
+                        {isMe && (
+                          <span className="text-[9px] text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded-full shrink-0">
+                            você
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-center">
-                      <div className="text-xs">
-                        <span className="font-semibold text-blue-600">{c.oa_norm}</span>
-                        <span className="block text-[10px] text-muted-foreground">#{c.oa_rank}</span>
+                    {/* Pillar scores with color coding */}
+                    <td className="py-2.5 px-2 text-center">
+                      <div className={`inline-flex flex-col items-center px-1.5 py-0.5 rounded-md ${getScoreBg(c.oa_norm)}`}>
+                        <span className={`text-xs font-bold ${getScoreColor(c.oa_norm)}`}>{c.oa_norm}</span>
+                        <span className="text-[9px] text-muted-foreground">#{c.oa_rank}</span>
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-center">
-                      <div className="text-xs">
-                        <span className="font-semibold text-purple-600">{c.gestao_norm}</span>
-                        <span className="block text-[10px] text-muted-foreground">#{c.gestao_rank}</span>
+                    <td className="py-2.5 px-2 text-center">
+                      <div className={`inline-flex flex-col items-center px-1.5 py-0.5 rounded-md ${getScoreBg(c.gestao_norm)}`}>
+                        <span className={`text-xs font-bold ${getScoreColor(c.gestao_norm)}`}>{c.gestao_norm}</span>
+                        <span className="text-[9px] text-muted-foreground">#{c.gestao_rank}</span>
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-center">
-                      <div className="text-xs">
-                        <span className="font-semibold text-emerald-600">
-                          {c.vgv_valor >= 1_000_000 ? `${(c.vgv_valor / 1_000_000).toFixed(1)}M` : c.vgv_valor >= 1_000 ? `${(c.vgv_valor / 1_000).toFixed(0)}k` : c.vgv_valor}
+                    <td className="py-2.5 px-2 text-center">
+                      <div className={`inline-flex flex-col items-center px-1.5 py-0.5 rounded-md ${getScoreBg(c.vgv_norm)}`}>
+                        <span className={`text-xs font-bold ${getScoreColor(c.vgv_norm)}`}>
+                          {c.vgv_valor >= 1_000_000 ? `${(c.vgv_valor / 1_000_000).toFixed(1)}M` : c.vgv_valor >= 1_000 ? `${(c.vgv_valor / 1_000).toFixed(0)}k` : c.vgv_valor || "—"}
                         </span>
-                        <span className="block text-[10px] text-muted-foreground">#{c.vgv_rank}</span>
+                        <span className="text-[9px] text-muted-foreground">#{c.vgv_rank}</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-2 text-center">
+                      <div className={`inline-flex flex-col items-center px-1.5 py-0.5 rounded-md ${getScoreBg(c.eficiencia_norm)}`}>
+                        <span className={`text-xs font-bold ${getScoreColor(c.eficiencia_norm)}`}>{c.eficiencia_norm}</span>
+                        <span className="text-[9px] text-muted-foreground">#{c.eficiencia_rank}</span>
                       </div>
                     </td>
                     <td className="py-2.5 px-3 text-center">
-                      <div className="text-xs">
-                        <span className="font-semibold text-amber-600">{c.eficiencia_norm}</span>
-                        <span className="block text-[10px] text-muted-foreground">#{c.eficiencia_rank}</span>
+                      <div className="flex flex-col items-center">
+                        <span className={`text-lg font-black ${getNotaColor(c.score_geral)}`}>{c.score_geral}</span>
+                        <span className="text-[9px] text-muted-foreground">/100</span>
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-center">
-                      <span className="text-lg font-black text-amber-600">{c.score_geral}</span>
-                      <span className="text-[10px] text-muted-foreground">/100</span>
-                    </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>
