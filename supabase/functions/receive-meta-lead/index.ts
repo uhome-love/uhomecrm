@@ -65,16 +65,25 @@ Deno.serve(async (req) => {
     }
 
     // ── Parse fields (support flat JSON, Meta Ads field_data, and nested formats) ──
-    let name = body.name || body.full_name || body.nome || body.Nome || body.NOME || "";
-    let email = body.email || body.Email || body.EMAIL || "";
-    let phone = body.phone || body.telefone || body.Telefone || body.TELEFONE || body.cel || body.celular || body.Celular || body.whatsapp || body.Whatsapp || "";
-    let campaignId = body.campaign_id || body.campaignId || body.CampaignId || "";
-    let campaignName = body.campaign_name || body.campaignName || body.campanha || body.Campanha || "";
-    let message = body.message || body.mensagem || body.Mensagem || body.observacao || "";
-    let platform = body.platform || body.source || body.origem || "meta_ads";
-    let formName = body.form_name || body.formName || body.formulario || body.Formulario || "";
-    let adName = body.ad_name || body.adName || "";
-    let adsetName = body.adset_name || body.adsetName || "";
+    // Helper: treat empty strings as null
+    const v = (...keys: string[]): string => {
+      for (const k of keys) {
+        const val = body[k];
+        if (typeof val === "string" && val.trim()) return val.trim();
+      }
+      return "";
+    };
+
+    let name = v("name", "full_name", "nome", "Nome", "NOME");
+    let email = v("email", "Email", "EMAIL");
+    let phone = v("phone", "telefone", "Telefone", "TELEFONE", "cel", "celular", "Celular", "whatsapp", "Whatsapp");
+    let campaignId = v("campaign_id", "campaignId", "CampaignId");
+    let campaignName = v("campaign_name", "campaignName", "campanha", "Campanha");
+    let message = v("message", "mensagem", "Mensagem", "observacao");
+    let platform = v("platform", "source", "origem") || "meta_ads";
+    let formName = v("form_name", "formName", "formulario", "Formulario");
+    let adName = v("ad_name", "adName");
+    let adsetName = v("adset_name", "adsetName");
 
     // Meta Ads native format: field_data array
     if (body.field_data && Array.isArray(body.field_data)) {
