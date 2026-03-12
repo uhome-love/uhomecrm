@@ -5539,6 +5539,33 @@ export type Database = {
         }
         Relationships: []
       }
+      typesense_sync_state: {
+        Row: {
+          id: string
+          last_indexed_at: string | null
+          next_page: number | null
+          status: string | null
+          total_pages: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          last_indexed_at?: string | null
+          next_page?: number | null
+          status?: string | null
+          total_pages?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          last_indexed_at?: string | null
+          next_page?: number | null
+          status?: string | null
+          total_pages?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
