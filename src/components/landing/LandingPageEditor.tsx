@@ -149,7 +149,7 @@ export default function LandingPageEditor({ open, onOpenChange, codigo, nome, ex
         const { data, error } = await supabase.from("vitrines").insert({
           titulo: titulo.trim() || `${nome} — Landing Page`,
           created_by: user.id,
-          tipo: "anuncio",
+          tipo: "product_page",
           imovel_ids: [codigo],
           mensagem_corretor: null,
         }).select("id").single();
