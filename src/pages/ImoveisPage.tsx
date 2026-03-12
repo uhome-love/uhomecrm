@@ -563,6 +563,9 @@ export default function ImoveisPage() {
     tipo && tipo !== "all",
     bairro,
     dormitorios && dormitorios !== "all",
+    suites && suites !== "all",
+    vagas && vagas !== "all",
+    areaRange[0] > 0 || areaRange[1] < 500,
     valorRange[0] > 0 || valorRange[1] < 5_000_000,
     somenteObras,
   ].filter(Boolean).length;
