@@ -374,7 +374,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     const { count: onlineCount } = await supabase
       .from("corretor_disponibilidade")
       .select("id", { count: "exact", head: true })
-      .eq("status", "online");
+      .in("status", ["online", "na_empresa", "disponivel", "em_pausa", "em_visita"]);
     setPresentesHoje(onlineCount || 0);
 
     // Metas do dia (sum of all corretor daily goals for today)
