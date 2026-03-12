@@ -813,7 +813,7 @@ function CriarVitrineDialog({
 
       if (error) throw error;
 
-      const url = `https://uhomesales.com/vitrine/${data.id}`;
+      const url = getVitrineShareUrl(data.id);
       setVitrineUrl(url);
       toast.success("Vitrine criada!");
     } catch (err: any) {

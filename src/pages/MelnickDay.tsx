@@ -1050,7 +1050,7 @@ export default function MelnickDay() {
                       .single();
 
                     if (error) throw error;
-                    const link = `https://uhomesales.com/vitrine/${data.id}`;
+                    const link = getVitrineShareUrl(data.id);
                     setVitrineLink(link);
                     navigator.clipboard.writeText(link);
                     toast.success("Vitrine criada! Link copiado.");
