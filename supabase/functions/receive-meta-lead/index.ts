@@ -1,26 +1,13 @@
 /**
  * receive-meta-lead — Public webhook for Meta Ads (Facebook/Instagram) lead forms.
- * Receives leads directly from Meta Ads webhooks or Zapier/Make integrations.
- * Applies dedup (phone + jetimob_processed), resolves empreendimento via
+ * Receives leads directly from Meta Ads webhooks or Make.com/Zapier integrations.
+ * Applies dedup (phone), resolves empreendimento via property_code or
  * jetimob_campaign_map, and distributes through the roleta.
  *
- * POST body (flexible — supports Meta Ads webhook format + flat JSON):
- * {
- *   name: "João Silva",
- *   email: "joao@email.com",
- *   phone: "51999001234",
- *   campaign_id: "3199",      // maps to empreendimento via jetimob_campaign_map
- *   campaign_name: "Casa Bastian",  // fallback if campaign_id not mapped
- *   message: "Quero saber mais",
- *   platform: "facebook",
- *   form_name: "Formulário Casa Bastian",
- *   ad_name: "Video 01",
- *   adset_name: "Público frio",
- *   source: "meta_ads",       // optional
- *   secret: "<WEBHOOK_SECRET>" // simple auth for webhook callers
- * }
- *
- * Also supports Meta Ads native format with field_data array.
+ * Supports multiple payload formats:
+ * 1. Flat JSON: { name, email, phone, campaign_id, ... }
+ * 2. Make.com format: { data: { full_name, phone_number, campaign_id: ["2776"], property_code: ["32849-UH"] }, mappable_field_data: [{name, value}], adId, formId, adgroupId }
+ * 3. Meta Ads native: { field_data: [{name, values: [...]}] }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -34,9 +21,15 @@ function normalizePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 10) return null;
-  // Remove country code 55 if present and phone has 12-13 digits
   if (digits.startsWith("55") && digits.length >= 12) return digits.slice(2);
   return digits;
+}
+
+/** Extract a string from a value that may be string, array, or undefined */
+function extractStr(val: any): string {
+  if (typeof val === "string" && val.trim()) return val.trim();
+  if (Array.isArray(val) && val.length > 0 && val[0]) return String(val[0]).trim();
+  return "";
 }
 
 Deno.serve(async (req) => {
@@ -64,53 +57,73 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Parse fields (support flat JSON, Meta Ads field_data, and nested formats) ──
-    // Helper: treat empty strings as null
+    // ── Parse fields from top-level body ──
     const v = (...keys: string[]): string => {
       for (const k of keys) {
-        const val = body[k];
-        if (typeof val === "string" && val.trim()) return val.trim();
+        const r = extractStr(body[k]);
+        if (r) return r;
       }
       return "";
     };
 
     let name = v("name", "full_name", "nome", "Nome", "NOME");
     let email = v("email", "Email", "EMAIL");
-    let phone = v("phone", "telefone", "Telefone", "TELEFONE", "cel", "celular", "Celular", "whatsapp", "Whatsapp");
-    let campaignId = v("campaign_id", "campaignId", "CampaignId");
-    let campaignName = v("campaign_name", "campaignName", "campanha", "Campanha");
-    let message = v("message", "mensagem", "Mensagem", "observacao");
+    let phone = v("phone", "phone_number", "telefone", "Telefone", "cel", "celular", "whatsapp");
+    let campaignId = v("campaign_id", "campaignId");
+    let campaignName = v("campaign_name", "campaignName", "campanha");
+    let message = v("message", "mensagem", "observacao");
     let platform = v("platform", "source", "origem") || "meta_ads";
-    let formName = v("form_name", "formName", "formulario", "Formulario");
-    let adName = v("ad_name", "adName");
-    let adsetName = v("adset_name", "adsetName");
+    let formName = v("form_name", "formName", "formulario");
+    let adName = v("ad_name", "adName", "adId");
+    let adsetName = v("adset_name", "adsetName", "adgroupId");
+    let propertyCode = v("property_code", "propertyCode", "codigo_imovel");
+    const metaFormId = v("formId");
 
-    // Meta Ads native format: field_data array
+    // ── Make.com format: data object with mixed string/array values ──
+    if (body.data && typeof body.data === "object" && !Array.isArray(body.data)) {
+      const d = body.data;
+      if (!name) name = extractStr(d.full_name) || extractStr(d.name) || extractStr(d.nome);
+      if (!phone) phone = extractStr(d.phone_number) || extractStr(d.phone) || extractStr(d.telefone) || extractStr(d.celular) || extractStr(d.whatsapp);
+      if (!email) email = extractStr(d.email);
+      if (!campaignId) campaignId = extractStr(d.campaign_id);
+      if (!message) message = extractStr(d.message) || extractStr(d.mensagem);
+      if (!propertyCode) propertyCode = extractStr(d.property_code) || extractStr(d.codigo_imovel);
+    }
+
+    // ── Make.com mappable_field_data: [{name, value}] ──
+    if (body.mappable_field_data && Array.isArray(body.mappable_field_data)) {
+      for (const field of body.mappable_field_data) {
+        const val = extractStr(field.value) || extractStr(field.values);
+        if (!val) continue;
+        const fn = (field.name || "").toLowerCase();
+        if (!name && (fn === "full_name" || fn === "nome" || fn === "name")) name = val;
+        else if (!email && fn.includes("email")) email = val;
+        else if (!phone && (fn.includes("phone") || fn.includes("telefone") || fn.includes("celular") || fn.includes("whatsapp"))) phone = val;
+        else if (!campaignId && fn === "campaign_id") campaignId = val;
+        else if (!message && fn === "message") message = val;
+        else if (!propertyCode && (fn === "property_code" || fn === "codigo_imovel")) propertyCode = val;
+      }
+    }
+
+    // ── Meta Ads native format: field_data [{name, values: [...]}] ──
     if (body.field_data && Array.isArray(body.field_data)) {
       for (const field of body.field_data) {
         const val = Array.isArray(field.values) ? field.values[0] : field.values;
         if (!val) continue;
         const fn = (field.name || "").toLowerCase();
-        if (fn.includes("full_name") || fn.includes("nome") || fn === "name") name = val;
-        else if (fn.includes("email")) email = val;
-        else if (fn.includes("phone") || fn.includes("telefone") || fn.includes("cel") || fn.includes("whatsapp")) phone = val;
+        if (!name && (fn.includes("full_name") || fn.includes("nome") || fn === "name")) name = val;
+        else if (!email && fn.includes("email")) email = val;
+        else if (!phone && (fn.includes("phone") || fn.includes("telefone") || fn.includes("cel") || fn.includes("whatsapp"))) phone = val;
       }
-      campaignId = body.campaign_id || campaignId;
-      campaignName = body.campaign_name || campaignName;
-      formName = body.form_name || formName;
+      if (!campaignId) campaignId = extractStr(body.campaign_id);
+      if (!campaignName) campaignName = extractStr(body.campaign_name);
+      if (!formName) formName = extractStr(body.form_name);
     }
 
-    // Try to extract from nested objects (Make.com sometimes nests data)
-    if (!name && !phone && typeof body === "object") {
-      for (const key of Object.keys(body)) {
-        const val = body[key];
-        if (typeof val === "object" && val !== null && !Array.isArray(val)) {
-          if (!name) name = val.name || val.full_name || val.nome || val.Nome || "";
-          if (!phone) phone = val.phone || val.telefone || val.Telefone || val.celular || val.whatsapp || "";
-          if (!email) email = val.email || val.Email || "";
-        }
-      }
-    }
+    // Use Meta form ID as fallback
+    if (!formName && metaFormId) formName = metaFormId;
+
+    console.log("META-LEAD PARSED:", JSON.stringify({ name, phone, email, campaignId, campaignName, message, propertyCode, formName, adName, adsetName }));
 
     const telefone = normalizePhone(phone);
     if (!name && !telefone) {
@@ -121,11 +134,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Resolve empreendimento from campaign_id via jetimob_campaign_map ──
+    // ── Resolve empreendimento ──
     let empreendimento: string | null = null;
     let segmentoFromMap: string | null = null;
 
-    if (campaignId) {
+    // Priority 1: property_code → empreendimento_overrides or jetimob lookup
+    if (propertyCode) {
+      const cleanCode = propertyCode.replace(/-UH$/i, "").trim();
+      // Try empreendimento_overrides
+      const { data: overrideRow } = await supabase
+        .from("empreendimento_overrides")
+        .select("nome_exibicao, segmento")
+        .or(`codigo.eq.${propertyCode},codigo.eq.${cleanCode}-UH`)
+        .limit(1)
+        .maybeSingle();
+      if (overrideRow) {
+        empreendimento = overrideRow.nome_exibicao;
+        if (overrideRow.segmento) segmentoFromMap = overrideRow.segmento;
+      }
+
+      // Also try roleta_campanhas by empreendimento code pattern
+      if (!empreendimento) {
+        const { data: rcByCode } = await supabase
+          .from("roleta_campanhas")
+          .select("empreendimento, segmento_id")
+          .ilike("empreendimento", `%${cleanCode}%`)
+          .eq("ativo", true)
+          .limit(1)
+          .maybeSingle();
+        if (rcByCode) empreendimento = rcByCode.empreendimento;
+      }
+    }
+
+    // Priority 2: campaign_id → jetimob_campaign_map
+    if (!empreendimento && campaignId) {
       const { data: mapRow } = await supabase
         .from("jetimob_campaign_map")
         .select("empreendimento, segmento")
@@ -134,11 +176,29 @@ Deno.serve(async (req) => {
 
       if (mapRow) {
         empreendimento = mapRow.empreendimento;
-        segmentoFromMap = mapRow.segmento;
+        if (!segmentoFromMap) segmentoFromMap = mapRow.segmento;
       }
     }
 
-    // Fallback: use campaign_name or form_name
+    // Priority 3: Extract from message (e.g. "Lead Gerado do Formulário de Open Bosque")
+    if (!empreendimento && message) {
+      const msgMatch = message.match(/Formul[aá]rio\s+de\s+(.+?)(?:\s*\(|$)/i);
+      if (msgMatch) {
+        const extracted = msgMatch[1].trim();
+        // Try roleta_campanhas fuzzy
+        const { data: rcMsg } = await supabase
+          .from("roleta_campanhas")
+          .select("empreendimento")
+          .ilike("empreendimento", `%${extracted}%`)
+          .eq("ativo", true)
+          .limit(1)
+          .maybeSingle();
+        if (rcMsg) empreendimento = rcMsg.empreendimento;
+        else empreendimento = extracted;
+      }
+    }
+
+    // Priority 4: campaign_name or form_name
     if (!empreendimento && campaignName) empreendimento = campaignName;
     if (!empreendimento && formName) empreendimento = formName;
     if (!empreendimento) empreendimento = "Avulso - Meta Ads";
@@ -154,7 +214,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (existing) {
-        // Re-entry: notify corretor, don't create new lead
         const todayStamp = new Date().toISOString().slice(0, 10);
         const interestLabel = empreendimento || existing.empreendimento || "mesmo imóvel";
 
@@ -173,7 +232,6 @@ Deno.serve(async (req) => {
           agrupamento_key: `lead_retorno_${existing.id}_${todayStamp}`,
         });
 
-        // Push notification
         try {
           await fetch(`${supabaseUrl}/functions/v1/send-push`, {
             method: "POST",
@@ -196,7 +254,6 @@ Deno.serve(async (req) => {
     }
 
     // ── Resolve segmento ──
-    // Map segmento name to pipeline_segmentos UUID
     let segmentoId: string | null = null;
     if (segmentoFromMap) {
       const { data: seg } = await supabase
@@ -207,7 +264,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (seg) segmentoId = seg.id;
     }
-    // Also try via roleta_campanhas mapping
     if (!segmentoId && empreendimento) {
       const { data: rc } = await supabase
         .from("roleta_campanhas")
@@ -217,7 +273,6 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (rc?.segmento_id) {
-        // Resolve roleta_segmentos → pipeline_segmentos
         const { data: rs } = await supabase
           .from("roleta_segmentos")
           .select("id, nome")
@@ -251,6 +306,12 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Build observacoes with full context
+    const obsLines: string[] = [];
+    if (message) obsLines.push(message);
+    if (propertyCode) obsLines.push(`Cód. Imóvel: ${propertyCode}`);
+    const obsText = obsLines.length > 0 ? obsLines.join(" | ") : null;
+
     // ── Insert lead ──
     const { data: insertedLead, error: insertError } = await supabase
       .from("pipeline_leads")
@@ -263,13 +324,13 @@ Deno.serve(async (req) => {
         stage_id: stageData.id,
         origem: platform || "Meta Ads",
         origem_detalhe: campaignName || formName || null,
-        campanha: campaignName || null,
+        campanha: campaignName || (message ? message.slice(0, 100) : null),
         campanha_id: campaignId || null,
         conjunto_anuncio: adsetName || null,
         anuncio: adName || null,
         formulario: formName || null,
         plataforma: platform || null,
-        observacoes: message || null,
+        observacoes: obsText,
         corretor_id: null,
         aceite_status: "pendente_distribuicao",
         prioridade_lead: message && message.length > 10 ? "alta" : "media",
@@ -285,7 +346,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`META-LEAD: Created lead ${insertedLead.id} — ${name} — ${empreendimento}`);
+    console.log(`META-LEAD: Created lead ${insertedLead.id} — ${name} — ${empreendimento} (campaign_id: ${campaignId}, property_code: ${propertyCode})`);
 
     // ── Auto-distribute via roleta ──
     try {
@@ -309,12 +370,12 @@ Deno.serve(async (req) => {
       user_id: "00000000-0000-0000-0000-000000000000",
       modulo: "pipeline",
       acao: "meta_ads_webhook",
-      descricao: `Lead direto Meta Ads: ${name} — ${empreendimento} (campaign_id: ${campaignId})`,
+      descricao: `Lead direto Meta Ads: ${name} — ${empreendimento} (campaign_id: ${campaignId}, property_code: ${propertyCode})`,
       origem: "webhook",
     }).then(r => { if (r.error) console.warn("audit:", r.error.message); });
 
     return new Response(
-      JSON.stringify({ success: true, lead_id: insertedLead.id, empreendimento, distributed: true }),
+      JSON.stringify({ success: true, lead_id: insertedLead.id, empreendimento, propertyCode, distributed: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
