@@ -1,0 +1,1 @@
+DELETE FROM pipeline_leads WHERE nome IN ('TESTE Make.com Format', 'TESTE Resolucao v2', 'TESTE Deploy v3', 'Maria Teste Meta', 'Teste Facebook Lead');
