@@ -14,12 +14,13 @@ import {
   Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath,
   Maximize, MapPin, Car, Megaphone, ChevronsUpDown, Check, UserCircle, Phone,
   Mail, X, Share2, CheckSquare, Square, Link2, Copy, CalendarClock,
-  LayoutGrid, List, Star, SlidersHorizontal, ChevronDown, Heart, DollarSign
+  LayoutGrid, List, Star, SlidersHorizontal, ChevronDown, Heart, DollarSign, Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { getVitrineShareUrl } from "@/lib/vitrineUrl";
+import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
+import { useTypesenseSearch, buildFilterBy, buildSortBy } from "@/hooks/useTypesenseSearch";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -441,6 +442,7 @@ function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onTog
 
 export default function ImoveisPage() {
   const { user } = useAuth();
+  const { search: typesenseSearch, autocomplete: typesenseAutocomplete, loading: tsLoading } = useTypesenseSearch();
   const [imoveis, setImoveis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -456,6 +458,7 @@ export default function ImoveisPage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [sortBy, setSortBy] = useState("relevancia");
+  const [searchTimeMs, setSearchTimeMs] = useState<number | null>(null);
 
   // Autocomplete
   const [suggestions, setSuggestions] = useState<{ type: string; value: string }[]>([]);
@@ -481,7 +484,9 @@ export default function ImoveisPage() {
   const [valorRange, setValorRange] = useState<[number, number]>([0, 5_000_000]);
   const [somenteObras, setSomenteObras] = useState(false);
 
-  // Debounced fetch ref to avoid stale closures
+  // Track if Typesense is available
+  const [useTypesense, setUseTypesense] = useState(true);
+
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filteredBairros = useMemo(() => {
@@ -508,12 +513,60 @@ export default function ImoveisPage() {
   // Abort controller for cancelling in-flight requests
   const abortRef = useRef<AbortController | null>(null);
 
-  const fetchImoveis = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
+  // ── Typesense search ──
+  const fetchViaTypesense = useCallback(async (pageNum: number) => {
+    const filterBy = buildFilterBy({
+      contrato, tipo, bairro, dormitorios, suites: suitesFilter, vagas,
+      valorRange, areaRange, somenteObras, uhomeOnly,
+    });
+    const sortByStr = search ? "" : buildSortBy(sortBy, contrato);
+
+    const result = await typesenseSearch({
+      q: search || "*",
+      page: pageNum,
+      per_page: 24,
+      filter_by: filterBy || undefined,
+      sort_by: sortByStr || undefined,
+    });
+
+    if (!result) return false;
+
+    // Map Typesense docs back to the format cards expect
+    const items = result.data.map((doc: any) => ({
+      ...doc,
+      codigo: doc.codigo || doc.id,
+      titulo_anuncio: doc.titulo,
+      empreendimento_nome: doc.empreendimento,
+      endereco_bairro: doc.bairro,
+      endereco_cidade: doc.cidade,
+      endereco_logradouro: doc.endereco,
+      valor_venda: doc.valor_venda,
+      valor_locacao: doc.valor_locacao,
+      area_privativa: doc.area_privativa,
+      garagens: doc.vagas,
+      suites: doc.suites,
+      banheiros: doc.banheiros,
+      dormitorios: doc.dormitorios,
+      valor_condominio: doc.valor_condominio,
+      situacao: doc.situacao,
+      _fotos_normalized: doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [],
+      imagens: (doc.fotos || []).map((url: string) => ({ link_thumb: url, link: url })),
+    }));
+
+    setImoveis(items);
+    setTotal(result.total);
+    setTotalPages(result.totalPages);
+    setPage(pageNum);
+    setSearchTimeMs(result.search_time_ms || null);
+    return true;
+  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, uhomeOnly, sortBy, typesenseSearch]);
+
+  // ── Fallback to jetimob-proxy ──
+  const fetchViaJetimob = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
-    setLoading(true);
     try {
       if (campanha) {
         const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
@@ -559,10 +612,36 @@ export default function ImoveisPage() {
     } catch (e: any) {
       if (e?.name === "AbortError" || controller.signal.aborted) return;
       toast.error("Erro de conexão");
-    } finally {
-      if (!controller.signal.aborted) setLoading(false);
     }
   }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
+
+  // ── Main fetch: try Typesense first, fallback to Jetimob ──
+  const fetchImoveis = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
+    setLoading(true);
+    setSearchTimeMs(null);
+
+    try {
+      // Campanha mode always uses jetimob-proxy (specific codes)
+      if (campanha) {
+        await fetchViaJetimob(pageNum, campanha, uhome);
+        return;
+      }
+
+      // Try Typesense
+      if (useTypesense) {
+        const success = await fetchViaTypesense(pageNum);
+        if (success) return;
+        // If Typesense fails, fall back
+        console.warn("Typesense unavailable, falling back to jetimob-proxy");
+        setUseTypesense(false);
+      }
+
+      // Fallback
+      await fetchViaJetimob(pageNum, campanha, uhome);
+    } finally {
+      setLoading(false);
+    }
+  }, [campanhaAtiva, uhomeOnly, useTypesense, fetchViaTypesense, fetchViaJetimob]);
 
   // Initial load
   const mounted = useRef(false);
@@ -582,29 +661,36 @@ export default function ImoveisPage() {
       fetchImoveis(1, campanhaAtiva, uhomeOnly);
     }, 400);
     return () => { if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current); };
-  }, [contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = () => { setCampanhaAtiva(false); setUhomeOnly(false); setShowSuggestions(false); fetchImoveis(1, false, false); };
 
-  // Autocomplete with debounce
+  // Autocomplete with debounce — Typesense powered
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
     debounceRef.current = setTimeout(async () => {
-      try {
-        const { data } = await supabase.functions.invoke("jetimob-proxy", {
-          body: { action: "autocomplete", query: value },
-        });
-        if (data?.suggestions?.length) {
-          setSuggestions(data.suggestions);
-          setShowSuggestions(true);
-        } else {
-          setShowSuggestions(false);
-        }
-      } catch { /* ignore */ }
-    }, 250);
-  }, []);
+      const results = await typesenseAutocomplete(value);
+      if (results.length) {
+        setSuggestions(results);
+        setShowSuggestions(true);
+      } else {
+        // Fallback to jetimob-proxy autocomplete
+        try {
+          const { data } = await supabase.functions.invoke("jetimob-proxy", {
+            body: { action: "autocomplete", query: value },
+          });
+          if (data?.suggestions?.length) {
+            setSuggestions(data.suggestions);
+            setShowSuggestions(true);
+          } else {
+            setShowSuggestions(false);
+          }
+        } catch { setShowSuggestions(false); }
+      }
+    }, 200);
+  }, [typesenseAutocomplete]);
 
   const handleSuggestionClick = (suggestion: { type: string; value: string }) => {
     setSearch(suggestion.value);
@@ -956,7 +1042,7 @@ export default function ImoveisPage() {
                   try {
                     const { data, error } = await supabase.from("vitrines").insert({ created_by: user.id, titulo: "Seleção de Imóveis", tipo: "property_selection", imovel_ids: [...selectedIds] as any }).select("id").single();
                     if (error) throw error;
-                    const link = getVitrineShareUrl(data.id);
+                    const link = getVitrinePublicUrl(data.id);
                     setVitrineLink(link); navigator.clipboard.writeText(link); toast.success("Vitrine criada! Link copiado.");
                   } catch { toast.error("Erro ao criar vitrine"); } finally { setCreatingVitrine(false); }
                 }} className="gap-1.5">
@@ -990,7 +1076,14 @@ export default function ImoveisPage() {
             {loading ? (
               <Skeleton className="h-4 w-24" />
             ) : (
-              <span className="text-sm font-medium text-foreground">{total.toLocaleString()} imóveis</span>
+              <>
+                <span className="text-sm font-medium text-foreground">{total.toLocaleString()} imóveis</span>
+                {searchTimeMs != null && (
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                    <Zap className="h-2.5 w-2.5" /> {searchTimeMs}ms
+                  </span>
+                )}
+              </>
             )}
           </div>
           <div className="flex items-center gap-2">
