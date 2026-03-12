@@ -375,7 +375,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       supabase
         .from("corretor_disponibilidade")
         .select("user_id")
-        .in("status", ["na_empresa", "em_pausa", "em_visita"]),
+        .in("status", ["online", "na_empresa", "disponivel", "em_pausa", "em_visita"]),
       supabase
         .from("checkpoint_diario")
         .select("corretor_id")
