@@ -10,12 +10,11 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Search, Building2, Loader2, ChevronLeft, ChevronRight, Home, BedDouble, Bath,
   Maximize, MapPin, Car, Megaphone, ChevronsUpDown, Check, UserCircle, Phone,
   Mail, X, Share2, CheckSquare, Square, Link2, Copy, CalendarClock,
-  LayoutGrid, List, Star, SlidersHorizontal, ChevronDown, Heart
+  LayoutGrid, List, Star, SlidersHorizontal, ChevronDown, Heart, DollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -224,16 +223,43 @@ function PhotoLightbox({ images, initialIndex, open, onClose }: { images: string
   );
 }
 
-// ── Grid Card ──
+// ── Filter Chip Popover ──
+function FilterChip({ label, active, children, onClear }: { label: string; active: boolean; children: React.ReactNode; onClear?: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className={cn(
+          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
+          active
+            ? "bg-primary/10 border-primary/30 text-primary hover:bg-primary/15"
+            : "bg-background border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+        )}>
+          {label}
+          <ChevronDown className="h-3 w-3" />
+          {active && onClear && (
+            <span onClick={(e) => { e.stopPropagation(); onClear(); }} className="ml-0.5 hover:bg-primary/20 rounded-full p-0.5 -mr-1">
+              <X className="h-2.5 w-2.5" />
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto min-w-[200px] p-3" align="start" sideOffset={8}>
+        {children}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ── Property Card (Grid) ──
 function PropertyCardGrid({ item, idx, isCampanha, selectMode, isSelected, onToggleSelect, onFavorite, isFavorite, onOpenLightbox, getPreco }: any) {
   const images = extractImages(item);
   const fullImages = extractFullImages(item);
   const loc = extractEndereco(item);
   const codigo = item.codigo;
   const titulo = item.titulo_anuncio || item.empreendimento_nome || "";
-  const tipoImovel = item.subtipo || item.tipo || "";
   const dorms = getNum(item, "dormitorios");
-  const suites = getNum(item, "suites");
+  const suitesVal = getNum(item, "suites");
   const area = getNumIncZero(item, "area_privativa", "area_util", "area_total");
   const vagas = getNum(item, "garagens", "vagas");
   const entrega = extractEntrega(item);
@@ -241,7 +267,7 @@ function PropertyCardGrid({ item, idx, isCampanha, selectMode, isSelected, onTog
 
   return (
     <Card className={cn(
-      "overflow-hidden group hover:shadow-xl transition-all duration-300 relative border-border/50",
+      "overflow-hidden group hover:shadow-xl transition-all duration-300 relative border-border/40 bg-card",
       isCampanha && "ring-1 ring-primary/20",
       selectMode && isSelected && "ring-2 ring-primary"
     )}>
@@ -251,8 +277,7 @@ function PropertyCardGrid({ item, idx, isCampanha, selectMode, isSelected, onTog
         </button>
       )}
 
-      {/* Image area */}
-      <div className="aspect-[4/3] relative bg-muted">
+      <div className="aspect-[16/10] relative bg-muted overflow-hidden">
         <ImageSlider images={images} alt={titulo || loc.endereco} onClickImage={() => onOpenLightbox(fullImages.length > 0 ? fullImages : images, 0)} />
         {isCampanha && (
           <Badge className="absolute top-3 left-3 text-[10px] bg-primary/90 text-primary-foreground backdrop-blur-sm shadow-sm">
@@ -267,69 +292,67 @@ function PropertyCardGrid({ item, idx, isCampanha, selectMode, isSelected, onTog
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onFavorite(imovelId); }}
-          className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all shadow-sm hover:scale-110"
+          className="absolute top-3 right-3 bg-background/70 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all shadow-sm hover:scale-110"
+          style={entrega.emObras ? { top: 'auto', bottom: '12px' } : {}}
         >
           <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
         </button>
       </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-lg font-bold text-primary leading-tight">{getPreco(item)}</p>
-          {codigo && <Badge variant="outline" className="text-[10px] shrink-0 font-mono">{codigo}</Badge>}
+      <div className="p-3.5 space-y-1.5">
+        <p className="text-[17px] font-bold text-foreground leading-tight">{getPreco(item)}</p>
+
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {dorms != null && dorms > 0 && (
+            <span className="font-medium"><strong className="text-foreground">{dorms}</strong> dorm{suitesVal ? ` · ${suitesVal}s` : ""}</span>
+          )}
+          {area != null && area > 0 && (
+            <span className="font-medium"><strong className="text-foreground">{area}</strong> m²</span>
+          )}
+          {vagas != null && vagas > 0 && (
+            <span className="font-medium"><strong className="text-foreground">{vagas}</strong> vaga{vagas > 1 ? "s" : ""}</span>
+          )}
         </div>
 
-        {titulo && <p className="text-sm font-semibold text-foreground leading-snug line-clamp-1">{titulo}</p>}
+        {titulo && <p className="text-xs text-foreground/80 font-medium leading-snug line-clamp-1">{titulo}</p>}
 
         {(loc.bairro || loc.endereco) && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <MapPin className="h-3 w-3 shrink-0 text-muted-foreground/60" />
-            <span className="truncate">{[loc.bairro, loc.cidade].filter(Boolean).join(" · ")}</span>
+          <p className="text-[11px] text-muted-foreground truncate">
+            {[loc.bairro, loc.cidade].filter(Boolean).join(", ")}
           </p>
         )}
 
-        <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t border-border/50">
-          {dorms != null && dorms > 0 && (
-            <span className="flex items-center gap-1"><BedDouble className="h-3.5 w-3.5" /> {dorms}{suites ? ` (${suites}s)` : ""}</span>
-          )}
-          {area != null && area > 0 && (
-            <span className="flex items-center gap-1"><Maximize className="h-3.5 w-3.5" /> {area}m²</span>
-          )}
-          {vagas != null && vagas > 0 && (
-            <span className="flex items-center gap-1"><Car className="h-3.5 w-3.5" /> {vagas}</span>
-          )}
-        </div>
-
-        {/* Quick actions */}
-        <div className="flex items-center gap-1 pt-1">
-          <Button
-            variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-primary"
-            onClick={() => {
-              const url = `https://uhomesales.com/imovel/${codigo || item.id_imovel || item.id}`;
-              navigator.clipboard.writeText(url);
-              toast.success("Link copiado!");
-            }}
-          >
-            <Copy className="h-3 w-3" /> Copiar
-          </Button>
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(`Confira este imóvel: ${titulo} - ${loc.bairro} - ${getPreco(item)}\nhttps://uhomesales.com/imovel/${codigo || item.id_imovel || item.id}`)}`}
-            target="_blank" rel="noopener noreferrer"
-            className="inline-flex"
-          >
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-green-600">
-              <Phone className="h-3 w-3" /> WhatsApp
-            </Button>
-          </a>
-          {codigo && <ResponsavelButton codigo={codigo} />}
-        </div>
+        {codigo && (
+          <div className="flex items-center justify-between pt-1.5 border-t border-border/40">
+            <span className="text-[10px] text-muted-foreground/60 font-mono">{codigo}</span>
+            <div className="flex items-center gap-0.5">
+              <Button
+                variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary"
+                onClick={() => {
+                  navigator.clipboard.writeText(`https://uhomesales.com/imovel/${codigo}`);
+                  toast.success("Link copiado!");
+                }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Confira este imóvel: ${titulo} - ${loc.bairro} - ${getPreco(item)}\nhttps://uhomesales.com/imovel/${codigo}`)}`}
+                target="_blank" rel="noopener noreferrer"
+              >
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-green-600">
+                  <Phone className="h-3 w-3" />
+                </Button>
+              </a>
+              <ResponsavelButton codigo={codigo} />
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
 }
 
-// ── List Card ──
+// ── Property Card (List) ──
 function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onToggleSelect, onFavorite, isFavorite, onOpenLightbox, getPreco }: any) {
   const images = extractImages(item);
   const fullImages = extractFullImages(item);
@@ -337,7 +360,7 @@ function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onTog
   const codigo = item.codigo;
   const titulo = item.titulo_anuncio || item.empreendimento_nome || "";
   const dorms = getNum(item, "dormitorios");
-  const suites = getNum(item, "suites");
+  const suitesVal = getNum(item, "suites");
   const banhos = getNum(item, "banheiros");
   const area = getNumIncZero(item, "area_privativa", "area_util", "area_total");
   const vagas = getNum(item, "garagens", "vagas");
@@ -347,7 +370,7 @@ function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onTog
 
   return (
     <Card className={cn(
-      "overflow-hidden hover:shadow-lg transition-all duration-200 relative",
+      "overflow-hidden hover:shadow-lg transition-all duration-200 relative border-border/40",
       isCampanha && "ring-1 ring-primary/20",
       selectMode && isSelected && "ring-2 ring-primary"
     )}>
@@ -357,55 +380,51 @@ function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onTog
         </button>
       )}
       <div className="flex">
-        <div className="w-52 h-44 flex-shrink-0 bg-muted relative">
+        <div className="w-56 h-40 flex-shrink-0 bg-muted relative">
           <ImageSlider images={images} alt={titulo || loc.endereco} onClickImage={() => onOpenLightbox(fullImages.length > 0 ? fullImages : images, 0)} />
           {isCampanha && <Badge className="absolute top-2 left-2 text-[10px] bg-primary/90 text-primary-foreground"><Megaphone className="h-2.5 w-2.5 mr-0.5" /> Campanha</Badge>}
-          {codigo && <Badge variant="secondary" className="absolute bottom-2 left-2 text-[10px] font-mono bg-background/80 backdrop-blur-sm">{codigo}</Badge>}
         </div>
-        <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
-          <div className="space-y-1.5">
+        <div className="flex-1 p-3.5 flex flex-col justify-between min-w-0">
+          <div className="space-y-1">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                {titulo && <p className="text-sm font-semibold text-foreground truncate">{titulo}</p>}
-                {(loc.bairro || loc.endereco) && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{[loc.endereco, loc.bairro, loc.cidade].filter(Boolean).join(" · ")}</span>
-                  </p>
-                )}
-              </div>
+              <p className="text-lg font-bold text-foreground">{getPreco(item)}</p>
               <button onClick={() => onFavorite(imovelId)} className="shrink-0 p-1 rounded-full hover:bg-muted transition-colors">
                 <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
               </button>
             </div>
 
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              {dorms != null && dorms > 0 && <span><strong className="text-foreground">{dorms}</strong> dorm{suitesVal ? ` · ${suitesVal}s` : ""}</span>}
+              {banhos != null && banhos > 0 && <span><strong className="text-foreground">{banhos}</strong> ban</span>}
+              {area != null && area > 0 && <span><strong className="text-foreground">{area}</strong> m²</span>}
+              {vagas != null && vagas > 0 && <span><strong className="text-foreground">{vagas}</strong> vaga{vagas > 1 ? "s" : ""}</span>}
+            </div>
+
+            {titulo && <p className="text-xs text-foreground/80 font-medium truncate">{titulo}</p>}
+            {(loc.bairro || loc.endereco) && (
+              <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {[loc.endereco, loc.bairro, loc.cidade].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between mt-1.5">
+            <div className="flex items-center gap-1.5">
+              {codigo && <span className="text-[10px] text-muted-foreground/60 font-mono">{codigo}</span>}
+              {cond != null && cond > 0 && <span className="text-[10px] text-muted-foreground">· Cond. {fmtBRL(cond)}</span>}
               {entrega.emObras && (
-                <Badge className="text-[10px] h-5 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 border">
-                  <CalendarClock className="h-2.5 w-2.5 mr-0.5" /> {entrega.previsao || "Em obras"}
+                <Badge className="text-[9px] h-4 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 border">
+                  {entrega.previsao || "Em obras"}
                 </Badge>
               )}
             </div>
-
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              {dorms != null && dorms > 0 && <span className="flex items-center gap-1"><BedDouble className="h-3.5 w-3.5" /> {dorms} dorm{suites ? ` (${suites}s)` : ""}</span>}
-              {banhos != null && banhos > 0 && <span className="flex items-center gap-1"><Bath className="h-3.5 w-3.5" /> {banhos}</span>}
-              {area != null && area > 0 && <span className="flex items-center gap-1"><Maximize className="h-3.5 w-3.5" /> {area}m²</span>}
-              {vagas != null && vagas > 0 && <span className="flex items-center gap-1"><Car className="h-3.5 w-3.5" /> {vagas} vaga{vagas > 1 ? "s" : ""}</span>}
-            </div>
-          </div>
-
-          <div className="flex items-end justify-between mt-2">
-            <div>
-              <p className="text-lg font-bold text-primary">{getPreco(item)}</p>
-              {cond != null && cond > 0 && <p className="text-[10px] text-muted-foreground">Cond. {fmtBRL(cond)}</p>}
-            </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => { navigator.clipboard.writeText(`https://uhomesales.com/imovel/${codigo || item.id}`); toast.success("Link copiado!"); }}>
+            <div className="flex items-center gap-0.5">
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(`https://uhomesales.com/imovel/${codigo || item.id}`); toast.success("Link copiado!"); }}>
                 <Copy className="h-3 w-3" />
               </Button>
               <a href={`https://wa.me/?text=${encodeURIComponent(`${titulo} - ${loc.bairro} - ${getPreco(item)}`)}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 hover:text-green-600"><Phone className="h-3 w-3" /></Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 hover:text-green-600"><Phone className="h-3 w-3" /></Button>
               </a>
               {codigo && <ResponsavelButton codigo={codigo} />}
             </div>
@@ -416,7 +435,9 @@ function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onTog
   );
 }
 
-// ── Main Page ──
+// ══════════════════════════════════════════
+// ██  MAIN PAGE
+// ══════════════════════════════════════════
 
 export default function ImoveisPage() {
   const { user } = useAuth();
@@ -434,7 +455,6 @@ export default function ImoveisPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(true);
   const [sortBy, setSortBy] = useState("relevancia");
 
   // Autocomplete
@@ -449,18 +469,20 @@ export default function ImoveisPage() {
   const [creatingVitrine, setCreatingVitrine] = useState(false);
   const [vitrineLink, setVitrineLink] = useState<string | null>(null);
 
-  // Filters
+  // Filters — reactive (auto-apply on change)
   const [contrato, setContrato] = useState("venda");
   const [tipo, setTipo] = useState("");
   const [bairro, setBairro] = useState("");
-  const [bairroOpen, setBairroOpen] = useState(false);
   const [bairroSearch, setBairroSearch] = useState("");
   const [dormitorios, setDormitorios] = useState("");
-  const [suites, setSuites] = useState("");
+  const [suitesFilter, setSuitesFilter] = useState("");
   const [vagas, setVagas] = useState("");
   const [areaRange, setAreaRange] = useState<[number, number]>([0, 500]);
   const [valorRange, setValorRange] = useState<[number, number]>([0, 5_000_000]);
   const [somenteObras, setSomenteObras] = useState(false);
+
+  // Debounced fetch ref to avoid stale closures
+  const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filteredBairros = useMemo(() => {
     if (!bairroSearch) return BAIRROS_POA;
@@ -487,7 +509,6 @@ export default function ImoveisPage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchImoveis = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
-    // Cancel previous request
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -519,7 +540,7 @@ export default function ImoveisPage() {
             bairro: bairro || undefined,
             search_uhome: uhome ? true : undefined,
             dormitorios: dormitorios && dormitorios !== "all" ? dormitorios : undefined,
-            suites: suites && suites !== "all" ? suites : undefined,
+            suites: suitesFilter && suitesFilter !== "all" ? suitesFilter : undefined,
             vagas: vagas && vagas !== "all" ? vagas : undefined,
             area_min: areaRange[0] > 0 ? String(areaRange[0]) : undefined,
             area_max: areaRange[1] < 500 ? String(areaRange[1]) : undefined,
@@ -541,14 +562,27 @@ export default function ImoveisPage() {
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [search, contrato, tipo, bairro, dormitorios, suites, vagas, areaRange, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
+  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
 
+  // Initial load
   const mounted = useRef(false);
   useEffect(() => {
     if (mounted.current) return;
     mounted.current = true;
     fetchImoveis(1, false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-apply filters with debounce (reactive like Zillow)
+  const filterVersion = useRef(0);
+  useEffect(() => {
+    if (!mounted.current) return;
+    filterVersion.current += 1;
+    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    filterDebounceRef.current = setTimeout(() => {
+      fetchImoveis(1, campanhaAtiva, uhomeOnly);
+    }, 400);
+    return () => { if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current); };
+  }, [contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = () => { setCampanhaAtiva(false); setUhomeOnly(false); setShowSuggestions(false); fetchImoveis(1, false, false); };
 
@@ -569,7 +603,7 @@ export default function ImoveisPage() {
           setShowSuggestions(false);
         }
       } catch { /* ignore */ }
-    }, 300);
+    }, 250);
   }, []);
 
   const handleSuggestionClick = (suggestion: { type: string; value: string }) => {
@@ -577,10 +611,7 @@ export default function ImoveisPage() {
     setShowSuggestions(false);
     setCampanhaAtiva(false);
     setUhomeOnly(false);
-    // Auto-search
-    setTimeout(() => {
-      fetchImoveis(1, false, false);
-    }, 50);
+    setTimeout(() => fetchImoveis(1, false, false), 50);
   };
 
   const getPreco = (item: any): string => {
@@ -611,128 +642,301 @@ export default function ImoveisPage() {
     return items;
   }, [imoveis, sortBy, showFavoritesOnly, favorites, somenteObras]);
 
-  const activeFilterCount = [
-    tipo && tipo !== "all",
-    bairro,
-    dormitorios && dormitorios !== "all",
-    suites && suites !== "all",
-    vagas && vagas !== "all",
-    areaRange[0] > 0 || areaRange[1] < 500,
-    valorRange[0] > 0 || valorRange[1] < 5_000_000,
-    somenteObras,
-  ].filter(Boolean).length;
+  // Active filter tags
+  const activeFilters: { key: string; label: string; onRemove: () => void }[] = [];
+  if (tipo && tipo !== "all") activeFilters.push({ key: "tipo", label: tipo.charAt(0).toUpperCase() + tipo.slice(1), onRemove: () => setTipo("") });
+  if (bairro) activeFilters.push({ key: "bairro", label: bairro, onRemove: () => setBairro("") });
+  if (dormitorios && dormitorios !== "all") activeFilters.push({ key: "dorms", label: `${dormitorios}+ dorm`, onRemove: () => setDormitorios("") });
+  if (suitesFilter && suitesFilter !== "all") activeFilters.push({ key: "suites", label: `${suitesFilter}+ suíte`, onRemove: () => setSuitesFilter("") });
+  if (vagas && vagas !== "all") activeFilters.push({ key: "vagas", label: `${vagas}+ vaga`, onRemove: () => setVagas("") });
+  if (valorRange[0] > 0 || valorRange[1] < 5_000_000) activeFilters.push({ key: "valor", label: `${fmtCompact(valorRange[0])} — ${valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}`, onRemove: () => setValorRange([0, 5_000_000]) });
+  if (areaRange[0] > 0 || areaRange[1] < 500) activeFilters.push({ key: "area", label: `${areaRange[0]}m² — ${areaRange[1] >= 500 ? "500+" : areaRange[1]}m²`, onRemove: () => setAreaRange([0, 500]) });
+  if (somenteObras) activeFilters.push({ key: "obras", label: "Em obras", onRemove: () => setSomenteObras(false) });
+  if (search) activeFilters.push({ key: "search", label: `"${search}"`, onRemove: () => { setSearch(""); setTimeout(() => fetchImoveis(1, campanhaAtiva, uhomeOnly), 50); } });
 
+  const clearAllFilters = () => {
+    setTipo(""); setBairro(""); setDormitorios(""); setSuitesFilter(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false); setSearch("");
+  };
+
+  // ── Render ──
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <PhotoLightbox images={lightboxImages} initialIndex={lightboxIndex} open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
 
-      {/* Hero search bar */}
-      <div className="bg-gradient-to-b from-primary/5 to-background border-b border-border/50 px-4 md:px-6 py-6">
-        <div className="max-w-7xl mx-auto space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2.5">
-                <Building2 className="h-6 w-6 text-primary" />
-                Busca de Imóveis
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Encontre o imóvel ideal para seu cliente</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => { setShowFavoritesOnly(!showFavoritesOnly); }}
-                variant={showFavoritesOnly ? "default" : "outline"} size="sm" className="gap-1.5"
-              >
-                <Heart className={cn("h-4 w-4", showFavoritesOnly && "fill-current")} />
-                Favoritos {favorites.size > 0 && <Badge variant="secondary" className="text-[10px] h-4 px-1 ml-0.5">{favorites.size}</Badge>}
-              </Button>
-              <Button
-                onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); setVitrineLink(null); }}
-                variant={selectMode ? "default" : "outline"} size="sm" className="gap-1.5"
-              >
-                <Share2 className="h-4 w-4" />
-                {selectMode ? `${selectedIds.size} selecionados` : "Vitrine"}
-              </Button>
-            </div>
-          </div>
-
-          {/* Search bar with autocomplete */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* ── Sticky top bar ── */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6">
+          {/* Row 1: Search */}
+          <div className="py-3 flex items-center gap-3">
+            <div className="relative flex-1 max-w-2xl">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 ref={searchInputRef}
-                placeholder="Buscar por bairro, empreendimento, código ou endereço..."
+                placeholder="Busque por bairro, empreendimento, código..."
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className="pl-10 h-11 text-sm bg-background border-border/80 focus-visible:ring-primary/30"
+                className="pl-10 h-10 text-sm bg-muted/50 border-border/60 rounded-full focus-visible:ring-primary/30 focus-visible:bg-background"
               />
+              {search && (
+                <button onClick={() => { setSearch(""); setSuggestions([]); setShowSuggestions(false); setTimeout(() => fetchImoveis(1, campanhaAtiva, uhomeOnly), 50); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
               {/* Autocomplete dropdown */}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-                  {suggestions.map((s, i) => (
-                    <button
-                      key={`${s.type}-${s.value}-${i}`}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors"
-                      onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
-                    >
-                      <span className={cn(
-                        "text-[10px] px-1.5 py-0.5 rounded font-medium uppercase",
-                        s.type === "bairro" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
-                        s.type === "empreendimento" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" :
-                        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                      )}>
-                        {s.type === "bairro" ? "Bairro" : s.type === "empreendimento" ? "Empreend." : "Código"}
-                      </span>
-                      <span className="truncate">{s.value}</span>
-                    </button>
-                  ))}
+                <div className="absolute top-full left-0 right-0 mt-1.5 bg-background border border-border rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto">
+                  {(() => {
+                    const bairros = suggestions.filter(s => s.type === "bairro");
+                    const empreendimentos = suggestions.filter(s => s.type === "empreendimento");
+                    const codigos = suggestions.filter(s => s.type === "codigo");
+                    return (
+                      <>
+                        {bairros.length > 0 && (
+                          <div className="px-3 pt-2.5 pb-1">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Bairros</p>
+                            {bairros.map((s, i) => (
+                              <button key={i} onClick={() => handleSuggestionClick(s)} className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted/50 rounded-md flex items-center gap-2">
+                                <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {s.value}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {empreendimentos.length > 0 && (
+                          <div className="px-3 pt-2 pb-1 border-t border-border/50">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Empreendimentos</p>
+                            {empreendimentos.map((s, i) => (
+                              <button key={i} onClick={() => handleSuggestionClick(s)} className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted/50 rounded-md flex items-center gap-2">
+                                <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> {s.value}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {codigos.length > 0 && (
+                          <div className="px-3 pt-2 pb-2.5 border-t border-border/50">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Códigos</p>
+                            {codigos.map((s, i) => (
+                              <button key={i} onClick={() => handleSuggestionClick(s)} className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted/50 rounded-md flex items-center gap-2 font-mono">
+                                <Search className="h-3.5 w-3.5 text-muted-foreground" /> {s.value}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
-            <Button onClick={handleSearch} disabled={loading} className="h-11 px-6 gap-2 font-semibold">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              Buscar
-            </Button>
+
+            {/* Right actions */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                onClick={() => { setShowFavoritesOnly(!showFavoritesOnly); }}
+                variant={showFavoritesOnly ? "default" : "ghost"} size="sm" className="gap-1.5 h-9"
+              >
+                <Heart className={cn("h-4 w-4", showFavoritesOnly && "fill-current")} />
+                <span className="hidden sm:inline">Favoritos</span>
+                {favorites.size > 0 && <Badge variant="secondary" className="text-[10px] h-4 px-1">{favorites.size}</Badge>}
+              </Button>
+              <Button
+                onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); setVitrineLink(null); }}
+                variant={selectMode ? "default" : "ghost"} size="sm" className="gap-1.5 h-9"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline">{selectMode ? `${selectedIds.size} selecionados` : "Vitrine"}</span>
+              </Button>
+            </div>
           </div>
 
-          {/* Quick filter chips */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Select value={contrato} onValueChange={(v) => { setContrato(v); }}>
-              <SelectTrigger className="w-[110px] h-8 text-xs bg-background"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="venda">Venda</SelectItem>
-                <SelectItem value="locacao">Locação</SelectItem>
-                <SelectItem value="temporada">Temporada</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={() => { const next = !campanhaAtiva; setCampanhaAtiva(next); setUhomeOnly(false); fetchImoveis(1, next, false); }}
-              variant={campanhaAtiva ? "default" : "outline"} size="sm" className="h-8 gap-1.5 text-xs"
+          {/* Row 2: Filter chips */}
+          <div className="pb-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            {/* Contrato */}
+            <div className="flex items-center rounded-full border border-border overflow-hidden shrink-0">
+              {["venda", "locacao"].map(c => (
+                <button key={c} onClick={() => setContrato(c)} className={cn(
+                  "px-3 py-1.5 text-xs font-medium transition-all",
+                  contrato === c ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"
+                )}>
+                  {c === "venda" ? "Comprar" : "Alugar"}
+                </button>
+              ))}
+            </div>
+
+            {/* Preço */}
+            <FilterChip
+              label={valorRange[0] > 0 || valorRange[1] < 5_000_000 ? `${fmtCompact(valorRange[0])} — ${valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}` : "Preço"}
+              active={valorRange[0] > 0 || valorRange[1] < 5_000_000}
+              onClear={() => setValorRange([0, 5_000_000])}
             >
-              <Megaphone className="h-3.5 w-3.5" /> Campanha Ativa
-            </Button>
-            <Button
-              onClick={() => { const next = !uhomeOnly; setUhomeOnly(next); setCampanhaAtiva(false); fetchImoveis(1, false, next); }}
-              variant={uhomeOnly ? "default" : "outline"} size="sm" className="h-8 gap-1.5 text-xs"
+              <div className="w-64 space-y-3">
+                <p className="text-xs font-semibold text-foreground">Faixa de preço</p>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground whitespace-nowrap">{fmtCompact(valorRange[0])}</span>
+                  <span className="text-muted-foreground">—</span>
+                  <span className="text-muted-foreground whitespace-nowrap">{valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}</span>
+                </div>
+                <Slider min={0} max={5_000_000} step={50_000} value={valorRange} onValueChange={(v) => setValorRange(v as [number, number])} />
+              </div>
+            </FilterChip>
+
+            {/* Dormitórios */}
+            <FilterChip
+              label={dormitorios && dormitorios !== "all" ? `${dormitorios}+ dorm` : "Dormitórios"}
+              active={!!dormitorios && dormitorios !== "all"}
+              onClear={() => setDormitorios("")}
             >
-              <Building2 className="h-3.5 w-3.5" /> uHome
-            </Button>
-            <Button
-              variant="outline" size="sm" className="h-8 gap-1.5 text-xs"
-              onClick={() => setFiltersOpen(!filtersOpen)}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-foreground">Dormitórios</p>
+                <div className="flex gap-1.5">
+                  {["all", "1", "2", "3", "4"].map(v => (
+                    <button key={v} onClick={() => setDormitorios(v === "all" ? "" : v)} className={cn(
+                      "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
+                      (dormitorios === v || (!dormitorios && v === "all"))
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/40"
+                    )}>
+                      {v === "all" ? "Todos" : `${v}+`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </FilterChip>
+
+            {/* Tipo */}
+            <FilterChip
+              label={tipo && tipo !== "all" ? tipo.charAt(0).toUpperCase() + tipo.slice(1) : "Tipo"}
+              active={!!tipo && tipo !== "all"}
+              onClear={() => setTipo("")}
             >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filtros {activeFilterCount > 0 && <Badge variant="default" className="text-[10px] h-4 px-1">{activeFilterCount}</Badge>}
-            </Button>
+              <div className="space-y-2 w-44">
+                <p className="text-xs font-semibold text-foreground">Tipo de imóvel</p>
+                {[
+                  { v: "", l: "Todos" }, { v: "apartamento", l: "Apartamento" }, { v: "casa", l: "Casa" },
+                  { v: "cobertura", l: "Cobertura" }, { v: "terreno", l: "Terreno" }, { v: "comercial", l: "Comercial" },
+                  { v: "loft", l: "Loft / Studio" }, { v: "kitnet", l: "Kitnet" }
+                ].map(({ v, l }) => (
+                  <button key={v} onClick={() => setTipo(v)} className={cn(
+                    "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all",
+                    (tipo === v || (!tipo && !v)) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50"
+                  )}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </FilterChip>
+
+            {/* Bairro */}
+            <FilterChip label={bairro || "Bairro"} active={!!bairro} onClear={() => setBairro("")}>
+              <div className="w-56">
+                <Command>
+                  <CommandInput placeholder="Buscar bairro..." value={bairroSearch} onValueChange={setBairroSearch} className="h-8" />
+                  <CommandList className="max-h-48">
+                    <CommandEmpty>
+                      {bairroSearch ? (
+                        <button className="w-full px-3 py-2 text-sm text-left hover:bg-accent rounded" onClick={() => { setBairro(bairroSearch); setBairroSearch(""); }}>
+                          Usar "<strong>{bairroSearch}</strong>"
+                        </button>
+                      ) : "Nenhum encontrado"}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem value="__todos__" onSelect={() => { setBairro(""); setBairroSearch(""); }}>
+                        <Check className={cn("mr-2 h-3 w-3", !bairro ? "opacity-100" : "opacity-0")} /> Todos
+                      </CommandItem>
+                      {filteredBairros.map((b) => (
+                        <CommandItem key={b} value={b} onSelect={() => { setBairro(b); setBairroSearch(""); }}>
+                          <Check className={cn("mr-2 h-3 w-3", bairro === b ? "opacity-100" : "opacity-0")} /> {b}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
+            </FilterChip>
+
+            {/* More filters */}
+            <FilterChip
+              label="Mais filtros"
+              active={!!(suitesFilter && suitesFilter !== "all") || !!(vagas && vagas !== "all") || (areaRange[0] > 0 || areaRange[1] < 500) || somenteObras}
+            >
+              <div className="w-64 space-y-4">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-foreground">Suítes</p>
+                  <div className="flex gap-1.5">
+                    {["all", "1", "2", "3"].map(v => (
+                      <button key={v} onClick={() => setSuitesFilter(v === "all" ? "" : v)} className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
+                        (suitesFilter === v || (!suitesFilter && v === "all"))
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground border-border hover:border-primary/40"
+                      )}>
+                        {v === "all" ? "Todos" : `${v}+`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-foreground">Vagas</p>
+                  <div className="flex gap-1.5">
+                    {["all", "1", "2", "3"].map(v => (
+                      <button key={v} onClick={() => setVagas(v === "all" ? "" : v)} className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
+                        (vagas === v || (!vagas && v === "all"))
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground border-border hover:border-primary/40"
+                      )}>
+                        {v === "all" ? "Todos" : `${v}+`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-foreground">
+                    Área: {areaRange[0]}m² — {areaRange[1] >= 500 ? "500+" : areaRange[1]}m²
+                  </p>
+                  <Slider min={0} max={500} step={10} value={areaRange} onValueChange={(v) => setAreaRange(v as [number, number])} />
+                </div>
+
+                <label className="flex items-center gap-2 text-xs cursor-pointer select-none pt-1 border-t border-border/50">
+                  <input type="checkbox" checked={somenteObras} onChange={(e) => setSomenteObras(e.target.checked)} className="rounded border-border" />
+                  <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground font-medium">Em obras / na planta</span>
+                </label>
+              </div>
+            </FilterChip>
+
+            {/* Quick toggles */}
+            <div className="border-l border-border/50 pl-2 ml-1 flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => { const next = !campanhaAtiva; setCampanhaAtiva(next); setUhomeOnly(false); fetchImoveis(1, next, false); }}
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
+                  campanhaAtiva ? "bg-primary/10 border-primary/30 text-primary" : "bg-background border-border text-muted-foreground hover:border-primary/40"
+                )}
+              >
+                <Megaphone className="h-3 w-3" /> Campanha
+              </button>
+              <button
+                onClick={() => { const next = !uhomeOnly; setUhomeOnly(next); setCampanhaAtiva(false); fetchImoveis(1, false, next); }}
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
+                  uhomeOnly ? "bg-primary/10 border-primary/30 text-primary" : "bg-background border-border text-muted-foreground hover:border-primary/40"
+                )}
+              >
+                <Building2 className="h-3 w-3" /> uHome
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-        {/* Vitrine action bar */}
+      {/* ── Main content ── */}
+      <div className="flex-1 max-w-[1400px] mx-auto w-full px-4 md:px-6 py-4">
+        {/* Vitrine bar */}
         {selectMode && selectedIds.size > 0 && (
           <Card className="p-3 mb-4 flex items-center justify-between bg-primary/5 border-primary/20 flex-wrap gap-2">
             <span className="text-sm font-medium">{selectedIds.size} imóvel(is) selecionado(s)</span>
@@ -763,160 +967,35 @@ export default function ImoveisPage() {
           </Card>
         )}
 
-        {/* Filters panel */}
-        {!campanhaAtiva && !uhomeOnly && filtersOpen && (
-          <Card className="p-4 mb-4 space-y-4 border-border/50">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Tipo</label>
-                <Select value={tipo} onValueChange={setTipo}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="apartamento">Apartamento</SelectItem>
-                    <SelectItem value="casa">Casa</SelectItem>
-                    <SelectItem value="cobertura">Cobertura</SelectItem>
-                    <SelectItem value="terreno">Terreno</SelectItem>
-                    <SelectItem value="comercial">Comercial</SelectItem>
-                    <SelectItem value="loft">Loft / Studio</SelectItem>
-                    <SelectItem value="kitnet">Kitnet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Bairro</label>
-                <Popover open={bairroOpen} onOpenChange={setBairroOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="w-full justify-between font-normal h-9 text-sm">
-                      {bairro || "Todos"}
-                      <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[250px] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Buscar bairro..." value={bairroSearch} onValueChange={setBairroSearch} />
-                      <CommandList>
-                        <CommandEmpty>
-                          {bairroSearch ? (
-                            <button className="w-full px-3 py-2 text-sm text-left hover:bg-accent rounded" onClick={() => { setBairro(bairroSearch); setBairroOpen(false); setBairroSearch(""); }}>
-                              Usar "<strong>{bairroSearch}</strong>"
-                            </button>
-                          ) : "Nenhum bairro encontrado"}
-                        </CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem value="__todos__" onSelect={() => { setBairro(""); setBairroOpen(false); setBairroSearch(""); }}>
-                            <Check className={cn("mr-2 h-3 w-3", !bairro ? "opacity-100" : "opacity-0")} /> Todos
-                          </CommandItem>
-                          {filteredBairros.map((b) => (
-                            <CommandItem key={b} value={b} onSelect={() => { setBairro(b); setBairroOpen(false); setBairroSearch(""); }}>
-                              <Check className={cn("mr-2 h-3 w-3", bairro === b ? "opacity-100" : "opacity-0")} /> {b}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Dormitórios</label>
-                <Select value={dormitorios} onValueChange={setDormitorios}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="1">1+</SelectItem>
-                    <SelectItem value="2">2+</SelectItem>
-                    <SelectItem value="3">3+</SelectItem>
-                    <SelectItem value="4">4+</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Suítes</label>
-                <Select value={suites} onValueChange={setSuites}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="1">1+</SelectItem>
-                    <SelectItem value="2">2+</SelectItem>
-                    <SelectItem value="3">3+</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Vagas</label>
-                <Select value={vagas} onValueChange={setVagas}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="1">1+</SelectItem>
-                    <SelectItem value="2">2+</SelectItem>
-                    <SelectItem value="3">3+</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Área: {areaRange[0]}m² — {areaRange[1] >= 500 ? "500+" : areaRange[1]}m²
-                </label>
-                <Slider
-                  min={0} max={500} step={10}
-                  value={areaRange}
-                  onValueChange={(v) => setAreaRange(v as [number, number])}
-                  className="mt-3"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Valor: {fmtCompact(valorRange[0])} — {valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}
-                </label>
-                <Slider
-                  min={0} max={5_000_000} step={50_000}
-                  value={valorRange}
-                  onValueChange={(v) => setValorRange(v as [number, number])}
-                  className="mt-3"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
-                <input type="checkbox" checked={somenteObras} onChange={(e) => setSomenteObras(e.target.checked)} className="rounded border-border" />
-                <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-muted-foreground font-medium">Em obras / na planta</span>
-              </label>
-              <Button onClick={handleSearch} size="sm" disabled={loading} className="gap-2">
-                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-                Aplicar Filtros
-              </Button>
-              {activeFilterCount > 0 && (
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => {
-                  setTipo(""); setBairro(""); setDormitorios(""); setSuites(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false);
-                }}>
-                  <X className="h-3 w-3 mr-1" /> Limpar filtros
-                </Button>
-              )}
-            </div>
-          </Card>
+        {/* Active filter tags */}
+        {activeFilters.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+            {activeFilters.map(f => (
+              <span key={f.key} className="inline-flex items-center gap-1 bg-primary/8 text-primary text-xs font-medium px-2.5 py-1 rounded-full border border-primary/20">
+                {f.label}
+                <button onClick={f.onRemove} className="hover:bg-primary/20 rounded-full p-0.5 -mr-0.5">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+            <button onClick={clearAllFilters} className="text-xs text-muted-foreground hover:text-foreground ml-1 underline underline-offset-2">
+              Limpar tudo
+            </button>
+          </div>
         )}
 
         {/* Results toolbar */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            {total > 0 && <span className="text-sm font-medium text-foreground">{total.toLocaleString()} imóveis</span>}
-            {showFavoritesOnly && <Badge variant="outline" className="text-xs gap-1"><Heart className="h-3 w-3 fill-red-500 text-red-500" /> Favoritos</Badge>}
+            {loading ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
+              <span className="text-sm font-medium text-foreground">{total.toLocaleString()} imóveis</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[150px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[140px] h-8 text-xs border-border/60"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="relevancia">Relevância</SelectItem>
                 <SelectItem value="menor_preco">Menor preço</SelectItem>
@@ -924,39 +1003,44 @@ export default function ImoveisPage() {
                 <SelectItem value="maior_area">Maior área</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex border border-border rounded-md overflow-hidden">
-              <button onClick={() => setViewMode("grid")} className={cn("p-1.5 transition-colors", viewMode === "grid" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}>
+            <div className="flex border border-border/60 rounded-lg overflow-hidden">
+              <button onClick={() => setViewMode("grid")} className={cn("p-1.5 transition-colors", viewMode === "grid" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")} title="Grade">
                 <LayoutGrid className="h-4 w-4" />
               </button>
-              <button onClick={() => setViewMode("list")} className={cn("p-1.5 transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}>
+              <button onClick={() => setViewMode("list")} className={cn("p-1.5 transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")} title="Lista">
                 <List className="h-4 w-4" />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Results */}
+        {/* Results grid */}
         {loading ? (
-          <div className={cn("grid gap-4", viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1")}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden">
+          <div className={cn("grid gap-4", viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden border-border/40">
                 {viewMode === "grid" ? (
-                  <div><Skeleton className="aspect-[4/3] rounded-none" /><div className="p-4 space-y-2"><Skeleton className="h-5 w-2/3" /><Skeleton className="h-4 w-1/2" /><Skeleton className="h-3 w-3/4" /></div></div>
+                  <div><Skeleton className="aspect-[16/10] rounded-none" /><div className="p-3.5 space-y-2"><Skeleton className="h-5 w-2/3" /><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-1/2" /></div></div>
                 ) : (
-                  <div className="flex"><Skeleton className="w-52 h-44 rounded-none" /><div className="flex-1 p-4 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/2" /><Skeleton className="h-5 w-1/3 mt-4" /></div></div>
+                  <div className="flex"><Skeleton className="w-56 h-40 rounded-none" /><div className="flex-1 p-3.5 space-y-2"><Skeleton className="h-5 w-1/3" /><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/2" /></div></div>
                 )}
               </Card>
             ))}
           </div>
         ) : sortedImoveis.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Building2 className="h-14 w-14 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhum imóvel encontrado</p>
-            <p className="text-sm text-muted-foreground/60 mt-1">Tente ajustar seus filtros de busca</p>
+          <Card className="p-16 text-center border-border/40">
+            <Search className="h-12 w-12 mx-auto text-muted-foreground/20 mb-4" />
+            <p className="text-lg font-semibold text-foreground">Nenhum imóvel encontrado</p>
+            <p className="text-sm text-muted-foreground mt-1">Tente ajustar seus filtros ou termo de busca</p>
+            {activeFilters.length > 0 && (
+              <Button variant="outline" size="sm" className="mt-4" onClick={clearAllFilters}>
+                <X className="h-3.5 w-3.5 mr-1.5" /> Limpar filtros
+              </Button>
+            )}
           </Card>
         ) : (
           <>
-            <div className={cn("grid gap-4", viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1")}>
+            <div className={cn("grid gap-4", viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
               {sortedImoveis.map((item, idx) => {
                 const isCampanha = CAMPANHA_CODES.some((c) => c.codigo === item.codigo);
                 const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
@@ -980,11 +1064,13 @@ export default function ImoveisPage() {
 
             {totalPages > 1 && !campanhaAtiva && (
               <div className="flex items-center justify-center gap-3 pt-6 pb-2">
-                <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchImoveis(page - 1)} className="gap-1">
+                <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchImoveis(page - 1)} className="gap-1 rounded-full">
                   <ChevronLeft className="h-4 w-4" /> Anterior
                 </Button>
-                <span className="text-sm text-muted-foreground font-medium">{page} de {totalPages}</span>
-                <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchImoveis(page + 1)} className="gap-1">
+                <span className="text-sm text-muted-foreground font-medium tabular-nums">
+                  {page} de {totalPages}
+                </span>
+                <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchImoveis(page + 1)} className="gap-1 rounded-full">
                   Próxima <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
