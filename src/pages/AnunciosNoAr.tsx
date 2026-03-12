@@ -889,7 +889,7 @@ function CriarVitrineDialog({
                 <Link2 className="h-4 w-4" /> Copiar
               </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => window.open(vitrineDirectUrl || vitrineUrl, "_blank")} className="w-full gap-2 text-xs">
+            <Button variant="ghost" size="sm" onClick={() => window.open(vitrineUrl!, "_blank")} className="w-full gap-2 text-xs">
               <ExternalLink className="h-3.5 w-3.5" /> Visualizar vitrine
             </Button>
           </div>
