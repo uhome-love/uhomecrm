@@ -127,11 +127,24 @@ export default function CheckpointDaily() {
     if (linkedMembers.length === 0) return {};
 
     const userIds = linkedMembers.map(m => m.user_id!);
-    const { data: visitas } = await supabase
-      .from("visitas")
-      .select("corretor_id, status")
-      .in("corretor_id", userIds)
-      .eq("data_visita", targetDate);
+    const dayStart = `${targetDate}T00:00:00`;
+    const dayEnd = `${targetDate}T23:59:59.999`;
+
+    // Fetch visitas created on this date (V.Marc = scheduled today) AND visitas happening on this date (V.Real)
+    const [{ data: visitasCriadas }, { data: visitasNoDia }] = await Promise.all([
+      supabase
+        .from("visitas")
+        .select("corretor_id, status")
+        .in("corretor_id", userIds)
+        .gte("created_at", dayStart)
+        .lte("created_at", dayEnd),
+      supabase
+        .from("visitas")
+        .select("corretor_id, status")
+        .in("corretor_id", userIds)
+        .eq("data_visita", targetDate)
+        .eq("status", "realizada"),
+    ]);
 
     // Count per corretor: marcadas = all non-cancelled, realizadas = status realizada
     const statsById: Record<string, { marcadas: number; realizadas: number }> = {};
