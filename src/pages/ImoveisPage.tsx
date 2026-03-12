@@ -437,6 +437,12 @@ export default function ImoveisPage() {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [sortBy, setSortBy] = useState("relevancia");
 
+  // Autocomplete
+  const [suggestions, setSuggestions] = useState<{ type: string; value: string }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   // Vitrine selection
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -477,13 +483,22 @@ export default function ImoveisPage() {
     });
   };
 
+  // Abort controller for cancelling in-flight requests
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchImoveis = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
+    // Cancel previous request
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     try {
       if (campanha) {
         const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
           body: { action: "get_imoveis_by_codigos", codigos: CAMPANHA_CODES.map(c => c.codigo) }
         });
+        if (controller.signal.aborted) return;
         if (error) { toast.error("Erro ao buscar imóveis da campanha"); return; }
         const imoveisMap = data?.imoveis || {};
         const items = Object.values(imoveisMap).filter((d: any) => d && !d.not_found);
@@ -512,6 +527,7 @@ export default function ImoveisPage() {
             somente_obras: somenteObras || undefined,
           },
         });
+        if (controller.signal.aborted) return;
         if (error) { toast.error("Erro ao buscar imóveis"); return; }
         const items = Array.isArray(data?.data) ? data.data : [];
         setImoveis(items);
@@ -519,7 +535,12 @@ export default function ImoveisPage() {
         setTotalPages(data?.totalPages || Math.ceil((data?.total || items.length) / 24));
         setPage(pageNum);
       }
-    } catch { toast.error("Erro de conexão"); } finally { setLoading(false); }
+    } catch (e: any) {
+      if (e?.name === "AbortError" || controller.signal.aborted) return;
+      toast.error("Erro de conexão");
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
   }, [search, contrato, tipo, bairro, dormitorios, suites, vagas, areaRange, valorRange, somenteObras, campanhaAtiva, uhomeOnly]);
 
   const mounted = useRef(false);
@@ -529,7 +550,38 @@ export default function ImoveisPage() {
     fetchImoveis(1, false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSearch = () => { setCampanhaAtiva(false); setUhomeOnly(false); fetchImoveis(1, false, false); };
+  const handleSearch = () => { setCampanhaAtiva(false); setUhomeOnly(false); setShowSuggestions(false); fetchImoveis(1, false, false); };
+
+  // Autocomplete with debounce
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { data } = await supabase.functions.invoke("jetimob-proxy", {
+          body: { action: "autocomplete", query: value },
+        });
+        if (data?.suggestions?.length) {
+          setSuggestions(data.suggestions);
+          setShowSuggestions(true);
+        } else {
+          setShowSuggestions(false);
+        }
+      } catch { /* ignore */ }
+    }, 300);
+  }, []);
+
+  const handleSuggestionClick = (suggestion: { type: string; value: string }) => {
+    setSearch(suggestion.value);
+    setShowSuggestions(false);
+    setCampanhaAtiva(false);
+    setUhomeOnly(false);
+    // Auto-search
+    setTimeout(() => {
+      fetchImoveis(1, false, false);
+    }, 50);
+  };
 
   const getPreco = (item: any): string => {
     const venda = getNum(item, "valor_venda", "preco_venda", "valor", "price");
