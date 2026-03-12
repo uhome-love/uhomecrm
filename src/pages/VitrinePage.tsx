@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Phone, MapPin, BedDouble, Car, Maximize, ChevronLeft, ChevronRight, X, Bath, Ruler, Building2, ArrowRight, Home, Shield, TreePine } from "lucide-react";
+import { Loader2, Phone, MapPin, BedDouble, Car, Maximize, ChevronLeft, ChevronRight, X, Bath, Ruler, Building2, ArrowRight, Home, Shield, TreePine, Send, CheckCircle, User, Mail } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatBRL } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface VitrineImovel {
   id: number;
@@ -93,6 +95,106 @@ function PhotoCarousel({ fotos, onOpen, large }: { fotos: string[]; onOpen: (idx
         </div>
       )}
     </div>
+  );
+}
+
+/* ═══════════════ Lead Capture Form ═══════════════ */
+function LeadCaptureForm({ empreendimento, source }: { empreendimento: string; source: string }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name && !phone) return;
+    setSending(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "hunbxqzhvuemgntklyzb";
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/receive-landing-lead`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          phone,
+          email,
+          empreendimento,
+          source,
+        }),
+      });
+      if (res.ok) {
+        setSent(true);
+      }
+    } catch (err) {
+      console.error("Lead submit error:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center space-y-3">
+        <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto" />
+        <h3 className="text-xl font-bold text-emerald-800">Recebemos seu interesse!</h3>
+        <p className="text-emerald-600 text-sm">Em breve um corretor entrará em contato com você.</p>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+      className="bg-gradient-to-br from-slate-50 to-blue-50/50 border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5"
+    >
+      <div className="text-center space-y-1">
+        <h3 className="text-xl font-bold text-slate-900">Tenho interesse!</h3>
+        <p className="text-sm text-slate-500">Preencha seus dados e um corretor entrará em contato</p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Seu nome"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="pl-10 h-12 rounded-xl border-slate-200 bg-white"
+            required
+          />
+        </div>
+        <div className="relative">
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="WhatsApp (DDD + número)"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="pl-10 h-12 rounded-xl border-slate-200 bg-white"
+            type="tel"
+            required
+          />
+        </div>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="E-mail (opcional)"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="pl-10 h-12 rounded-xl border-slate-200 bg-white"
+            type="email"
+          />
+        </div>
+        <Button type="submit" disabled={sending || (!name && !phone)}
+          className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base shadow-lg shadow-emerald-500/25"
+        >
+          {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+            <>
+              <Send className="h-4 w-4 mr-2" />
+              Quero saber mais
+            </>
+          )}
+        </Button>
+      </form>
+    </motion.div>
   );
 }
 
@@ -257,6 +359,11 @@ function SinglePropertyView({ imovel, corretor, vitrine, onOpenLightbox, whatsap
             {corretor && <p className="text-sm text-slate-400 mt-2">— {corretor.nome}</p>}
           </motion.div>
         )}
+        {/* Lead Capture Form */}
+        <LeadCaptureForm
+          empreendimento={imovel.empreendimento || imovel.titulo || vitrine.titulo}
+          source="vitrine_melnick_day"
+        />
       </div>
 
       {/* ─── CTA Footer ─── */}
@@ -555,6 +662,14 @@ export default function VitrinePage() {
               </div>
             )}
           </main>
+
+          {/* Lead Capture Form */}
+          <div className="max-w-lg mx-auto px-4 sm:px-6 pb-8">
+            <LeadCaptureForm
+              empreendimento={isMelnickDay ? vitrine.titulo : imoveis[0]?.empreendimento || vitrine.titulo}
+              source={isMelnickDay ? "vitrine_melnick_day" : "vitrine_uhome"}
+            />
+          </div>
 
           {/* CTA Footer */}
           {whatsappLink && (
