@@ -239,7 +239,6 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
               <div><Label className="text-xs">Gerente - E-mail</Label><Input value={data.gerente_email} onChange={e => onDataChange({ ...data, gerente_email: e.target.value })} className="h-8 text-sm" /></div>
               <div><Label className="text-xs">Data de assinatura</Label><Input type="date" value={data.data_assinatura} onChange={e => onDataChange({ ...data, data_assinatura: e.target.value })} className="h-8 text-sm" /></div>
             </div>
-            </div>
 
             <p className="text-sm font-semibold text-muted-foreground mt-4">👥 Testemunhas (não podem ser contratados)</p>
             <div className="grid grid-cols-2 gap-3">
