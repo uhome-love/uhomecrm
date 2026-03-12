@@ -189,6 +189,7 @@ export default function CeoCheckpointViewer() {
       const lines = team.map(t => {
         const l = linesMap.get(t.id);
         const oa = oaStatsByMemberId[t.id];
+        const vis = visitasStatsByMemberId[t.id];
         const cGoal = goalsMap[t.id];
         return {
           corretor_id: t.id,
@@ -200,8 +201,8 @@ export default function CeoCheckpointViewer() {
           obs_gerente: l?.obs_gerente ?? "",
           real_ligacoes: l?.real_ligacoes != null ? l.real_ligacoes : (oa?.ligacoes ?? null),
           real_leads: l?.real_leads != null ? l.real_leads : (oa?.leads ?? null),
-          real_visitas_marcadas: l?.real_visitas_marcadas ?? null,
-          real_visitas_realizadas: l?.real_visitas_realizadas ?? null,
+          real_visitas_marcadas: vis ? vis.marcadas : (l?.real_visitas_marcadas ?? null),
+          real_visitas_realizadas: vis ? vis.realizadas : (l?.real_visitas_realizadas ?? null),
           real_propostas: l?.real_propostas ?? null,
           obs_dia: l?.obs_dia ?? null,
           status_dia: l?.status_dia ?? null,
