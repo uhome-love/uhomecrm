@@ -483,10 +483,10 @@ export default function ContratoIntermediacao({ open, onOpenChange, data, onData
             ]).map((c, i) => (
               <div key={`contratante-${i}`}>
                 <div style={{ borderTop: "1px solid #000", width: "70%", margin: "40px auto 5px auto" }} />
-                <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "0px" }}>
+                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "0px" }}>
                   <b>CONTRATANTE:</b>
                 </p>
-                <p style={{ textAlign: "center", fontSize: "10px", marginBottom: "3px" }}>
+                <p style={{ textAlign: "center", fontSize: "12px", marginBottom: "3px" }}>
                   {(c as any).nome || "_______________"}
                 </p>
               </div>
