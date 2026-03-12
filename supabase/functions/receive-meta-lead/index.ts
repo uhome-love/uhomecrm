@@ -203,17 +203,35 @@ Deno.serve(async (req) => {
     if (!empreendimento && formName) empreendimento = formName;
     if (!empreendimento) empreendimento = "Avulso - Meta Ads";
 
-    // ── Dedup: check phone ──
+    // ── Dedup: check phone (ALL leads, including pending distribution) ──
     if (telefone) {
+      // Check jetimob_processed too (permanent dedup registry)
+      const { data: alreadyProcessed } = await supabase
+        .from("jetimob_processed")
+        .select("id")
+        .eq("telefone", telefone)
+        .limit(1)
+        .maybeSingle();
+
       const { data: existing } = await supabase
         .from("pipeline_leads")
-        .select("id, corretor_id, nome, empreendimento")
+        .select("id, corretor_id, nome, empreendimento, aceite_status")
         .eq("telefone", telefone)
-        .not("corretor_id", "is", null)
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (existing) {
+        // If lead exists but is still pending distribution (no corretor), just skip silently
+        if (!existing.corretor_id) {
+          console.log(`META-LEAD DEDUP: ${telefone} already pending distribution (lead ${existing.id}), skipping`);
+          return new Response(
+            JSON.stringify({ success: true, action: "skipped_duplicate_pending", lead_id: existing.id }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Lead has a corretor — reactivate with notification
         const todayStamp = new Date().toISOString().slice(0, 10);
         const interestLabel = empreendimento || existing.empreendimento || "mesmo imóvel";
 
@@ -248,6 +266,15 @@ Deno.serve(async (req) => {
         console.log(`META-LEAD DEDUP: ${telefone} already exists (lead ${existing.id}), notified corretor`);
         return new Response(
           JSON.stringify({ success: true, action: "reactivated", lead_id: existing.id }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Also skip if phone was ever processed before (permanent dedup)
+      if (alreadyProcessed) {
+        console.log(`META-LEAD DEDUP: ${telefone} found in permanent dedup registry, skipping`);
+        return new Response(
+          JSON.stringify({ success: true, action: "skipped_permanent_dedup" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
