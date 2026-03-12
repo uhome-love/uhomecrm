@@ -274,7 +274,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string) => {
+  const handleResultSubmit = async (resultado: string, feedback: string, visitaMarcada?: boolean, interesseTipo?: string, retirarDoSistema?: boolean) => {
     if (!lead || !actionTaken || submitting) return;
     setSubmitting(true);
     try {
