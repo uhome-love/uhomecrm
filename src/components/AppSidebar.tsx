@@ -40,6 +40,7 @@ import {
   Zap,
   Radio,
   Megaphone,
+  Terminal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
