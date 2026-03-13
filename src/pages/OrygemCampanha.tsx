@@ -1,18 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Building2, Phone, MessageSquare, Copy, MapPin, Target, Star,
   ChevronDown, ChevronUp, Home, DollarSign, Users, Calendar,
   TreePine, Dumbbell, PartyPopper, Baby, Dog, Flame, Palmtree,
   Waves, Send, FileText, ArrowRight, Gift, Sparkles, Car, Eye,
   BadgeCheck, ShieldCheck, ExternalLink, Play, Clock, Navigation,
-  Leaf, ShoppingBag, Gamepad2, Armchair, Sun, X
+  Leaf, ShoppingBag, Gamepad2, Armchair, Sun, X, Link2, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 
 /* ═══════════════════════════════════════════
    CONSTANTS
@@ -182,6 +189,7 @@ function copyToClipboard(text: string) {
 
 export default function OrygemCampanha() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showScripts, setShowScripts] = useState(false);
   const [showArguments, setShowArguments] = useState(false);
   const [showUnits, setShowUnits] = useState<"fase1" | "fase2" | null>(null);
@@ -189,6 +197,99 @@ export default function OrygemCampanha() {
   const [galleryFilter, setGalleryFilter] = useState<string>("todos");
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
   const [salesCount] = useState(0);
+
+  // Enviar Página state
+  const [showEnviar, setShowEnviar] = useState(false);
+  const [enviarSaving, setEnviarSaving] = useState(false);
+  const [enviarLeadNome, setEnviarLeadNome] = useState("");
+  const [enviarLeadTel, setEnviarLeadTel] = useState("");
+  const [enviarMensagem, setEnviarMensagem] = useState("");
+  const [enviarVitrineUrl, setEnviarVitrineUrl] = useState<string | null>(null);
+  const [orygemOverride, setOrygemOverride] = useState<any>(null);
+
+  // Load Orygem override from empreendimento_overrides
+  useEffect(() => {
+    supabase
+      .from("empreendimento_overrides")
+      .select("*")
+      .or("codigo.ilike.%orygem%,nome.ilike.%orygem%")
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setOrygemOverride(data);
+      });
+  }, []);
+
+  // Reset enviar dialog on open
+  useEffect(() => {
+    if (showEnviar) {
+      setEnviarLeadNome("");
+      setEnviarLeadTel("");
+      setEnviarMensagem("");
+      setEnviarVitrineUrl(null);
+    }
+  }, [showEnviar]);
+
+  const handleCreateVitrine = useCallback(async () => {
+    if (!user) { toast.error("Você precisa estar logado."); return; }
+    setEnviarSaving(true);
+    try {
+      const images = orygemOverride?.fotos || GALLERY_IMAGES.map(g => g.url);
+      const dadosCustom = [{
+        nome: "Orygem Residence Club",
+        codigo: orygemOverride?.codigo || "ORYGEM",
+        bairro: orygemOverride?.bairro || "Teresópolis",
+        valor_venda: 871500,
+        valor_min: 871500,
+        valor_max: 1318000,
+        tipologias: orygemOverride?.tipologias || [],
+        area_privativa: 150,
+        dormitorios: 2,
+        suites: 1,
+        vagas: 2,
+        status_obra: orygemOverride?.status_obra || "Em obras",
+        previsao_entrega: orygemOverride?.previsao_entrega || "",
+        descricao: "Condomínio fechado de casas com infraestrutura de clube. 150 a 173m², 2 ou 3 dormitórios, pátio privativo, terraço e 16 espaços de lazer.",
+        fotos: images,
+      }];
+
+      const { data, error } = await supabase.from("vitrines").insert({
+        titulo: `Orygem Residence Club — Vitrine Exclusiva`,
+        created_by: user.id,
+        tipo: "product_page",
+        imovel_ids: [orygemOverride?.codigo || "ORYGEM"],
+        dados_custom: dadosCustom,
+        lead_nome: enviarLeadNome || null,
+        lead_telefone: enviarLeadTel || null,
+        mensagem_corretor: enviarMensagem || null,
+      }).select("id").single();
+
+      if (error) throw error;
+      const url = getVitrinePublicUrl(data.id);
+      setEnviarVitrineUrl(url);
+      toast.success("Vitrine criada!");
+    } catch (err: any) {
+      toast.error("Erro: " + (err.message || "Falha ao criar vitrine"));
+    } finally {
+      setEnviarSaving(false);
+    }
+  }, [user, orygemOverride, enviarLeadNome, enviarLeadTel, enviarMensagem]);
+
+  function enviarWhatsApp() {
+    if (!enviarVitrineUrl) return;
+    const text = `Olá${enviarLeadNome ? ` ${enviarLeadNome}` : ""}! 🏡\n\nPreparei uma vitrine exclusiva do *Orygem Residence Club* para você:\n\n${enviarVitrineUrl}\n\n${enviarMensagem || "Qualquer dúvida, estou à disposição!"}`;
+    const encoded = encodeURIComponent(text);
+    const whatsUrl = enviarLeadTel
+      ? `https://wa.me/55${enviarLeadTel.replace(/\D/g, "")}?text=${encoded}`
+      : `https://wa.me/?text=${encoded}`;
+    window.open(whatsUrl, "_blank");
+  }
+
+  function enviarCopyLink() {
+    if (!enviarVitrineUrl) return;
+    navigator.clipboard.writeText(enviarVitrineUrl);
+    toast.success("Link copiado!");
+  }
 
   const progress = Math.round((salesCount / CAMPAIGN_TARGET) * 100);
 
@@ -198,6 +299,58 @@ export default function OrygemCampanha() {
 
   return (
     <div className="space-y-5 pb-24">
+
+      {/* ═══ ENVIAR PÁGINA DIALOG ═══ */}
+      <Dialog open={showEnviar} onOpenChange={setShowEnviar}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-4 w-4 text-amber-500" />
+              Enviar Página — Orygem Residence Club
+            </DialogTitle>
+          </DialogHeader>
+          {!enviarVitrineUrl ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Nome do Cliente (opcional)</Label>
+                  <Input value={enviarLeadNome} onChange={e => setEnviarLeadNome(e.target.value)} placeholder="João" className="h-9 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">WhatsApp (opcional)</Label>
+                  <Input value={enviarLeadTel} onChange={e => setEnviarLeadTel(e.target.value)} placeholder="51999999999" className="h-9 text-sm" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Mensagem personalizada</Label>
+                <Textarea value={enviarMensagem} onChange={e => setEnviarMensagem(e.target.value)} rows={2} placeholder="Qualquer dúvida, estou à disposição!" className="text-sm" />
+              </div>
+              <Button onClick={handleCreateVitrine} disabled={enviarSaving} className="w-full gap-2 bg-amber-500 hover:bg-amber-600">
+                {enviarSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {enviarSaving ? "Criando..." : "Criar Vitrine e Enviar"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-center space-y-2">
+                <p className="text-sm font-bold text-amber-600">✅ Vitrine criada com sucesso!</p>
+                <p className="text-xs text-muted-foreground break-all font-mono bg-muted/30 rounded-lg p-2">{enviarVitrineUrl}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={enviarWhatsApp} className="flex-1 gap-2 bg-green-600 hover:bg-green-700">
+                  <Send className="h-4 w-4" /> Enviar via WhatsApp
+                </Button>
+                <Button onClick={enviarCopyLink} variant="outline" className="gap-2">
+                  <Link2 className="h-4 w-4" /> Copiar
+                </Button>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => window.open(enviarVitrineUrl!, "_blank")} className="w-full gap-2 text-xs">
+                <ExternalLink className="h-3.5 w-3.5" /> Visualizar vitrine
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ═══ LIGHTBOX ═══ */}
       {lightboxImg && (
@@ -264,6 +417,9 @@ export default function OrygemCampanha() {
               </Button>
               <Button size="sm" className="gap-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/30 backdrop-blur-sm" onClick={() => navigate("/pipeline-leads")}>
                 <Target className="h-3.5 w-3.5" /> Abrir Pipeline
+              </Button>
+              <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700 text-white border-0 font-bold" onClick={() => setShowEnviar(true)}>
+                <Send className="h-3.5 w-3.5" /> Enviar Página
               </Button>
             </div>
           </div>
