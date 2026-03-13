@@ -147,28 +147,28 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
           {/* Name */}
           <p className="text-[13px] font-bold text-foreground truncate leading-tight">{v.nome_cliente}</p>
 
-          {/* Phone */}
-          {v.telefone && (
-            <p className="text-[11px] text-muted-foreground truncate leading-snug">
-              📞 {v.telefone}
-            </p>
-          )}
-
-          {/* 4️⃣ Product + local */}
-          {produto && (
-            <p className="text-[11px] text-muted-foreground/70 truncate leading-snug">
-              🏢 {produto}
-            </p>
-          )}
+          {/* Phone + Product/local on the same line */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {v.telefone && (
+              <span className="text-[11px] text-foreground/60 font-medium truncate leading-snug">
+                📞 {v.telefone}
+              </span>
+            )}
+            {produto && (
+              <span className="text-[11px] text-foreground/55 font-medium truncate leading-snug">
+                🏢 {produto}
+              </span>
+            )}
+          </div>
 
           {/* Negocio objetivo */}
           {isNegocio && negocioMeta.objetivo && (
             <p className="text-[10px] text-amber-600 font-semibold truncate leading-snug">🎯 {negocioMeta.objetivo}</p>
           )}
 
-          {/* 9️⃣ Observações — smaller, gray, italic */}
+          {/* Observações */}
           {v.observacoes && !isNegocio && (
-            <p className="text-[10px] text-muted-foreground/50 truncate leading-snug italic max-w-[300px]" title={v.observacoes}>
+            <p className="text-[10px] text-muted-foreground/60 truncate leading-snug italic max-w-[300px]" title={v.observacoes}>
               💬 {v.observacoes}
             </p>
           )}
