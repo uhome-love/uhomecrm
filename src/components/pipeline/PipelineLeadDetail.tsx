@@ -502,7 +502,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
         </div>
 
-        {/* ════════════ ZONA 2 — ALERTAS + PRÓXIMA TAREFA ════════════ */}
+        {/* ════════════ ZONA 2 — ALERTAS + PRÓXIMA AÇÃO ════════════ */}
         <div className="shrink-0 border-b border-border/50 bg-accent/20 px-6 py-2.5 space-y-2">
           {/* Alert: Overdue tasks */}
           {overdueTasks > 0 && (() => {
@@ -555,33 +555,39 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             return null;
           })()}
 
-          {/* Next task indicator OR missing task alert */}
+          {/* ═══ BLOCO: PRÓXIMA AÇÃO ═══ */}
           {nextTask ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-              <span className="text-xs font-semibold text-foreground">Próxima tarefa:</span>
-              <span className="text-xs text-muted-foreground">
-                {nextTask.descricao || nextTask.titulo}
-                {nextTask.vence_em && ` · ${formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "data inválida" })}`}
-                {(nextTask as any).hora_vencimento && ` ${(nextTask as any).hora_vencimento.slice(0, 5)}`}
-              </span>
-              <div className="ml-auto flex items-center gap-1">
-                <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={() => leadData.toggleTarefa(nextTask.id, nextTask.status)}>
-                  <CheckCircle2 className="h-3 w-3" /> Feito
-                </Button>
+            <div className="flex items-center gap-3 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                <Target className="h-5 w-5 text-primary" />
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300/50 dark:border-amber-600/30 rounded-lg px-3 py-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-              <div className="flex-1">
-                <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Lead desatualizado</span>
-                <p className="text-[10px] text-amber-600 dark:text-amber-400/80 mt-0.5">
-                  Para manter o lead atualizado, crie uma tarefa com a próxima ação a ser realizada.
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Próxima Ação</p>
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {nextTask.titulo || nextTask.descricao}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {nextTask.tipo && <span className="capitalize">{nextTask.tipo.replace(/_/g, " ")}</span>}
+                  {nextTask.vence_em && <> · {formatDateSafe(nextTask.vence_em, "dd/MM 'às'", { locale: ptBR, dateOnly: true, fallback: "" })}</>}
+                  {(nextTask as any).hora_vencimento && ` ${(nextTask as any).hora_vencimento.slice(0, 5)}`}
                 </p>
               </div>
-              <Button variant="default" size="sm" className="h-7 text-xs px-3 gap-1 bg-amber-500 hover:bg-amber-600 text-white shrink-0" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
-                <Plus className="h-3 w-3" /> Criar próxima ação
+              <Button variant="default" size="sm" className="h-8 text-xs px-3 gap-1.5 shrink-0" onClick={() => leadData.toggleTarefa(nextTask.id, nextTask.status)}>
+                <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300/50 dark:border-amber-600/30 px-4 py-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30 shrink-0">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Próxima Ação</p>
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Este lead não possui próxima ação</p>
+                <p className="text-[10px] text-amber-600/80 dark:text-amber-400/60">Crie uma tarefa para manter o follow-up em dia.</p>
+              </div>
+              <Button variant="default" size="sm" className="h-8 text-xs px-3 gap-1.5 bg-amber-500 hover:bg-amber-600 text-white shrink-0" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
+                <Plus className="h-3.5 w-3.5" /> Criar ação
               </Button>
             </div>
           )}
