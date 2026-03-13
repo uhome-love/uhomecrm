@@ -710,7 +710,7 @@ const PipelineCard = memo(function PipelineCard({
               {/* Custom date picker */}
               {quickTaskDateMode === "custom" && (
                 <div className="border border-border rounded-md overflow-hidden">
-                  <Calendar
+                  <CalendarPicker
                     mode="single"
                     selected={quickTaskCustomDate}
                     onSelect={(d) => setQuickTaskCustomDate(d as Date | undefined)}
