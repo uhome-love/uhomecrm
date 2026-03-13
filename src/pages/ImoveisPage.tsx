@@ -716,7 +716,7 @@ export default function ImoveisPage() {
     setShowSuggestions(false);
     setCampanhaAtiva(false);
     setUhomeOnly(false);
-    setTimeout(() => fetchImoveis(1, false, false), 50);
+    setTimeout(() => fetchRef.current(1), 50);
   };
 
   const getPreco = (item: any): string => {
