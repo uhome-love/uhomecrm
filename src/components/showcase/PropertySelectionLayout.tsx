@@ -9,6 +9,7 @@ import ContactCTA from "./ContactCTA";
 import FooterBranding from "./FooterBranding";
 import type { ShowcaseData, ShowcaseImovel } from "./types";
 import { supabase } from "@/integrations/supabase/client";
+import { useVitrineTracking } from "@/hooks/useVitrineTracking";
 
 const ShowcaseMap = lazy(() => import("./ShowcaseMap"));
 
