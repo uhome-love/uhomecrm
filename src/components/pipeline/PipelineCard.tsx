@@ -306,7 +306,48 @@ const PipelineCard = memo(function PipelineCard({
     setWhatsappTemplatesOpen(true);
   };
 
-  const handleScheduleVisit = async () => {
+  const handleQuickTaskCreate = async (quando: "hoje" | "amanha") => {
+    if (!user) { toast.error("Faça login primeiro"); return; }
+    setQuickTaskSaving(true);
+    try {
+      const now = new Date();
+      let venceEm: string;
+      if (quando === "hoje") {
+        venceEm = todayBRT();
+      } else {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        venceEm = dateToBRT(tomorrow);
+      }
+      const titulo = `${TIPO_LABELS[quickTaskType] || quickTaskType}: ${lead.nome || "Lead"}`;
+      await supabase.from("pipeline_tarefas").insert({
+        pipeline_lead_id: lead.id,
+        titulo,
+        descricao: quickTaskObs || null,
+        tipo: quickTaskType,
+        vence_em: venceEm,
+        prioridade: "media",
+        status: "pendente",
+        created_by: user.id,
+        responsavel_id: user.id,
+      } as any);
+      await supabase.from("pipeline_leads").update({
+        proxima_acao: TIPO_LABELS[quickTaskType] || titulo,
+        data_proxima_acao: venceEm,
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", lead.id);
+      toast.success(`Tarefa "${TIPO_LABELS[quickTaskType]}" criada para ${quando === "hoje" ? "hoje" : "amanhã"} ✅`);
+      setQuickTaskOpen(false);
+      setQuickTaskObs("");
+      setQuickTaskType("follow_up");
+    } catch (err: any) {
+      toast.error("Erro ao criar tarefa: " + (err.message || ""));
+    } finally {
+      setQuickTaskSaving(false);
+    }
+  };
+
+
     if (!scheduleDate || !user) return;
     const dateStr = format(scheduleDate, "yyyy-MM-dd");
     await supabase.from("visitas").insert({
