@@ -389,6 +389,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
       const filterParts: string[] = ["valor_venda:>0"];
       if (selectedBairros.length === 1) filterParts.push(`bairro:=${selectedBairros[0]}`);
       else if (selectedBairros.length > 1) filterParts.push(`bairro:[${selectedBairros.join(",")}]`);
+      if (valorMin) filterParts.push(`valor_venda:>=${parseFloat(valorMin)}`);
       if (valorMax) filterParts.push(`valor_venda:<=${parseFloat(valorMax) * 1.15}`);
       if (quartos) filterParts.push(`dormitorios:>=${parseInt(quartos)}`);
 
