@@ -189,22 +189,29 @@ export default function PropertySelectionLayout({ data }: Props) {
       {/* ═══ PROPERTY GRID ═══ */}
       <section className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
         <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {imoveis.map((item, idx) => (
-            <PropertyCard
-              key={idx}
-              item={item}
-              index={idx}
-              variant="selection"
-              whatsappBase={whatsappBase}
-              corretorNome={corretor?.nome}
-              onViewDetails={setSelectedItem}
-              onTrack={trackEvent}
-              onFavorite={handleFavorite}
-              isFavorited={favorites.has(item.id)}
-              onCompare={imoveis.length > 1 ? handleCompare : undefined}
-              isComparing={compareItems.some(c => c.id === item.id)}
-            />
-          ))}
+          {imoveis.length === 0 ? (
+            <div className="col-span-full rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
+              <p className="text-base font-semibold text-slate-700">Nenhum imóvel disponível nesta vitrine</p>
+              <p className="text-sm text-slate-500 mt-1">Peça ao corretor para gerar novamente a seleção.</p>
+            </div>
+          ) : (
+            imoveis.map((item, idx) => (
+              <PropertyCard
+                key={idx}
+                item={item}
+                index={idx}
+                variant="selection"
+                whatsappBase={whatsappBase}
+                corretorNome={corretor?.nome}
+                onViewDetails={setSelectedItem}
+                onTrack={trackEvent}
+                onFavorite={handleFavorite}
+                isFavorited={favorites.has(item.id)}
+                onCompare={imoveis.length > 1 ? handleCompare : undefined}
+                isComparing={compareItems.some(c => c.id === item.id)}
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -261,13 +268,15 @@ export default function PropertySelectionLayout({ data }: Props) {
       <FooterBranding corretorNome={corretor?.nome} />
 
       {/* ═══ MODALS ═══ */}
-      <PropertyDetailModal
-        item={selectedItem || imoveis[0]}
-        corretor={corretor}
-        open={!!selectedItem}
-        onClose={() => setSelectedItem(null)}
-        onTrack={trackEvent}
-      />
+      {selectedItem && (
+        <PropertyDetailModal
+          item={selectedItem}
+          corretor={corretor}
+          open={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onTrack={trackEvent}
+        />
+      )}
 
       <CompareModal
         items={compareItems}
