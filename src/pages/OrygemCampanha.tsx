@@ -418,6 +418,9 @@ export default function OrygemCampanha() {
               <Button size="sm" className="gap-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/30 backdrop-blur-sm" onClick={() => navigate("/pipeline-leads")}>
                 <Target className="h-3.5 w-3.5" /> Abrir Pipeline
               </Button>
+              <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700 text-white border-0 font-bold" onClick={() => setShowEnviar(true)}>
+                <Send className="h-3.5 w-3.5" /> Enviar Página
+              </Button>
             </div>
           </div>
         </div>
