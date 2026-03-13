@@ -65,6 +65,7 @@ const HomiAna = lazy(() => import("./pages/HomiAna"));
 const TarefasPage = lazy(() => import("./pages/TarefasPage"));
 const BackofficeCentral = lazy(() => import("./pages/BackofficeCentral"));
 const MinhasTarefas = lazy(() => import("./pages/MinhasTarefas"));
+const MinhasVitrines = lazy(() => import("./pages/MinhasVitrines"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const TemplatesComunicacao = lazy(() => import("./pages/TemplatesComunicacao"));
 const AcademiaPage = lazy(() => import("./pages/AcademiaPage"));
