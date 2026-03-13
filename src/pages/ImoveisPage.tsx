@@ -247,13 +247,13 @@ function PhotoLightbox({ images, initialIndex, open, onClose }: { images: string
         {current + 1} / {images.length}
       </div>
 
-      {/* Main image area */}
-      <div className="flex items-center justify-center h-full px-16 py-20" onClick={(e) => e.stopPropagation()}>
+      {/* Main image area — maximized for premium feel */}
+      <div className="flex items-center justify-center h-full px-4 sm:px-8 pt-14 pb-24" onClick={(e) => e.stopPropagation()}>
         <div className="relative w-full h-full flex items-center justify-center">
           <img
             src={getFullRes(images[current])}
             alt={`Foto ${current + 1}`}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-opacity duration-300"
+            className="max-w-[95vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300"
             style={{ opacity: isTransitioning ? 0.6 : 1 }}
             draggable={false}
           />
