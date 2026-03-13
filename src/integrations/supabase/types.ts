@@ -3868,6 +3868,7 @@ export type Database = {
           stage_changed_at: string
           stage_id: string
           telefone: string | null
+          telefone_normalizado: string | null
           telefone2: string | null
           temperatura: string | null
           ultima_acao_at: string | null
@@ -3929,6 +3930,7 @@ export type Database = {
           stage_changed_at?: string
           stage_id: string
           telefone?: string | null
+          telefone_normalizado?: string | null
           telefone2?: string | null
           temperatura?: string | null
           ultima_acao_at?: string | null
@@ -3990,6 +3992,7 @@ export type Database = {
           stage_changed_at?: string
           stage_id?: string
           telefone?: string | null
+          telefone_normalizado?: string | null
           telefone2?: string | null
           temperatura?: string | null
           ultima_acao_at?: string | null
@@ -4124,6 +4127,74 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pipeline_playbook_tarefas: {
+        Row: {
+          dias_offset: number
+          hora_sugerida: string | null
+          id: string
+          ordem: number
+          playbook_id: string
+          prioridade: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          dias_offset?: number
+          hora_sugerida?: string | null
+          id?: string
+          ordem?: number
+          playbook_id: string
+          prioridade?: string
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          dias_offset?: number
+          hora_sugerida?: string | null
+          id?: string
+          ordem?: number
+          playbook_id?: string
+          prioridade?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_playbook_tarefas_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_playbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pipeline_playbooks: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          stage_gatilho_tipo: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          stage_gatilho_tipo: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          stage_gatilho_tipo?: string
+        }
+        Relationships: []
       }
       pipeline_produtos: {
         Row: {
@@ -6047,9 +6118,14 @@ export type Database = {
         Returns: Json
       }
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
+      normalize_telefone: { Args: { raw: string }; Returns: string }
       rate_marketplace_item: {
         Args: { p_comentario?: string; p_item_id: string; p_nota: number }
         Returns: undefined
+      }
+      recalc_oportunidade_score: {
+        Args: { p_lead_id: string }
+        Returns: number
       }
       recalculate_all_scores: { Args: never; Returns: undefined }
       reciclar_leads_expirados: { Args: never; Returns: number }
