@@ -26,8 +26,8 @@ export default function PropertyCard({
   onViewDetails, onTrack, onFavorite, isFavorited, onCompare, isComparing,
 }: PropertyCardProps) {
   const [currentImg, setCurrentImg] = useState(0);
-  const fotos = item.fotos || [];
-  const seg = item.segmento ? getSegmentoStyle(item.segmento) : null;
+  const fotos = Array.isArray(item?.fotos) ? item.fotos.filter(Boolean) : [];
+  const seg = item?.segmento ? getSegmentoStyle(item.segmento) : null;
 
   const whatsappMsg = variant === "campaign"
     ? `Tenho interesse no ${item.empreendimento || item.titulo} - Melnick Day 2026`
