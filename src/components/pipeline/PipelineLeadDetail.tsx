@@ -436,7 +436,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </Button>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: "calc(85vh - 240px)" }}>
+          <ScrollArea className="flex-1 min-h-0">
             {/* ===== TAB: TAREFAS ===== */}
             <TabsContent value="tarefas" className="mt-0">
               <LeadTarefasTab
