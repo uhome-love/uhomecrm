@@ -1,0 +1,2 @@
+insert into public.pipeline_leads (nome, telefone, email, origem, origem_detalhe, stage_id, aceite_status, prioridade_lead)
+values ('Ulisses Maximilian', '51985694143', 'ulissesmaximilian@yahoo.com', 'tiktok', 'Criado manualmente — não entrou via webhook', 'd3843b2f-2fa1-4c31-9129-4eb0ed21f019', 'pendente_distribuicao', 'alta');
