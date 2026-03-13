@@ -491,14 +491,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 📋 Tarefas
                 {pendingTasks > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{pendingTasks}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="visitas-propostas" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
-                📊 Visitas
-              </TabsTrigger>
               <TabsTrigger value="radar" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 📡 Radar
-              </TabsTrigger>
-              <TabsTrigger value="inteligencia" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
-                🧠
               </TabsTrigger>
             </TabsList>
             <Button
@@ -555,131 +549,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               />
             </TabsContent>
 
-            {/* ===== TAB: VISITAS & PROPOSTAS ===== */}
-            <TabsContent value="visitas-propostas" className="px-6 pb-8 space-y-6 mt-0">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <MapPin className="h-4 w-4" /> Visitas
-                  </h4>
-                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { onOpenChange(false); setTimeout(() => { navigate(`/agenda-visitas?lead=${lead.id}&nome=${encodeURIComponent(lead.nome)}&telefone=${encodeURIComponent(lead.telefone || "")}&empreendimento=${encodeURIComponent(lead.empreendimento || "")}`); }, 200); }}>
-                    <Calendar className="h-3 w-3" /> + Agendar Visita
-                  </Button>
-                </div>
-                <OpportunityVisitasTab pipelineLeadId={lead.id} />
-              </div>
-              <div className="border-t border-border/50 pt-5">
-                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <DollarSign className="h-4 w-4" /> Propostas
-                </h4>
-                <OpportunityPropostasTab pipelineLeadId={lead.id} valorEstimado={lead.valor_estimado} corretorNomes={corretorNomes} />
-              </div>
-            </TabsContent>
 
-            {/* ===== TAB: INTELIGÊNCIA ===== */}
-            <TabsContent value="inteligencia" className="px-6 pb-8 space-y-5 mt-0">
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-                <h4 className="text-xs font-bold text-primary flex items-center gap-1.5">
-                  <Brain className="h-4 w-4" /> Inteligência do Lead
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <InsightItem icon={Clock} label="Sem contato" value={lastActivity ? formatDistanceToNowSafe(lastActivity.created_at, { locale: ptBR, fallback: "Nenhum" }) : "Nenhum"} alert={!lastActivity || (differenceInHoursSafe(lastActivity.created_at) ?? 999) > 48} />
-                  <InsightItem icon={Phone} label="Tentativas" value={`${leadData.atividades.length}`} />
-                  <InsightItem icon={Clock} label="Nesta etapa" value={hoursInStage < 24 ? `${hoursInStage}h` : `${Math.round(hoursInStage / 24)}d`} alert={hoursInStage > 72} />
-                  <InsightItem icon={AlertTriangle} label="Atrasadas" value={overdueTasks > 0 ? `${overdueTasks}` : "0"} alert={overdueTasks > 0} />
-                </div>
-                {hoursInStage > 48 && !lastActivity && (
-                  <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-lg flex items-center gap-1.5">
-                    <Zap className="h-4 w-4" /> Faça contato imediato — lead sem interação.
-                  </p>
-                )}
-              </div>
-              {currentStage && (
-                <LeadSequenceSuggestion leadId={lead.id} leadNome={lead.nome} stageType={currentStage.tipo} empreendimento={lead.empreendimento} onTasksCreated={leadData.reload} />
-              )}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <TrendingUp className="h-4 w-4" /> Dados Comerciais
-                  </h4>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs text-primary" onClick={() => setEditingCommercial(!editingCommercial)}>
-                    {editingCommercial ? "Cancelar" : "Editar"}
-                  </Button>
-                </div>
-                {editingCommercial ? (
-                  <div className="space-y-3 border rounded-xl p-4 bg-card">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Empreendimento</Label>
-                      <EmpreendimentoCombobox value={commercialData.empreendimento} onChange={v => setCommercialData(p => ({ ...p, empreendimento: v }))} placeholder="Selecione ou digite..." />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Temperatura</Label>
-                        <Select value={commercialData.temperatura} onValueChange={v => setCommercialData(p => ({ ...p, temperatura: v }))}>
-                          <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="quente">🔥 Quente</SelectItem>
-                            <SelectItem value="morno">☀️ Morno</SelectItem>
-                            <SelectItem value="frio">❄️ Frio</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
-                        <Input type="number" className="h-9 text-sm" value={commercialData.valor_estimado || ""} onChange={e => setCommercialData(p => ({ ...p, valor_estimado: Number(e.target.value) }))} />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox checked={commercialData.imovel_troca} onCheckedChange={v => setCommercialData(p => ({ ...p, imovel_troca: !!v }))} />
-                      <Label className="text-xs">Imóvel na troca</Label>
-                    </div>
-                    <Button size="sm" className="w-full h-9 text-sm" onClick={handleSaveCommercial} disabled={saving}>
-                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-6 flex-wrap text-sm py-2">
-                    <div className="relative">
-                      <span className="text-xs text-muted-foreground">Empreendimento</span>
-                      <Popover open={empreendimentoOpen} onOpenChange={(o) => { setEmpreendimentoOpen(o); if (o) setEmpreendimentoSearch(lead.empreendimento || ""); }}>
-                        <PopoverTrigger asChild>
-                          {lead.empreendimento ? (
-                            <button className="flex items-center gap-1.5 font-medium text-foreground hover:text-primary transition-colors group">
-                              {lead.empreendimento}
-                              <span className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity text-xs">✏️</span>
-                            </button>
-                          ) : (
-                            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors border border-amber-300 dark:border-amber-700">
-                              🏠 Selecionar Empreendimento ▼
-                            </button>
-                          )}
-                        </PopoverTrigger>
-                        <PopoverContent className="w-72 p-3 space-y-2" align="start">
-                          <EmpreendimentoCombobox value={empreendimentoSearch} onChange={(v) => setEmpreendimentoSearch(v)} onSelect={async (v) => { setSavingEmpreendimento(true); await onUpdate(lead.id, { empreendimento: v } as any); setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); setSavingEmpreendimento(false); toast.success("Empreendimento atualizado ✅"); }} placeholder="Buscar ou digitar..." />
-                          <Button size="sm" className="w-full h-8 text-xs font-semibold" disabled={!empreendimentoSearch.trim() || savingEmpreendimento} onClick={async () => { setSavingEmpreendimento(true); await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any); setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); setSavingEmpreendimento(false); toast.success("Empreendimento atualizado ✅"); }}>
-                            {savingEmpreendimento ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Salvar"}
-                          </Button>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="h-8 w-px bg-border" />
-                    <div>
-                      <span className="text-xs text-muted-foreground">Valor</span>
-                      <p className="font-medium text-foreground">{lead.valor_estimado ? `R$ ${lead.valor_estimado.toLocaleString("pt-BR")}` : <span className="text-muted-foreground/60">—</span>}</p>
-                    </div>
-                    <div className="h-8 w-px bg-border" />
-                    <div>
-                      <span className="text-xs text-muted-foreground">Origem</span>
-                      <p className="font-medium text-foreground">{lead.origem || <span className="text-muted-foreground/60">—</span>}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {lead.observacoes && (
-                <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">{lead.observacoes}</p>
-              )}
-            </TabsContent>
-
+            
             {/* ===== TAB: RADAR IMÓVEIS ===== */}
             <TabsContent value="radar" className="mt-0">
               <RadarImoveisTab
