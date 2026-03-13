@@ -359,7 +359,10 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
     }
   };
 
-  const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
+  const set = (field: string, value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
+    setFormErrors(prev => ({ ...prev, [field]: undefined }));
+  };
 
   // Stage name lookup
   const stageName = (stageId: string) => stages.find(s => s.id === stageId)?.nome || "";
