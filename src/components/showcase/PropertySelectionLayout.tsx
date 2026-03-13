@@ -1,4 +1,4 @@
-import { useState, useCallback, Suspense, lazy } from "react";
+import { useState, useCallback, Suspense, lazy, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Heart, GitCompareArrows } from "lucide-react";
 import { toast } from "sonner";
