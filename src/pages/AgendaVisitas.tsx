@@ -505,7 +505,7 @@ export default function AgendaVisitas() {
     return pastList;
   }, [filtered, anterioresPeriodo, anterioresCustomFrom, anterioresCustomTo]);
 
-  const hasFilters = statusFilter !== "all" || corretorFilter !== "all" || empreendimentoFilter !== "all" || !!dateFrom || !!dateTo || searchTerm.trim() || pendingOnly || teamFilter !== "all";
+  const hasFilters = statusFilter !== "all" || corretorFilter !== "all" || empreendimentoFilter !== "all" || !!dateFrom || !!dateTo || searchTerm.trim() || pendingOnly || teamFilter !== "all" || !!quickFilter;
 
   const clearAll = () => {
     setStatusFilter("all");
