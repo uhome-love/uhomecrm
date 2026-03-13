@@ -601,13 +601,24 @@ export default function ImoveisPage() {
 
     try {
       if (campanha) {
-        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
-          body: { action: "get_imoveis_by_codigos", codigos: CAMPANHA_CODES.map(c => c.codigo) }
-        });
-        if (controller.signal.aborted) return;
-        if (error) { toast.error("Erro ao buscar imóveis da campanha"); return; }
-        const imoveisMap = data?.imoveis || {};
-        const items = Object.values(imoveisMap).filter((d: any) => d && !d.not_found);
+        // Use overrides data directly — no need to call jetimob-proxy
+        const items = campanhaOverrides.map(ov => ({
+          codigo: ov.codigo,
+          titulo_anuncio: ov.nome || ov.codigo,
+          empreendimento_nome: ov.nome || ov.codigo,
+          endereco_bairro: ov.bairro || "",
+          valor_venda: ov.valor_min || 0,
+          valor_max: ov.valor_max || 0,
+          dormitorios: ov.dormitorios || 0,
+          descricao: ov.descricao || "",
+          status: ov.status_obra || "Lançamento",
+          previsao_entrega: ov.previsao_entrega || "",
+          foto_principal: ov.fotos?.[0] || "",
+          fotos: ov.fotos || [],
+          imagens: (ov.fotos || []).map(url => ({ link: url, link_thumb: url })),
+          _fotos_normalized: ov.fotos || [],
+          _is_campanha_override: true,
+        }));
         setImoveis(items as any[]);
         setTotal(items.length);
         setTotalPages(1);
