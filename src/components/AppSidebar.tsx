@@ -72,6 +72,8 @@ const homiMascot = "/images/homi-48.png";
 
 type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }> };
 
+const COLLAPSED_BY_DEFAULT = new Set(["Marketing", "Financeiro", "Operacional", "RH & Recepção"]);
+
 function SidebarNavGroup({ label, items, badges, collapsed, index }: {
   label: string;
   items: NavItem[];
@@ -80,10 +82,65 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
   index: number;
 }) {
   if (items.length === 0) return null;
+
+  const shouldCollapse = COLLAPSED_BY_DEFAULT.has(label);
+
+  const menuContent = (
+    <SidebarMenu className="gap-0.5">
+      {items.map((item) => {
+        const badgeCount = badges[item.url] || 0;
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild tooltip={item.title}>
+              <NavLink
+                to={item.url}
+                end
+                className={`group/nav text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 ${collapsed ? "px-0 justify-center" : "px-3"}`}
+                activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg [&_svg]:!text-blue-400"
+              >
+                <item.icon className={`${collapsed ? "" : "mr-2.5"} h-4 w-4 shrink-0 text-neutral-400 group-[.active]/nav:text-blue-400 transition-colors duration-150`} />
+                {!collapsed && (
+                  <span className="text-sm">{item.title}</span>
+                )}
+                {badgeCount > 0 && !collapsed && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white px-1 animate-pulse-soft">
+                    {badgeCount}
+                  </span>
+                )}
+                {badgeCount > 0 && collapsed && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2 rounded-full bg-danger-500 animate-pulse-soft" />
+                )}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+    </SidebarMenu>
+  );
+
+  if (shouldCollapse && !collapsed) {
+    return (
+      <SidebarGroup className="animate-fade-in mt-4 first:mt-0 py-0" style={{ animationDelay: `${index * 60}ms` }}>
+        <Collapsible defaultOpen={false}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-3 mb-1 group/trigger">
+            <span className="text-neutral-500 text-[10px] font-medium tracking-widest uppercase">
+              {label}
+            </span>
+            <ChevronDown className="h-3 w-3 text-neutral-500 transition-transform duration-200 group-data-[state=open]/trigger:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <SidebarGroupContent>
+              {menuContent}
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </SidebarGroup>
+    );
+  }
+
   return (
     <SidebarGroup key={label} className="animate-fade-in mt-4 first:mt-0 py-0" style={{ animationDelay: `${index * 60}ms` }}>
       {collapsed ? (
-        /* Collapsed: thin separator line instead of label */
         index > 0 ? <div className="border-t border-white/10 my-1 mx-2" /> : null
       ) : (
         <SidebarGroupLabel className="text-neutral-500 text-[10px] font-medium tracking-widest uppercase px-3 mb-1">
@@ -91,36 +148,7 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
         </SidebarGroupLabel>
       )}
       <SidebarGroupContent>
-        <SidebarMenu className="gap-0.5">
-          {items.map((item) => {
-            const badgeCount = badges[item.url] || 0;
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild tooltip={item.title}>
-                  <NavLink
-                    to={item.url}
-                    end
-                    className={`group/nav text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 ${collapsed ? "px-0 justify-center" : "px-3"}`}
-                    activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg [&_svg]:!text-blue-400"
-                  >
-                    <item.icon className={`${collapsed ? "" : "mr-2.5"} h-4 w-4 shrink-0 text-neutral-400 group-[.active]/nav:text-blue-400 transition-colors duration-150`} />
-                    {!collapsed && (
-                      <span className="text-sm">{item.title}</span>
-                    )}
-                    {badgeCount > 0 && !collapsed && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white px-1 animate-pulse-soft">
-                        {badgeCount}
-                      </span>
-                    )}
-                    {badgeCount > 0 && collapsed && (
-                      <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2 rounded-full bg-danger-500 animate-pulse-soft" />
-                    )}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
+        {menuContent}
       </SidebarGroupContent>
     </SidebarGroup>
   );
