@@ -297,6 +297,61 @@ export default function OrygemCampanha() {
     ? GALLERY_IMAGES
     : GALLERY_IMAGES.filter((img) => img.category === galleryFilter);
 
+  return (
+    <div className="space-y-5 pb-24">
+
+      {/* ═══ ENVIAR PÁGINA DIALOG ═══ */}
+      <Dialog open={showEnviar} onOpenChange={setShowEnviar}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-4 w-4 text-amber-500" />
+              Enviar Página — Orygem Residence Club
+            </DialogTitle>
+          </DialogHeader>
+          {!enviarVitrineUrl ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Nome do Cliente (opcional)</Label>
+                  <Input value={enviarLeadNome} onChange={e => setEnviarLeadNome(e.target.value)} placeholder="João" className="h-9 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">WhatsApp (opcional)</Label>
+                  <Input value={enviarLeadTel} onChange={e => setEnviarLeadTel(e.target.value)} placeholder="51999999999" className="h-9 text-sm" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Mensagem personalizada</Label>
+                <Textarea value={enviarMensagem} onChange={e => setEnviarMensagem(e.target.value)} rows={2} placeholder="Qualquer dúvida, estou à disposição!" className="text-sm" />
+              </div>
+              <Button onClick={handleCreateVitrine} disabled={enviarSaving} className="w-full gap-2 bg-amber-500 hover:bg-amber-600">
+                {enviarSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {enviarSaving ? "Criando..." : "Criar Vitrine e Enviar"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-center space-y-2">
+                <p className="text-sm font-bold text-amber-600">✅ Vitrine criada com sucesso!</p>
+                <p className="text-xs text-muted-foreground break-all font-mono bg-muted/30 rounded-lg p-2">{enviarVitrineUrl}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={enviarWhatsApp} className="flex-1 gap-2 bg-green-600 hover:bg-green-700">
+                  <Send className="h-4 w-4" /> Enviar via WhatsApp
+                </Button>
+                <Button onClick={enviarCopyLink} variant="outline" className="gap-2">
+                  <Link2 className="h-4 w-4" /> Copiar
+                </Button>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => window.open(enviarVitrineUrl!, "_blank")} className="w-full gap-2 text-xs">
+                <ExternalLink className="h-3.5 w-3.5" /> Visualizar vitrine
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* ═══ LIGHTBOX ═══ */}
       {lightboxImg && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxImg(null)}>
