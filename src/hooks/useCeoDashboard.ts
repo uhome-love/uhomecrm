@@ -291,13 +291,20 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const allMemberUserIds = (members || []).map(m => m.user_id).filter(Boolean) as string[];
       if (allMemberUserIds.length === 0) return { teams: [] as TeamData[], corretoresRank: [] as CorretorRankData[] };
 
-      const [{ data: corrProfs }, { data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
-        supabase.from("profiles").select("id, nome, user_id").in("user_id", allMemberUserIds),
+      const { data: corrProfs } = await supabase.from("profiles").select("id, nome, user_id").in("user_id", allMemberUserIds);
+      const corrNameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"]));
+      // Map user_id -> profile_id for negocios lookup
+      const userToProfileId = new Map((corrProfs || []).map(p => [p.user_id, p.id]));
+      const profileToUserId = new Map((corrProfs || []).map(p => [p.id, p.user_id]));
+      const allMemberProfileIds = (corrProfs || []).map(p => p.id).filter(Boolean) as string[];
+
+      const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
         supabase.from("visitas").select("id, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
-        supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, corretor_id, data_assinatura").in("corretor_id", allMemberUserIds).in("fase", ["assinado", "vendido"]).gte("data_assinatura", range.start).lte("data_assinatura", range.end),
+        allMemberProfileIds.length > 0
+          ? supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, corretor_id, data_assinatura").in("corretor_id", allMemberProfileIds).in("fase", ["assinado", "vendido"])
+          : Promise.resolve({ data: [] as any[] }),
       ]);
-      const corrNameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"]));
 
       // Paginated tentativas
       let allTent: any[] = [];
@@ -325,7 +332,9 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const aprov = tent.filter(t => t.resultado === "com_interesse").length;
           const vm = (allVisMarcadas || []).filter(v => v.corretor_id === uid).length;
           const vr = (allVisRealizadas || []).filter(v => v.corretor_id === uid && v.status === "realizada").length;
-          const neg = (allNeg || []).filter(n => n.corretor_id === uid);
+          // Negocios use profile_id as corretor_id
+          const profId = userToProfileId.get(uid);
+          const neg = profId ? (allNeg || []).filter(n => n.corretor_id === profId) : [];
           const prop = neg.filter(n => n.fase === "proposta" || n.fase === "negociacao").length;
           const vgv = neg.reduce((s, n) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
