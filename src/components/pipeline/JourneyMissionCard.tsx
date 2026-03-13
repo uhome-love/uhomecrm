@@ -89,6 +89,13 @@ const JourneyMissionCard = memo(function JourneyMissionCard({
           </Tooltip>
         </div>
 
+        {/* Stale lead alert */}
+        {isStale && (
+          <div className="text-[9px] font-bold px-2 py-0.5 rounded-full text-center mb-1" style={{ background: "rgba(248,113,113,0.15)", color: "#F87171" }}>
+            ⚠️ {daysSinceAction}d sem ação
+          </div>
+        )}
+
         {/* Line 2: Name */}
         <p className="text-sm font-semibold text-white truncate mb-0.5">{lead.nome}</p>
 
