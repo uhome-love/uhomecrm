@@ -35,6 +35,7 @@ export default function RhSalaReuniao() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }));
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingReserva, setEditingReserva] = useState<Reserva | null>(null);
 
   // Form
   const [data, setData] = useState(selectedDate);
@@ -54,25 +55,62 @@ export default function RhSalaReuniao() {
 
   useEffect(() => { fetchReservas(); }, [selectedDate]);
 
-  const handleAdd = async () => {
+  const openAdd = () => {
+    setEditingReserva(null);
+    setData(selectedDate);
+    setHoraInicio("09:00");
+    setHoraFim("10:00");
+    setResponsavel("");
+    setAssunto("");
+    setDialogOpen(true);
+  };
+
+  const openEdit = (r: Reserva) => {
+    setEditingReserva(r);
+    setData(r.data);
+    setHoraInicio(r.hora_inicio);
+    setHoraFim(r.hora_fim);
+    setResponsavel(r.responsavel);
+    setAssunto(r.assunto || "");
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!responsavel.trim()) { toast.error("Responsável é obrigatório"); return; }
     if (horaInicio >= horaFim) { toast.error("Horário de fim deve ser após o início"); return; }
 
-    // Check overlap
-    const overlap = reservas.some(r => r.hora_inicio < horaFim && r.hora_fim > horaInicio);
+    // Check overlap (exclude current reservation if editing)
+    const overlap = reservas.some(r =>
+      r.hora_inicio < horaFim && r.hora_fim > horaInicio &&
+      (!editingReserva || r.id !== editingReserva.id)
+    );
     if (overlap && data === selectedDate) { toast.error("Conflito de horário! Já existe reserva neste período."); return; }
 
-    const { error } = await supabase.from("sala_reuniao_reservas" as any).insert({
-      data,
-      hora_inicio: horaInicio,
-      hora_fim: horaFim,
-      responsavel: responsavel.trim(),
-      assunto: assunto.trim() || null,
-      created_by: user?.id,
-    });
-    if (error) { toast.error("Erro: " + error.message); return; }
-    toast.success("Reserva criada!");
+    if (editingReserva) {
+      const { error } = await supabase.from("sala_reuniao_reservas" as any).update({
+        data,
+        hora_inicio: horaInicio,
+        hora_fim: horaFim,
+        responsavel: responsavel.trim(),
+        assunto: assunto.trim() || null,
+      }).eq("id", editingReserva.id);
+      if (error) { toast.error("Erro: " + error.message); return; }
+      toast.success("Reserva atualizada!");
+    } else {
+      const { error } = await supabase.from("sala_reuniao_reservas" as any).insert({
+        data,
+        hora_inicio: horaInicio,
+        hora_fim: horaFim,
+        responsavel: responsavel.trim(),
+        assunto: assunto.trim() || null,
+        created_by: user?.id,
+      });
+      if (error) { toast.error("Erro: " + error.message); return; }
+      toast.success("Reserva criada!");
+    }
+
     setDialogOpen(false);
+    setEditingReserva(null);
     setResponsavel(""); setAssunto("");
     if (data === selectedDate) fetchReservas();
   };
