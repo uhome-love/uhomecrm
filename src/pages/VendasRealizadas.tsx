@@ -132,19 +132,32 @@ export default function VendasRealizadas() {
       const { data: vendas } = await query;
       const rows = (vendas || []) as VendaRow[];
 
-      // Load partnerships to mark VGV splits
+      // Load partnerships with partner details
       const leadIds = rows.map(v => (v as any).pipeline_lead_id).filter(Boolean);
-      let parceriaSet = new Set<string>(); // set of pipeline_lead_ids that have partnerships
+      let parceriaSet = new Set<string>();
+      let parceriaMap: Record<string, { principal_id: string; parceiro_id: string }> = {};
       if (leadIds.length > 0) {
         const { data: parcerias } = await supabase.from("pipeline_parcerias")
-          .select("pipeline_lead_id")
+          .select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id")
           .eq("status", "ativa")
           .in("pipeline_lead_id", leadIds);
-        (parcerias || []).forEach(p => parceriaSet.add(p.pipeline_lead_id));
+        (parcerias || []).forEach(p => {
+          parceriaSet.add(p.pipeline_lead_id);
+          parceriaMap[p.pipeline_lead_id] = {
+            principal_id: p.corretor_principal_id,
+            parceiro_id: p.corretor_parceiro_id,
+          };
+        });
       }
 
-      // Load profiles for corretores
-      const ids = [...new Set(rows.map(v => v.corretor_id).filter(Boolean))] as string[];
+      // Load profiles for corretores + parceiros
+      const corretorIds = new Set(rows.map(v => v.corretor_id).filter(Boolean) as string[]);
+      // Add partner profile IDs
+      Object.values(parceriaMap).forEach(p => {
+        if (p.principal_id) corretorIds.add(p.principal_id);
+        if (p.parceiro_id) corretorIds.add(p.parceiro_id);
+      });
+      const ids = [...corretorIds];
       let profileMap: Record<string, ProfileInfo> = {};
       if (ids.length > 0) {
         const { data: profiles } = await supabase.from("profiles").select("id, nome, avatar_url, avatar_gamificado_url").in("id", ids);
@@ -184,7 +197,7 @@ export default function VendasRealizadas() {
         });
       }
 
-      return { vendas: rows, profiles: profileMap, annualVgvByCorretor, parceriaSet: [...parceriaSet], origemMap };
+      return { vendas: rows, profiles: profileMap, annualVgvByCorretor, parceriaSet: [...parceriaSet], parceriaMap, origemMap };
     },
   });
 
@@ -192,6 +205,7 @@ export default function VendasRealizadas() {
   const profiles = data?.profiles || {};
   const annualVgvByCorretor = data?.annualVgvByCorretor || {};
   const parceriaLeadIds = new Set(data?.parceriaSet || []);
+  const parceriaMap = data?.parceriaMap || {};
   const origemMap = data?.origemMap || {};
 
   const [activeTab, setActiveTab] = useState("vendas");
@@ -555,17 +569,45 @@ export default function VendasRealizadas() {
                             </td>
                             {(isAdmin || isGestor) && (
                               <td className="py-3 px-3">
-                                {corr ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <Avatar className="h-5 w-5">
-                                      {(corr.avatar_gamificado_url || corr.avatar_url) && <img src={corr.avatar_gamificado_url || corr.avatar_url!} className="h-5 w-5 rounded-full object-cover" />}
-                                      <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{getInitials(corr.nome)}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-xs text-foreground">{corr.nome.split(" ")[0]}</span>
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground italic">—</span>
-                                )}
+                                {(() => {
+                                  const parceria = v.pipeline_lead_id ? parceriaMap[v.pipeline_lead_id] : null;
+                                  if (parceria) {
+                                    const p1 = profiles[parceria.principal_id];
+                                    const p2 = profiles[parceria.parceiro_id];
+                                    const name1 = p1?.nome?.split(" ")[0] || "Corretor";
+                                    const name2 = p2?.nome?.split(" ")[0] || "Corretor";
+                                    return (
+                                      <div className="flex items-center gap-1">
+                                        <div className="flex -space-x-1.5">
+                                          {p1 && (
+                                            <Avatar className="h-5 w-5 border border-background">
+                                              {(p1.avatar_gamificado_url || p1.avatar_url) && <img src={p1.avatar_gamificado_url || p1.avatar_url!} className="h-5 w-5 rounded-full object-cover" />}
+                                              <AvatarFallback className="text-[7px] bg-primary/10 text-primary">{getInitials(p1.nome)}</AvatarFallback>
+                                            </Avatar>
+                                          )}
+                                          {p2 && (
+                                            <Avatar className="h-5 w-5 border border-background">
+                                              {(p2.avatar_gamificado_url || p2.avatar_url) && <img src={p2.avatar_gamificado_url || p2.avatar_url!} className="h-5 w-5 rounded-full object-cover" />}
+                                              <AvatarFallback className="text-[7px] bg-primary/10 text-primary">{getInitials(p2.nome)}</AvatarFallback>
+                                            </Avatar>
+                                          )}
+                                        </div>
+                                        <span className="text-xs text-foreground">{name1} ↔ {name2}</span>
+                                      </div>
+                                    );
+                                  }
+                                  return corr ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <Avatar className="h-5 w-5">
+                                        {(corr.avatar_gamificado_url || corr.avatar_url) && <img src={corr.avatar_gamificado_url || corr.avatar_url!} className="h-5 w-5 rounded-full object-cover" />}
+                                        <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{getInitials(corr.nome)}</AvatarFallback>
+                                      </Avatar>
+                                      <span className="text-xs text-foreground">{corr.nome.split(" ")[0]}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground italic">—</span>
+                                  );
+                                })()}
                               </td>
                             )}
                             <td className="py-3 px-3 text-right">
