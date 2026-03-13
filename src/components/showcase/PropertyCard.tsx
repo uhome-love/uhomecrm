@@ -62,7 +62,7 @@ export default function PropertyCard({
     >
       {/* Image */}
       <div className="relative aspect-[4/3] bg-slate-50 overflow-hidden cursor-pointer"
-        onClick={() => { onViewDetails?.(item); onTrack?.("card_click", item.id); }}>
+        onClick={() => { onViewDetails?.(item); onTrack?.("card_click", item?.id ?? 0); }}>
         {fotos.length > 0 ? (
           <>
             <img src={fotos[currentImg]} alt={item.empreendimento || ""} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
