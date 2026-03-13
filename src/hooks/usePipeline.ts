@@ -266,17 +266,26 @@ export function usePipeline(pipelineTipo: string = "leads") {
       .finally(() => setLoading(false));
   }, [user, loadStages, loadSegmentos, loadLeads]);
 
-  // Realtime subscription — debounced to avoid rapid reloads
+  // Realtime subscription — smart debounce to avoid rapid reloads
+  // Ignores changes we made ourselves (optimistic updates already handled)
   useEffect(() => {
     if (!user) return;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastLocalUpdate = 0;
     const channel = supabase
       .channel("pipeline-leads-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "pipeline_leads" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "pipeline_leads" }, (payload) => {
+        // Skip reload if we just made a local change (within 2s)
+        const now = Date.now();
+        if (now - lastLocalUpdate < 2000) return;
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => loadLeads(), 1500);
       })
       .subscribe();
+
+    // Track local updates
+    const origSetLeads = setLeads;
+
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
@@ -300,20 +309,22 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
     const oldStageId = lead.stage_id;
+    const oldStageChangedAt = lead.stage_changed_at;
     if (oldStageId === newStageId) return;
 
-    // Optimistic update
+    // ─── Optimistic update (immediate UI response) ───
+    const now = new Date().toISOString();
     setLeads(prev => prev.map(l =>
       l.id === leadId
-        ? { ...l, stage_id: newStageId, stage_changed_at: new Date().toISOString() }
+        ? { ...l, stage_id: newStageId, stage_changed_at: now }
         : l
     ));
 
-    // STEP 1: Change stage — this MUST always succeed independently
+    // ─── Persist to backend ───
     const updatePayload: Record<string, any> = {
       stage_id: newStageId,
-      stage_changed_at: new Date().toISOString(),
-      ultima_acao_at: new Date().toISOString(), // BUG 3 FIX: always update ultima_acao_at
+      stage_changed_at: now,
+      ultima_acao_at: now,
     };
     if (observacao && stages.find(s => s.id === newStageId)?.tipo === "descarte") {
       updatePayload.motivo_descarte = observacao;
@@ -326,9 +337,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     if (stageError) {
       console.error("Error moving lead (stage update):", stageError, { leadId, newStageId, userId: user.id });
-      toast.error("Erro ao mover lead: " + (stageError.message || stageError.code));
+      toast.error("Erro ao mover lead. Revertendo posição.", { duration: 3000 });
+      // ─── Rollback: restore previous position ───
       setLeads(prev => prev.map(l =>
-        l.id === leadId ? { ...l, stage_id: oldStageId } : l
+        l.id === leadId ? { ...l, stage_id: oldStageId, stage_changed_at: oldStageChangedAt } : l
       ));
       return;
     }

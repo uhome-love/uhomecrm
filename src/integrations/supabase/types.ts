@@ -6058,7 +6058,7 @@ export type Database = {
         Returns: Json
       }
       rejeitar_lead: {
-        Args: { p_corretor_id: string; p_lead_id: string; p_motivo: string }
+        Args: { p_corretor_id: string; p_lead_id: string; p_motivo?: string }
         Returns: Json
       }
       renew_lead_lock: {

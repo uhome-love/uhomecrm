@@ -7,19 +7,16 @@ const corsHeaders = {
 };
 
 // ─── Dynamic Empreendimento → Roleta Segmento resolution ───
-// Loaded from roleta_campanhas at runtime to stay in sync with the DB
 let cachedMapping: Record<string, string> | null = null;
 let cacheTime = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 min
+const CACHE_TTL = 5 * 60 * 1000;
 
 async function loadEmpreendimentoMapping(supabase: any): Promise<Record<string, string>> {
   if (cachedMapping && Date.now() - cacheTime < CACHE_TTL) return cachedMapping;
-
   const { data } = await supabase
     .from("roleta_campanhas")
     .select("empreendimento, segmento_id")
     .eq("ativo", true);
-
   const mapping: Record<string, string> = {};
   for (const row of data || []) {
     if (row.empreendimento && row.segmento_id) {
@@ -36,14 +33,12 @@ async function resolveSegmento(supabase: any, empreendimento: string | null): Pr
   const mapping = await loadEmpreendimentoMapping(supabase);
   const lower = empreendimento.toLowerCase().trim();
   if (mapping[lower]) return mapping[lower];
-  // Fuzzy match
   for (const [key, segId] of Object.entries(mapping)) {
     if (lower.includes(key) || key.includes(lower)) return segId;
   }
   return null;
 }
 
-// ─── Current window detection ───
 function getCurrentJanela(): string {
   const now = new Date();
   const brHour = (now.getUTCHours() - 3 + 24) % 24;
@@ -53,10 +48,10 @@ function getCurrentJanela(): string {
 }
 
 interface CorretorCandidate {
-  corretorId: string;  // profiles.id (FK for credenciamentos)
-  authUserId: string;  // auth.users.id (for pipeline_leads.corretor_id)
+  corretorId: string;  // profiles.id
+  authUserId: string;  // auth.users.id
   leadsHoje: number;
-  totalAtivos: number; // total active pipeline leads (not in descarte/venda)
+  totalAtivos: number;
   lastReceivedAt: string | null;
 }
 
@@ -77,11 +72,9 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Verify JWT
     const token = authHeader.replace("Bearer ", "");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Allow service role calls (from jetimob-sync) or user JWT
     let userId: string | null = null;
     if (token !== serviceKey && token !== anonKey) {
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
@@ -115,20 +108,18 @@ Deno.serve(async (req) => {
 
     console.log(`Action: ${action}, Lead: ${singleLeadId}, Leads: ${batchLeadIds.length}`);
 
-    // ─── Accept / Reject ───
+    // ─── Accept / Reject (now using atomic RPCs) ───
     if (action === "aceitar" || action === "rejeitar") {
       return await handleAcceptReject(supabase, body, userId!, supabaseUrl, serviceKey);
     }
 
-    // ─── Batch dispatch (CEO Fila + backward-compatible aliases) ───
+    // ─── Batch dispatch ───
     if (action === "dispatch_batch" || action === "dispatch_fila_ceo") {
       const leadIds: string[] = batchLeadIds.length
         ? batchLeadIds
         : (singleLeadId ? [singleLeadId] : []);
       const targetJanela = janela || getCurrentJanela();
-      
 
-      // Load all leads
       const { data: leadsData } = await supabase
         .from("pipeline_leads")
         .select("id, empreendimento, nome, telefone")
@@ -140,10 +131,8 @@ Deno.serve(async (req) => {
         return jsonResponse({ success: true, dispatched: 0, reason: "no_eligible_leads" });
       }
 
-      // Get today's start
       const todayStart = getTodayStartUTC();
 
-      // Get ALL approved credenciamentos for today (ignore janela — balancing is global)
       const { data: creds } = await supabase
         .from("roleta_credenciamentos")
         .select("corretor_id, segmento_1_id, segmento_2_id, janela")
@@ -154,18 +143,14 @@ Deno.serve(async (req) => {
         return jsonResponse({ success: false, reason: "no_credenciados", dispatched: 0 });
       }
 
-      // Build unique corretor set with their segments
       const corretorSegments = new Map<string, Set<string>>();
       for (const c of creds) {
-        if (!corretorSegments.has(c.corretor_id)) {
-          corretorSegments.set(c.corretor_id, new Set());
-        }
+        if (!corretorSegments.has(c.corretor_id)) corretorSegments.set(c.corretor_id, new Set());
         const segs = corretorSegments.get(c.corretor_id)!;
         if (c.segmento_1_id) segs.add(c.segmento_1_id);
         if (c.segmento_2_id) segs.add(c.segmento_2_id);
       }
 
-      // Resolve profiles → auth user IDs
       const corretorProfileIds = [...corretorSegments.keys()];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -181,8 +166,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Count leads received TODAY per corretor — only ASSIGNED leads (aceito or pendente)
-      // NEVER count pendente_distribuicao (those are unassigned in the CEO queue)
       const authUserIds = [...profileToAuth.values()];
       const { data: todayLeads } = await supabase
         .from("pipeline_leads")
@@ -191,7 +174,6 @@ Deno.serve(async (req) => {
         .gte("distribuido_em", todayStart)
         .in("aceite_status", ["aceito", "pendente"]);
 
-      // Count TOTAL active pipeline leads per corretor (for fairer balancing)
       const { data: activeLeadsData } = await supabase
         .from("pipeline_leads")
         .select("corretor_id")
@@ -204,37 +186,27 @@ Deno.serve(async (req) => {
         totalAtivosCount.set(l.corretor_id, (totalAtivosCount.get(l.corretor_id) || 0) + 1);
       }
 
-      // Count per auth user
       const leadsCount = new Map<string, number>();
       const lastReceived = new Map<string, string>();
-      for (const uid of authUserIds) {
-        leadsCount.set(uid, 0);
-      }
+      for (const uid of authUserIds) leadsCount.set(uid, 0);
       for (const l of todayLeads || []) {
         leadsCount.set(l.corretor_id, (leadsCount.get(l.corretor_id) || 0) + 1);
         const prev = lastReceived.get(l.corretor_id);
-        if (!prev || l.distribuido_em > prev) {
-          lastReceived.set(l.corretor_id, l.distribuido_em);
-        }
+        if (!prev || l.distribuido_em > prev) lastReceived.set(l.corretor_id, l.distribuido_em);
       }
 
-      // Distribute leads one by one with global balancing
       let dispatched = 0;
       let failed = 0;
       const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string; leadsHoje?: number; totalAtivos?: number }> = [];
 
       for (const lead of leads) {
         const segmentoId = await resolveSegmento(supabase, lead.empreendimento);
-        
-        // Find eligible corretores for this segment
+
         const eligible: CorretorCandidate[] = [];
         for (const [profileId, segs] of corretorSegments.entries()) {
-          // If no segment identified, allow all credenciados
           if (segmentoId && !segs.has(segmentoId)) continue;
-          
           const authId = profileToAuth.get(profileId);
           if (!authId) continue;
-
           eligible.push({
             corretorId: profileId,
             authUserId: authId,
@@ -250,25 +222,20 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Sort: 1) least leads today, 2) fewest total active leads, 3) longest without a lead
         eligible.sort((a, b) => {
           if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
           if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
-          // Tie-breaker: who hasn't received recently (null = never received = first)
           if (!a.lastReceivedAt && b.lastReceivedAt) return -1;
           if (a.lastReceivedAt && !b.lastReceivedAt) return 1;
-          if (a.lastReceivedAt && b.lastReceivedAt) {
-            return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
-          }
+          if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
           return 0;
         });
 
         console.log(`Lead ${lead.nome}: ${eligible.length} eligible. Top 3: ${eligible.slice(0, 3).map(e => `${e.authUserId.slice(0,8)}(hoje=${e.leadsHoje},total=${e.totalAtivos})`).join(", ")}`);
         const chosen = eligible[0];
         const now = new Date();
-        const expireAt = new Date(now.getTime() + 10 * 60 * 1000); // 10 min
+        const expireAt = new Date(now.getTime() + 10 * 60 * 1000);
 
-        // Assign lead
         const { error: updateErr } = await supabase
           .from("pipeline_leads")
           .update({
@@ -286,15 +253,13 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Update counters for next iteration
         leadsCount.set(chosen.authUserId, (leadsCount.get(chosen.authUserId) || 0) + 1);
         totalAtivosCount.set(chosen.authUserId, (totalAtivosCount.get(chosen.authUserId) || 0) + 1);
         lastReceived.set(chosen.authUserId, now.toISOString());
 
-        // Log distribution
         await supabase.from("roleta_distribuicoes").insert({
           lead_id: lead.id,
-          corretor_id: chosen.corretorId, // profile id
+          corretor_id: chosen.corretorId,
           segmento_id: segmentoId,
           janela: targetJanela,
           status: "aguardando",
@@ -303,18 +268,16 @@ Deno.serve(async (req) => {
           avisos_enviados: 0,
         }).then(r => { if (r.error) console.warn("roleta_distribuicoes insert:", r.error.message); });
 
-        // Create notification
         await supabase.from("notifications").insert({
           user_id: chosen.authUserId,
           tipo: "lead",
           categoria: "lead_novo",
           titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
           mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}${lead.origem ? ` (${lead.origem})` : ""}. Aceite em 10 minutos!`,
-          dados: { pipeline_lead_id: lead.id, lead_nome: lead.nome, empreendimento: lead.empreendimento, telefone: lead.telefone, origem: lead.origem, campanha: lead.origem_detalhe },
+          dados: { pipeline_lead_id: lead.id, lead_nome: lead.nome, empreendimento: lead.empreendimento, telefone: lead.telefone, origem: lead.origem },
           agrupamento_key: `lead_novo_${lead.id}`,
         }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
 
-        // Send WhatsApp + Push notifications (fire and forget)
         sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
           console.warn("WhatsApp notify error:", e)
         );
@@ -322,11 +285,10 @@ Deno.serve(async (req) => {
           console.warn("Push notify error:", e)
         );
 
-          distributionLog.push({ leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown", leadsHoje: chosen.leadsHoje, totalAtivos: chosen.totalAtivos });
+        distributionLog.push({ leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown", leadsHoje: chosen.leadsHoje, totalAtivos: chosen.totalAtivos });
         dispatched++;
       }
 
-      // Audit log
       if (userId) {
         await supabase.from("audit_log").insert({
           user_id: userId,
@@ -341,12 +303,11 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: true, dispatched, failed });
     }
 
-    // ─── Single lead distribution (from jetimob-sync + backward-compatible aliases) ───
+    // ─── Single lead distribution ───
     if (action === "distribute_single" || !action) {
       if (!singleLeadId) {
         return jsonResponse({ error: "pipeline_lead_id required" }, 400);
       }
-
       const result = await distributeSingleLead(supabase, supabaseUrl, serviceKey, singleLeadId, janela);
       return jsonResponse(result);
     }
@@ -379,7 +340,6 @@ async function distributeSingleLead(
   const todayStart = getTodayStartUTC();
   const todayStr = getTodayDateStr();
 
-  // Get ALL approved credenciados for today (global balancing, no janela filter)
   const { data: creds } = await supabase
     .from("roleta_credenciamentos")
     .select("corretor_id, segmento_1_id, segmento_2_id")
@@ -390,7 +350,6 @@ async function distributeSingleLead(
     return { success: false, reason: "no_credenciados" };
   }
 
-  // Build eligible list filtered by segment
   const corretorSegments = new Map<string, Set<string>>();
   for (const c of creds) {
     if (!corretorSegments.has(c.corretor_id)) corretorSegments.set(c.corretor_id, new Set());
@@ -399,7 +358,6 @@ async function distributeSingleLead(
     if (c.segmento_2_id) segs.add(c.segmento_2_id);
   }
 
-  // Filter by segment
   const eligibleProfileIds: string[] = [];
   for (const [profileId, segs] of corretorSegments.entries()) {
     if (!segmentoId || segs.has(segmentoId)) {
@@ -411,7 +369,6 @@ async function distributeSingleLead(
     return { success: false, reason: "no_corretor_available", segmento_id: segmentoId };
   }
 
-  // Resolve auth IDs
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, user_id")
@@ -424,7 +381,6 @@ async function distributeSingleLead(
 
   const authIds = [...profileToAuth.values()];
 
-  // Count today's leads — only actually assigned (aceito/pendente), NOT pendente_distribuicao
   const { data: todayLeads } = await supabase
     .from("pipeline_leads")
     .select("corretor_id, distribuido_em")
@@ -432,7 +388,6 @@ async function distributeSingleLead(
     .gte("distribuido_em", todayStart)
     .in("aceite_status", ["aceito", "pendente"]);
 
-  // Count TOTAL active pipeline leads per corretor (fairer balancing)
   const { data: activeLeadsData } = await supabase
     .from("pipeline_leads")
     .select("corretor_id")
@@ -454,10 +409,9 @@ async function distributeSingleLead(
     if (!prev || l.distribuido_em > prev) lastReceived.set(l.corretor_id, l.distribuido_em);
   }
 
-  // Build candidates and sort — exclude rejected broker if specified
   const candidates: CorretorCandidate[] = [];
   for (const [profileId, authId] of profileToAuth.entries()) {
-    if (excludeAuthUserId && authId === excludeAuthUserId) continue; // skip rejected broker
+    if (excludeAuthUserId && authId === excludeAuthUserId) continue;
     candidates.push({
       corretorId: profileId,
       authUserId: authId,
@@ -467,7 +421,6 @@ async function distributeSingleLead(
     });
   }
 
-  // Sort: 1) least leads today, 2) fewest total active leads, 3) longest without a lead
   candidates.sort((a, b) => {
     if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
     if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
@@ -476,6 +429,10 @@ async function distributeSingleLead(
     if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
     return 0;
   });
+
+  if (candidates.length === 0) {
+    return { success: false, reason: "no_corretor_available", segmento_id: segmentoId };
+  }
 
   const chosen = candidates[0];
   const now = new Date();
@@ -497,7 +454,6 @@ async function distributeSingleLead(
     return { success: false, reason: "update_failed", error: error.message };
   }
 
-  // Log, notify
   const distRes = await supabase.from("roleta_distribuicoes").insert({
     lead_id: leadId,
     corretor_id: chosen.corretorId,
@@ -516,7 +472,7 @@ async function distributeSingleLead(
     categoria: "lead_novo",
     titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
     mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}${lead.origem ? ` (${lead.origem})` : ""}. Aceite em 10 minutos!`,
-    dados: { pipeline_lead_id: leadId, lead_nome: lead.nome, empreendimento: lead.empreendimento, origem: lead.origem, campanha: lead.origem_detalhe },
+    dados: { pipeline_lead_id: leadId, lead_nome: lead.nome, empreendimento: lead.empreendimento, origem: lead.origem },
     agrupamento_key: `lead_novo_${leadId}`,
   });
   if (notifRes.error) console.warn("notification insert:", notifRes.error.message);
@@ -527,34 +483,29 @@ async function distributeSingleLead(
   return { success: true, corretor_id: chosen.authUserId, segmento_id: segmentoId };
 }
 
-// ─── Accept / Reject handler ───
+// ─── Accept / Reject handler (now using atomic RPCs) ───
 async function handleAcceptReject(supabase: any, body: any, userId: string, supabaseUrl: string, serviceKey: string) {
-  const { action, pipeline_lead_id } = body;
+  const { action, pipeline_lead_id, status_inicial, motivo } = body;
 
   if (action === "aceitar") {
-    const { error } = await supabase
-      .from("pipeline_leads")
-      .update({
-        aceite_status: "aceito",
-        aceito_em: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", pipeline_lead_id)
-      .eq("corretor_id", userId)
-      .eq("aceite_status", "pendente");
+    // Use atomic RPC instead of direct update
+    const { data: result, error } = await supabase.rpc("aceitar_lead", {
+      p_lead_id: pipeline_lead_id,
+      p_corretor_id: userId,
+      p_status_inicial: status_inicial || "ligando_agora",
+    });
 
     if (error) {
+      console.error("aceitar_lead RPC error:", error);
       return jsonResponse({ success: false, error: error.message }, 500);
     }
 
-    // Update roleta_distribuicoes
-    const distUpd = await supabase.from("roleta_distribuicoes")
-      .update({ status: "aceito", aceito_em: new Date().toISOString() })
-      .eq("lead_id", pipeline_lead_id)
-      .eq("status", "aguardando");
-    if (distUpd.error) console.warn("roleta_distribuicoes update:", distUpd.error.message);
+    if (!result?.success) {
+      console.log(`Lead acceptance rejected: ${JSON.stringify(result)}`);
+      return jsonResponse(result);
+    }
 
-    // Notification
+    // Post-acceptance: notification (non-blocking)
     const { data: leadData } = await supabase
       .from("pipeline_leads")
       .select("nome, empreendimento")
@@ -562,7 +513,7 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
       .maybeSingle();
 
     if (leadData) {
-      const notifRes2 = await supabase.from("notifications").insert({
+      await supabase.from("notifications").insert({
         user_id: userId,
         tipo: "lead",
         categoria: "lead_aceito",
@@ -570,43 +521,34 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
         mensagem: `${leadData.nome || "Lead"}${leadData.empreendimento ? ` — ${leadData.empreendimento}` : ""}. Faça o primeiro contato agora!`,
         dados: { pipeline_lead_id, lead_nome: leadData.nome, empreendimento: leadData.empreendimento },
         agrupamento_key: `lead_aceito_${pipeline_lead_id}`,
-      });
-      if (notifRes2.error) console.warn("notification insert:", notifRes2.error.message);
+      }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
     }
 
     return jsonResponse({ success: true });
   }
 
   if (action === "rejeitar") {
-    // Reject: clear corretor, set back to pendente_distribuicao for redistribution
-    const { error } = await supabase
-      .from("pipeline_leads")
-      .update({
-        aceite_status: "pendente_distribuicao",
-        corretor_id: null,
-        distribuido_em: null,
-        aceite_expira_em: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", pipeline_lead_id)
-      .eq("corretor_id", userId);
+    // Use atomic RPC instead of direct update
+    const { data: result, error } = await supabase.rpc("rejeitar_lead", {
+      p_lead_id: pipeline_lead_id,
+      p_corretor_id: userId,
+      p_motivo: motivo || "outro",
+    });
 
     if (error) {
+      console.error("rejeitar_lead RPC error:", error);
       return jsonResponse({ success: false, error: error.message }, 500);
     }
 
-    // Update roleta_distribuicoes
-    const rejUpd = await supabase.from("roleta_distribuicoes")
-      .update({ status: "recusado" })
-      .eq("lead_id", pipeline_lead_id)
-      .eq("status", "aguardando");
-    if (rejUpd.error) console.warn("roleta_distribuicoes reject update:", rejUpd.error.message);
+    if (!result?.success) {
+      return jsonResponse(result);
+    }
 
     // Try to redistribute immediately, excluding the broker who just rejected
-    const result = await distributeSingleLead(supabase, supabaseUrl, serviceKey, pipeline_lead_id, undefined, userId);
-    console.log(`Redistribution after reject (excluded ${userId}):`, JSON.stringify(result));
+    const redistResult = await distributeSingleLead(supabase, supabaseUrl, serviceKey, pipeline_lead_id, undefined, userId);
+    console.log(`Redistribution after reject (excluded ${userId}):`, JSON.stringify(redistResult));
 
-    return jsonResponse({ success: true, redistributed: result.success });
+    return jsonResponse({ success: true, redistributed: redistResult.success });
   }
 
   return jsonResponse({ error: "Invalid action" }, 400);
@@ -656,13 +598,12 @@ async function sendPush(supabaseUrl: string, serviceKey: string, authUserId: str
 }
 
 function getTodayStartUTC(): string {
-  // Brazil is UTC-3
   const now = new Date();
   const brDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
   const y = brDate.getUTCFullYear();
   const m = String(brDate.getUTCMonth() + 1).padStart(2, "0");
   const d = String(brDate.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${d}T03:00:00.000Z`; // midnight BR = 03:00 UTC
+  return `${y}-${m}-${d}T03:00:00.000Z`;
 }
 
 function getTodayDateStr(): string {
