@@ -193,8 +193,16 @@ function inferProfileFromLead(leadData?: Props["leadData"], currentProfile?: Pro
 
   return {
     quartos: currentProfile?.radar_quartos ?? hint?.dorms ?? null,
+    valor_min: hint?.faixa_min ?? null,
     valor_max: currentProfile?.radar_valor_max ?? leadData?.valor_estimado ?? hint?.faixa_max ?? null,
-    tipologia: currentProfile?.radar_tipologia || hint?.tipo || "apartamento",
+    tipologias: (() => {
+      const raw = currentProfile?.radar_tipologia;
+      if (raw) {
+        try { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } catch {}
+        return [raw];
+      }
+      return hint?.tipo ? [hint.tipo] : ["apartamento"];
+    })(),
     bairros: (() => {
       const raw = currentProfile?.radar_bairros;
       if (Array.isArray(raw) && raw.length > 0) return raw;
