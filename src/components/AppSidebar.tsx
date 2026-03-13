@@ -566,6 +566,19 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Orygem 60 dias">
+                  <NavLink
+                    to="/orygem-60"
+                    end
+                    className={`group/nav text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 transition-all duration-150 rounded-lg relative py-1.5 font-medium ${collapsed ? "px-0 justify-center" : "px-3"}`}
+                    activeClassName="!text-emerald-200 !font-semibold !bg-emerald-500/15 border-l-2 !border-l-emerald-400 !rounded-l-none rounded-r-lg"
+                  >
+                    <Home className={`${collapsed ? "" : "mr-2.5"} h-4 w-4 shrink-0 text-emerald-400`} />
+                    {!collapsed && <span className="text-sm">🏠 Orygem 60 dias</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </div>
         )}
