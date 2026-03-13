@@ -671,9 +671,14 @@ export default function ImoveisPage() {
 
   useEffect(() => {
     if (!mounted.current) return;
-    // Skip if filterKey hasn't actually changed (prevents double-fire)
     if (prevFilterKey.current === filterKey) return;
     prevFilterKey.current = filterKey;
+
+    // If an immediate search was already triggered, skip the debounced one
+    if (skipNextDebounce.current) {
+      skipNextDebounce.current = false;
+      return;
+    }
 
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
     filterDebounceRef.current = setTimeout(() => {
@@ -682,7 +687,25 @@ export default function ImoveisPage() {
     return () => { if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current); };
   }, [filterKey]);
 
-  const handleSearch = () => { setCampanhaAtiva(false); setUhomeOnly(false); setShowSuggestions(false); };
+  // Flag to skip the debounced effect when handleSearch already fired immediately
+  const skipNextDebounce = useRef(false);
+
+  const handleSearch = () => {
+    setShowSuggestions(false);
+    // Cancel any pending debounce
+    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    // Mark to skip the next debounced effect (state changes below will trigger it)
+    skipNextDebounce.current = true;
+    // Force immediate fetch with current state
+    // Use setTimeout(0) to let any pending state updates flush first
+    setTimeout(() => {
+      prevFilterKey.current = JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly: false, campanhaAtiva: false });
+      fetchRef.current(1);
+    }, 0);
+    setCampanhaAtiva(false);
+    setUhomeOnly(false);
+  };
 
   // Autocomplete with debounce — Typesense powered
   const handleSearchChange = useCallback((value: string) => {
@@ -695,28 +718,24 @@ export default function ImoveisPage() {
         setSuggestions(results);
         setShowSuggestions(true);
       } else {
-        // Fallback to jetimob-proxy autocomplete
-        try {
-          const { data } = await supabase.functions.invoke("jetimob-proxy", {
-            body: { action: "autocomplete", query: value },
-          });
-          if (data?.suggestions?.length) {
-            setSuggestions(data.suggestions);
-            setShowSuggestions(true);
-          } else {
-            setShowSuggestions(false);
-          }
-        } catch { setShowSuggestions(false); }
+        setSuggestions([]);
+        setShowSuggestions(false);
       }
     }, 200);
   }, [typesenseAutocomplete]);
 
   const handleSuggestionClick = (suggestion: { type: string; value: string }) => {
-    setSearch(suggestion.value);
     setShowSuggestions(false);
-    setCampanhaAtiva(false);
-    setUhomeOnly(false);
-    // search state change triggers the reactive useEffect via filterKey
+    setSuggestions([]);
+    if (suggestion.type === "bairro") {
+      setBairro(prev => prev.includes(suggestion.value) ? prev : [...prev, suggestion.value]);
+      setSearch("");
+    } else {
+      setSearch(suggestion.value);
+      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+      skipNextDebounce.current = true;
+      setTimeout(() => fetchRef.current(1), 0);
+    }
   };
 
   const getPreco = (item: any): string => {
