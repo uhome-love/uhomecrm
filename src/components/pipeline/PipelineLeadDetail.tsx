@@ -311,13 +311,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
               </Button>
             )}
-            {lead.email && (
-              <a href={`mailto:${lead.email}`} className="flex-1 min-w-0">
-                <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1 rounded-lg">
-                  <Mail className="h-3.5 w-3.5" /> Email
-                </Button>
-              </a>
-            )}
             <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => setComunicacaoOpen(true)}>
               <FileText className="h-3.5 w-3.5" /> Scripts
             </Button>
@@ -325,7 +318,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <Building2 className="h-3.5 w-3.5" /> Imóveis
             </Button>
             <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
-              <Plus className="h-3.5 w-3.5" /> Ação
+              <ClipboardList className="h-3.5 w-3.5" /> Tarefa
             </Button>
             <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
               <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg">
@@ -491,6 +484,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 📋 Tarefas
                 {pendingTasks > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{pendingTasks}</Badge>}
               </TabsTrigger>
+              <TabsTrigger value="visitas" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                📊 Visitas
+              </TabsTrigger>
               <TabsTrigger value="radar" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 📡 Radar
               </TabsTrigger>
@@ -549,9 +545,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               />
             </TabsContent>
 
+            {/* ===== TAB: VISITAS ===== */}
+            <TabsContent value="visitas" className="px-6 pb-8 space-y-4 mt-0">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" /> Visitas do Lead
+                </h4>
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { onOpenChange(false); setTimeout(() => { navigate(`/agenda-visitas?lead=${lead.id}&nome=${encodeURIComponent(lead.nome)}&telefone=${encodeURIComponent(lead.telefone || "")}&empreendimento=${encodeURIComponent(lead.empreendimento || "")}`); }, 200); }}>
+                  <Calendar className="h-3 w-3" /> + Agendar Visita
+                </Button>
+              </div>
+              <OpportunityVisitasTab pipelineLeadId={lead.id} />
+            </TabsContent>
 
-            
-            {/* ===== TAB: RADAR IMÓVEIS ===== */}
+
             <TabsContent value="radar" className="mt-0">
               <RadarImoveisTab
                 leadId={lead.id}
