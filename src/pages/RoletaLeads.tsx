@@ -107,6 +107,9 @@ function CeoView() {
           <TabsTrigger value="perdidos" className="gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5" /> Leads Perdidos
           </TabsTrigger>
+          <TabsTrigger value="inteligencia" className="gap-1.5">
+            🧠 Inteligência
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="gestao" className="space-y-6">
