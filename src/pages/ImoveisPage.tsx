@@ -808,7 +808,7 @@ export default function ImoveisPage() {
                 />
                 <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {search && (
-                    <button onClick={() => { setSearch(""); setSuggestions([]); setShowSuggestions(false); setTimeout(() => fetchImoveis(1, campanhaAtiva, uhomeOnly), 50); }} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted/50">
+                    <button onClick={() => { setSearch(""); setSuggestions([]); setShowSuggestions(false); }} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted/50">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   )}
