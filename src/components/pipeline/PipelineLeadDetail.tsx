@@ -350,131 +350,59 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </DropdownMenu>
           </div>
 
-          {/* Row 4: Simplified origin — single line */}
-          {(lead.empreendimento || lead.campanha || lead.formulario) && (
-            <div className="text-[11px] text-muted-foreground space-y-0.5">
-              {(lead.empreendimento || lead.plataforma) && (
-                <p>
-                  <span className="font-semibold text-foreground/80">Empreendimento:</span>{" "}
-                  {originLine}
-                  {callAttempts > 0 && (
-                    <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="ml-2 text-[9px] h-4 px-1">
-                      📞 {callAttempts}/4
-                    </Badge>
-                  )}
-                  {jetimobCode && (
-                    <span className="ml-2 text-muted-foreground/60">
-                      <Tag className="h-2.5 w-2.5 inline" /> {jetimobCode}
-                    </span>
-                  )}
-                </p>
-              )}
-              {lead.formulario && (
-                <p>
-                  <span className="font-semibold text-foreground/80">Formulário:</span>{" "}
-                  {lead.formulario}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ════════════ ALERTAS COMPACTOS + PRÓXIMA AÇÃO ════════════ */}
-        <div className="shrink-0 border-b border-border/50 px-5 py-2 space-y-2">
-          {/* Compact alert cards — side by side */}
-          {(noContactAlert || overdueTasks > 0) && (
-            <div className="grid grid-cols-2 gap-2">
-              {/* Alert: No contact */}
-              {noContactAlert && (
-                <button
-                  onClick={() => setActiveTab("historico")}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
-                    noContactAlert === "critical"
-                      ? "bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-800/40 hover:bg-red-100 dark:hover:bg-red-950/30"
-                      : "bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-950/30"
-                  }`}
-                >
-                  <span className="text-sm shrink-0">{noContactAlert === "critical" ? "🔴" : "🟡"}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[10px] font-semibold ${noContactAlert === "critical" ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"}`}>
-                      Sem contato
-                    </p>
-                    <p className={`text-[9px] ${noContactAlert === "critical" ? "text-red-600/70 dark:text-red-400/60" : "text-amber-600/70 dark:text-amber-400/60"}`}>
-                      Registrar contato →
-                    </p>
-                  </div>
-                </button>
-              )}
-
-              {/* Alert: Overdue tasks */}
-              {overdueTasks > 0 && (
-                <button
-                  onClick={() => setActiveTab("tarefas")}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-left bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-800/40 hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
-                >
-                  <span className="text-sm shrink-0">🔴</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold text-red-700 dark:text-red-400">
-                      {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
-                    </p>
-                    <p className="text-[9px] text-red-600/70 dark:text-red-400/60">
-                      Resolver →
-                    </p>
-                  </div>
-                </button>
-              )}
-
-              {/* If only one alert, fill second slot with next action mini */}
-              {!noContactAlert && overdueTasks > 0 && !nextTask && (
-                <button
-                  onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-left bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors"
-                >
-                  <span className="text-sm shrink-0">⚠️</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">Sem próxima ação</p>
-                    <p className="text-[9px] text-amber-600/70 dark:text-amber-400/60">Criar ação →</p>
-                  </div>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Próxima Ação — compact */}
-          {nextTask ? (
-            <div className="flex items-center gap-2.5 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2">
-              <Target className="h-4 w-4 text-primary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Próxima Ação</p>
-                <p className="text-xs font-semibold text-foreground truncate">
-                  {nextTask.titulo || nextTask.descricao}
-                  {nextTask.tipo && <span className="font-normal text-muted-foreground ml-1">· {nextTask.tipo.replace(/_/g, " ")}</span>}
-                  {nextTask.vence_em && <span className="font-normal text-muted-foreground ml-1">· {formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "" })}</span>}
-                  {(nextTask as any).hora_vencimento && <span className="font-normal text-muted-foreground"> {(nextTask as any).hora_vencimento.slice(0, 5)}</span>}
-                </p>
-              </div>
-              <Button variant="default" size="sm" className="h-7 text-[10px] px-2.5 gap-1 shrink-0" onClick={() => leadData.toggleTarefa(nextTask.id, nextTask.status)}>
-                <CheckCircle2 className="h-3 w-3" /> Concluir
-              </Button>
-            </div>
-          ) : !noContactAlert && overdueTasks === 0 && (
-            <button
-              onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}
-              className="flex items-center gap-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-700/30 px-3 py-2 w-full text-left hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors"
-            >
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Sem próxima ação</p>
-                <p className="text-[10px] text-amber-600/70 dark:text-amber-400/60">Crie uma tarefa para manter o follow-up →</p>
-              </div>
-              <Plus className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-            </button>
-          )}
+          {/* Row 4: Context line — empreendimento + formulário + status */}
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+            {(lead.empreendimento || lead.plataforma) && (
+              <span className="flex items-center gap-1">
+                <Building2 className="h-3 w-3" />
+                <span className="font-semibold text-foreground/80">{originLine}</span>
+              </span>
+            )}
+            {lead.formulario && (
+              <>
+                <span className="text-muted-foreground/40">|</span>
+                <span className="truncate max-w-[220px]">{lead.formulario}</span>
+              </>
+            )}
+            {callAttempts > 0 && (
+              <>
+                <span className="text-muted-foreground/40">|</span>
+                <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="text-[9px] h-4 px-1">
+                  📞 {callAttempts}/4
+                </Badge>
+              </>
+            )}
+            {jetimobCode && (
+              <>
+                <span className="text-muted-foreground/40">|</span>
+                <span className="text-muted-foreground/60">
+                  <Tag className="h-2.5 w-2.5 inline" /> {jetimobCode}
+                </span>
+              </>
+            )}
+            <span className="text-muted-foreground/40">|</span>
+            {noContactAlert ? (
+              <span className={`font-semibold ${noContactAlert === "critical" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
+                {noContactAlert === "critical" ? "🔴" : "🟡"} Sem contato
+              </span>
+            ) : overdueTasks > 0 ? (
+              <span className="font-semibold text-red-600 dark:text-red-400">
+                🔴 {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
+              </span>
+            ) : nextTask ? (
+              <span className="font-semibold text-primary">
+                ✅ Próx: {nextTask.titulo || nextTask.descricao}
+                {nextTask.vence_em && <span className="font-normal ml-1">· {formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "" })}</span>}
+              </span>
+            ) : (
+              <span className="font-semibold text-amber-600 dark:text-amber-400">⚠️ Sem próxima ação</span>
+            )}
+          </div>
         </div>
 
         {/* ════════════ ABAS ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 px-5 pt-2 pb-1 flex items-center gap-2">
+          <div className="shrink-0 px-5 pt-2 pb-1 flex items-center gap-2 border-b border-border/50">
             <TabsList className="bg-muted/50 h-8 flex-1">
               <TabsTrigger value="historico" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 📝 Histórico
@@ -493,7 +421,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </TabsList>
             <Button
               size="sm"
-              className="h-8 text-xs px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md shrink-0"
+              className="h-8 text-xs px-3 gap-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md shrink-0"
               onClick={() => setHomiOpen(!homiOpen)}
             >
               <Bot className="h-3.5 w-3.5" /> HOMI
