@@ -355,6 +355,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const oldStageChangedAt = lead.stage_changed_at;
     if (oldStageId === newStageId) return;
 
+    localMutationRef.current = true;
+
     // ─── Optimistic update (immediate UI response) ───
     const now = new Date().toISOString();
     setLeads(prev => prev.map(l =>
