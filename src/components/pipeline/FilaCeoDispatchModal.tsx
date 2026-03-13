@@ -42,8 +42,10 @@ function resolveSegmentoNome(emp: string | null): string | null {
   if (!emp) return null;
   const lower = emp.toLowerCase().trim();
   if (EMPREENDIMENTO_SEGMENTO[lower]) return EMPREENDIMENTO_SEGMENTO[lower];
-  for (const [key, nome] of Object.entries(EMPREENDIMENTO_SEGMENTO)) {
-    if (lower.includes(key) || key.includes(lower)) return nome;
+  // Sort keys by length descending to match most specific first
+  const sortedKeys = Object.keys(EMPREENDIMENTO_SEGMENTO).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (lower.includes(key) || key.includes(lower)) return EMPREENDIMENTO_SEGMENTO[key];
   }
   return null;
 }
