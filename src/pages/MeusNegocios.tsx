@@ -166,17 +166,32 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
 
   const handleSaveTask = async () => {
     if (!user || !taskText.trim()) { setEditingTask(false); return; }
+    const trimmed = taskText.trim();
     if (nextTask) {
-      await supabase.from("negocios_tarefas").update({ titulo: taskText.trim(), updated_at: new Date().toISOString() }).eq("id", nextTask.id);
+      await supabase.from("negocios_tarefas").update({ titulo: trimmed, updated_at: new Date().toISOString() }).eq("id", nextTask.id);
+      await supabase.from("negocios_atividades").insert({
+        negocio_id: negocio.id,
+        tipo: "proximo_passo",
+        titulo: "Próximo passo atualizado",
+        descricao: trimmed,
+        created_by: user.id,
+      } as any);
     } else {
       await supabase.from("negocios_tarefas").insert({
         negocio_id: negocio.id,
-        titulo: taskText.trim(),
+        titulo: trimmed,
         tipo: "follow_up",
         status: "pendente",
         prioridade: "media",
         created_by: user.id,
       });
+      await supabase.from("negocios_atividades").insert({
+        negocio_id: negocio.id,
+        tipo: "proximo_passo",
+        titulo: "Próximo passo definido",
+        descricao: trimmed,
+        created_by: user.id,
+      } as any);
     }
     setEditingTask(false);
     setTaskText("");
