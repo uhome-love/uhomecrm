@@ -257,23 +257,63 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
         telefone: lead.telefone || f.telefone || "",
         empreendimento: lead.empreendimento || f.empreendimento || "",
       }));
+      setFormErrors((prev) => ({ ...prev, pipeline_lead_id: undefined, nome_cliente: undefined }));
       setSearchPipeline("");
       setShowFilters(false);
     }
   };
 
+  const validateForm = (): FormErrors => {
+    const errors: FormErrors = {};
+
+    if (!form.nome_cliente.trim()) {
+      errors.nome_cliente = "Informe o nome do cliente.";
+    }
+
+    if (mode === "create" && !UUID_REGEX.test((form.pipeline_lead_id || "").trim())) {
+      errors.pipeline_lead_id = "Selecione um lead válido da lista.";
+    }
+
+    if (!form.data_visita) {
+      errors.data_visita = "Selecione a data da visita.";
+    } else if (Number.isNaN(new Date(`${form.data_visita}T00:00:00`).getTime())) {
+      errors.data_visita = "Data inválida.";
+    }
+
+    if (form.hora_visita && !/^\d{2}:\d{2}$/.test(form.hora_visita)) {
+      errors.hora_visita = "Horário inválido.";
+    }
+
+    if (!form.responsavel_visita) {
+      errors.responsavel_visita = "Selecione o responsável pela visita.";
+    }
+
+    if (isManager && form.corretor_id && !UUID_REGEX.test(form.corretor_id)) {
+      errors.corretor_id = "Selecione um corretor válido.";
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async () => {
-    if (!form.nome_cliente.trim()) return;
+    const errors = validateForm();
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      toast.error("Revise os campos obrigatórios para continuar.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await onSubmit({
         ...form,
         corretor_id: form.corretor_id || undefined,
-        telefone: form.telefone || null,
-        empreendimento: form.empreendimento || null,
+        telefone: form.telefone?.trim() || null,
+        empreendimento: form.empreendimento?.trim() || null,
         hora_visita: form.hora_visita || null,
         local_visita: form.local_visita || null,
-        observacoes: form.observacoes || null,
+        observacoes: form.observacoes?.trim() || null,
         pipeline_lead_id: form.pipeline_lead_id || null,
         lead_id: null,
         responsavel_visita: form.responsavel_visita || null,
