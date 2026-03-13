@@ -108,8 +108,8 @@ Deno.serve(async (req) => {
       const corretor = corretorResult.data;
       const overrideRows = overrideResult.data;
 
-      // Handle Melnick Day vitrines
-      if (vitrine.tipo === "melnick_day" && vitrine.dados_custom) {
+      // Handle Melnick Day and Mega Cyrela vitrines (custom data)
+      if ((vitrine.tipo === "melnick_day" || vitrine.tipo === "mega_cyrela") && vitrine.dados_custom) {
         const customData = vitrine.dados_custom as any[];
         const imoveis = customData.map((item: any, idx: number) => ({
           id: idx + 1,
