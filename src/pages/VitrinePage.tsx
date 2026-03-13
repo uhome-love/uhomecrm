@@ -18,13 +18,29 @@ export default function VitrinePage() {
     if (!id) return;
     (async () => {
       try {
+        console.log("[Vitrine] Fetching data for:", id);
         const { data: result, error: fnError } = await supabase.functions.invoke("vitrine-public", {
           body: { action: "get_vitrine", vitrine_id: id },
         });
         if (fnError) throw fnError;
-        if (result?.error) setError(result.error);
-        else setData(result);
+        if (result?.error) {
+          console.error("[Vitrine] API error:", result.error);
+          setError(result.error);
+        } else {
+          console.log("[Vitrine] Data loaded:", {
+            tipo: result?.vitrine?.tipo,
+            imoveis: result?.imoveis?.length,
+            hasLanding: !!result?.landing,
+            hasCorretor: !!result?.corretor,
+          });
+          // Sanitize imoveis array
+          if (result?.imoveis && Array.isArray(result.imoveis)) {
+            result.imoveis = result.imoveis.filter((i: any) => i != null);
+          }
+          setData(result);
+        }
       } catch (err: any) {
+        console.error("[Vitrine] Fetch error:", err);
         setError(err.message || "Erro ao carregar");
       } finally {
         setLoading(false);
