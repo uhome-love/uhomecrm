@@ -332,8 +332,9 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
 
   // Profile state
   const [quartos, setQuartos] = useState<string>(inferred.quartos ? String(inferred.quartos) : "");
+  const [valorMin, setValorMin] = useState<string>(inferred.valor_min ? String(inferred.valor_min) : "");
   const [valorMax, setValorMax] = useState<string>(inferred.valor_max ? String(inferred.valor_max) : "");
-  const [tipologia, setTipologia] = useState(inferred.tipologia || "apartamento");
+  const [selectedTipologias, setSelectedTipologias] = useState<string[]>(inferred.tipologias);
   const [selectedBairros, setSelectedBairros] = useState<string[]>(inferred.bairros);
   const [statusImovel, setStatusImovel] = useState(inferred.status_imovel || "qualquer");
   const [bairroSearch, setBairroSearch] = useState("");
@@ -358,13 +359,15 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
 
   const profile: RadarProfile = {
     quartos: quartos ? parseInt(quartos) : null,
+    valor_min: valorMin ? parseFloat(valorMin) : null,
     valor_max: valorMax ? parseFloat(valorMax) : null,
-    tipologia,
+    tipologias: selectedTipologias,
     bairros: selectedBairros,
     status_imovel: statusImovel === "qualquer" ? "" : statusImovel,
   };
 
   const toggleBairro = (b: string) => setSelectedBairros(prev => prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]);
+  const toggleTipologia = (t: string) => setSelectedTipologias(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   const filteredBairros = BAIRROS_POA.filter(b => !bairroSearch || normalize(b).includes(normalize(bairroSearch)));
   const toggleObjecao = (key: string) => setActiveObjecoes(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
 
@@ -373,7 +376,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     await onUpdate(leadId, {
       radar_quartos: quartos ? parseInt(quartos) : null,
       radar_valor_max: valorMax ? parseFloat(valorMax) : null,
-      radar_tipologia: tipologia,
+      radar_tipologia: JSON.stringify(selectedTipologias),
       radar_bairros: selectedBairros,
       radar_status_imovel: statusImovel === "qualquer" ? null : statusImovel,
       radar_atualizado_em: new Date().toISOString(),
