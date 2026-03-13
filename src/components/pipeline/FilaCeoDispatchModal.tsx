@@ -10,8 +10,15 @@ import { toast } from "sonner";
 // Empreendimento → Segmento mapping (mirrors edge function)
 const EMPREENDIMENTO_SEGMENTO: Record<string, string> = {
   "open bosque": "MCMV / Até 500k",
+  "melnick day médio padrão": "Médio-Alto Padrão",
+  "melnick day medio padrao": "Médio-Alto Padrão",
+  "melnick day - médio padrão": "Médio-Alto Padrão",
+  "melnick day alto padrão": "Altíssimo Padrão",
+  "melnick day - alto padrão": "Altíssimo Padrão",
+  "melnick day alto padrao": "Altíssimo Padrão",
+  "melnick day compactos": "Investimento",
+  "melnick day - compactos": "Investimento",
   "melnick day": "MCMV / Até 500k",
-  "melnick day compactos": "MCMV / Até 500k",
   "casa tua": "Médio-Alto Padrão",
   "las casas": "Médio-Alto Padrão",
   "orygem": "Médio-Alto Padrão",
