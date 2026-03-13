@@ -716,7 +716,7 @@ export default function ImoveisPage() {
     setShowSuggestions(false);
     setCampanhaAtiva(false);
     setUhomeOnly(false);
-    setTimeout(() => fetchRef.current(1), 50);
+    // search state change triggers the reactive useEffect via filterKey
   };
 
   const getPreco = (item: any): string => {
