@@ -245,18 +245,24 @@ export function useLeadIntelligence(periodo: string) {
       .sort((a, b) => b.count - a.count);
   }, [leads]);
 
-  // Ranking empreendimentos
+  // Ranking empreendimentos (full performance)
   const empreendimentoPerf = useMemo((): EmpreendimentoPerf[] => {
-    const map = new Map<string, number>();
+    const map = new Map<string, LeadIntelData[]>();
     leads.forEach(l => {
       const key = l.empreendimento || "Não informado";
-      map.set(key, (map.get(key) || 0) + 1);
+      map.set(key, [...(map.get(key) || []), l]);
     });
     return [...map.entries()]
-      .map(([empreendimento, leads]) => ({ empreendimento, leads }))
+      .map(([empreendimento, arr]) => ({
+        empreendimento,
+        leads: arr.length,
+        taxaContato: arr.length ? Math.round((arr.filter(hasContato).length / arr.length) * 100) : 0,
+        visitas: arr.filter(l => isVisita(l) || isProposta(l)).length,
+        vendas: arr.filter(isVenda).length,
+      }))
       .sort((a, b) => b.leads - a.leads)
-      .slice(0, 15);
-  }, [leads]);
+      .slice(0, 20);
+  }, [leads, stageMap]);
 
   // Leads por horário
   const hourlyData = useMemo((): HourlyData[] => {

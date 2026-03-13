@@ -107,36 +107,20 @@ export default function LeadIntelligenceTab() {
         <KpiCard icon={BarChart3} label="Taxa de venda" value={kpis.taxaVenda} suffix="%" color="bg-emerald-500/10" />
       </div>
 
-      {/* Performance por campanha + formulário */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-1.5"><Megaphone className="h-4 w-4" /> Performance por Campanha</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="max-h-[300px]">
-              <DataTable
-                headers={["Campanha", "Leads", "Taxa Contato", "Visitas", "Vendas"]}
-                rows={campanhas.slice(0, 20).map(c => [c.campanha, c.leads, c.taxaContato, c.visitas, c.vendas])}
-              />
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-1.5"><FileText className="h-4 w-4" /> Performance por Formulário</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="max-h-[300px]">
-              <DataTable
-                headers={["Formulário", "Leads", "Taxa Contato", "Visitas", "Vendas"]}
-                rows={formularios.slice(0, 15).map(f => [f.campanha, f.leads, f.taxaContato, f.visitas, f.vendas])}
-              />
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Performance por Empreendimento */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-1.5"><Building2 className="h-4 w-4" /> Performance por Empreendimento</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="max-h-[350px]">
+            <DataTable
+              headers={["Empreendimento", "Leads", "Taxa Contato", "Visitas", "Vendas"]}
+              rows={empreendimentoPerf.map(e => [e.empreendimento, e.leads, e.taxaContato, e.visitas, e.vendas])}
+            />
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
       {/* Segmento + Corretor */}
       <div className="grid lg:grid-cols-2 gap-4">
