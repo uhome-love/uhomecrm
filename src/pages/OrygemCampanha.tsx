@@ -20,6 +20,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
+import plantaTerreo2d from "@/assets/orygem/planta-2d-terreo.png";
+import planta2pav2d from "@/assets/orygem/planta-2d-2pav.png";
+import planta3pavEstar2d from "@/assets/orygem/planta-2d-3pav-estar.png";
 
 /* ═══════════════════════════════════════════
    CONSTANTS
@@ -163,9 +166,9 @@ const PAYMENT_CONDITIONS = [
 
 const PLANT_IMAGES = {
   "2d": [
-    { label: "Térreo", url: "/images/orygem/planta-2d-terreo.jpg" },
-    { label: "2º Pavimento", url: "/images/orygem/planta-2d-2pav.jpg" },
-    { label: "Terraço", url: "/images/orygem/planta-2d-terraco.jpg" },
+    { label: "Térreo", url: plantaTerreo2d },
+    { label: "2º Pavimento", url: planta2pav2d },
+    { label: "3º Pav — Estar", url: planta3pavEstar2d },
   ],
   "3d": [
     { label: "Térreo", url: "/images/orygem/planta-3d-terreo.jpg" },
