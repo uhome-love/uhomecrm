@@ -29,7 +29,7 @@ export default function MelnickDayLayout({ data }: Props) {
 
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 40%, #f1f5f9 100%)" }}>
-      <CampaignHeader vitrine={vitrine} corretor={corretor} badgeText="Seleção Melnick Day 2026" />
+      <CampaignHeader vitrine={vitrine} corretor={corretor} badgeText={isMegaCyrela ? "⚽ Seleção Cyrela 2026" : "Seleção Melnick Day 2026"} />
 
       {/* Property Grid */}
       <section className="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-16">
