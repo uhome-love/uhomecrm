@@ -11,8 +11,8 @@ interface Props {
   onViewDetails: (item: ShowcaseImovel) => void;
 }
 
-function createPriceIcon(valor: number | null) {
-  const label = valor ? `R$ ${(valor / 1000).toFixed(0)}k` : "📍";
+function createPriceIcon(valor?: number | null) {
+  const label = typeof valor === "number" && Number.isFinite(valor) ? `R$ ${(valor / 1000).toFixed(0)}k` : "📍";
   return L.divIcon({
     className: "showcase-map-pin",
     html: `<div style="
@@ -34,16 +34,24 @@ function createPriceIcon(valor: number | null) {
 
 export default function ShowcaseMap({ imoveis, onViewDetails }: Props) {
   const geoImoveis = useMemo(
-    () => (imoveis || []).filter(i => i?.lat && i?.lng),
+    () => (Array.isArray(imoveis) ? imoveis : [])
+      .map((item) => {
+        const lat = typeof item?.lat === "number" ? item.lat : Number(item?.lat);
+        const lng = typeof item?.lng === "number" ? item.lng : Number(item?.lng);
+        return { item, lat, lng };
+      })
+      .filter(({ lat, lng }) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180),
     [imoveis]
   );
 
   if (geoImoveis.length === 0) return null;
 
   const center: [number, number] = [
-    geoImoveis.reduce((s, i) => s + (i.lat || 0), 0) / geoImoveis.length,
-    geoImoveis.reduce((s, i) => s + (i.lng || 0), 0) / geoImoveis.length,
+    geoImoveis.reduce((sum, current) => sum + current.lat, 0) / geoImoveis.length,
+    geoImoveis.reduce((sum, current) => sum + current.lng, 0) / geoImoveis.length,
   ];
+
+  if (!Number.isFinite(center[0]) || !Number.isFinite(center[1])) return null;
 
   return (
     <section className="max-w-6xl mx-auto px-4 sm:px-8 pb-8">
@@ -56,31 +64,20 @@ export default function ShowcaseMap({ imoveis, onViewDetails }: Props) {
       </div>
 
       <div className="rounded-3xl overflow-hidden" style={{ boxShadow: "0 8px 30px rgba(0,0,0,0.08)", border: "1px solid #e2e8f0" }}>
-        <MapContainer
-          center={center}
-          zoom={13}
-          style={{ height: "400px", width: "100%" }}
-          scrollWheelZoom={false}
-        >
+        <MapContainer center={center} zoom={13} style={{ height: "400px", width: "100%" }} scrollWheelZoom={false}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {geoImoveis.map((item) => (
-            <Marker
-              key={item.id}
-              position={[item.lat!, item.lng!]}
-              icon={createPriceIcon(item.valor)}
-            >
+          {geoImoveis.map(({ item, lat, lng }) => (
+            <Marker key={`${item.id}-${lat}-${lng}`} position={[lat, lng]} icon={createPriceIcon(item.valor)}>
               <Popup>
                 <div style={{ width: "220px", padding: 0 }}>
-                  {item.fotos?.[0] && (
-                    <img src={item.fotos[0]} alt="" className="w-full h-28 object-cover rounded-t-lg" />
-                  )}
+                  {item.fotos?.[0] && <img src={item.fotos[0]} alt="" className="w-full h-28 object-cover rounded-t-lg" />}
                   <div className="p-3">
                     <p className="font-bold text-sm text-slate-800">{item.empreendimento || item.titulo}</p>
                     {item.bairro && <p className="text-xs text-slate-500 mt-0.5">{item.bairro}</p>}
-                    {item.valor && <p className="text-sm font-black text-blue-600 mt-1">{formatBRL(item.valor)}</p>}
+                    {typeof item.valor === "number" && <p className="text-sm font-black text-blue-600 mt-1">{formatBRL(item.valor)}</p>}
                     <button
                       onClick={() => onViewDetails(item)}
                       className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold text-white"
@@ -105,3 +102,4 @@ export default function ShowcaseMap({ imoveis, onViewDetails }: Props) {
     </section>
   );
 }
+
