@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
