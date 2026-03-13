@@ -182,10 +182,13 @@ function fmtPrice(v: number): string {
   return `R$ ${v}`;
 }
 
+type HintMap = Record<string, { faixa_min?: number; faixa_max?: number; bairros?: string[]; tipo?: string; dorms?: number }>;
+
 /** Infer profile from lead context */
-function inferProfileFromLead(leadData?: Props["leadData"], currentProfile?: Props["currentProfile"]): RadarProfile {
+function inferProfileFromLead(leadData?: Props["leadData"], currentProfile?: Props["currentProfile"], dynamicHints?: HintMap): RadarProfile {
   const emp = normalize(leadData?.empreendimento || "");
-  const hint = Object.entries(EMPREENDIMENTO_HINTS).find(([k]) => emp.includes(normalize(k)))?.[1];
+  const allHints: HintMap = { ...EMPREENDIMENTO_HINTS_FALLBACK, ...(dynamicHints || {}) };
+  const hint = Object.entries(allHints).find(([k]) => emp.includes(normalize(k)))?.[1];
 
   return {
     quartos: currentProfile?.radar_quartos ?? hint?.dorms ?? null,
