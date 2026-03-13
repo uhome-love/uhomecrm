@@ -97,16 +97,31 @@ const OBJECOES = [
   { key: "investir", label: "Quer investir", icon: "📈" },
 ];
 
-// Empreendimento → segment hints
+// Empreendimento → segment hints (preço referência + margem ~10% no valor_max inferido)
 const EMPREENDIMENTO_HINTS: Record<string, { faixa_min?: number; faixa_max?: number; bairros?: string[]; tipo?: string; dorms?: number }> = {
-  "casa tua": { faixa_min: 400000, faixa_max: 900000, bairros: ["Auxiliadora"], tipo: "apartamento", dorms: 2 },
-  "open bosque": { faixa_min: 200000, faixa_max: 350000, bairros: ["Passo d'Areia"], tipo: "apartamento", dorms: 2 },
-  "orygem": { faixa_min: 500000, faixa_max: 1200000, bairros: ["Petrópolis"], tipo: "apartamento", dorms: 3 },
-  "las casas": { faixa_min: 600000, faixa_max: 1500000, tipo: "casa" },
-  "lake eyre": { faixa_min: 1500000, faixa_max: 5000000, bairros: ["Três Figueiras", "Boa Vista"], tipo: "apartamento", dorms: 3 },
-  "shift": { faixa_min: 250000, faixa_max: 600000, tipo: "apartamento", dorms: 1 },
-  "casa bastian": { faixa_min: 300000, faixa_max: 700000, tipo: "apartamento", dorms: 1 },
-  "melnick day": { faixa_min: 200000, faixa_max: 500000, tipo: "apartamento", dorms: 2 },
+  // MCMV
+  "open bosque": { faixa_min: 200000, faixa_max: 280000, bairros: ["Passo d'Areia"], tipo: "apartamento", dorms: 2 },
+  "open major": { faixa_min: 200000, faixa_max: 270000, bairros: ["Marechal Rondon"], tipo: "apartamento", dorms: 2 },
+  "open alto ipiranga": { faixa_min: 200000, faixa_max: 300000, bairros: ["Jardim Carvalho", "Vila Ipiranga"], tipo: "apartamento", dorms: 2 },
+  "melnick day": { faixa_min: 200000, faixa_max: 350000, tipo: "apartamento", dorms: 2 },
+  // Médio-Alto
+  "casa tua": { faixa_min: 500000, faixa_max: 650000, bairros: ["Petrópolis", "Higienópolis", "Bom Fim"], tipo: "casa", dorms: 3 },
+  "las casas": { faixa_min: 600000, faixa_max: 900000, bairros: ["Petrópolis", "Higienópolis"], tipo: "casa", dorms: 3 },
+  "orygem": { faixa_min: 700000, faixa_max: 1200000, bairros: ["Petrópolis"], tipo: "apartamento", dorms: 3 },
+  "me day": { faixa_min: 400000, faixa_max: 700000, tipo: "apartamento", dorms: 2 },
+  "alto lindoia": { faixa_min: 400000, faixa_max: 650000, bairros: ["Lindóia", "Cristo Redentor"], tipo: "apartamento", dorms: 2 },
+  "alto lindóia": { faixa_min: 400000, faixa_max: 650000, bairros: ["Lindóia", "Cristo Redentor"], tipo: "apartamento", dorms: 2 },
+  "terrace": { faixa_min: 500000, faixa_max: 900000, bairros: ["Petrópolis", "Bela Vista"], tipo: "apartamento", dorms: 3 },
+  "alfa": { faixa_min: 400000, faixa_max: 700000, tipo: "apartamento", dorms: 2 },
+  "duetto": { faixa_min: 500000, faixa_max: 800000, tipo: "apartamento", dorms: 2 },
+  "salzburg": { faixa_min: 600000, faixa_max: 1000000, bairros: ["Auxiliadora", "Petrópolis"], tipo: "apartamento", dorms: 3 },
+  // Altíssimo
+  "lake eyre": { faixa_min: 1500000, faixa_max: 3500000, bairros: ["Três Figueiras", "Boa Vista"], tipo: "apartamento", dorms: 3 },
+  "seen": { faixa_min: 1200000, faixa_max: 2500000, bairros: ["Três Figueiras", "Menino Deus"], tipo: "apartamento", dorms: 3 },
+  "boa vista country": { faixa_min: 2000000, faixa_max: 5000000, bairros: ["Boa Vista", "Três Figueiras"], tipo: "apartamento", dorms: 4 },
+  // Investimento
+  "shift": { faixa_min: 250000, faixa_max: 500000, bairros: ["Centro Histórico", "Cidade Baixa"], tipo: "apartamento", dorms: 1 },
+  "casa bastian": { faixa_min: 300000, faixa_max: 550000, bairros: ["Cidade Baixa", "Menino Deus"], tipo: "apartamento", dorms: 1 },
 };
 
 const MEDAY_CATALOG: ImovelResult[] = [
