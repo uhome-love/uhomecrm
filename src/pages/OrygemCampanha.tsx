@@ -174,9 +174,9 @@ const PLANT_IMAGES = {
     { label: "3º Pav — Estar", url: planta3pavEstar2d },
   ],
   "3d": [
-    { label: "Térreo", url: "/images/orygem/planta-3d-terreo.jpg" },
-    { label: "2º Pavimento", url: "/images/orygem/planta-3d-2pav.jpg" },
-    { label: "Terraço", url: "/images/orygem/planta-3d-terraco.jpg" },
+    { label: "Térreo", url: plantaTerreo3d },
+    { label: "2º Pavimento", url: planta2pav3d },
+    { label: "3º Pav — Estar", url: planta3pavEstar3d },
   ],
 };
 
