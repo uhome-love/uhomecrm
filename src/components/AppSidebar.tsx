@@ -278,7 +278,7 @@ export function AppSidebar() {
             label: "Marketing",
             items: [
               { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
-              { title: "Imóveis Jetimob", url: "/imoveis", icon: Building2 },
+              { title: "Imóveis", url: "/imoveis", icon: Building2 },
               { title: "Melnick Day", url: "/melnick-day", icon: Zap },
             ],
           },
