@@ -12,7 +12,7 @@ function sanitizeImovel(item: any): ShowcaseImovel | null {
   if (!item || typeof item !== "object") return null;
   return {
     id: Number(item.id) || 0,
-    codigo: item.codigo ?? null,
+    codigo: typeof item.codigo === "string" ? item.codigo : undefined,
     titulo: item.titulo || "Imóvel",
     endereco: item.endereco ?? null,
     bairro: item.bairro ?? null,
