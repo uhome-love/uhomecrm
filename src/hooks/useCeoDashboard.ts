@@ -440,7 +440,13 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     totalLeadsPeriodo: extraKpis?.totalLeadsPeriodo || 0,
     presentesHoje: extraKpis?.presentesHoje || 0,
     metasDiaTotal: extraKpis?.metasDiaTotal || { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0 },
-    reload: () => {}, // No-op — react-query handles caching
+    reload: useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["ceo-kpis"] });
+      queryClient.invalidateQueries({ queryKey: ["ceo-pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["ceo-negocios"] });
+      queryClient.invalidateQueries({ queryKey: ["ceo-teams"] });
+      queryClient.invalidateQueries({ queryKey: ["ceo-extra-kpis"] });
+    }, [queryClient]),
     reloadRoleta,
   };
 }
