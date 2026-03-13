@@ -150,8 +150,14 @@ export default function VendasRealizadas() {
         });
       }
 
-      // Load profiles for corretores
-      const ids = [...new Set(rows.map(v => v.corretor_id).filter(Boolean))] as string[];
+      // Load profiles for corretores + parceiros
+      const corretorIds = new Set(rows.map(v => v.corretor_id).filter(Boolean) as string[]);
+      // Add partner profile IDs
+      Object.values(parceriaMap).forEach(p => {
+        if (p.principal_id) corretorIds.add(p.principal_id);
+        if (p.parceiro_id) corretorIds.add(p.parceiro_id);
+      });
+      const ids = [...corretorIds];
       let profileMap: Record<string, ProfileInfo> = {};
       if (ids.length > 0) {
         const { data: profiles } = await supabase.from("profiles").select("id, nome, avatar_url, avatar_gamificado_url").in("id", ids);
