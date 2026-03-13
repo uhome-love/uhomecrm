@@ -38,11 +38,13 @@ function extractImages(item: any): string[] {
 }
 
 function extractFullImages(item: any): string[] {
+  // Prefer fotos_full (full-res URLs from Typesense)
+  if (item._fotos_full?.length) return item._fotos_full;
   if (item._fotos_normalized?.length) return item._fotos_normalized;
   const arr = item.imagens;
   if (!Array.isArray(arr) || arr.length === 0) return [];
-  // Prefer full-size: link > link_large > link_medio > link_thumb
-  return arr.map((img: any) => img.link || img.link_large || img.link_medio || img.link_thumb || img.url || img.src || "").filter(Boolean);
+  // Prefer full-size: link_large > link > link_medio > link_thumb
+  return arr.map((img: any) => img.link_large || img.link || img.link_medio || img.link_thumb || img.url || img.src || "").filter(Boolean);
 }
 
 function extractOrigemExterna(item: any) {
