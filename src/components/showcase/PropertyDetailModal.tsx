@@ -15,7 +15,7 @@ interface Props {
 
 export default function PropertyDetailModal({ item, corretor, open, onClose, onTrack }: Props) {
   const [currentImg, setCurrentImg] = useState(0);
-  const fotos = item.fotos || [];
+  const fotos = Array.isArray(item?.fotos) ? item.fotos.filter(Boolean) : [];
 
   if (!open) return null;
 
