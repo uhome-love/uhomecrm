@@ -201,7 +201,7 @@ export default function PropertyCard({
         <div className="flex gap-2 mt-1">
           {onViewDetails && (
             <button
-              onClick={() => { onViewDetails(item); onTrack?.("detail_click", item.id); }}
+              onClick={() => { onViewDetails(item); onTrack?.("detail_click", item?.id ?? 0); }}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:shadow-lg"
               style={{ background: "linear-gradient(135deg, #1e3a5f, #2563eb)", color: "white", boxShadow: "0 4px 15px rgba(37,99,235,0.3)" }}
             >
