@@ -6,6 +6,7 @@ import type { ShowcaseData } from "@/components/showcase/types";
 import ProductPageLayout from "@/components/showcase/ProductPageLayout";
 import MelnickDayLayout from "@/components/showcase/MelnickDayLayout";
 import PropertySelectionLayout from "@/components/showcase/PropertySelectionLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function VitrinePage() {
   const { id } = useParams<{ id: string }>();
@@ -58,20 +59,38 @@ export default function VitrinePage() {
 
   const tipo = data.vitrine.tipo || "property_selection";
 
-  // Route to the correct layout based on vitrine type
-  switch (tipo) {
-    case "melnick_day":
-      return <MelnickDayLayout data={data} />;
-    case "product_page":
-    case "anuncio": // backward compat
-      return <ProductPageLayout data={data} />;
-    case "property_selection":
-    case "jetimob": // backward compat
-    default:
-      // If has landing data (single product with overrides), use product page layout
-      if (data.landing && data.imoveis.length <= 1) {
+  const renderLayout = () => {
+    switch (tipo) {
+      case "melnick_day":
+        return <MelnickDayLayout data={data} />;
+      case "product_page":
+      case "anuncio":
         return <ProductPageLayout data={data} />;
+      case "property_selection":
+      case "jetimob":
+      default:
+        if (data.landing && data.imoveis.length <= 1) {
+          return <ProductPageLayout data={data} />;
+        }
+        return <PropertySelectionLayout data={data} />;
+    }
+  };
+
+  return (
+    <ErrorBoundary
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white px-4">
+          <div className="text-center space-y-4 max-w-md">
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto">
+              <Building2 className="h-8 w-8 text-slate-400" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">Erro ao abrir vitrine</h1>
+            <p className="text-slate-500">Tente gerar o link novamente na página de imóveis.</p>
+          </div>
+        </div>
       }
-      return <PropertySelectionLayout data={data} />;
-  }
+    >
+      {renderLayout()}
+    </ErrorBoundary>
+  );
 }
