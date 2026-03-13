@@ -1,24 +1,23 @@
 /**
  * Vitrine public URL generator.
  *
- * Shared links go through the vitrine-og edge function so that
- * WhatsApp / Telegram / social-media crawlers receive real OG meta
- * tags (title, description, image) from the vitrine data.
+ * Always returns the official uhomesales.com domain URL.
+ * The edge function vitrine-og exists as internal infrastructure
+ * for OG metadata generation but is NEVER exposed to end users.
  *
- * The edge function detects bots → serves OG HTML.
- * Regular browsers → 302 redirect to the SPA route.
+ * OG previews are handled via server-side rewrite/proxy at the
+ * hosting layer (e.g. Cloudflare, Vercel, etc.) that internally
+ * calls the edge function when a crawler is detected.
  */
 
-const SUPABASE_URL =
-  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_SUPABASE_URL) ||
-  "https://hunbxqzhvuemgntklyzb.supabase.co";
+const PUBLIC_DOMAIN = "https://uhomesales.com";
 
 /**
- * Returns the share-safe URL for a vitrine.
- * Routes through the vitrine-og edge function so crawlers see real OG tags.
+ * Returns the official public URL for a vitrine.
+ * Always uses the canonical uhomesales.com domain.
  */
 export function getVitrinePublicUrl(vitrineId: string): string {
-  return `${SUPABASE_URL}/functions/v1/vitrine-og?id=${vitrineId}`;
+  return `${PUBLIC_DOMAIN}/vitrine/${vitrineId}`;
 }
 
 /** @deprecated Use getVitrinePublicUrl instead */
