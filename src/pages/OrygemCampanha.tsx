@@ -52,21 +52,21 @@ const GALLERY_IMAGES = [
 ];
 
 const INFRASTRUCTURE = [
-  { icon: Building2, label: "Club House", img: "/images/orygem/salao-festas.jpg" },
+  { icon: Home, label: "Quarto da Casa", img: "/images/orygem/suite.jpg" },
   { icon: Waves, label: "Piscina com Deck Solarium", img: "/images/orygem/piscina.jpg" },
-  { icon: Waves, label: "Piscina em Níveis e Spa", img: "/images/orygem/interior-spa.jpg" },
-  { icon: Dumbbell, label: "Academia", img: "/images/orygem/academia.jpg" },
-  { icon: PartyPopper, label: "Salão de Festas", img: "/images/orygem/salao-festas.jpg" },
-  { icon: Gamepad2, label: "Sala de Jogos", img: "/images/orygem/market.jpg" },
-  { icon: Baby, label: "Brinquedoteca", img: "/images/orygem/playground.jpg" },
-  { icon: Target, label: "Quadra Beach Tennis", img: "/images/orygem/beach-tennis.jpg" },
-  { icon: Target, label: "Mini-Quadra", img: "/images/orygem/beach-tennis.jpg" },
+  { icon: Home, label: "Pátio da Casa", img: "/images/orygem/patio.jpg" },
+  { icon: Target, label: "Quadra Poliesportiva", img: "/images/orygem/beach-tennis.jpg" },
+  { icon: Home, label: "Quarto da Casa", img: "/images/orygem/cozinha.jpg" },
+  { icon: ShoppingBag, label: "Market 24h", img: "/images/orygem/market.jpg" },
+  { icon: Armchair, label: "Sala da Casa", img: "/images/orygem/living.jpg" },
+  { icon: Sun, label: "Terraço da Casa", img: "/images/orygem/terraco.jpg" },
+  { icon: Sun, label: "Terraço da Casa", img: "/images/orygem/churrasqueira.jpg" },
   { icon: Palmtree, label: "Quiosque Gourmet", img: "/images/orygem/quiosque.jpg" },
   { icon: Baby, label: "Playground", img: "/images/orygem/playground.jpg" },
-  { icon: Flame, label: "Fogo de Chão", img: "/images/orygem/churrasqueira.jpg" },
-  { icon: Armchair, label: "Redário", img: "/images/orygem/redario.jpg" },
+  { icon: Flame, label: "Fogo de Chão", img: "/images/orygem/redario.jpg" },
   { icon: Dog, label: "Espaço Pet", img: "/images/orygem/pet-space.jpg" },
-  { icon: ShoppingBag, label: "Market", img: "/images/orygem/market.jpg" },
+  { icon: Dumbbell, label: "Academia", img: "/images/orygem/academia.jpg" },
+  { icon: PartyPopper, label: "Salão de Festas", img: "/images/orygem/salao-festas.jpg" },
   { icon: TreePine, label: "Área Verde 13.000m²", img: "/images/orygem/area-verde.jpg" },
 ];
 
