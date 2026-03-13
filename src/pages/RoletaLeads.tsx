@@ -246,6 +246,9 @@ function CeoView() {
         <TabsContent value="perdidos">
           <RoletagensTab view="perdidos" />
         </TabsContent>
+        <TabsContent value="inteligencia">
+          <LeadIntelligenceTab />
+        </TabsContent>
       </Tabs>
 
       {/* Modal: Incluir manualmente na roleta */}
