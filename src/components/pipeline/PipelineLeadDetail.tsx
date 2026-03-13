@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -197,6 +197,40 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     }
   }, [inativarMotivo, inativarObs, stages, lead.id, onUpdate, onMove, onOpenChange]);
 
+  // ═══ Keyboard shortcuts ═══
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      // Skip if user is typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement)?.isContentEditable) return;
+
+      switch (e.key.toLowerCase()) {
+        case "l":
+          if (lead.telefone) window.open(`tel:${lead.telefone}`, "_self");
+          break;
+        case "w":
+          if (lead.telefone) setWhatsappTemplatesOpen(true);
+          break;
+        case "t":
+          setActiveTab("tarefas");
+          setShowNovaTarefa(true);
+          break;
+        case "s":
+          setComunicacaoOpen(true);
+          break;
+        case "i":
+          setActiveTab("radar");
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, lead.telefone]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden border-l border-border/50 max-h-[100dvh]">
@@ -293,40 +327,52 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               )}
             </div>
 
-            {/* Row 3: Action buttons */}
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* Row 3: Barra de Ações Rápidas — fixa no topo */}
+            <div className="flex items-center gap-1.5 flex-wrap rounded-xl bg-muted/60 border border-border/40 px-3 py-2">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mr-1">⚡ Ações</span>
               {lead.telefone && (
                 <a href={`tel:${lead.telefone}`}>
-                  <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary">
+                  <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-border/60 hover:border-primary hover:text-primary">
                     <Phone className="h-3.5 w-3.5" /> Ligar
+                    <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">L</kbd>
                   </Button>
                 </a>
               )}
               {lead.telefone && (
-                <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-green-300 text-green-600 hover:bg-green-50" onClick={() => setWhatsappTemplatesOpen(true)}>
+                <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-green-300 text-green-600 hover:bg-green-50" onClick={() => setWhatsappTemplatesOpen(true)}>
                   <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+                  <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">W</kbd>
                 </Button>
               )}
               {lead.email && (
                 <a href={`mailto:${lead.email}`}>
-                  <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-border/60 hover:border-primary hover:text-primary">
+                  <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-border/60 hover:border-primary hover:text-primary">
                     <Mail className="h-3.5 w-3.5" /> Email
                   </Button>
                 </a>
               )}
-              <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
-                <MessageSquare className="h-3.5 w-3.5" /> 📚 Scripts
+              <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
+                <FileText className="h-3.5 w-3.5" /> Scripts
+                <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">S</kbd>
               </Button>
-              <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")}>
-                <Button variant="outline" size="sm" className="py-2 px-4 text-xs gap-1.5 rounded-full">
-                  <Plus className="h-3.5 w-3.5" /> Ação
+              <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-purple-300 text-purple-600 hover:bg-purple-50" onClick={() => setActiveTab("radar")}>
+                <Building2 className="h-3.5 w-3.5" /> Imóveis
+                <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">I</kbd>
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-amber-300 text-amber-600 hover:bg-amber-50" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
+                <Plus className="h-3.5 w-3.5" /> Próxima Ação
+                <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">T</kbd>
+              </Button>
+              <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1 rounded-lg">
+                  <Zap className="h-3.5 w-3.5" /> Registrar
                 </Button>
               </QuickActionMenu>
 
               {/* ⋯ More menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full">
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg ml-auto">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -456,7 +502,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
         </div>
 
-        {/* ════════════ ZONA 2 — ALERTAS + PRÓXIMA TAREFA ════════════ */}
+        {/* ════════════ ZONA 2 — ALERTAS + PRÓXIMA AÇÃO ════════════ */}
         <div className="shrink-0 border-b border-border/50 bg-accent/20 px-6 py-2.5 space-y-2">
           {/* Alert: Overdue tasks */}
           {overdueTasks > 0 && (() => {
@@ -509,33 +555,39 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             return null;
           })()}
 
-          {/* Next task indicator OR missing task alert */}
+          {/* ═══ BLOCO: PRÓXIMA AÇÃO ═══ */}
           {nextTask ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-              <span className="text-xs font-semibold text-foreground">Próxima tarefa:</span>
-              <span className="text-xs text-muted-foreground">
-                {nextTask.descricao || nextTask.titulo}
-                {nextTask.vence_em && ` · ${formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "data inválida" })}`}
-                {(nextTask as any).hora_vencimento && ` ${(nextTask as any).hora_vencimento.slice(0, 5)}`}
-              </span>
-              <div className="ml-auto flex items-center gap-1">
-                <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={() => leadData.toggleTarefa(nextTask.id, nextTask.status)}>
-                  <CheckCircle2 className="h-3 w-3" /> Feito
-                </Button>
+            <div className="flex items-center gap-3 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                <Target className="h-5 w-5 text-primary" />
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300/50 dark:border-amber-600/30 rounded-lg px-3 py-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-              <div className="flex-1">
-                <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Lead desatualizado</span>
-                <p className="text-[10px] text-amber-600 dark:text-amber-400/80 mt-0.5">
-                  Para manter o lead atualizado, crie uma tarefa com a próxima ação a ser realizada.
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Próxima Ação</p>
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {nextTask.titulo || nextTask.descricao}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {nextTask.tipo && <span className="capitalize">{nextTask.tipo.replace(/_/g, " ")}</span>}
+                  {nextTask.vence_em && <> · {formatDateSafe(nextTask.vence_em, "dd/MM 'às'", { locale: ptBR, dateOnly: true, fallback: "" })}</>}
+                  {(nextTask as any).hora_vencimento && ` ${(nextTask as any).hora_vencimento.slice(0, 5)}`}
                 </p>
               </div>
-              <Button variant="default" size="sm" className="h-7 text-xs px-3 gap-1 bg-amber-500 hover:bg-amber-600 text-white shrink-0" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
-                <Plus className="h-3 w-3" /> Criar próxima ação
+              <Button variant="default" size="sm" className="h-8 text-xs px-3 gap-1.5 shrink-0" onClick={() => leadData.toggleTarefa(nextTask.id, nextTask.status)}>
+                <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300/50 dark:border-amber-600/30 px-4 py-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30 shrink-0">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Próxima Ação</p>
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Este lead não possui próxima ação</p>
+                <p className="text-[10px] text-amber-600/80 dark:text-amber-400/60">Crie uma tarefa para manter o follow-up em dia.</p>
+              </div>
+              <Button variant="default" size="sm" className="h-8 text-xs px-3 gap-1.5 bg-amber-500 hover:bg-amber-600 text-white shrink-0" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
+                <Plus className="h-3.5 w-3.5" /> Criar ação
               </Button>
             </div>
           )}
