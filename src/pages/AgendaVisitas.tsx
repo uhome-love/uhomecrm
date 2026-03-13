@@ -761,25 +761,42 @@ export default function AgendaVisitas() {
         ))}
       </div>
 
-      <Tabs defaultValue="lista">
+      <Tabs defaultValue="semana-atual" onValueChange={(val) => {
+        // Auto-apply date filters based on tab
+        const today = startOfDay(new Date());
+        if (val === "semana-atual") {
+          setDateFrom(startOfWeek(today, { weekStartsOn: 1 }));
+          setDateTo(endOfWeek(today, { weekStartsOn: 1 }));
+          setQuickFilter("semana");
+        } else if (val === "semana-anterior") {
+          const prevWeek = subWeeks(today, 1);
+          setDateFrom(startOfWeek(prevWeek, { weekStartsOn: 1 }));
+          setDateTo(endOfWeek(prevWeek, { weekStartsOn: 1 }));
+          setQuickFilter("semana_anterior");
+        } else if (val === "mes") {
+          setDateFrom(startOfMonth(today));
+          setDateTo(endOfMonth(today));
+          setQuickFilter("mes");
+        } else {
+          // calendar / performance: clear date filter
+          setDateFrom(undefined);
+          setDateTo(undefined);
+          setQuickFilter("");
+        }
+      }}>
         <TabsList className="h-9 flex-wrap">
-          <TabsTrigger value="lista" className="gap-1.5 text-xs h-8 px-3">
-            <List className="h-3.5 w-3.5" /> Visitas
+          <TabsTrigger value="semana-atual" className="gap-1.5 text-xs h-8 px-3">
+            <CalendarDays className="h-3.5 w-3.5" /> Semana Atual
           </TabsTrigger>
-          <TabsTrigger value="anteriores" className="gap-1.5 text-xs h-8 px-3">
-            <History className="h-3.5 w-3.5" /> Anteriores
+          <TabsTrigger value="semana-anterior" className="gap-1.5 text-xs h-8 px-3">
+            <History className="h-3.5 w-3.5" /> Semana Anterior
           </TabsTrigger>
-          <TabsTrigger value="geral" className="gap-1.5 text-xs h-8 px-3">
-            <CalendarDays className="h-3.5 w-3.5" /> Visitas Geral
+          <TabsTrigger value="mes" className="gap-1.5 text-xs h-8 px-3">
+            <List className="h-3.5 w-3.5" /> Mês
           </TabsTrigger>
           <TabsTrigger value="calendario" className="gap-1.5 text-xs h-8 px-3">
             <CalendarDays className="h-3.5 w-3.5" /> Calendário
           </TabsTrigger>
-          {(isAdmin || isGestor) && (
-            <TabsTrigger value="por-corretor" className="gap-1.5 text-xs h-8 px-3">
-              <Users className="h-3.5 w-3.5" /> Por Corretor
-            </TabsTrigger>
-          )}
           {pendingCount > 0 && (
             <TabsTrigger value="alertas" className="gap-1.5 text-xs h-8 px-3 text-destructive">
               <AlertTriangle className="h-3.5 w-3.5" /> Alertas <Badge variant="destructive" className="text-[10px] ml-0.5 px-1.5 py-0">{pendingCount}</Badge>
@@ -790,7 +807,14 @@ export default function AgendaVisitas() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="lista" className="mt-3">
+        {/* ─── SEMANA ATUAL ─── */}
+        <TabsContent value="semana-atual" className="mt-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {format(startOfWeek(new Date(), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })} — {format(endOfWeek(new Date(), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })}
+            </Badge>
+          </div>
+          <DaySummary visitas={filtered} showTeamBreakdown={isAdmin} />
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
@@ -801,88 +825,24 @@ export default function AgendaVisitas() {
               onDelete={deleteVisita}
               showCorretor={isAdmin || isGestor}
               showTeam={isAdmin}
-              mode="upcoming"
+              mode="all"
             />
           )}
         </TabsContent>
 
-        <TabsContent value="anteriores" className="mt-3 space-y-3">
-          {/* Period selector */}
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { key: "mes-atual", label: "Mês atual" },
-              { key: "mes-1", label: format(subMonths(new Date(), 1), "MMMM", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase()) },
-              { key: "mes-2", label: format(subMonths(new Date(), 2), "MMMM", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase()) },
-              { key: "mes-3", label: format(subMonths(new Date(), 3), "MMMM", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase()) },
-              { key: "personalizado", label: "Personalizado" },
-            ].map(p => (
-              <button
-                key={p.key}
-                onClick={() => setAnterioresPeriodo(p.key)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
-                  anterioresPeriodo === p.key
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                    : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted"
-                )}
-              >
-                {p.label}
-              </button>
-            ))}
+        {/* ─── SEMANA ANTERIOR ─── */}
+        <TabsContent value="semana-anterior" className="mt-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {format(startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })} — {format(endOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })}
+            </Badge>
           </div>
-
-          {anterioresPeriodo === "personalizado" && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className={cn("h-9 text-xs gap-1", anterioresCustomFrom && "border-primary text-primary")}>
-                    <CalendarIcon className="h-3.5 w-3.5" />
-                    {anterioresCustomFrom ? format(anterioresCustomFrom, "dd/MM/yyyy") : "Data início"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={anterioresCustomFrom}
-                    onSelect={setAnterioresCustomFrom}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-              <span className="text-xs text-muted-foreground">até</span>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className={cn("h-9 text-xs gap-1", anterioresCustomTo && "border-primary text-primary")}>
-                    <CalendarIcon className="h-3.5 w-3.5" />
-                    {anterioresCustomTo ? format(anterioresCustomTo, "dd/MM/yyyy") : "Data fim"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={anterioresCustomTo}
-                    onSelect={setAnterioresCustomTo}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-              {(anterioresCustomFrom || anterioresCustomTo) && (
-                <Button variant="ghost" size="sm" className="h-9 text-xs text-destructive" onClick={() => { setAnterioresCustomFrom(undefined); setAnterioresCustomTo(undefined); }}>
-                  <X className="h-3.5 w-3.5 mr-1" /> Limpar
-                </Button>
-              )}
-            </div>
-          )}
-
+          <DaySummary visitas={filtered} showTeamBreakdown={isAdmin} />
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
             <VisitasList
-              visitas={anterioresFiltered}
+              visitas={filtered}
               onUpdateStatus={handleUpdateStatus}
               onEdit={handleEdit}
               onDelete={deleteVisita}
@@ -893,37 +853,35 @@ export default function AgendaVisitas() {
           )}
         </TabsContent>
 
-        <TabsContent value="geral" className="mt-3">
+        {/* ─── MÊS ─── */}
+        <TabsContent value="mes" className="mt-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {format(new Date(), "MMMM yyyy", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())}
+            </Badge>
+          </div>
+          <DaySummary visitas={filtered} showTeamBreakdown={isAdmin} />
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
-            <>
-              <DaySummary visitas={visitas} showTeamBreakdown={isAdmin} />
-              <div className="mt-3">
-                <VisitasList
-                  visitas={filtered}
-                  onUpdateStatus={handleUpdateStatus}
-                  onEdit={handleEdit}
-                  onDelete={deleteVisita}
-                  showCorretor={isAdmin || isGestor}
-                  showTeam={isAdmin}
-                  mode="all"
-                />
-              </div>
-            </>
+            <VisitasList
+              visitas={filtered}
+              onUpdateStatus={handleUpdateStatus}
+              onEdit={handleEdit}
+              onDelete={deleteVisita}
+              showCorretor={isAdmin || isGestor}
+              showTeam={isAdmin}
+              mode="all"
+            />
           )}
         </TabsContent>
 
+        {/* ─── CALENDÁRIO ─── */}
         <TabsContent value="calendario" className="mt-3">
           <VisitasCalendar visitas={allVisitasFiltered} showTeam={isAdmin} />
         </TabsContent>
 
-        {(isAdmin || isGestor) && (
-          <TabsContent value="por-corretor" className="mt-3">
-            <VisitasByCorretor visitas={filtered} onUpdateStatus={handleUpdateStatus} onDelete={deleteVisita} showTeam={isAdmin} />
-          </TabsContent>
-        )}
-
+        {/* ─── PERFORMANCE ─── */}
         <TabsContent value="performance" className="mt-3">
           <VisitasPerformance visitas={visitas} showCorretor={isAdmin || isGestor} />
         </TabsContent>
