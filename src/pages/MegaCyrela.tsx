@@ -728,7 +728,6 @@ export default function MegaCyrela() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </>
+    </div>
   );
 }
