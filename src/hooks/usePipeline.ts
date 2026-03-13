@@ -387,6 +387,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       setLeads(prev => prev.map(l =>
         l.id === leadId ? { ...l, stage_id: oldStageId, stage_changed_at: oldStageChangedAt } : l
       ));
+      setTimeout(() => { localMutationRef.current = false; }, 500);
       return;
     }
 
