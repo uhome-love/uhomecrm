@@ -79,7 +79,7 @@ interface Props {
 
 const BAIRROS_POA = [
   "Auxiliadora", "Bela Vista", "Boa Vista", "Bom Fim", "Centro Histórico",
-  "Cidade Baixa", "Cristo Redentor", "Glória", "Higienópolis", "Jardim Carvalho",
+  "Cidade Baixa", "Cristal", "Cristo Redentor", "Glória", "Higienópolis", "Jardim Carvalho",
   "Jardim do Salso", "Lindóia", "Marechal Rondon", "Mário Quintana", "Menino Deus",
   "Moinhos de Vento", "Mont'Serrat", "Passo d'Areia", "Petrópolis", "Rio Branco",
   "Santa Cecília", "São Sebastião", "Teresópolis", "Três Figueiras", "Vila Ipiranga", "Canoas",
@@ -97,8 +97,8 @@ const OBJECOES = [
   { key: "investir", label: "Quer investir", icon: "📈" },
 ];
 
-// Empreendimento → segment hints (preço referência + margem ~10% no valor_max inferido)
-const EMPREENDIMENTO_HINTS: Record<string, { faixa_min?: number; faixa_max?: number; bairros?: string[]; tipo?: string; dorms?: number }> = {
+// Fallback hints — used when empreendimento_overrides has no data for a product
+const EMPREENDIMENTO_HINTS_FALLBACK: Record<string, { faixa_min?: number; faixa_max?: number; bairros?: string[]; tipo?: string; dorms?: number }> = {
   // MCMV
   "open bosque": { faixa_min: 200000, faixa_max: 280000, bairros: ["Passo d'Areia"], tipo: "apartamento", dorms: 2 },
   "open major": { faixa_min: 200000, faixa_max: 270000, bairros: ["Marechal Rondon"], tipo: "apartamento", dorms: 2 },
@@ -116,13 +116,32 @@ const EMPREENDIMENTO_HINTS: Record<string, { faixa_min?: number; faixa_max?: num
   "duetto": { faixa_min: 500000, faixa_max: 800000, tipo: "apartamento", dorms: 2 },
   "salzburg": { faixa_min: 600000, faixa_max: 1000000, bairros: ["Auxiliadora", "Petrópolis"], tipo: "apartamento", dorms: 3 },
   // Altíssimo
-  "lake eyre": { faixa_min: 1500000, faixa_max: 3500000, bairros: ["Três Figueiras", "Boa Vista"], tipo: "apartamento", dorms: 3 },
+  "lake eyre": { faixa_min: 2000000, faixa_max: 4000000, bairros: ["Cristal"], tipo: "apartamento", dorms: 3 },
   "seen": { faixa_min: 1200000, faixa_max: 2500000, bairros: ["Três Figueiras", "Menino Deus"], tipo: "apartamento", dorms: 3 },
   "boa vista country": { faixa_min: 2000000, faixa_max: 5000000, bairros: ["Boa Vista", "Três Figueiras"], tipo: "apartamento", dorms: 4 },
   // Investimento
   "shift": { faixa_min: 250000, faixa_max: 500000, bairros: ["Centro Histórico", "Cidade Baixa"], tipo: "apartamento", dorms: 1 },
   "casa bastian": { faixa_min: 300000, faixa_max: 550000, bairros: ["Cidade Baixa", "Menino Deus"], tipo: "apartamento", dorms: 1 },
 };
+
+/** Build hints from empreendimento_overrides data */
+function buildHintsFromOverrides(
+  overrides: Array<{ nome: string | null; codigo: string; bairro: string | null; valor_min: number | null; valor_max: number | null; dormitorios: number | null }>,
+): Record<string, { faixa_min?: number; faixa_max?: number; bairros?: string[]; tipo?: string; dorms?: number }> {
+  const hints: Record<string, { faixa_min?: number; faixa_max?: number; bairros?: string[]; tipo?: string; dorms?: number }> = {};
+  for (const o of overrides) {
+    const key = normalize(o.nome || o.codigo);
+    if (!key) continue;
+    const h: any = {};
+    if (o.valor_min) h.faixa_min = o.valor_min;
+    if (o.valor_max) h.faixa_max = o.valor_max * 1.1; // 10% margin
+    if (o.bairro) h.bairros = [o.bairro];
+    if (o.dormitorios) h.dorms = o.dormitorios;
+    h.tipo = "apartamento";
+    hints[key] = h;
+  }
+  return hints;
+}
 
 const MEDAY_CATALOG: ImovelResult[] = [
   { nome: "Open Major", bairro: "Marechal Rondon", dorms: 2, preco: 235505, metragens: "43 m²", status: "Em obras", source: "meday", score: 0, imagem: "https://wordpress-melnick.s3.sa-east-1.amazonaws.com/wp-content/uploads/2026/03/03122722/open-major.png", tipo: "apartamento", justificativas: [] },
@@ -163,10 +182,13 @@ function fmtPrice(v: number): string {
   return `R$ ${v}`;
 }
 
+type HintMap = Record<string, { faixa_min?: number; faixa_max?: number; bairros?: string[]; tipo?: string; dorms?: number }>;
+
 /** Infer profile from lead context */
-function inferProfileFromLead(leadData?: Props["leadData"], currentProfile?: Props["currentProfile"]): RadarProfile {
+function inferProfileFromLead(leadData?: Props["leadData"], currentProfile?: Props["currentProfile"], dynamicHints?: HintMap): RadarProfile {
   const emp = normalize(leadData?.empreendimento || "");
-  const hint = Object.entries(EMPREENDIMENTO_HINTS).find(([k]) => emp.includes(normalize(k)))?.[1];
+  const allHints: HintMap = { ...EMPREENDIMENTO_HINTS_FALLBACK, ...(dynamicHints || {}) };
+  const hint = Object.entries(allHints).find(([k]) => emp.includes(normalize(k)))?.[1];
 
   return {
     quartos: currentProfile?.radar_quartos ?? hint?.dorms ?? null,
@@ -284,8 +306,20 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const navigate = useNavigate();
   const { search: typesenseSearch } = useTypesenseSearch();
 
+  // Load dynamic hints from empreendimento_overrides
+  const [dynamicHints, setDynamicHints] = useState<HintMap>({});
+  useEffect(() => {
+    supabase.from("empreendimento_overrides")
+      .select("nome, codigo, bairro, valor_min, valor_max, dormitorios")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setDynamicHints(buildHintsFromOverrides(data));
+        }
+      });
+  }, []);
+
   // Inferred profile
-  const inferred = useMemo(() => inferProfileFromLead(leadData, currentProfile), [leadData, currentProfile]);
+  const inferred = useMemo(() => inferProfileFromLead(leadData, currentProfile, dynamicHints), [leadData, currentProfile, dynamicHints]);
 
   // Profile state
   const [quartos, setQuartos] = useState<string>(inferred.quartos ? String(inferred.quartos) : "");
