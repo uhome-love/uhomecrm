@@ -266,17 +266,26 @@ export function usePipeline(pipelineTipo: string = "leads") {
       .finally(() => setLoading(false));
   }, [user, loadStages, loadSegmentos, loadLeads]);
 
-  // Realtime subscription — debounced to avoid rapid reloads
+  // Realtime subscription — smart debounce to avoid rapid reloads
+  // Ignores changes we made ourselves (optimistic updates already handled)
   useEffect(() => {
     if (!user) return;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastLocalUpdate = 0;
     const channel = supabase
       .channel("pipeline-leads-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "pipeline_leads" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "pipeline_leads" }, (payload) => {
+        // Skip reload if we just made a local change (within 2s)
+        const now = Date.now();
+        if (now - lastLocalUpdate < 2000) return;
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => loadLeads(), 1500);
       })
       .subscribe();
+
+    // Track local updates
+    const origSetLeads = setLeads;
+
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
