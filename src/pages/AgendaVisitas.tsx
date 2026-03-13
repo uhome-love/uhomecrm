@@ -608,7 +608,6 @@ export default function AgendaVisitas() {
               {format(startOfWeek(new Date(), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })} — {format(endOfWeek(new Date(), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })}
             </Badge>
           </div>
-          <DaySummary visitas={filtered} showTeamBreakdown={isAdmin} />
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
