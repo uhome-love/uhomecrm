@@ -536,9 +536,9 @@ export default function OrygemCampanha() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {INFRASTRUCTURE.map((item) => (
+            {INFRASTRUCTURE.map((item, idx) => (
               <div
-                key={item.label}
+                key={`${item.label}-${idx}`}
                 className="relative group rounded-xl overflow-hidden aspect-[4/3] cursor-pointer"
                 onClick={() => setLightboxImg(item.img)}
               >
