@@ -1187,7 +1187,7 @@ export default function ImoveisPage() {
             ) : (
               <div className="space-y-2">
                 {sortedImoveis.map((item, idx) => {
-                  const isCampanha = CAMPANHA_CODES.some((c) => c.codigo === item.codigo);
+                  const isCampanha = campanhaOverrides.some((c) => c.codigo === item.codigo);
                   const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
                   return <PropertyCardList key={item.id_imovel || item.codigo || idx} item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} onOpenLightbox={openLightbox} getPreco={getPreco} />;
                 })}
