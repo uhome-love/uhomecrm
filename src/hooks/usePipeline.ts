@@ -500,6 +500,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
     if (newStage?.tipo === "venda") {
       toast.success("🎉 Venda registrada! Parabéns!");
     }
+
+    setTimeout(() => { localMutationRef.current = false; }, 2000);
   }, [user, leads, stages]);
 
   const addLead = useCallback(async (lead: Partial<PipelineLead>) => {
