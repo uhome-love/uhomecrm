@@ -372,16 +372,31 @@ const PipelineCard = memo(function PipelineCard({
     >
       {/* Content */}
       <div className="px-3 pt-3 pb-2 space-y-1.5">
-        {/* Line 1: Name + status indicator */}
+        {/* Line 1: Name + score badge + temperature */}
         <div className="flex items-center justify-between gap-1">
           <span className="text-[13px] font-bold text-foreground truncate leading-tight tracking-tight">
             {cleanName(lead.nome)}
           </span>
-          {status.indicator && (
-            <span className={cn("text-sm shrink-0", status.indicatorCls)}>
-              {status.indicator}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Temperature indicator */}
+            {tempConfig && (
+              <span className={cn("inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold", tempConfig.bg, tempConfig.cls)}>
+                <tempConfig.icon className="h-2.5 w-2.5" />
+              </span>
+            )}
+            {/* Lead Score badge */}
+            <span className={cn(
+              "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-black",
+              leadScore.bgColor, leadScore.color
+            )}>
+              {leadScore.label}
             </span>
-          )}
+            {status.indicator && (
+              <span className={cn("text-sm", status.indicatorCls)}>
+                {status.indicator}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Line 2: Corretor (for managers) + Empreendimento · Phone · Origin badge */}
