@@ -1,6 +1,6 @@
 import { memo, useState, useMemo } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, MessageCircle, Zap, Calendar, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft, Eye, MapPin, PhoneCall, Send, FileText, Mail, MoreVertical, ArrowRight, Trash2, Flame, Snowflake, ThermometerSun } from "lucide-react";
+import { Phone, MessageCircle, Zap, Calendar, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft, Eye, MapPin, PhoneCall, Send, FileText, Mail, MoreVertical, ArrowRight, Trash2, Flame, Snowflake, ThermometerSun, ClipboardList, Loader2 } from "lucide-react";
 import { calculateLeadScore } from "@/lib/leadScoring";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserRole } from "@/hooks/useUserRole";
