@@ -61,6 +61,9 @@ export interface OrigemPerf {
 export interface EmpreendimentoPerf {
   empreendimento: string;
   leads: number;
+  taxaContato: number;
+  visitas: number;
+  vendas: number;
 }
 
 export interface HourlyData {
