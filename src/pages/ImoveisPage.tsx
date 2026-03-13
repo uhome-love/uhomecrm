@@ -290,7 +290,8 @@ function PhotoLightbox({ images, initialIndex, open, onClose }: { images: string
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
