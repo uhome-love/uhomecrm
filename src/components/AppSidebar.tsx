@@ -536,7 +536,7 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Top item + Melnick Day promo (until 2026-03-31) */}
+        {/* Top item */}
         {topItem && (
           <div className={`border-b border-white/10 pb-3 mb-1 ${collapsed ? "px-1" : ""}`}>
             <SidebarMenu className="px-1 pt-3 gap-0.5">
@@ -553,31 +553,64 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {new Date() <= new Date("2026-03-31T23:59:59") && (
+            </SidebarMenu>
+          </div>
+        )}
+
+        {/* Campanhas Comerciais - collapsible */}
+        {!collapsed ? (
+          <Collapsible defaultOpen className="border-b border-white/10 pb-2 mb-1">
+            <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors">
+              <span>Campanhas Comerciais</span>
+              <ChevronDown className="h-3 w-3 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenu className="px-1 gap-0.5">
+                {new Date() <= new Date("2026-03-31T23:59:59") && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Melnick Day">
+                      <NavLink
+                        to="/melnick-day"
+                        end
+                        className={`group/nav text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 transition-all duration-150 rounded-lg relative py-1.5 font-medium px-3`}
+                        activeClassName="!text-amber-200 !font-semibold !bg-amber-500/15 border-l-2 !border-l-amber-400 !rounded-l-none rounded-r-lg"
+                      >
+                        <Zap className="mr-2.5 h-4 w-4 shrink-0 text-amber-400" />
+                        <span className="text-sm">⚡ Melnick Day</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Melnick Day">
+                  <SidebarMenuButton asChild tooltip="Orygem 60 dias">
                     <NavLink
-                      to="/melnick-day"
+                      to="/orygem-60"
                       end
-                      className={`group/nav text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 transition-all duration-150 rounded-lg relative py-1.5 font-medium ${collapsed ? "px-0 justify-center" : "px-3"}`}
-                      activeClassName="!text-amber-200 !font-semibold !bg-amber-500/15 border-l-2 !border-l-amber-400 !rounded-l-none rounded-r-lg"
+                      className={`group/nav text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 transition-all duration-150 rounded-lg relative py-1.5 font-medium px-3`}
+                      activeClassName="!text-emerald-200 !font-semibold !bg-emerald-500/15 border-l-2 !border-l-emerald-400 !rounded-l-none rounded-r-lg"
                     >
-                      <Zap className={`${collapsed ? "" : "mr-2.5"} h-4 w-4 shrink-0 text-amber-400`} />
-                      {!collapsed && <span className="text-sm">⚡ Melnick Day</span>}
+                      <Home className="mr-2.5 h-4 w-4 shrink-0 text-emerald-400" />
+                      <span className="text-sm">🏠 Orygem 60 dias</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )}
+              </SidebarMenu>
+            </CollapsibleContent>
+          </Collapsible>
+        ) : (
+          <div className="border-b border-white/10 pb-2 mb-1 px-1">
+            <SidebarMenu className="gap-0.5">
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Melnick Day">
+                  <NavLink to="/melnick-day" end className="justify-center text-amber-300 hover:bg-amber-500/10 rounded-lg py-1.5" activeClassName="!bg-amber-500/15">
+                    <Zap className="h-4 w-4 text-amber-400" />
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Orygem 60 dias">
-                  <NavLink
-                    to="/orygem-60"
-                    end
-                    className={`group/nav text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 transition-all duration-150 rounded-lg relative py-1.5 font-medium ${collapsed ? "px-0 justify-center" : "px-3"}`}
-                    activeClassName="!text-emerald-200 !font-semibold !bg-emerald-500/15 border-l-2 !border-l-emerald-400 !rounded-l-none rounded-r-lg"
-                  >
-                    <Home className={`${collapsed ? "" : "mr-2.5"} h-4 w-4 shrink-0 text-emerald-400`} />
-                    {!collapsed && <span className="text-sm">🏠 Orygem 60 dias</span>}
+                  <NavLink to="/orygem-60" end className="justify-center text-emerald-300 hover:bg-emerald-500/10 rounded-lg py-1.5" activeClassName="!bg-emerald-500/15">
+                    <Home className="h-4 w-4 text-emerald-400" />
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
