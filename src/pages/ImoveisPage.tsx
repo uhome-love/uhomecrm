@@ -1084,7 +1084,7 @@ export default function ImoveisPage() {
                 <Megaphone className="h-3 w-3" /> Campanha
               </button>
               <button
-                onClick={() => { const next = !uhomeOnly; setUhomeOnly(next); setCampanhaAtiva(false); fetchImoveis(1, false, next); }}
+                onClick={() => { setUhomeOnly(prev => !prev); setCampanhaAtiva(false); }}
                 className={cn(
                   "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
                   uhomeOnly ? "bg-primary/10 border-primary/30 text-primary" : "bg-background border-border text-muted-foreground hover:border-primary/40"
