@@ -35,14 +35,28 @@ const BAIRROS_ALTO_PADRAO = [
   "Rio Branco", "Independência",
 ];
 
+const BAIRROS_LESTE = [
+  "Jardim Carvalho", "Jardim do Salso", "Mário Quintana", "Agronomia",
+  "Lomba do Pinheiro", "Protásio Alves",
+];
+
+const BAIRROS_INVESTIMENTO = [
+  "Centro Histórico", "Cidade Baixa", "Bom Fim", "Rio Branco", "Auxiliadora",
+  "Moinhos de Vento", "Menino Deus",
+];
+
 const REGION_MAP: Record<string, string[]> = {
   "zona norte": BAIRROS_ZONA_NORTE,
   "zona sul": BAIRROS_ZONA_SUL,
   "centro": BAIRROS_CENTRO,
+  "zona leste": BAIRROS_LESTE,
   "perto do iguatemi": BAIRROS_PERTO_IGUATEMI,
   "proximidades do iguatemi": BAIRROS_PERTO_IGUATEMI,
   "alto padrao": BAIRROS_ALTO_PADRAO,
   "alto padrão": BAIRROS_ALTO_PADRAO,
+  "regiao nobre": BAIRROS_ALTO_PADRAO,
+  "região nobre": BAIRROS_ALTO_PADRAO,
+  "investimento": BAIRROS_INVESTIMENTO,
 };
 
 serve(async (req) => {
@@ -69,22 +83,50 @@ CONTEXTO GEOGRÁFICO:
 - Zona Norte: ${BAIRROS_ZONA_NORTE.join(", ")}
 - Zona Sul: ${BAIRROS_ZONA_SUL.join(", ")}
 - Centro: ${BAIRROS_CENTRO.join(", ")}
+- Zona Leste: ${BAIRROS_LESTE.join(", ")}
 - Perto do Iguatemi: ${BAIRROS_PERTO_IGUATEMI.join(", ")}
 - Bairros Alto Padrão: ${BAIRROS_ALTO_PADRAO.join(", ")}
+- Bairros para Investimento: ${BAIRROS_INVESTIMENTO.join(", ")}
 
 SINÔNIMOS IMOBILIÁRIOS:
 - "compacto", "studio", "kitnet" = tipo loft/studio/kitnet, 1 dormitório
 - "alto padrão", "luxo", "premium" = bairros nobres, valor alto
 - "entrada facilitada" = lançamento/em obras
-- "bom para Airbnb", "investir", "renda" = perfil investidor, compactos
-- "para família" = 2-3 dormitórios, maior metragem
+- "bom para Airbnb", "investir", "renda" = perfil investidor, compactos em bairros centrais
+- "para família", "família grande" = 3-4 dormitórios, maior metragem
+- "casal", "jovem casal", "recém casados" = 2 dormitórios, valor moderado
 - "qtos", "quartos" = dormitórios
 - "apto" = apartamento
 - "cond", "condomínio" = condomínio fechado (casas)
+- "jk" = kitnet/studio, 1 dormitório
+- "cobertura", "duplex" = cobertura
+- "terreno", "lote" = terreno
+- "alugar", "aluguel", "locação" = contrato locacao (usar campo contrato)
+- "comprar", "compra", "venda" = contrato venda
+
+FAIXAS DE PREÇO COMUNS EM PORTO ALEGRE:
+- MCMV / econômico: até R$ 350.000
+- Médio padrão: R$ 350.000 - R$ 700.000
+- Médio-alto: R$ 700.000 - R$ 1.200.000
+- Alto padrão: R$ 1.200.000 - R$ 2.500.000
+- Altíssimo padrão: acima de R$ 2.500.000
+- "barato", "econômico", "acessível" = até R$ 400.000
+- "até 1 milhão" = valor_max 1.000.000
 
 CORREÇÃO DE ERROS COMUNS:
 - "bela vsta" = "Bela Vista", "iguatmi" = região Iguatemi
 - "moinhos" = "Moinhos de Vento", "pet" = "Petrópolis"
+- "lindoia" = "Jardim Lindóia" ou "Lindóia"
+- "cidade baixa" ou "CB" = "Cidade Baixa"
+- "menino deus" ou "MD" = "Menino Deus"
+- "3fig" ou "tres figueiras" = "Três Figueiras"
+
+REGRAS IMPORTANTES:
+1. Se o usuário não especificar contrato, assuma VENDA
+2. Se mencionar "aluguel/alugar/locação", defina contrato como "locacao"
+3. NÃO restrinja excessivamente — se houver dúvida, seja mais amplo nos filtros
+4. Se o usuário buscar por nome de empreendimento, coloque no texto_busca
+5. Sempre forneça uma explicação consultiva clara
 
 Use a ferramenta parse_property_search para extrair os filtros. Sempre chame a ferramenta.`;
 
@@ -112,49 +154,54 @@ Use a ferramenta parse_property_search para extrair os filtros. Sempre chame a f
                   tipos: {
                     type: "array",
                     items: { type: "string", enum: ["apartamento", "casa", "cobertura", "terreno", "comercial", "loft", "kitnet"] },
-                    description: "Tipos de imóvel identificados",
+                    description: "Tipos de imóvel identificados. Só inclua se o usuário mencionou explicitamente.",
+                  },
+                  contrato: {
+                    type: "string",
+                    enum: ["venda", "locacao"],
+                    description: "Tipo de contrato: venda (compra) ou locacao (aluguel). Default: venda",
                   },
                   bairros: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Bairros específicos mencionados ou inferidos da região",
+                    description: "Bairros específicos mencionados ou inferidos da região. Use nomes exatos da lista de bairros.",
                   },
                   regiao: {
                     type: "string",
-                    description: "Região mencionada: zona norte, zona sul, centro, perto do iguatemi, etc.",
+                    description: "Região mencionada: zona norte, zona sul, centro, zona leste, perto do iguatemi, etc.",
                   },
                   dormitorios: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Números de dormitórios desejados, ex: ['2','3']",
+                    description: "Números de dormitórios desejados, ex: ['2','3']. Só inclua se mencionado.",
                   },
                   suites_min: {
                     type: "number",
-                    description: "Mínimo de suítes",
+                    description: "Mínimo de suítes. Só inclua se mencionado.",
                   },
                   vagas_min: {
                     type: "number",
-                    description: "Mínimo de vagas de garagem",
+                    description: "Mínimo de vagas de garagem. Só inclua se mencionado.",
                   },
                   valor_min: {
                     type: "number",
-                    description: "Valor mínimo em reais",
+                    description: "Valor mínimo em reais. Só inclua se mencionado ou inferido do contexto.",
                   },
                   valor_max: {
                     type: "number",
-                    description: "Valor máximo em reais",
+                    description: "Valor máximo em reais. Só inclua se mencionado ou inferido do contexto.",
                   },
                   area_min: {
                     type: "number",
-                    description: "Área mínima em m²",
+                    description: "Área mínima em m². Só inclua se mencionado.",
                   },
                   area_max: {
                     type: "number",
-                    description: "Área máxima em m²",
+                    description: "Área máxima em m². Só inclua se mencionado.",
                   },
                   em_obras: {
                     type: "boolean",
-                    description: "Se busca especificamente lançamentos/em obras",
+                    description: "Se busca especificamente lançamentos/em obras. Só true se mencionado.",
                   },
                   perfil: {
                     type: "string",
@@ -163,15 +210,15 @@ Use a ferramenta parse_property_search para extrair os filtros. Sempre chame a f
                   },
                   texto_busca: {
                     type: "string",
-                    description: "Termos adicionais para busca textual no Typesense (empreendimento, característica, etc.)",
+                    description: "Termos para busca textual livre no catálogo (nome de empreendimento, construtora, característica específica). Use '*' se não houver termos específicos.",
                   },
                   explicacao: {
                     type: "string",
-                    description: "Frase curta e consultiva explicando o que foi entendido, ex: 'Busquei apartamentos compactos para investimento na zona central'",
+                    description: "Frase consultiva explicando o que foi entendido da busca, como um consultor imobiliário faria. Ex: 'Busquei apartamentos compactos ideais para investimento na região central de Porto Alegre'",
                   },
                   sugestao_alternativa: {
                     type: "string",
-                    description: "Sugestão de busca alternativa caso não haja resultados exatos, ex: 'Tente também bairros próximos como Jardim Europa'",
+                    description: "Sugestão proativa de busca alternativa, como um bom consultor faria. Ex: 'Considere também o bairro Menino Deus, com boa valorização e mesmo perfil'",
                   },
                 },
                 required: ["explicacao"],
@@ -235,9 +282,18 @@ Use a ferramenta parse_property_search para extrair os filtros. Sempre chame a f
       }
     }
 
+    // Determine contrato
+    const contrato = parsed.contrato || "venda";
+
     // Build Typesense-compatible filter_by
     const filterParts: string[] = [];
-    filterParts.push("valor_venda:>0");
+
+    // Contrato-based value filter
+    if (contrato === "locacao") {
+      filterParts.push("valor_locacao:>0");
+    } else {
+      filterParts.push("valor_venda:>0");
+    }
 
     if (parsed.bairros?.length === 1) {
       filterParts.push(`bairro:=${parsed.bairros[0]}`);
@@ -252,29 +308,30 @@ Use a ferramenta parse_property_search para extrair os filtros. Sempre chame a f
     }
 
     if (parsed.dormitorios?.length === 1) {
-      filterParts.push(`dormitorios:>=${parsed.dormitorios[0]}`);
+      filterParts.push(`dormitorios:=${parsed.dormitorios[0]}`);
     } else if (parsed.dormitorios?.length > 1) {
       filterParts.push(`dormitorios:[${parsed.dormitorios.join(",")}]`);
     }
 
+    const priceField = contrato === "locacao" ? "valor_locacao" : "valor_venda";
     if (parsed.suites_min) filterParts.push(`suites:>=${parsed.suites_min}`);
     if (parsed.vagas_min) filterParts.push(`vagas:>=${parsed.vagas_min}`);
-    if (parsed.valor_min) filterParts.push(`valor_venda:>=${parsed.valor_min}`);
-    if (parsed.valor_max) filterParts.push(`valor_venda:<=${parsed.valor_max}`);
+    if (parsed.valor_min) filterParts.push(`${priceField}:>=${parsed.valor_min}`);
+    if (parsed.valor_max) filterParts.push(`${priceField}:<=${parsed.valor_max}`);
     if (parsed.area_min) filterParts.push(`area_privativa:>=${parsed.area_min}`);
     if (parsed.area_max) filterParts.push(`area_privativa:<=${parsed.area_max}`);
     if (parsed.em_obras) filterParts.push(`em_obras:=true`);
 
     const result = {
-      filters: parsed,
+      filters: { ...parsed, contrato },
       filter_by: filterParts.join(" && "),
       query_by: "titulo,empreendimento,bairro,endereco,codigo,construtora,descricao_resumida",
       text_query: parsed.texto_busca || "*",
       explicacao: parsed.explicacao || "Busca processada.",
       sugestao_alternativa: parsed.sugestao_alternativa || null,
       perfil: parsed.perfil || null,
-      // Tags for display
-      tags: buildTags(parsed),
+      contrato,
+      tags: buildTags(parsed, contrato),
     };
 
     return new Response(JSON.stringify(result), {
@@ -289,8 +346,12 @@ Use a ferramenta parse_property_search para extrair os filtros. Sempre chame a f
   }
 });
 
-function buildTags(parsed: any): { key: string; label: string; category: string }[] {
+function buildTags(parsed: any, contrato?: string): { key: string; label: string; category: string }[] {
   const tags: { key: string; label: string; category: string }[] = [];
+
+  if (contrato === "locacao") {
+    tags.push({ key: "contrato", label: "Locação", category: "contrato" });
+  }
 
   if (parsed.tipos?.length) {
     parsed.tipos.forEach((t: string) => tags.push({ key: `tipo-${t}`, label: t.charAt(0).toUpperCase() + t.slice(1), category: "tipo" }));

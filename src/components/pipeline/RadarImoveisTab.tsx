@@ -384,22 +384,41 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     });
   }, [leadId, quartos, valorMax, selectedTipologias, selectedBairros, statusImovel, onUpdate]);
 
-  // Search Typesense
+  // Search Typesense — always broad ("*") so scoring picks the best matches
   const searchTypesense = useCallback(async (): Promise<ImovelResult[]> => {
     try {
       const filterParts: string[] = ["valor_venda:>0"];
+
+      // Only apply bairro filter when user explicitly selected bairros
       if (selectedBairros.length === 1) filterParts.push(`bairro:=${selectedBairros[0]}`);
       else if (selectedBairros.length > 1) filterParts.push(`bairro:[${selectedBairros.join(",")}]`);
-      if (valorMin) filterParts.push(`valor_venda:>=${parseFloat(valorMin)}`);
-      if (valorMax) filterParts.push(`valor_venda:<=${parseFloat(valorMax) * 1.15}`);
-      if (quartos) filterParts.push(`dormitorios:>=${parseInt(quartos)}`);
+
+      // Price filters with generous margin
+      if (valorMin) filterParts.push(`valor_venda:>=${parseFloat(valorMin) * 0.85}`);
+      if (valorMax) filterParts.push(`valor_venda:<=${parseFloat(valorMax) * 1.2}`);
+
+      // Dormitorios — use exact match only when explicitly set
+      if (quartos) {
+        const q = parseInt(quartos);
+        if (q >= 4) filterParts.push(`dormitorios:>=${q}`);
+        else filterParts.push(`dormitorios:[${Math.max(1, q - 1)},${q},${q + 1}]`);
+      }
+
+      // Tipologia filter
+      const validTipos = selectedTipologias.filter(t => t && t !== "qualquer");
+      if (validTipos.length === 1) filterParts.push(`tipo:=${validTipos[0]}`);
+      else if (validTipos.length > 1) filterParts.push(`tipo:[${validTipos.join(",")}]`);
+
+      // Status filter
+      if (statusImovel === "pronto") filterParts.push(`em_obras:=false`);
+      else if (statusImovel === "obras") filterParts.push(`em_obras:=true`);
 
       const result = await typesenseSearch({
-        q: leadData?.empreendimento || "*",
+        q: "*",
         page: 1,
-        per_page: 30,
+        per_page: 48,
         filter_by: filterParts.join(" && "),
-        sort_by: "valor_venda:asc",
+        sort_by: "data_atualizacao:desc",
       });
 
       if (!result) return [];
@@ -424,7 +443,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
       console.error("Typesense radar search error:", err);
       return [];
     }
-  }, [typesenseSearch, selectedBairros, valorMin, valorMax, quartos, leadData?.empreendimento]);
+  }, [typesenseSearch, selectedBairros, valorMin, valorMax, quartos, selectedTipologias, statusImovel]);
 
   // Main search
   const handleSearch = useCallback(async (silent = false) => {
