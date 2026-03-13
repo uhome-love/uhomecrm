@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { format, isToday, isTomorrow, isBefore, startOfDay, startOfWeek, startOfMonth, endOfWeek, endOfMonth, addDays, isWithinInterval, subMonths, endOfDay } from "date-fns";
+import { format, isToday, isTomorrow, isBefore, startOfDay, startOfWeek, startOfMonth, endOfWeek, endOfMonth, addDays, subWeeks, isWithinInterval, subMonths, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -234,7 +234,6 @@ export default function AgendaVisitas() {
     setStatusFilter("all");
 
     if (key === "hoje") {
-      const d = format(today, "yyyy-MM-dd");
       setDateFrom(today);
       setDateTo(today);
     } else if (key === "amanha") {
@@ -244,6 +243,17 @@ export default function AgendaVisitas() {
     } else if (key === "semana") {
       setDateFrom(startOfWeek(today, { weekStartsOn: 1 }));
       setDateTo(endOfWeek(today, { weekStartsOn: 1 }));
+    } else if (key === "semana_anterior") {
+      const prevWeek = subWeeks(today, 1);
+      setDateFrom(startOfWeek(prevWeek, { weekStartsOn: 1 }));
+      setDateTo(endOfWeek(prevWeek, { weekStartsOn: 1 }));
+    } else if (key === "mes") {
+      setDateFrom(startOfMonth(today));
+      setDateTo(endOfMonth(today));
+    } else if (key === "mes_anterior") {
+      const prevMonth = subMonths(today, 1);
+      setDateFrom(startOfMonth(prevMonth));
+      setDateTo(endOfMonth(prevMonth));
     } else if (key === "nao_confirmadas") {
       setDateFrom(undefined);
       setDateTo(undefined);
@@ -252,6 +262,8 @@ export default function AgendaVisitas() {
       setDateFrom(undefined);
       setDateTo(undefined);
       setPendingOnly(true);
+    } else if (key === "personalizado") {
+      // keep current dateFrom/dateTo, user picks via calendar
     }
   }, [quickFilter]);
 
@@ -582,12 +594,15 @@ export default function AgendaVisitas() {
             { key: "hoje", label: "Hoje" },
             { key: "amanha", label: "Amanhã" },
             { key: "semana", label: "Semana" },
+            { key: "semana_anterior", label: "Sem. anterior" },
+            { key: "mes", label: "Mês" },
+            { key: "mes_anterior", label: "Mês anterior" },
           ].map(qf => (
             <button
               key={qf.key}
               onClick={() => applyQuickFilter(qf.key)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-[11px] font-bold transition-all",
+                "px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all",
                 quickFilter === qf.key
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -596,6 +611,64 @@ export default function AgendaVisitas() {
               {qf.label}
             </button>
           ))}
+          {/* Custom date picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(
+                  "px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center gap-1",
+                  quickFilter === "personalizado"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <CalendarIcon className="h-3 w-3" />
+                {quickFilter === "personalizado" && dateFrom
+                  ? dateTo && dateFrom.getTime() !== dateTo.getTime()
+                    ? `${format(dateFrom, "dd/MM")} - ${format(dateTo, "dd/MM")}`
+                    : format(dateFrom, "dd/MM/yy")
+                  : "Data"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="end">
+              <div className="space-y-2">
+                <p className="text-[11px] font-bold text-muted-foreground">Selecione o período</p>
+                <div className="flex gap-2">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">De</p>
+                    <Calendar
+                      mode="single"
+                      selected={quickFilter === "personalizado" ? dateFrom : undefined}
+                      onSelect={(d) => {
+                        setQuickFilter("personalizado");
+                        setPendingOnly(false);
+                        setStatusFilter("all");
+                        setDateFrom(d);
+                        if (!dateTo || (d && dateTo && d > dateTo)) setDateTo(d);
+                      }}
+                      className="p-2 pointer-events-auto"
+                      initialFocus
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">Até</p>
+                    <Calendar
+                      mode="single"
+                      selected={quickFilter === "personalizado" ? dateTo : undefined}
+                      onSelect={(d) => {
+                        setQuickFilter("personalizado");
+                        setPendingOnly(false);
+                        setStatusFilter("all");
+                        setDateTo(d);
+                      }}
+                      disabled={(d) => dateFrom ? d < dateFrom : false}
+                      className="p-2 pointer-events-auto"
+                    />
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Tipo toggle */}
