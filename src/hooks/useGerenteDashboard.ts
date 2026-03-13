@@ -491,7 +491,9 @@ export function useGerenteDashboard(period: Period) {
       return { leadsDisponiveis: totalLeads || 0, tentativasHoje: t, aproveitados: aprHoje, taxa: t > 0 ? Math.round((aprHoje / t) * 100) : 0, corretoresAtivos: ativos, corretoresParados: parados, tempoMedioMinutos, taxaPorCorretor } as OAResumo;
     },
     enabled: !!user && teamUserIds.length > 0,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    placeholderData: keepPreviousData,
   });
 
   // ── Alertas operacionais ──
