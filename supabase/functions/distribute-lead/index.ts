@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
         .select("corretor_id, segmento_1_id, segmento_2_id, janela")
         .eq("data", getTodayDateStr())
         .eq("status", "aprovado")
+        .eq("janela", targetJanela)
         .is("saiu_em", null);
       if (!creds || creds.length === 0) {
         return jsonResponse({ success: false, reason: "no_credenciados", dispatched: 0 });
