@@ -754,38 +754,46 @@ export default function ImoveisPage() {
 
   // ── Main fetch: try Typesense first, fallback to Jetimob ──
   const fetchImoveis = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
+    // Increment sequence to invalidate any in-flight requests
+    const seq = ++fetchSeqRef.current;
+
     setLoading(true);
     setSearchTimeMs(null);
     setFetchError(null);
 
     try {
-      // Campanha mode always uses jetimob-proxy (specific codes)
+      // Campanha mode always uses local overrides
       if (campanha) {
         await fetchViaJetimob(pageNum, campanha, uhome);
+        if (seq !== fetchSeqRef.current) return; // superseded
         return;
       }
 
-      // Try Typesense
-      if (useTypesense) {
-        const success = await fetchViaTypesense(pageNum);
-        if (success) return;
-        // If Typesense fails, fall back
-        console.warn("Typesense unavailable, falling back to jetimob-proxy");
-        setUseTypesense(false);
+      // Try Typesense (always retry, don't permanently disable)
+      const tsResult = await fetchViaTypesense(pageNum, seq);
+
+      if (tsResult === "aborted") {
+        // Request was superseded — don't fallback, don't update loading
+        return;
       }
 
-      // Fallback
+      if (tsResult === "ok") return;
+
+      // Typesense had a real error — fallback to Jetimob
+      console.warn("Typesense error, falling back to jetimob-proxy");
       await fetchViaJetimob(pageNum, campanha, uhome);
     } catch (err: any) {
+      if (seq !== fetchSeqRef.current) return; // superseded
       console.error("fetchImoveis critical error:", err);
       setFetchError(err?.message || "Erro ao buscar imóveis");
       setImoveis([]);
       setTotal(0);
       setTotalPages(1);
     } finally {
-      setLoading(false);
+      // Only clear loading if this is still the latest request
+      if (seq === fetchSeqRef.current) setLoading(false);
     }
-  }, [campanhaAtiva, uhomeOnly, useTypesense, fetchViaTypesense, fetchViaJetimob]);
+  }, [campanhaAtiva, uhomeOnly, fetchViaTypesense, fetchViaJetimob]);
 
   // Keep a ref to the latest fetchImoveis to avoid stale closures in effects
   const fetchRef = useRef(fetchImoveis);
