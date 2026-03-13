@@ -75,6 +75,12 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const [corretorAvatars, setCorretorAvatars] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Guard: suppress realtime events during local mutations to prevent flicker
+  const localMutationRef = useRef(false);
+  const mutationGuard = useCallback((fn: () => Promise<void>) => {
+    localMutationRef.current = true;
+    return fn().finally(() => { setTimeout(() => { localMutationRef.current = false; }, 2000); });
+  }, []);
 
   const loadStages = useCallback(async () => {
     try {
