@@ -423,7 +423,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
       console.error("Typesense radar search error:", err);
       return [];
     }
-  }, [typesenseSearch, selectedBairros, valorMax, quartos, leadData?.empreendimento]);
+  }, [typesenseSearch, selectedBairros, valorMin, valorMax, quartos, leadData?.empreendimento]);
 
   // Main search
   const handleSearch = useCallback(async (silent = false) => {
