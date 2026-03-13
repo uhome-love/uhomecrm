@@ -31,6 +31,14 @@ import imgVistaMeninoDeus from "@/assets/cyrela/vista-menino-deus.jpeg";
 import imgTheArch from "@/assets/cyrela/the-arch.jpeg";
 import imgSkylineParqueMoinhos from "@/assets/cyrela/skyline-parque-moinhos.jpeg";
 import imgPrimeWallig from "@/assets/cyrela/prime-wallig.jpeg";
+import imgPrimeAltosGermania from "@/assets/cyrela/prime-altos-germania.jpeg";
+import imgBoaVistaCountryClub from "@/assets/cyrela/boa-vista-country-club.jpeg";
+import imgArbo from "@/assets/cyrela/arbo.jpeg";
+import imgThePark from "@/assets/cyrela/the-park.jpeg";
+import imgGardenHaus from "@/assets/cyrela/garden-haus.jpeg";
+import imgVistaNovaCarlosGomes2d from "@/assets/cyrela/vista-nova-carlos-gomes-2d.jpeg";
+import imgTheArch2d from "@/assets/cyrela/the-arch-2d.jpeg";
+import imgPrimeWish from "@/assets/cyrela/prime-wish.jpeg";
 
 /* ═══════════════════════════════════════════
    DATA
