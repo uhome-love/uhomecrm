@@ -95,6 +95,10 @@ export default function VitrinePage() {
 
   return (
     <ErrorBoundary
+      onError={(error, stack) => {
+        console.error("[Vitrine] Runtime error in layout:", error.message);
+        console.error("[Vitrine] Stack:", stack);
+      }}
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-white px-4">
           <div className="text-center space-y-4 max-w-md">
