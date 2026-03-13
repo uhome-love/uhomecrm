@@ -658,6 +658,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <WhatsAppTemplatesDialog
+        open={whatsappTemplatesOpen}
+        onOpenChange={setWhatsappTemplatesOpen}
+        leadNome={lead.nome}
+        leadTelefone={lead.telefone}
+        leadEmpreendimento={lead.empreendimento}
+        leadId={lead.id}
+        corretorNome={user?.user_metadata?.nome || ""}
+      />
     </Sheet>
   );
 }
