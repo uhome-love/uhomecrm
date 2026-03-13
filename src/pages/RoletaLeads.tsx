@@ -15,6 +15,7 @@ import { formatDistanceToNow, differenceInMinutes, format, startOfDay, subHours 
 import { ptBR } from "date-fns/locale";
 import RoletagensTab from "@/components/roleta/RoletagensTab";
 import LeadsGeradosTab from "@/components/roleta/LeadsGeradosTab";
+import LeadIntelligenceTab from "@/components/roleta/LeadIntelligenceTab";
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
   const [now, setNow] = useState(new Date());
@@ -105,6 +106,9 @@ function CeoView() {
           </TabsTrigger>
           <TabsTrigger value="perdidos" className="gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5" /> Leads Perdidos
+          </TabsTrigger>
+          <TabsTrigger value="inteligencia" className="gap-1.5">
+            🧠 Inteligência
           </TabsTrigger>
         </TabsList>
 
@@ -241,6 +245,9 @@ function CeoView() {
         </TabsContent>
         <TabsContent value="perdidos">
           <RoletagensTab view="perdidos" />
+        </TabsContent>
+        <TabsContent value="inteligencia">
+          <LeadIntelligenceTab />
         </TabsContent>
       </Tabs>
 
