@@ -1,13 +1,15 @@
 import { useState, useRef, useCallback, useEffect, memo } from "react";
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Copy, MapPin, Globe, Clock, Eye, FileText, MessageCircle, Check } from "lucide-react";
+import { Phone, Copy, MapPin, Globe, Clock, Eye, FileText, MessageCircle, Check, ClipboardList, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { differenceInHoursSafe } from "@/lib/utils";
+import { differenceInHoursSafe, todayBRT, dateToBRT } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 // Activity type icons
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
