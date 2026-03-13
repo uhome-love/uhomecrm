@@ -23,7 +23,7 @@ serve(async (req) => {
     const body = await req.json();
     const {
       q = "*",
-      query_by = "titulo,empreendimento,bairro,endereco,codigo,construtora,descricao_resumida",
+      query_by = "titulo,empreendimento,bairro,endereco,codigo,construtora,descricao_resumida,tipo",
       filter_by = "",
       sort_by = "",
       page = 1,
