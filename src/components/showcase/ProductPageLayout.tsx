@@ -43,7 +43,7 @@ export default function ProductPageLayout({ data }: Props) {
   const statusObra = l.status_obra || "";
   const previsaoEntrega = l.previsao_entrega || "";
 
-  const whatsappLink = buildWhatsappLink(corretor?.telefone, corretor?.nome || "", `Vi a página do ${nome} e gostaria de mais informações.`);
+  const whatsappLink = buildWhatsappLink(corretor?.telefone, corretor?.nome || "", `Vi a página do ${nome || "empreendimento"} e gostaria de mais informações.`);
 
   const areaLabel = (() => {
     if (tipologias.length > 0) {
