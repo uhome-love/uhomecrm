@@ -1293,14 +1293,16 @@ export default function ImoveisPage() {
           </div>
           {/* Right: map */}
           <div className="flex-1 h-[calc(100vh-120px)]">
-            <PropertyMap
-              properties={sortedImoveis}
-              loading={loading}
-              onFavorite={toggleFavorite}
-              favorites={favorites}
-              getPreco={getPreco}
-              className="h-full w-full rounded-none border-0"
-            />
+            <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
+              <PropertyMap
+                properties={sortedImoveis}
+                loading={loading}
+                onFavorite={toggleFavorite}
+                favorites={favorites}
+                getPreco={getPreco}
+                className="h-full w-full rounded-none border-0"
+              />
+            </ErrorBoundary>
           </div>
         </div>
       ) : (
