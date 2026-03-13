@@ -61,7 +61,7 @@ function DataTable({ headers, rows }: { headers: string[]; rows: (string | numbe
 
 export default function LeadIntelligenceTab() {
   const [periodo, setPeriodo] = useState("30d");
-  const { loading, kpis, campanhas, formularios, segmentoPerf, corretorPerf, origemPerf, empreendimentoPerf, hourlyData, reload } = useLeadIntelligence(periodo);
+  const { loading, kpis, segmentoPerf, corretorPerf, origemPerf, empreendimentoPerf, hourlyData, reload } = useLeadIntelligence(periodo);
 
   if (loading) {
     return (
