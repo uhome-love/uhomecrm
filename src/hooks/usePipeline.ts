@@ -300,20 +300,22 @@ export function usePipeline(pipelineTipo: string = "leads") {
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
     const oldStageId = lead.stage_id;
+    const oldStageChangedAt = lead.stage_changed_at;
     if (oldStageId === newStageId) return;
 
-    // Optimistic update
+    // ─── Optimistic update (immediate UI response) ───
+    const now = new Date().toISOString();
     setLeads(prev => prev.map(l =>
       l.id === leadId
-        ? { ...l, stage_id: newStageId, stage_changed_at: new Date().toISOString() }
+        ? { ...l, stage_id: newStageId, stage_changed_at: now }
         : l
     ));
 
-    // STEP 1: Change stage — this MUST always succeed independently
+    // ─── Persist to backend ───
     const updatePayload: Record<string, any> = {
       stage_id: newStageId,
-      stage_changed_at: new Date().toISOString(),
-      ultima_acao_at: new Date().toISOString(), // BUG 3 FIX: always update ultima_acao_at
+      stage_changed_at: now,
+      ultima_acao_at: now,
     };
     if (observacao && stages.find(s => s.id === newStageId)?.tipo === "descarte") {
       updatePayload.motivo_descarte = observacao;
@@ -326,9 +328,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     if (stageError) {
       console.error("Error moving lead (stage update):", stageError, { leadId, newStageId, userId: user.id });
-      toast.error("Erro ao mover lead: " + (stageError.message || stageError.code));
+      toast.error("Erro ao mover lead. Revertendo posição.", { duration: 3000 });
+      // ─── Rollback: restore previous position ───
       setLeads(prev => prev.map(l =>
-        l.id === leadId ? { ...l, stage_id: oldStageId } : l
+        l.id === leadId ? { ...l, stage_id: oldStageId, stage_changed_at: oldStageChangedAt } : l
       ));
       return;
     }
