@@ -171,8 +171,6 @@ function DateGroupCard({
 }
 
 export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete, showCorretor, showTeam, mode = "upcoming" }: Props) {
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-
   const displayGroups = useMemo(() => {
     const groups = buildGroups(visitas);
     if (mode === "past") {
@@ -183,6 +181,16 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
     }
     return groups.filter(g => !g.isPast).sort((a, b) => a.dateStr.localeCompare(b.dateStr));
   }, [visitas, mode]);
+
+  // Past days start collapsed by default
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    const groups = buildGroups(visitas);
+    for (const g of groups) {
+      if (g.isPast) initial.add(g.dateStr);
+    }
+    return initial;
+  });
 
   const toggle = (dateStr: string) => {
     setCollapsed(prev => {
