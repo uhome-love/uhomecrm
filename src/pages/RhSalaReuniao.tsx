@@ -194,9 +194,14 @@ export default function RhSalaReuniao() {
                           {reserva.assunto && <> · {reserva.assunto}</>}
                         </p>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(reserva.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={() => openEdit(reserva)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(reserva.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   ) : reserva ? (
                     <div className="flex-1 border-l-2 border-primary/20 pl-3">
