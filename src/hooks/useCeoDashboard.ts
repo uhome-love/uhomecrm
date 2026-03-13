@@ -384,14 +384,14 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const startTs = `${range.start}T00:00:00`;
       const endTs = `${range.end}T23:59:59`;
 
-      const [{ count: leadsCount }, { data: dispRows }, { data: goals }] = await Promise.all([
+      const [{ count: leadsCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs),
-        supabase.from("corretor_disponibilidade").select("user_id").eq("status", "na_empresa"),
+        supabase.from("roleta_credenciamentos").select("corretor_id").eq("data", hoje).in("status", ["aprovado", "saiu"]),
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
       ]);
 
       const dispIds = new Set<string>();
-      (dispRows || []).forEach(r => dispIds.add(r.user_id));
+      (roletaRows || []).forEach(r => { if (r.corretor_id) dispIds.add(r.corretor_id); });
 
       return {
         totalLeadsPeriodo: leadsCount || 0,
