@@ -121,11 +121,11 @@ Deno.serve(async (req) => {
           valor: item.precoPor ? parseFloat(item.precoPor.replace(/[^0-9.,]/g, "").replace(/\./g, "").replace(",", ".")) : (item.valor ? parseFloat(String(item.valor).replace(/[^0-9.,]/g, "").replace(/\./g, "").replace(",", ".")) : null),
           fotos: item.imagens?.length > 0 ? item.imagens : (item.imagem ? [item.imagem] : []),
           empreendimento: item.nome,
-          descricao: `${item.metragens} · ${item.dorms} · ${item.status}`,
+          descricao: item.metragens ? `${item.metragens} · ${item.dorms} · ${item.status}` : [item.tipologia, item.metragem, item.fase].filter(Boolean).join(" · "),
           precoDe: item.precoDe || null, precoPor: item.precoPor || null,
-          descontoMax: item.descontoMax || null, status: item.status || null,
-          metragens: item.metragens || null, dorms: item.dorms || null,
-          condicoes: item.condicoes || null, segmento: item.segmento || null,
+          descontoMax: item.descontoMax || null, status: item.status || item.fase || null,
+          metragens: item.metragens || item.metragem || null, dorms: item.dorms || item.tipologia || null,
+          condicoes: item.condicoes || null, segmento: item.segmento || item.categoria || null,
         }));
 
         return jsonResponse({
