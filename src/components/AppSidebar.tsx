@@ -72,7 +72,7 @@ const homiMascot = "/images/homi-48.png";
 
 type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }> };
 
-const COLLAPSED_BY_DEFAULT = new Set(["Marketing", "Financeiro", "Operacional", "RH & Recepção"]);
+const COLLAPSED_BY_DEFAULT = new Set(["Visão Geral", "Gestão de Leads", "Gestão de Vendas", "Performance", "Marketing", "Financeiro", "Operacional", "RH & Recepção", "Ferramentas", "Campanhas Comerciais"]);
 
 function SidebarNavGroup({ label, items, badges, collapsed, index }: {
   label: string;
