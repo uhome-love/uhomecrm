@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -619,57 +620,62 @@ export default function ImoveisPage() {
 
   // ── Typesense search ──
   const fetchViaTypesense = useCallback(async (pageNum: number) => {
-    const filterBy = buildFilterBy({
-      contrato, tipo, bairro, dormitorios, suites: suitesFilter, vagas,
-      valorRange, areaRange, somenteObras, uhomeOnly,
-    });
-    const sortByStr = search ? "" : buildSortBy(sortBy, contrato);
+    try {
+      const filterBy = buildFilterBy({
+        contrato, tipo, bairro, dormitorios, suites: suitesFilter, vagas,
+        valorRange, areaRange, somenteObras, uhomeOnly,
+      });
+      const sortByStr = search ? "" : buildSortBy(sortBy, contrato);
 
-    const result = await typesenseSearch({
-      q: search || "*",
-      page: pageNum,
-      per_page: 24,
-      filter_by: filterBy || undefined,
-      sort_by: sortByStr || undefined,
-    });
+      const result = await typesenseSearch({
+        q: search || "*",
+        page: pageNum,
+        per_page: 24,
+        filter_by: filterBy || undefined,
+        sort_by: sortByStr || undefined,
+      });
 
-    if (!result) return false;
+      if (!result) return false;
 
-    // Map Typesense docs back to the format cards expect
-    const items = result.data.map((doc: any) => ({
-      ...doc,
-      codigo: doc.codigo || doc.id,
-      titulo_anuncio: doc.titulo,
-      empreendimento_nome: doc.empreendimento,
-      endereco_bairro: doc.bairro,
-      endereco_cidade: doc.cidade,
-      endereco_logradouro: doc.endereco,
-      valor_venda: doc.valor_venda,
-      valor_locacao: doc.valor_locacao,
-      area_privativa: doc.area_privativa,
-      garagens: doc.vagas,
-      suites: doc.suites,
-      banheiros: doc.banheiros,
-      dormitorios: doc.dormitorios,
-      valor_condominio: doc.valor_condominio,
-      situacao: doc.situacao,
-      latitude: doc.latitude,
-      longitude: doc.longitude,
-      _fotos_normalized: doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [],
-      _fotos_full: doc.fotos_full?.length ? doc.fotos_full : doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [],
-      imagens: (doc.fotos || []).map((url: string, i: number) => ({
-        link_thumb: url,
-        link: doc.fotos_full?.[i] || url,
-        link_large: doc.fotos_full?.[i] || url,
-      })),
-    }));
+      // Map Typesense docs back to the format cards expect
+      const items = (result.data || []).map((doc: any) => ({
+        ...doc,
+        codigo: doc.codigo || doc.id,
+        titulo_anuncio: doc.titulo,
+        empreendimento_nome: doc.empreendimento,
+        endereco_bairro: doc.bairro,
+        endereco_cidade: doc.cidade,
+        endereco_logradouro: doc.endereco,
+        valor_venda: doc.valor_venda,
+        valor_locacao: doc.valor_locacao,
+        area_privativa: doc.area_privativa,
+        garagens: doc.vagas,
+        suites: doc.suites,
+        banheiros: doc.banheiros,
+        dormitorios: doc.dormitorios,
+        valor_condominio: doc.valor_condominio,
+        situacao: doc.situacao,
+        latitude: doc.latitude,
+        longitude: doc.longitude,
+        _fotos_normalized: doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [],
+        _fotos_full: doc.fotos_full?.length ? doc.fotos_full : doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [],
+        imagens: (doc.fotos || []).map((url: string, i: number) => ({
+          link_thumb: url,
+          link: doc.fotos_full?.[i] || url,
+          link_large: doc.fotos_full?.[i] || url,
+        })),
+      }));
 
-    setImoveis(items);
-    setTotal(result.total);
-    setTotalPages(result.totalPages);
-    setPage(pageNum);
-    setSearchTimeMs(result.search_time_ms || null);
-    return true;
+      setImoveis(items);
+      setTotal(result.total || 0);
+      setTotalPages(result.totalPages || 1);
+      setPage(pageNum);
+      setSearchTimeMs(result.search_time_ms || null);
+      return true;
+    } catch (err) {
+      console.error("Typesense fetch error:", err);
+      return false;
+    }
   }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, uhomeOnly, sortBy, typesenseSearch]);
 
   // ── Fallback to jetimob-proxy ──
@@ -867,16 +873,21 @@ export default function ImoveisPage() {
 
   const openLightbox = (imgs: string[], index: number) => { setLightboxImages(imgs); setLightboxIndex(index); setLightboxOpen(true); };
 
-  // Sort items
+  // Sort items — defensive: always ensure imoveis is an array
   const sortedImoveis = useMemo(() => {
-    let items = [...imoveis];
-    if (showFavoritesOnly) items = items.filter(item => favorites.has(String(item.codigo || item.id_imovel || item.id)));
-    if (somenteObras) items = items.filter(item => extractEntrega(item).emObras);
+    try {
+      let items = [...(Array.isArray(imoveis) ? imoveis : [])];
+      if (showFavoritesOnly) items = items.filter(item => favorites.has(String(item?.codigo || item?.id_imovel || item?.id)));
+      if (somenteObras) items = items.filter(item => extractEntrega(item).emObras);
 
-    if (sortBy === "menor_preco") items.sort((a, b) => (getNum(a, "valor_venda", "valor") || 999999999) - (getNum(b, "valor_venda", "valor") || 999999999));
-    else if (sortBy === "maior_preco") items.sort((a, b) => (getNum(b, "valor_venda", "valor") || 0) - (getNum(a, "valor_venda", "valor") || 0));
-    else if (sortBy === "maior_area") items.sort((a, b) => (getNumIncZero(b, "area_privativa", "area_util") || 0) - (getNumIncZero(a, "area_privativa", "area_util") || 0));
-    return items;
+      if (sortBy === "menor_preco") items.sort((a, b) => (getNum(a, "valor_venda", "valor") || 999999999) - (getNum(b, "valor_venda", "valor") || 999999999));
+      else if (sortBy === "maior_preco") items.sort((a, b) => (getNum(b, "valor_venda", "valor") || 0) - (getNum(a, "valor_venda", "valor") || 0));
+      else if (sortBy === "maior_area") items.sort((a, b) => (getNumIncZero(b, "area_privativa", "area_util") || 0) - (getNumIncZero(a, "area_privativa", "area_util") || 0));
+      return items;
+    } catch (err) {
+      console.error("Sort error:", err);
+      return [];
+    }
   }, [imoveis, sortBy, showFavoritesOnly, favorites, somenteObras]);
 
   // Active filter tags
@@ -1282,14 +1293,16 @@ export default function ImoveisPage() {
           </div>
           {/* Right: map */}
           <div className="flex-1 h-[calc(100vh-120px)]">
-            <PropertyMap
-              properties={sortedImoveis}
-              loading={loading}
-              onFavorite={toggleFavorite}
-              favorites={favorites}
-              getPreco={getPreco}
-              className="h-full w-full rounded-none border-0"
-            />
+            <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
+              <PropertyMap
+                properties={sortedImoveis}
+                loading={loading}
+                onFavorite={toggleFavorite}
+                favorites={favorites}
+                getPreco={getPreco}
+                className="h-full w-full rounded-none border-0"
+              />
+            </ErrorBoundary>
           </div>
         </div>
       ) : (

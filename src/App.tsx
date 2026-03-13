@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleProtectedRoute from "@/components/RoleProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import { lazy, Suspense } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
 // Lazy load all pages including Auth and NotFound
@@ -188,7 +189,7 @@ const App = () => (
             <Route path="/pipeline-negocios" element={<ProtectedPage><MeusNegocios /></ProtectedPage>} />
             <Route path="/vendas-realizadas" element={<ProtectedPage><VendasRealizadas /></ProtectedPage>} />
             <Route path="/pos-vendas" element={<ProtectedPage><PosVendas /></ProtectedPage>} />
-            <Route path="/imoveis" element={<ProtectedPage><ImoveisPage /></ProtectedPage>} />
+            <Route path="/imoveis" element={<ProtectedPage><ErrorBoundary><ImoveisPage /></ErrorBoundary></ProtectedPage>} />
             <Route path="/melnick-day" element={<ProtectedPage><MelnickDay /></ProtectedPage>} />
             <Route path="/anuncios" element={<ProtectedPage><AnunciosNoAr /></ProtectedPage>} />
 
