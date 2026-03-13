@@ -225,15 +225,16 @@ function scoreAndJustify(profile: RadarProfile, imovel: ImovelResult, objecoes: 
   } else score += 15;
 
   // Valor (30 pts)
-  if (profile.valor_max && imovel.preco > 0) {
-    if (imovel.preco <= profile.valor_max) {
+  if ((profile.valor_min || profile.valor_max) && imovel.preco > 0) {
+    const aboveMin = !profile.valor_min || imovel.preco >= profile.valor_min;
+    const belowMax = !profile.valor_max || imovel.preco <= profile.valor_max;
+    if (aboveMin && belowMax) {
       score += 30;
-      const ratio = imovel.preco / profile.valor_max;
-      if (ratio >= 0.7) justificativas.push("Dentro da faixa de valor do lead");
-      else justificativas.push("Abaixo do orçamento — boa economia");
-    } else if (imovel.preco <= profile.valor_max * 1.15) {
+      justificativas.push("Dentro da faixa de valor do lead");
+    } else if (!profile.valor_max || imovel.preco <= profile.valor_max * 1.15) {
       score += 15;
-      justificativas.push("Até 15% acima do orçamento — negociável");
+      if (!aboveMin) justificativas.push("Abaixo do valor mínimo — pode negociar");
+      else justificativas.push("Até 15% acima do orçamento — negociável");
     }
   } else score += 15;
 
