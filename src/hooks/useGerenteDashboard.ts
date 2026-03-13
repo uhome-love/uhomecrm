@@ -365,6 +365,7 @@ export function useGerenteDashboard(period: Period) {
     },
     enabled: !!user && !!profileId,
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
   });
 
   // ── Negócios Quentes (mais avançados) ──
