@@ -279,7 +279,6 @@ export function AppSidebar() {
             items: [
               { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
               { title: "Imóveis", url: "/imoveis", icon: Building2 },
-              { title: "Melnick Day", url: "/melnick-day", icon: Zap },
             ],
           },
           {
