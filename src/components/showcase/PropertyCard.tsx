@@ -134,7 +134,7 @@ export default function PropertyCard({
       <div className="p-5 sm:p-6 flex-1 flex flex-col gap-3">
         <div>
           <h3 className="text-lg sm:text-xl font-extrabold text-slate-800 leading-tight tracking-tight">
-            {item.empreendimento || item.titulo}
+            {item?.empreendimento || item?.titulo || "Imóvel"}
           </h3>
           {item.bairro && (
             <p className="text-slate-500 text-xs flex items-center gap-1.5 mt-1.5 font-medium">
