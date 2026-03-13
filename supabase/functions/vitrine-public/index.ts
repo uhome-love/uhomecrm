@@ -38,6 +38,8 @@ async function fetchImovelFromJetimob(apiKey: string, codigo: string) {
       fotos,
       empreendimento: item.empreendimento?.nome || item.empreendimento || null,
       descricao: item.descricao_curta || item.titulo || null,
+      lat: item.endereco?.latitude || item.latitude || null,
+      lng: item.endereco?.longitude || item.longitude || null,
     };
   } catch {
     return null;
