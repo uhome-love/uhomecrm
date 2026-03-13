@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -71,6 +71,71 @@ export const ORIGEM_LABELS: Record<string, string> = {
   outro: "Outro",
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_ONLY_REGEX = /^\d{2}:\d{2}(:\d{2})?$/;
+
+interface CreateVisitaInput extends Partial<Visita> {
+  responsavel_visita?: string | null;
+}
+
+function sanitizeText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function extractUuid(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return UUID_REGEX.test(trimmed) ? trimmed : null;
+  }
+
+  if (value && typeof value === "object" && "id" in value) {
+    const nested = (value as { id?: unknown }).id;
+    if (typeof nested === "string") {
+      const trimmed = nested.trim();
+      return UUID_REGEX.test(trimmed) ? trimmed : null;
+    }
+  }
+
+  return null;
+}
+
+function normalizeDateForDb(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (DATE_ONLY_REGEX.test(trimmed)) return trimmed;
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  const year = parsed.getUTCFullYear();
+  const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeTimeForDb(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!TIME_ONLY_REGEX.test(trimmed)) return null;
+
+  if (trimmed.length === 5) {
+    return `${trimmed}:00`;
+  }
+
+  return trimmed;
+}
+
+function sortVisitasBySchedule(a: Visita, b: Visita) {
+  const aKey = `${a.data_visita}T${a.hora_visita || "23:59:59"}`;
+  const bKey = `${b.data_visita}T${b.hora_visita || "23:59:59"}`;
+  return aKey.localeCompare(bKey);
+}
+
 export function useVisitas(filters?: {
   status?: string;
   corretorId?: string;
@@ -79,7 +144,7 @@ export function useVisitas(filters?: {
   endDate?: string;
 }) {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isGestor } = useUserRole();
   const queryClient = useQueryClient();
 
   const { data: visitas = [], isLoading } = useQuery({
@@ -102,39 +167,39 @@ export function useVisitas(filters?: {
       if (error) throw error;
       const rows = (data || []) as Visita[];
 
-      // Fetch corretor names for all unique corretor_ids
-      const corretorIds = [...new Set(rows.map(r => r.corretor_id).filter(Boolean))];
+      const corretorIds = [...new Set(rows.map((r) => r.corretor_id).filter(Boolean))];
       if (corretorIds.length > 0) {
         const [profilesRes, membersRes] = await Promise.all([
           supabase.from("profiles").select("user_id, nome").in("user_id", corretorIds),
           supabase.from("team_members").select("user_id, nome, equipe").in("user_id", corretorIds).eq("status", "ativo"),
         ]);
 
-        const nameMap = new Map((profilesRes.data || []).map(p => [p.user_id, p.nome]));
+        const nameMap = new Map((profilesRes.data || []).map((p) => [p.user_id, p.nome]));
         const equipeMap = new Map<string, string>();
-        (membersRes.data || []).forEach(m => {
+
+        (membersRes.data || []).forEach((m) => {
           if (m.user_id) {
             if (!nameMap.get(m.user_id)) nameMap.set(m.user_id, m.nome);
             if (m.equipe) equipeMap.set(m.user_id, m.equipe);
           }
         });
 
-        // Fetch gerente names to derive team when equipe is missing
-        const gerenteIds = [...new Set(rows.map(r => r.gerente_id).filter(Boolean))];
+        const gerenteIds = [...new Set(rows.map((r) => r.gerente_id).filter(Boolean))];
         const gerenteNameMap = new Map<string, string>();
         if (gerenteIds.length > 0) {
           const { data: gerenteProfiles } = await supabase
             .from("profiles")
             .select("user_id, nome")
             .in("user_id", gerenteIds);
-          (gerenteProfiles || []).forEach(g => {
+
+          (gerenteProfiles || []).forEach((g) => {
             if (g.user_id && g.nome) {
               gerenteNameMap.set(g.user_id, g.nome.split(" ")[0]);
             }
           });
         }
 
-        rows.forEach(r => {
+        rows.forEach((r) => {
           r.corretor_nome = nameMap.get(r.corretor_id) || undefined;
           r.equipe = equipeMap.get(r.corretor_id) || (r.gerente_id ? gerenteNameMap.get(r.gerente_id) : undefined) || undefined;
         });
@@ -148,11 +213,58 @@ export function useVisitas(filters?: {
   const createVisita = useCallback(async (visita: Partial<Visita>) => {
     if (!user) return null;
 
-    // Always ensure corretor_id is the current user for corretores (RLS requirement)
-    const corretorId = visita.corretor_id || user.id;
+    const input = visita as CreateVisitaInput;
+    const isManagerUser = isGestor || isAdmin;
 
-    // Resolve gerente_id from team_members
-    let gerenteId = visita.gerente_id;
+    const requestedCorretorId = extractUuid(input.corretor_id);
+    const requestedGerenteId = extractUuid(input.gerente_id);
+
+    let corretorId = user.id;
+    let gerenteId: string | null = requestedGerenteId;
+
+    if (isManagerUser && requestedCorretorId) {
+      corretorId = requestedCorretorId;
+    }
+
+    if (!isManagerUser && requestedCorretorId && requestedCorretorId !== user.id) {
+      console.warn("[createVisita] Ignorando corretor_id inválido para corretor comum", {
+        requestedCorretorId,
+        authUserId: user.id,
+      });
+    }
+
+    if (isManagerUser && corretorId !== user.id) {
+      let teamMemberQuery = supabase
+        .from("team_members")
+        .select("user_id, gerente_id")
+        .eq("user_id", corretorId)
+        .eq("status", "ativo")
+        .limit(1)
+        .maybeSingle();
+
+      if (!isAdmin) {
+        teamMemberQuery = teamMemberQuery.eq("gerente_id", user.id);
+      }
+
+      const { data: teamMember, error: teamMemberError } = await teamMemberQuery;
+
+      if (teamMemberError || !teamMember) {
+        console.error("[createVisita] corretor_id não autorizado para o gestor", {
+          requestedCorretorId: corretorId,
+          authUserId: user.id,
+          error: teamMemberError,
+        });
+        toast.error("Selecione um corretor válido da sua equipe.");
+        return null;
+      }
+
+      gerenteId = isAdmin ? (teamMember.gerente_id || gerenteId || user.id) : user.id;
+    }
+
+    if (isGestor && !isAdmin) {
+      gerenteId = user.id;
+    }
+
     if (!gerenteId) {
       try {
         const { data: tm } = await supabase
@@ -162,37 +274,76 @@ export function useVisitas(filters?: {
           .eq("status", "ativo")
           .limit(1)
           .maybeSingle();
+
         gerenteId = tm?.gerente_id || user.id;
       } catch (e) {
-        console.warn("[createVisita] Failed to resolve gerente_id, using self:", e);
+        console.warn("[createVisita] Falha ao resolver gerente_id, usando usuário logado", e);
         gerenteId = user.id;
       }
+    }
+
+    const tipo = input.tipo === "negocio" ? "negocio" : "lead";
+    const leadId = extractUuid(input.lead_id);
+    const pipelineLeadId = extractUuid(input.pipeline_lead_id);
+
+    if (tipo === "lead" && !leadId && !pipelineLeadId) {
+      toast.error("Selecione um lead válido antes de agendar a visita.");
+      return null;
+    }
+
+    const nomeCliente = sanitizeText(input.nome_cliente);
+    if (!nomeCliente) {
+      toast.error("Informe o nome do cliente.");
+      return null;
+    }
+
+    const dataVisita =
+      normalizeDateForDb(input.data_visita) ||
+      new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
+    if (!dataVisita) {
+      toast.error("Data da visita inválida.");
+      return null;
+    }
+
+    const horaVisita = normalizeTimeForDb(input.hora_visita);
+    if (input.hora_visita && !horaVisita) {
+      toast.error("Horário da visita inválido.");
+      return null;
+    }
+
+    const responsavelVisita = sanitizeText(input.responsavel_visita);
+    if (tipo === "lead" && !responsavelVisita) {
+      toast.error("Selecione o responsável pela visita.");
+      return null;
     }
 
     const payload = {
       corretor_id: corretorId,
       gerente_id: gerenteId,
-      lead_id: visita.lead_id || null,
-      pipeline_lead_id: visita.pipeline_lead_id || null,
-      nome_cliente: visita.nome_cliente || "Sem nome",
-      telefone: visita.telefone || null,
-      empreendimento: visita.empreendimento || null,
-      origem: visita.origem || "manual",
-      origem_detalhe: visita.origem_detalhe || null,
-      data_visita: visita.data_visita || new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-      hora_visita: visita.hora_visita || null,
-      local_visita: visita.local_visita || null,
-      status: visita.status || "marcada",
-      observacoes: visita.observacoes || null,
+      lead_id: leadId,
+      pipeline_lead_id: pipelineLeadId,
+      nome_cliente: nomeCliente,
+      telefone: sanitizeText(input.telefone),
+      empreendimento: sanitizeText(input.empreendimento),
+      origem: sanitizeText(input.origem) || "manual",
+      origem_detalhe: sanitizeText(input.origem_detalhe),
+      data_visita: dataVisita,
+      hora_visita: horaVisita,
+      local_visita: sanitizeText(input.local_visita),
+      status: sanitizeText(input.status) || "marcada",
+      observacoes: sanitizeText(input.observacoes),
       created_by: user.id,
-      linked_attempt_id: visita.linked_attempt_id || null,
-      tipo: visita.tipo || "lead",
-      negocio_id: visita.negocio_id || null,
-      tipo_reuniao: visita.tipo_reuniao || null,
-      responsavel_visita: (visita as any).responsavel_visita || null,
+      linked_attempt_id: extractUuid(input.linked_attempt_id),
+      tipo,
+      negocio_id: extractUuid(input.negocio_id),
+      tipo_reuniao: sanitizeText(input.tipo_reuniao),
+      responsavel_visita: responsavelVisita,
     };
 
-    console.log("[createVisita] payload:", JSON.stringify(payload));
+    if (import.meta.env.DEV) {
+      console.info("[createVisita] payload:", payload);
+    }
 
     const { data, error } = await supabase
       .from("visitas")
@@ -201,19 +352,41 @@ export function useVisitas(filters?: {
       .single();
 
     if (error) {
-      console.error("[createVisita] Erro:", error, "Payload:", payload);
-      toast.error("Erro ao criar visita: " + (error.message || error.code || "Erro desconhecido"));
+      const debugError = {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      };
+
+      console.error("[createVisita] Erro ao inserir visita", {
+        error: debugError,
+        payload,
+      });
+
+      toast.error(`Erro ao criar visita: ${debugError.message}${debugError.code ? ` (${debugError.code})` : ""}`);
       return null;
     }
 
     toast.success("📅 Visita agendada com sucesso!");
 
-    // GATILHO 1: Auto-advance pipeline lead to "agenda" module
+    queryClient.setQueriesData({ queryKey: ["visitas"] }, (oldData: unknown) => {
+      if (!Array.isArray(oldData)) return oldData;
+      const visitasAtuais = oldData as Visita[];
+      if (visitasAtuais.some((item) => item.id === data.id)) {
+        return visitasAtuais;
+      }
+      return [...visitasAtuais, data as Visita].sort(sortVisitasBySchedule);
+    });
+
     if (data?.pipeline_lead_id) {
       try {
-        await supabase.from("pipeline_leads").update({
-          modulo_atual: "agenda",
-        } as any).eq("id", data.pipeline_lead_id);
+        await supabase
+          .from("pipeline_leads")
+          .update({
+            modulo_atual: "agenda",
+          } as any)
+          .eq("id", data.pipeline_lead_id);
 
         await supabase.from("lead_progressao").insert({
           lead_id: data.pipeline_lead_id,
@@ -225,38 +398,44 @@ export function useVisitas(filters?: {
           visita_id: data.id,
         });
       } catch (err) {
-        console.error("Lead progression error:", err);
+        console.error("[createVisita] Erro ao atualizar progressão do lead", err);
       }
     }
 
-    queryClient.invalidateQueries({ queryKey: ["visitas"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["visitas"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] }),
+      queryClient.invalidateQueries({ queryKey: ["pipeline-leads"] }),
+      queryClient.invalidateQueries({ queryKey: ["agenda-visitas"] }),
+    ]);
 
-    // Send WhatsApp confirmation (fire-and-forget)
     if (data?.telefone) {
-      supabase.functions.invoke("visita-whatsapp-confirm", {
-        body: {
-          action: "confirm",
-          visita_data: {
-            nome_cliente: data.nome_cliente,
-            telefone: data.telefone,
-            empreendimento: data.empreendimento,
-            data_visita: data.data_visita,
-            hora_visita: data.hora_visita,
-            corretor_id: data.corretor_id,
-            confirmation_token: (data as any).confirmation_token || null,
+      supabase.functions
+        .invoke("visita-whatsapp-confirm", {
+          body: {
+            action: "confirm",
+            visita_data: {
+              nome_cliente: data.nome_cliente,
+              telefone: data.telefone,
+              empreendimento: data.empreendimento,
+              data_visita: data.data_visita,
+              hora_visita: data.hora_visita,
+              corretor_id: data.corretor_id,
+              confirmation_token: (data as any).confirmation_token || null,
+            },
           },
-        },
-      }).then(({ error: whatsappError }) => {
-        if (whatsappError) {
-          console.warn("WhatsApp confirmation failed:", whatsappError);
-        } else {
-          toast.success("📱 Confirmação enviada por WhatsApp!", { duration: 3000 });
-        }
-      });
+        })
+        .then(({ error: whatsappError }) => {
+          if (whatsappError) {
+            console.warn("WhatsApp confirmation failed:", whatsappError);
+          } else {
+            toast.success("📱 Confirmação enviada por WhatsApp!", { duration: 3000 });
+          }
+        });
     }
 
     return data;
-  }, [user, queryClient]);
+  }, [user, isGestor, isAdmin, queryClient]);
 
   const updateVisita = useCallback(async (id: string, updates: Partial<Visita>, silent = false) => {
     const { error } = await supabase
@@ -265,7 +444,14 @@ export function useVisitas(filters?: {
       .eq("id", id);
 
     if (error) {
-      console.error("Erro ao atualizar visita:", error);
+      console.error("Erro ao atualizar visita:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        updates,
+        id,
+      });
       toast.error("Erro ao atualizar visita");
       return false;
     }
@@ -276,17 +462,13 @@ export function useVisitas(filters?: {
   }, [queryClient]);
 
   const updateStatus = useCallback(async (id: string, newStatus: VisitaStatus) => {
-    // Use silent=true to avoid double toast
     const result = await updateVisita(id, { status: newStatus } as any, true);
-    
+
     if (result) {
       toast.success(`Status atualizado para ${STATUS_LABELS[newStatus]}`);
 
-      // Pipeline stage moves are handled by DB triggers:
-      // - trg_visita_status_pipeline (moves pipeline lead stage)
-      // Note: Negócio creation is now manual via "Criar Negócio" button on the pipeline card
       if (newStatus === "realizada") {
-        const visita = visitas.find(v => v.id === id);
+        const visita = visitas.find((v) => v.id === id);
         if (visita?.pipeline_lead_id) {
           toast("✅ Visita realizada!", {
             description: "Use o botão 'Criar Negócio' no card do Pipeline para iniciar o negócio.",
@@ -295,7 +477,7 @@ export function useVisitas(filters?: {
         }
       }
     }
-    
+
     return result;
   }, [updateVisita, visitas]);
 
@@ -306,7 +488,13 @@ export function useVisitas(filters?: {
       .eq("id", id);
 
     if (error) {
-      console.error("Erro ao excluir visita:", error);
+      console.error("Erro ao excluir visita:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        id,
+      });
       toast.error("Erro ao excluir visita");
       return false;
     }
@@ -338,28 +526,40 @@ export async function createVisitaFromOA(params: {
     .maybeSingle();
 
   const gerenteId = tm?.gerente_id || params.corretorId;
+  const dataVisita = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+
+  const payload = {
+    corretor_id: params.corretorId,
+    gerente_id: gerenteId,
+    lead_id: extractUuid(params.leadId),
+    nome_cliente: sanitizeText(params.nomeCliente) || "Sem nome",
+    telefone: sanitizeText(params.telefone),
+    empreendimento: sanitizeText(params.empreendimento),
+    origem: "oferta_ativa",
+    data_visita: dataVisita,
+    status: "marcada",
+    observacoes: sanitizeText(params.observacoes),
+    created_by: params.corretorId,
+    linked_attempt_id: extractUuid(params.attemptId),
+    tipo: "lead",
+    responsavel_visita: "proprio_corretor",
+  };
 
   const { data, error } = await supabase
     .from("visitas")
-    .insert({
-      corretor_id: params.corretorId,
-      gerente_id: gerenteId,
-      lead_id: params.leadId || null,
-      nome_cliente: params.nomeCliente,
-      telefone: params.telefone || null,
-      empreendimento: params.empreendimento || null,
-      origem: "oferta_ativa",
-      data_visita: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
-      status: "marcada",
-      observacoes: params.observacoes || null,
-      created_by: params.corretorId,
-      linked_attempt_id: params.attemptId || null,
-    } as any)
+    .insert(payload as any)
     .select()
     .single();
 
   if (error) {
-    console.error("Erro ao criar visita automática:", error);
+    console.error("Erro ao criar visita automática:", {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      payload,
+    });
   }
+
   return data;
 }
