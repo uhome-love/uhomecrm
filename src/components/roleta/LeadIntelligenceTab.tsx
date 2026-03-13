@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, RefreshCw, TrendingUp, Users, Target, BarChart3, Brain, Clock, Building2, Megaphone, FileText, Layers } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, Users, Target, BarChart3, Brain, Clock, Building2, Layers } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useLeadIntelligence } from "@/hooks/useLeadIntelligence";
 import LeadInsightsAI from "./LeadInsightsAI";
