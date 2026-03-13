@@ -36,11 +36,11 @@ export function useAuthUser() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, user_id, nome, email, telefone, cargo, avatar_url, avatar_gamificado_url, gerente_id")
+        .select("id, user_id, nome, email, telefone, cargo, avatar_url, avatar_gamificado_url")
         .eq("user_id", user!.id)
         .single();
       if (error) throw error;
-      return data as UserProfile;
+      return { ...data, gerente_id: null } as UserProfile;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
