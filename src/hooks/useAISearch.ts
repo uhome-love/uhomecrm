@@ -259,8 +259,15 @@ export function useAISearch() {
               garagens: doc.vagas,
               suites: doc.suites,
               dormitorios: doc.dormitorios,
+              latitude: doc.latitude,
+              longitude: doc.longitude,
               _fotos_normalized: doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [],
-              imagens: (doc.fotos || []).map((url: string) => ({ link_thumb: url, link: url })),
+              _fotos_full: doc.fotos_full?.length ? doc.fotos_full : doc.fotos?.length ? doc.fotos : [],
+              imagens: (doc.fotos || []).map((url: string, i: number) => ({
+                link_thumb: url,
+                link: doc.fotos_full?.[i] || url,
+                link_large: doc.fotos_full?.[i] || url,
+              })),
             },
             score: calculateScore(doc, aiData.filters),
           }));
