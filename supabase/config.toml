@@ -99,6 +99,9 @@ verify_jwt = false
 [functions.vitrine-public]
 verify_jwt = false
 
+[functions.vitrine-og]
+verify_jwt = false
+
 [functions.receive-meta-lead]
 verify_jwt = false
 

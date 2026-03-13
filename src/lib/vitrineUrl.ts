@@ -1,22 +1,24 @@
-const PUBLISHED_APP_DOMAIN = "https://uhomeia.lovable.app";
+/**
+ * Vitrine public URL generator.
+ *
+ * Shared links go through the vitrine-og edge function so that
+ * WhatsApp / Telegram / social-media crawlers receive real OG meta
+ * tags (title, description, image) from the vitrine data.
+ *
+ * The edge function detects bots → serves OG HTML.
+ * Regular browsers → 302 redirect to the SPA route.
+ */
 
-function resolvePublicDomain(): string {
-  if (typeof window === "undefined") return PUBLISHED_APP_DOMAIN;
-
-  const origin = window.location.origin;
-  const isPreview = origin.includes("lovableproject.com") || origin.includes("id-preview--");
-
-  return isPreview ? PUBLISHED_APP_DOMAIN : origin;
-}
+const SUPABASE_URL =
+  (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_SUPABASE_URL) ||
+  "https://hunbxqzhvuemgntklyzb.supabase.co";
 
 /**
- * Returns the official public URL for a vitrine.
- * This is the ONLY URL that should be displayed, copied, or shared.
- * Never expose backend function URLs to the end user.
+ * Returns the share-safe URL for a vitrine.
+ * Routes through the vitrine-og edge function so crawlers see real OG tags.
  */
 export function getVitrinePublicUrl(vitrineId: string): string {
-  const base = resolvePublicDomain().replace(/\/$/, "");
-  return `${base}/vitrine/${vitrineId}`;
+  return `${SUPABASE_URL}/functions/v1/vitrine-og?id=${vitrineId}`;
 }
 
 /** @deprecated Use getVitrinePublicUrl instead */
