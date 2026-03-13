@@ -23,8 +23,9 @@ import { useTypesenseSearch } from "@/hooks/useTypesenseSearch";
 
 interface RadarProfile {
   quartos: number | null;
+  valor_min: number | null;
   valor_max: number | null;
-  tipologia: string;
+  tipologias: string[];
   bairros: string[];
   status_imovel: string;
 }
@@ -192,8 +193,16 @@ function inferProfileFromLead(leadData?: Props["leadData"], currentProfile?: Pro
 
   return {
     quartos: currentProfile?.radar_quartos ?? hint?.dorms ?? null,
+    valor_min: hint?.faixa_min ?? null,
     valor_max: currentProfile?.radar_valor_max ?? leadData?.valor_estimado ?? hint?.faixa_max ?? null,
-    tipologia: currentProfile?.radar_tipologia || hint?.tipo || "apartamento",
+    tipologias: (() => {
+      const raw = currentProfile?.radar_tipologia;
+      if (raw) {
+        try { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } catch {}
+        return [raw];
+      }
+      return hint?.tipo ? [hint.tipo] : ["apartamento"];
+    })(),
     bairros: (() => {
       const raw = currentProfile?.radar_bairros;
       if (Array.isArray(raw) && raw.length > 0) return raw;
@@ -216,15 +225,16 @@ function scoreAndJustify(profile: RadarProfile, imovel: ImovelResult, objecoes: 
   } else score += 15;
 
   // Valor (30 pts)
-  if (profile.valor_max && imovel.preco > 0) {
-    if (imovel.preco <= profile.valor_max) {
+  if ((profile.valor_min || profile.valor_max) && imovel.preco > 0) {
+    const aboveMin = !profile.valor_min || imovel.preco >= profile.valor_min;
+    const belowMax = !profile.valor_max || imovel.preco <= profile.valor_max;
+    if (aboveMin && belowMax) {
       score += 30;
-      const ratio = imovel.preco / profile.valor_max;
-      if (ratio >= 0.7) justificativas.push("Dentro da faixa de valor do lead");
-      else justificativas.push("Abaixo do orçamento — boa economia");
-    } else if (imovel.preco <= profile.valor_max * 1.15) {
+      justificativas.push("Dentro da faixa de valor do lead");
+    } else if (!profile.valor_max || imovel.preco <= profile.valor_max * 1.15) {
       score += 15;
-      justificativas.push("Até 15% acima do orçamento — negociável");
+      if (!aboveMin) justificativas.push("Abaixo do valor mínimo — pode negociar");
+      else justificativas.push("Até 15% acima do orçamento — negociável");
     }
   } else score += 15;
 
@@ -323,8 +333,9 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
 
   // Profile state
   const [quartos, setQuartos] = useState<string>(inferred.quartos ? String(inferred.quartos) : "");
+  const [valorMin, setValorMin] = useState<string>(inferred.valor_min ? String(inferred.valor_min) : "");
   const [valorMax, setValorMax] = useState<string>(inferred.valor_max ? String(inferred.valor_max) : "");
-  const [tipologia, setTipologia] = useState(inferred.tipologia || "apartamento");
+  const [selectedTipologias, setSelectedTipologias] = useState<string[]>(inferred.tipologias);
   const [selectedBairros, setSelectedBairros] = useState<string[]>(inferred.bairros);
   const [statusImovel, setStatusImovel] = useState(inferred.status_imovel || "qualquer");
   const [bairroSearch, setBairroSearch] = useState("");
@@ -349,13 +360,15 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
 
   const profile: RadarProfile = {
     quartos: quartos ? parseInt(quartos) : null,
+    valor_min: valorMin ? parseFloat(valorMin) : null,
     valor_max: valorMax ? parseFloat(valorMax) : null,
-    tipologia,
+    tipologias: selectedTipologias,
     bairros: selectedBairros,
     status_imovel: statusImovel === "qualquer" ? "" : statusImovel,
   };
 
   const toggleBairro = (b: string) => setSelectedBairros(prev => prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]);
+  const toggleTipologia = (t: string) => setSelectedTipologias(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   const filteredBairros = BAIRROS_POA.filter(b => !bairroSearch || normalize(b).includes(normalize(bairroSearch)));
   const toggleObjecao = (key: string) => setActiveObjecoes(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
 
@@ -364,12 +377,12 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     await onUpdate(leadId, {
       radar_quartos: quartos ? parseInt(quartos) : null,
       radar_valor_max: valorMax ? parseFloat(valorMax) : null,
-      radar_tipologia: tipologia,
+      radar_tipologia: JSON.stringify(selectedTipologias),
       radar_bairros: selectedBairros,
       radar_status_imovel: statusImovel === "qualquer" ? null : statusImovel,
       radar_atualizado_em: new Date().toISOString(),
     });
-  }, [leadId, quartos, valorMax, tipologia, selectedBairros, statusImovel, onUpdate]);
+  }, [leadId, quartos, valorMax, selectedTipologias, selectedBairros, statusImovel, onUpdate]);
 
   // Search Typesense
   const searchTypesense = useCallback(async (): Promise<ImovelResult[]> => {
@@ -377,6 +390,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
       const filterParts: string[] = ["valor_venda:>0"];
       if (selectedBairros.length === 1) filterParts.push(`bairro:=${selectedBairros[0]}`);
       else if (selectedBairros.length > 1) filterParts.push(`bairro:[${selectedBairros.join(",")}]`);
+      if (valorMin) filterParts.push(`valor_venda:>=${parseFloat(valorMin)}`);
       if (valorMax) filterParts.push(`valor_venda:<=${parseFloat(valorMax) * 1.15}`);
       if (quartos) filterParts.push(`dormitorios:>=${parseInt(quartos)}`);
 
@@ -410,7 +424,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
       console.error("Typesense radar search error:", err);
       return [];
     }
-  }, [typesenseSearch, selectedBairros, valorMax, quartos, leadData?.empreendimento]);
+  }, [typesenseSearch, selectedBairros, valorMin, valorMax, quartos, leadData?.empreendimento]);
 
   // Main search
   const handleSearch = useCallback(async (silent = false) => {
@@ -670,7 +684,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
             <h5 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Home className="h-3.5 w-3.5" /> Perfil de Interesse
             </h5>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label className="text-[11px] text-muted-foreground">Quartos</Label>
                 <Select value={quartos} onValueChange={setQuartos}>
@@ -684,6 +698,10 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
                 </Select>
               </div>
               <div>
+                <Label className="text-[11px] text-muted-foreground">Valor Mínimo (R$)</Label>
+                <Input type="number" className="h-9 text-sm" placeholder="Ex: 200000" value={valorMin} onChange={(e) => setValorMin(e.target.value)} />
+              </div>
+              <div>
                 <Label className="text-[11px] text-muted-foreground">Valor Máximo (R$)</Label>
                 <Input type="number" className="h-9 text-sm" placeholder="Ex: 500000" value={valorMax} onChange={(e) => setValorMax(e.target.value)} />
               </div>
@@ -691,15 +709,26 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px] text-muted-foreground">Tipologia</Label>
-                <Select value={tipologia} onValueChange={setTipologia}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="apartamento">Apartamento</SelectItem>
-                    <SelectItem value="casa">Casa</SelectItem>
-                    <SelectItem value="terreno">Terreno</SelectItem>
-                    <SelectItem value="comercial">Comercial</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {[
+                    { value: "apartamento", label: "🏢 Apartamento" },
+                    { value: "casa", label: "🏡 Casa" },
+                    { value: "terreno", label: "🏞️ Terreno" },
+                    { value: "comercial", label: "🏪 Comercial" },
+                  ].map(t => (
+                    <button
+                      key={t.value}
+                      onClick={() => toggleTipologia(t.value)}
+                      className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${
+                        selectedTipologias.includes(t.value)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <Label className="text-[11px] text-muted-foreground">Status</Label>
