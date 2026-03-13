@@ -66,7 +66,7 @@ export default function DevAIPage() {
       .eq("id", id)
       .single();
     if (data?.mensagens) {
-      setMessages(data.mensagens as Message[]);
+      setMessages(data.mensagens as unknown as Message[]);
       setCurrentConvId(id);
     }
   }, []);
