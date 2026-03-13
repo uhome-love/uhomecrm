@@ -37,129 +37,6 @@ const FIXED_TEAMS = [
 ];
 
 
-// ─── Day Summary Card ───
-type PlacarPeriodo = "dia" | "semana" | "mes";
-
-function DaySummary({ visitas, showTeamBreakdown }: { visitas: Visita[]; showTeamBreakdown?: boolean }) {
-  const [periodo, setPeriodo] = useState<PlacarPeriodo>("dia");
-  const today = startOfDay(new Date());
-
-  const periodVisitas = useMemo(() => {
-    if (periodo === "dia") {
-      return visitas.filter(v => isToday(new Date(v.data_visita + "T12:00:00")));
-    }
-    const start = periodo === "semana"
-      ? startOfWeek(today, { weekStartsOn: 1 })
-      : startOfMonth(today);
-    const end = periodo === "semana"
-      ? endOfWeek(today, { weekStartsOn: 1 })
-      : endOfMonth(today);
-    return visitas.filter(v => {
-      const d = new Date(v.data_visita + "T12:00:00");
-      return isWithinInterval(d, { start, end });
-    });
-  }, [visitas, periodo, today]);
-
-  const realizadas = periodVisitas.filter(v => v.status === "realizada").length;
-  const noShows = periodVisitas.filter(v => v.status === "no_show").length;
-  const reagendadas = periodVisitas.filter(v => v.status === "reagendada").length;
-  const pendentes = periodVisitas.filter(v => v.status === "marcada" || v.status === "confirmada").length;
-  const total = periodVisitas.length;
-  const taxa = total > 0 ? Math.round((realizadas / total) * 100) : 0;
-
-  const periodoLabel = periodo === "dia" ? "Hoje" : periodo === "semana" ? "Semana" : "Mês";
-
-  // Team breakdown
-  const teamStats = useMemo(() => {
-    if (!showTeamBreakdown) return [];
-    const map = new Map<string, { total: number; realizadas: number }>();
-    FIXED_TEAMS.forEach(t => map.set(t.key, { total: 0, realizadas: 0 }));
-    for (const v of periodVisitas) {
-      const equipe = (v.equipe || "").toLowerCase().replace(/^equipe\s+/i, "").trim();
-      const teamKey = FIXED_TEAMS.find(t => equipe.includes(t.key))?.key;
-      if (teamKey) {
-        const s = map.get(teamKey)!;
-        s.total++;
-        if (v.status === "realizada") s.realizadas++;
-      }
-    }
-    return FIXED_TEAMS.map(t => ({
-      name: t.key,
-      label: t.label,
-      emoji: t.emoji,
-      className: t.className,
-      ...map.get(t.key)!,
-    }));
-  }, [periodVisitas, showTeamBreakdown]);
-
-  if (total === 0 && periodo === "dia") return null;
-
-  return (
-    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm px-5 py-3 shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-            <CalendarDays className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <span className="text-sm font-bold text-foreground tracking-tight">Placar</span>
-        </div>
-        <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5">
-          {(["dia", "semana", "mes"] as PlacarPeriodo[]).map(p => (
-            <button
-              key={p}
-              onClick={() => setPeriodo(p)}
-              className={cn(
-                "px-3 py-1 rounded-md text-[11px] font-bold transition-all",
-                periodo === p
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {p === "dia" ? "Dia" : p === "semana" ? "Semana" : "Mês"}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex items-center gap-0 divide-x divide-border/40">
-        {[
-          { value: total, label: periodoLabel, emoji: "📅", color: "text-foreground" },
-          { value: realizadas, label: "Realizadas", emoji: "✅", color: "text-emerald-600" },
-          { value: noShows, label: "No Show", emoji: "❌", color: "text-destructive" },
-          { value: reagendadas, label: "Reagend.", emoji: "🔄", color: "text-purple-600" },
-          { value: pendentes, label: "Pendentes", emoji: "⏳", color: "text-amber-600" },
-        ].map((item, i) => (
-          <div key={i} className="text-center flex-1 py-1">
-            <p className={cn("text-base font-black", item.color)}>{item.value}</p>
-            <p className="text-[9px] text-muted-foreground font-medium">{item.emoji} {item.label}</p>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center gap-3 mt-1.5">
-        <Progress value={taxa} className="flex-1 h-1.5" />
-        <span className={cn("text-[11px] font-bold tabular-nums", taxa >= 70 ? "text-emerald-600" : taxa >= 40 ? "text-amber-600" : "text-destructive")}>
-          {taxa}% realização
-        </span>
-      </div>
-
-      {/* Team breakdown for CEO/admin */}
-      {showTeamBreakdown && teamStats.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-border/40 flex items-center gap-4 flex-wrap">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Equipes</span>
-          {teamStats.map(t => (
-            <div key={t.name} className="flex items-center gap-1.5">
-              <span className={cn("text-[10px] px-2 py-0.5 rounded-full border whitespace-nowrap font-bold", t.className)}>
-                {t.emoji} {t.label}
-              </span>
-              <span className="text-[10px] text-foreground font-bold">{t.total}</span>
-              <span className="text-[10px] text-emerald-600 font-semibold">{t.realizadas}✅</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── STATUS chip colors ───
 const STATUS_CHIP_COLORS: Record<string, string> = {
   marcada: "bg-amber-100 text-amber-700 border-amber-300",
@@ -731,7 +608,6 @@ export default function AgendaVisitas() {
               {format(startOfWeek(new Date(), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })} — {format(endOfWeek(new Date(), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })}
             </Badge>
           </div>
-          <DaySummary visitas={filtered} showTeamBreakdown={isAdmin} />
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
@@ -754,7 +630,6 @@ export default function AgendaVisitas() {
               {format(startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })} — {format(endOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }), "dd/MM", { locale: ptBR })}
             </Badge>
           </div>
-          <DaySummary visitas={filtered} showTeamBreakdown={isAdmin} />
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
@@ -777,7 +652,7 @@ export default function AgendaVisitas() {
               {format(new Date(), "MMMM yyyy", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())}
             </Badge>
           </div>
-          <DaySummary visitas={filtered} showTeamBreakdown={isAdmin} />
+          
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
