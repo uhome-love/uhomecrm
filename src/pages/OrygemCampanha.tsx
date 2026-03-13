@@ -765,7 +765,7 @@ export default function OrygemCampanha() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {[
               { icon: Calendar, label: "Agendar visita", color: "bg-amber-500 hover:bg-amber-600", action: () => navigate("/agenda-visitas?nova=1") },
               { icon: Target, label: "Abrir pipeline", color: "bg-primary hover:bg-primary/90", action: () => navigate("/pipeline-leads") },
