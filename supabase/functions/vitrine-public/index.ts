@@ -239,6 +239,29 @@ Deno.serve(async (req) => {
       return jsonResponse({ imoveis });
     }
 
+    // Track vitrine events (non-blocking analytics)
+    if (action === "track_event") {
+      const { event_type, imovel_id } = body;
+      if (vitrine_id && event_type) {
+        // Increment WhatsApp clicks counter
+        if (event_type === "whatsapp_click") {
+          supabase.from("vitrines")
+            .select("cliques_whatsapp")
+            .eq("id", vitrine_id)
+            .maybeSingle()
+            .then(({ data: v }) => {
+              if (v) {
+                supabase.from("vitrines")
+                  .update({ cliques_whatsapp: (v.cliques_whatsapp || 0) + 1 })
+                  .eq("id", vitrine_id)
+                  .then(() => {});
+              }
+            });
+        }
+      }
+      return jsonResponse({ ok: true });
+    }
+
     return jsonResponse({ error: "Unknown action" }, 400);
   } catch (err) {
     console.error("vitrine-public error:", err);
