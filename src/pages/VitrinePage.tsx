@@ -11,7 +11,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 function sanitizeImovel(item: any): ShowcaseImovel | null {
   if (!item || typeof item !== "object") return null;
   return {
-    id: item.id ?? 0,
+    id: Number(item.id) || 0,
     codigo: item.codigo ?? null,
     titulo: item.titulo || "Imóvel",
     endereco: item.endereco ?? null,
