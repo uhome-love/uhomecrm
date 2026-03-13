@@ -145,9 +145,10 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
         },
       });
       if (data?.mensagem) {
-        await navigator.clipboard.writeText(data.mensagem);
-        toast.success("✨ Mensagem HOMI copiada!");
+        // Open WhatsApp first to avoid popup blockers
         if (leadTelefone) window.open(getWhatsAppUrl(leadTelefone), "_blank");
+        navigator.clipboard.writeText(data.mensagem).catch(() => {});
+        toast.success("✨ Mensagem HOMI copiada!");
         onOpenChange(false);
       } else {
         toast.error("Erro ao gerar mensagem");
