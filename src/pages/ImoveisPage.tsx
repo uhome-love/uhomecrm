@@ -1274,7 +1274,7 @@ export default function ImoveisPage() {
                 <Search className="h-8 w-8 mx-auto text-destructive/30 mb-2" />
                 <p className="text-sm font-medium text-foreground">Erro ao carregar</p>
                 <p className="text-xs text-muted-foreground mt-1">{fetchError}</p>
-                <Button variant="outline" size="xs" className="mt-2 text-xs" onClick={() => fetchRef.current(1)}>Tentar novamente</Button>
+                <Button variant="outline" size="sm" className="mt-2 text-xs" onClick={() => fetchRef.current(1)}>Tentar novamente</Button>
               </div>
             ) : loading ? (
               <div className="space-y-3">
