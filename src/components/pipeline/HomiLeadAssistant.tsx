@@ -381,12 +381,12 @@ ${histCtx}
                   key={action.id}
                   variant="outline"
                   size="sm"
-                  className="h-7 text-[10px] gap-1 justify-start"
+                  className="h-8 text-[10px] gap-1 justify-start overflow-hidden"
                   onClick={() => setActiveAction("objecao_input")}
                   disabled={loading}
                 >
                   <Icon className="h-3 w-3 shrink-0" />
-                  {action.label}
+                  <span className="truncate">{action.label}</span>
                 </Button>
               );
             }
@@ -396,12 +396,12 @@ ${histCtx}
                   key={action.id}
                   variant="outline"
                   size="sm"
-                  className="h-7 text-[10px] gap-1 justify-start"
+                  className="h-8 text-[10px] gap-1 justify-start overflow-hidden"
                   onClick={() => setActiveAction("custom_input")}
                   disabled={loading}
                 >
                   <Icon className="h-3 w-3 shrink-0" />
-                  {action.label}
+                  <span className="truncate">{action.label}</span>
                 </Button>
               );
             }
@@ -410,12 +410,12 @@ ${histCtx}
                 key={action.id}
                 variant={action.highlight ? "default" : "outline"}
                 size="sm"
-                className={`h-7 text-[10px] gap-1 justify-start ${action.highlight ? "ring-1 ring-primary/30" : ""}`}
+                className={`h-8 text-[10px] gap-1 justify-start overflow-hidden ${action.highlight ? "ring-1 ring-primary/30" : ""}`}
                 onClick={() => handleAction(action.id)}
                 disabled={loading}
               >
                 <Icon className="h-3 w-3 shrink-0" />
-                {action.label}
+                <span className="truncate">{action.label}</span>
               </Button>
             );
           })}
