@@ -652,7 +652,7 @@ export default function AgendaVisitas() {
               {format(new Date(), "MMMM yyyy", { locale: ptBR }).replace(/^\w/, c => c.toUpperCase())}
             </Badge>
           </div>
-          <DaySummary visitas={filtered} showTeamBreakdown={isAdmin} />
+          
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : (
