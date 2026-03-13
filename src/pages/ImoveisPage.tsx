@@ -755,8 +755,8 @@ export default function ImoveisPage() {
   if (valorRange[0] > 0 || valorRange[1] < 5_000_000) activeFilters.push({ key: "valor", label: `${fmtCompact(valorRange[0])} — ${valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}`, onRemove: () => setValorRange([0, 5_000_000]) });
   if (areaRange[0] > 0 || areaRange[1] < 500) activeFilters.push({ key: "area", label: `${areaRange[0]}m² — ${areaRange[1] >= 500 ? "500+" : areaRange[1]}m²`, onRemove: () => setAreaRange([0, 500]) });
   if (somenteObras) activeFilters.push({ key: "obras", label: "Em obras", onRemove: () => setSomenteObras(false) });
-  if (uhomeOnly) activeFilters.push({ key: "uhome", label: "uHome", onRemove: () => { setUhomeOnly(false); fetchImoveis(1, false, false); } });
-  if (campanhaAtiva) activeFilters.push({ key: "campanha", label: "Campanha", onRemove: () => { setCampanhaAtiva(false); fetchImoveis(1, false, uhomeOnly); } });
+  if (uhomeOnly) activeFilters.push({ key: "uhome", label: "uHome", onRemove: () => { setUhomeOnly(false); } });
+  if (campanhaAtiva) activeFilters.push({ key: "campanha", label: "Campanha", onRemove: () => { setCampanhaAtiva(false); } });
 
   const clearAllFilters = () => {
     setTipo([]); setBairro([]); setDormitorios([]); setSuitesFilter(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false); setSearch(""); setUhomeOnly(false); setCampanhaAtiva(false);
