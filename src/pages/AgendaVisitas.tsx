@@ -594,12 +594,15 @@ export default function AgendaVisitas() {
             { key: "hoje", label: "Hoje" },
             { key: "amanha", label: "Amanhã" },
             { key: "semana", label: "Semana" },
+            { key: "semana_anterior", label: "Sem. anterior" },
+            { key: "mes", label: "Mês" },
+            { key: "mes_anterior", label: "Mês anterior" },
           ].map(qf => (
             <button
               key={qf.key}
               onClick={() => applyQuickFilter(qf.key)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-[11px] font-bold transition-all",
+                "px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all",
                 quickFilter === qf.key
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -608,6 +611,64 @@ export default function AgendaVisitas() {
               {qf.label}
             </button>
           ))}
+          {/* Custom date picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(
+                  "px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center gap-1",
+                  quickFilter === "personalizado"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <CalendarIcon className="h-3 w-3" />
+                {quickFilter === "personalizado" && dateFrom
+                  ? dateTo && dateFrom.getTime() !== dateTo.getTime()
+                    ? `${format(dateFrom, "dd/MM")} - ${format(dateTo, "dd/MM")}`
+                    : format(dateFrom, "dd/MM/yy")
+                  : "Data"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="end">
+              <div className="space-y-2">
+                <p className="text-[11px] font-bold text-muted-foreground">Selecione o período</p>
+                <div className="flex gap-2">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">De</p>
+                    <Calendar
+                      mode="single"
+                      selected={quickFilter === "personalizado" ? dateFrom : undefined}
+                      onSelect={(d) => {
+                        setQuickFilter("personalizado");
+                        setPendingOnly(false);
+                        setStatusFilter("all");
+                        setDateFrom(d);
+                        if (!dateTo || (d && dateTo && d > dateTo)) setDateTo(d);
+                      }}
+                      className="p-2 pointer-events-auto"
+                      initialFocus
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">Até</p>
+                    <Calendar
+                      mode="single"
+                      selected={quickFilter === "personalizado" ? dateTo : undefined}
+                      onSelect={(d) => {
+                        setQuickFilter("personalizado");
+                        setPendingOnly(false);
+                        setStatusFilter("all");
+                        setDateTo(d);
+                      }}
+                      disabled={(d) => dateFrom ? d < dateFrom : false}
+                      className="p-2 pointer-events-auto"
+                    />
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Tipo toggle */}
