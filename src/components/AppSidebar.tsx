@@ -282,6 +282,7 @@ export function AppSidebar() {
               { title: "Roleta de Leads", url: "/roleta", icon: Cog },
               { title: "Pipeline de Leads", url: "/pipeline-leads", icon: Kanban },
               { title: "Anúncios no Ar", url: "/anuncios", icon: Radio },
+              { title: "Imóveis", url: "/imoveis", icon: Building2 },
               { title: "Oferta Ativa", url: "/oferta-ativa", icon: Phone },
               { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
               { title: "Busca de Leads", url: "/busca-leads", icon: SearchCheck },
@@ -303,22 +304,9 @@ export function AppSidebar() {
             ],
           },
           {
-            label: "Marketing",
-            items: [
-              { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
-              { title: "Imóveis", url: "/imoveis", icon: Building2 },
-            ],
-          },
-          {
-            label: "Financeiro",
-            items: [
-              { title: "Pagadorias", url: "/backoffice/pagadorias", icon: FileBarChart },
-              { title: "Cadastros", url: "/backoffice/cadastros", icon: Users },
-            ],
-          },
-          {
             label: "Operacional",
             items: [
+              { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
               { title: "Tarefas & Marketing", url: "/backoffice/tarefas", icon: ClipboardCheck },
             ],
           },
