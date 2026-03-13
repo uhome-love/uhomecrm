@@ -456,7 +456,30 @@ export default function ImoveisPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [campanhaAtiva, setCampanhaAtiva] = useState(false);
+  const [campanhaOverrides, setCampanhaOverrides] = useState<{ codigo: string; nome: string; fotos: string[]; valor_min: number | null; valor_max: number | null; bairro: string | null; dormitorios: number | null; descricao: string | null; status_obra: string | null; previsao_entrega: string | null }[]>([]);
   const [uhomeOnly, setUhomeOnly] = useState(false);
+
+  // Load campaign codes from empreendimento_overrides (source of truth for "Anúncios no Ar")
+  useEffect(() => {
+    supabase.from("empreendimento_overrides").select("codigo, nome, fotos, valor_min, valor_max, bairro, dormitorios, descricao, status_obra, previsao_entrega").then(({ data }) => {
+      if (data && data.length > 0) {
+        setCampanhaOverrides(data.map(d => ({
+          codigo: d.codigo,
+          nome: d.nome || d.codigo,
+          fotos: d.fotos || [],
+          valor_min: d.valor_min,
+          valor_max: d.valor_max,
+          bairro: d.bairro,
+          dormitorios: d.dormitorios,
+          descricao: d.descricao,
+          status_obra: d.status_obra,
+          previsao_entrega: d.previsao_entrega,
+        })));
+      } else {
+        setCampanhaOverrides(CAMPANHA_CODES_FALLBACK.map(c => ({ codigo: c.codigo, nome: c.nome, fotos: [], valor_min: null, valor_max: null, bairro: null, dormitorios: null, descricao: null, status_obra: null, previsao_entrega: null })));
+      }
+    });
+  }, []);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
