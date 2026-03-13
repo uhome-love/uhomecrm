@@ -792,19 +792,19 @@ export default function ImoveisPage() {
 
   const handleSearch = () => {
     setShowSuggestions(false);
-    // Cancel any pending debounce
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    // Mark to skip the next debounced effect (state changes below will trigger it)
     skipNextDebounce.current = true;
-    // Force immediate fetch with current state
-    // Use setTimeout(0) to let any pending state updates flush first
-    setTimeout(() => {
-      prevFilterKey.current = JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly: false, campanhaAtiva: false });
-      fetchRef.current(1);
-    }, 0);
+    // Immediately fetch — fetchRef always points to latest closure which captures current search state
     setCampanhaAtiva(false);
     setUhomeOnly(false);
+    // Use rAF + setTimeout to ensure state updates (campanha/uhome) have flushed
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        prevFilterKey.current = JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly: false, campanhaAtiva: false });
+        fetchRef.current(1);
+      }, 0);
+    });
   };
 
   // Autocomplete with debounce — Typesense powered
