@@ -228,7 +228,7 @@ function PhotoLightbox({ images, initialIndex, open, onClose }: { images: string
   const getFullRes = (url: string) => url.replace(/\/thumb\//, "/large/").replace(/_thumb\./i, ".");
 
   if (!open || images.length === 0) return null;
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] bg-black/97" onClick={onClose}>
       {/* Close button */}
       <button onClick={onClose} className="absolute top-4 right-4 z-50 bg-white/10 hover:bg-white/20 rounded-full p-2.5 text-white backdrop-blur-sm transition-all">
