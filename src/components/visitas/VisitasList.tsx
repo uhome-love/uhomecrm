@@ -171,8 +171,6 @@ function DateGroupCard({
 }
 
 export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete, showCorretor, showTeam, mode = "upcoming" }: Props) {
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-
   const displayGroups = useMemo(() => {
     const groups = buildGroups(visitas);
     if (mode === "past") {
