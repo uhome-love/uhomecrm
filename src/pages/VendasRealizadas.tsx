@@ -205,6 +205,7 @@ export default function VendasRealizadas() {
   const profiles = data?.profiles || {};
   const annualVgvByCorretor = data?.annualVgvByCorretor || {};
   const parceriaLeadIds = new Set(data?.parceriaSet || []);
+  const parceriaMap = data?.parceriaMap || {};
   const origemMap = data?.origemMap || {};
 
   const [activeTab, setActiveTab] = useState("vendas");
