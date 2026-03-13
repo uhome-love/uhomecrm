@@ -1,6 +1,7 @@
 import { memo, useState, useMemo } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, MessageCircle, Zap, Calendar, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft, Eye, MapPin, PhoneCall, Send, FileText, Mail, MoreVertical, ArrowRight, Trash2 } from "lucide-react";
+import { Phone, MessageCircle, Zap, Calendar, UserPlus, StickyNote, XCircle, Handshake, ArrowRightLeft, Eye, MapPin, PhoneCall, Send, FileText, Mail, MoreVertical, ArrowRight, Trash2, Flame, Snowflake, ThermometerSun } from "lucide-react";
+import { calculateLeadScore } from "@/lib/leadScoring";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserRole } from "@/hooks/useUserRole";
 import { differenceInHours, differenceInDays } from "date-fns";
@@ -240,6 +241,27 @@ const PipelineCard = memo(function PipelineCard({
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
   const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]);
 
+  // Lead scoring
+  const leadScore = useMemo(() => calculateLeadScore({
+    telefone: lead.telefone,
+    email: lead.email,
+    empreendimento: lead.empreendimento,
+    valor_estimado: lead.valor_estimado,
+    origem: lead.origem,
+    temperatura: lead.temperatura,
+    created_at: lead.created_at,
+    stage_changed_at: lead.stage_changed_at,
+  }), [lead.telefone, lead.email, lead.empreendimento, lead.valor_estimado, lead.origem, lead.temperatura, lead.created_at, lead.stage_changed_at]);
+
+  // Temperature config
+  const tempConfig = useMemo(() => {
+    const t = lead.temperatura;
+    if (t === "quente") return { icon: Flame, cls: "text-orange-500", bg: "bg-orange-500/10", label: "Quente" };
+    if (t === "morno") return { icon: ThermometerSun, cls: "text-amber-500", bg: "bg-amber-500/10", label: "Morno" };
+    if (t === "frio") return { icon: Snowflake, cls: "text-blue-400", bg: "bg-blue-400/10", label: "Frio" };
+    return null;
+  }, [lead.temperatura]);
+
   const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!lead.telefone) return;
@@ -350,16 +372,31 @@ const PipelineCard = memo(function PipelineCard({
     >
       {/* Content */}
       <div className="px-3 pt-3 pb-2 space-y-1.5">
-        {/* Line 1: Name + status indicator */}
+        {/* Line 1: Name + score badge + temperature */}
         <div className="flex items-center justify-between gap-1">
           <span className="text-[13px] font-bold text-foreground truncate leading-tight tracking-tight">
             {cleanName(lead.nome)}
           </span>
-          {status.indicator && (
-            <span className={cn("text-sm shrink-0", status.indicatorCls)}>
-              {status.indicator}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Temperature indicator */}
+            {tempConfig && (
+              <span className={cn("inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold", tempConfig.bg, tempConfig.cls)}>
+                <tempConfig.icon className="h-2.5 w-2.5" />
+              </span>
+            )}
+            {/* Lead Score badge */}
+            <span className={cn(
+              "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-black",
+              leadScore.bgColor, leadScore.color
+            )}>
+              {leadScore.label}
             </span>
-          )}
+            {status.indicator && (
+              <span className={cn("text-sm", status.indicatorCls)}>
+                {status.indicator}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Line 2: Corretor (for managers) + Empreendimento · Phone · Origin badge */}

@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
+import { useVendaRealtimeNotification } from "@/hooks/useVendaRealtimeNotification";
 import LeadAcceptanceDialog from "@/components/pipeline/LeadAcceptanceDialog";
 import NewLeadBanner from "@/components/notifications/NewLeadBanner";
 import PushPromptBanner from "@/components/notifications/PushPromptBanner";
@@ -76,6 +77,7 @@ function ArenaAutoCollapse({ isSession }: { isSession: boolean }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const { isAdmin, isGestor, isBackoffice, isRh } = useUserRole();
+  useVendaRealtimeNotification();
   const navigate = useNavigate();
   const [nome, setNome] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
