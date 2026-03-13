@@ -132,15 +132,22 @@ export default function VendasRealizadas() {
       const { data: vendas } = await query;
       const rows = (vendas || []) as VendaRow[];
 
-      // Load partnerships to mark VGV splits
+      // Load partnerships with partner details
       const leadIds = rows.map(v => (v as any).pipeline_lead_id).filter(Boolean);
-      let parceriaSet = new Set<string>(); // set of pipeline_lead_ids that have partnerships
+      let parceriaSet = new Set<string>();
+      let parceriaMap: Record<string, { principal_id: string; parceiro_id: string }> = {};
       if (leadIds.length > 0) {
         const { data: parcerias } = await supabase.from("pipeline_parcerias")
-          .select("pipeline_lead_id")
+          .select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id")
           .eq("status", "ativa")
           .in("pipeline_lead_id", leadIds);
-        (parcerias || []).forEach(p => parceriaSet.add(p.pipeline_lead_id));
+        (parcerias || []).forEach(p => {
+          parceriaSet.add(p.pipeline_lead_id);
+          parceriaMap[p.pipeline_lead_id] = {
+            principal_id: p.corretor_principal_id,
+            parceiro_id: p.corretor_parceiro_id,
+          };
+        });
       }
 
       // Load profiles for corretores
