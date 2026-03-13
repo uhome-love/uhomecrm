@@ -65,12 +65,30 @@ interface Props {
   onOpenLead: () => void;
 }
 
+const QUICK_TASK_TYPES = [
+  { value: "ligar", label: "Ligar", emoji: "📞" },
+  { value: "whatsapp", label: "WhatsApp", emoji: "💬" },
+  { value: "follow_up", label: "Follow-up", emoji: "📋" },
+  { value: "marcar_visita", label: "Visita", emoji: "🏠" },
+  { value: "enviar_proposta", label: "Proposta", emoji: "📄" },
+];
+
+const QUICK_TASK_LABELS: Record<string, string> = {
+  follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp",
+  enviar_proposta: "Enviar proposta", marcar_visita: "Marcar visita",
+};
+
 const PipelineCardHover = memo(function PipelineCardHover({ lead, children, onOpenLead }: Props) {
+  const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [hoverData, setHoverData] = useState<HoverData | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [position, setPosition] = useState<"right" | "left">("right");
+  const [showQuickTask, setShowQuickTask] = useState(false);
+  const [quickTaskType, setQuickTaskType] = useState("follow_up");
+  const [quickTaskObs, setQuickTaskObs] = useState("");
+  const [quickTaskSaving, setQuickTaskSaving] = useState(false);
   const enterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
