@@ -594,6 +594,19 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Mega da Cyrela">
+                    <NavLink
+                      to="/mega-cyrela"
+                      end
+                      className={`group/nav text-[#d4af37] hover:text-[#e5c04a] hover:bg-[#d4af37]/10 transition-all duration-150 rounded-lg relative py-1.5 font-medium px-3`}
+                      activeClassName="!text-[#e5c04a] !font-semibold !bg-[#d4af37]/15 border-l-2 !border-l-[#d4af37] !rounded-l-none rounded-r-lg"
+                    >
+                      <Trophy className="mr-2.5 h-4 w-4 shrink-0 text-[#d4af37]" />
+                      <span className="text-sm">⚽ Mega da Cyrela</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </CollapsibleContent>
           </Collapsible>
@@ -611,6 +624,13 @@ export function AppSidebar() {
                 <SidebarMenuButton asChild tooltip="Orygem 60 dias">
                   <NavLink to="/orygem-60" end className="justify-center text-emerald-300 hover:bg-emerald-500/10 rounded-lg py-1.5" activeClassName="!bg-emerald-500/15">
                     <Home className="h-4 w-4 text-emerald-400" />
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Mega da Cyrela">
+                  <NavLink to="/mega-cyrela" end className="justify-center text-[#d4af37] hover:bg-[#d4af37]/10 rounded-lg py-1.5" activeClassName="!bg-[#d4af37]/15">
+                    <Trophy className="h-4 w-4 text-[#d4af37]" />
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
