@@ -79,6 +79,7 @@ const ImoveisPage = lazy(() => import("./pages/ImoveisPage"));
 const VitrinePage = lazy(() => import("./pages/VitrinePage"));
 const PosVendas = lazy(() => import("./pages/PosVendas"));
 const MelnickDay = lazy(() => import("./pages/MelnickDay"));
+const OrygemCampanha = lazy(() => import("./pages/OrygemCampanha"));
 const VendasRealizadas = lazy(() => import("./pages/VendasRealizadas"));
 const AnunciosNoAr = lazy(() => import("./pages/AnunciosNoAr"));
 const IntegracaoJetimob = lazy(() => import("./pages/IntegracaoJetimob"));
