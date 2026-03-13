@@ -80,12 +80,21 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
       .replace(/\{\{corretor\}\}/g, corretorNome || "seu corretor");
   };
 
-  const handleSelectTemplate = async (template: string) => {
+  const handleSelectTemplate = (template: string) => {
     const msg = replaceVars(template);
-    await navigator.clipboard.writeText(msg);
-    toast.success("Mensagem copiada! Cole no WhatsApp 📋");
+    
+    // Open WhatsApp FIRST (synchronous, in user-gesture context) to avoid popup blockers
+    if (leadTelefone) {
+      window.open(getWhatsAppUrl(leadTelefone), "_blank");
+    }
+    
+    // Then copy and register (async, non-blocking)
+    navigator.clipboard.writeText(msg).then(() => {
+      toast.success("Mensagem copiada! Cole no WhatsApp 📋");
+    }).catch(() => {
+      toast.success("WhatsApp aberto!");
+    });
 
-    // Register activity
     if (user) {
       supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: leadId,
@@ -100,14 +109,11 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
       } as any).eq("id", leadId).then(() => {});
     }
 
-    // Open WhatsApp
-    if (leadTelefone) {
-      window.open(getWhatsAppUrl(leadTelefone), "_blank");
-    }
     onOpenChange(false);
   };
 
   const handleFreeMessage = () => {
+    // Open WhatsApp FIRST (synchronous) to avoid popup blockers
     if (leadTelefone) {
       window.open(getWhatsAppUrl(leadTelefone), "_blank");
     }
@@ -139,9 +145,10 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
         },
       });
       if (data?.mensagem) {
-        await navigator.clipboard.writeText(data.mensagem);
-        toast.success("✨ Mensagem HOMI copiada!");
+        // Open WhatsApp first to avoid popup blockers
         if (leadTelefone) window.open(getWhatsAppUrl(leadTelefone), "_blank");
+        navigator.clipboard.writeText(data.mensagem).catch(() => {});
+        toast.success("✨ Mensagem HOMI copiada!");
         onOpenChange(false);
       } else {
         toast.error("Erro ao gerar mensagem");
