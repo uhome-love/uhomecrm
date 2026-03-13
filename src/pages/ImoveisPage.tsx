@@ -1467,7 +1467,14 @@ export default function ImoveisPage() {
                   </div>
                 </div>
               </div>
-              {loading ? (
+              {fetchError ? (
+                <Card className="p-16 text-center border-destructive/30 bg-destructive/5">
+                  <Search className="h-12 w-12 mx-auto text-destructive/30 mb-4" />
+                  <p className="text-lg font-semibold text-foreground">Erro ao carregar imóveis</p>
+                  <p className="text-sm text-muted-foreground mt-1">{fetchError}</p>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={() => fetchRef.current(1)}>Tentar novamente</Button>
+                </Card>
+              ) : loading ? (
                 <div className={cn("grid gap-4", "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
                   {Array.from({ length: 8 }).map((_, i) => (
                     <Card key={i} className="overflow-hidden border-border/40">
