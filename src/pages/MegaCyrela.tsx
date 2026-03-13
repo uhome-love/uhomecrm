@@ -31,6 +31,14 @@ import imgVistaMeninoDeus from "@/assets/cyrela/vista-menino-deus.jpeg";
 import imgTheArch from "@/assets/cyrela/the-arch.jpeg";
 import imgSkylineParqueMoinhos from "@/assets/cyrela/skyline-parque-moinhos.jpeg";
 import imgPrimeWallig from "@/assets/cyrela/prime-wallig.jpeg";
+import imgPrimeAltosGermania from "@/assets/cyrela/prime-altos-germania.jpeg";
+import imgBoaVistaCountryClub from "@/assets/cyrela/boa-vista-country-club.jpeg";
+import imgArbo from "@/assets/cyrela/arbo.jpeg";
+import imgThePark from "@/assets/cyrela/the-park.jpeg";
+import imgGardenHaus from "@/assets/cyrela/garden-haus.jpeg";
+import imgVistaNovaCarlosGomes2d from "@/assets/cyrela/vista-nova-carlos-gomes-2d.jpeg";
+import imgTheArch2d from "@/assets/cyrela/the-arch-2d.jpeg";
+import imgPrimeWish from "@/assets/cyrela/prime-wish.jpeg";
 
 /* ═══════════════════════════════════════════
    DATA
@@ -70,10 +78,10 @@ const CATEGORIAS: Record<string, {
     label: "2 Dormitórios",
     emoji: "🏠",
     empreendimentos: [
-      { nome: "Vista Nova Carlos Gomes", tipologia: "2 dormitórios", bairro: "Petrópolis", fase: "Em construção", unidade: "402", metragem: "68 m²", valor: "R$ 847.254" },
-      { nome: "The Arch", tipologia: "2 dormitórios", bairro: "Bela Vista", fase: "Pronto para morar", unidade: "501", metragem: "70 m²", valor: "R$ 1.075.358" },
-      { nome: "Prime Wish", tipologia: "2 dormitórios", bairro: "São Geraldo", fase: "Pronto para morar", unidade: "203", metragem: "56 m²", valor: "R$ 429.460" },
-      { nome: "Boa Vista Country Club", tipologia: "2 dormitórios", bairro: "Boa Vista", fase: "Pronto", unidade: "1008", metragem: "69 m²", valor: "R$ 812.752" },
+      { nome: "Vista Nova Carlos Gomes", tipologia: "2 dormitórios", bairro: "Petrópolis", fase: "Em construção", unidade: "402", metragem: "68 m²", valor: "R$ 847.254", imagem: imgVistaNovaCarlosGomes2d },
+      { nome: "The Arch", tipologia: "2 dormitórios", bairro: "Bela Vista", fase: "Pronto para morar", unidade: "501", metragem: "70 m²", valor: "R$ 1.075.358", imagem: imgTheArch2d },
+      { nome: "Prime Wish", tipologia: "2 dormitórios", bairro: "São Geraldo", fase: "Pronto para morar", unidade: "203", metragem: "56 m²", valor: "R$ 429.460", imagem: imgPrimeWish },
+      { nome: "Boa Vista Country Club", tipologia: "2 dormitórios", bairro: "Boa Vista", fase: "Pronto", unidade: "1008", metragem: "69 m²", valor: "R$ 812.752", imagem: imgBoaVistaCountryClub },
     ],
   },
   "3dorms": {
@@ -81,17 +89,17 @@ const CATEGORIAS: Record<string, {
     emoji: "🏡",
     empreendimentos: [
       { nome: "Prime Wallig", tipologia: "3 dormitórios", bairro: "Passo D'Areia", fase: "Pronto para morar", unidade: "1210", metragem: "67 m²", valor: "R$ 610.448", imagem: imgPrimeWallig },
-      { nome: "Prime Altos do Germânia", tipologia: "3 dormitórios", bairro: "Passo D'Areia", fase: "Pronto para morar", unidade: "1509", metragem: "67 m²", valor: "R$ 583.064" },
-      { nome: "Boa Vista Country Club", tipologia: "3 dormitórios", bairro: "Boa Vista", fase: "Pronto para morar", unidade: "201", metragem: "93 m²", valor: "R$ 1.022.390" },
-      { nome: "Arbo", tipologia: "3 dormitórios", bairro: "Higienópolis", fase: "Em construção", unidade: "201", metragem: "106 m²", valor: "R$ 1.308.645" },
+      { nome: "Prime Altos do Germânia", tipologia: "3 dormitórios", bairro: "Passo D'Areia", fase: "Pronto para morar", unidade: "1509", metragem: "67 m²", valor: "R$ 583.064", imagem: imgPrimeAltosGermania },
+      { nome: "Boa Vista Country Club", tipologia: "3 dormitórios", bairro: "Boa Vista", fase: "Pronto para morar", unidade: "201", metragem: "93 m²", valor: "R$ 1.022.390", imagem: imgBoaVistaCountryClub },
+      { nome: "Arbo", tipologia: "3 dormitórios", bairro: "Higienópolis", fase: "Em construção", unidade: "201", metragem: "106 m²", valor: "R$ 1.308.645", imagem: imgArbo },
     ],
   },
   "3suites": {
     label: "3 Suítes",
     emoji: "👑",
     empreendimentos: [
-      { nome: "The Park", tipologia: "3 suítes", bairro: "Rio Branco", fase: "Pronto para morar", unidade: "704 ART", metragem: "144 m²", valor: "R$ 1.991.456" },
-      { nome: "Garden Haus", tipologia: "3 suítes", bairro: "Jardim Europa", fase: "Pronto para morar", unidade: "403", metragem: "159 m²", valor: "R$ 2.854.137" },
+      { nome: "The Park", tipologia: "3 suítes", bairro: "Rio Branco", fase: "Pronto para morar", unidade: "704 ART", metragem: "144 m²", valor: "R$ 1.991.456", imagem: imgThePark },
+      { nome: "Garden Haus", tipologia: "3 suítes", bairro: "Jardim Europa", fase: "Pronto para morar", unidade: "403", metragem: "159 m²", valor: "R$ 2.854.137", imagem: imgGardenHaus },
     ],
   },
 };
