@@ -34,7 +34,7 @@ function createPriceIcon(valor: number | null) {
 
 export default function ShowcaseMap({ imoveis, onViewDetails }: Props) {
   const geoImoveis = useMemo(
-    () => imoveis.filter(i => i.lat && i.lng),
+    () => (imoveis || []).filter(i => i?.lat && i?.lng),
     [imoveis]
   );
 

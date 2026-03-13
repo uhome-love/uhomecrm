@@ -17,7 +17,7 @@ export default function PropertyDetailModal({ item, corretor, open, onClose, onT
   const [currentImg, setCurrentImg] = useState(0);
   const fotos = Array.isArray(item?.fotos) ? item.fotos.filter(Boolean) : [];
 
-  if (!open) return null;
+  if (!open || !item) return null;
 
   const specs = [
     { icon: Ruler, label: "Área", value: item.area ? `${item.area}m²` : null },
