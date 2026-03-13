@@ -594,6 +594,19 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Mega da Cyrela">
+                    <NavLink
+                      to="/mega-cyrela"
+                      end
+                      className={`group/nav text-[#d4af37] hover:text-[#e5c04a] hover:bg-[#d4af37]/10 transition-all duration-150 rounded-lg relative py-1.5 font-medium px-3`}
+                      activeClassName="!text-[#e5c04a] !font-semibold !bg-[#d4af37]/15 border-l-2 !border-l-[#d4af37] !rounded-l-none rounded-r-lg"
+                    >
+                      <Trophy className="mr-2.5 h-4 w-4 shrink-0 text-[#d4af37]" />
+                      <span className="text-sm">⚽ Mega da Cyrela</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </CollapsibleContent>
           </Collapsible>
