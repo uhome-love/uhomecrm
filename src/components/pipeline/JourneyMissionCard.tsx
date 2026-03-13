@@ -41,6 +41,11 @@ const JourneyMissionCard = memo(function JourneyMissionCard({
   const totalStages = stages.length;
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || "");
 
+  // Stale lead detection: no action for 5+ days
+  const lastAction = lead.ultima_acao_at ? new Date(lead.ultima_acao_at) : new Date(lead.updated_at);
+  const daysSinceAction = differenceInDays(new Date(), lastAction);
+  const isStale = daysSinceAction >= 5;
+
   const daysLabel = useMemo(() => {
     if (daysInStage <= 2) return { text: `✅ ${daysInStage}d`, color: "#34D399" };
     if (daysInStage <= 5) return { text: `⚠️ ${daysInStage}d`, color: "#FBBF24" };
