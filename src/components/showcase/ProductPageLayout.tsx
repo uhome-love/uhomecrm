@@ -10,6 +10,7 @@ import FooterBranding from "./FooterBranding";
 import ShowcaseLightbox from "./ShowcaseLightbox";
 import { buildWhatsappLink, extractYoutubeId } from "./types";
 import type { ShowcaseData, ShowcaseLanding } from "./types";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface Props {
   data: ShowcaseData;
