@@ -863,6 +863,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 leadId={lead.id}
                 leadNome={lead.nome}
                 leadTelefone={lead.telefone}
+                leadData={{
+                  empreendimento: lead.empreendimento,
+                  campanha: lead.campanha,
+                  campanha_id: lead.campanha_id,
+                  valor_estimado: lead.valor_estimado,
+                  origem: lead.origem,
+                  observacoes: lead.observacoes,
+                  segmento_id: lead.segmento_id,
+                  temperatura: lead.temperatura,
+                }}
                 currentProfile={{
                   radar_quartos: (lead as any).radar_quartos,
                   radar_valor_max: (lead as any).radar_valor_max,
