@@ -590,8 +590,7 @@ export default function ImoveisPage() {
   const [valorRange, setValorRange] = useState<[number, number]>([0, 5_000_000]);
   const [somenteObras, setSomenteObras] = useState(false);
 
-  // Track if Typesense is available
-  const [useTypesense, setUseTypesense] = useState(true);
+  // Typesense is always attempted (no permanent disable)
 
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
