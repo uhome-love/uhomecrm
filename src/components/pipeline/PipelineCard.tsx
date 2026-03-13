@@ -585,16 +585,52 @@ const PipelineCard = memo(function PipelineCard({
       {/* Line 4: Action buttons + 3-dot menu */}
       <div data-actions-area className="px-2.5 py-1.5 flex items-center justify-between">
         <div className="flex items-center gap-0.5">
-          {lead.telefone && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-foreground/80 hover:bg-accent hover:text-foreground rounded-lg"
-              onClick={handleCall}
-            >
-              <Phone className="h-3.5 w-3.5" /> Ligar
-            </Button>
-          )}
+          <Popover open={quickTaskOpen} onOpenChange={setQuickTaskOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-foreground/80 hover:bg-accent hover:text-foreground rounded-lg"
+                onClick={(e) => { e.stopPropagation(); setQuickTaskOpen(true); }}
+              >
+                <ClipboardList className="h-3.5 w-3.5" /> Tarefa
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent side="top" align="start" className="w-64 p-2.5 space-y-2" onClick={(e) => e.stopPropagation()}>
+              <p className="text-[10px] font-bold text-foreground">➕ Tarefa rápida para {lead.nome?.split(" ")[0]}</p>
+              <div className="flex flex-wrap gap-1">
+                {CARD_QUICK_TASK_TYPES.map(t => (
+                  <button
+                    key={t.value}
+                    onClick={() => setQuickTaskType(t.value)}
+                    className={cn(
+                      "text-[10px] px-2 py-1 rounded-md border transition-colors",
+                      quickTaskType === t.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border hover:border-primary/50"
+                    )}
+                  >
+                    {t.emoji} {t.label}
+                  </button>
+                ))}
+              </div>
+              <Input
+                className="h-7 text-[11px]"
+                placeholder="Obs: ex. Retornar sobre financiamento"
+                value={quickTaskObs}
+                onChange={e => setQuickTaskObs(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleQuickTaskCreate("hoje"); }}
+              />
+              <div className="flex gap-1">
+                <Button size="sm" className="h-6 text-[10px] flex-1 gap-1" disabled={quickTaskSaving} onClick={() => handleQuickTaskCreate("hoje")}>
+                  {quickTaskSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Hoje"}
+                </Button>
+                <Button size="sm" variant="outline" className="h-6 text-[10px] flex-1" disabled={quickTaskSaving} onClick={() => handleQuickTaskCreate("amanha")}>
+                  Amanhã
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <Button
             size="sm"
