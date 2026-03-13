@@ -26,6 +26,35 @@ function extractStr(val: any): string {
   return "";
 }
 
+/**
+ * Attempt to extract structured field/value pairs from a stringified
+ * TikTok Answers array that Make.com sometimes dumps into a single field.
+ * e.g. '{"field":"email","value":"a@b.com"}, {"field":"name","value":"João"}'
+ */
+function extractFieldValuePairs(raw: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  try {
+    // Try wrapping in array brackets and parsing
+    const wrapped = `[${raw.replace(/}\s*,\s*{/g, "},{")}]`;
+    const arr = JSON.parse(wrapped);
+    if (Array.isArray(arr)) {
+      for (const item of arr) {
+        if (item.field && item.value) {
+          result[String(item.field).toLowerCase().trim()] = String(item.value).trim();
+        }
+      }
+    }
+  } catch {
+    // Fallback: regex extraction
+    const regex = /"field"\s*:\s*"([^"]+)"\s*,\s*"value"\s*:\s*"([^"]*)"/g;
+    let match;
+    while ((match = regex.exec(raw)) !== null) {
+      result[match[1].toLowerCase().trim()] = match[2].trim();
+    }
+  }
+  return result;
+}
+
 function normalizeLower(value: string | null | undefined): string {
   return (value || "").toLowerCase().trim();
 }
@@ -110,6 +139,27 @@ Deno.serve(async (req) => {
         else if (!message && fn === "message") message = val;
         else if (!propertyCode && (fn === "property_code" || fn === "codigo_imovel")) propertyCode = val;
         else if (!externalLeadId && (fn === "lead_id" || fn === "tiktok_lead_id")) externalLeadId = val;
+      }
+    }
+
+    // ── Fallback: detect stringified field/value pairs ──
+    // Make.com sometimes dumps the entire Answers[] array into each field
+    const allRawValues = [name, email, phone, message].join(" ");
+    if (allRawValues.includes('"field"') && allRawValues.includes('"value"')) {
+      // Find the longest raw value (likely contains the full answers array)
+      const candidates = [name, email, phone, message].filter(v => v.includes('"field"'));
+      const longestRaw = candidates.sort((a, b) => b.length - a.length)[0] || "";
+      if (longestRaw) {
+        const parsed = extractFieldValuePairs(longestRaw);
+        console.log("TIKTOK-LEAD FALLBACK PARSE:", JSON.stringify(parsed));
+        if (parsed.name || parsed.full_name || parsed.nome) {
+          name = parsed.name || parsed.full_name || parsed.nome || name;
+        }
+        if (parsed.email) email = parsed.email;
+        if (parsed.phone_number || parsed.phone || parsed.telefone || parsed.celular || parsed.whatsapp) {
+          phone = parsed.phone_number || parsed.phone || parsed.telefone || parsed.celular || parsed.whatsapp || phone;
+        }
+        if (parsed.message || parsed.mensagem) message = parsed.message || parsed.mensagem || message;
       }
     }
 
