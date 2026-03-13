@@ -84,7 +84,7 @@ export default function LeadInsightsAI({ kpis, empreendimentoPerf, segmentoPerf,
     } finally {
       setLoading(false);
     }
-  }, [kpis, campanhas, formularios, segmentoPerf, corretorPerf, periodo]);
+  }, [kpis, empreendimentoPerf, segmentoPerf, corretorPerf, periodo]);
 
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
