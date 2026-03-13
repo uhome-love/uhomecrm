@@ -5796,6 +5796,39 @@ export type Database = {
           },
         ]
       }
+      vitrine_interacoes: {
+        Row: {
+          created_at: string
+          id: string
+          imovel_id: string
+          lead_nome: string | null
+          lead_telefone: string | null
+          metadata: Json | null
+          tipo: string
+          vitrine_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imovel_id: string
+          lead_nome?: string | null
+          lead_telefone?: string | null
+          metadata?: Json | null
+          tipo: string
+          vitrine_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imovel_id?: string
+          lead_nome?: string | null
+          lead_telefone?: string | null
+          metadata?: Json | null
+          tipo?: string
+          vitrine_id?: string
+        }
+        Relationships: []
+      }
       vitrines: {
         Row: {
           cliques_whatsapp: number | null
