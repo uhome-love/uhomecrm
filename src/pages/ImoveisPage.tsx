@@ -106,15 +106,18 @@ const fmtCompact = (v: number) => {
   return fmtBRL(v);
 };
 
-const CAMPANHA_CODES = [
+// Fallback hardcoded list (used if overrides fail to load)
+const CAMPANHA_CODES_FALLBACK = [
   { codigo: "97325-UH", nome: "Shift" },
   { codigo: "32849-UH", nome: "Open Bosque" },
-  { codigo: "57920-UH", nome: "Orygem" },
+  { codigo: "57290-UH", nome: "Orygem" },
   { codigo: "39808-UH", nome: "Melnick Day - Compactos" },
   { codigo: "58935-UH", nome: "Lake Eyre" },
   { codigo: "4688-UH", nome: "Casa Bastian" },
   { codigo: "52101-UH", nome: "Casa Tua" },
   { codigo: "41190-UH", nome: "Las Casas" },
+  { codigo: "76953-UH", nome: "Melnick Day - Médio Padrão" },
+  { codigo: "91245-UH", nome: "Melnick Day - Alto Padrão" },
 ];
 
 const BAIRROS_POA = [
