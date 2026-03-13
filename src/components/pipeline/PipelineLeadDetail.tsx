@@ -24,7 +24,7 @@ import {
   Plus, CheckCircle2, AlertTriangle, ChevronRight,
   FileText, ChevronDown, ClipboardList,
   Flame, Snowflake, Sun, Zap, Brain, TrendingUp,
-  Trash2, Ban, PhoneOff, Handshake, MoreHorizontal, Bot, History, Tag
+  Trash2, Ban, Handshake, MoreHorizontal, Bot, History, Tag
 } from "lucide-react";
 import PartnershipDialog from "./PartnershipDialog";
 import LeadSequenceSuggestion from "./LeadSequenceSuggestion";
@@ -60,13 +60,6 @@ const TEMPERATURA_MAP: Record<string, { label: string; color: string; icon: any 
   morno: { label: "Morno", color: "text-amber-500", icon: Sun },
   frio: { label: "Frio", color: "text-blue-500", icon: Snowflake },
 };
-
-const EMPREENDIMENTOS_UHOME = [
-  'Alfa', 'Alto Lindóia', 'Boa Vista Country Club', 'Casa Tua',
-  'Duetto - Morana', 'Lake Eyre', 'Las Casas', 'Me Day',
-  'Melnick Day', 'Melnick Day Compactos', 'Open Bosque',
-  'Orygem', 'Seen', 'Shift - Vanguard', 'Terrace', 'Vértice - Las Casas',
-];
 
 export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
   const { user } = useAuth();
@@ -107,10 +100,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     empreendimento: lead.empreendimento || "",
   });
 
-  // Move stage
   const [moveObs, setMoveObs] = useState("");
-
-  // Partnership & Comunicacao
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
@@ -122,7 +112,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
-
   const hoursInStage = differenceInHoursSafe(lead.stage_changed_at) ?? 0;
   const daysSinceCreation = differenceInDaysSafe(lead.created_at) ?? 0;
   const lastActivity = leadData.atividades[0];
@@ -132,7 +121,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     return t.status === "pendente" && !!dueDate && dueDate < new Date();
   }).length;
 
-  // Attempt counter (Melhoria 9)
   const callAttempts = useMemo(() => {
     return leadData.atividades.filter(a => a.tipo === "ligacao").length;
   }, [leadData.atividades]);
@@ -140,9 +128,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const temperatureInfo = TEMPERATURA_MAP[(lead as any).temperatura || "morno"] || TEMPERATURA_MAP.morno;
   const TempIcon = temperatureInfo.icon;
 
-  const whatsappUrl = lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : null;
-
-  // Extract jetimob code from jetimob_lead_id
   const jetimobCode = useMemo(() => {
     const jid = (lead as any).jetimob_lead_id;
     if (!jid) return null;
@@ -150,7 +135,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     return match ? `${match[1]}-UH` : jid;
   }, [(lead as any).jetimob_lead_id]);
 
-  // Next task for indicator
   const nextTask = useMemo(() => {
     const pending = leadData.tarefas.filter(t => t.status === "pendente");
     pending.sort((a, b) => {
@@ -179,57 +163,57 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     setInativando(true);
     try {
       const descarteStage = stages.find(s => s.tipo === "descarte");
-      const motivoTexto = inativarMotivo === "outro" 
+      const motivoTexto = inativarMotivo === "outro"
         ? `Inativado: ${inativarObs.trim() || "Outro motivo"}`
         : `Inativado: ${inativarMotivo}`;
-      
       await onUpdate(lead.id, { motivo_descarte: motivoTexto } as any);
-      if (descarteStage) {
-        await onMove(lead.id, descarteStage.id, motivoTexto);
-      }
+      if (descarteStage) await onMove(lead.id, descarteStage.id, motivoTexto);
       toast.success("Lead inativado com sucesso");
       setInativarOpen(false);
       onOpenChange(false);
     } catch (err: any) {
       toast.error("Erro ao inativar: " + (err.message || ""));
-    } finally {
-      setInativando(false);
-    }
+    } finally { setInativando(false); }
   }, [inativarMotivo, inativarObs, stages, lead.id, onUpdate, onMove, onOpenChange]);
 
-  // ═══ Keyboard shortcuts ═══
+  // Keyboard shortcuts
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      // Skip if user is typing in an input/textarea
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement)?.isContentEditable) return;
-
       switch (e.key.toLowerCase()) {
-        case "l":
-          if (lead.telefone) window.open(`tel:${lead.telefone}`, "_self");
-          break;
-        case "w":
-          if (lead.telefone) setWhatsappTemplatesOpen(true);
-          break;
-        case "t":
-          setActiveTab("tarefas");
-          setShowNovaTarefa(true);
-          break;
-        case "s":
-          setComunicacaoOpen(true);
-          break;
-        case "i":
-          setActiveTab("radar");
-          break;
-        default:
-          return;
+        case "l": if (lead.telefone) window.open(`tel:${lead.telefone}`, "_self"); break;
+        case "w": if (lead.telefone) setWhatsappTemplatesOpen(true); break;
+        case "t": setActiveTab("tarefas"); setShowNovaTarefa(true); break;
+        case "s": setComunicacaoOpen(true); break;
+        case "i": setActiveTab("radar"); break;
+        default: return;
       }
       e.preventDefault();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, lead.telefone]);
+
+  // Build simplified origin line
+  const originLine = useMemo(() => {
+    const parts: string[] = [];
+    if (lead.empreendimento) parts.push(lead.empreendimento);
+    if (lead.plataforma) parts.push(`(${lead.plataforma})`);
+    return parts.join(" ");
+  }, [lead.empreendimento, lead.plataforma]);
+
+  // Has no contact alert
+  const noContactAlert = useMemo(() => {
+    if (nextTask) return null;
+    const lastContact = (lead as any).ultima_acao_at;
+    const hoursSince = differenceInHoursSafe(lastContact) ?? 999;
+    if (leadData.atividades.length === 0 || hoursSince > 24) {
+      return hoursSince > 48 ? "critical" : "warning";
+    }
+    return null;
+  }, [nextTask, leadData.atividades, lead]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -242,390 +226,292 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
         }>
 
-        {/* ════════════ ZONA 1 — HEADER FIXO ════════════ */}
-        <div className="shrink-0 border-b border-border/50 bg-card">
-          <div className="px-6 pt-5 pb-3 space-y-3">
-            {/* Row 1: Name + Stage badge + Temp + Days */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                {editingName ? (
-                  <div className="flex items-center gap-1.5">
-                    <Input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") { setEditingName(false); setEditName(lead.nome); } }}
-                      className="h-8 text-lg font-bold w-48"
-                      autoFocus
-                      disabled={saving}
-                    />
-                    <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={saving} className="h-7 px-2 text-xs">
-                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "✓"}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setEditingName(false); setEditName(lead.nome); }} className="h-7 px-2 text-xs">✕</Button>
-                  </div>
-                ) : (
-                  <h2 className="text-xl font-bold text-foreground truncate cursor-pointer hover:underline" onClick={() => { setEditName(lead.nome); setEditingName(true); }} title="Clique para editar o nome">{lead.nome}</h2>
-                )}
-
-                {/* Stage badge — click to change */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
-                      <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
-                      {currentStage?.nome}
-                      <ChevronDown className="h-2.5 w-2.5" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-56 p-2" align="start">
-                    <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
-                    <div className="space-y-0.5">
-                      {stages.filter(s => s.id !== lead.stage_id).map(s => (
-                        <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
-                          <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
-                          {s.nome}
-                        </button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                {/* Temperatura */}
-                <span className={`flex items-center gap-0.5 text-xs font-medium ${temperatureInfo.color}`}>
-                  <TempIcon className="h-3.5 w-3.5" />
-                  {temperatureInfo.label}
-                </span>
-
-                {lead.oportunidade_score != null && (() => {
-                  const s = lead.oportunidade_score!;
-                  const scoreStyle = s >= 81
-                    ? { emoji: "💎", label: `${s}`, cls: "text-red-500 font-black" }
-                    : s >= 61
-                    ? { emoji: "⚡", label: `${s}`, cls: "text-orange-500 font-bold" }
-                    : s >= 31
-                    ? { emoji: "🔥", label: `${s}`, cls: "text-amber-500 font-semibold" }
-                    : { emoji: "🧊", label: `${s}`, cls: "text-blue-500 font-semibold" };
-                  return (
-                    <span className={`text-xs ${scoreStyle.cls}`}>{scoreStyle.emoji} {scoreStyle.label}</span>
-                  );
-                })()}
+        {/* ════════════ HEADER COMPACTO ════════════ */}
+        <div className="shrink-0 border-b border-border/50 bg-card px-5 pt-4 pb-3 space-y-2.5">
+          {/* Row 1: Name + Stage + Temp + Score + Days */}
+          <div className="flex items-center gap-2 min-w-0">
+            {editingName ? (
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") { setEditingName(false); setEditName(lead.nome); } }} className="h-8 text-lg font-bold flex-1" autoFocus disabled={saving} />
+                <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={saving} className="h-7 px-2 text-xs">{saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "✓"}</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setEditingName(false); setEditName(lead.nome); }} className="h-7 px-2 text-xs">✕</Button>
               </div>
-
-              <span className="text-xs text-muted-foreground shrink-0 font-medium">{daysSinceCreation}d</span>
-            </div>
-
-            {/* Row 2: Contact info */}
-            <div className="flex items-center gap-4 flex-wrap">
-              {lead.telefone && (
-                <a href={`tel:${lead.telefone}`} className="text-base text-foreground hover:text-primary transition-colors flex items-center gap-1.5">
-                  <Phone className="h-4 w-4" /> {lead.telefone}
-                </a>
-              )}
-              {lead.email && (
-                <a href={`mailto:${lead.email}`} className="text-base text-foreground hover:text-primary transition-colors flex items-center gap-1.5 truncate">
-                  <Mail className="h-4 w-4" /> {lead.email}
-                </a>
-              )}
-            </div>
-
-            {/* Row 3: Barra de Ações Rápidas — fixa no topo */}
-            <div className="flex items-center gap-1.5 flex-wrap rounded-xl bg-muted/60 border border-border/40 px-3 py-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mr-1">⚡ Ações</span>
-              {lead.telefone && (
-                <a href={`tel:${lead.telefone}`}>
-                  <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-border/60 hover:border-primary hover:text-primary">
-                    <Phone className="h-3.5 w-3.5" /> Ligar
-                    <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">L</kbd>
-                  </Button>
-                </a>
-              )}
-              {lead.telefone && (
-                <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-green-300 text-green-600 hover:bg-green-50" onClick={() => setWhatsappTemplatesOpen(true)}>
-                  <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
-                  <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">W</kbd>
-                </Button>
-              )}
-              {lead.email && (
-                <a href={`mailto:${lead.email}`}>
-                  <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-border/60 hover:border-primary hover:text-primary">
-                    <Mail className="h-3.5 w-3.5" /> Email
-                  </Button>
-                </a>
-              )}
-              <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-blue-300 text-blue-500 hover:bg-blue-50" onClick={() => setComunicacaoOpen(true)}>
-                <FileText className="h-3.5 w-3.5" /> Scripts
-                <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">S</kbd>
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-purple-300 text-purple-600 hover:bg-purple-50" onClick={() => setActiveTab("radar")}>
-                <Building2 className="h-3.5 w-3.5" /> Imóveis
-                <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">I</kbd>
-              </Button>
-              <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1.5 rounded-lg border-amber-300 text-amber-600 hover:bg-amber-50" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
-                <Plus className="h-3.5 w-3.5" /> Próxima Ação
-                <kbd className="ml-1 text-[9px] text-muted-foreground/60 font-mono bg-muted px-1 rounded hidden sm:inline">T</kbd>
-              </Button>
-              <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
-                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1 rounded-lg">
-                  <Zap className="h-3.5 w-3.5" /> Registrar
-                </Button>
-              </QuickActionMenu>
-
-              {/* ⋯ More menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg ml-auto">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => setActiveTab("tarefas")}>
-                    <ClipboardList className="h-3.5 w-3.5 mr-2" /> Nova Tarefa
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("historico")}>
-                    <Calendar className="h-3.5 w-3.5 mr-2" /> Nova Atividade
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setPartnerOpen(true)}>
-                    <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setInativarOpen(true); }}>
-                    <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
-                  </DropdownMenuItem>
-                  {isAdmin && onDelete && (
-                    <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
-                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar (CEO)
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Row 4: Corretor (for managers) */}
-            {lead.corretor_id && corretorNomes[lead.corretor_id] && (
-              <div className="flex items-center gap-2 text-sm">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
-                  <span className="text-xs">👤</span>
-                  <span className="text-xs font-semibold text-primary">
-                    {corretorNomes[lead.corretor_id]}
-                  </span>
-                </span>
-              </div>
+            ) : (
+              <h2 className="text-lg font-bold text-foreground truncate cursor-pointer hover:text-primary transition-colors flex-1 min-w-0" onClick={() => { setEditName(lead.nome); setEditingName(true); }} title="Clique para editar">
+                {lead.nome}
+              </h2>
             )}
 
-            {/* Row 5: Empreendimento + Canal + Jetimob code + Attempts */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-              <span className="flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5" />
-                <span className="font-medium text-foreground/80">{lead.empreendimento || 'Sem empreendimento'}</span>
-              </span>
-              {(lead as any).origem && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-medium">
-                  {(lead as any).origem}
-                </Badge>
-              )}
-              {jetimobCode && (
-                <span className="flex items-center gap-1 text-xs">
-                  <Tag className="h-3 w-3" /> {jetimobCode}
-                </span>
-              )}
-              {callAttempts > 0 && (
-                <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="text-[10px] h-5 px-1.5">
-                  📞 {callAttempts}/4 tentativas
-                </Badge>
-              )}
-            </div>
-
-            {/* Row 6: Marketing Attribution — campanha, formulário, anúncio */}
-            {(() => {
-              const campanha = lead.campanha;
-              const campanhaId = lead.campanha_id;
-              const formulario = lead.formulario;
-              const conjuntoAnuncio = lead.conjunto_anuncio;
-              const anuncio = lead.anuncio;
-              const plataforma = lead.plataforma;
-              const origemDetalhe = lead.origem_detalhe;
-              const hasAttribution = campanha || campanhaId || formulario || conjuntoAnuncio || anuncio || plataforma || origemDetalhe;
-              if (!hasAttribution) return null;
-              return (
-                <div className="rounded-lg bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-800/40 px-3 py-2 space-y-1">
-                  <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide flex items-center gap-1">
-                    📡 Origem do Lead
-                  </p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                    {plataforma && (
-                      <span className="text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">Plataforma:</span> {plataforma}
-                      </span>
-                    )}
-                    {campanha && (
-                      <span className="text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">Campanha:</span> {campanha}
-                      </span>
-                    )}
-                    {campanhaId && (
-                      <span className="text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">ID:</span> {campanhaId}
-                      </span>
-                    )}
-                    {formulario && (
-                      <span className="text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">Formulário:</span> {formulario}
-                      </span>
-                    )}
-                    {conjuntoAnuncio && (
-                      <span className="text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">Conjunto:</span> {conjuntoAnuncio}
-                      </span>
-                    )}
-                    {anuncio && (
-                      <span className="text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">Anúncio:</span> {anuncio}
-                      </span>
-                    )}
-                    {origemDetalhe && !campanha && (
-                      <span className="text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">Detalhe:</span> {origemDetalhe}
-                      </span>
-                    )}
-                  </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
+                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStage?.cor }} />
+                  {currentStage?.nome}
+                  <ChevronDown className="h-2.5 w-2.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-2" align="end">
+                <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">Mover para:</p>
+                <div className="space-y-0.5">
+                  {stages.filter(s => s.id !== lead.stage_id).map(s => (
+                    <button key={s.id} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-accent transition-colors text-left" onClick={() => handleMoveStage(s.id)}>
+                      <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.cor }} />
+                      {s.nome}
+                    </button>
+                  ))}
                 </div>
-              );
+              </PopoverContent>
+            </Popover>
+
+            <span className={`flex items-center gap-0.5 text-xs font-medium shrink-0 ${temperatureInfo.color}`}>
+              <TempIcon className="h-3 w-3" />
+              {temperatureInfo.label}
+            </span>
+
+            {lead.oportunidade_score != null && (() => {
+              const s = lead.oportunidade_score!;
+              const cls = s >= 81 ? "text-red-500 font-black" : s >= 61 ? "text-orange-500 font-bold" : s >= 31 ? "text-amber-500 font-semibold" : "text-blue-500 font-semibold";
+              const emoji = s >= 81 ? "💎" : s >= 61 ? "⚡" : s >= 31 ? "🔥" : "🧊";
+              return <span className={`text-xs shrink-0 ${cls}`}>{emoji} {s}</span>;
             })()}
 
-            {/* Row 7: Full message / observações */}
-            {(lead as any).observacoes && (
-              <div className="rounded-md bg-muted/40 border border-border/30 px-3 py-2">
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  💬 {(lead as any).observacoes}
-                </p>
-              </div>
+            <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{daysSinceCreation}d</span>
+          </div>
+
+          {/* Row 2: Contact + Corretor + Origin — single line */}
+          <div className="flex items-center gap-3 text-sm flex-wrap">
+            {lead.telefone && (
+              <a href={`tel:${lead.telefone}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                <Phone className="h-3.5 w-3.5" /> <span className="text-sm">{lead.telefone}</span>
+              </a>
+            )}
+            {lead.email && (
+              <a href={`mailto:${lead.email}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1 truncate max-w-[180px]">
+                <Mail className="h-3.5 w-3.5" /> <span className="text-sm truncate">{lead.email}</span>
+              </a>
+            )}
+            {lead.corretor_id && corretorNomes[lead.corretor_id] && (
+              <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                👤 {corretorNomes[lead.corretor_id]}
+              </span>
             )}
           </div>
-        </div>
 
-        {/* ════════════ ZONA 2 — ALERTAS + PRÓXIMA AÇÃO ════════════ */}
-        <div className="shrink-0 border-b border-border/50 bg-accent/20 px-6 py-2.5 space-y-2">
-          {/* Alert: Overdue tasks */}
-          {overdueTasks > 0 && (() => {
-            const overdueList = leadData.tarefas.filter(t => {
-              const dueDate = parseDateBRTSafe(t.vence_em);
-              return t.status === "pendente" && !!dueDate && dueDate < new Date();
-            });
-            const firstOverdue = overdueList[0];
-            const overdueDate = formatDateSafe(firstOverdue?.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "data inválida" });
-            return (
-              <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300/50 dark:border-red-600/30 rounded-lg px-3 py-2">
-                <span className="text-base shrink-0">🔴</span>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-semibold text-red-700 dark:text-red-400">
-                    {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
-                  </span>
-                  <p className="text-[10px] text-red-600 dark:text-red-400/80 truncate">
-                    {firstOverdue?.descricao || firstOverdue?.titulo} · venceu {overdueDate}
-                  </p>
-                </div>
-                <Button variant="default" size="sm" className="h-7 text-xs px-3 gap-1 bg-red-500 hover:bg-red-600 text-white shrink-0" onClick={() => setActiveTab("tarefas")}>
-                  <AlertTriangle className="h-3 w-3" /> Resolver
+          {/* Row 3: Actions bar — all same size */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {lead.telefone && (
+              <a href={`tel:${lead.telefone}`} className="flex-1 min-w-0">
+                <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1 rounded-lg">
+                  <Phone className="h-3.5 w-3.5" /> Ligar
                 </Button>
-              </div>
-            );
-          })()}
-
-          {/* Alert: No contact for 24h+ and no tasks */}
-          {!nextTask && (() => {
-            const lastContact = (lead as any).ultima_acao_at;
-            const hoursSince = differenceInHoursSafe(lastContact) ?? 999;
-            if (leadData.atividades.length === 0 || hoursSince > 24) {
-              const severity = hoursSince > 48 ? "red" : "amber";
-              const bgCls = severity === "red" ? "bg-red-50 dark:bg-red-900/20 border-red-300/50 dark:border-red-600/30" : "bg-amber-50 dark:bg-amber-900/20 border-amber-300/50 dark:border-amber-600/30";
-              const textCls = severity === "red" ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400";
-              const btnCls = severity === "red" ? "bg-red-500 hover:bg-red-600" : "bg-amber-500 hover:bg-amber-600";
-              return (
-                <div className={`flex items-center gap-2 border rounded-lg px-3 py-2 ${bgCls}`}>
-                  <span className="text-base shrink-0">{severity === "red" ? "🔴" : "🟡"}</span>
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-xs font-semibold ${textCls}`}>Sem contato registrado</span>
-                    <p className={`text-[10px] ${textCls} opacity-80`}>Registre uma atividade ou ligue para o lead.</p>
-                  </div>
-                  <Button variant="default" size="sm" className={`h-7 text-xs px-3 gap-1 ${btnCls} text-white shrink-0`} onClick={() => setActiveTab("historico")}>
-                    <Plus className="h-3 w-3" /> Registrar contato
-                  </Button>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          {/* ═══ BLOCO: PRÓXIMA AÇÃO ═══ */}
-          {nextTask ? (
-            <div className="flex items-center gap-3 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                <Target className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Próxima Ação</p>
-                <p className="text-sm font-semibold text-foreground truncate">
-                  {nextTask.titulo || nextTask.descricao}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {nextTask.tipo && <span className="capitalize">{nextTask.tipo.replace(/_/g, " ")}</span>}
-                  {nextTask.vence_em && <> · {formatDateSafe(nextTask.vence_em, "dd/MM 'às'", { locale: ptBR, dateOnly: true, fallback: "" })}</>}
-                  {(nextTask as any).hora_vencimento && ` ${(nextTask as any).hora_vencimento.slice(0, 5)}`}
-                </p>
-              </div>
-              <Button variant="default" size="sm" className="h-8 text-xs px-3 gap-1.5 shrink-0" onClick={() => leadData.toggleTarefa(nextTask.id, nextTask.status)}>
-                <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
+              </a>
+            )}
+            {lead.telefone && (
+              <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setWhatsappTemplatesOpen(true)}>
+                <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
               </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300/50 dark:border-amber-600/30 px-4 py-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30 shrink-0">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Próxima Ação</p>
-                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Este lead não possui próxima ação</p>
-                <p className="text-[10px] text-amber-600/80 dark:text-amber-400/60">Crie uma tarefa para manter o follow-up em dia.</p>
-              </div>
-              <Button variant="default" size="sm" className="h-8 text-xs px-3 gap-1.5 bg-amber-500 hover:bg-amber-600 text-white shrink-0" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
-                <Plus className="h-3.5 w-3.5" /> Criar ação
+            )}
+            {lead.email && (
+              <a href={`mailto:${lead.email}`} className="flex-1 min-w-0">
+                <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1 rounded-lg">
+                  <Mail className="h-3.5 w-3.5" /> Email
+                </Button>
+              </a>
+            )}
+            <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => setComunicacaoOpen(true)}>
+              <FileText className="h-3.5 w-3.5" /> Scripts
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => setActiveTab("radar")}>
+              <Building2 className="h-3.5 w-3.5" /> Imóveis
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
+              <Plus className="h-3.5 w-3.5" /> Ação
+            </Button>
+            <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
+              <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg">
+                <Zap className="h-3.5 w-3.5" /> Registrar
               </Button>
+            </QuickActionMenu>
+
+            {/* More menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg shrink-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setPartnerOpen(true)}>
+                  <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setInativarOpen(true); }}>
+                  <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
+                </DropdownMenuItem>
+                {isAdmin && onDelete && (
+                  <DropdownMenuItem className="text-destructive" onClick={async () => { setDeleting(true); await onDelete(lead.id); setDeleting(false); onOpenChange(false); }}>
+                    <Trash2 className="h-3.5 w-3.5 mr-2" /> Apagar (CEO)
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Row 4: Simplified origin — single line */}
+          {(lead.empreendimento || lead.campanha || lead.formulario) && (
+            <div className="text-[11px] text-muted-foreground space-y-0.5">
+              {(lead.empreendimento || lead.plataforma) && (
+                <p>
+                  <span className="font-semibold text-foreground/80">Empreendimento:</span>{" "}
+                  {originLine}
+                  {callAttempts > 0 && (
+                    <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="ml-2 text-[9px] h-4 px-1">
+                      📞 {callAttempts}/4
+                    </Badge>
+                  )}
+                  {jetimobCode && (
+                    <span className="ml-2 text-muted-foreground/60">
+                      <Tag className="h-2.5 w-2.5 inline" /> {jetimobCode}
+                    </span>
+                  )}
+                </p>
+              )}
+              {lead.formulario && (
+                <p>
+                  <span className="font-semibold text-foreground/80">Formulário:</span>{" "}
+                  {lead.formulario}
+                </p>
+              )}
             </div>
           )}
         </div>
 
-        {/* ════════════ ZONA 3 — CONTEÚDO (4 Abas reordenadas) ════════════ */}
+        {/* ════════════ ALERTAS COMPACTOS + PRÓXIMA AÇÃO ════════════ */}
+        <div className="shrink-0 border-b border-border/50 px-5 py-2 space-y-2">
+          {/* Compact alert cards — side by side */}
+          {(noContactAlert || overdueTasks > 0) && (
+            <div className="grid grid-cols-2 gap-2">
+              {/* Alert: No contact */}
+              {noContactAlert && (
+                <button
+                  onClick={() => setActiveTab("historico")}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
+                    noContactAlert === "critical"
+                      ? "bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-800/40 hover:bg-red-100 dark:hover:bg-red-950/30"
+                      : "bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-950/30"
+                  }`}
+                >
+                  <span className="text-sm shrink-0">{noContactAlert === "critical" ? "🔴" : "🟡"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[10px] font-semibold ${noContactAlert === "critical" ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"}`}>
+                      Sem contato
+                    </p>
+                    <p className={`text-[9px] ${noContactAlert === "critical" ? "text-red-600/70 dark:text-red-400/60" : "text-amber-600/70 dark:text-amber-400/60"}`}>
+                      Registrar contato →
+                    </p>
+                  </div>
+                </button>
+              )}
+
+              {/* Alert: Overdue tasks */}
+              {overdueTasks > 0 && (
+                <button
+                  onClick={() => setActiveTab("tarefas")}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-left bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-800/40 hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
+                >
+                  <span className="text-sm shrink-0">🔴</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-red-700 dark:text-red-400">
+                      {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
+                    </p>
+                    <p className="text-[9px] text-red-600/70 dark:text-red-400/60">
+                      Resolver →
+                    </p>
+                  </div>
+                </button>
+              )}
+
+              {/* If only one alert, fill second slot with next action mini */}
+              {!noContactAlert && overdueTasks > 0 && !nextTask && (
+                <button
+                  onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-left bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors"
+                >
+                  <span className="text-sm shrink-0">⚠️</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">Sem próxima ação</p>
+                    <p className="text-[9px] text-amber-600/70 dark:text-amber-400/60">Criar ação →</p>
+                  </div>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Próxima Ação — compact */}
+          {nextTask ? (
+            <div className="flex items-center gap-2.5 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2">
+              <Target className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Próxima Ação</p>
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {nextTask.titulo || nextTask.descricao}
+                  {nextTask.tipo && <span className="font-normal text-muted-foreground ml-1">· {nextTask.tipo.replace(/_/g, " ")}</span>}
+                  {nextTask.vence_em && <span className="font-normal text-muted-foreground ml-1">· {formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "" })}</span>}
+                  {(nextTask as any).hora_vencimento && <span className="font-normal text-muted-foreground"> {(nextTask as any).hora_vencimento.slice(0, 5)}</span>}
+                </p>
+              </div>
+              <Button variant="default" size="sm" className="h-7 text-[10px] px-2.5 gap-1 shrink-0" onClick={() => leadData.toggleTarefa(nextTask.id, nextTask.status)}>
+                <CheckCircle2 className="h-3 w-3" /> Concluir
+              </Button>
+            </div>
+          ) : !noContactAlert && overdueTasks === 0 && (
+            <button
+              onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}
+              className="flex items-center gap-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-700/30 px-3 py-2 w-full text-left hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors"
+            >
+              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Sem próxima ação</p>
+                <p className="text-[10px] text-amber-600/70 dark:text-amber-400/60">Crie uma tarefa para manter o follow-up →</p>
+              </div>
+              <Plus className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+            </button>
+          )}
+        </div>
+
+        {/* ════════════ ABAS ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 mx-6 mt-3 mb-4 flex items-center gap-2">
-            <TabsList className="bg-muted/50 h-9 flex-1">
-              <TabsTrigger value="historico" className="text-sm h-7 data-[state=active]:shadow-sm">
-                <History className="h-3.5 w-3.5 mr-1" /> 📝 Histórico
-                {leadData.atividades.length > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{leadData.atividades.length}</Badge>}
+          <div className="shrink-0 px-5 pt-2 pb-1 flex items-center gap-2">
+            <TabsList className="bg-muted/50 h-8 flex-1">
+              <TabsTrigger value="historico" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                📝 Histórico
+                {leadData.atividades.length > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{leadData.atividades.length}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="tarefas" className="text-sm h-7 data-[state=active]:shadow-sm">
-                <ClipboardList className="h-3.5 w-3.5 mr-1" /> 📋 Tarefas
-                {pendingTasks > 0 && <Badge variant="secondary" className="ml-1 h-4 text-[9px] px-1">{pendingTasks}</Badge>}
+              <TabsTrigger value="tarefas" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                📋 Tarefas
+                {pendingTasks > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1 ml-0.5">{pendingTasks}</Badge>}
               </TabsTrigger>
-              <TabsTrigger value="visitas-propostas" className="text-sm h-7 data-[state=active]:shadow-sm">
-                <MapPin className="h-3.5 w-3.5 mr-1" /> 📊 Visitas
+              <TabsTrigger value="visitas-propostas" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                📊 Visitas
               </TabsTrigger>
-              <TabsTrigger value="inteligencia" className="text-sm h-7 data-[state=active]:shadow-sm">
-                <Brain className="h-3.5 w-3.5 mr-1" /> 🧠
+              <TabsTrigger value="radar" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                📡 Radar
               </TabsTrigger>
-              <TabsTrigger value="radar" className="text-sm h-7 data-[state=active]:shadow-sm">
-                <Building2 className="h-3.5 w-3.5 mr-1" /> 📡 Radar
+              <TabsTrigger value="inteligencia" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                🧠
               </TabsTrigger>
             </TabsList>
             <Button
               size="sm"
-              className="h-9 text-xs px-4 gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md shrink-0"
-              onClick={() => setComunicacaoOpen(true)}
+              className="h-8 text-xs px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md shrink-0"
+              onClick={() => setHomiOpen(!homiOpen)}
             >
-              ✨ HOMI
+              <Bot className="h-3.5 w-3.5" /> HOMI
             </Button>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: "calc(85vh - 260px)" }}>
-            {/* ===== TAB: TAREFAS (DEFAULT) ===== */}
+          <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: "calc(85vh - 240px)" }}>
+            {/* ===== TAB: TAREFAS ===== */}
             <TabsContent value="tarefas" className="mt-0">
               <LeadTarefasTab
                 leadId={lead.id}
@@ -638,7 +524,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onDeleteTarefa={leadData.deleteTarefa}
                 onReload={leadData.reload}
               />
-              {/* Sequence suggestions — collapsed by default, below tasks */}
               {currentStage && (
                 <Collapsible className="px-6 pb-6">
                   <CollapsibleTrigger className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full group">
@@ -646,13 +531,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     🤖 Sequências sugeridas
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-3">
-                    <LeadSequenceSuggestion
-                      leadId={lead.id}
-                      leadNome={lead.nome}
-                      stageType={currentStage.tipo}
-                      empreendimento={lead.empreendimento}
-                      onTasksCreated={leadData.reload}
-                    />
+                    <LeadSequenceSuggestion leadId={lead.id} leadNome={lead.nome} stageType={currentStage.tipo} empreendimento={lead.empreendimento} onTasksCreated={leadData.reload} />
                   </CollapsibleContent>
                 </Collapsible>
               )}
@@ -683,17 +562,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" /> Visitas
                   </h4>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs gap-1"
-                    onClick={() => {
-                      onOpenChange(false);
-                      setTimeout(() => {
-                        navigate(`/agenda-visitas?lead=${lead.id}&nome=${encodeURIComponent(lead.nome)}&telefone=${encodeURIComponent(lead.telefone || "")}&empreendimento=${encodeURIComponent(lead.empreendimento || "")}`);
-                      }, 200);
-                    }}
-                  >
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { onOpenChange(false); setTimeout(() => { navigate(`/agenda-visitas?lead=${lead.id}&nome=${encodeURIComponent(lead.nome)}&telefone=${encodeURIComponent(lead.telefone || "")}&empreendimento=${encodeURIComponent(lead.empreendimento || "")}`); }, 200); }}>
                     <Calendar className="h-3 w-3" /> + Agendar Visita
                   </Button>
                 </div>
@@ -709,18 +578,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
             {/* ===== TAB: INTELIGÊNCIA ===== */}
             <TabsContent value="inteligencia" className="px-6 pb-8 space-y-5 mt-0">
-              {/* Lead intelligence card */}
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
                 <h4 className="text-xs font-bold text-primary flex items-center gap-1.5">
                   <Brain className="h-4 w-4" /> Inteligência do Lead
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <InsightItem
-                    icon={Clock}
-                    label="Sem contato"
-                    value={lastActivity ? formatDistanceToNowSafe(lastActivity.created_at, { locale: ptBR, fallback: "Nenhum" }) : "Nenhum"}
-                    alert={!lastActivity || (differenceInHoursSafe(lastActivity.created_at) ?? 999) > 48}
-                  />
+                  <InsightItem icon={Clock} label="Sem contato" value={lastActivity ? formatDistanceToNowSafe(lastActivity.created_at, { locale: ptBR, fallback: "Nenhum" }) : "Nenhum"} alert={!lastActivity || (differenceInHoursSafe(lastActivity.created_at) ?? 999) > 48} />
                   <InsightItem icon={Phone} label="Tentativas" value={`${leadData.atividades.length}`} />
                   <InsightItem icon={Clock} label="Nesta etapa" value={hoursInStage < 24 ? `${hoursInStage}h` : `${Math.round(hoursInStage / 24)}d`} alert={hoursInStage > 72} />
                   <InsightItem icon={AlertTriangle} label="Atrasadas" value={overdueTasks > 0 ? `${overdueTasks}` : "0"} alert={overdueTasks > 0} />
@@ -731,13 +594,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   </p>
                 )}
               </div>
-
-              {/* Sequence Suggestion */}
               {currentStage && (
                 <LeadSequenceSuggestion leadId={lead.id} leadNome={lead.nome} stageType={currentStage.tipo} empreendimento={lead.empreendimento} onTasksCreated={leadData.reload} />
               )}
-
-              {/* Commercial Data */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -751,12 +610,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   <div className="space-y-3 border rounded-xl p-4 bg-card">
                     <div>
                       <Label className="text-xs text-muted-foreground">Empreendimento</Label>
-                      {/* BUG 6 FIX: Use EmpreendimentoCombobox for free-text input */}
-                      <EmpreendimentoCombobox
-                        value={commercialData.empreendimento}
-                        onChange={v => setCommercialData(p => ({ ...p, empreendimento: v }))}
-                        placeholder="Selecione ou digite o empreendimento..."
-                      />
+                      <EmpreendimentoCombobox value={commercialData.empreendimento} onChange={v => setCommercialData(p => ({ ...p, empreendimento: v }))} placeholder="Selecione ou digite..." />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -787,10 +641,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   <div className="flex items-center gap-6 flex-wrap text-sm py-2">
                     <div className="relative">
                       <span className="text-xs text-muted-foreground">Empreendimento</span>
-                      <Popover open={empreendimentoOpen} onOpenChange={(o) => {
-                        setEmpreendimentoOpen(o);
-                        if (o) setEmpreendimentoSearch(lead.empreendimento || "");
-                      }}>
+                      <Popover open={empreendimentoOpen} onOpenChange={(o) => { setEmpreendimentoOpen(o); if (o) setEmpreendimentoSearch(lead.empreendimento || ""); }}>
                         <PopoverTrigger asChild>
                           {lead.empreendimento ? (
                             <button className="flex items-center gap-1.5 font-medium text-foreground hover:text-primary transition-colors group">
@@ -804,33 +655,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                           )}
                         </PopoverTrigger>
                         <PopoverContent className="w-72 p-3 space-y-2" align="start">
-                          <EmpreendimentoCombobox
-                            value={empreendimentoSearch}
-                            onChange={(v) => setEmpreendimentoSearch(v)}
-                            onSelect={async (v) => {
-                              setSavingEmpreendimento(true);
-                              await onUpdate(lead.id, { empreendimento: v } as any);
-                              setEmpreendimentoOpen(false);
-                              setEmpreendimentoSearch("");
-                              setSavingEmpreendimento(false);
-                              toast.success("Empreendimento atualizado ✅");
-                            }}
-                            placeholder="Buscar ou digitar empreendimento..."
-                          />
-                          <Button
-                            size="sm"
-                            className="w-full h-8 text-xs font-semibold"
-                            disabled={!empreendimentoSearch.trim() || savingEmpreendimento}
-                            onClick={async () => {
-                              setSavingEmpreendimento(true);
-                              await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
-                              setEmpreendimentoOpen(false);
-                              setEmpreendimentoSearch("");
-                              setSavingEmpreendimento(false);
-                              toast.success("Empreendimento atualizado ✅");
-                            }}
-                          >
-                            {savingEmpreendimento ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Salvar Empreendimento"}
+                          <EmpreendimentoCombobox value={empreendimentoSearch} onChange={(v) => setEmpreendimentoSearch(v)} onSelect={async (v) => { setSavingEmpreendimento(true); await onUpdate(lead.id, { empreendimento: v } as any); setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); setSavingEmpreendimento(false); toast.success("Empreendimento atualizado ✅"); }} placeholder="Buscar ou digitar..." />
+                          <Button size="sm" className="w-full h-8 text-xs font-semibold" disabled={!empreendimentoSearch.trim() || savingEmpreendimento} onClick={async () => { setSavingEmpreendimento(true); await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any); setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); setSavingEmpreendimento(false); toast.success("Empreendimento atualizado ✅"); }}>
+                            {savingEmpreendimento ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Salvar"}
                           </Button>
                         </PopoverContent>
                       </Popover>
@@ -848,12 +675,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   </div>
                 )}
               </div>
-
-              {/* Observações */}
               {lead.observacoes && (
-                <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                  {lead.observacoes}
-                </p>
+                <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">{lead.observacoes}</p>
               )}
             </TabsContent>
 
@@ -886,16 +709,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </ScrollArea>
         </Tabs>
 
-        {/* ════════════ HOMI — BOTÃO FLUTUANTE ════════════ */}
-        <button
-          onClick={() => setHomiOpen(!homiOpen)}
-          className="absolute bottom-4 right-4 z-50 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
-          title="HOMI Assistente"
-        >
-          <Bot className="h-5 w-5" />
-        </button>
-
-        {/* HOMI Side Panel */}
+        {/* ════════════ HOMI SIDE PANEL ════════════ */}
         {homiOpen && (
           <div className="absolute inset-y-0 right-0 w-full sm:w-[45%] z-40 bg-card border-l border-border shadow-xl flex flex-col">
             <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-primary/5">
@@ -948,9 +762,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             <div className="space-y-2">
               <Label className="text-sm font-medium">Motivo *</Label>
               <Select value={inativarMotivo} onValueChange={setInativarMotivo}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o motivo..." />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione o motivo..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Contato errado">📵 Contato errado</SelectItem>
                   <SelectItem value="Não quer mais contato">🚫 Não quer mais contato</SelectItem>
@@ -962,28 +774,15 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             {inativarMotivo === "outro" && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Descreva o motivo</Label>
-                <Textarea
-                  value={inativarObs}
-                  onChange={e => setInativarObs(e.target.value)}
-                  placeholder="Descreva o motivo da inativação..."
-                  className="resize-none"
-                  rows={3}
-                />
+                <Textarea value={inativarObs} onChange={e => setInativarObs(e.target.value)} placeholder="Descreva..." className="resize-none" rows={3} />
               </div>
             )}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setInativarOpen(false)} disabled={inativando}>
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleInativar}
-              disabled={inativando || !inativarMotivo || (inativarMotivo === "outro" && !inativarObs.trim())}
-              className="gap-2"
-            >
+            <Button variant="outline" onClick={() => setInativarOpen(false)} disabled={inativando}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleInativar} disabled={inativando || !inativarMotivo || (inativarMotivo === "outro" && !inativarObs.trim())} className="gap-2">
               {inativando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
-              Confirmar Inativação
+              Confirmar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -991,8 +790,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     </Sheet>
   );
 }
-
-// ===== Sub-components =====
 
 function InsightItem({ icon: Icon, label, value, alert }: { icon: any; label: string; value: string; alert?: boolean }) {
   return (
