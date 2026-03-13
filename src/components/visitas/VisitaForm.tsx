@@ -167,7 +167,7 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
       setEmpreendimentos(Array.from(empSet).sort());
     };
     load();
-  }, [user, open]);
+  }, [user, open, isManager, isAdmin]);
 
   // Filtered leads with search + stage + empreendimento filters
   const filteredLeads = useMemo(() => {
