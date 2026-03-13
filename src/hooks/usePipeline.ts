@@ -559,6 +559,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   const updateLead = useCallback(async (leadId: string, updates: Partial<PipelineLead>) => {
     if (!user) return;
+    localMutationRef.current = true;
     // Always update ultima_acao_at when any action is taken
     const payload = {
       ...updates,
