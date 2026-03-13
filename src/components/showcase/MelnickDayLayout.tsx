@@ -48,8 +48,8 @@ export default function MelnickDayLayout({ data }: Props) {
 
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {imoveis.map((item, idx) => (
-            <PropertyCard
-              key={idx}
+            <SafePropertyCard
+              key={item?.id ?? idx}
               item={item}
               index={idx}
               variant="campaign"
