@@ -520,58 +520,22 @@ export default function AgendaVisitas() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* ─── HEADER + QUICK FILTERS ─── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-black text-foreground tracking-tight">Agenda de Visitas</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {isAdmin ? "Visão consolidada da empresa" : isGestor ? "Visitas da sua equipe" : "Suas visitas agendadas"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Quick period filters */}
-          <div className="hidden sm:flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
-            {[
-              { key: "hoje", label: "Hoje" },
-              { key: "amanha", label: "Amanhã" },
-              { key: "semana", label: "Semana" },
-            ].map(qf => (
-              <button
-                key={qf.key}
-                onClick={() => applyQuickFilter(qf.key)}
-                className={cn(
-                  "px-3 py-1.5 rounded-md text-[11px] font-bold transition-all",
-                  quickFilter === qf.key
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {qf.label}
-              </button>
-            ))}
-          </div>
-          <Button onClick={() => setShowTypeSelector(true)} size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md h-8 text-xs">
-            <Plus className="h-3.5 w-3.5" /> Nova Visita
-          </Button>
-        </div>
-      </div>
-
-      {/* ─── SEARCH + FILTERS LINE ─── */}
+    <div className="space-y-3">
+      {/* ─── BLOCO 1: CONTROLES PRINCIPAIS ─── */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[180px] max-w-sm">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Buscar cliente, telefone ou corretor..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="text-xs h-8 pl-9 bg-muted/30 border-border/50"
+            className="text-xs h-9 pl-9 bg-card border-border/60"
           />
         </div>
 
         {(isAdmin || isGestor) && corretores.length > 1 && (
           <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-            <SelectTrigger className="h-8 w-[150px] text-xs bg-muted/30 border-border/50">
+            <SelectTrigger className="h-9 w-[155px] text-xs bg-card border-border/60">
               <SelectValue placeholder="Todos corretores" />
             </SelectTrigger>
             <SelectContent>
@@ -585,7 +549,7 @@ export default function AgendaVisitas() {
 
         {empreendimentos.length > 1 && (
           <Select value={empreendimentoFilter} onValueChange={setEmpreendimentoFilter}>
-            <SelectTrigger className="h-8 w-[150px] text-xs bg-muted/30 border-border/50">
+            <SelectTrigger className="h-9 w-[155px] text-xs bg-card border-border/60">
               <SelectValue placeholder="Todos empreend." />
             </SelectTrigger>
             <SelectContent>
@@ -597,12 +561,49 @@ export default function AgendaVisitas() {
           </Select>
         )}
 
+        {/* Equipe dropdown (replaces team tabs) */}
+        {isAdmin && (
+          <Select value={teamFilter} onValueChange={setTeamFilter}>
+            <SelectTrigger className="h-9 w-[140px] text-xs bg-card border-border/60">
+              <SelectValue placeholder="Equipe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas equipes</SelectItem>
+              {FIXED_TEAMS.map(t => (
+                <SelectItem key={t.key} value={t.key}>{t.emoji} {t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* Quick period filters */}
+        <div className="hidden sm:flex items-center gap-0.5 bg-muted/40 rounded-lg p-0.5">
+          {[
+            { key: "hoje", label: "Hoje" },
+            { key: "amanha", label: "Amanhã" },
+            { key: "semana", label: "Semana" },
+          ].map(qf => (
+            <button
+              key={qf.key}
+              onClick={() => applyQuickFilter(qf.key)}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-[11px] font-bold transition-all",
+                quickFilter === qf.key
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {qf.label}
+            </button>
+          ))}
+        </div>
+
         {/* Tipo toggle */}
-        <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
+        <div className="flex items-center gap-0.5 bg-muted/40 rounded-lg p-0.5">
           <button
             onClick={() => setAgendaTipo("lead")}
             className={cn(
-              "px-2.5 py-1 rounded-md text-[11px] font-bold transition-all",
+              "px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all",
               agendaTipo === "lead"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -613,7 +614,7 @@ export default function AgendaVisitas() {
           <button
             onClick={() => setAgendaTipo("negocio")}
             className={cn(
-              "px-2.5 py-1 rounded-md text-[11px] font-bold transition-all",
+              "px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all",
               agendaTipo === "negocio"
                 ? "bg-amber-600 text-white shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -623,51 +624,23 @@ export default function AgendaVisitas() {
           </button>
         </div>
 
+        <Button onClick={() => setShowTypeSelector(true)} size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md h-9 text-xs ml-auto">
+          <Plus className="h-3.5 w-3.5" /> Nova Visita
+        </Button>
+
         {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 text-[11px] gap-1 text-destructive px-2">
+          <Button variant="ghost" size="sm" onClick={clearAll} className="h-9 text-[11px] gap-1 text-destructive px-2">
             <X className="h-3 w-3" /> Limpar
           </Button>
         )}
       </div>
 
-      {/* ─── TEAM TABS (CEO/Admin) ─── */}
-      {isAdmin && (
-        <div className="flex items-center gap-0.5 bg-muted/40 rounded-lg p-0.5 w-fit">
-          {[
-            { key: "all", label: "Todas", emoji: "👥" },
-            ...FIXED_TEAMS,
-          ].map(t => {
-            const isActive = teamFilter === t.key;
-            const count = t.key === "all"
-              ? visitas.length
-              : visitas.filter(v => (v.equipe || "").toLowerCase().replace(/^equipe\s+/i, "").trim().includes(t.key)).length;
-            const teamMeta = FIXED_TEAMS.find(ft => ft.key === t.key);
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTeamFilter(t.key)}
-                className={cn(
-                  "px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1",
-                  isActive
-                    ? t.key === "all"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : `${teamMeta?.className || ""} shadow-sm border`
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t.emoji} {t.label} <span className="text-[10px] opacity-70">{count}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ─── STATUS CHIPS + QUICK FILTER EXTRAS ─── */}
-      <div className="flex flex-wrap items-center gap-1">
+      {/* ─── BLOCO 2: STATUS CHIPS ─── */}
+      <div className="flex flex-wrap items-center gap-1.5">
         <button
           onClick={() => setStatusFilter("all")}
           className={cn(
-            "px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border",
+            "px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border",
             statusFilter === "all"
               ? "bg-primary text-primary-foreground border-primary shadow-sm"
               : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
@@ -683,7 +656,7 @@ export default function AgendaVisitas() {
               key={s}
               onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}
               className={cn(
-                "px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border",
+                "px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border",
                 isActive
                   ? STATUS_CHIP_COLORS[s] + " shadow-sm"
                   : count === 0
@@ -704,7 +677,7 @@ export default function AgendaVisitas() {
             key={qf.key}
             onClick={() => applyQuickFilter(qf.key)}
             className={cn(
-              "px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border",
+              "px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border",
               quickFilter === qf.key
                 ? "bg-amber-100 text-amber-700 border-amber-300 shadow-sm"
                 : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
