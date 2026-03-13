@@ -10,8 +10,15 @@ import { toast } from "sonner";
 // Empreendimento → Segmento mapping (mirrors edge function)
 const EMPREENDIMENTO_SEGMENTO: Record<string, string> = {
   "open bosque": "MCMV / Até 500k",
+  "melnick day médio padrão": "Médio-Alto Padrão",
+  "melnick day medio padrao": "Médio-Alto Padrão",
+  "melnick day - médio padrão": "Médio-Alto Padrão",
+  "melnick day alto padrão": "Altíssimo Padrão",
+  "melnick day - alto padrão": "Altíssimo Padrão",
+  "melnick day alto padrao": "Altíssimo Padrão",
+  "melnick day compactos": "Investimento",
+  "melnick day - compactos": "Investimento",
   "melnick day": "MCMV / Até 500k",
-  "melnick day compactos": "MCMV / Até 500k",
   "casa tua": "Médio-Alto Padrão",
   "las casas": "Médio-Alto Padrão",
   "orygem": "Médio-Alto Padrão",
@@ -35,8 +42,10 @@ function resolveSegmentoNome(emp: string | null): string | null {
   if (!emp) return null;
   const lower = emp.toLowerCase().trim();
   if (EMPREENDIMENTO_SEGMENTO[lower]) return EMPREENDIMENTO_SEGMENTO[lower];
-  for (const [key, nome] of Object.entries(EMPREENDIMENTO_SEGMENTO)) {
-    if (lower.includes(key) || key.includes(lower)) return nome;
+  // Sort keys by length descending to match most specific first
+  const sortedKeys = Object.keys(EMPREENDIMENTO_SEGMENTO).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (lower.includes(key) || key.includes(lower)) return EMPREENDIMENTO_SEGMENTO[key];
   }
   return null;
 }
