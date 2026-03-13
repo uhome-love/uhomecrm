@@ -527,32 +527,6 @@ export default function OrygemCampanha() {
         </CardContent>
       </Card>
 
-      {/* ═══ INFRAESTRUTURA com imagens ═══ */}
-      <Card className="border-border/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Star className="h-4 w-4 text-amber-500" /> Infraestrutura do Clube — 16 Espaços de Lazer
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {INFRASTRUCTURE.map((item, idx) => (
-              <div
-                key={`${item.label}-${idx}`}
-                className="relative group rounded-xl overflow-hidden aspect-[4/3] cursor-pointer"
-                onClick={() => setLightboxImg(item.img)}
-              >
-                <img src={item.img} alt={item.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1.5">
-                  <item.icon className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  <p className="text-[10px] font-semibold text-white leading-tight">{item.label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* ═══ TIPOLOGIAS ═══ */}
       <div className="grid md:grid-cols-2 gap-4">
