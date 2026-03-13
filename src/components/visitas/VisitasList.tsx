@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import { format, isToday, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, ChevronDown, ChevronRight, History } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { type Visita, type VisitaStatus } from "@/hooks/useVisitas";
-import VisitaRow, { VisitaRowHeader } from "./VisitaRow";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import VisitaRow from "./VisitaRow";
 
 interface Props {
   visitas: Visita[];
@@ -82,46 +81,54 @@ function DateGroupCard({
   const taxa = g.total > 0 ? Math.round((g.realizadas / g.total) * 100) : 0;
 
   return (
-    <div className="rounded-xl border border-border/50 overflow-hidden bg-card shadow-sm">
+    <div className="rounded-lg border border-border/40 overflow-hidden bg-card">
+      {/* Day header — compact */}
       <button
         onClick={onToggle}
         className={cn(
-          "w-full flex items-center gap-3 px-5 py-3 text-left transition-all",
+          "w-full flex items-center gap-2 px-4 py-2 text-left transition-all",
           g.isToday
-            ? "bg-gradient-to-r from-[hsl(221,83%,53%)] to-[hsl(221,83%,60%)] text-white"
+            ? "bg-primary/10 border-b border-primary/20"
             : g.isPast
-              ? "bg-muted/40 text-muted-foreground"
-              : "bg-gradient-to-r from-[hsl(222,47%,11%)] to-[hsl(222,47%,18%)] text-white"
+              ? "bg-muted/30"
+              : "bg-card hover:bg-accent/20"
         )}
       >
-        {isOpen ? <ChevronDown className="h-4 w-4 shrink-0 opacity-70" /> : <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />}
-        <CalendarDays className="h-4 w-4 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <span className="text-sm font-black tracking-tight">{g.dayOfWeek}</span>
-          <span className={cn("text-sm ml-2 font-medium", g.isToday ? "text-white/80" : g.isPast ? "text-muted-foreground" : "text-white/60")}>
+        {isOpen ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <span className={cn(
+            "text-xs font-black uppercase tracking-wide",
+            g.isToday ? "text-primary" : g.isPast ? "text-muted-foreground" : "text-foreground"
+          )}>
+            {g.dayOfWeek}
+          </span>
+          <span className="text-[11px] text-muted-foreground font-medium">
             {g.label}
           </span>
         </div>
+
         {g.isToday && (
-          <Badge className="bg-white/95 text-[hsl(221,83%,53%)] text-[10px] font-black px-2.5 py-0.5 border-0 shrink-0 shadow-sm">
+          <Badge className="bg-primary text-primary-foreground text-[9px] font-black px-2 py-0 border-0 shrink-0">
             HOJE
           </Badge>
         )}
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={cn("text-xs font-bold tabular-nums", g.isToday ? "text-white/90" : g.isPast ? "text-muted-foreground" : "text-white/80")}>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[11px] font-bold text-muted-foreground tabular-nums">
             {g.total} visita{g.total !== 1 ? "s" : ""}
           </span>
           {g.realizadas > 0 && (
-            <span className="text-xs text-green-400 font-bold tabular-nums">
-              {g.realizadas} ✅
+            <span className="text-[11px] text-green-600 font-bold tabular-nums">
+              {g.realizadas}✅
             </span>
           )}
           {g.isPast && g.total > 0 && (
-            <Badge className={cn(
-              "text-[10px] px-2 py-0.5 border font-black tabular-nums shadow-sm",
-              taxa >= 80 ? "bg-green-100 text-green-700 border-green-300"
-                : taxa >= 50 ? "bg-amber-100 text-amber-700 border-amber-300"
-                  : "bg-red-100 text-red-700 border-red-300"
+            <Badge variant="outline" className={cn(
+              "text-[9px] px-1.5 py-0 font-black tabular-nums",
+              taxa >= 80 ? "border-green-300 text-green-700"
+                : taxa >= 50 ? "border-amber-300 text-amber-700"
+                  : "border-red-300 text-red-700"
             )}>
               {taxa}%
             </Badge>
@@ -130,25 +137,22 @@ function DateGroupCard({
       </button>
 
       {isOpen && (
-        <div>
-          <VisitaRowHeader showCorretor={showCorretor} showTeam={showTeam} />
-          <div className="divide-y divide-border/30">
-            {g.visitas.map(v => {
-              const isPastPending = g.isPast && (v.status === "marcada" || v.status === "confirmada");
-              return (
-                <VisitaRow
-                  key={v.id}
-                  visita={v}
-                  onUpdateStatus={onUpdateStatus}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  showCorretor={showCorretor}
-                  showTeam={showTeam}
-                  isPastPending={isPastPending}
-                />
-              );
-            })}
-          </div>
+        <div className="py-0.5">
+          {g.visitas.map(v => {
+            const isPastPending = g.isPast && (v.status === "marcada" || v.status === "confirmada");
+            return (
+              <VisitaRow
+                key={v.id}
+                visita={v}
+                onUpdateStatus={onUpdateStatus}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                showCorretor={showCorretor}
+                showTeam={showTeam}
+                isPastPending={isPastPending}
+              />
+            );
+          })}
         </div>
       )}
     </div>
@@ -166,7 +170,6 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
     if (mode === "all") {
       return groups.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
     }
-    // upcoming (default)
     return groups.filter(g => !g.isPast).sort((a, b) => a.dateStr.localeCompare(b.dateStr));
   }, [visitas, mode]);
 
@@ -180,9 +183,9 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
 
   if (displayGroups.length === 0) {
     return (
-      <div className="text-center py-6 rounded-xl border border-dashed border-border/50 bg-muted/20">
-        <CalendarDays className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-        <p className="text-sm text-muted-foreground">
+      <div className="text-center py-6 rounded-lg border border-dashed border-border/40 bg-muted/10">
+        <CalendarDays className="h-7 w-7 mx-auto text-muted-foreground/30 mb-1.5" />
+        <p className="text-xs text-muted-foreground">
           {mode === "past" ? "Nenhuma visita anterior encontrada" : mode === "all" ? "Nenhuma visita encontrada" : "Nenhuma visita futura agendada"}
         </p>
       </div>
@@ -190,7 +193,7 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {displayGroups.map(g => (
         <DateGroupCard
           key={g.dateStr}

@@ -521,51 +521,57 @@ export default function AgendaVisitas() {
 
   return (
     <div className="space-y-4">
-      {/* ─── HEADER ─── */}
+      {/* ─── HEADER + QUICK FILTERS ─── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
-            📅 Agenda de Visitas
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h1 className="text-xl font-black text-foreground tracking-tight">Agenda de Visitas</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {isAdmin ? "Visão consolidada da empresa" : isGestor ? "Visitas da sua equipe" : "Suas visitas agendadas"}
           </p>
         </div>
-        <Button onClick={() => setShowTypeSelector(true)} className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
-          <Plus className="h-4 w-4" /> Nova Visita
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Quick period filters */}
+          <div className="hidden sm:flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+            {[
+              { key: "hoje", label: "Hoje" },
+              { key: "amanha", label: "Amanhã" },
+              { key: "semana", label: "Semana" },
+            ].map(qf => (
+              <button
+                key={qf.key}
+                onClick={() => applyQuickFilter(qf.key)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-[11px] font-bold transition-all",
+                  quickFilter === qf.key
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {qf.label}
+              </button>
+            ))}
+          </div>
+          <Button onClick={() => setShowTypeSelector(true)} size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md h-8 text-xs">
+            <Plus className="h-3.5 w-3.5" /> Nova Visita
+          </Button>
+        </div>
       </div>
 
-      {/* ─── TIPO TABS + FILTERS (inline) ─── */}
+      {/* ─── SEARCH + FILTERS LINE ─── */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-          <button
-            onClick={() => setAgendaTipo("lead")}
-            className={cn(
-              "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
-              agendaTipo === "lead"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            🏠 Visitas de Leads <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{leadCount}</Badge>
-          </button>
-          <button
-            onClick={() => setAgendaTipo("negocio")}
-            className={cn(
-              "px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
-              agendaTipo === "negocio"
-                ? "bg-amber-600 text-white shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            💼 Reuniões de Negócios <Badge variant="secondary" className="text-[10px] ml-1 px-1.5 py-0">{negocioCount}</Badge>
-          </button>
+        <div className="relative flex-1 min-w-[180px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente, telefone ou corretor..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="text-xs h-8 pl-9 bg-muted/30 border-border/50"
+          />
         </div>
 
         {(isAdmin || isGestor) && corretores.length > 1 && (
           <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-            <SelectTrigger className="h-9 w-[160px] text-xs">
+            <SelectTrigger className="h-8 w-[150px] text-xs bg-muted/30 border-border/50">
               <SelectValue placeholder="Todos corretores" />
             </SelectTrigger>
             <SelectContent>
@@ -579,7 +585,7 @@ export default function AgendaVisitas() {
 
         {empreendimentos.length > 1 && (
           <Select value={empreendimentoFilter} onValueChange={setEmpreendimentoFilter}>
-            <SelectTrigger className="h-9 w-[160px] text-xs">
+            <SelectTrigger className="h-8 w-[150px] text-xs bg-muted/30 border-border/50">
               <SelectValue placeholder="Todos empreend." />
             </SelectTrigger>
             <SelectContent>
@@ -591,28 +597,44 @@ export default function AgendaVisitas() {
           </Select>
         )}
 
-        <div className="relative flex-1 min-w-[160px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar cliente, corretor..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="text-xs h-9 pl-9"
-          />
+        {/* Tipo toggle */}
+        <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
+          <button
+            onClick={() => setAgendaTipo("lead")}
+            className={cn(
+              "px-2.5 py-1 rounded-md text-[11px] font-bold transition-all",
+              agendaTipo === "lead"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            🏠 Visitas ({leadCount})
+          </button>
+          <button
+            onClick={() => setAgendaTipo("negocio")}
+            className={cn(
+              "px-2.5 py-1 rounded-md text-[11px] font-bold transition-all",
+              agendaTipo === "negocio"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            💼 Negócios ({negocioCount})
+          </button>
         </div>
 
         {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAll} className="h-9 text-xs gap-1 text-destructive">
-            <X className="h-3.5 w-3.5" /> Limpar
+          <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 text-[11px] gap-1 text-destructive px-2">
+            <X className="h-3 w-3" /> Limpar
           </Button>
         )}
       </div>
 
       {/* ─── TEAM TABS (CEO/Admin) ─── */}
       {isAdmin && (
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+        <div className="flex items-center gap-0.5 bg-muted/40 rounded-lg p-0.5 w-fit">
           {[
-            { key: "all", label: "Todas Equipes", emoji: "👥" },
+            { key: "all", label: "Todas", emoji: "👥" },
             ...FIXED_TEAMS,
           ].map(t => {
             const isActive = teamFilter === t.key;
@@ -625,7 +647,7 @@ export default function AgendaVisitas() {
                 key={t.key}
                 onClick={() => setTeamFilter(t.key)}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5",
+                  "px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1",
                   isActive
                     ? t.key === "all"
                       ? "bg-primary text-primary-foreground shadow-sm"
@@ -633,25 +655,25 @@ export default function AgendaVisitas() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                {t.emoji} {t.label} <Badge variant="secondary" className="text-[10px] ml-0.5 px-1.5 py-0">{count}</Badge>
+                {t.emoji} {t.label} <span className="text-[10px] opacity-70">{count}</span>
               </button>
             );
           })}
         </div>
       )}
 
-      {/* ─── STATUS CHIPS ─── */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      {/* ─── STATUS CHIPS + QUICK FILTER EXTRAS ─── */}
+      <div className="flex flex-wrap items-center gap-1">
         <button
           onClick={() => setStatusFilter("all")}
           className={cn(
-            "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+            "px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border",
             statusFilter === "all"
               ? "bg-primary text-primary-foreground border-primary shadow-sm"
-              : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted"
+              : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
           )}
         >
-          Todas {visitas.length}
+          Todas ({visitas.length})
         </button>
         {(["marcada", "confirmada", "realizada", "reagendada", "no_show", "cancelada"] as VisitaStatus[]).map(s => {
           const count = counts[s] || 0;
@@ -661,38 +683,31 @@ export default function AgendaVisitas() {
               key={s}
               onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                "px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border",
                 isActive
                   ? STATUS_CHIP_COLORS[s] + " shadow-sm"
                   : count === 0
-                    ? "bg-muted/30 text-muted-foreground/40 border-transparent cursor-default"
-                    : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted"
+                    ? "bg-muted/20 text-muted-foreground/30 border-transparent cursor-default"
+                    : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
               )}
             >
-              {STATUS_EMOJIS[s]} {STATUS_LABELS[s]} {count}
+              {STATUS_EMOJIS[s]} {STATUS_LABELS[s]} ({count})
             </button>
           );
         })}
-      </div>
-
-      {/* ─── QUICK FILTERS ─── */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mr-1">Rápido:</span>
+        <span className="mx-1 h-4 w-px bg-border/50" />
         {[
-          { key: "hoje", label: "📅 Hoje", color: "bg-blue-100 text-blue-700 border-blue-300" },
-          { key: "amanha", label: "📆 Amanhã", color: "bg-indigo-100 text-indigo-700 border-indigo-300" },
-          { key: "semana", label: "🗓️ Esta semana", color: "bg-cyan-100 text-cyan-700 border-cyan-300" },
-          { key: "nao_confirmadas", label: "⚠️ Não confirmadas", color: "bg-amber-100 text-amber-700 border-amber-300" },
-          { key: "sem_feedback", label: "🔴 Sem feedback", color: "bg-red-100 text-red-700 border-red-300" },
+          { key: "nao_confirmadas", label: "⚠️ Não confirmadas" },
+          { key: "sem_feedback", label: "🔴 Sem feedback" },
         ].map(qf => (
           <button
             key={qf.key}
             onClick={() => applyQuickFilter(qf.key)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+              "px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border",
               quickFilter === qf.key
-                ? qf.color + " shadow-sm"
-                : "bg-muted/60 text-muted-foreground border-transparent hover:bg-muted"
+                ? "bg-amber-100 text-amber-700 border-amber-300 shadow-sm"
+                : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
             )}
           >
             {qf.label}

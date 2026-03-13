@@ -4,7 +4,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { MoreVertical, Trash2, Pencil, CalendarPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
-import { useState } from "react";
 
 function addToCalendar(v: Visita) {
   const dateStr = v.data_visita.replace(/-/g, "");
@@ -55,12 +54,8 @@ const STATUS_EMOJIS: Record<string, string> = {
 };
 
 const LOCAL_LABELS: Record<string, string> = {
-  stand: "Stand",
-  empresa: "Escritório",
-  videochamada: "Videochamada",
-  decorado: "Decorado",
-  cartorio: "Cartório",
-  outro: "Outro",
+  stand: "Stand", empresa: "Escritório", videochamada: "Videochamada",
+  decorado: "Decorado", cartorio: "Cartório", outro: "Outro",
 };
 
 const RESPONSAVEL_LABELS: Record<string, { label: string; emoji: string }> = {
@@ -106,23 +101,9 @@ function parseNegocioMeta(obs: string | null) {
   return { objetivo, responsavel };
 }
 
-/** Column header for the list view */
+/** Column header — hidden now, kept for backward compat */
 export function VisitaRowHeader({ showCorretor, showTeam }: { showCorretor?: boolean; showTeam?: boolean }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/50 bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">
-      <span className="w-14 text-center shrink-0">Hora</span>
-      <span className="w-1 shrink-0" />
-      <span style={{ width: "clamp(100px, 16%, 180px)" }} className="shrink-0">Cliente</span>
-      <span style={{ width: "clamp(90px, 14%, 150px)" }} className="shrink-0 hidden md:block">Produto</span>
-      <span style={{ width: "clamp(70px, 10%, 110px)" }} className="shrink-0 hidden md:block">Local</span>
-      {showCorretor && <span style={{ width: "clamp(90px, 13%, 140px)" }} className="shrink-0 hidden lg:block">Corretor</span>}
-      {showTeam && <span style={{ width: "clamp(70px, 10%, 100px)" }} className="shrink-0 hidden lg:block">Time</span>}
-      {(showCorretor || showTeam) && <span style={{ width: "clamp(80px, 10%, 110px)" }} className="shrink-0 hidden lg:block">Responsável</span>}
-      <span className="flex-1" />
-      <span className="text-right shrink-0">Status / Ações</span>
-      <span className="w-7 shrink-0" />
-    </div>
-  );
+  return null;
 }
 
 interface Props {
@@ -139,114 +120,101 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
   const isNegocio = v.tipo === "negocio";
   const negocioMeta = isNegocio ? parseNegocioMeta(v.observacoes) : { objetivo: null, responsavel: null };
   const teamStyle = showTeam ? getTeamBadgeStyle(v.equipe) : null;
+  const local = LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "";
+  const produto = [v.empreendimento, local].filter(Boolean).join(" • ");
+  const responsavelInfo = (v as any).responsavel_visita ? RESPONSAVEL_LABELS[(v as any).responsavel_visita] : null;
 
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 px-4 py-3.5 transition-all hover:bg-accent/30",
+        "group flex items-stretch gap-0 transition-all hover:bg-accent/20 rounded-lg mx-1 my-0.5",
         isPastPending && "bg-red-50/60 dark:bg-red-950/20"
       )}
     >
-      {/* Hora */}
-      <span className="text-[13px] font-black font-mono text-foreground shrink-0 w-14 text-center tracking-tight">
-        {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
-      </span>
+      {/* Status color bar */}
+      <div className={cn("w-[3px] rounded-l-lg shrink-0 self-stretch", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
 
-      {/* Status color line */}
-      <div className={cn("w-[3px] h-9 rounded-full shrink-0", STATUS_LINE_COLORS[v.status] || "bg-gray-300")} />
+      {/* Main content */}
+      <div className="flex-1 flex items-center gap-3 px-3 py-2 min-w-0">
+        {/* Time */}
+        <span className="text-xs font-black font-mono text-foreground shrink-0 w-11 text-center tabular-nums">
+          {v.hora_visita ? v.hora_visita.slice(0, 5) : "—"}
+        </span>
 
-      {/* Cliente */}
-      <div className="min-w-0 shrink-0" style={{ width: "clamp(100px, 16%, 180px)" }}>
-        <p className="text-[13px] font-bold text-foreground truncate leading-tight tracking-tight">{v.nome_cliente}</p>
-        {v.telefone && (
-          <p className="text-[11px] text-muted-foreground truncate mt-0.5 font-medium">
-            <span className="opacity-60">📞</span> {v.telefone}
-          </p>
-        )}
-        {v.observacoes && !isNegocio && (
-          <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5 italic max-w-[180px]" title={v.observacoes}>
-            💬 {v.observacoes}
-          </p>
-        )}
-      </div>
+        {/* Client + details stacked */}
+        <div className="flex-1 min-w-0 space-y-0">
+          {/* Line 1: Name */}
+          <p className="text-[13px] font-bold text-foreground truncate leading-tight">{v.nome_cliente}</p>
 
-      {/* Produto (Empreendimento) */}
-      <div className="hidden md:block min-w-0 shrink-0" style={{ width: "clamp(90px, 14%, 150px)" }}>
-        <p className="text-xs font-semibold text-foreground/70 truncate">
-          🏢 {v.empreendimento || <span className="text-muted-foreground/50 font-normal">—</span>}
-        </p>
-        {isNegocio && negocioMeta.objetivo && (
-          <p className="text-[10px] text-amber-600 font-semibold truncate mt-0.5">🎯 {negocioMeta.objetivo}</p>
-        )}
-      </div>
+          {/* Line 2: Phone */}
+          {v.telefone && (
+            <p className="text-[11px] text-muted-foreground truncate leading-tight">
+              📞 {v.telefone}
+            </p>
+          )}
 
-      {/* Local da Visita */}
-      <div className="hidden md:block min-w-0 shrink-0" style={{ width: "clamp(70px, 10%, 110px)" }}>
-        <p className="text-xs text-muted-foreground truncate font-medium">
-          📍 {LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "—"}
-        </p>
-      </div>
+          {/* Line 3: Product + local */}
+          {produto && (
+            <p className="text-[11px] text-muted-foreground/80 truncate leading-tight">
+              🏢 {produto}
+            </p>
+          )}
 
-      {/* Corretor */}
-      {showCorretor && (
-        <div className="hidden lg:block min-w-0 shrink-0" style={{ width: "clamp(90px, 13%, 140px)" }}>
-          <p className="text-xs font-semibold text-foreground truncate">
-            👤 {v.corretor_nome?.split(" ").slice(0, 2).join(" ") || "—"}
-          </p>
-        </div>
-      )}
+          {/* Negocio objetivo */}
+          {isNegocio && negocioMeta.objetivo && (
+            <p className="text-[10px] text-amber-600 font-semibold truncate leading-tight">🎯 {negocioMeta.objetivo}</p>
+          )}
 
-      {/* Time */}
-      {showTeam && (
-        <div className="hidden lg:flex items-center min-w-0 shrink-0" style={{ width: "clamp(70px, 10%, 100px)" }}>
-          {teamStyle ? (
-            <span className={cn("text-[10px] px-2 py-0.5 rounded-full border whitespace-nowrap font-bold", teamStyle.className)}>
-              {teamStyle.emoji} {teamStyle.label}
-            </span>
-          ) : (
-            <span className="text-[10px] text-muted-foreground">—</span>
+          {/* Observações */}
+          {v.observacoes && !isNegocio && (
+            <p className="text-[10px] text-muted-foreground/60 truncate leading-tight italic" title={v.observacoes}>
+              💬 {v.observacoes}
+            </p>
           )}
         </div>
-      )}
 
-      {/* Responsável */}
-      {(showCorretor || showTeam) && (
-        <div className="hidden lg:flex items-center min-w-0 shrink-0" style={{ width: "clamp(80px, 10%, 110px)" }}>
-          {(v as any).responsavel_visita ? (
-            <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">
-              {RESPONSAVEL_LABELS[(v as any).responsavel_visita]?.emoji || "👤"}{" "}
-              {RESPONSAVEL_LABELS[(v as any).responsavel_visita]?.label || (v as any).responsavel_visita}
-            </span>
-          ) : (
-            <span className="text-[10px] text-muted-foreground">—</span>
+        {/* Corretor + Team column */}
+        {(showCorretor || showTeam) && (
+          <div className="hidden md:flex flex-col items-end gap-0.5 shrink-0 min-w-0 max-w-[140px]">
+            {showCorretor && v.corretor_nome && (
+              <span className="text-[11px] font-semibold text-foreground/80 truncate w-full text-right">
+                👤 {v.corretor_nome.split(" ").slice(0, 2).join(" ")}
+              </span>
+            )}
+            {teamStyle && (
+              <span className={cn("text-[10px] px-1.5 py-0 rounded-full border whitespace-nowrap font-bold", teamStyle.className)}>
+                {teamStyle.emoji} {teamStyle.label}
+              </span>
+            )}
+            {responsavelInfo && (
+              <span className="text-[10px] text-muted-foreground font-medium">
+                {responsavelInfo.emoji} {responsavelInfo.label}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Status + actions */}
+        <div className="shrink-0 flex items-center gap-1 justify-end">
+          <Badge className={cn("text-[10px] px-2 py-0.5 border font-bold whitespace-nowrap", STATUS_BADGE_COLORS[v.status])}>
+            {STATUS_EMOJIS[v.status]} {STATUS_LABELS[v.status]}
+          </Badge>
+
+          {/* Quick action buttons — visible on hover */}
+          {(v.status === "marcada" || v.status === "confirmada") && (
+            <div className="hidden group-hover:flex items-center gap-0.5">
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600 hover:bg-green-50 rounded" onClick={() => onUpdateStatus(v.id, "realizada")} title="Realizada">✅</Button>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-purple-600 hover:bg-purple-50 rounded" onClick={() => onUpdateStatus(v.id, "reagendada")} title="Reagendada">🔄</Button>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-600 hover:bg-red-50 rounded" onClick={() => onUpdateStatus(v.id, "no_show")} title="No Show">❌</Button>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-gray-500 hover:bg-gray-50 rounded" onClick={() => onUpdateStatus(v.id, "cancelada")} title="Cancelada">⚫</Button>
+            </div>
           )}
         </div>
-      )}
 
-      {/* Spacer */}
-      <div className="flex-1 min-w-0" />
-
-      {/* Status badge + inline action buttons */}
-      <div className="shrink-0 flex items-center gap-1.5 justify-end">
-        <Badge className={cn("text-[10px] px-2.5 py-0.5 border font-bold whitespace-nowrap shadow-sm", STATUS_BADGE_COLORS[v.status] || "bg-muted text-muted-foreground")}>
-          {STATUS_EMOJIS[v.status]} {STATUS_LABELS[v.status]}
-        </Badge>
-
-        {(v.status === "marcada" || v.status === "confirmada") && (
-          <>
-            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-green-300 text-green-700 hover:bg-green-50 rounded-lg font-bold shadow-sm" onClick={() => onUpdateStatus(v.id, "realizada")} title="Realizada">✅</Button>
-            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-purple-300 text-purple-700 hover:bg-purple-50 rounded-lg font-bold shadow-sm" onClick={() => onUpdateStatus(v.id, "reagendada")} title="Reagendada">🔄</Button>
-            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-red-300 text-red-700 hover:bg-red-50 rounded-lg font-bold shadow-sm" onClick={() => onUpdateStatus(v.id, "no_show")} title="No Show">❌</Button>
-            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg font-bold shadow-sm" onClick={() => onUpdateStatus(v.id, "cancelada")} title="Cancelada">⚫</Button>
-          </>
-        )}
-      </div>
-
-      {/* Menu */}
-      <div className="shrink-0">
+        {/* Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <MoreVertical className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
