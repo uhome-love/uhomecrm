@@ -260,6 +260,17 @@ Deno.serve(async (req) => {
               }
             });
         }
+        // Persist interaction
+        supabase.from("vitrine_interacoes")
+          .insert({
+            vitrine_id,
+            imovel_id: imovel_id || "general",
+            tipo: event_type,
+            lead_nome: body.lead_nome || null,
+            lead_telefone: body.lead_telefone || null,
+            metadata: body.metadata || {},
+          })
+          .then(() => {});
       }
       return jsonResponse({ ok: true });
     }
