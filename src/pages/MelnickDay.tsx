@@ -1023,6 +1023,13 @@ export default function MelnickDay() {
                       return;
                     }
 
+                    // Convert relative image paths to absolute URLs for public vitrine
+                    const origin = window.location.origin;
+                    const toAbsoluteUrl = (path: string) => {
+                      if (!path) return "";
+                      if (path.startsWith("http://") || path.startsWith("https://")) return path;
+                      return `${origin}${path.startsWith("/") ? "" : "/"}${path}`;
+                    };
                     const dadosCustom = selectedEmpData.map((emp) => ({
                       nome: emp.nome,
                       bairro: emp.bairro,
@@ -1032,7 +1039,7 @@ export default function MelnickDay() {
                       precoDe: emp.precoDe,
                       precoPor: emp.precoPor,
                       descontoMax: emp.descontoMax,
-                      imagens: emp.imagens,
+                      imagens: (emp.imagens || []).map((img: string) => toAbsoluteUrl(img)),
                       condicoes: emp.condicoes,
                       segmento: emp.segmento,
                       m2: emp.m2,
