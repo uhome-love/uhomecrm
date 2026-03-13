@@ -23,6 +23,9 @@ import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import plantaTerreo2d from "@/assets/orygem/planta-2d-terreo.png";
 import planta2pav2d from "@/assets/orygem/planta-2d-2pav.png";
 import planta3pavEstar2d from "@/assets/orygem/planta-2d-3pav-estar.png";
+import plantaTerreo3d from "@/assets/orygem/planta-3d-terreo.png";
+import planta2pav3d from "@/assets/orygem/planta-3d-2pav.png";
+import planta3pavEstar3d from "@/assets/orygem/planta-3d-3pav-estar.png";
 
 /* ═══════════════════════════════════════════
    CONSTANTS
