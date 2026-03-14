@@ -93,9 +93,9 @@ Deno.serve(async (req) => {
     if (webhookSecret) {
       const provided = body.secret || req.headers.get("x-webhook-secret") || "";
       if (provided !== webhookSecret) {
+        L.warn("Auth failed");
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         });
       }
     }
