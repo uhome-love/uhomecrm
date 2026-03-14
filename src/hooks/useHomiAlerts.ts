@@ -7,11 +7,11 @@ const POLL_INTERVAL = 60_000; // 1 minute
 
 /**
  * Polls homi_alerts for the current user and feeds them into HomiContext.
- * Only active alerts (not dismissed) from the last 24h are fetched.
+ * Handles both aggregated (broker-level) and individual alerts.
  */
 export function useHomiAlerts() {
   const { user } = useAuth();
-  const { addProactiveAlert, alerts: existingAlerts } = useHomi();
+  const { addProactiveAlert } = useHomi();
   const seenIdsRef = useRef<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -33,11 +33,7 @@ export function useHomiAlerts() {
         return;
       }
 
-      const alerts = (data || []) as Array<{
-        id: string; tipo: string; prioridade: string; mensagem: string; contexto: any; created_at: string;
-      }>;
-
-      for (const alert of alerts) {
+      for (const alert of (data || []) as AlertRow[]) {
         if (seenIdsRef.current.has(alert.id)) continue;
         seenIdsRef.current.add(alert.id);
 
@@ -55,19 +51,11 @@ export function useHomiAlerts() {
 
   useEffect(() => {
     if (!user) return;
-
-    // Initial fetch
     fetchAlerts();
-
-    // Poll
     intervalRef.current = setInterval(fetchAlerts, POLL_INTERVAL);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [user, fetchAlerts]);
 
-  // Sync dismissals back to DB
   const dismissInDb = useCallback(async (alertDbId: string) => {
     try {
       await (supabase as any)
@@ -82,44 +70,58 @@ export function useHomiAlerts() {
   return { dismissInDb };
 }
 
-function buildActions(tipo: string, contexto: any, dbAlertId: string) {
+interface AlertRow {
+  id: string;
+  tipo: string;
+  prioridade: string;
+  mensagem: string;
+  contexto: any;
+  created_at: string;
+}
+
+function buildActions(tipo: string, ctx: any, _dbAlertId: string) {
   const actions: { label: string; action: () => void }[] = [];
 
   switch (tipo) {
+    // Aggregated alerts → navigate to pipeline filtered by broker
     case "leads_sem_contato":
     case "lead_stuck_stage":
-      if (contexto?.lead_id) {
+      if (ctx?.corretor_id) {
         actions.push({
-          label: "Ver lead",
-          action: () => {
-            window.location.href = `/pipeline?lead=${contexto.lead_id}`;
-          },
+          label: `Ver leads (${ctx.count || "?"})`,
+          action: () => { window.location.href = `/pipeline?corretor=${ctx.corretor_id}`; },
         });
       }
       break;
+
+    // Individual visit alerts
     case "visita_sem_confirmacao":
       actions.push({
         label: "Ver visitas",
-        action: () => {
-          window.location.href = "/visitas";
-        },
+        action: () => { window.location.href = "/visitas"; },
       });
+      if (ctx?.corretor_id) {
+        actions.push({
+          label: "Ver corretor",
+          action: () => { window.location.href = `/pipeline?corretor=${ctx.corretor_id}`; },
+        });
+      }
       break;
+
+    // Individual inactivity alerts
     case "corretor_inativo":
       actions.push({
-        label: "Ver equipe",
-        action: () => {
-          window.location.href = "/equipe";
-        },
+        label: `Ver leads (${ctx?.pending_leads || "?"})`,
+        action: () => { window.location.href = `/pipeline?corretor=${ctx?.corretor_id}`; },
       });
       break;
+
+    // Aggregated task alerts
     case "tarefa_vencida":
-      if (contexto?.pipeline_lead_id) {
+      if (ctx?.corretor_id) {
         actions.push({
-          label: "Ver tarefa",
-          action: () => {
-            window.location.href = `/pipeline?lead=${contexto.pipeline_lead_id}`;
-          },
+          label: `Ver tarefas (${ctx.count || "?"})`,
+          action: () => { window.location.href = `/pipeline?corretor=${ctx.corretor_id}`; },
         });
       }
       break;
