@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
     const { data: cleanedCount, error: cleanError } = await supabase.rpc(
       "cleanup_expired_locks"
     );
-    if (cleanError) console.error("Cleanup error:", cleanError);
+    if (cleanError) L.error("Cleanup RPC failed", {}, cleanError);
 
     const result = {
       escalated: escalationCount || 0,
