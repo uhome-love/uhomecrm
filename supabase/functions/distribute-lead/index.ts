@@ -467,6 +467,7 @@ async function distributeSingleLead(
 
   if (error) {
     console.error(JSON.stringify({ fn: "distribute-lead", level: "error", msg: "Failed to assign single lead", ctx: { leadId }, err: { message: error.message }, ts: new Date().toISOString() }));
+    // Note: logOps not available in this standalone function scope; error persisted via stdout
     return { success: false, reason: "update_failed", error: error.message };
   }
 
