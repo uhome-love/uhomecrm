@@ -70,7 +70,10 @@ Deno.serve(async (req) => {
     const { data: escalationCount, error: escError } = await supabase.rpc(
       "escalonar_notificacoes_leads"
     );
-    if (escError) L.error("Escalation RPC failed", {}, escError);
+    if (escError) {
+      L.error("Escalation RPC failed", {}, escError);
+      logOps("error", "system", "Escalation RPC failed", {}, escError.message);
+    }
 
     // 2. Send push + WhatsApp for leads at escalation thresholds
     // Fetch leads currently pending acceptance with their escalation state
