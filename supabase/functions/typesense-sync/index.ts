@@ -194,13 +194,20 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     }).eq("id", "default");
 
-    console.log(`Page ${page}: ${indexed} indexed, ${errors} errors, hasMore: ${hasMore}`);
+    console.info(JSON.stringify({ fn: "typesense-sync", level: "info", msg: `Page ${page}: ${indexed} indexed, ${errors} errors, hasMore: ${hasMore}`, traceId, ts: new Date().toISOString() }));
+    if (errors > 0) {
+      logOps("warn", "business", `Typesense sync page ${page} had ${errors} indexing errors`, { page, indexed, errors, hasMore });
+    }
 
     return new Response(JSON.stringify({ success: true, page, indexed, errors, hasMore }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("typesense-sync error:", e);
+    console.error(JSON.stringify({ fn: "typesense-sync", level: "error", msg: "Unhandled exception", traceId, err: e instanceof Error ? { name: e.name, message: e.message } : { raw: String(e) }, ts: new Date().toISOString() }));
+    try {
+      const sbErr = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      sbErr.from("ops_events").insert({ fn: "typesense-sync", level: "error", category: "system", message: "Unhandled exception", trace_id: traceId, ctx: {}, error_detail: e instanceof Error ? e.message : String(e) }).then(() => {});
+    } catch {}
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
