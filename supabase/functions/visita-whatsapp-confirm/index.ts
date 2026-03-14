@@ -7,7 +7,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const FN = "visita-whatsapp-confirm";
 const DIALOG_API_URL = "https://waba-v2.360dialog.io/messages";
+
+function makeLogger(traceId: string) {
+  const emit = (level: string, msg: string, ctx?: Record<string, unknown>, err?: unknown) => {
+    const payload = { fn: FN, level, msg, traceId, ctx, err: err instanceof Error ? { name: err.name, message: err.message } : err ? { raw: String(err) } : undefined, ts: new Date().toISOString() };
+    level === "error" ? console.error(JSON.stringify(payload)) : level === "warn" ? console.warn(JSON.stringify(payload)) : console.info(JSON.stringify(payload));
+  };
+  return {
+    info: (msg: string, ctx?: Record<string, unknown>) => emit("info", msg, ctx),
+    warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => emit("warn", msg, ctx, err),
+    error: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => emit("error", msg, ctx, err),
+  };
+}
 
 function formatPhone(phone: string): string {
   let clean = phone.replace(/\D/g, "");
@@ -46,8 +59,7 @@ async function sendWhatsApp(apiKey: string, phone: string, message: string) {
 
   const data = await resp.json();
   if (!resp.ok) {
-    console.error("360dialog error:", resp.status, JSON.stringify(data));
-    throw new Error(data?.error?.message || `Erro ao enviar: ${resp.status}`);
+    throw new Error(data?.error?.message || `360dialog error: ${resp.status}`);
   }
   return data;
 }
@@ -57,10 +69,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
+  const L = makeLogger(traceId);
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
+      supabase.from("ops_events").insert({ fn: FN, level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
+    };
 
     // Get 360dialog API key
     const { data: setting } = await supabase
@@ -70,6 +89,7 @@ serve(async (req) => {
       .single();
 
     if (!setting?.value) {
+      L.warn("360dialog API key not configured");
       return new Response(
         JSON.stringify({ error: "API key do 360dialog não configurada" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -107,12 +127,18 @@ serve(async (req) => {
 
       const message = `Olá ${visita.nome_cliente || ""}! 👋 Sua visita ao ${visita.empreendimento || "empreendimento"} está confirmada para ${formatDate(visita.data_visita)} às ${formatTime(visita.hora_visita)}. Seu corretor ${corretorNome} estará te esperando.${confirmLink}\nQualquer dúvida é só responder esta mensagem. Até lá! 🏠`;
 
-      const result = await sendWhatsApp(apiKey, visita.telefone, message);
-
-      return new Response(
-        JSON.stringify({ success: true, message_id: result?.messages?.[0]?.id }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      try {
+        const result = await sendWhatsApp(apiKey, visita.telefone, message);
+        L.info("Confirmation sent", { visita_id, phone: visita.telefone?.slice(-4) });
+        return new Response(
+          JSON.stringify({ success: true, message_id: result?.messages?.[0]?.id }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (sendErr) {
+        L.error("Confirmation WhatsApp failed", { visita_id }, sendErr);
+        logOps("error", "integration", "WhatsApp confirmation send failed", { visita_id }, sendErr instanceof Error ? sendErr.message : String(sendErr));
+        throw sendErr;
+      }
     }
 
     // ─── ACTION: reminder_cron (Trigger 2 — 24h before) ───
@@ -132,7 +158,8 @@ serve(async (req) => {
         .in("status", ["marcada", "confirmada"]);
 
       if (error) {
-        console.error("Error fetching visitas:", error);
+        L.error("Failed to fetch visitas", {}, error);
+        logOps("error", "system", "Failed to fetch visitas for reminder", {}, error.message);
         return new Response(
           JSON.stringify({ error: "Erro ao buscar visitas" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -166,7 +193,7 @@ serve(async (req) => {
           await sendWhatsApp(apiKey, v.telefone, message);
           sent++;
         } catch (e) {
-          console.error(`Erro ao enviar reminder para visita ${v.id}:`, e);
+          L.warn("Reminder send failed", { visita_id: v.id }, e);
           errors++;
         }
 
@@ -174,18 +201,32 @@ serve(async (req) => {
         await new Promise(r => setTimeout(r, 300));
       }
 
+      const result = { total: (visitas || []).length, sent, skipped, errors, date: tomorrowStr };
+      L.info("Reminder cron complete", result as unknown as Record<string, unknown>);
+      if (sent > 0 || errors > 0) {
+        logOps("info", "business", `Visit reminders: ${sent} sent, ${errors} errors, ${skipped} skipped`, result as unknown as Record<string, unknown>);
+      }
+      if (errors > 0) {
+        logOps("warn", "integration", `${errors} WhatsApp reminder(s) failed`, { errors, total: (visitas || []).length });
+      }
+
       return new Response(
-        JSON.stringify({ success: true, total: (visitas || []).length, sent, skipped, errors }),
+        JSON.stringify({ success: true, ...result }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    L.warn("Invalid action received", { action });
     return new Response(
       JSON.stringify({ error: "Ação inválida" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
-    console.error("visita-whatsapp-confirm error:", e);
+    L.error("Unhandled exception", {}, e);
+    try {
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      sb.from("ops_events").insert({ fn: FN, level: "error", category: "system", message: "Unhandled exception", trace_id: traceId, ctx: {}, error_detail: e instanceof Error ? e.message : String(e) }).then(() => {});
+    } catch {}
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

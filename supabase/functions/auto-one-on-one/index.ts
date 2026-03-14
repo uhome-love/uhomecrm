@@ -7,15 +7,36 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const FN = "auto-one-on-one";
+
+function makeLogger(traceId: string) {
+  const emit = (level: string, msg: string, ctx?: Record<string, unknown>, err?: unknown) => {
+    const payload = { fn: FN, level, msg, traceId, ctx, err: err instanceof Error ? { name: err.name, message: err.message } : err ? { raw: String(err) } : undefined, ts: new Date().toISOString() };
+    level === "error" ? console.error(JSON.stringify(payload)) : level === "warn" ? console.warn(JSON.stringify(payload)) : console.info(JSON.stringify(payload));
+  };
+  return {
+    info: (msg: string, ctx?: Record<string, unknown>) => emit("info", msg, ctx),
+    warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => emit("warn", msg, ctx, err),
+    error: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => emit("error", msg, ctx, err),
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
+  const L = makeLogger(traceId);
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
+      supabase.from("ops_events").insert({ fn: FN, level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
+    };
 
     // Calculate current week (Mon-Sun) in BRT
     const now = new Date();
@@ -41,12 +62,19 @@ serve(async (req) => {
     const prev4End = periodoInicio + "T00:00:00-03:00";
 
     // Get all active gestors
-    const { data: gestors } = await supabase
+    const { data: gestors, error: gestorErr } = await supabase
       .from("user_roles")
       .select("user_id")
       .eq("role", "gestor");
 
+    if (gestorErr) {
+      L.error("Failed to fetch gestors", {}, gestorErr);
+      logOps("error", "system", "Failed to fetch gestors", {}, gestorErr.message);
+      return new Response(JSON.stringify({ error: gestorErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (!gestors || gestors.length === 0) {
+      L.info("No gestors found");
       return new Response(
         JSON.stringify({ success: true, message: "No gestors found", reports: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -54,6 +82,7 @@ serve(async (req) => {
     }
 
     let totalReports = 0;
+    let skippedExisting = 0;
 
     for (const gestor of gestors) {
       const gerenteId = gestor.user_id;
@@ -91,7 +120,7 @@ serve(async (req) => {
         // Skip if no user_id linked
         if (!member.user_id) continue;
 
-        // Check if report already exists for this period
+        // Check if report already exists for this period (idempotency)
         const { data: existing } = await supabase
           .from("one_on_one_reports")
           .select("id")
@@ -101,7 +130,10 @@ serve(async (req) => {
           .eq("periodo_fim", periodoFim)
           .maybeSingle();
 
-        if (existing) continue; // Already generated
+        if (existing) {
+          skippedExisting++;
+          continue;
+        }
 
         // ── Current week metrics ──
         let ligacoes = 0, aproveitados = 0, visitasMarcadas = 0, visitasRealizadas = 0;
@@ -214,7 +246,7 @@ serve(async (req) => {
         score = Math.min(score, 100);
 
         // Insert report
-        await supabase.from("one_on_one_reports").insert({
+        const { error: insertErr } = await supabase.from("one_on_one_reports").insert({
           corretor_id: member.id,
           gerente_id: gerenteId,
           corretor_nome: member.nome,
@@ -226,7 +258,11 @@ serve(async (req) => {
           score_performance: score,
         });
 
-        totalReports++;
+        if (insertErr) {
+          L.warn("Failed to insert 1:1 report", { corretor: member.nome, gerente: gerenteId }, insertErr);
+        } else {
+          totalReports++;
+        }
       }
 
       // Create notification for the gerente
@@ -243,12 +279,20 @@ serve(async (req) => {
       }
     }
 
+    const result = { reports_generated: totalReports, skipped_existing: skippedExisting, gestors: gestors.length, periodo: `${periodoInicio}..${periodoFim}` };
+    L.info("Run complete", result as unknown as Record<string, unknown>);
+    logOps("info", "business", `1:1 reports: ${totalReports} generated, ${skippedExisting} skipped (existing)`, result as unknown as Record<string, unknown>);
+
     return new Response(
-      JSON.stringify({ success: true, reports_generated: totalReports }),
+      JSON.stringify({ success: true, ...result }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
-    console.error("auto-one-on-one error:", e);
+    L.error("Unhandled exception", {}, e);
+    try {
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      sb.from("ops_events").insert({ fn: FN, level: "error", category: "system", message: "Unhandled exception", trace_id: traceId, ctx: {}, error_detail: e instanceof Error ? e.message : String(e) }).then(() => {});
+    } catch {}
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
