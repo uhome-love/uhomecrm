@@ -643,9 +643,11 @@ export default function VendasRealizadas() {
                             )}
                             <td className="py-3 px-3 text-right">
                               <span className="text-sm font-black text-emerald-500">{formatCurrency(vgv)}</span>
-                              {v.pipeline_lead_id && parceriaLeadIds.has(v.pipeline_lead_id) && (
-                                <p className="text-[9px] font-bold text-violet-500 mt-0.5">🤝 Parceria 50%</p>
-                              )}
+                              {v.pipeline_lead_id && parceriaLeadIds.has(v.pipeline_lead_id) && (() => {
+                                const splitPct = parceriaPartners[v.pipeline_lead_id!]?.fator_split;
+                                const pctLabel = splitPct ? `${Math.round(splitPct * 100)}%` : "50%";
+                                return <p className="text-[9px] font-bold text-violet-500 mt-0.5">🤝 Parceria {pctLabel}</p>;
+                              })()}
                             </td>
                             <td className="py-3 px-3 text-center">
                               <span className="text-xs text-muted-foreground">
