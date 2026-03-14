@@ -88,6 +88,7 @@ export default function HomiCeoChat() {
         },
         body: JSON.stringify({ messages: allMessages, quickAction }),
         signal: abortRef.current.signal,
+      });
 
       if (!resp.ok) {
         const errorData = await resp.json().catch(() => ({}));
