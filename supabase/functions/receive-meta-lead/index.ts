@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
     }
 
     if (!telefone) {
-      console.warn("META-LEAD IGNORED — missing/invalid phone", JSON.stringify({ name, email, campaignId, formName }));
+      L.warn("Missing phone", { name, email, campaignId, formName });
       return new Response(
         JSON.stringify({ success: true, action: "ignored_missing_phone", reason: "telefone obrigatório" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
