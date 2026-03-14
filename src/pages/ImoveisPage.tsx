@@ -28,6 +28,7 @@ import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import { useTypesenseSearch, buildFilterBy, buildSortBy } from "@/hooks/useTypesenseSearch";
 import { useAISearch, type AIPropertyResult } from "@/hooks/useAISearch";
 import { mapTypesenseDocs } from "@/lib/typesenseMapping";
+import { PropertyCardGrid, PropertyCardList } from "@/components/imoveis/PropertyCards";
 import {
   extractImages, extractFullImages, extractOrigemExterna, extractEntrega, extractEndereco,
   getNum, getNumIncZero, fmtBRL, fmtCompact,
