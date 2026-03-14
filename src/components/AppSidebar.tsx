@@ -168,6 +168,7 @@ export function AppSidebar() {
   const [roletaPendentes, setRoletaPendentes] = useState(0);
   const [tarefasPendentes, setTarefasPendentes] = useState(0);
   const [aceiteLeadsPendentes, setAceiteLeadsPendentes] = useState(0);
+  const [alertasPendentes, setAlertasPendentes] = useState(0);
 
   const fetchProfile = useCallback(() => {
     if (!user) return;
@@ -246,6 +247,26 @@ export function AppSidebar() {
     return () => clearInterval(interval);
   }, [fetchAceitePendentes]);
 
+  // Fetch homi_alerts unread count for CEO/Gestor badge
+  const fetchAlertasPendentes = useCallback(async () => {
+    if (!user || (!isAdmin && !isGestor)) return;
+    const { count } = await (supabase as any)
+      .from("homi_alerts")
+      .select("id", { count: "exact", head: true })
+      .eq("destinatario_id", user.id)
+      .eq("dispensada", false)
+      .eq("lida", false)
+      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+    setAlertasPendentes(count ?? 0);
+  }, [user, isAdmin, isGestor]);
+
+  useEffect(() => {
+    fetchAlertasPendentes();
+    if (!isAdmin && !isGestor) return;
+    const interval = setInterval(fetchAlertasPendentes, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchAlertasPendentes, isAdmin, isGestor]);
+
   useEffect(() => {
     if (toastShown.current || alerts.length === 0) return;
     toastShown.current = true;
@@ -265,13 +286,15 @@ export function AppSidebar() {
   function getGroupsByRole(): { topItem: NavItem | null; groups: { label: string; items: NavItem[] }[]; roleLabel: string; extraBadges?: Record<string, number> } {
     // ── CEO / Admin ──
     if (isAdmin) {
-      const roletaBadges: Record<string, number> = roletaPendentes > 0 ? { "/roleta": roletaPendentes } : {};
+      const alertasBadges: Record<string, number> = alertasPendentes > 0 ? { "/alertas": alertasPendentes } : {};
+      const roletaBadges: Record<string, number> = { ...alertasBadges, ...(roletaPendentes > 0 ? { "/roleta": roletaPendentes } : {}) };
       return {
         topItem: { title: "Dashboard CEO", url: "/ceo", icon: Home },
         groups: [
           {
             label: "Visão Geral",
             items: [
+              { title: "Alertas HOMI", url: "/alertas", icon: Bell },
               { title: "Meu Time", url: "/meu-time", icon: Users },
               { title: "Central do Gerente", url: "/central-do-gerente", icon: ClipboardCheck },
             ],
@@ -344,6 +367,7 @@ export function AppSidebar() {
           {
             label: "Visão Geral",
             items: [
+              { title: "Alertas HOMI", url: "/alertas", icon: Bell },
               { title: "Central do Gerente", url: "/central-do-gerente", icon: ClipboardCheck },
             ],
           },
@@ -385,6 +409,7 @@ export function AppSidebar() {
           },
         ],
         roleLabel: `Gerente · Time ${profile.nome?.split(" ")[0] || ""}`,
+        extraBadges: alertasPendentes > 0 ? { "/alertas": alertasPendentes } : {},
       };
     }
 
