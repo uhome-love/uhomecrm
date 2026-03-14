@@ -32,6 +32,7 @@ serve(async (req) => {
 
     if (!token || !phoneId) {
       L.error("Credentials not configured", { hasToken: !!token, hasPhoneId: !!phoneId });
+      logOps("error", "integration", "WhatsApp credentials not configured", { hasToken: !!token, hasPhoneId: !!phoneId });
       return new Response(
         JSON.stringify({ error: "WhatsApp credentials not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
