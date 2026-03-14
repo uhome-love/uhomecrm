@@ -431,10 +431,10 @@ const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx, isCam
       </div>
     </Card>
   );
-}
+});
 
 // ── Property Card (List) ──
-function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onToggleSelect, onFavorite, isFavorite, onOpenLightbox, getPreco }: any) {
+const PropertyCardList = React.memo(function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onToggleSelect, onFavorite, isFavorite, onOpenLightbox, getPreco }: any) {
   const images = extractImages(item);
   const fullImages = extractFullImages(item);
   const loc = extractEndereco(item);
