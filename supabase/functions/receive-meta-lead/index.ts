@@ -155,21 +155,7 @@ Deno.serve(async (req) => {
     const telefone = normalizePhone(phone);
     const isTestLead = isLikelyTestLead(name, email, message);
 
-    console.log("META-LEAD PARSED:", JSON.stringify({
-      name,
-      phone,
-      telefone,
-      email,
-      campaignId,
-      campaignName,
-      message,
-      propertyCode,
-      formName,
-      adName,
-      adsetName,
-      externalLeadId,
-      isTestLead,
-    }));
+    L.info("Parsed", { name, telefone, campaignId, propertyCode, empreendimento: empreendimento || "pending", externalLeadId, isTestLead });
 
     if (isTestLead) {
       console.warn("META-LEAD IGNORED — detected test payload", JSON.stringify({ name, email, externalLeadId }));
