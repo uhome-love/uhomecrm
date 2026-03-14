@@ -8,16 +8,40 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
 
-    const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
-    const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
-      supabase.from("ops_events").insert({ fn: "execute-automations", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
-    };
+  const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
+  const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
+    supabase.from("ops_events").insert({ fn: "execute-automations", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
+  };
+
+  try {
+    // ── Overlap guard: skip if another run started within the last 50 seconds ──
+    const guardCutoff = new Date(Date.now() - 50_000).toISOString();
+    const { data: recentRun } = await supabase
+      .from("ops_events")
+      .select("id, trace_id")
+      .eq("fn", "execute-automations")
+      .eq("category", "guard")
+      .eq("message", "run_start")
+      .gte("created_at", guardCutoff)
+      .limit(1);
+
+    if (recentRun && recentRun.length > 0) {
+      console.info(`Skipping overlapping run — recent trace ${recentRun[0].trace_id}`);
+      return new Response(JSON.stringify({ skipped: true, reason: "overlap_guard", recent_trace: recentRun[0].trace_id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Stamp run start
+    await supabase.from("ops_events").insert({
+      fn: "execute-automations", level: "info", category: "guard",
+      message: "run_start", trace_id: traceId, ctx: {}, error_detail: null,
+    });
 
     // Fetch all active automations
     const { data: automations, error: autoErr } = await supabase
@@ -55,7 +79,6 @@ Deno.serve(async (req) => {
           }
 
           case "lead_arrived": {
-            // Check leads created in the last 5 minutes
             const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
             const { data: leads } = await supabase
               .from("pipeline_leads")
@@ -67,7 +90,6 @@ Deno.serve(async (req) => {
           }
 
           case "deal_lost": {
-            // Check leads moved to "caiu" stages in last 5 minutes
             const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
             const { data: history } = await supabase
               .from("pipeline_historico")
@@ -118,7 +140,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Deduplicate: check if already executed today for each lead (non-cron)
+        // Deduplicate: check if already executed today for each lead
         if (auto.trigger_type !== "cron" && matchedLeads.length > 0) {
           const { data: existingLogs } = await supabase
             .from("automation_logs")
@@ -184,7 +206,6 @@ Deno.serve(async (req) => {
                 }
 
                 case "whatsapp": {
-                  // Log the WhatsApp action (actual sending would be done via whatsapp-send function)
                   executedActions.push("whatsapp");
                   break;
                 }
@@ -240,6 +261,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    logOps("error", "system", "Unhandled exception", {}, error.message || "Unknown");
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
