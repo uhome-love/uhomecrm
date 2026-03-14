@@ -6240,6 +6240,7 @@ export type Database = {
           historico_id: string | null
           pipeline_lead_id: string | null
           pontos: number | null
+          raw_created_at: string | null
           stage_nome: string | null
           stage_ordem: number | null
         }
@@ -6260,6 +6261,7 @@ export type Database = {
           auth_user_id: string | null
           canal: string | null
           data: string | null
+          raw_created_at: string | null
           resultado: string | null
           tentativa: number | null
         }
@@ -6269,6 +6271,7 @@ export type Database = {
           auth_user_id?: string | null
           canal?: string | null
           data?: never
+          raw_created_at?: string | null
           resultado?: string | null
           tentativa?: never
         }
@@ -6278,6 +6281,7 @@ export type Database = {
           auth_user_id?: string | null
           canal?: string | null
           data?: never
+          raw_created_at?: string | null
           resultado?: string | null
           tentativa?: never
         }
