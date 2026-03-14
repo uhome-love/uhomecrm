@@ -336,7 +336,7 @@ Deno.serve(async (req) => {
 
     // Also skip if phone was ever processed before (permanent dedup)
     if (alreadyProcessed) {
-      console.log(`META-LEAD DEDUP: ${telefone} found in permanent dedup registry, skipping`);
+      L.info("Dedup: permanent registry", { telefone });
       return new Response(
         JSON.stringify({ success: true, action: "skipped_permanent_dedup" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
