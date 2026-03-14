@@ -188,7 +188,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       try {
         const ksHeader = resp.headers.get("x-knowledge-source");
         if (ksHeader) setKnowledgeSource(JSON.parse(ksHeader));
-      } catch { /* ignore */ }
+      } catch (e) { console.warn("[HomiContext] Failed to parse x-knowledge-source header:", e); }
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -220,7 +220,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
                 return [...prev, { role: "assistant", content: assistantContent }];
               });
             }
-          } catch { /* partial */ }
+          } catch (e) { console.warn("[HomiContext] Partial SSE chunk:", e); }
         }
       }
 
@@ -322,7 +322,7 @@ function emitFallbackWarning() {
     const callerLine = lines.find(l => !l.includes("HomiContext")) || lines[0] || "";
     const match = callerLine.match(/\/src\/(.+?)(?:\?|:)/);
     if (match) callerHint = match[1];
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[HomiContext] Failed to extract caller hint:", e); }
 
   // Deduplicate by caller
   if (_warnedCallers.has(callerHint)) return;

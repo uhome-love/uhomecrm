@@ -23,7 +23,7 @@ function loadSavedPosition() {
   try {
     const saved = localStorage.getItem("homi-avatar-pos");
     if (saved) return JSON.parse(saved);
-  } catch {}
+  } catch (e) { console.warn("[HomiAvatar] localStorage parse error:", e); }
   return null;
 }
 

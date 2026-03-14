@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Loader2, BarChart3, Users, TrendingUp, AlertTriangle, FileText, Lightbulb, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +38,11 @@ export default function HomiCeoChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(() => { scrollToBottom(); }, [messages]);
@@ -72,6 +77,8 @@ export default function HomiCeoChat() {
         return;
       }
 
+      abortRef.current = new AbortController();
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -80,6 +87,7 @@ export default function HomiCeoChat() {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ messages: allMessages, quickAction }),
+        signal: abortRef.current.signal,
       });
 
       if (!resp.ok) {
@@ -87,7 +95,6 @@ export default function HomiCeoChat() {
         if (resp.status === 429) toast.error("Rate limit excedido, aguarde.");
         else if (resp.status === 402) toast.error("Créditos esgotados.");
         else toast.error(errorData.error || "Erro ao conectar com o HOMI CEO");
-        setIsLoading(false);
         return;
       }
 
@@ -124,7 +131,8 @@ export default function HomiCeoChat() {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsertAssistant(content);
-          } catch {
+          } catch (e) {
+            console.warn("[HomiCeoChat] Partial SSE chunk, buffering:", e);
             textBuffer = line + "\n" + textBuffer;
             break;
           }
@@ -140,18 +148,20 @@ export default function HomiCeoChat() {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsertAssistant(content);
-          } catch {}
+          } catch (e) { console.warn("[HomiCeoChat] Malformed SSE line in flush:", e); }
         }
       }
 
       const finalMessages = [...allMessages, { role: "assistant" as const, content: assistantSoFar }];
       setMessages(finalMessages);
       saveConversation(finalMessages);
-    } catch (e) {
-      console.error("Chat error:", e);
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      console.error("[HomiCeoChat] Stream error:", e);
       toast.error("Erro ao comunicar com o HOMI CEO");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const sendMessage = async (text?: string) => {

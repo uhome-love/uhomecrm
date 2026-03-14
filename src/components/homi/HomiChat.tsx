@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +34,12 @@ export default function HomiChat({ onBack }: Props) {
   const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,6 +93,7 @@ export default function HomiChat({ onBack }: Props) {
     let assistantSoFar = "";
 
     try {
+      abortRef.current = new AbortController();
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -94,6 +101,7 @@ export default function HomiChat({ onBack }: Props) {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: newMessages }),
+        signal: abortRef.current.signal,
       });
 
       if (!resp.ok) {
@@ -101,7 +109,6 @@ export default function HomiChat({ onBack }: Props) {
         if (resp.status === 429) toast.error("Rate limit excedido, aguarde alguns segundos");
         else if (resp.status === 402) toast.error("Créditos esgotados");
         else toast.error(errorData.error || "Erro ao conectar com o HOMI");
-        setIsLoading(false);
         return;
       }
 
@@ -142,7 +149,8 @@ export default function HomiChat({ onBack }: Props) {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) upsertAssistant(content);
-          } catch {
+          } catch (e) {
+            console.warn("[HomiChat] Partial SSE chunk, buffering:", e);
             textBuffer = line + "\n" + textBuffer;
             break;
           }
@@ -161,7 +169,7 @@ export default function HomiChat({ onBack }: Props) {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) upsertAssistant(content);
-          } catch { /* ignore */ }
+          } catch (e) { console.warn("[HomiChat] Malformed SSE line in flush:", e); }
         }
       }
 
@@ -169,13 +177,14 @@ export default function HomiChat({ onBack }: Props) {
       const finalMessages = [...newMessages, { role: "assistant" as const, content: assistantSoFar }];
       setMessages(finalMessages);
       saveConversation(finalMessages);
-    } catch (e) {
-      console.error("Chat error:", e);
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      console.error("[HomiChat] Stream error:", e);
       toast.error("Erro ao comunicar com o HOMI");
+    } finally {
+      setIsLoading(false);
+      setIsStreaming(false);
     }
-
-    setIsLoading(false);
-    setIsStreaming(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

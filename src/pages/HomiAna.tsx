@@ -179,7 +179,8 @@ Seja breve e energético. Comece com "Oi Ana! 👋"`;
       if (error) throw error;
       const reply = data?.reply || data?.message || "Sem resposta.";
       setMessages((prev) => [...prev, { role: "assistant" as const, content: reply }]);
-    } catch {
+    } catch (e) {
+      console.error("[HomiAna] Chat error:", e);
       toast.error("Ops! O HOMI está descansando um segundo. Tente novamente 🤖");
     } finally {
       setLoading(false);

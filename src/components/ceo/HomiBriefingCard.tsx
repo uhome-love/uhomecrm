@@ -32,12 +32,12 @@ export default function HomiBriefingCard({ dashboardData }: Props) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [isOpen, setIsOpen] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) === "open"; } catch { return false; }
+    try { return localStorage.getItem(STORAGE_KEY) === "open"; } catch (e) { console.warn("[HomiBriefingCard] localStorage read error:", e); return false; }
   });
 
   const handleToggle = (open: boolean) => {
     setIsOpen(open);
-    try { localStorage.setItem(STORAGE_KEY, open ? "open" : "closed"); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, open ? "open" : "closed"); } catch (e) { console.warn("[HomiBriefingCard] localStorage write error:", e); }
   };
 
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -96,7 +96,8 @@ export default function HomiBriefingCard({ dashboardData }: Props) {
         setBriefing({ ...data.briefing, gerado_em: new Date().toISOString() });
         toast.success("Briefing gerado!");
       }
-    } catch {
+    } catch (e) {
+      console.error("[HomiBriefingCard] Generate error:", e);
       toast.error("Erro ao gerar briefing");
     } finally {
       setGenerating(false);

@@ -43,7 +43,8 @@ export default function HomiIdeiasChat() {
       if (error) throw error;
       const reply = data?.reply || data?.message || "Sem resposta.";
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
-    } catch {
+    } catch (e) {
+      console.error("[HomiIdeiasChat] Chat error:", e);
       toast.error("Erro ao conectar com HOMI. Tente novamente.");
     } finally {
       setLoading(false);
