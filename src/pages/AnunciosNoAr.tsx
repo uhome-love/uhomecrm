@@ -1282,6 +1282,19 @@ export default function AnunciosNoAr() {
         />
       )}
 
+      {/* AI Knowledge Editor Modal */}
+      {aiEditingConfig && (
+        <AIKnowledgeEditorModal
+          open={!!aiEditingCodigo}
+          onOpenChange={(v) => { if (!v) setAiEditingCodigo(null); }}
+          codigo={aiEditingConfig.codigo}
+          nome={aiEditingConfig.nome}
+          overrideId={overrides[aiEditingConfig.codigo]?.id || null}
+          initialData={overrides[aiEditingConfig.codigo] as AIKnowledgeData | null}
+          onSaved={fetchOverrides}
+        />
+      )}
+
       {/* Landing Page Editor */}
       {landingCodigo && (() => {
         const landingConfig = SEGMENTOS.flatMap(s => s.empreendimentos).find(e => e.codigo === landingCodigo);
