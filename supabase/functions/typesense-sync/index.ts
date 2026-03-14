@@ -90,6 +90,8 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
+
   try {
     const TYPESENSE_HOST = Deno.env.get("TYPESENSE_HOST");
     const TYPESENSE_ADMIN_API_KEY = Deno.env.get("TYPESENSE_ADMIN_API_KEY");
@@ -102,6 +104,34 @@ serve(async (req) => {
     }
 
     const sb = createClient(supabaseUrl, serviceRoleKey);
+
+    const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
+      sb.from("ops_events").insert({ fn: "typesense-sync", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
+    };
+
+    // ── Overlap guard: skip if another run started within the last 50 seconds ──
+    const guardCutoff = new Date(Date.now() - 50_000).toISOString();
+    const { data: recentRun } = await sb
+      .from("ops_events")
+      .select("id, trace_id")
+      .eq("fn", "typesense-sync")
+      .eq("category", "guard")
+      .eq("message", "run_start")
+      .gte("created_at", guardCutoff)
+      .limit(1);
+
+    if (recentRun && recentRun.length > 0) {
+      console.info(JSON.stringify({ fn: "typesense-sync", level: "info", msg: "Skipping overlapping run", traceId, recent_trace: recentRun[0].trace_id, ts: new Date().toISOString() }));
+      return new Response(JSON.stringify({ skipped: true, reason: "overlap_guard", recent_trace: recentRun[0].trace_id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Stamp run start
+    await sb.from("ops_events").insert({
+      fn: "typesense-sync", level: "info", category: "guard",
+      message: "run_start", trace_id: traceId, ctx: {}, error_detail: null,
+    });
 
     // Get current sync state
     const { data: state } = await sb

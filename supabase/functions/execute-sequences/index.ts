@@ -27,6 +27,30 @@ Deno.serve(async (req) => {
       supabase.from("ops_events").insert({ fn: "execute-sequences", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
     };
 
+    // ── Overlap guard: skip if another run started within the last 4 minutes ──
+    const guardCutoff = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+    const { data: recentRun } = await supabase
+      .from("ops_events")
+      .select("id, trace_id")
+      .eq("fn", "execute-sequences")
+      .eq("category", "guard")
+      .eq("message", "run_start")
+      .gte("created_at", guardCutoff)
+      .limit(1);
+
+    if (recentRun && recentRun.length > 0) {
+      L.info("Skipping overlapping run", { recent_trace: recentRun[0].trace_id });
+      return new Response(JSON.stringify({ skipped: true, reason: "overlap_guard", recent_trace: recentRun[0].trace_id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Stamp run start
+    await supabase.from("ops_events").insert({
+      fn: "execute-sequences", level: "info", category: "guard",
+      message: "run_start", trace_id: traceId, ctx: {}, error_detail: null,
+    });
+
     const now = new Date();
     let executed = 0;
     let errors = 0;
