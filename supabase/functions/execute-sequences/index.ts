@@ -39,10 +39,11 @@ Deno.serve(async (req) => {
       .lte("proximo_envio_em", now.toISOString());
 
     if (fetchError) {
-      console.error("Error fetching pending sequences:", fetchError);
+      L.error("Fetch pending sequences failed", {}, fetchError);
       return new Response(JSON.stringify({ error: fetchError.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
       });
     }
 
