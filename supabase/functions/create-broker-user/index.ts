@@ -215,7 +215,16 @@ serve(async (req) => {
       if (!target_user_id) throw new Error("ID do usuário não informado");
       if (target_user_id === caller.id) throw new Error("Você não pode excluir a si mesmo");
 
+      // Resolve profile ID for tables that reference profiles.id
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", target_user_id)
+        .maybeSingle();
+      const profileId = profileData?.id;
+
       // Delete all user data across the system before removing auth user
+      // Tables using auth.user_id
       const deletions = [
         supabase.from("lead_messages").delete().eq("user_id", target_user_id),
         supabase.from("lead_tasks").delete().eq("user_id", target_user_id),
@@ -233,7 +242,27 @@ serve(async (req) => {
         supabase.from("negocios").delete().eq("gerente_id", target_user_id),
         supabase.from("manager_checklist").delete().eq("gerente_id", target_user_id),
         supabase.from("ceo_metas_mensais").delete().eq("gerente_id", target_user_id),
+        supabase.from("corretor_disponibilidade").delete().eq("user_id", target_user_id),
+        supabase.from("corretor_conquistas").delete().eq("user_id", target_user_id),
+        supabase.from("corretor_onboarding").delete().eq("user_id", target_user_id),
+        supabase.from("homi_conversations").delete().eq("user_id", target_user_id),
+        supabase.from("homi_briefing_diario").delete().eq("user_id", target_user_id),
+        supabase.from("backoffice_tasks").delete().eq("user_id", target_user_id),
+        supabase.from("coaching_sessions").delete().eq("corretor_id", target_user_id),
       ];
+
+      // Tables using profiles.id (only if profile exists)
+      if (profileId) {
+        deletions.push(
+          supabase.from("negocios").delete().eq("corretor_id", profileId),
+          supabase.from("checkpoint_diario").delete().eq("corretor_id", profileId),
+          supabase.from("academia_progresso").delete().eq("corretor_id", profileId),
+          supabase.from("academia_certificados").delete().eq("corretor_id", profileId),
+          supabase.from("lead_progressao").delete().eq("corretor_id", profileId),
+          supabase.from("roleta_credenciamentos").delete().eq("corretor_id", profileId),
+          supabase.from("empreendimento_fichas").delete().eq("atualizado_por", profileId),
+        );
+      }
 
       // Delete checkpoint_lines before checkpoints (FK dependency)
       const { data: userCheckpoints } = await supabase
@@ -246,6 +275,19 @@ serve(async (req) => {
         await supabase.from("checkpoint_lines").delete().in("checkpoint_id", checkpointIds);
       }
       await supabase.from("checkpoints").delete().eq("gerente_id", target_user_id);
+
+      // Also delete checkpoint_lines where this user is the corretor (via team_members.id)
+      if (profileId) {
+        const { data: teamMemberData } = await supabase
+          .from("team_members")
+          .select("id")
+          .eq("user_id", target_user_id);
+        if (teamMemberData && teamMemberData.length > 0) {
+          const tmIds = teamMemberData.map((t: any) => t.id);
+          await supabase.from("checkpoint_lines").delete().in("corretor_id", tmIds);
+          await supabase.from("corretor_reports").delete().in("corretor_id", tmIds);
+        }
+      }
 
       // Run all other deletions in parallel
       const results = await Promise.allSettled(deletions);
