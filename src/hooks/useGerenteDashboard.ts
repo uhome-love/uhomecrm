@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { todayBRT, formatBRLCompact } from "@/lib/utils";
+import { fetchKPIs as fetchOfficialKPIs, type CorretorKPIs } from "@/lib/metricsService";
 
 export type Period = "dia" | "semana" | "mes";
 export const periodLabels: Record<Period, string> = { dia: "Hoje", semana: "Esta Semana", mes: "Este Mês" };
