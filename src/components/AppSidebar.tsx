@@ -267,7 +267,7 @@ export function AppSidebar() {
     return () => clearInterval(interval);
   }, [fetchAlertasPendentes, isAdmin, isGestor]);
 
-
+  useEffect(() => {
     if (toastShown.current || alerts.length === 0) return;
     toastShown.current = true;
     const critical = alerts.filter(a => a.severity === "critical");
