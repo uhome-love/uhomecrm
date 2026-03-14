@@ -491,7 +491,10 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
             await supabase.from("pipeline_leads").update({
               temperatura: "frio",
             } as any).eq("id", lead.id);
-          } catch {}
+          } catch (e) {
+            console.error("[OA] Falha ao atualizar temperatura (sem_interesse):", e);
+            toast.error("Erro ao atualizar temperatura do lead. Atualize manualmente no Pipeline.");
+          }
         } else if (resultado === "descarte_oa") {
           toast("📤 Lead enviado para Oferta Ativa — registrado no Pipeline", { duration: 2500 });
         }
