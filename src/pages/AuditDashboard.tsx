@@ -133,16 +133,22 @@ Retorne:
         </Card>
       )}
 
-      {/* Tabs: Logs + Errors */}
-      <Tabs defaultValue="logs">
+      {/* Tabs: Ops Events + Logs + Errors */}
+      <Tabs defaultValue="ops">
         <TabsList>
+          <TabsTrigger value="ops" className="gap-1.5">
+            <Radio className="h-3.5 w-3.5" /> Eventos Ops
+          </TabsTrigger>
           <TabsTrigger value="logs" className="gap-1.5">
             <FileText className="h-3.5 w-3.5" /> Logs de Auditoria
           </TabsTrigger>
           <TabsTrigger value="errors" className="gap-1.5">
-            <Activity className="h-3.5 w-3.5" /> Erros Recentes
+            <Activity className="h-3.5 w-3.5" /> Erros Automação
           </TabsTrigger>
         </TabsList>
+        <TabsContent value="ops" className="mt-4">
+          <OpsEventsPanel />
+        </TabsContent>
         <TabsContent value="logs" className="mt-4">
           <AuditLogPanel />
         </TabsContent>
