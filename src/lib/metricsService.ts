@@ -37,6 +37,7 @@ export interface CorretorKPIs {
   propostas: number;
   vendas: number;
   perdidos: number;
+  perdidos_unicos: number;
   vgv_gerado: number;
   vgv_assinado: number;
   pontos_gestao: number;
