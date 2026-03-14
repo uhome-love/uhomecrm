@@ -305,7 +305,7 @@ Deno.serve(async (req) => {
           }
         }
       } catch (notifyErr) {
-        console.error("CEO notification error (non-blocking):", notifyErr);
+        L.error("CEO notification error (non-blocking)", {}, notifyErr);
       }
     }
 
