@@ -276,6 +276,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
       messages, sendMessage, clearMessages, isLoading,
       alerts, addProactiveAlert, dismissAlert, unseenCount,
       currentPage, homiRole, userName,
+      knowledgeSource,
       conversationId,
     }}>
       {children}
