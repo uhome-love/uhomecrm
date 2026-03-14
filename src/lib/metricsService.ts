@@ -67,7 +67,7 @@ export async function fetchKPIs(
   });
 
   if (error) {
-    console.error("[metricsService] fetchKPIs error:", error);
+    log.error("metrics", "fetchKPIs RPC failed", { period, userId }, error);
     throw error;
   }
 

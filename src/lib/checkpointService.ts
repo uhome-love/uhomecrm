@@ -194,7 +194,7 @@ export async function fetchCanonicalCheckpointLines(
 
   const { data, error } = await query;
   if (error) {
-    console.error("[checkpointService] v_checkpoint_lines_canonical error:", error);
+    log.error("checkpoint", "v_checkpoint_lines_canonical query failed", { date, gerenteIds }, error);
     return [];
   }
   return data || [];
