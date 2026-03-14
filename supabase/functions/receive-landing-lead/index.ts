@@ -280,6 +280,7 @@ Deno.serve(async (req) => {
       acao: "landing_page_lead",
       descricao: `Lead via Landing Page: ${name} — ${empreendimento} (source: ${source})`,
       origem: "webhook",
+      request_id: traceId,
     }).then(r => { if (r.error) L.warn("Audit insert failed", {}, r.error); });
 
     return new Response(
