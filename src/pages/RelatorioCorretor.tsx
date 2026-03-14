@@ -227,13 +227,16 @@ export default function RelatorioCorretor() {
       prevEnd = format(endOfMonth(prev), "yyyy-MM-dd");
     }
 
-    const { data: cps } = await supabase
-      .from("checkpoints").select("id").eq("gerente_id", user.id).gte("data", prevStart).lte("data", prevEnd);
-    const cpIds = (cps || []).map(c => c.id);
-    if (cpIds.length === 0) return null;
-
+    // Single query via canonical view — no checkpoint join needed
     const { data: lines } = await supabase
-      .from("checkpoint_lines").select("*").eq("corretor_id", corretorId).in("checkpoint_id", cpIds);
+      .from("v_checkpoint_lines_canonical" as any)
+      .select("real_ligacoes, real_visitas_marcadas, real_visitas_realizadas, real_propostas, real_vgv_gerado, real_vgv_assinado")
+      .eq("team_member_id", corretorId)
+      .eq("checkpoint_gerente_id", user.id)
+      .gte("checkpoint_date", prevStart)
+      .lte("checkpoint_date", prevEnd);
+
+    if (!lines || lines.length === 0) return null;
 
     const prev = { ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
     (lines || []).forEach((l: any) => {

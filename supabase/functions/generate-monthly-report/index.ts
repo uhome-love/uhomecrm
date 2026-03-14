@@ -65,104 +65,96 @@ serve(async (req) => {
       await supabase.from("executive_reports").update({ status: "gerando", updated_at: new Date().toISOString() }).eq("id", reportId);
     }
 
-    // ═══ AGGREGATE DATA ═══
+    // ═══ AGGREGATE DATA via canonical view ═══
 
-    // 1. Checkpoints data
-    const { data: checkpoints } = await supabase
-      .from("checkpoints")
-      .select("id, gerente_id, data")
-      .gte("data", startDate)
-      .lte("data", endDate);
+    // 1. Checkpoint data via v_checkpoint_lines_canonical (single query, no joins)
+    const { data: lines } = await supabase
+      .from("v_checkpoint_lines_canonical")
+      .select("team_member_id, corretor_nome, checkpoint_gerente_id, real_leads, real_ligacoes, real_visitas_marcadas, real_visitas_realizadas, real_propostas, real_vgv_gerado, real_vgv_assinado, gerente_id")
+      .gte("checkpoint_date", startDate)
+      .lte("checkpoint_date", endDate);
 
-    const cpIds = (checkpoints || []).map(c => c.id);
-    let lines: any[] = [];
-    if (cpIds.length > 0) {
-      const { data: linesData } = await supabase
-        .from("checkpoint_lines")
-        .select("checkpoint_id, corretor_id, real_leads, real_ligacoes, real_visitas_marcadas, real_visitas_realizadas, real_propostas, real_vgv_gerado, real_vgv_assinado")
-        .in("checkpoint_id", cpIds);
-      lines = linesData || [];
-    }
+    // 2. Gerente names for context
+    const gerenteIds = [...new Set((lines || []).map((l: any) => l.checkpoint_gerente_id).filter(Boolean))];
+    const { data: gerenteProfiles } = gerenteIds.length > 0
+      ? await supabase.from("profiles").select("user_id, nome").in("user_id", gerenteIds)
+      : { data: [] };
+    const gerenteMap = new Map((gerenteProfiles || []).map((p: any) => [p.user_id, p.nome]));
 
-    // 2. Team members
-    const { data: teams } = await supabase.from("team_members").select("id, nome, gerente_id, equipe, user_id").eq("status", "ativo");
-    const teamMap = new Map((teams || []).map(t => [t.id, t]));
-
-    // 3. Gerentes (profiles)
-    const gerenteIds = [...new Set((checkpoints || []).map(c => c.gerente_id))];
-    const { data: gerenteProfiles } = await supabase.from("profiles").select("user_id, nome").in("user_id", gerenteIds);
-    const gerenteMap = new Map((gerenteProfiles || []).map(p => [p.user_id, p.nome]));
-
-    // 4. Aggregate by team/gerente
+    // 3. Aggregate by team/gerente and by corretor
     const byGerente: Record<string, any> = {};
     const byCorretor: Record<string, any> = {};
     const totals = { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
 
-    // Map checkpoint to gerente
-    const cpGerenteMap = new Map((checkpoints || []).map(c => [c.id, c.gerente_id]));
-
-    for (const l of lines) {
-      const gerenteId = cpGerenteMap.get(l.checkpoint_id);
-      const member = teamMap.get(l.corretor_id);
-      const nome = member?.nome || "Desconhecido";
-      const gerNome = gerenteMap.get(gerenteId || "") || "Desconhecido";
+    for (const l of (lines || []) as any[]) {
+      const gerenteId = l.checkpoint_gerente_id;
+      const nome = l.corretor_nome || "Desconhecido";
+      const gerNome = gerenteMap.get(gerenteId) || "Desconhecido";
 
       if (gerenteId && !byGerente[gerenteId]) {
         byGerente[gerenteId] = { nome: gerNome, leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
       }
-      if (!byCorretor[l.corretor_id]) {
-        byCorretor[l.corretor_id] = { nome, equipe: member?.equipe || gerNome, leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
+      if (!byCorretor[l.team_member_id]) {
+        byCorretor[l.team_member_id] = { nome, equipe: gerNome, leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
       }
 
       const fields = ["leads", "ligacoes", "visitas_marcadas", "visitas_realizadas", "propostas"];
       for (const f of fields) {
         const val = l[`real_${f}`] || 0;
         if (gerenteId) byGerente[gerenteId][f] += val;
-        byCorretor[l.corretor_id][f] += val;
+        byCorretor[l.team_member_id][f] += val;
         (totals as any)[f] += val;
       }
       const vgvG = l.real_vgv_gerado || 0;
       const vgvA = l.real_vgv_assinado || 0;
       if (gerenteId) { byGerente[gerenteId].vgv_gerado += vgvG; byGerente[gerenteId].vgv_assinado += vgvA; }
-      byCorretor[l.corretor_id].vgv_gerado += vgvG;
-      byCorretor[l.corretor_id].vgv_assinado += vgvA;
+      byCorretor[l.team_member_id].vgv_gerado += vgvG;
+      byCorretor[l.team_member_id].vgv_assinado += vgvA;
       totals.vgv_gerado += vgvG;
       totals.vgv_assinado += vgvA;
     }
 
-    // 5. Negocios data
-    const { data: pdns } = await supabase.from("negocios").select("*").gte("created_at", `${targetMes}-01`).lt("created_at", `${targetMes}-32`);
-    const pdnCount = (pdns || []).length;
-    const pdnVgv = (pdns || []).reduce((s, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
-    const pdnAssinado = (pdns || []).filter((p: any) => p.fase === "assinado").reduce((s, p: any) => s + Number(p.vgv_final || p.vgv_estimado || 0), 0);
+    // 4. Negocios data via v_kpi_negocios for partnership-aware + deduplicated lost deals
+    const { data: kpiNegocios } = await supabase
+      .from("v_kpi_negocios")
+      .select("id, auth_user_id, vgv_rateado, fase, conta_venda, conta_perdido")
+      .gte("created_at", `${targetMes}-01`)
+      .lt("created_at", `${targetMes}-32`);
 
-    // 6. Previous month data for comparison
+    const pdnRows = kpiNegocios || [];
+    // Unique deal count (deduplicated by id)
+    const uniqueDealIds = new Set(pdnRows.map((r: any) => r.id));
+    const pdnCount = uniqueDealIds.size;
+    const pdnVgv = pdnRows.reduce((s: number, p: any) => s + Number(p.vgv_rateado || 0), 0);
+    const pdnAssinado = pdnRows.filter((p: any) => p.conta_venda === 1).reduce((s: number, p: any) => s + Number(p.vgv_rateado || 0), 0);
+    // Executive lost deals: deduplicated by deal id
+    const uniqueLostIds = new Set(pdnRows.filter((p: any) => p.conta_perdido === 1).map((r: any) => r.id));
+    const perdidosUnicos = uniqueLostIds.size;
+
+    // 5. Previous month data via canonical view
     const prevMonth = new Date(year, month - 2, 1);
     const prevMes = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
     const prevStart = `${prevMes}-01`;
     const prevEnd = new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 0).toISOString().split("T")[0];
 
-    const { data: prevCps } = await supabase.from("checkpoints").select("id").gte("data", prevStart).lte("data", prevEnd);
-    const prevCpIds = (prevCps || []).map(c => c.id);
-    let prevTotals = { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
+    const { data: prevLines } = await supabase
+      .from("v_checkpoint_lines_canonical")
+      .select("real_leads, real_ligacoes, real_visitas_marcadas, real_visitas_realizadas, real_propostas, real_vgv_gerado, real_vgv_assinado")
+      .gte("checkpoint_date", prevStart)
+      .lte("checkpoint_date", prevEnd);
 
-    if (prevCpIds.length > 0) {
-      const { data: prevLines } = await supabase
-        .from("checkpoint_lines")
-        .select("real_leads, real_ligacoes, real_visitas_marcadas, real_visitas_realizadas, real_propostas, real_vgv_gerado, real_vgv_assinado")
-        .in("checkpoint_id", prevCpIds);
-      for (const l of (prevLines || [])) {
-        prevTotals.leads += l.real_leads || 0;
-        prevTotals.ligacoes += l.real_ligacoes || 0;
-        prevTotals.visitas_marcadas += l.real_visitas_marcadas || 0;
-        prevTotals.visitas_realizadas += l.real_visitas_realizadas || 0;
-        prevTotals.propostas += l.real_propostas || 0;
-        prevTotals.vgv_gerado += l.real_vgv_gerado || 0;
-        prevTotals.vgv_assinado += l.real_vgv_assinado || 0;
-      }
+    let prevTotals = { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
+    for (const l of (prevLines || []) as any[]) {
+      prevTotals.leads += l.real_leads || 0;
+      prevTotals.ligacoes += l.real_ligacoes || 0;
+      prevTotals.visitas_marcadas += l.real_visitas_marcadas || 0;
+      prevTotals.visitas_realizadas += l.real_visitas_realizadas || 0;
+      prevTotals.propostas += l.real_propostas || 0;
+      prevTotals.vgv_gerado += l.real_vgv_gerado || 0;
+      prevTotals.vgv_assinado += l.real_vgv_assinado || 0;
     }
 
-    // 7. Marketing/campaign data
+    // 6. Marketing/campaign data
     const { data: mktEntries } = await supabase
       .from("marketing_entries")
       .select("campanha, empreendimento, canal, investimento, leads_gerados, visitas, propostas, vendas")
@@ -170,7 +162,7 @@ serve(async (req) => {
       .lte("created_at", endDate + "T23:59:59");
 
     const campanhas: Record<string, any> = {};
-    for (const e of (mktEntries || [])) {
+    for (const e of (mktEntries || []) as any[]) {
       const key = e.campanha || e.empreendimento || e.canal;
       if (!campanhas[key]) campanhas[key] = { nome: key, investimento: 0, leads: 0, visitas: 0, propostas: 0, vendas: 0 };
       campanhas[key].investimento += e.investimento || 0;
@@ -207,7 +199,7 @@ serve(async (req) => {
 
     // Metricas summary
     const ticketMedio = totals.propostas > 0 ? Math.round(totals.vgv_assinado / totals.propostas) : 0;
-    const metricas = { ...totals, pdnCount, pdnVgv, pdnAssinado, ticketMedio };
+    const metricas = { ...totals, pdnCount, pdnVgv, pdnAssinado, perdidosUnicos, ticketMedio };
 
     // ═══ AI DIAGNOSIS ═══
     const aiPrompt = `Gere um relatório executivo mensal COMPLETO para apresentação em reunião de diretoria.
@@ -223,7 +215,8 @@ MÉTRICAS DO MÊS:
 - VGV Gerado: ${fmtCurrency(totals.vgv_gerado)}
 - VGV Assinado: ${fmtCurrency(totals.vgv_assinado)}
 - Ticket Médio: ${fmtCurrency(ticketMedio)}
-- Negócios PDN: ${pdnCount} | VGV PDN: ${fmtCurrency(pdnVgv)} | PDN Assinado: ${fmtCurrency(pdnAssinado)}
+- Negócios ativos: ${pdnCount} | VGV PDN: ${fmtCurrency(pdnVgv)} | PDN Assinado: ${fmtCurrency(pdnAssinado)}
+- Negócios perdidos (únicos): ${perdidosUnicos}
 
 COMPARATIVO MÊS ANTERIOR:
 ${Object.entries(comparativo).map(([k, v]: [string, any]) => `- ${k}: ${v.anterior} → ${v.atual} (${v.variacao > 0 ? "+" : ""}${v.variacao}%)`).join("\n")}
@@ -232,7 +225,7 @@ RANKING EQUIPES:
 ${Object.entries(byGerente).map(([id, g]: [string, any]) => `- ${g.nome}: ${g.ligacoes} lig, ${g.visitas_marcadas} vmar, ${g.visitas_realizadas} vreal, ${g.propostas} prop, VGV Ass: ${fmtCurrency(g.vgv_assinado)}`).join("\n")}
 
 TOP 5 CORRETORES:
-${topCorretores.map((c: any, i) => `${i + 1}. ${c.nome} (${c.equipe}): ${c.ligacoes} lig, ${c.visitas_realizadas} vreal, ${c.propostas} prop, VGV: ${fmtCurrency(c.vgv_assinado)}`).join("\n")}
+${topCorretores.map((c: any, i: number) => `${i + 1}. ${c.nome} (${c.equipe}): ${c.ligacoes} lig, ${c.visitas_realizadas} vreal, ${c.propostas} prop, VGV: ${fmtCurrency(c.vgv_assinado)}`).join("\n")}
 
 CAMPANHAS:
 ${Object.values(campanhas).slice(0, 5).map((c: any) => `- ${c.nome}: Invest ${fmtCurrency(c.investimento)}, ${c.leads} leads, ${c.visitas} visitas, ${c.vendas} vendas`).join("\n") || "Sem dados de campanha no período"}
@@ -326,7 +319,7 @@ ${diagnosticoIa}
 
     // Notify admins
     const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
-    for (const admin of (admins || [])) {
+    for (const admin of (admins || []) as any[]) {
       await supabase.from("notifications").insert({
         user_id: admin.user_id,
         categoria: "relatorio",
