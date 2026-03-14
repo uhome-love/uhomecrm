@@ -1533,21 +1533,28 @@ export type Database = {
       empreendimento_overrides: {
         Row: {
           area_privativa: number | null
+          argumentos_venda: string | null
           bairro: string | null
           codigo: string
           cor_primaria: string | null
           created_at: string | null
           descricao: string | null
+          descricao_completa: string | null
           diferenciais: string[] | null
           dormitorios: number | null
+          estrategia_conversao: string | null
           fotos: string[] | null
+          hashtags: string[] | null
           id: string
           landing_subtitulo: string | null
           landing_titulo: string | null
           mapa_url: string | null
           nome: string | null
+          objecoes: Json | null
+          perfil_cliente: string | null
           plantas: string[] | null
           previsao_entrega: string | null
+          segmento_comercial: string | null
           status_obra: string | null
           suites: number | null
           tipologias: Json | null
@@ -1561,21 +1568,28 @@ export type Database = {
         }
         Insert: {
           area_privativa?: number | null
+          argumentos_venda?: string | null
           bairro?: string | null
           codigo: string
           cor_primaria?: string | null
           created_at?: string | null
           descricao?: string | null
+          descricao_completa?: string | null
           diferenciais?: string[] | null
           dormitorios?: number | null
+          estrategia_conversao?: string | null
           fotos?: string[] | null
+          hashtags?: string[] | null
           id?: string
           landing_subtitulo?: string | null
           landing_titulo?: string | null
           mapa_url?: string | null
           nome?: string | null
+          objecoes?: Json | null
+          perfil_cliente?: string | null
           plantas?: string[] | null
           previsao_entrega?: string | null
+          segmento_comercial?: string | null
           status_obra?: string | null
           suites?: number | null
           tipologias?: Json | null
@@ -1589,21 +1603,28 @@ export type Database = {
         }
         Update: {
           area_privativa?: number | null
+          argumentos_venda?: string | null
           bairro?: string | null
           codigo?: string
           cor_primaria?: string | null
           created_at?: string | null
           descricao?: string | null
+          descricao_completa?: string | null
           diferenciais?: string[] | null
           dormitorios?: number | null
+          estrategia_conversao?: string | null
           fotos?: string[] | null
+          hashtags?: string[] | null
           id?: string
           landing_subtitulo?: string | null
           landing_titulo?: string | null
           mapa_url?: string | null
           nome?: string | null
+          objecoes?: Json | null
+          perfil_cliente?: string | null
           plantas?: string[] | null
           previsao_entrega?: string | null
+          segmento_comercial?: string | null
           status_obra?: string | null
           suites?: number | null
           tipologias?: Json | null
