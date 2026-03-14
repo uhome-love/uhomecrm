@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
 
         executed++;
       } catch (stepErr) {
-        console.error("Step execution error:", stepErr);
+        L.error("Step execution error", { enrollmentId: enrollment.id }, stepErr);
         errors++;
       }
     }
