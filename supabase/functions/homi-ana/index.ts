@@ -6,7 +6,7 @@
  */
 import { withCorsAndErrorHandling, requireApiKey, callAI } from "../_shared/ai-helpers.ts";
 import { jsonResponse, errorResponse } from "../_shared/cors.ts";
-import { loadEnterpriseKnowledge, formatForMarketing } from "../_shared/enterprise-knowledge.ts";
+import { loadEnterpriseKnowledge, formatForMarketing, getKnowledgeSourceReport } from "../_shared/enterprise-knowledge.ts";
 
 async function buildSystemPrompt(): Promise<string> {
   const knowledge = await loadEnterpriseKnowledge();
