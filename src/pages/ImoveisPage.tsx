@@ -514,7 +514,7 @@ const PropertyCardList = React.memo(function PropertyCardList({ item, idx, isCam
       </div>
     </Card>
   );
-}
+});
 
 // ══════════════════════════════════════════
 // ██  MAIN PAGE
