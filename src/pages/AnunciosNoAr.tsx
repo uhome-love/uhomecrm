@@ -123,6 +123,14 @@ type EmpreendimentoOverride = {
   previsao_entrega: string | null;
   descricao: string | null;
   fotos: string[];
+  // AI Knowledge fields (Phase 2)
+  descricao_completa: string | null;
+  objecoes: Array<{ objecao: string; resposta: string }> | null;
+  estrategia_conversao: string | null;
+  perfil_cliente: string | null;
+  argumentos_venda: string | null;
+  segmento_comercial: string | null;
+  hashtags: string[] | null;
 };
 
 type Material = {
