@@ -275,24 +275,25 @@ Deno.serve(async (req) => {
 
             if (!leadData) continue;
 
-            // ── AUTO-REDISTRIBUTE: call distribute-lead excluding the timed-out broker ──
+            // ── AUTO-REDISTRIBUTE with retry + duplicate guard ──
             if (leadData.aceite_status === "pendente_distribuicao") {
-              try {
-                const distResponse = await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${serviceKey}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    action: "distribute_single",
-                    pipeline_lead_id: expired.pipeline_lead_id,
-                  }),
-                });
-                const distResult = await distResponse.json();
-                L.info("Auto-redistribute lead", { leadId: expired.pipeline_lead_id, result: distResult });
-              } catch (distErr) {
-                L.warn("Auto-redistribute failed", { leadId: expired.pipeline_lead_id }, distErr);
+              // Re-check status right before distributing to avoid duplicate assignment
+              const { data: freshLead } = await supabase
+                .from("pipeline_leads")
+                .select("aceite_status, corretor_id")
+                .eq("id", expired.pipeline_lead_id)
+                .maybeSingle();
+
+              if (freshLead?.aceite_status !== "pendente_distribuicao") {
+                L.info("Skip redistribute — status changed", { leadId: expired.pipeline_lead_id, status: freshLead?.aceite_status });
+              } else {
+                const ok = await distributeWithRetry(supabaseUrl, serviceKey, expired.pipeline_lead_id, traceId);
+                if (ok) {
+                  L.info("Auto-redistribute succeeded", { leadId: expired.pipeline_lead_id });
+                } else {
+                  L.warn("Auto-redistribute failed after retries", { leadId: expired.pipeline_lead_id });
+                  logOps("error", "business", "Auto-redistribute failed after retries", { lead_id: expired.pipeline_lead_id }, "All retry attempts exhausted");
+                }
               }
             }
 
