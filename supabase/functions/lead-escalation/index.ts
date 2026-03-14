@@ -50,8 +50,28 @@ async function sendWhatsApp(supabaseUrl: string, serviceKey: string, telefone: s
   }
 }
 
-async function distributeWithRetry(supabaseUrl: string, serviceKey: string, leadId: string, traceId: string, maxRetries = 2): Promise<boolean> {
+async function distributeWithRetry(
+  supabaseUrl: string,
+  serviceKey: string,
+  leadId: string,
+  traceId: string,
+  maxRetries = 2,
+  supabase?: any,
+): Promise<boolean> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // Idempotency guard: re-check lead status before each retry attempt
+    if (attempt > 0 && supabase) {
+      const { data: check } = await supabase
+        .from("pipeline_leads")
+        .select("aceite_status, corretor_id")
+        .eq("id", leadId)
+        .maybeSingle();
+      if (!check || check.aceite_status !== "pendente_distribuicao" || check.corretor_id) {
+        _emit("info", `Retry ${attempt} skipped — lead already handled`, traceId, { leadId, status: check?.aceite_status });
+        return true; // Not a failure — lead was handled by another path
+      }
+    }
+
     try {
       const resp = await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
         method: "POST",
@@ -64,11 +84,17 @@ async function distributeWithRetry(supabaseUrl: string, serviceKey: string, lead
       });
       if (resp.ok) return true;
       const body = await resp.text().catch(() => "");
-      console.warn(`distribute-lead attempt ${attempt} failed (${resp.status}): ${body}`);
+      _emit("warn", `distribute-lead attempt ${attempt} failed (${resp.status})`, traceId, { leadId, body });
     } catch (err) {
-      console.warn(`distribute-lead attempt ${attempt} error:`, err);
+      _emit("warn", `distribute-lead attempt ${attempt} error`, traceId, { leadId }, err);
     }
-    if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+
+    if (attempt < maxRetries) {
+      // Exponential backoff with jitter: ~1s, ~2.5s
+      const baseMs = 1000 * Math.pow(2, attempt);
+      const jitter = Math.random() * 500;
+      await new Promise(r => setTimeout(r, baseMs + jitter));
+    }
   }
   return false;
 }
