@@ -133,7 +133,8 @@ export default function HomiGerencialChat() {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsertAssistant(content);
-          } catch {
+          } catch (e) {
+            console.warn("[HomiGerencialChat] Partial SSE chunk, buffering:", e);
             textBuffer = line + "\n" + textBuffer;
             break;
           }
