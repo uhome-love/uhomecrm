@@ -86,8 +86,8 @@ export default function HomiObjectionHelper({ leadNome, leadEmpreendimento, sele
             const parsed = JSON.parse(payload);
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) reply += delta;
-          } catch {
-            // skip malformed lines
+          } catch (e) {
+            console.warn("[HomiObjectionHelper] Malformed SSE line:", e);
           }
         }
       }

@@ -158,12 +158,13 @@ export default function HomiGerencialChat() {
       const finalMessages = [...allMessages, { role: "assistant" as const, content: assistantSoFar }];
       setMessages(finalMessages);
       saveConversation(finalMessages);
-    } catch (e) {
-      console.error("Chat error:", e);
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      console.error("[HomiGerencialChat] Stream error:", e);
       toast.error("Erro ao comunicar com o HOMI");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const sendMessage = async (text?: string) => {

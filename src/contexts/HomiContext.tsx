@@ -322,7 +322,7 @@ function emitFallbackWarning() {
     const callerLine = lines.find(l => !l.includes("HomiContext")) || lines[0] || "";
     const match = callerLine.match(/\/src\/(.+?)(?:\?|:)/);
     if (match) callerHint = match[1];
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[HomiContext] Failed to extract caller hint:", e); }
 
   // Deduplicate by caller
   if (_warnedCallers.has(callerHint)) return;

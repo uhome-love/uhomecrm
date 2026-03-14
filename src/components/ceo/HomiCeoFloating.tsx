@@ -171,8 +171,11 @@ export default function HomiCeoFloating({ dashboardData }: Props) {
           } catch (e) { console.warn("[HomiCeoFloating] Partial SSE chunk:", e); }
         }
       }
-    } catch {
-      toast.error("Erro ao enviar mensagem");
+    } catch (e: any) {
+      if (e?.name !== "AbortError") {
+        console.error("[HomiCeoFloating] Stream error:", e);
+        toast.error("Erro ao enviar mensagem");
+      }
     } finally {
       setStreaming(false);
     }
