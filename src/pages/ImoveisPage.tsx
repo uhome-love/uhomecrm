@@ -65,9 +65,114 @@ const BAIRROS_POA = [
   "Vila Conceição", "Vila Ipiranga", "Vila Jardim", "Vila Nova",
 ];
 
-import { PropertyCardGrid, PropertyCardList } from "@/components/imoveis/PropertyCards";
+// ══════════════════════════════════════════
+// ██  MAIN PAGE
+// ══════════════════════════════════════════
 
-  // ── Typesense search ──
+export default function ImoveisPage() {
+  const { user } = useAuth();
+  const { search: typesenseSearch, autocomplete: typesenseAutocomplete, loading: tsLoading } = useTypesenseSearch();
+  const { searchWithAI, clearAISearch, removeTag, aiLoading, aiResult, aiError, aiProperties, aiTotal, aiSearchTime } = useAISearch();
+  const [imoveis, setImoveis] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [campanhaAtiva, setCampanhaAtiva] = useState(false);
+  const [campanhaOverrides, setCampanhaOverrides] = useState<{ codigo: string; nome: string; fotos: string[]; valor_min: number | null; valor_max: number | null; bairro: string | null; dormitorios: number | null; descricao: string | null; status_obra: string | null; previsao_entrega: string | null }[]>([]);
+  const [uhomeOnly, setUhomeOnly] = useState(false);
+
+  // Load campaign codes from empreendimento_overrides (source of truth for "Anúncios no Ar")
+  useEffect(() => {
+    supabase.from("empreendimento_overrides").select("codigo, nome, fotos, valor_min, valor_max, bairro, dormitorios, descricao, status_obra, previsao_entrega").then(({ data }) => {
+      if (data && data.length > 0) {
+        setCampanhaOverrides(data.map(d => ({
+          codigo: d.codigo,
+          nome: d.nome || d.codigo,
+          fotos: d.fotos || [],
+          valor_min: d.valor_min,
+          valor_max: d.valor_max,
+          bairro: d.bairro,
+          dormitorios: d.dormitorios,
+          descricao: d.descricao,
+          status_obra: d.status_obra,
+          previsao_entrega: d.previsao_entrega,
+        })));
+      } else {
+        setCampanhaOverrides(CAMPANHA_CODES_FALLBACK.map(c => ({ codigo: c.codigo, nome: c.nome, fotos: [], valor_min: null, valor_max: null, bairro: null, dormitorios: null, descricao: null, status_obra: null, previsao_entrega: null })));
+      }
+    });
+  }, []);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [sortBy, setSortBy] = useState("relevancia");
+  const [searchTimeMs, setSearchTimeMs] = useState<number | null>(null);
+  const [searchMode, setSearchMode] = useState<"normal" | "ai">("normal");
+  const [aiQuery, setAiQuery] = useState("");
+
+  // Autocomplete
+  const [suggestions, setSuggestions] = useState<{ type: string; value: string }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Vitrine selection
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [creatingVitrine, setCreatingVitrine] = useState(false);
+  const [vitrineLink, setVitrineLink] = useState<string | null>(null);
+
+  // Filters — reactive (auto-apply on change)
+  const [contrato, setContrato] = useState("venda");
+  const [tipo, setTipo] = useState<string[]>([]);
+  const [bairro, setBairro] = useState<string[]>([]);
+  const [bairroSearch, setBairroSearch] = useState("");
+  const [dormitorios, setDormitorios] = useState<string[]>([]);
+  const [suitesFilter, setSuitesFilter] = useState("");
+  const [vagas, setVagas] = useState("");
+  const [areaRange, setAreaRange] = useState<[number, number]>([0, 500]);
+  const [valorRange, setValorRange] = useState<[number, number]>([0, 5_000_000]);
+  const [somenteObras, setSomenteObras] = useState(false);
+
+  // Typesense is always attempted (no permanent disable)
+
+  const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const filteredBairros = useMemo(() => {
+    if (!bairroSearch) return BAIRROS_POA;
+    const q = bairroSearch.toLowerCase();
+    return BAIRROS_POA.filter((b) => b.toLowerCase().includes(q));
+  }, [bairroSearch]);
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(`uhome-favorites-${user?.id}`);
+    if (saved) setFavorites(new Set(JSON.parse(saved)));
+  }, [user?.id]);
+
+  const toggleFavorite = (id: string) => {
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      localStorage.setItem(`uhome-favorites-${user?.id}`, JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  // Abort controller for cancelling in-flight requests
+  const abortRef = useRef<AbortController | null>(null);
+  // Sequence number to prevent stale responses from updating state
+  const fetchSeqRef = useRef(0);
+
+  // mapTypesenseDocs imported from @/lib/typesenseMapping
+
+
   const fetchViaTypesense = useCallback(async (pageNum: number, seq: number): Promise<"ok" | "aborted" | "error"> => {
     try {
       const filterBy = buildFilterBy({
