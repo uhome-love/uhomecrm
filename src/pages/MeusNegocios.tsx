@@ -570,32 +570,46 @@ export default function MeusNegocios() {
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
 
-  // Load partnerships for negocios
-  const [parceriaMap, setParceriaMap] = useState<Record<string, { label: string; isParceria: boolean }>>({});
+  // Load partnerships from v_kpi_negocios (official source of truth)
+  const [parceriaMap, setParceriaMap] = useState<Record<string, { label: string; isParceria: boolean; fatorSplit: number }>>({});
   useEffect(() => {
     if (!negocios.length) return;
-    const leadIds = negocios.map(n => n.pipeline_lead_id).filter(Boolean) as string[];
-    if (!leadIds.length) return;
+    const dealIds = negocios.map(n => n.id).filter(Boolean);
+    if (!dealIds.length) return;
     (async () => {
-      const { data } = await supabase
-        .from("pipeline_parcerias")
-        .select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id")
-        .eq("status", "ativa")
-        .in("pipeline_lead_id", leadIds);
-      if (!data || !data.length) return;
-      const allUserIds = [...new Set(data.flatMap(p => [p.corretor_principal_id, p.corretor_parceiro_id]))];
-      const { data: profiles } = await supabase.from("profiles").select("user_id, nome").in("user_id", allUserIds);
-      const { data: members } = await supabase.from("team_members").select("user_id, nome").in("user_id", allUserIds);
+      // Get partnership rows from canonical view
+      const { data: kpiRows } = await supabase.from("v_kpi_negocios")
+        .select("id, auth_user_id, pipeline_lead_id, is_parceria, fator_split")
+        .eq("is_parceria", true)
+        .in("id", dealIds);
+      if (!kpiRows || !kpiRows.length) return;
+
+      // Group by pipeline_lead_id to find both partners
+      const partnersByLead: Record<string, { auth_user_ids: string[]; fator_split: number }> = {};
+      kpiRows.forEach(r => {
+        const plId = r.pipeline_lead_id;
+        if (!plId) return;
+        if (!partnersByLead[plId]) partnersByLead[plId] = { auth_user_ids: [], fator_split: Number(r.fator_split || 0.5) };
+        if (r.auth_user_id && !partnersByLead[plId].auth_user_ids.includes(r.auth_user_id)) {
+          partnersByLead[plId].auth_user_ids.push(r.auth_user_id);
+        }
+      });
+
+      // Resolve auth_user_ids to names
+      const allAuthIds = [...new Set(Object.values(partnersByLead).flatMap(p => p.auth_user_ids))];
       const nameMap: Record<string, string> = {};
-      (profiles || []).forEach((p: any) => { if (p.user_id && p.nome) nameMap[p.user_id] = p.nome; });
-      (members || []).forEach((m: any) => { if (m.user_id && m.nome) nameMap[m.user_id] = m.nome; });
-      const result: Record<string, { label: string; isParceria: boolean }> = {};
-      data.forEach(p => {
-        const parceiroNome = nameMap[p.corretor_parceiro_id] || "Parceiro";
-        const principalNome = nameMap[p.corretor_principal_id] || "Principal";
-        result[p.pipeline_lead_id] = {
-          label: `${principalNome.split(" ")[0]} ↔ ${parceiroNome.split(" ")[0]}`,
+      if (allAuthIds.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("user_id, nome").in("user_id", allAuthIds);
+        (profiles || []).forEach((p: any) => { if (p.user_id && p.nome) nameMap[p.user_id] = p.nome; });
+      }
+
+      const result: Record<string, { label: string; isParceria: boolean; fatorSplit: number }> = {};
+      Object.entries(partnersByLead).forEach(([plId, info]) => {
+        const names = info.auth_user_ids.map(id => (nameMap[id] || "Parceiro").split(" ")[0]);
+        result[plId] = {
+          label: names.length >= 2 ? `${names[0]} ↔ ${names[1]}` : names[0] || "Parceria",
           isParceria: true,
+          fatorSplit: info.fator_split,
         };
       });
       setParceriaMap(result);
