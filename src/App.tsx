@@ -93,6 +93,7 @@ const RhConversas = lazy(() => import("./pages/RhConversas"));
 const RhSalaReuniao = lazy(() => import("./pages/RhSalaReuniao"));
 const RhEntrevistas = lazy(() => import("./pages/RhEntrevistas"));
 const DevAIPage = lazy(() => import("./pages/DevAIPage"));
+const AlertasPage = lazy(() => import("./pages/AlertasPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
