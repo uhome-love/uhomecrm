@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
     }
 
     if (!telefone) {
-      console.warn("TIKTOK-LEAD IGNORED — missing/invalid phone", JSON.stringify({ name, email, campaignId }));
+      L.warn("Missing phone", { name, email, campaignId });
       return new Response(
         JSON.stringify({ success: true, action: "ignored_missing_phone", reason: "telefone obrigatório" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
