@@ -11,7 +11,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import {
-  Search, Building2, Loader2, ChevronLeft, ChevronRight,
+  Search, Building2, Loader2, ChevronLeft, ChevronRight, Phone,
   MapPin, Megaphone, Check, X, Share2, Link2, Copy, CalendarClock,
   LayoutGrid, List, Heart, Zap,
   Sparkles, Brain, ArrowRight, Map
