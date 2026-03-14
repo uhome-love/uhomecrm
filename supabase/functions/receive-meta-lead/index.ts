@@ -447,7 +447,7 @@ Deno.serve(async (req) => {
       );
 
     if (registryError) {
-      console.warn("META-LEAD registry upsert warning:", registryError.message);
+      L.warn("Registry upsert warn", { dedupRegistryId }, registryError);
     }
 
     // ── Auto-distribute via roleta ──
