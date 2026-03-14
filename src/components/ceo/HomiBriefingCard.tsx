@@ -37,7 +37,7 @@ export default function HomiBriefingCard({ dashboardData }: Props) {
 
   const handleToggle = (open: boolean) => {
     setIsOpen(open);
-    try { localStorage.setItem(STORAGE_KEY, open ? "open" : "closed"); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, open ? "open" : "closed"); } catch (e) { console.warn("[HomiBriefingCard] localStorage write error:", e); }
   };
 
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
