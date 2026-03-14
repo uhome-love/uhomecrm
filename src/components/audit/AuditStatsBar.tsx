@@ -40,10 +40,11 @@ export function AuditStatsBar() {
   }, []);
 
   const items = [
-    { icon: FileText, label: "Eventos (24h)", value: stats.total24h, color: "text-blue-500" },
-    { icon: AlertTriangle, label: "Erros (48h)", value: stats.errors48h, color: stats.errors48h > 0 ? "text-destructive" : "text-green-500" },
-    { icon: Activity, label: "Módulos ativos", value: stats.modules, color: "text-purple-500" },
-    { icon: Zap, label: "Com trace ID", value: stats.traced, color: "text-amber-500" },
+    { icon: FileText, label: "Audit Logs (24h)", value: stats.total24h, color: "text-blue-500" },
+    { icon: Radio, label: "Ops Events (24h)", value: stats.opsEvents24h, color: "text-purple-500" },
+    { icon: AlertTriangle, label: "Erros Ops (24h)", value: stats.opsErrors24h, color: stats.opsErrors24h > 0 ? "text-destructive" : "text-green-500" },
+    { icon: AlertTriangle, label: "Erros Automação (48h)", value: stats.errors48h, color: stats.errors48h > 0 ? "text-destructive" : "text-green-500" },
+    { icon: Zap, label: "Com Trace ID", value: stats.traced, color: "text-amber-500" },
   ];
 
   return (
