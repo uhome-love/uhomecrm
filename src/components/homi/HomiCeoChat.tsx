@@ -87,7 +87,7 @@ export default function HomiCeoChat() {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ messages: allMessages, quickAction }),
-      });
+        signal: abortRef.current.signal,
 
       if (!resp.ok) {
         const errorData = await resp.json().catch(() => ({}));
