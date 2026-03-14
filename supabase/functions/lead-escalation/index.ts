@@ -345,6 +345,61 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 4c. Sweep stuck leads — catch pendente_distribuicao that 4b missed (previous retry failures)
+    let stuckRedistributed = 0;
+    try {
+      const threeMinAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+      const { data: stuckLeads } = await supabase
+        .from("pipeline_leads")
+        .select("id, nome, empreendimento")
+        .eq("aceite_status", "pendente_distribuicao")
+        .is("corretor_id", null)
+        .lt("updated_at", threeMinAgo)    // stuck for >3 min (not being handled by 4b)
+        .gt("updated_at", thirtyMinAgo);  // cap at 30 min to avoid ancient orphans
+
+      if (stuckLeads && stuckLeads.length > 0) {
+        for (const stuck of stuckLeads) {
+          // Cap: check how many timeout entries exist for this lead (max 5 total redistribute attempts)
+          const { count } = await supabase
+            .from("distribuicao_historico")
+            .select("id", { count: "exact", head: true })
+            .eq("pipeline_lead_id", stuck.id)
+            .eq("acao", "timeout");
+
+          if ((count || 0) >= 5) {
+            L.warn("Stuck lead exceeded max redistribute attempts — requires manual intervention", { leadId: stuck.id, attempts: count });
+            logOps("warn", "business", "Stuck lead max attempts reached", { lead_id: stuck.id, attempts: count }, "Requires manual CEO queue assignment");
+            continue;
+          }
+
+          // Double-check status atomically before calling distribute
+          const { data: freshCheck } = await supabase
+            .from("pipeline_leads")
+            .select("aceite_status, corretor_id")
+            .eq("id", stuck.id)
+            .maybeSingle();
+
+          if (freshCheck?.aceite_status !== "pendente_distribuicao" || freshCheck?.corretor_id) {
+            L.info("Stuck sweep — status changed, skipping", { leadId: stuck.id, status: freshCheck?.aceite_status });
+            continue;
+          }
+
+          const ok = await distributeWithRetry(supabaseUrl, serviceKey, stuck.id, traceId);
+          if (ok) {
+            stuckRedistributed++;
+            L.info("Stuck lead redistributed successfully", { leadId: stuck.id, previousAttempts: count });
+          } else {
+            L.warn("Stuck lead redistribute failed — will retry next cycle", { leadId: stuck.id, attempt: (count || 0) + 1 });
+            logOps("warn", "business", "Stuck lead redistribute retry failed", { lead_id: stuck.id, attempt: (count || 0) + 1 }, "Will retry next cron cycle");
+          }
+        }
+      }
+    } catch (stuckErr) {
+      L.error("Stuck leads sweep error (non-blocking)", {}, stuckErr);
+    }
+
     // 5. Clean expired OA locks
     const { data: cleanedCount, error: cleanError } = await supabase.rpc(
       "cleanup_expired_locks"
@@ -356,13 +411,14 @@ Deno.serve(async (req) => {
       push_sent: pushSent,
       stale_alerts: staleCount || 0,
       recycled: recycledCount || 0,
+      stuck_redistributed: stuckRedistributed,
       locks_cleaned: cleanedCount || 0,
       timestamp: new Date().toISOString(),
     };
 
     L.info("Lead escalation run", result);
-    if (result.escalated > 0 || result.recycled > 0) {
-      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled`, result as unknown as Record<string, unknown>);
+    if (result.escalated > 0 || result.recycled > 0 || result.stuck_redistributed > 0) {
+      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled, ${result.stuck_redistributed} stuck retried`, result as unknown as Record<string, unknown>);
     }
 
     return new Response(JSON.stringify(result), {
