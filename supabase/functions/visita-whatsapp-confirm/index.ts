@@ -39,29 +39,73 @@ function formatTime(timeStr: string | null): string {
   return timeStr.substring(0, 5);
 }
 
-async function sendWhatsApp(apiKey: string, phone: string, message: string) {
-  const formattedPhone = formatPhone(phone);
+// ─── Retry config ───
+// Max 2 retries (3 total attempts). Delays: 1s, 3s (exponential backoff).
+// Only retries on transient errors: network failures, 429, 5xx.
+// 4xx (except 429) are permanent → no retry to avoid duplicate sends.
+const MAX_ATTEMPTS = 3;
+const BASE_DELAY_MS = 1000;
 
-  const resp = await fetch(DIALOG_API_URL, {
-    method: "POST",
-    headers: {
-      "D360-API-KEY": apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to: formattedPhone,
-      type: "text",
-      text: { body: message },
-    }),
+function isTransient(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+async function sendWhatsApp(
+  apiKey: string,
+  phone: string,
+  message: string,
+  logger?: ReturnType<typeof makeLogger>,
+): Promise<{ data: Record<string, unknown>; attempts: number }> {
+  const formattedPhone = formatPhone(phone);
+  const body = JSON.stringify({
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: formattedPhone,
+    type: "text",
+    text: { body: message },
   });
 
-  const data = await resp.json();
-  if (!resp.ok) {
-    throw new Error(data?.error?.message || `360dialog error: ${resp.status}`);
+  let lastErr: Error | null = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const resp = await fetch(DIALOG_API_URL, {
+        method: "POST",
+        headers: { "D360-API-KEY": apiKey, "Content-Type": "application/json" },
+        body,
+      });
+
+      const data = await resp.json();
+
+      if (resp.ok) {
+        if (attempt > 1) logger?.info("WhatsApp delivered after retry", { attempt, phone: phone.slice(-4) });
+        return { data, attempts: attempt };
+      }
+
+      // Permanent error → don't retry to avoid duplicate sends
+      if (!isTransient(resp.status)) {
+        throw new Error(data?.error?.message || `360dialog error: ${resp.status}`);
+      }
+
+      // Transient → will retry
+      lastErr = new Error(data?.error?.message || `360dialog transient ${resp.status}`);
+      logger?.warn("WhatsApp transient error, will retry", { attempt, status: resp.status, phone: phone.slice(-4) });
+    } catch (fetchErr) {
+      // Network-level error (DNS, timeout) → transient, retry
+      lastErr = fetchErr instanceof Error ? fetchErr : new Error(String(fetchErr));
+      if (attempt < MAX_ATTEMPTS) {
+        logger?.warn("WhatsApp network error, will retry", { attempt, phone: phone.slice(-4) }, fetchErr);
+      }
+    }
+
+    // Backoff before next attempt (skip after last attempt)
+    if (attempt < MAX_ATTEMPTS) {
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1); // 1s, 2s
+      await new Promise(r => setTimeout(r, delay));
+    }
   }
-  return data;
+
+  throw lastErr || new Error("sendWhatsApp failed after retries");
 }
 
 serve(async (req) => {
@@ -128,15 +172,15 @@ serve(async (req) => {
       const message = `Olá ${visita.nome_cliente || ""}! 👋 Sua visita ao ${visita.empreendimento || "empreendimento"} está confirmada para ${formatDate(visita.data_visita)} às ${formatTime(visita.hora_visita)}. Seu corretor ${corretorNome} estará te esperando.${confirmLink}\nQualquer dúvida é só responder esta mensagem. Até lá! 🏠`;
 
       try {
-        const result = await sendWhatsApp(apiKey, visita.telefone, message);
-        L.info("Confirmation sent", { visita_id, phone: visita.telefone?.slice(-4) });
+        const { data: result, attempts } = await sendWhatsApp(apiKey, visita.telefone, message, L);
+        L.info("Confirmation sent", { visita_id, phone: visita.telefone?.slice(-4), attempts });
         return new Response(
-          JSON.stringify({ success: true, message_id: result?.messages?.[0]?.id }),
+          JSON.stringify({ success: true, message_id: result?.messages?.[0]?.id, attempts }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       } catch (sendErr) {
-        L.error("Confirmation WhatsApp failed", { visita_id }, sendErr);
-        logOps("error", "integration", "WhatsApp confirmation send failed", { visita_id }, sendErr instanceof Error ? sendErr.message : String(sendErr));
+        L.error("Confirmation WhatsApp failed after retries", { visita_id }, sendErr);
+        logOps("error", "integration", "WhatsApp confirmation send failed after retries", { visita_id }, sendErr instanceof Error ? sendErr.message : String(sendErr));
         throw sendErr;
       }
     }
@@ -190,10 +234,10 @@ serve(async (req) => {
         const message = `Olá ${v.nome_cliente || ""}! 🔔 Lembrete: amanhã às ${formatTime(v.hora_visita)} você tem visita ao ${v.empreendimento || "empreendimento"} com ${corretorNome}. Confirma sua presença? Responda SIM para confirmar ou NOS chame para reagendar.`;
 
         try {
-          await sendWhatsApp(apiKey, v.telefone, message);
+          await sendWhatsApp(apiKey, v.telefone, message, L);
           sent++;
         } catch (e) {
-          L.warn("Reminder send failed", { visita_id: v.id }, e);
+          L.warn("Reminder send failed after retries", { visita_id: v.id }, e);
           errors++;
         }
 
