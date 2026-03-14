@@ -255,13 +255,14 @@ Deno.serve(async (req) => {
 
     L.info("Lead created", { leadId: insertedLead.id, name, empreendimento, source });
 
-    // ── Auto-distribute ──
+    // ── Auto-distribute (propagate trace) ──
     try {
       await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${serviceKey}`,
           "Content-Type": "application/json",
+          "x-trace-id": traceId,
         },
         body: JSON.stringify({
           action: "distribute_single",
