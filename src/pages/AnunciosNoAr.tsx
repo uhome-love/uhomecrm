@@ -1343,6 +1343,16 @@ export default function AnunciosNoAr() {
               <p className="text-sm text-white/60">
                 {totalAnuncios} produto{totalAnuncios !== 1 ? "s" : ""} com anúncios ativos por segmento
               </p>
+              {isAdmin && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline" className="text-[9px] bg-white/10 text-white/80 border-white/20 gap-1">
+                    <Brain className="h-3 w-3" />
+                    IA: {aiStats.complete} completo{aiStats.complete !== 1 ? "s" : ""}
+                    {aiStats.partial > 0 && ` · ${aiStats.partial} parcial`}
+                    {aiStats.empty > 0 && ` · ${aiStats.empty} pendente${aiStats.empty !== 1 ? "s" : ""}`}
+                  </Badge>
+                </div>
+              )}
             </div>
           </div>
 
