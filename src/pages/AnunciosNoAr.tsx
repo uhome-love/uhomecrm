@@ -923,6 +923,7 @@ function EmpreendimentoCard({
   override,
   onEditOverride,
   onEditLanding,
+  onEditAIKnowledge,
   landingRefreshKey,
 }: {
   config: AnuncioConfig;
@@ -935,6 +936,7 @@ function EmpreendimentoCard({
   override: EmpreendimentoOverride | null;
   onEditOverride: () => void;
   onEditLanding: () => void;
+  onEditAIKnowledge: () => void;
   landingRefreshKey: number;
 }) {
   const { user } = useAuth();
