@@ -68,10 +68,11 @@ export default function CorretorDashboard() {
         .eq("aceite_status", "aceito")
         .neq("stage_id", "1dd66c25-3848-4053-9f66-82e902989b4d");
 
+      // Use auth_user_id column (canonical) instead of corretor_id (profiles.id)
       const { count: totalNegocios } = await supabase
         .from("negocios")
         .select("id", { count: "exact", head: true })
-        .eq("corretor_id", user!.id)
+        .eq("auth_user_id", user!.id)
         .neq("fase", "caiu");
 
       const { data: rankingData } = await supabase
