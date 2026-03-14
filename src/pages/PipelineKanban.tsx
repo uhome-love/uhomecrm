@@ -124,25 +124,17 @@ export default function PipelineKanban() {
     setSelectionMode(false);
   }, []);
 
-  // Load partnerships — only once on mount, not on every leads change
+  // Load partnerships from v_pipeline_parcerias_visual (names resolved in SQL)
   const [parceriasLoaded, setParceriasLoaded] = useState(false);
   useEffect(() => {
     if (parceriasLoaded || pipeline.loading) return;
     (async () => {
       const { data } = await supabase
-        .from("pipeline_parcerias")
-        .select("pipeline_lead_id, corretor_parceiro_id")
-        .eq("status", "ativa");
+        .from("v_pipeline_parcerias_visual")
+        .select("pipeline_lead_id, parceiro_nome");
       if (!data || data.length === 0) { setParceriasLoaded(true); return; }
-      const parceiroIds = [...new Set(data.map(p => p.corretor_parceiro_id))];
-      const { data: members } = await supabase
-        .from("team_members")
-        .select("user_id, nome")
-        .in("user_id", parceiroIds);
-      const nameMap: Record<string, string> = {};
-      members?.forEach(m => { if (m.user_id) nameMap[m.user_id] = m.nome; });
       const result: Record<string, string> = {};
-      data.forEach(p => { result[p.pipeline_lead_id] = nameMap[p.corretor_parceiro_id] || "Parceiro"; });
+      data.forEach(p => { result[p.pipeline_lead_id] = p.parceiro_nome || "Parceiro"; });
       setParcerias(result);
       setParceriasLoaded(true);
     })();
