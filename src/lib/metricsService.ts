@@ -23,6 +23,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getMetricPeriodRange, periodToTimestamps } from "./metricDefinitions";
+import { log } from "@/lib/logger";
 
 // ─── Types ───
 
@@ -66,7 +67,7 @@ export async function fetchKPIs(
   });
 
   if (error) {
-    console.error("[metricsService] fetchKPIs error:", error);
+    log.error("metrics", "fetchKPIs RPC failed", { period, userId }, error);
     throw error;
   }
 

@@ -148,11 +148,11 @@ const App = () => (
             <Route path="/indica/:codigo" element={<Suspense fallback={<PageLoader />}><ReferralPage /></Suspense>} />
             <Route path="/vitrine/:id" element={<Suspense fallback={<PageLoader />}><VitrinePage /></Suspense>} />
             {/* Acessível a todos os autenticados */}
-            <Route path="/" element={<ProtectedPage><HomeDashboard /></ProtectedPage>} />
+            <Route path="/" element={<ProtectedPage><ErrorBoundary module="home-dashboard"><HomeDashboard /></ErrorBoundary></ProtectedPage>} />
 
             {/* Gestão Comercial — gestor + admin */}
-            <Route path="/gerente/dashboard" element={<ProtectedPage roles={["gestor", "admin"]}><GerenteDashboard /></ProtectedPage>} />
-            <Route path="/central-do-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><CheckpointGerente /></ProtectedPage>} />
+            <Route path="/gerente/dashboard" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="gerente-dashboard"><GerenteDashboard /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/central-do-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="checkpoint"><CheckpointGerente /></ErrorBoundary></ProtectedPage>} />
             
             <Route path="/central-dados" element={<ProtectedPage roles={["gestor", "admin"]}><CentralDados /></ProtectedPage>} />
             <Route path="/scripts" element={<ProtectedPage><ScriptsGenerator /></ProtectedPage>} />
@@ -160,22 +160,22 @@ const App = () => (
             <Route path="/relatorios" element={<ProtectedPage roles={["gestor", "admin"]}><RelatorioCorretor /></ProtectedPage>} />
             <Route path="/ranking" element={<ProtectedPage><RankingEquipe /></ProtectedPage>} />
             <Route path="/meu-time" element={<ProtectedPage roles={["gestor", "admin"]}><MeuTime /></ProtectedPage>} />
-            <Route path="/oferta-ativa" element={<ProtectedPage><OfertaAtiva /></ProtectedPage>} />
-            <Route path="/roleta" element={<ProtectedPage roles={["admin"]}><RoletaLeads /></ProtectedPage>} />
+            <Route path="/oferta-ativa" element={<ProtectedPage><ErrorBoundary module="oferta-ativa"><OfertaAtiva /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/roleta" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="roleta"><RoletaLeads /></ErrorBoundary></ProtectedPage>} />
             <Route path="/marketplace" element={<ProtectedPage><MarketplaceScripts /></ProtectedPage>} />
-            <Route path="/pipeline-leads" element={<ProtectedPage><PipelineKanban /></ProtectedPage>} />
+            <Route path="/pipeline-leads" element={<ProtectedPage><ErrorBoundary module="pipeline"><PipelineKanban /></ErrorBoundary></ProtectedPage>} />
             <Route path="/escala-diaria" element={<ProtectedPage roles={["admin"]}><EscalaDiaria /></ProtectedPage>} />
             <Route path="/disponibilidade" element={<ProtectedPage roles={["gestor", "admin"]}><DisponibilidadePage /></ProtectedPage>} />
             <Route path="/automacoes" element={<ProtectedPage roles={["gestor", "admin"]}><AutomacoesPage /></ProtectedPage>} />
             <Route path="/templates-comunicacao" element={<ProtectedPage roles={["gestor", "admin"]}><TemplatesComunicacao /></ProtectedPage>} />
 
             {/* Corretor — todos autenticados */}
-            <Route path="/corretor" element={<ProtectedPage><CorretorDashboard /></ProtectedPage>} />
-            <Route path="/aceite" element={<ProtectedPage><AceiteLeads /></ProtectedPage>} />
+            <Route path="/corretor" element={<ProtectedPage><ErrorBoundary module="corretor-dashboard"><CorretorDashboard /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/aceite" element={<ProtectedPage><ErrorBoundary module="aceite-leads"><AceiteLeads /></ErrorBoundary></ProtectedPage>} />
             <Route path="/minhas-tarefas" element={<ProtectedPage><MinhasTarefas /></ProtectedPage>} />
             <Route path="/minhas-vitrines" element={<ProtectedPage><MinhasVitrines /></ProtectedPage>} />
             <Route path="/corretor/call" element={<ProtectedPage><CorretorCall /></ProtectedPage>} />
-            <Route path="/agenda-visitas" element={<ProtectedPage><AgendaVisitas /></ProtectedPage>} />
+            <Route path="/agenda-visitas" element={<ProtectedPage><ErrorBoundary module="agenda-visitas"><AgendaVisitas /></ErrorBoundary></ProtectedPage>} />
             <Route path="/corretor/resumo" element={<ProtectedPage><CorretorResumo /></ProtectedPage>} />
             <Route path="/corretor/ranking-equipes" element={<ProtectedPage><RankingEquipe /></ProtectedPage>} />
             <Route path="/conquistas" element={<ProtectedPage><Conquistas /></ProtectedPage>} />
@@ -188,10 +188,10 @@ const App = () => (
             <Route path="/homi-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><HomiGerencial /></ProtectedPage>} />
             <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><HomiCeo /></ProtectedPage>} />
             <Route path="/homi/base-conhecimento" element={<ProtectedPage roles={["admin", "gestor"]}><BaseConhecimento /></ProtectedPage>} />
-            <Route path="/pipeline-negocios" element={<ProtectedPage><MeusNegocios /></ProtectedPage>} />
+            <Route path="/pipeline-negocios" element={<ProtectedPage><ErrorBoundary module="negocios"><MeusNegocios /></ErrorBoundary></ProtectedPage>} />
             <Route path="/vendas-realizadas" element={<ProtectedPage><VendasRealizadas /></ProtectedPage>} />
             <Route path="/pos-vendas" element={<ProtectedPage><PosVendas /></ProtectedPage>} />
-            <Route path="/imoveis" element={<ProtectedPage><ErrorBoundary><ImoveisPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/imoveis" element={<ProtectedPage><ErrorBoundary module="imoveis"><ImoveisPage /></ErrorBoundary></ProtectedPage>} />
             <Route path="/melnick-day" element={<ProtectedPage><MelnickDay /></ProtectedPage>} />
             <Route path="/orygem-60" element={<ProtectedPage><OrygemCampanha /></ProtectedPage>} />
             <Route path="/mega-cyrela" element={<ProtectedPage><MegaCyrela /></ProtectedPage>} />
@@ -203,7 +203,7 @@ const App = () => (
             <Route path="/notificacoes" element={<ProtectedPage><Notificacoes /></ProtectedPage>} />
 
             {/* CEO / Admin only */}
-            <Route path="/ceo" element={<ProtectedPage roles={["admin"]}><CeoDashboard /></ProtectedPage>} />
+            <Route path="/ceo" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="ceo-dashboard"><CeoDashboard /></ErrorBoundary></ProtectedPage>} />
             <Route path="/marketing" element={<ProtectedPage roles={["admin"]}><MarketingDashboard /></ProtectedPage>} />
             <Route path="/auditoria" element={<ProtectedPage roles={["admin"]}><AuditDashboard /></ProtectedPage>} />
             <Route path="/admin" element={<ProtectedPage roles={["admin"]}><AdminPanel /></ProtectedPage>} />

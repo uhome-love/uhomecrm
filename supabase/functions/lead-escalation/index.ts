@@ -6,6 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Structured logger
+const L = {
+  _emit: (level: string, msg: string, ctx?: Record<string, unknown>, err?: unknown) => {
+    const payload = { fn: "lead-escalation", level, msg, ctx, err: err instanceof Error ? { name: err.name, message: err.message } : err ? { raw: String(err) } : undefined, ts: new Date().toISOString() };
+    level === "error" ? console.error(JSON.stringify(payload)) : level === "warn" ? console.warn(JSON.stringify(payload)) : console.info(JSON.stringify(payload));
+  },
+  info: (msg: string, ctx?: Record<string, unknown>) => L._emit("info", msg, ctx),
+  warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => L._emit("warn", msg, ctx, err),
+  error: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => L._emit("error", msg, ctx, err),
+};
+
 async function sendPush(supabaseUrl: string, serviceKey: string, userId: string, title: string, body: string, data?: Record<string, any>) {
   try {
     await fetch(`${supabaseUrl}/functions/v1/send-push`, {
@@ -50,7 +61,7 @@ Deno.serve(async (req) => {
     const { data: escalationCount, error: escError } = await supabase.rpc(
       "escalonar_notificacoes_leads"
     );
-    if (escError) console.error("Escalation error:", escError);
+    if (escError) L.error("Escalation RPC failed", {}, escError);
 
     // 2. Send push + WhatsApp for leads at escalation thresholds
     // Fetch leads currently pending acceptance with their escalation state
@@ -188,13 +199,13 @@ Deno.serve(async (req) => {
     const { data: staleCount, error: staleError } = await supabase.rpc(
       "detectar_leads_parados"
     );
-    if (staleError) console.error("Stale detection error:", staleError);
+    if (staleError) L.error("Stale detection RPC failed", {}, staleError);
 
     // 4. Recycle expired acceptance leads
     const { data: recycledCount, error: recycleError } = await supabase.rpc(
       "reciclar_leads_expirados"
     );
-    if (recycleError) console.error("Recycle error:", recycleError);
+    if (recycleError) L.error("Recycle RPC failed", {}, recycleError);
 
     // 4b. Auto-redistribute recycled leads + notify CEO/gerentes
     if (recycledCount && recycledCount > 0) {
@@ -244,9 +255,9 @@ Deno.serve(async (req) => {
                   }),
                 });
                 const distResult = await distResponse.json();
-                console.log(`Auto-redistribute lead ${expired.pipeline_lead_id}: ${JSON.stringify(distResult)}`);
+                L.info("Auto-redistribute lead", { leadId: expired.pipeline_lead_id, result: distResult });
               } catch (distErr) {
-                console.warn(`Auto-redistribute failed for ${expired.pipeline_lead_id}:`, distErr);
+                L.warn("Auto-redistribute failed", { leadId: expired.pipeline_lead_id }, distErr);
               }
             }
 
@@ -294,7 +305,7 @@ Deno.serve(async (req) => {
           }
         }
       } catch (notifyErr) {
-        console.error("CEO notification error (non-blocking):", notifyErr);
+        L.error("CEO notification error (non-blocking)", {}, notifyErr);
       }
     }
 
@@ -302,7 +313,7 @@ Deno.serve(async (req) => {
     const { data: cleanedCount, error: cleanError } = await supabase.rpc(
       "cleanup_expired_locks"
     );
-    if (cleanError) console.error("Cleanup error:", cleanError);
+    if (cleanError) L.error("Cleanup RPC failed", {}, cleanError);
 
     const result = {
       escalated: escalationCount || 0,
@@ -313,13 +324,13 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString(),
     };
 
-    console.log("Lead escalation run:", result);
+    L.info("Lead escalation run", result);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Escalation error:", err);
+    L.error("Unhandled exception", {}, err);
     return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

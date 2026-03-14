@@ -25,6 +25,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Structured logger
+const L = {
+  _emit: (level: string, msg: string, ctx?: Record<string, unknown>, err?: unknown) => {
+    const payload = { fn: "receive-landing-lead", level, msg, ctx, err: err instanceof Error ? { name: err.name, message: err.message } : err ? { raw: String(err) } : undefined, ts: new Date().toISOString() };
+    level === "error" ? console.error(JSON.stringify(payload)) : level === "warn" ? console.warn(JSON.stringify(payload)) : console.info(JSON.stringify(payload));
+  },
+  info: (msg: string, ctx?: Record<string, unknown>) => L._emit("info", msg, ctx),
+  warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => L._emit("warn", msg, ctx, err),
+  error: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => L._emit("error", msg, ctx, err),
+};
+
 function normalizePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
   const digits = phone.replace(/\D/g, "");
@@ -50,6 +61,7 @@ Deno.serve(async (req) => {
     if (webhookSecret) {
       const provided = body.secret || req.headers.get("x-webhook-secret") || "";
       if (provided !== webhookSecret) {
+        L.warn("Auth failed — invalid webhook secret", { source: body.source });
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -70,6 +82,7 @@ Deno.serve(async (req) => {
     const utmCampaign = body.utm_campaign || "";
 
     if (!name && !telefone) {
+      L.warn("Validation failed — missing name and phone", { source, body: { name: body.name, phone: body.phone } });
       return new Response(
         JSON.stringify({ error: "Nome ou telefone obrigatório" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -224,14 +237,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
-      console.error("Insert error:", insertError.message);
+      L.error("Lead insert failed", { name, telefone, empreendimento }, insertError);
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`LANDING-LEAD: Created lead ${insertedLead.id} — ${name} — ${empreendimento}`);
+    L.info("Lead created", { leadId: insertedLead.id, name, empreendimento, source });
 
     // ── Auto-distribute ──
     try {
@@ -247,7 +260,7 @@ Deno.serve(async (req) => {
         }),
       });
     } catch (distErr) {
-      console.warn("Auto-distribute failed:", distErr);
+      L.warn("Auto-distribute failed", { leadId: insertedLead.id }, distErr);
     }
 
     // ── Audit ──
@@ -257,14 +270,14 @@ Deno.serve(async (req) => {
       acao: "landing_page_lead",
       descricao: `Lead via Landing Page: ${name} — ${empreendimento} (source: ${source})`,
       origem: "webhook",
-    }).then(r => { if (r.error) console.warn("audit:", r.error.message); });
+    }).then(r => { if (r.error) L.warn("Audit insert failed", {}, r.error); });
 
     return new Response(
       JSON.stringify({ success: true, lead_id: insertedLead.id, empreendimento, distributed: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("receive-landing-lead error:", err);
+    L.error("Unhandled exception", {}, err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
