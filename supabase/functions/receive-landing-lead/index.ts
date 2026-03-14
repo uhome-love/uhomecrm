@@ -62,6 +62,10 @@ Deno.serve(async (req) => {
   const traceId = extractTraceId(req);
   const L = makeLogger(traceId);
 
+  const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
+    supabase.from("ops_events").insert({ fn: "receive-landing-lead", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
+  };
+
   try {
     const body = await req.json();
 
