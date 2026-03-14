@@ -1,11 +1,13 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+/**
+ * homi-ana — Assistente criativo/operacional da Ana Paula (Marketing)
+ * 
+ * Migrated to shared helpers (Phase 1).
+ * Still has hardcoded enterprise data in SYSTEM_PROMPT — Phase 2 target.
+ */
+import { withCorsAndErrorHandling, requireApiKey, callAI } from "../_shared/ai-helpers.ts";
+import { jsonResponse, errorResponse } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
+// NOTE: Hardcoded enterprise data — Phase 2 will migrate to DB
 const SYSTEM_PROMPT = `Você é o HOMI, sócio criativo e operacional da Ana Paula na Uhome Negócios Imobiliários, Porto Alegre/RS.
 
 Sua personalidade: energético, criativo, direto, fala como criador de conteúdo profissional. Usa emojis com moderação. Conhece os empreendimentos de cor.
@@ -38,69 +40,21 @@ Quando criar legendas, inclua emojis, CTA e hashtags otimizadas.
 Quando criar roteiros, numere com timestamps (0:00, 0:05...).
 Quando criar calendários, use formato de tabela: Dia | Formato | Empreendimento | Tema | Horário sugerido.`;
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+Deno.serve(withCorsAndErrorHandling("homi-ana", async (req) => {
+  const { messages } = await req.json();
+
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return errorResponse("messages array is required", 400);
   }
 
-  try {
-    const { messages } = await req.json();
+  const apiKey = requireApiKey();
+  const reply = await callAI(apiKey, [
+    { role: "system", content: SYSTEM_PROMPT },
+    ...messages.map((m: { role: string; content: string }) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    })),
+  ], { fnName: "homi-ana", maxTokens: 2000 });
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "messages array is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        max_tokens: 2000,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...messages.map((m: { role: string; content: string }) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("OpenAI API error:", response.status, errText);
-      return new Response(
-        JSON.stringify({ error: "AI service unavailable", details: errText }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content ?? "Sem resposta no momento.";
-
-    return new Response(
-      JSON.stringify({ reply }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("homi-ana error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Internal error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});
+  return jsonResponse({ reply: reply || "Sem resposta no momento." });
+}));

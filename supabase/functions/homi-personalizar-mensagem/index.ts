@@ -1,39 +1,21 @@
+/**
+ * homi-personalizar-mensagem — Personalização de templates com IA
+ * 
+ * Migrated to shared helpers (Phase 1).
+ * No hardcoded enterprise data — clean function.
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withCorsAndErrorHandling, requireApiKey, callAI } from "../_shared/ai-helpers.ts";
+import { jsonResponse, errorResponse } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+Deno.serve(withCorsAndErrorHandling("homi-personalizar-mensagem", async (req) => {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return errorResponse("Unauthorized", 401);
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const { template, lead, corretor_nome } = await req.json();
+  if (!template || !lead) return errorResponse("Missing template or lead data", 400);
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { template, lead, corretor_nome } = await req.json();
-
-    if (!template || !lead) {
-      return new Response(JSON.stringify({ error: "Missing template or lead data" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const systemPrompt = `Você é um especialista em vendas imobiliárias da Uhome. Personalize esta mensagem para o lead específico, tornando-a mais natural e persuasiva.
+  const systemPrompt = `Você é um especialista em vendas imobiliárias da Uhome. Personalize esta mensagem para o lead específico, tornando-a mais natural e persuasiva.
 
 Dados do lead:
 - Nome: ${lead.nome || "Cliente"}
@@ -54,46 +36,11 @@ Regras:
 - O nome do corretor é: ${corretor_nome || "Corretor"}
 - Retorne APENAS a mensagem personalizada, sem explicações`;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+  const apiKey = requireApiKey();
+  const mensagem = await callAI(apiKey, [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: "Personalize esta mensagem para o lead." },
+  ], { fnName: "homi-personalizar-mensagem", maxTokens: 500, temperature: 0.7 });
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: "Personalize esta mensagem para o lead." },
-        ],
-        max_tokens: 500,
-        temperature: 0.7,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.error("AI error:", errText);
-      return new Response(JSON.stringify({ error: "AI service error" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const aiData = await aiResponse.json();
-    const mensagem = aiData.choices?.[0]?.message?.content || template;
-
-    return new Response(JSON.stringify({ mensagem }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error("Error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
+  return jsonResponse({ mensagem: mensagem || template });
+}));

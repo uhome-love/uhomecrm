@@ -1,30 +1,22 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+/**
+ * oa-session-coaching — Feedback pós-sessão de Oferta Ativa
+ * 
+ * Migrated to shared helpers (Phase 1).
+ * No hardcoded enterprise data — clean function.
+ */
+import { withCorsAndErrorHandling, requireApiKey, callAI } from "../_shared/ai-helpers.ts";
+import { jsonResponse, errorResponse } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+Deno.serve(withCorsAndErrorHandling("oa-session-coaching", async (req) => {
+  const { session_metrics, corretor_nome } = await req.json();
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (!session_metrics) {
+    return errorResponse("session_metrics required", 400);
+  }
 
-  try {
-    const { session_metrics, corretor_nome } = await req.json();
+  const m = session_metrics;
 
-    if (!session_metrics) {
-      return new Response(JSON.stringify({ error: "session_metrics required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
-    const m = session_metrics;
-
-    const systemPrompt = `Você é o HOMI, coach de vendas imobiliárias da Uhome. 
+  const systemPrompt = `Você é o HOMI, coach de vendas imobiliárias da Uhome. 
 Após cada sessão de ligações do corretor, você analisa os resultados e dá um feedback personalizado.
 
 Regras:
@@ -39,7 +31,7 @@ Regras:
 
 IMPORTANTE: Responda em português do Brasil.`;
 
-    const userPrompt = `Analise esta sessão de ligações do corretor ${corretor_nome || ""}:
+  const userPrompt = `Analise esta sessão de ligações do corretor ${corretor_nome || ""}:
 
 📊 MÉTRICAS DA SESSÃO:
 - Duração: ${m.duracao_min || 0} minutos
@@ -64,50 +56,11 @@ ${m.leads_quentes_pendentes ? `🔥 Leads quentes sem contato: ${m.leads_quentes
 
 Gere o feedback de coaching personalizado.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    });
+  const apiKey = requireApiKey();
+  const feedback = await callAI(apiKey, [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ], { fnName: "oa-session-coaching" });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      throw new Error("AI gateway error");
-    }
-
-    const result = await response.json();
-    const feedback = result.choices?.[0]?.message?.content || "Sem feedback disponível.";
-
-    return new Response(JSON.stringify({ feedback }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    console.error("oa-session-coaching error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});
+  return jsonResponse({ feedback: feedback || "Sem feedback disponível." });
+}));
