@@ -220,7 +220,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
                 return [...prev, { role: "assistant", content: assistantContent }];
               });
             }
-          } catch { /* partial */ }
+          } catch (e) { console.warn("[HomiContext] Partial SSE chunk:", e); }
         }
       }
 
