@@ -50,6 +50,29 @@ async function sendWhatsApp(supabaseUrl: string, serviceKey: string, telefone: s
   }
 }
 
+async function distributeWithRetry(supabaseUrl: string, serviceKey: string, leadId: string, traceId: string, maxRetries = 2): Promise<boolean> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const resp = await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+        },
+        body: JSON.stringify({ action: "distribute_single", pipeline_lead_id: leadId }),
+      });
+      if (resp.ok) return true;
+      const body = await resp.text().catch(() => "");
+      console.warn(`distribute-lead attempt ${attempt} failed (${resp.status}): ${body}`);
+    } catch (err) {
+      console.warn(`distribute-lead attempt ${attempt} error:`, err);
+    }
+    if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+  }
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
