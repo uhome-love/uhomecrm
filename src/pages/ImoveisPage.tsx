@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import {
   Search, Building2, Loader2, ChevronLeft, ChevronRight, Phone,
@@ -17,108 +16,44 @@ import {
   Sparkles, Brain, ArrowRight, Map
 } from "lucide-react";
 import PropertyMap from "@/components/imoveis/PropertyMap";
-import ImageSlider from "@/components/imoveis/ImageSlider";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
 import FilterChip from "@/components/imoveis/FilterChip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
-import { useTypesenseSearch, buildFilterBy, buildSortBy } from "@/hooks/useTypesenseSearch";
-import { useAISearch, type AIPropertyResult } from "@/hooks/useAISearch";
-import { mapTypesenseDocs } from "@/lib/typesenseMapping";
+import { useAISearch } from "@/hooks/useAISearch";
 import { PropertyCardGrid, PropertyCardList } from "@/components/imoveis/PropertyCards";
-import {
-  extractImages, extractFullImages, extractOrigemExterna, extractEntrega, extractEndereco,
-  getNum, getNumIncZero, fmtBRL, fmtCompact,
-} from "@/lib/imovelHelpers";
+import { getNum, fmtBRL, fmtCompact } from "@/lib/imovelHelpers";
+import { useImoveisFilters } from "@/hooks/useImoveisFilters";
+import { useImoveisSearch } from "@/hooks/useImoveisSearch";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Fallback hardcoded list (used if overrides fail to load)
-const CAMPANHA_CODES_FALLBACK = [
-  { codigo: "97325-UH", nome: "Shift" },
-  { codigo: "32849-UH", nome: "Open Bosque" },
-  { codigo: "57290-UH", nome: "Orygem" },
-  { codigo: "39808-UH", nome: "Melnick Day - Compactos" },
-  { codigo: "58935-UH", nome: "Lake Eyre" },
-  { codigo: "4688-UH", nome: "Casa Bastian" },
-  { codigo: "52101-UH", nome: "Casa Tua" },
-  { codigo: "41190-UH", nome: "Las Casas" },
-  { codigo: "76953-UH", nome: "Melnick Day - Médio Padrão" },
-  { codigo: "91245-UH", nome: "Melnick Day - Alto Padrão" },
-];
-
-const BAIRROS_POA = [
-  "Auxiliadora", "Bela Vista", "Bom Fim", "Camaquã", "Cavalhada",
-  "Centro Histórico", "Chácara das Pedras", "Cidade Baixa", "Cristal",
-  "Farroupilha", "Floresta", "Higienópolis", "Humaitá", "Independência",
-  "Ipanema", "Jardim Botânico", "Jardim do Salso", "Jardim Europa",
-  "Jardim Isabel", "Jardim Lindóia", "Jardim Planalto", "Jardim São Pedro",
-  "Lami", "Lomba do Pinheiro", "Medianeira", "Menino Deus", "Moinhos de Vento",
-  "Mont'Serrat", "Navegantes", "Nonoai", "Partenon", "Passo d'Areia",
-  "Pedra Redonda", "Petrópolis", "Praia de Belas", "Rio Branco",
-  "Santa Cecília", "Santa Tereza", "Santana", "Santo Antônio",
-  "São Geraldo", "São João", "São José", "São Sebastião",
-  "Teresópolis", "Três Figueiras", "Tristeza", "Vila Assunção",
-  "Vila Conceição", "Vila Ipiranga", "Vila Jardim", "Vila Nova",
-];
-
-// ══════════════════════════════════════════
-// ██  MAIN PAGE
-// ══════════════════════════════════════════
-
 export default function ImoveisPage() {
   const { user } = useAuth();
-  const { search: typesenseSearch, autocomplete: typesenseAutocomplete, loading: tsLoading } = useTypesenseSearch();
   const { searchWithAI, clearAISearch, removeTag, aiLoading, aiResult, aiError, aiProperties, aiTotal, aiSearchTime } = useAISearch();
-  const [imoveis, setImoveis] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [campanhaAtiva, setCampanhaAtiva] = useState(false);
-  const [campanhaOverrides, setCampanhaOverrides] = useState<{ codigo: string; nome: string; fotos: string[]; valor_min: number | null; valor_max: number | null; bairro: string | null; dormitorios: number | null; descricao: string | null; status_obra: string | null; previsao_entrega: string | null }[]>([]);
-  const [uhomeOnly, setUhomeOnly] = useState(false);
 
-  // Load campaign codes from empreendimento_overrides (source of truth for "Anúncios no Ar")
-  useEffect(() => {
-    supabase.from("empreendimento_overrides").select("codigo, nome, fotos, valor_min, valor_max, bairro, dormitorios, descricao, status_obra, previsao_entrega").then(({ data }) => {
-      if (data && data.length > 0) {
-        setCampanhaOverrides(data.map(d => ({
-          codigo: d.codigo,
-          nome: d.nome || d.codigo,
-          fotos: d.fotos || [],
-          valor_min: d.valor_min,
-          valor_max: d.valor_max,
-          bairro: d.bairro,
-          dormitorios: d.dormitorios,
-          descricao: d.descricao,
-          status_obra: d.status_obra,
-          previsao_entrega: d.previsao_entrega,
-        })));
-      } else {
-        setCampanhaOverrides(CAMPANHA_CODES_FALLBACK.map(c => ({ codigo: c.codigo, nome: c.nome, fotos: [], valor_min: null, valor_max: null, bairro: null, dormitorios: null, descricao: null, status_obra: null, previsao_entrega: null })));
-      }
-    });
-  }, []);
+  // ── Filters ──
+  const filters = useImoveisFilters();
+  const {
+    contrato, tipo, setTipo, bairro, setBairro, bairroSearch, setBairroSearch,
+    dormitorios, setDormitorios, suitesFilter, setSuitesFilter,
+    vagas, setVagas, areaRange, setAreaRange, valorRange, setValorRange,
+    somenteObras, setSomenteObras, campanhaAtiva, setCampanhaAtiva,
+    uhomeOnly, setUhomeOnly, search, setSearch, sortBy, setSortBy,
+    filteredBairros, activeFilters, clearAllFilters, filterKey,
+  } = filters;
+
+  // ── UI state (local to page) ──
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [sortBy, setSortBy] = useState("relevancia");
-  const [searchTimeMs, setSearchTimeMs] = useState<number | null>(null);
   const [searchMode, setSearchMode] = useState<"normal" | "ai">("normal");
   const [aiQuery, setAiQuery] = useState("");
-
-  // Autocomplete
-  const [suggestions, setSuggestions] = useState<{ type: string; value: string }[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Vitrine selection
@@ -127,29 +62,26 @@ export default function ImoveisPage() {
   const [creatingVitrine, setCreatingVitrine] = useState(false);
   const [vitrineLink, setVitrineLink] = useState<string | null>(null);
 
-  // Filters — reactive (auto-apply on change)
-  const [contrato, setContrato] = useState("venda");
-  const [tipo, setTipo] = useState<string[]>([]);
-  const [bairro, setBairro] = useState<string[]>([]);
-  const [bairroSearch, setBairroSearch] = useState("");
-  const [dormitorios, setDormitorios] = useState<string[]>([]);
-  const [suitesFilter, setSuitesFilter] = useState("");
-  const [vagas, setVagas] = useState("");
-  const [areaRange, setAreaRange] = useState<[number, number]>([0, 500]);
-  const [valorRange, setValorRange] = useState<[number, number]>([0, 5_000_000]);
-  const [somenteObras, setSomenteObras] = useState(false);
+  // ── Search ──
+  const {
+    loading, fetchError, page, totalPages, total, searchTimeMs, sortedImoveis,
+    campanhaOverrides, suggestions, showSuggestions, setShowSuggestions,
+    handleSearchChange, handleSuggestionClick, handleSearch, fetchPage, fetchRef,
+  } = useImoveisSearch({
+    filters: {
+      search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas,
+      areaRange, valorRange, somenteObras, uhomeOnly, campanhaAtiva, sortBy,
+    },
+    filterKey,
+    setSearch,
+    setBairro: (fn) => setBairro(fn as any),
+    setCampanhaAtiva,
+    setUhomeOnly,
+    showFavoritesOnly,
+    favorites,
+  });
 
-  // Typesense is always attempted (no permanent disable)
-
-  const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const filteredBairros = useMemo(() => {
-    if (!bairroSearch) return BAIRROS_POA;
-    const q = bairroSearch.toLowerCase();
-    return BAIRROS_POA.filter((b) => b.toLowerCase().includes(q));
-  }, [bairroSearch]);
-
-  // Load favorites from localStorage
+  // ── Favorites persistence ──
   useEffect(() => {
     const saved = localStorage.getItem(`uhome-favorites-${user?.id}`);
     if (saved) setFavorites(new Set(JSON.parse(saved)));
@@ -164,247 +96,7 @@ export default function ImoveisPage() {
     });
   };
 
-  // Abort controller for cancelling in-flight requests
-  const abortRef = useRef<AbortController | null>(null);
-  // Sequence number to prevent stale responses from updating state
-  const fetchSeqRef = useRef(0);
-
-  // mapTypesenseDocs imported from @/lib/typesenseMapping
-
-
-  const fetchViaTypesense = useCallback(async (pageNum: number, seq: number): Promise<"ok" | "aborted" | "error"> => {
-    try {
-      const filterBy = buildFilterBy({
-        contrato, tipo, bairro, dormitorios, suites: suitesFilter, vagas,
-        valorRange, areaRange, somenteObras, uhomeOnly,
-      });
-      const sortByStr = search ? "" : buildSortBy(sortBy, contrato);
-
-      const result = await typesenseSearch({
-        q: search || "*",
-        page: pageNum,
-        per_page: 24,
-        filter_by: filterBy || undefined,
-        sort_by: sortByStr || undefined,
-      });
-
-      // If this request was superseded, don't update state
-      if (seq !== fetchSeqRef.current) return "aborted";
-
-      if (!result) return "aborted"; // null = aborted by hook
-
-      const items = mapTypesenseDocs(result.data || []);
-
-      setImoveis(items);
-      setTotal(result.total || 0);
-      setTotalPages(result.totalPages || 1);
-      setPage(pageNum);
-      setSearchTimeMs(result.search_time_ms || null);
-      return "ok";
-    } catch (err) {
-      if (seq !== fetchSeqRef.current) return "aborted";
-      console.error("Typesense fetch error:", err);
-      return "error";
-    }
-  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, uhomeOnly, sortBy, typesenseSearch]);
-
-  // ── Fallback to jetimob-proxy ──
-  const fetchViaJetimob = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
-    if (abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      if (campanha) {
-        // Use overrides data directly — no need to call jetimob-proxy
-        const items = campanhaOverrides.map(ov => ({
-          codigo: ov.codigo,
-          titulo_anuncio: ov.nome || ov.codigo,
-          empreendimento_nome: ov.nome || ov.codigo,
-          endereco_bairro: ov.bairro || "",
-          valor_venda: ov.valor_min || 0,
-          valor_max: ov.valor_max || 0,
-          dormitorios: ov.dormitorios || 0,
-          descricao: ov.descricao || "",
-          status: ov.status_obra || "Lançamento",
-          previsao_entrega: ov.previsao_entrega || "",
-          foto_principal: ov.fotos?.[0] || "",
-          fotos: ov.fotos || [],
-          imagens: (ov.fotos || []).map(url => ({ link: url, link_thumb: url })),
-          _fotos_normalized: ov.fotos || [],
-          _is_campanha_override: true,
-        }));
-        setImoveis(items as any[]);
-        setTotal(items.length);
-        setTotalPages(1);
-        setPage(1);
-      } else {
-        const valorMin = valorRange[0] > 0 ? String(valorRange[0]) : undefined;
-        const valorMax = valorRange[1] < 5_000_000 ? String(valorRange[1]) : undefined;
-        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
-          body: {
-            action: "list_imoveis", page: pageNum, pageSize: 24,
-            search: search || undefined,
-            contrato: contrato || undefined,
-            tipo: tipo.length ? tipo.join(",") : undefined,
-            cidade: "Porto Alegre",
-            bairro: bairro.length ? bairro.join(",") : undefined,
-            search_uhome: uhome ? true : undefined,
-            dormitorios: dormitorios.length ? dormitorios[0] : undefined,
-            suites: suitesFilter && suitesFilter !== "all" ? suitesFilter : undefined,
-            vagas: vagas && vagas !== "all" ? vagas : undefined,
-            area_min: areaRange[0] > 0 ? String(areaRange[0]) : undefined,
-            area_max: areaRange[1] < 500 ? String(areaRange[1]) : undefined,
-            valor_min: valorMin, valor_max: valorMax,
-            somente_obras: somenteObras || undefined,
-          },
-        });
-        if (controller.signal.aborted) return;
-        if (error) { toast.error("Erro ao buscar imóveis"); return; }
-        const items = Array.isArray(data?.data) ? data.data : [];
-        setImoveis(items);
-        setTotal(data?.total || items.length);
-        setTotalPages(data?.totalPages || Math.ceil((data?.total || items.length) / 24));
-        setPage(pageNum);
-      }
-    } catch (e: any) {
-      if (e?.name === "AbortError" || controller.signal.aborted) return;
-      toast.error("Erro de conexão");
-    }
-  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, campanhaAtiva, uhomeOnly, campanhaOverrides]);
-
-  // ── Main fetch: try Typesense first, fallback to Jetimob ──
-  const fetchImoveis = useCallback(async (pageNum: number, campanha = campanhaAtiva, uhome = uhomeOnly) => {
-    // Increment sequence to invalidate any in-flight requests
-    const seq = ++fetchSeqRef.current;
-
-    setLoading(true);
-    setSearchTimeMs(null);
-    setFetchError(null);
-
-    try {
-      // Campanha mode always uses local overrides
-      if (campanha) {
-        await fetchViaJetimob(pageNum, campanha, uhome);
-        if (seq !== fetchSeqRef.current) return; // superseded
-        return;
-      }
-
-      // Try Typesense (always retry, don't permanently disable)
-      const tsResult = await fetchViaTypesense(pageNum, seq);
-
-      if (tsResult === "aborted") {
-        // Request was superseded — don't fallback, don't update loading
-        return;
-      }
-
-      if (tsResult === "ok") return;
-
-      // Typesense had a real error — fallback to Jetimob
-      console.warn("Typesense error, falling back to jetimob-proxy");
-      await fetchViaJetimob(pageNum, campanha, uhome);
-    } catch (err: any) {
-      if (seq !== fetchSeqRef.current) return; // superseded
-      console.error("fetchImoveis critical error:", err);
-      setFetchError(err?.message || "Erro ao buscar imóveis");
-      setImoveis([]);
-      setTotal(0);
-      setTotalPages(1);
-    } finally {
-      // Only clear loading if this is still the latest request
-      if (seq === fetchSeqRef.current) setLoading(false);
-    }
-  }, [campanhaAtiva, uhomeOnly, fetchViaTypesense, fetchViaJetimob]);
-
-  // Keep a ref to the latest fetchImoveis to avoid stale closures in effects
-  const fetchRef = useRef(fetchImoveis);
-  fetchRef.current = fetchImoveis;
-
-  // Initial load
-  const mounted = useRef(false);
-  useEffect(() => {
-    if (mounted.current) return;
-    mounted.current = true;
-    fetchRef.current(1, false);
-  }, []);
-
-  // Auto-apply ALL filter changes with debounce (reactive like Zillow)
-  // Using a serialized key ensures we catch every filter change including uhomeOnly/campanhaAtiva
-  const filterKey = useMemo(() =>
-    JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva }),
-    [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva]
-  );
-  const prevFilterKey = useRef(filterKey);
-
-  useEffect(() => {
-    if (!mounted.current) return;
-    if (prevFilterKey.current === filterKey) return;
-    prevFilterKey.current = filterKey;
-
-    // If an immediate search was already triggered, skip the debounced one
-    if (skipNextDebounce.current) {
-      skipNextDebounce.current = false;
-      return;
-    }
-
-    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
-    filterDebounceRef.current = setTimeout(() => {
-      fetchRef.current(1);
-    }, 400);
-    return () => { if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current); };
-  }, [filterKey]);
-
-  // Flag to skip the debounced effect when handleSearch already fired immediately
-  const skipNextDebounce = useRef(false);
-
-  const handleSearch = () => {
-    setShowSuggestions(false);
-    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    skipNextDebounce.current = true;
-    // Immediately fetch — fetchRef always points to latest closure which captures current search state
-    setCampanhaAtiva(false);
-    setUhomeOnly(false);
-    // Use rAF + setTimeout to ensure state updates (campanha/uhome) have flushed
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        prevFilterKey.current = JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly: false, campanhaAtiva: false });
-        fetchRef.current(1);
-      }, 0);
-    });
-  };
-
-  // Autocomplete with debounce — Typesense powered
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
-    debounceRef.current = setTimeout(async () => {
-      const results = await typesenseAutocomplete(value);
-      if (results.length) {
-        setSuggestions(results);
-        setShowSuggestions(true);
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
-    }, 200);
-  }, [typesenseAutocomplete]);
-
-  const handleSuggestionClick = (suggestion: { type: string; value: string }) => {
-    setShowSuggestions(false);
-    setSuggestions([]);
-    if (suggestion.type === "bairro") {
-      setBairro(prev => prev.includes(suggestion.value) ? prev : [...prev, suggestion.value]);
-      setSearch("");
-    } else {
-      setSearch(suggestion.value);
-      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
-      skipNextDebounce.current = true;
-      setTimeout(() => fetchRef.current(1), 0);
-    }
-  };
-
+  // ── Helpers ──
   const getPreco = (item: any): string => {
     const venda = getNum(item, "valor_venda", "preco_venda", "valor", "price");
     if (venda) return fmtBRL(venda);
@@ -417,41 +109,6 @@ export default function ImoveisPage() {
   };
 
   const openLightbox = (imgs: string[], index: number) => { setLightboxImages(imgs); setLightboxIndex(index); setLightboxOpen(true); };
-
-  // Sort items — defensive: always ensure imoveis is an array
-  const sortedImoveis = useMemo(() => {
-    try {
-      let items = [...(Array.isArray(imoveis) ? imoveis : [])];
-      if (showFavoritesOnly) items = items.filter(item => favorites.has(String(item?.codigo || item?.id_imovel || item?.id)));
-      if (somenteObras) items = items.filter(item => extractEntrega(item).emObras);
-
-      if (sortBy === "menor_preco") items.sort((a, b) => (getNum(a, "valor_venda", "valor") || 999999999) - (getNum(b, "valor_venda", "valor") || 999999999));
-      else if (sortBy === "maior_preco") items.sort((a, b) => (getNum(b, "valor_venda", "valor") || 0) - (getNum(a, "valor_venda", "valor") || 0));
-      else if (sortBy === "maior_area") items.sort((a, b) => (getNumIncZero(b, "area_privativa", "area_util") || 0) - (getNumIncZero(a, "area_privativa", "area_util") || 0));
-      return items;
-    } catch (err) {
-      console.error("Sort error:", err);
-      return [];
-    }
-  }, [imoveis, sortBy, showFavoritesOnly, favorites, somenteObras]);
-
-  // Active filter tags
-  const activeFilters: { key: string; label: string; onRemove: () => void }[] = [];
-  if (search) activeFilters.push({ key: "search", label: `"${search}"`, onRemove: () => { setSearch(""); } });
-  if (tipo.length > 0) activeFilters.push({ key: "tipo", label: tipo.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(", "), onRemove: () => setTipo([]) });
-  if (bairro.length > 0) activeFilters.push({ key: "bairro", label: bairro.join(", "), onRemove: () => setBairro([]) });
-  if (dormitorios.length > 0) activeFilters.push({ key: "dorms", label: dormitorios.map(d => `${d} dorm`).join(", "), onRemove: () => setDormitorios([]) });
-  if (suitesFilter && suitesFilter !== "all") activeFilters.push({ key: "suites", label: `${suitesFilter}+ suíte`, onRemove: () => setSuitesFilter("") });
-  if (vagas && vagas !== "all") activeFilters.push({ key: "vagas", label: `${vagas}+ vaga`, onRemove: () => setVagas("") });
-  if (valorRange[0] > 0 || valorRange[1] < 5_000_000) activeFilters.push({ key: "valor", label: `${fmtCompact(valorRange[0])} — ${valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}`, onRemove: () => setValorRange([0, 5_000_000]) });
-  if (areaRange[0] > 0 || areaRange[1] < 500) activeFilters.push({ key: "area", label: `${areaRange[0]}m² — ${areaRange[1] >= 500 ? "500+" : areaRange[1]}m²`, onRemove: () => setAreaRange([0, 500]) });
-  if (somenteObras) activeFilters.push({ key: "obras", label: "Em obras", onRemove: () => setSomenteObras(false) });
-  if (uhomeOnly) activeFilters.push({ key: "uhome", label: "uHome", onRemove: () => { setUhomeOnly(false); } });
-  if (campanhaAtiva) activeFilters.push({ key: "campanha", label: "Campanha", onRemove: () => { setCampanhaAtiva(false); } });
-
-  const clearAllFilters = () => {
-    setTipo([]); setBairro([]); setDormitorios([]); setSuitesFilter(""); setVagas(""); setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false); setSearch(""); setUhomeOnly(false); setCampanhaAtiva(false);
-  };
 
   // ── Render ──
   return (
@@ -499,7 +156,7 @@ export default function ImoveisPage() {
                 />
                 <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {search && (
-                    <button onClick={() => { setSearch(""); setSuggestions([]); setShowSuggestions(false); }} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted/50">
+                    <button onClick={() => { setSearch(""); setShowSuggestions(false); }} className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted/50">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   )}
@@ -605,8 +262,6 @@ export default function ImoveisPage() {
 
           {/* Row 2: Filter chips */}
           <div className="pb-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-            {/* Contrato: uHome só trabalha com venda */}
-
             {/* Preço */}
             <FilterChip
               label={valorRange[0] > 0 || valorRange[1] < 5_000_000 ? `${fmtCompact(valorRange[0])} — ${valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}` : "Preço"}
@@ -766,7 +421,7 @@ export default function ImoveisPage() {
             {/* Quick toggles */}
             <div className="border-l border-border/50 pl-2 ml-1 flex items-center gap-1.5 shrink-0">
               <button
-                onClick={() => { setCampanhaAtiva(prev => !prev); setUhomeOnly(false); }}
+                onClick={() => { setCampanhaAtiva(!campanhaAtiva); setUhomeOnly(false); }}
                 className={cn(
                   "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
                   campanhaAtiva ? "bg-primary/10 border-primary/30 text-primary" : "bg-background border-border text-muted-foreground hover:border-primary/40"
@@ -775,7 +430,7 @@ export default function ImoveisPage() {
                 <Megaphone className="h-3 w-3" /> Campanha
               </button>
               <button
-                onClick={() => { setUhomeOnly(prev => !prev); setCampanhaAtiva(false); }}
+                onClick={() => { setUhomeOnly(!uhomeOnly); setCampanhaAtiva(false); }}
                 className={cn(
                   "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
                   uhomeOnly ? "bg-primary/10 border-primary/30 text-primary" : "bg-background border-border text-muted-foreground hover:border-primary/40"
@@ -811,7 +466,7 @@ export default function ImoveisPage() {
                 <Search className="h-8 w-8 mx-auto text-destructive/30 mb-2" />
                 <p className="text-sm font-medium text-foreground">Erro ao carregar</p>
                 <p className="text-xs text-muted-foreground mt-1">{fetchError}</p>
-                <Button variant="outline" size="sm" className="mt-2 text-xs" onClick={() => fetchRef.current(1)}>Tentar novamente</Button>
+                <Button variant="outline" size="sm" className="mt-2 text-xs" onClick={() => fetchPage(1)}>Tentar novamente</Button>
               </div>
             ) : loading ? (
               <div className="space-y-3">
@@ -835,9 +490,9 @@ export default function ImoveisPage() {
                 })}
                 {totalPages > 1 && !campanhaAtiva && (
                   <div className="flex items-center justify-center gap-2 py-3">
-                    <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchRef.current(page - 1)} className="gap-1 rounded-full text-xs"><ChevronLeft className="h-3 w-3" /></Button>
+                    <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchPage(page - 1)} className="gap-1 rounded-full text-xs"><ChevronLeft className="h-3 w-3" /></Button>
                     <span className="text-xs text-muted-foreground tabular-nums">{page}/{totalPages}</span>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchRef.current(page + 1)} className="gap-1 rounded-full text-xs"><ChevronRight className="h-3 w-3" /></Button>
+                    <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchPage(page + 1)} className="gap-1 rounded-full text-xs"><ChevronRight className="h-3 w-3" /></Button>
                   </div>
                 )}
               </div>
@@ -945,13 +600,12 @@ export default function ImoveisPage() {
                     <div className={cn("grid gap-4", "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
                       {aiProperties.map(({ item, score }, idx) => {
                         const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
-                        const CardComponent = PropertyCardGrid;
                         return (
                           <div key={item.id_imovel || item.codigo || idx} className="relative">
                             <div className={cn("absolute top-3 left-3 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold shadow-sm backdrop-blur-sm", score >= 90 ? "bg-emerald-500/90 text-white" : score >= 75 ? "bg-primary/90 text-primary-foreground" : score >= 60 ? "bg-amber-500/90 text-white" : "bg-muted/90 text-foreground")}>
                               <Sparkles className="h-2.5 w-2.5" />{score}%
                             </div>
-                            <CardComponent item={item} idx={idx} isCampanha={false} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} onOpenLightbox={openLightbox} getPreco={getPreco} />
+                            <PropertyCardGrid item={item} idx={idx} isCampanha={false} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} onOpenLightbox={openLightbox} getPreco={getPreco} />
                           </div>
                         );
                       })}
@@ -1016,7 +670,7 @@ export default function ImoveisPage() {
                   <Search className="h-12 w-12 mx-auto text-destructive/30 mb-4" />
                   <p className="text-lg font-semibold text-foreground">Erro ao carregar imóveis</p>
                   <p className="text-sm text-muted-foreground mt-1">{fetchError}</p>
-                  <Button variant="outline" size="sm" className="mt-4" onClick={() => fetchRef.current(1)}>Tentar novamente</Button>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={() => fetchPage(1)}>Tentar novamente</Button>
                 </Card>
               ) : loading ? (
                 <div className={cn("grid gap-4", "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
@@ -1044,9 +698,9 @@ export default function ImoveisPage() {
                   </div>
                   {totalPages > 1 && !campanhaAtiva && (
                     <div className="flex items-center justify-center gap-3 pt-6 pb-2">
-                      <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchRef.current(page - 1)} className="gap-1 rounded-full"><ChevronLeft className="h-4 w-4" /> Anterior</Button>
+                      <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchPage(page - 1)} className="gap-1 rounded-full"><ChevronLeft className="h-4 w-4" /> Anterior</Button>
                       <span className="text-sm text-muted-foreground font-medium tabular-nums">{page} de {totalPages}</span>
-                      <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchRef.current(page + 1)} className="gap-1 rounded-full">Próxima <ChevronRight className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchPage(page + 1)} className="gap-1 rounded-full">Próxima <ChevronRight className="h-4 w-4" /></Button>
                     </div>
                   )}
                 </>
