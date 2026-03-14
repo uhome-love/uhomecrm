@@ -6,6 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Structured logger
+const L = {
+  _emit: (level: string, msg: string, ctx?: Record<string, unknown>, err?: unknown) => {
+    const payload = { fn: "lead-escalation", level, msg, ctx, err: err instanceof Error ? { name: err.name, message: err.message } : err ? { raw: String(err) } : undefined, ts: new Date().toISOString() };
+    level === "error" ? console.error(JSON.stringify(payload)) : level === "warn" ? console.warn(JSON.stringify(payload)) : console.info(JSON.stringify(payload));
+  },
+  info: (msg: string, ctx?: Record<string, unknown>) => L._emit("info", msg, ctx),
+  warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => L._emit("warn", msg, ctx, err),
+  error: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => L._emit("error", msg, ctx, err),
+};
+
 async function sendPush(supabaseUrl: string, serviceKey: string, userId: string, title: string, body: string, data?: Record<string, any>) {
   try {
     await fetch(`${supabaseUrl}/functions/v1/send-push`, {
