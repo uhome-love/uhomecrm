@@ -286,7 +286,8 @@ export function AppSidebar() {
   function getGroupsByRole(): { topItem: NavItem | null; groups: { label: string; items: NavItem[] }[]; roleLabel: string; extraBadges?: Record<string, number> } {
     // ── CEO / Admin ──
     if (isAdmin) {
-      const roletaBadges: Record<string, number> = roletaPendentes > 0 ? { "/roleta": roletaPendentes } : {};
+      const alertasBadges: Record<string, number> = alertasPendentes > 0 ? { "/alertas": alertasPendentes } : {};
+      const roletaBadges: Record<string, number> = { ...alertasBadges, ...(roletaPendentes > 0 ? { "/roleta": roletaPendentes } : {}) };
       return {
         topItem: { title: "Dashboard CEO", url: "/ceo", icon: Home },
         groups: [
