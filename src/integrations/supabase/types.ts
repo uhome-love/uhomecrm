@@ -6541,6 +6541,7 @@ export type Database = {
           auth_user_id: string
           dias_presente: number
           perdidos: number
+          perdidos_unicos: number
           pontos_gestao: number
           propostas: number
           taxa_aproveitamento: number
