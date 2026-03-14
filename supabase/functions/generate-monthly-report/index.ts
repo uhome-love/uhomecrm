@@ -342,7 +342,10 @@ ${diagnosticoIa}
     });
   } catch (e) {
     console.error("generate-monthly-report error:", e);
-    logOps("error", "system", "Report generation failed", {}, e instanceof Error ? e.message : String(e));
+    try {
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      sb.from("ops_events").insert({ fn: "generate-monthly-report", level: "error", category: "system", message: "Report generation failed", trace_id: null, ctx: {}, error_detail: e instanceof Error ? e.message : String(e) }).then(() => {});
+    } catch {}
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
