@@ -6303,6 +6303,44 @@ export type Database = {
         }
         Relationships: []
       }
+      v_pipeline_parcerias_visual: {
+        Row: {
+          corretor_parceiro_id: string | null
+          corretor_principal_id: string | null
+          divisao_parceiro: number | null
+          divisao_principal: number | null
+          parceiro_nome: string | null
+          pipeline_lead_id: string | null
+          principal_nome: string | null
+        }
+        Insert: {
+          corretor_parceiro_id?: string | null
+          corretor_principal_id?: string | null
+          divisao_parceiro?: number | null
+          divisao_principal?: number | null
+          parceiro_nome?: never
+          pipeline_lead_id?: string | null
+          principal_nome?: never
+        }
+        Update: {
+          corretor_parceiro_id?: string | null
+          corretor_principal_id?: string | null
+          divisao_parceiro?: number | null
+          divisao_principal?: number | null
+          parceiro_nome?: never
+          pipeline_lead_id?: string | null
+          principal_nome?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_parcerias_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       aceitar_lead: {
