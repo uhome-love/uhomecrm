@@ -62,6 +62,10 @@ Deno.serve(async (req) => {
     const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
     const L = makeLogger(traceId);
 
+    const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
+      supabase.from("ops_events").insert({ fn: "lead-escalation", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
+    };
+
     // 1. Run the DB-level escalation (creates in-app notifications)
     const { data: escalationCount, error: escError } = await supabase.rpc(
       "escalonar_notificacoes_leads"
