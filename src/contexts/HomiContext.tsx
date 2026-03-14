@@ -8,6 +8,14 @@ export type HomiRole = "corretor" | "gestor" | "ceo";
 
 export type Message = { role: "user" | "assistant"; content: string };
 
+export type KnowledgeSourceInfo = {
+  source: "db" | "fallback" | "partial";
+  db: number;
+  fallback: number;
+  partial: number;
+  total: number;
+} | null;
+
 export type ProactiveAlert = {
   id: string;
   priority: "critical" | "normal" | "info";
