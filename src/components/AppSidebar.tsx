@@ -409,6 +409,7 @@ export function AppSidebar() {
           },
         ],
         roleLabel: `Gerente · Time ${profile.nome?.split(" ")[0] || ""}`,
+        extraBadges: alertasPendentes > 0 ? { "/alertas": alertasPendentes } : {},
       };
     }
 
