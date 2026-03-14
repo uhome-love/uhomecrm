@@ -413,6 +413,7 @@ Deno.serve(async (req) => {
 
     if (insertError) {
       L.error("Lead insert failed", { name, telefone, empreendimento }, insertError);
+      logOps("error", "system", "Lead insert failed", { name, telefone, empreendimento }, insertError.message);
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
