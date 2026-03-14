@@ -70,9 +70,9 @@ export function useHomiAlerts() {
   // Sync dismissals back to DB
   const dismissInDb = useCallback(async (alertDbId: string) => {
     try {
-      await supabase
-        .from("homi_alerts" as any)
-        .update({ dispensada: true } as any)
+      await (supabase as any)
+        .from("homi_alerts")
+        .update({ dispensada: true })
         .eq("id", alertDbId);
     } catch (e) {
       console.warn("[useHomiAlerts] Dismiss error:", e);
