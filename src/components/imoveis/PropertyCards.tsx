@@ -32,19 +32,29 @@ import {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// ── ResponsavelButton (lazy-loads owner info on click) ──
+// ── In-memory cache for ResponsavelButton (session-scoped) ──
+const responsavelCache = new Map<string, { origem: any | null }>();
+
+// ── ResponsavelButton (lazy-loads owner info on click, cached) ──
 
 function ResponsavelButton({ codigo }: { codigo: string }) {
-  const [origem, setOrigem] = useState<any>(null);
+  const [origem, setOrigem] = useState<any>(() => responsavelCache.get(codigo)?.origem ?? null);
   const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
+  const [fetched, setFetched] = useState(() => responsavelCache.has(codigo));
   const handleOpen = async (open: boolean) => {
     if (!open || fetched || !codigo) return;
+    if (responsavelCache.has(codigo)) {
+      setOrigem(responsavelCache.get(codigo)!.origem);
+      setFetched(true);
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await supabase.functions.invoke("jetimob-proxy", { body: { action: "get_imovel", codigo } });
       const detail = data?.data || data;
-      if (detail && !detail.not_found) setOrigem(extractOrigemExterna(detail));
+      const result = (detail && !detail.not_found) ? extractOrigemExterna(detail) : null;
+      responsavelCache.set(codigo, { origem: result });
+      setOrigem(result);
     } catch { /* */ } finally { setLoading(false); setFetched(true); }
   };
   return (
