@@ -158,44 +158,48 @@ export function useGerenteDashboard(period: Period) {
     return map;
   }, [teamMembers]);
 
-  // ── KPIs ──
+  // ── KPIs — MIGRATED to official metrics layer ──
   const { data: kpis, isLoading: kpisLoading } = useQuery({
-    queryKey: ["gerente-kpis-v2", user?.id, profileId, period, teamUserIds.join(",")],
+    queryKey: ["gerente-kpis-v3", user?.id, profileId, period, teamUserIds.join(",")],
     queryFn: async () => {
       if (teamUserIds.length === 0 || !profileId) return { ligacoes: 0, metaTime: 0, aproveitados: 0, taxa: 0, visitasHoje: 0, visitasSemana: 0, visitasMarcadas: 0, visitasRealizadas: 0, totalLeads: 0, negociosAtivos: 0, vgvTotal: 0, melhorStreak: { nome: "-", count: 0 } };
 
-      const [{ count: ligacoes }, { count: aproveitados }, { count: visitasHoje }, { count: visitasSemana }, { count: visitasMarcadas }, { count: visitasRealizadas }, { count: totalLeads }] = await Promise.all([
-        supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
-        supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds).eq("resultado", "com_interesse").gte("created_at", startTs).lte("created_at", endTs),
+      // Fetch team KPIs from official RPC
+      const allKPIs = await fetchOfficialKPIs({ start, end });
+      const teamKPIs = allKPIs.filter(k => teamUserIds.includes(k.auth_user_id));
+
+      const ligacoes = teamKPIs.reduce((s, k) => s + k.total_ligacoes, 0);
+      const aproveitados = teamKPIs.reduce((s, k) => s + k.total_aproveitados, 0);
+      const visitasMarcadas = teamKPIs.reduce((s, k) => s + k.visitas_marcadas, 0);
+      const visitasRealizadas = teamKPIs.reduce((s, k) => s + k.visitas_realizadas, 0);
+
+      // Visitas hoje (operational, keep direct query)
+      const [{ count: visitasHoje }, { count: visitasSemana }, { count: totalLeads }] = await Promise.all([
         supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today),
         supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).gte("data_visita", format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).lte("data_visita", format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")),
-        // Visitas Marcadas = created in period (when booked), not by scheduled date
-        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).gte("created_at", startTs).lte("created_at", endTs),
-        // Visitas Realizadas = data_visita in period + status realizada
-        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("status", "realizada").gte("data_visita", start).lte("data_visita", end),
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds),
       ]);
 
+      // Negocios ativos (operational detail, keep direct query)
       const { data: negocios } = await supabase.from("negocios").select("fase, vgv_estimado").eq("gerente_id", profileId!).not("fase", "in", '("perdido","cancelado","distrato")');
       const negociosAtivos = negocios?.length || 0;
       const vgvTotal = (negocios || []).reduce((s, n) => s + Number(n.vgv_estimado || 0), 0);
-      const lig = ligacoes || 0;
-      const apr = aproveitados || 0;
+
       const metaPorCorretor = period === "dia" ? 30 : period === "semana" ? 150 : 600;
       const metaTime = teamUserIds.length * metaPorCorretor;
 
-      const { data: streakData } = await supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs);
-      const streakCounts: Record<string, number> = {};
-      (streakData || []).forEach(s => { streakCounts[s.corretor_id] = (streakCounts[s.corretor_id] || 0) + 1; });
-      const topStreakId = Object.entries(streakCounts).sort((a, b) => b[1] - a[1])[0];
+      // Best streak from team KPIs
+      const topStreak = teamKPIs.sort((a, b) => b.total_ligacoes - a.total_ligacoes)[0];
+      const melhorStreak = topStreak 
+        ? { nome: teamNameMap[topStreak.auth_user_id]?.split(" ")[0] || "Corretor", count: topStreak.total_ligacoes }
+        : { nome: "-", count: 0 };
 
       return {
-        ligacoes: lig, metaTime, aproveitados: apr, taxa: lig > 0 ? Math.round((apr / lig) * 100) : 0,
+        ligacoes, metaTime, aproveitados, taxa: ligacoes > 0 ? Math.round((aproveitados / ligacoes) * 100) : 0,
         visitasHoje: visitasHoje || 0, visitasSemana: visitasSemana || 0,
-        visitasMarcadas: visitasMarcadas || 0, visitasRealizadas: visitasRealizadas || 0,
+        visitasMarcadas, visitasRealizadas,
         totalLeads: totalLeads || 0,
-        negociosAtivos, vgvTotal,
-        melhorStreak: topStreakId ? { nome: teamNameMap[topStreakId[0]]?.split(" ")[0] || "Corretor", count: topStreakId[1] } : { nome: "-", count: 0 },
+        negociosAtivos, vgvTotal, melhorStreak,
       };
     },
     enabled: !!user && !!profileId && teamUserIds.length > 0,
