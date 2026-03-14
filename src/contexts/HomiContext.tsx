@@ -284,8 +284,32 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// No-op defaults for when useHomi is called outside HomiProvider (e.g. lazy load race)
+const NOOP_CONTEXT: HomiContextType = {
+  isOpen: false,
+  openHomi: () => {},
+  closeHomi: () => {},
+  toggleHomi: () => {},
+  messages: [],
+  sendMessage: async () => {},
+  clearMessages: () => {},
+  isLoading: false,
+  alerts: [],
+  addProactiveAlert: () => {},
+  dismissAlert: () => {},
+  unseenCount: 0,
+  currentPage: "/",
+  homiRole: "gestor",
+  userName: "",
+  knowledgeSource: null,
+  conversationId: null,
+};
+
 export function useHomi() {
   const ctx = useContext(HomiContext);
-  if (!ctx) throw new Error("useHomi must be used within HomiProvider");
+  if (!ctx) {
+    console.warn("useHomi called outside HomiProvider — returning no-op defaults");
+    return NOOP_CONTEXT;
+  }
   return ctx;
 }
