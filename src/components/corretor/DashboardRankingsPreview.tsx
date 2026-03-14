@@ -1,15 +1,24 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRankings } from "@/hooks/useKPIs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Trophy, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatBRLCompact } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 import { useOARanking } from "@/hooks/useOfertaAtiva";
+
+/**
+ * DashboardRankingsPreview — Mini ranking cards for broker dashboard
+ * 
+ * MIGRATED: VGV ranking now uses the official metrics layer (v_kpi_negocios view).
+ * OA ranking still uses useOARanking (already canonical - uses auth_user_id).
+ * Gestão ranking still uses existing RPC.
+ */
 
 const medals = ["🥇", "🥈", "🥉"];
 
@@ -38,21 +47,24 @@ export default function DashboardRankingsPreview() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // OA ranking
+  // OA ranking (already uses auth_user_id)
   const { ranking: oaRanking } = useOARanking("hoje");
   const oaItems = (oaRanking || []).map(r => ({ id: r.corretor_id, nome: r.nome, value: r.tentativas }));
 
-  // VGV mini ranking (from negocios)
+  // VGV mini ranking — MIGRATED to official metrics layer
   const { data: vgvItems = [] } = useQuery({
-    queryKey: ["mini-ranking-vgv"],
+    queryKey: ["mini-ranking-vgv-v2"],
     queryFn: async () => {
+      // Use the canonical view which resolves profiles.id → auth_user_id
       const { data } = await supabase
-        .from("negocios")
-        .select("corretor_id, vgv_final")
-        .eq("fase", "assinado");
+        .from("v_kpi_negocios" as any)
+        .select("auth_user_id, vgv_efetivo")
+        .eq("conta_venda", 1);
       if (!data) return [];
       const map: Record<string, number> = {};
-      data.forEach(n => { if (n.corretor_id) map[n.corretor_id] = (map[n.corretor_id] || 0) + (n.vgv_final || 0); });
+      (data as any[]).forEach(n => {
+        if (n.auth_user_id) map[n.auth_user_id] = (map[n.auth_user_id] || 0) + (n.vgv_efetivo || 0);
+      });
       const ids = Object.keys(map);
       if (ids.length === 0) return [];
       const { data: profiles } = await supabase.from("profiles").select("user_id, nome").in("user_id", ids);
@@ -63,7 +75,7 @@ export default function DashboardRankingsPreview() {
     staleTime: 60_000,
   });
 
-  // Gestão mini ranking (lead activity score)
+  // Gestão mini ranking (existing RPC - already uses auth_user_id via pipeline_leads)
   const { data: gestaoItems = [] } = useQuery({
     queryKey: ["mini-ranking-gestao"],
     queryFn: async () => {

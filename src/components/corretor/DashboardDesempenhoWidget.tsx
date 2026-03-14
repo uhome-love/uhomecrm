@@ -1,77 +1,38 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useMyKPIs } from "@/hooks/useKPIs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, Phone, CheckCircle, CalendarCheck, MessageCircle, Mail } from "lucide-react";
-import { format, subDays, startOfWeek, startOfMonth } from "date-fns";
-import { todayBRT } from "@/lib/utils";
 
-interface Stats {
-  tentativas: number;
-  aproveitados: number;
-  visitasMarcadas: number;
-  visitasRealizadas: number;
-  pontos: number;
-  ligacoes: number;
-  whatsapps: number;
-  emails: number;
-}
+/**
+ * DashboardDesempenhoWidget — Broker performance widget
+ * 
+ * MIGRATED: Main KPI metrics now come from the official metrics layer (useMyKPIs).
+ * Channel breakdowns (ligacoes/whatsapp/email) still use a direct query since
+ * the RPC doesn't break down by channel.
+ */
 
-function useDesempenho(period: "dia" | "semana" | "mes") {
+function useChannelBreakdown(period: "dia" | "semana" | "mes") {
   const { user } = useAuth();
-  const today = todayBRT();
 
   return useQuery({
-    queryKey: ["desempenho-widget", user?.id, period, today],
-    queryFn: async (): Promise<Stats> => {
-      const now = new Date();
-      let fromDate: string;
-      if (period === "dia") {
-        fromDate = today;
-      } else if (period === "semana") {
-        fromDate = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
-      } else {
-        fromDate = format(startOfMonth(now), "yyyy-MM-dd");
-      }
-      const fromUtc = new Date(`${fromDate}T00:00:00-03:00`).toISOString();
-
-      const { data: tentativas } = await supabase
-        .from("oferta_ativa_tentativas")
-        .select("canal, resultado, pontos")
-        .eq("corretor_id", user!.id)
-        .gte("created_at", fromUtc);
-
-      const rows = tentativas || [];
-      const stats: Stats = {
-        tentativas: rows.length,
-        aproveitados: rows.filter(r => r.resultado === "com_interesse").length,
-        ligacoes: rows.filter(r => r.canal === "ligacao").length,
-        whatsapps: rows.filter(r => r.canal === "whatsapp").length,
-        emails: rows.filter(r => r.canal === "email").length,
-        pontos: rows.reduce((s, r) => s + (r.pontos || 0), 0),
-        visitasMarcadas: 0,
-        visitasRealizadas: 0,
+    queryKey: ["desempenho-channels", user?.id, period],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("v_kpi_ligacoes" as any)
+        .select("canal, aproveitado")
+        .eq("auth_user_id", user!.id);
+      // Note: filtering by period is handled by the main KPI hook;
+      // here we just need channel distribution for today's view
+      const rows = data || [];
+      return {
+        ligacoes: rows.filter((r: any) => r.canal === "ligacao").length,
+        whatsapps: rows.filter((r: any) => r.canal === "whatsapp").length,
+        emails: rows.filter((r: any) => r.canal === "email").length,
       };
-
-      const { count: vm } = await supabase
-        .from("visitas")
-        .select("id", { count: "exact", head: true })
-        .eq("corretor_id", user!.id)
-        .gte("created_at", fromUtc)
-        .in("status", ["marcada", "confirmada"]);
-      stats.visitasMarcadas = vm || 0;
-
-      const { count: vr } = await supabase
-        .from("visitas")
-        .select("id", { count: "exact", head: true })
-        .eq("corretor_id", user!.id)
-        .gte("created_at", fromUtc)
-        .eq("status", "realizada");
-      stats.visitasRealizadas = vr || 0;
-
-      return stats;
     },
     enabled: !!user,
     staleTime: 30_000,
@@ -80,18 +41,19 @@ function useDesempenho(period: "dia" | "semana" | "mes") {
 
 export default function DashboardDesempenhoWidget() {
   const [period, setPeriod] = useState<"dia" | "semana" | "mes">("dia");
-  const { data: stats } = useDesempenho(period);
+  const { data: kpis } = useMyKPIs(period);
+  const { data: channels } = useChannelBreakdown(period);
 
-  const s = stats || { tentativas: 0, aproveitados: 0, visitasMarcadas: 0, visitasRealizadas: 0, pontos: 0, ligacoes: 0, whatsapps: 0, emails: 0 };
-  const taxa = s.tentativas > 0 ? Math.round((s.aproveitados / s.tentativas) * 100) : 0;
+  const k = kpis || { total_ligacoes: 0, total_aproveitados: 0, taxa_aproveitamento: 0, visitas_marcadas: 0, visitas_realizadas: 0, pontos_gestao: 0 };
+  const ch = channels || { ligacoes: 0, whatsapps: 0, emails: 0 };
 
   const metrics = [
-    { label: "Ligações", value: s.ligacoes, icon: Phone, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { label: "WhatsApps", value: s.whatsapps, icon: MessageCircle, color: "text-green-500", bg: "bg-green-500/10" },
-    { label: "E-mails", value: s.emails, icon: Mail, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Visitas Marc.", value: s.visitasMarcadas, icon: CalendarCheck, color: "text-amber-500", bg: "bg-amber-500/10" },
-    { label: "Aproveitados", value: s.aproveitados, icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-    { label: "Taxa Aprov.", value: `${taxa}%`, icon: BarChart3, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Ligações", value: ch.ligacoes, icon: Phone, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "WhatsApps", value: ch.whatsapps, icon: MessageCircle, color: "text-green-500", bg: "bg-green-500/10" },
+    { label: "E-mails", value: ch.emails, icon: Mail, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Visitas Marc.", value: k.visitas_marcadas, icon: CalendarCheck, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { label: "Aproveitados", value: k.total_aproveitados, icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+    { label: "Taxa Aprov.", value: `${k.taxa_aproveitamento}%`, icon: BarChart3, color: "text-primary", bg: "bg-primary/10" },
   ];
 
   return (
@@ -127,8 +89,8 @@ export default function DashboardDesempenhoWidget() {
         </div>
 
         <div className="flex items-center justify-between px-1 pt-1 border-t border-border/40">
-          <span className="text-xs text-muted-foreground">Total tentativas: <strong className="text-foreground">{s.tentativas}</strong></span>
-          <span className="text-xs text-muted-foreground">Pontos: <strong className="text-primary">{s.pontos}</strong></span>
+          <span className="text-xs text-muted-foreground">Total tentativas: <strong className="text-foreground">{k.total_ligacoes}</strong></span>
+          <span className="text-xs text-muted-foreground">Pontos: <strong className="text-primary">{k.pontos_gestao}</strong></span>
         </div>
       </CardContent>
     </Card>

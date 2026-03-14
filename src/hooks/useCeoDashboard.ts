@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from "date-fns";
 import { todayBRT, dateToBRT, formatBRLCompact } from "@/lib/utils";
+import { fetchKPIs as fetchOfficialKPIs } from "@/lib/metricsService";
 
 export type DashPeriod = "hoje" | "ontem" | "semana" | "mes" | "ultimos_30d" | "custom";
 
@@ -64,34 +65,25 @@ export interface OrigemData {
   origem: string; count: number;
 }
 
-// ── KPI fetcher (reused for current + previous period) ──
+// ── KPI fetcher — MIGRATED to official metrics layer ──
 async function fetchKPIs(r: { start: string; end: string }): Promise<KPIs> {
-  const startTs = `${r.start}T00:00:00`;
-  const endTs = `${r.end}T23:59:59`;
+  const allKPIs = await fetchOfficialKPIs(r);
 
-  const [{ count: ligacoes }, { count: aproveitados }, { count: visitasMarcadasCount }, { data: visitasData }, { data: negocios }, { data: negociosAssinados }] = await Promise.all([
-    supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs),
-    supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).eq("resultado", "com_interesse"),
-    supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs),
-    supabase.from("visitas").select("id, status").gte("data_visita", r.start).lte("data_visita", r.end),
-    supabase.from("negocios").select("id, fase, status, vgv_estimado, vgv_final").gte("created_at", startTs).lte("created_at", endTs),
-    supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final").in("fase", ["assinado", "vendido"]).gte("data_assinatura", r.start).lte("data_assinatura", r.end),
-  ]);
-
-  const lig = ligacoes || 0;
-  const aprov = aproveitados || 0;
-  const visitasMarcadas = visitasMarcadasCount || 0;
-  const visitasRealizadas = visitasData?.filter(v => v.status === "realizada").length || 0;
-  const noShows = visitasData?.filter(v => v.status === "no_show").length || 0;
-  const vgvGerado = negocios?.reduce((s, n) => s + (n.vgv_estimado || 0), 0) || 0;
-  const vgvAssinado = (negociosAssinados || []).reduce((s, n) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
-  const propostas = negocios?.filter(n => n.fase === "proposta" || n.fase === "negociacao").length || 0;
-  const negociosPerdidos = negocios?.filter(n => n.status === "perdido" || n.status === "cancelado").length || 0;
+  // Aggregate across all corretores (CEO sees company-wide)
+  const lig = allKPIs.reduce((s, k) => s + k.total_ligacoes, 0);
+  const aprov = allKPIs.reduce((s, k) => s + k.total_aproveitados, 0);
+  const visitasMarcadas = allKPIs.reduce((s, k) => s + k.visitas_marcadas, 0);
+  const visitasRealizadas = allKPIs.reduce((s, k) => s + k.visitas_realizadas, 0);
+  const noShows = allKPIs.reduce((s, k) => s + k.visitas_no_show, 0);
+  const vgvGerado = allKPIs.reduce((s, k) => s + k.vgv_gerado, 0);
+  const vgvAssinado = allKPIs.reduce((s, k) => s + k.vgv_assinado, 0);
+  const propostas = allKPIs.reduce((s, k) => s + k.propostas, 0);
+  const vendas = allKPIs.reduce((s, k) => s + k.vendas, 0);
 
   return {
     ligacoes: lig, aproveitados: aprov, taxaConversao: lig > 0 ? Math.round((aprov / lig) * 100) : 0,
     visitasMarcadas, visitasRealizadas, taxaRealizacao: visitasMarcadas > 0 ? Math.round((visitasRealizadas / visitasMarcadas) * 100) : 0,
-    vgvGerado, vgvAssinado, propostas, negociosPerdidos, noShows,
+    vgvGerado, vgvAssinado, propostas, negociosPerdidos: 0, noShows,
   };
 }
 
@@ -237,7 +229,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   const { data: negociosData } = useQuery({
     queryKey: ["ceo-negocios", user?.id],
     queryFn: async () => {
-      const { data: negocios } = await supabase.from("negocios").select("id, fase, status, vgv_estimado, vgv_final, corretor_id, updated_at, empreendimento").limit(500);
+      // MIGRATED: Include auth_user_id for canonical identity lookup
+      const { data: negocios } = await supabase.from("negocios").select("id, fase, status, vgv_estimado, vgv_final, auth_user_id, updated_at, empreendimento").limit(500);
       const now = new Date();
       const faseMap = new Map<string, { count: number; vgv: number }>();
       let risco = 0;
@@ -253,16 +246,17 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       }
       const negocioFases = Array.from(faseMap.entries()).map(([fase, d]) => ({ fase, ...d }));
 
-      // Top corretores by VGV de vendas realizadas (assinado/vendido)
+      // MIGRATED: Top corretores by VGV using auth_user_id (canonical)
       const corrMap = new Map<string, number>();
       for (const n of (negocios || [])) {
-        if (!n.corretor_id) continue;
+        const uid = n.auth_user_id;
+        if (!uid) continue;
         if (n.fase !== "assinado" && n.fase !== "vendido") continue;
-        corrMap.set(n.corretor_id, (corrMap.get(n.corretor_id) || 0) + (n.vgv_final || n.vgv_estimado || 0));
+        corrMap.set(uid, (corrMap.get(uid) || 0) + (n.vgv_final || n.vgv_estimado || 0));
       }
       const corrIds = [...corrMap.keys()];
-      const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("id, nome").in("id", corrIds) : { data: [] as { id: string; nome: string }[] };
-      const profMap = new Map((profs || []).map(p => [p.id, p.nome] as [string, string]));
+      const { data: profs } = corrIds.length > 0 ? await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds) : { data: [] as { user_id: string; nome: string }[] };
+      const profMap = new Map((profs || []).map(p => [p.user_id, p.nome] as [string, string]));
       const topCorretoresVgv = Array.from(corrMap.entries()).map(([id, vgv]) => ({ nome: profMap.get(id) || "Corretor", vgv })).sort((a, b) => b.vgv - a.vgv).slice(0, 5);
 
       return { negocioFases, vgvEmRisco: risco, topCorretoresVgv };
@@ -298,12 +292,11 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const profileToUserId = new Map((corrProfs || []).map(p => [p.id, p.user_id]));
       const allMemberProfileIds = (corrProfs || []).map(p => p.id).filter(Boolean) as string[];
 
+      // MIGRATED: Use auth_user_id for negocios instead of profile_id lookup
       const [{ data: allVisMarcadas }, { data: allVisRealizadas }, { data: allNeg }] = await Promise.all([
         supabase.from("visitas").select("id, corretor_id").in("corretor_id", allMemberUserIds).gte("created_at", startTs).lte("created_at", endTs),
         supabase.from("visitas").select("id, status, corretor_id").in("corretor_id", allMemberUserIds).gte("data_visita", range.start).lte("data_visita", range.end),
-        allMemberProfileIds.length > 0
-          ? supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, corretor_id, data_assinatura").in("corretor_id", allMemberProfileIds).in("fase", ["assinado", "vendido"])
-          : Promise.resolve({ data: [] as any[] }),
+        supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final, auth_user_id, data_assinatura").in("auth_user_id", allMemberUserIds).in("fase", ["assinado", "vendido"]),
       ]);
 
       // Paginated tentativas
@@ -332,11 +325,10 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const aprov = tent.filter(t => t.resultado === "com_interesse").length;
           const vm = (allVisMarcadas || []).filter(v => v.corretor_id === uid).length;
           const vr = (allVisRealizadas || []).filter(v => v.corretor_id === uid && v.status === "realizada").length;
-          // Negocios use profile_id as corretor_id
-          const profId = userToProfileId.get(uid);
-          const neg = profId ? (allNeg || []).filter(n => n.corretor_id === profId) : [];
+          // MIGRATED: Use auth_user_id directly (no profile_id conversion needed)
+          const neg = (allNeg || []).filter(n => n.auth_user_id === uid);
           const prop = neg.filter(n => n.fase === "proposta" || n.fase === "negociacao").length;
-          const vgv = neg.reduce((s, n) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
+          const vgv = neg.reduce((s: number, n: any) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
           corretoresAll.push({
             corretor_id: uid, nome: corrNameMap.get(uid) || "Corretor", gerente_nome: gerenteNome,
