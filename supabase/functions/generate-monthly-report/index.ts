@@ -335,11 +335,14 @@ ${diagnosticoIa}
       });
     }
 
+    logOps("info", "business", `Monthly report generated: ${targetMes}`, { mes: targetMes });
+
     return new Response(JSON.stringify({ success: true, mes: targetMes }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("generate-monthly-report error:", e);
+    logOps("error", "system", "Report generation failed", {}, e instanceof Error ? e.message : String(e));
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

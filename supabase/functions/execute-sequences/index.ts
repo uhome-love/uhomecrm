@@ -244,12 +244,19 @@ Deno.serve(async (req) => {
 
     const result = { executed, errors, enrolled, timestamp: now.toISOString() };
     L.info("Run complete", result as unknown as Record<string, unknown>);
+    if (executed > 0 || errors > 0 || enrolled > 0) {
+      logOps("info", "business", `Sequences run: ${executed} executed, ${errors} errors, ${enrolled} enrolled`, result as unknown as Record<string, unknown>);
+    }
+    if (errors > 0) {
+      logOps("warn", "system", `Sequence execution had ${errors} errors`, { executed, errors });
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     L.error("Unhandled exception", {}, err);
+    logOps("error", "system", "Unhandled exception", {}, err instanceof Error ? err.message : String(err));
     return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
