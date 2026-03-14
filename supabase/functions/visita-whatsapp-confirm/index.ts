@@ -172,15 +172,15 @@ serve(async (req) => {
       const message = `Olá ${visita.nome_cliente || ""}! 👋 Sua visita ao ${visita.empreendimento || "empreendimento"} está confirmada para ${formatDate(visita.data_visita)} às ${formatTime(visita.hora_visita)}. Seu corretor ${corretorNome} estará te esperando.${confirmLink}\nQualquer dúvida é só responder esta mensagem. Até lá! 🏠`;
 
       try {
-        const result = await sendWhatsApp(apiKey, visita.telefone, message);
-        L.info("Confirmation sent", { visita_id, phone: visita.telefone?.slice(-4) });
+        const { data: result, attempts } = await sendWhatsApp(apiKey, visita.telefone, message, L);
+        L.info("Confirmation sent", { visita_id, phone: visita.telefone?.slice(-4), attempts });
         return new Response(
-          JSON.stringify({ success: true, message_id: result?.messages?.[0]?.id }),
+          JSON.stringify({ success: true, message_id: result?.messages?.[0]?.id, attempts }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       } catch (sendErr) {
-        L.error("Confirmation WhatsApp failed", { visita_id }, sendErr);
-        logOps("error", "integration", "WhatsApp confirmation send failed", { visita_id }, sendErr instanceof Error ? sendErr.message : String(sendErr));
+        L.error("Confirmation WhatsApp failed after retries", { visita_id }, sendErr);
+        logOps("error", "integration", "WhatsApp confirmation send failed after retries", { visita_id }, sendErr instanceof Error ? sendErr.message : String(sendErr));
         throw sendErr;
       }
     }
