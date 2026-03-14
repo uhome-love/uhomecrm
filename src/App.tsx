@@ -173,30 +173,30 @@ const App = () => (
             {/* Corretor — todos autenticados */}
             <Route path="/corretor" element={<ProtectedPage><ErrorBoundary module="corretor-dashboard"><CorretorDashboard /></ErrorBoundary></ProtectedPage>} />
             <Route path="/aceite" element={<ProtectedPage><ErrorBoundary module="aceite-leads"><AceiteLeads /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/minhas-tarefas" element={<ProtectedPage><MinhasTarefas /></ProtectedPage>} />
-            <Route path="/minhas-vitrines" element={<ProtectedPage><MinhasVitrines /></ProtectedPage>} />
-            <Route path="/corretor/call" element={<ProtectedPage><CorretorCall /></ProtectedPage>} />
+            <Route path="/minhas-tarefas" element={<ProtectedPage><ErrorBoundary module="minhas-tarefas"><MinhasTarefas /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/minhas-vitrines" element={<ProtectedPage><ErrorBoundary module="minhas-vitrines"><MinhasVitrines /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/corretor/call" element={<ProtectedPage><ErrorBoundary module="corretor-call"><CorretorCall /></ErrorBoundary></ProtectedPage>} />
             <Route path="/agenda-visitas" element={<ProtectedPage><ErrorBoundary module="agenda-visitas"><AgendaVisitas /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/corretor/resumo" element={<ProtectedPage><CorretorResumo /></ProtectedPage>} />
-            <Route path="/corretor/ranking-equipes" element={<ProtectedPage><RankingEquipe /></ProtectedPage>} />
-            <Route path="/conquistas" element={<ProtectedPage><Conquistas /></ProtectedPage>} />
-            <Route path="/academia" element={<ProtectedPage><AcademiaPage /></ProtectedPage>} />
-            <Route path="/academia/trilha/:trilhaId" element={<ProtectedPage><AcademiaTrilhaPage /></ProtectedPage>} />
-            <Route path="/academia/aula/:aulaId" element={<ProtectedPage><AcademiaAulaPage /></ProtectedPage>} />
-            <Route path="/academia/gerenciar" element={<ProtectedPage roles={["gestor", "admin"]}><AcademiaGerenciarPage /></ProtectedPage>} />
-            <Route path="/onboarding" element={<ProtectedPage><Onboarding /></ProtectedPage>} />
-            <Route path="/homi" element={<ProtectedPage><HomiAssistant /></ProtectedPage>} />
-            <Route path="/homi-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><HomiGerencial /></ProtectedPage>} />
-            <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><HomiCeo /></ProtectedPage>} />
-            <Route path="/homi/base-conhecimento" element={<ProtectedPage roles={["admin", "gestor"]}><BaseConhecimento /></ProtectedPage>} />
+            <Route path="/corretor/resumo" element={<ProtectedPage><ErrorBoundary module="corretor-resumo"><CorretorResumo /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/corretor/ranking-equipes" element={<ProtectedPage><ErrorBoundary module="corretor-ranking"><RankingEquipe /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/conquistas" element={<ProtectedPage><ErrorBoundary module="conquistas"><Conquistas /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/academia" element={<ProtectedPage><ErrorBoundary module="academia"><AcademiaPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/academia/trilha/:trilhaId" element={<ProtectedPage><ErrorBoundary module="academia-trilha"><AcademiaTrilhaPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/academia/aula/:aulaId" element={<ProtectedPage><ErrorBoundary module="academia-aula"><AcademiaAulaPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/academia/gerenciar" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="academia-gerenciar"><AcademiaGerenciarPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/onboarding" element={<ProtectedPage><ErrorBoundary module="onboarding"><Onboarding /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/homi" element={<ProtectedPage><ErrorBoundary module="homi"><HomiAssistant /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/homi-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="homi-gerente"><HomiGerencial /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="homi-ceo"><HomiCeo /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/homi/base-conhecimento" element={<ProtectedPage roles={["admin", "gestor"]}><ErrorBoundary module="base-conhecimento"><BaseConhecimento /></ErrorBoundary></ProtectedPage>} />
             <Route path="/pipeline-negocios" element={<ProtectedPage><ErrorBoundary module="negocios"><MeusNegocios /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/vendas-realizadas" element={<ProtectedPage><VendasRealizadas /></ProtectedPage>} />
-            <Route path="/pos-vendas" element={<ProtectedPage><PosVendas /></ProtectedPage>} />
+            <Route path="/vendas-realizadas" element={<ProtectedPage><ErrorBoundary module="vendas-realizadas"><VendasRealizadas /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/pos-vendas" element={<ProtectedPage><ErrorBoundary module="pos-vendas"><PosVendas /></ErrorBoundary></ProtectedPage>} />
             <Route path="/imoveis" element={<ProtectedPage><ErrorBoundary module="imoveis"><ImoveisPage /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/melnick-day" element={<ProtectedPage><MelnickDay /></ProtectedPage>} />
-            <Route path="/orygem-60" element={<ProtectedPage><OrygemCampanha /></ProtectedPage>} />
-            <Route path="/mega-cyrela" element={<ProtectedPage><MegaCyrela /></ProtectedPage>} />
-            <Route path="/anuncios" element={<ProtectedPage><AnunciosNoAr /></ProtectedPage>} />
+            <Route path="/melnick-day" element={<ProtectedPage><ErrorBoundary module="melnick-day"><MelnickDay /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/orygem-60" element={<ProtectedPage><ErrorBoundary module="orygem-60"><OrygemCampanha /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/mega-cyrela" element={<ProtectedPage><ErrorBoundary module="mega-cyrela"><MegaCyrela /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/anuncios" element={<ProtectedPage><ErrorBoundary module="anuncios"><AnunciosNoAr /></ErrorBoundary></ProtectedPage>} />
 
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><BuscaLeads /></ProtectedPage>} />
