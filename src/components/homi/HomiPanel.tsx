@@ -33,8 +33,9 @@ const QUICK_ACTIONS: Record<string, { label: string; prompt: string }[]> = {
 
 function HomiPanelInner() {
   const {
-    isOpen, closeHomi, messages, sendMessage, clearMessages, isLoading, homiRole, userName,
+    isOpen, closeHomi, messages, sendMessage, clearMessages, isLoading, homiRole, userName, knowledgeSource,
   } = useHomi();
+  const { isAdmin } = useUserRole();
 
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
