@@ -77,6 +77,7 @@ export function HomiProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<ProactiveAlert[]>([]);
   const [userName, setUserName] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [knowledgeSource, setKnowledgeSource] = useState<KnowledgeSourceInfo>(null);
   const pendingMessageRef = useRef<string | null>(null);
 
   const homiRole: HomiRole = isAdmin ? "ceo" : isCorretor ? "corretor" : "gestor";
