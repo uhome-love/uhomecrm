@@ -255,9 +255,9 @@ Deno.serve(async (req) => {
                   }),
                 });
                 const distResult = await distResponse.json();
-                console.log(`Auto-redistribute lead ${expired.pipeline_lead_id}: ${JSON.stringify(distResult)}`);
+                L.info("Auto-redistribute lead", { leadId: expired.pipeline_lead_id, result: distResult });
               } catch (distErr) {
-                console.warn(`Auto-redistribute failed for ${expired.pipeline_lead_id}:`, distErr);
+                L.warn("Auto-redistribute failed", { leadId: expired.pipeline_lead_id }, distErr);
               }
             }
 
