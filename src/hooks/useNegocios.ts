@@ -115,15 +115,13 @@ export function useNegocios() {
 
     let rows = (data || []) as Negocio[];
 
-    // For corretores: also fetch partner negocios via pipeline_parcerias
+    // For corretores: also fetch partner negocios via canonical view
     if (!isAdmin && !isGestor) {
       const { data: partnerships } = await supabase
-        .from("pipeline_parcerias")
-        .select("pipeline_lead_id")
-        .or(`corretor_principal_id.eq.${user.id},corretor_parceiro_id.eq.${user.id}`)
-        .eq("status", "ativa");
+        .from("v_user_partner_leads")
+        .select("pipeline_lead_id");
 
-      const partnerLeadIds = (partnerships || []).map(p => p.pipeline_lead_id).filter(Boolean);
+      const partnerLeadIds = (partnerships || []).map((p: any) => p.pipeline_lead_id).filter(Boolean);
       if (partnerLeadIds.length > 0) {
         const existingIds = new Set(rows.map(n => n.id));
         const { data: partnerNegocios } = await supabase

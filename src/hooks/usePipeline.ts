@@ -157,15 +157,13 @@ export function usePipeline(pipelineTipo: string = "leads") {
       }
     }
 
-    // Load partnership lead IDs for corretores (leads where user is a partner)
+    // Load partnership lead IDs for corretores via canonical view
     let partnerLeadIds: string[] = [];
     if (!isAdmin && !isGestor) {
       const { data: partnerships } = await supabase
-        .from("pipeline_parcerias")
-        .select("pipeline_lead_id")
-        .or(`corretor_principal_id.eq.${user.id},corretor_parceiro_id.eq.${user.id}`)
-        .eq("status", "ativa");
-      partnerLeadIds = (partnerships || []).map(p => p.pipeline_lead_id).filter(Boolean);
+        .from("v_user_partner_leads")
+        .select("pipeline_lead_id");
+      partnerLeadIds = (partnerships || []).map((p: any) => p.pipeline_lead_id).filter(Boolean);
     }
 
     const allRows: PipelineLead[] = [];
