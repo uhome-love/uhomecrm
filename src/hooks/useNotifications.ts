@@ -55,7 +55,7 @@ export function useNotifications() {
       return results;
     },
     enabled: !!user,
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   const unreadCount = notifications.filter((n) => !n.lida).length;

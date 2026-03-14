@@ -98,9 +98,9 @@ export default function HomiCeoFloating({ dashboardData }: Props) {
 
   useEffect(() => { generateAlerts(); }, [generateAlerts]);
 
-  // Refresh alerts every 30s
+  // Refresh alerts every 60s
   useEffect(() => {
-    const interval = setInterval(generateAlerts, 30000);
+    const interval = setInterval(generateAlerts, 60000);
     return () => clearInterval(interval);
   }, [generateAlerts]);
 
