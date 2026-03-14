@@ -4,84 +4,91 @@
  * Every dashboard, ranking, report, and table MUST reference these definitions
  * to ensure consistency across the entire UhomeSales system.
  * 
+ * ══════════════════════════════════════════════════
+ * CANONICAL IDENTITY: auth.users.id (auth_user_id)
+ * ══════════════════════════════════════════════════
+ * 
+ * ALL metrics resolve to auth_user_id as the canonical corretor key.
+ * Tables that historically used profiles.id now have an auth_user_id column.
+ * 
+ * === OFFICIAL DATA LAYER ===
+ * 
+ * SQL Views (source of truth for queries):
+ *   v_kpi_ligacoes       → call attempts with auth_user_id
+ *   v_kpi_visitas         → visits with auth_user_id
+ *   v_kpi_negocios        → deals resolved to auth_user_id
+ *   v_kpi_gestao_leads    → pipeline progression points
+ *   v_kpi_presenca        → checkpoint presence resolved to auth_user_id
+ *   v_kpi_disponibilidade → real-time availability
+ * 
+ * Aggregation RPC:
+ *   get_kpis_por_periodo(p_start, p_end, p_user_id) → all KPIs aggregated
+ * 
+ * TypeScript Service:
+ *   src/lib/metricsService.ts → fetchKPIs, fetchTeamKPIs, calculateRankingScores
+ *   src/hooks/useKPIs.ts      → useMyKPIs, useTeamKPIs, useRankings, useAllKPIs
+ * 
  * === METRIC DEFINITIONS ===
  * 
  * LIGAÇÃO (Call):
+ *   View: v_kpi_ligacoes
  *   Source: oferta_ativa_tentativas
- *   Filter: created_at within period
- *   Note: Each row = 1 tentativa. canal='ligacao' for phone calls specifically.
- *   ID field: corretor_id = auth.user_id
+ *   Identity: corretor_id = auth.user_id (native)
+ *   Filter: data within period
  * 
  * APROVEITADO (Interested Lead):
- *   Source: oferta_ativa_tentativas
- *   Filter: resultado = 'com_interesse' AND created_at within period
- *   ID field: corretor_id = auth.user_id
+ *   View: v_kpi_ligacoes WHERE aproveitado = 1
+ *   Filter: resultado = 'com_interesse'
  * 
  * TAXA DE CONVERSÃO OA:
  *   Formula: (aproveitados / tentativas) * 100
  * 
  * VISITA MARCADA:
- *   Source: visitas table
- *   Definition: A visit CREATED (created_at) within the period
- *   Statuses that count: marcada, confirmada, realizada, reagendada
- *   Does NOT count: cancelada
- *   ID field: corretor_id = auth.user_id
+ *   View: v_kpi_visitas WHERE conta_marcada = 1
+ *   Identity: corretor_id = auth.user_id (native)
+ *   Period: data_criacao (created_at) within period
+ *   Statuses: marcada, confirmada, realizada, reagendada
  * 
  * VISITA REALIZADA:
- *   Source: visitas table
- *   Definition: Visit where data_visita is within period AND status = 'realizada'
- *   ID field: corretor_id = auth.user_id
+ *   View: v_kpi_visitas WHERE conta_realizada = 1
+ *   Period: data_visita within period AND status = 'realizada'
  * 
  * VISITA NO SHOW:
- *   Source: visitas table
- *   Definition: Visit where data_visita is within period AND status = 'no_show'
+ *   View: v_kpi_visitas WHERE conta_no_show = 1
+ *   Period: data_visita within period AND status = 'no_show'
  * 
  * PROPOSTA:
- *   Source: negocios table
- *   Definition: Negócio with fase IN ('proposta', 'negociacao', 'documentacao')
- *   Period filter: created_at within period
- *   ID field: corretor_id = profiles.id (NOT auth.user_id)
+ *   View: v_kpi_negocios WHERE conta_proposta = 1
+ *   Identity: auth_user_id (resolved from profiles.id via COALESCE)
+ *   Phases: proposta, negociacao, documentacao
+ *   Period: data_criacao within period
  * 
  * VGV GERADO:
- *   Source: negocios table
- *   Definition: SUM(vgv_estimado) for negocios created in period
+ *   View: v_kpi_negocios
+ *   Formula: SUM(vgv_estimado) for propostas + vendas created in period
  * 
  * VGV ASSINADO:
- *   Source: negocios table
- *   Definition: SUM(vgv_final || vgv_estimado) where fase IN ('assinado','vendido')
- *   Period filter: data_assinatura within period (NOT created_at)
- *   ID field: corretor_id = profiles.id
+ *   View: v_kpi_negocios WHERE conta_venda = 1
+ *   Value: COALESCE(vgv_final, vgv_estimado)
+ *   Period: data_assinatura within period (NOT created_at)
  * 
  * PRESENÇA:
- *   Source: checkpoint_lines (primary) + corretor_disponibilidade (realtime)
- *   Definition: 
- *     - checkpoint_lines.real_presenca IN ('presente','home_office','externo') 
- *     - OR corretor_disponibilidade.status IN ('online','na_empresa','disponivel','em_pausa','em_visita')
- *   Conta como presença: presente, home_office, externo
- *   NÃO conta: ausente, null, folga
+ *   View: v_kpi_presenca
+ *   Identity: resolved via team_members.user_id → auth.user_id
+ *   Counts: presente, home_office, externo
  * 
- * GESTÃO DE LEADS (Pipeline progression):
- *   Source: pipeline_historico + pipeline_stages
+ * GESTÃO DE LEADS:
+ *   View: v_kpi_gestao_leads
+ *   Identity: pipeline_leads.corretor_id = auth.user_id (native)
  *   Points: Contato Iniciado (5), Qualificação (10), V.Marcada (30), V.Realizada (50)
- *   Period filter: pipeline_historico.created_at within period
- *   ID field: pipeline_leads.corretor_id = auth.user_id
  * 
- * === ID MAPPING ===
+ * === LEGACY ID MAPPING (being phased out) ===
  * 
- * CRITICAL: The system has TWO types of IDs for corretores:
- * 1. auth.user_id (UUID from auth.users) — used in:
- *    - pipeline_leads.corretor_id
- *    - oferta_ativa_tentativas.corretor_id
- *    - visitas.corretor_id
- *    - team_members.user_id
- *    - corretor_disponibilidade.user_id
+ * Tables with auth_user_id backfill column (Phase 1 complete):
+ *   negocios, checkpoint_diario, academia_progresso, academia_certificados,
+ *   lead_progressao, roleta_credenciamentos, empreendimento_fichas, corretor_reports
  * 
- * 2. profiles.id (separate UUID) — used in:
- *    - negocios.corretor_id
- *    - checkpoint_lines.corretor_id → team_members.id
- * 
- * When combining data across these sources, ALWAYS resolve to auth.user_id
- * as the canonical corretor identifier.
+ * Auto-populated via triggers on: negocios, roleta_credenciamentos
  */
 
 export const METRIC_WEIGHTS = {
