@@ -1084,7 +1084,9 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                     session_id: sessionId,
                     metadata: { skip_number: skipCount + 1 },
                   });
-                } catch {}
+                } catch (e) {
+                  console.warn("[OA] Falha ao registrar evento de skip:", e);
+                }
                 await unlockLead(lead.id);
               }
               await fetchNext();
