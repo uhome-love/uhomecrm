@@ -32,7 +32,7 @@ export default function HomiBriefingCard({ dashboardData }: Props) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [isOpen, setIsOpen] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) === "open"; } catch { return false; }
+    try { return localStorage.getItem(STORAGE_KEY) === "open"; } catch (e) { console.warn("[HomiBriefingCard] localStorage read error:", e); return false; }
   });
 
   const handleToggle = (open: boolean) => {
