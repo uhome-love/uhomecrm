@@ -72,6 +72,7 @@ export type Database = {
       }
       academia_certificados: {
         Row: {
+          auth_user_id: string | null
           codigo: string | null
           corretor_id: string | null
           emitido_at: string | null
@@ -79,6 +80,7 @@ export type Database = {
           trilha_id: string | null
         }
         Insert: {
+          auth_user_id?: string | null
           codigo?: string | null
           corretor_id?: string | null
           emitido_at?: string | null
@@ -86,6 +88,7 @@ export type Database = {
           trilha_id?: string | null
         }
         Update: {
+          auth_user_id?: string | null
           codigo?: string | null
           corretor_id?: string | null
           emitido_at?: string | null
@@ -141,6 +144,7 @@ export type Database = {
       academia_progresso: {
         Row: {
           aula_id: string | null
+          auth_user_id: string | null
           checklist_items: Json | null
           concluida_at: string | null
           corretor_id: string | null
@@ -153,6 +157,7 @@ export type Database = {
         }
         Insert: {
           aula_id?: string | null
+          auth_user_id?: string | null
           checklist_items?: Json | null
           concluida_at?: string | null
           corretor_id?: string | null
@@ -165,6 +170,7 @@ export type Database = {
         }
         Update: {
           aula_id?: string | null
+          auth_user_id?: string | null
           checklist_items?: Json | null
           concluida_at?: string | null
           corretor_id?: string | null
@@ -572,6 +578,7 @@ export type Database = {
       }
       checkpoint_diario: {
         Row: {
+          auth_user_id: string | null
           corretor_id: string
           created_at: string | null
           data: string
@@ -592,6 +599,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auth_user_id?: string | null
           corretor_id: string
           created_at?: string | null
           data: string
@@ -612,6 +620,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auth_user_id?: string | null
           corretor_id?: string
           created_at?: string | null
           data?: string
@@ -1199,6 +1208,7 @@ export type Database = {
       }
       corretor_reports: {
         Row: {
+          auth_user_id: string | null
           conteudo_relatorio: string
           contexto_gerente: string
           corretor_id: string
@@ -1214,6 +1224,7 @@ export type Database = {
           score_performance: number | null
         }
         Insert: {
+          auth_user_id?: string | null
           conteudo_relatorio: string
           contexto_gerente: string
           corretor_id: string
@@ -1229,6 +1240,7 @@ export type Database = {
           score_performance?: number | null
         }
         Update: {
+          auth_user_id?: string | null
           conteudo_relatorio?: string
           contexto_gerente?: string
           corretor_id?: string
@@ -1422,6 +1434,7 @@ export type Database = {
       empreendimento_fichas: {
         Row: {
           atualizado_por: string | null
+          auth_user_id: string | null
           desconto: string | null
           empreendimento: string
           entrada: string | null
@@ -1434,6 +1447,7 @@ export type Database = {
         }
         Insert: {
           atualizado_por?: string | null
+          auth_user_id?: string | null
           desconto?: string | null
           empreendimento: string
           entrada?: string | null
@@ -1446,6 +1460,7 @@ export type Database = {
         }
         Update: {
           atualizado_por?: string | null
+          auth_user_id?: string | null
           desconto?: string | null
           empreendimento?: string
           entrada?: string | null
@@ -2004,6 +2019,7 @@ export type Database = {
       }
       lead_progressao: {
         Row: {
+          auth_user_id: string | null
           corretor_id: string | null
           created_at: string | null
           fase_destino: string | null
@@ -2017,6 +2033,7 @@ export type Database = {
           visita_id: string | null
         }
         Insert: {
+          auth_user_id?: string | null
           corretor_id?: string | null
           created_at?: string | null
           fase_destino?: string | null
@@ -2030,6 +2047,7 @@ export type Database = {
           visita_id?: string | null
         }
         Update: {
+          auth_user_id?: string | null
           corretor_id?: string | null
           created_at?: string | null
           fase_destino?: string | null
@@ -2631,6 +2649,7 @@ export type Database = {
       }
       negocios: {
         Row: {
+          auth_user_id: string | null
           corretor_id: string | null
           created_at: string | null
           data_assinatura: string | null
@@ -2661,6 +2680,7 @@ export type Database = {
           visita_id: string | null
         }
         Insert: {
+          auth_user_id?: string | null
           corretor_id?: string | null
           created_at?: string | null
           data_assinatura?: string | null
@@ -2691,6 +2711,7 @@ export type Database = {
           visita_id?: string | null
         }
         Update: {
+          auth_user_id?: string | null
           corretor_id?: string | null
           created_at?: string | null
           data_assinatura?: string | null
@@ -5156,6 +5177,7 @@ export type Database = {
         Row: {
           aprovado_em: string | null
           aprovado_por: string | null
+          auth_user_id: string | null
           corretor_id: string | null
           created_at: string | null
           data: string
@@ -5169,6 +5191,7 @@ export type Database = {
         Insert: {
           aprovado_em?: string | null
           aprovado_por?: string | null
+          auth_user_id?: string | null
           corretor_id?: string | null
           created_at?: string | null
           data?: string
@@ -5182,6 +5205,7 @@ export type Database = {
         Update: {
           aprovado_em?: string | null
           aprovado_por?: string | null
+          auth_user_id?: string | null
           corretor_id?: string | null
           created_at?: string | null
           data?: string
