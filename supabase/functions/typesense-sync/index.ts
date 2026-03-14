@@ -90,6 +90,8 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
+
   try {
     const TYPESENSE_HOST = Deno.env.get("TYPESENSE_HOST");
     const TYPESENSE_ADMIN_API_KEY = Deno.env.get("TYPESENSE_ADMIN_API_KEY");
@@ -102,6 +104,34 @@ serve(async (req) => {
     }
 
     const sb = createClient(supabaseUrl, serviceRoleKey);
+
+    const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
+      sb.from("ops_events").insert({ fn: "typesense-sync", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
+    };
+
+    // ── Overlap guard: skip if another run started within the last 50 seconds ──
+    const guardCutoff = new Date(Date.now() - 50_000).toISOString();
+    const { data: recentRun } = await sb
+      .from("ops_events")
+      .select("id, trace_id")
+      .eq("fn", "typesense-sync")
+      .eq("category", "guard")
+      .eq("message", "run_start")
+      .gte("created_at", guardCutoff)
+      .limit(1);
+
+    if (recentRun && recentRun.length > 0) {
+      console.info(JSON.stringify({ fn: "typesense-sync", level: "info", msg: "Skipping overlapping run", traceId, recent_trace: recentRun[0].trace_id, ts: new Date().toISOString() }));
+      return new Response(JSON.stringify({ skipped: true, reason: "overlap_guard", recent_trace: recentRun[0].trace_id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Stamp run start
+    await sb.from("ops_events").insert({
+      fn: "typesense-sync", level: "info", category: "guard",
+      message: "run_start", trace_id: traceId, ctx: {}, error_detail: null,
+    });
 
     // Get current sync state
     const { data: state } = await sb
@@ -164,13 +194,20 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     }).eq("id", "default");
 
-    console.log(`Page ${page}: ${indexed} indexed, ${errors} errors, hasMore: ${hasMore}`);
+    console.info(JSON.stringify({ fn: "typesense-sync", level: "info", msg: `Page ${page}: ${indexed} indexed, ${errors} errors, hasMore: ${hasMore}`, traceId, ts: new Date().toISOString() }));
+    if (errors > 0) {
+      logOps("warn", "business", `Typesense sync page ${page} had ${errors} indexing errors`, { page, indexed, errors, hasMore });
+    }
 
     return new Response(JSON.stringify({ success: true, page, indexed, errors, hasMore }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("typesense-sync error:", e);
+    console.error(JSON.stringify({ fn: "typesense-sync", level: "error", msg: "Unhandled exception", traceId, err: e instanceof Error ? { name: e.name, message: e.message } : { raw: String(e) }, ts: new Date().toISOString() }));
+    try {
+      const sbErr = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      sbErr.from("ops_events").insert({ fn: "typesense-sync", level: "error", category: "system", message: "Unhandled exception", trace_id: traceId, ctx: {}, error_detail: e instanceof Error ? e.message : String(e) }).then(() => {});
+    } catch {}
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
