@@ -270,14 +270,14 @@ Deno.serve(async (req) => {
       acao: "landing_page_lead",
       descricao: `Lead via Landing Page: ${name} — ${empreendimento} (source: ${source})`,
       origem: "webhook",
-    }).then(r => { if (r.error) console.warn("audit:", r.error.message); });
+    }).then(r => { if (r.error) L.warn("Audit insert failed", {}, r.error); });
 
     return new Response(
       JSON.stringify({ success: true, lead_id: insertedLead.id, empreendimento, distributed: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("receive-landing-lead error:", err);
+    L.error("Unhandled exception", {}, err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
