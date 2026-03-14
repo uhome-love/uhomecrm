@@ -6453,6 +6453,7 @@ export type Database = {
         Returns: number
       }
       cleanup_expired_locks: { Args: never; Returns: number }
+      cleanup_ops_events: { Args: never; Returns: undefined }
       criar_notificacao: {
         Args: {
           p_agrupamento_key?: string
