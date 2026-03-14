@@ -6730,6 +6730,10 @@ export type Database = {
       }
       marcar_todas_notificacoes_lidas: { Args: never; Returns: number }
       normalize_telefone: { Args: { raw: string }; Returns: string }
+      prune_old_notifications: {
+        Args: { batch_size?: number }
+        Returns: number
+      }
       rate_marketplace_item: {
         Args: { p_comentario?: string; p_item_id: string; p_nota: number }
         Returns: undefined
