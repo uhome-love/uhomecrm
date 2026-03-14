@@ -221,29 +221,7 @@ export function useAISearch() {
 
         if (relaxedResult && relaxedResult.data.length > 0) {
           const scored = relaxedResult.data.map((doc: any) => ({
-            item: {
-              ...doc,
-              codigo: doc.codigo || doc.id,
-              titulo_anuncio: doc.titulo,
-              empreendimento_nome: doc.empreendimento,
-              endereco_bairro: doc.bairro,
-              endereco_cidade: doc.cidade,
-              endereco_logradouro: doc.endereco,
-              valor_venda: doc.valor_venda,
-              area_privativa: doc.area_privativa,
-              garagens: doc.vagas,
-              suites: doc.suites,
-              dormitorios: doc.dormitorios,
-              latitude: doc.latitude,
-              longitude: doc.longitude,
-              _fotos_normalized: doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [],
-              _fotos_full: doc.fotos_full?.length ? doc.fotos_full : doc.fotos?.length ? doc.fotos : [],
-              imagens: (doc.fotos || []).map((url: string, i: number) => ({
-                link_thumb: url,
-                link: doc.fotos_full?.[i] || url,
-                link_large: doc.fotos_full?.[i] || url,
-              })),
-            },
+            item: mapTypesenseDoc(doc),
             score: calculateScore(doc, aiData.filters),
           }));
           scored.sort((a: AIPropertyResult, b: AIPropertyResult) => b.score - a.score);
