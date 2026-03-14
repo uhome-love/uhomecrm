@@ -2076,6 +2076,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lead_progressao_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_progressao_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_visitas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lead_progressao_visita_id_fkey"
             columns: ["visita_id"]
             isOneToOne: false
@@ -2782,6 +2796,13 @@ export type Database = {
             referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "negocios_atividades_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_negocios"
+            referencedColumns: ["id"]
+          },
         ]
       }
       negocios_tarefas: {
@@ -2839,6 +2860,13 @@ export type Database = {
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negocios_tarefas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_negocios"
             referencedColumns: ["id"]
           },
         ]
@@ -3420,6 +3448,13 @@ export type Database = {
             referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pagadoria_solicitacoes_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_negocios"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pagadorias: {
@@ -3583,6 +3618,13 @@ export type Database = {
           vgv?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pdn_entries_linked_visit_id_fkey"
+            columns: ["linked_visit_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_visitas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pdn_entries_linked_visit_id_fkey"
             columns: ["linked_visit_id"]
@@ -4026,6 +4068,13 @@ export type Database = {
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_leads_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_negocios"
             referencedColumns: ["id"]
           },
           {
@@ -4549,6 +4598,13 @@ export type Database = {
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_vendas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_negocios"
             referencedColumns: ["id"]
           },
         ]
@@ -5812,6 +5868,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "visitas_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "v_kpi_negocios"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "visitas_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
@@ -5918,7 +5981,163 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_kpi_disponibilidade: {
+        Row: {
+          auth_user_id: string | null
+          entrada_em: string | null
+          esta_disponivel: boolean | null
+          leads_recebidos_turno: number | null
+          na_roleta: boolean | null
+          saida_em: string | null
+          segmentos: string[] | null
+          status: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          entrada_em?: string | null
+          esta_disponivel?: never
+          leads_recebidos_turno?: number | null
+          na_roleta?: boolean | null
+          saida_em?: string | null
+          segmentos?: string[] | null
+          status?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          entrada_em?: string | null
+          esta_disponivel?: never
+          leads_recebidos_turno?: number | null
+          na_roleta?: boolean | null
+          saida_em?: string | null
+          segmentos?: string[] | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      v_kpi_gestao_leads: {
+        Row: {
+          auth_user_id: string | null
+          data: string | null
+          historico_id: string | null
+          pipeline_lead_id: string | null
+          pontos: number | null
+          stage_nome: string | null
+          stage_ordem: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_historico_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_kpi_ligacoes: {
+        Row: {
+          aproveitado: number | null
+          atendeu: number | null
+          auth_user_id: string | null
+          canal: string | null
+          data: string | null
+          resultado: string | null
+          tentativa: number | null
+        }
+        Insert: {
+          aproveitado?: never
+          atendeu?: never
+          auth_user_id?: string | null
+          canal?: string | null
+          data?: never
+          resultado?: string | null
+          tentativa?: never
+        }
+        Update: {
+          aproveitado?: never
+          atendeu?: never
+          auth_user_id?: string | null
+          canal?: string | null
+          data?: never
+          resultado?: string | null
+          tentativa?: never
+        }
+        Relationships: []
+      }
+      v_kpi_negocios: {
+        Row: {
+          auth_user_id: string | null
+          conta_perdido: number | null
+          conta_proposta: number | null
+          conta_venda: number | null
+          data_assinatura: string | null
+          data_criacao: string | null
+          empreendimento: string | null
+          fase: string | null
+          id: string | null
+          pipeline_lead_id: string | null
+          profile_id: string | null
+          vgv_efetivo: number | null
+          vgv_estimado: number | null
+          vgv_final: number | null
+        }
+        Relationships: []
+      }
+      v_kpi_presenca: {
+        Row: {
+          auth_user_id: string | null
+          data: string | null
+          obs_dia: string | null
+          obs_gerente: string | null
+          presente: number | null
+          real_ligacoes: number | null
+          real_presenca: string | null
+          real_propostas: number | null
+          real_vgv_assinado: number | null
+          real_visitas_marcadas: number | null
+          real_visitas_realizadas: number | null
+        }
+        Relationships: []
+      }
+      v_kpi_visitas: {
+        Row: {
+          auth_user_id: string | null
+          conta_marcada: number | null
+          conta_no_show: number | null
+          conta_realizada: number | null
+          data_criacao: string | null
+          data_visita: string | null
+          empreendimento: string | null
+          id: string | null
+          origem: string | null
+          status: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          conta_marcada?: never
+          conta_no_show?: never
+          conta_realizada?: never
+          data_criacao?: never
+          data_visita?: string | null
+          empreendimento?: string | null
+          id?: string | null
+          origem?: string | null
+          status?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          conta_marcada?: never
+          conta_no_show?: never
+          conta_realizada?: never
+          data_criacao?: never
+          data_visita?: string | null
+          empreendimento?: string | null
+          id?: string | null
+          origem?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       aceitar_lead: {
@@ -6088,6 +6307,24 @@ export type Database = {
         Returns: Json
       }
       get_individual_oa_ranking: { Args: { p_period?: string }; Returns: Json }
+      get_kpis_por_periodo: {
+        Args: { p_end: string; p_start: string; p_user_id?: string }
+        Returns: {
+          auth_user_id: string
+          dias_presente: number
+          pontos_gestao: number
+          propostas: number
+          taxa_aproveitamento: number
+          total_aproveitados: number
+          total_ligacoes: number
+          vendas: number
+          vgv_assinado: number
+          vgv_gerado: number
+          visitas_marcadas: number
+          visitas_no_show: number
+          visitas_realizadas: number
+        }[]
+      }
       get_profile_id_for_auth: { Args: never; Returns: string }
       get_ranking_gestao_leads: {
         Args: { p_periodo: string }
