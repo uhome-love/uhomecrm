@@ -123,6 +123,7 @@ serve(async (req) => {
       L.info("Sent successfully", { tipo, to: numeroFinal, messageId: result?.messages?.[0]?.id });
     } else {
       L.error("API error", { tipo, to: numeroFinal, status: response.status, error: result?.error });
+      logOps("error", "integration", `WhatsApp API error: ${response.status}`, { tipo, to: numeroFinal, status: response.status }, JSON.stringify(result?.error || {}));
     }
 
     return new Response(JSON.stringify(result), {
