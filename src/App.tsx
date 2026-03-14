@@ -155,78 +155,78 @@ const App = () => (
             <Route path="/gerente/dashboard" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="gerente-dashboard"><GerenteDashboard /></ErrorBoundary></ProtectedPage>} />
             <Route path="/central-do-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="checkpoint"><CheckpointGerente /></ErrorBoundary></ProtectedPage>} />
             
-            <Route path="/central-dados" element={<ProtectedPage roles={["gestor", "admin"]}><CentralDados /></ProtectedPage>} />
-            <Route path="/scripts" element={<ProtectedPage><ScriptsGenerator /></ProtectedPage>} />
-            <Route path="/gestao" element={<ProtectedPage roles={["admin"]}><GestorDashboard /></ProtectedPage>} />
-            <Route path="/relatorios" element={<ProtectedPage roles={["gestor", "admin"]}><RelatorioCorretor /></ProtectedPage>} />
-            <Route path="/ranking" element={<ProtectedPage><RankingEquipe /></ProtectedPage>} />
-            <Route path="/meu-time" element={<ProtectedPage roles={["gestor", "admin"]}><MeuTime /></ProtectedPage>} />
+            <Route path="/central-dados" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="central-dados"><CentralDados /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/scripts" element={<ProtectedPage><ErrorBoundary module="scripts"><ScriptsGenerator /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/gestao" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="gestao"><GestorDashboard /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/relatorios" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="relatorios"><RelatorioCorretor /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/ranking" element={<ProtectedPage><ErrorBoundary module="ranking"><RankingEquipe /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/meu-time" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="meu-time"><MeuTime /></ErrorBoundary></ProtectedPage>} />
             <Route path="/oferta-ativa" element={<ProtectedPage><ErrorBoundary module="oferta-ativa"><OfertaAtiva /></ErrorBoundary></ProtectedPage>} />
             <Route path="/roleta" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="roleta"><RoletaLeads /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/marketplace" element={<ProtectedPage><MarketplaceScripts /></ProtectedPage>} />
+            <Route path="/marketplace" element={<ProtectedPage><ErrorBoundary module="marketplace"><MarketplaceScripts /></ErrorBoundary></ProtectedPage>} />
             <Route path="/pipeline-leads" element={<ProtectedPage><ErrorBoundary module="pipeline"><PipelineKanban /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/escala-diaria" element={<ProtectedPage roles={["admin"]}><EscalaDiaria /></ProtectedPage>} />
-            <Route path="/disponibilidade" element={<ProtectedPage roles={["gestor", "admin"]}><DisponibilidadePage /></ProtectedPage>} />
-            <Route path="/automacoes" element={<ProtectedPage roles={["gestor", "admin"]}><AutomacoesPage /></ProtectedPage>} />
-            <Route path="/templates-comunicacao" element={<ProtectedPage roles={["gestor", "admin"]}><TemplatesComunicacao /></ProtectedPage>} />
+            <Route path="/escala-diaria" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="escala-diaria"><EscalaDiaria /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/disponibilidade" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="disponibilidade"><DisponibilidadePage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/automacoes" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="automacoes"><AutomacoesPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/templates-comunicacao" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="templates-comunicacao"><TemplatesComunicacao /></ErrorBoundary></ProtectedPage>} />
 
             {/* Corretor — todos autenticados */}
             <Route path="/corretor" element={<ProtectedPage><ErrorBoundary module="corretor-dashboard"><CorretorDashboard /></ErrorBoundary></ProtectedPage>} />
             <Route path="/aceite" element={<ProtectedPage><ErrorBoundary module="aceite-leads"><AceiteLeads /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/minhas-tarefas" element={<ProtectedPage><MinhasTarefas /></ProtectedPage>} />
-            <Route path="/minhas-vitrines" element={<ProtectedPage><MinhasVitrines /></ProtectedPage>} />
-            <Route path="/corretor/call" element={<ProtectedPage><CorretorCall /></ProtectedPage>} />
+            <Route path="/minhas-tarefas" element={<ProtectedPage><ErrorBoundary module="minhas-tarefas"><MinhasTarefas /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/minhas-vitrines" element={<ProtectedPage><ErrorBoundary module="minhas-vitrines"><MinhasVitrines /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/corretor/call" element={<ProtectedPage><ErrorBoundary module="corretor-call"><CorretorCall /></ErrorBoundary></ProtectedPage>} />
             <Route path="/agenda-visitas" element={<ProtectedPage><ErrorBoundary module="agenda-visitas"><AgendaVisitas /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/corretor/resumo" element={<ProtectedPage><CorretorResumo /></ProtectedPage>} />
-            <Route path="/corretor/ranking-equipes" element={<ProtectedPage><RankingEquipe /></ProtectedPage>} />
-            <Route path="/conquistas" element={<ProtectedPage><Conquistas /></ProtectedPage>} />
-            <Route path="/academia" element={<ProtectedPage><AcademiaPage /></ProtectedPage>} />
-            <Route path="/academia/trilha/:trilhaId" element={<ProtectedPage><AcademiaTrilhaPage /></ProtectedPage>} />
-            <Route path="/academia/aula/:aulaId" element={<ProtectedPage><AcademiaAulaPage /></ProtectedPage>} />
-            <Route path="/academia/gerenciar" element={<ProtectedPage roles={["gestor", "admin"]}><AcademiaGerenciarPage /></ProtectedPage>} />
-            <Route path="/onboarding" element={<ProtectedPage><Onboarding /></ProtectedPage>} />
-            <Route path="/homi" element={<ProtectedPage><HomiAssistant /></ProtectedPage>} />
-            <Route path="/homi-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><HomiGerencial /></ProtectedPage>} />
-            <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><HomiCeo /></ProtectedPage>} />
-            <Route path="/homi/base-conhecimento" element={<ProtectedPage roles={["admin", "gestor"]}><BaseConhecimento /></ProtectedPage>} />
+            <Route path="/corretor/resumo" element={<ProtectedPage><ErrorBoundary module="corretor-resumo"><CorretorResumo /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/corretor/ranking-equipes" element={<ProtectedPage><ErrorBoundary module="corretor-ranking"><RankingEquipe /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/conquistas" element={<ProtectedPage><ErrorBoundary module="conquistas"><Conquistas /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/academia" element={<ProtectedPage><ErrorBoundary module="academia"><AcademiaPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/academia/trilha/:trilhaId" element={<ProtectedPage><ErrorBoundary module="academia-trilha"><AcademiaTrilhaPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/academia/aula/:aulaId" element={<ProtectedPage><ErrorBoundary module="academia-aula"><AcademiaAulaPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/academia/gerenciar" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="academia-gerenciar"><AcademiaGerenciarPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/onboarding" element={<ProtectedPage><ErrorBoundary module="onboarding"><Onboarding /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/homi" element={<ProtectedPage><ErrorBoundary module="homi"><HomiAssistant /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/homi-gerente" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="homi-gerente"><HomiGerencial /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/homi-ceo" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="homi-ceo"><HomiCeo /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/homi/base-conhecimento" element={<ProtectedPage roles={["admin", "gestor"]}><ErrorBoundary module="base-conhecimento"><BaseConhecimento /></ErrorBoundary></ProtectedPage>} />
             <Route path="/pipeline-negocios" element={<ProtectedPage><ErrorBoundary module="negocios"><MeusNegocios /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/vendas-realizadas" element={<ProtectedPage><VendasRealizadas /></ProtectedPage>} />
-            <Route path="/pos-vendas" element={<ProtectedPage><PosVendas /></ProtectedPage>} />
+            <Route path="/vendas-realizadas" element={<ProtectedPage><ErrorBoundary module="vendas-realizadas"><VendasRealizadas /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/pos-vendas" element={<ProtectedPage><ErrorBoundary module="pos-vendas"><PosVendas /></ErrorBoundary></ProtectedPage>} />
             <Route path="/imoveis" element={<ProtectedPage><ErrorBoundary module="imoveis"><ImoveisPage /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/melnick-day" element={<ProtectedPage><MelnickDay /></ProtectedPage>} />
-            <Route path="/orygem-60" element={<ProtectedPage><OrygemCampanha /></ProtectedPage>} />
-            <Route path="/mega-cyrela" element={<ProtectedPage><MegaCyrela /></ProtectedPage>} />
-            <Route path="/anuncios" element={<ProtectedPage><AnunciosNoAr /></ProtectedPage>} />
+            <Route path="/melnick-day" element={<ProtectedPage><ErrorBoundary module="melnick-day"><MelnickDay /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/orygem-60" element={<ProtectedPage><ErrorBoundary module="orygem-60"><OrygemCampanha /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/mega-cyrela" element={<ProtectedPage><ErrorBoundary module="mega-cyrela"><MegaCyrela /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/anuncios" element={<ProtectedPage><ErrorBoundary module="anuncios"><AnunciosNoAr /></ErrorBoundary></ProtectedPage>} />
 
             {/* Busca de Leads / Higienização — gestor + admin */}
-            <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><BuscaLeads /></ProtectedPage>} />
-            <Route path="/configuracoes" element={<ProtectedPage><Configuracoes /></ProtectedPage>} />
-            <Route path="/notificacoes" element={<ProtectedPage><Notificacoes /></ProtectedPage>} />
+            <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="busca-leads"><BuscaLeads /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/configuracoes" element={<ProtectedPage><ErrorBoundary module="configuracoes"><Configuracoes /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/notificacoes" element={<ProtectedPage><ErrorBoundary module="notificacoes"><Notificacoes /></ErrorBoundary></ProtectedPage>} />
 
             {/* CEO / Admin only */}
             <Route path="/ceo" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="ceo-dashboard"><CeoDashboard /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/marketing" element={<ProtectedPage roles={["admin"]}><MarketingDashboard /></ProtectedPage>} />
-            <Route path="/auditoria" element={<ProtectedPage roles={["admin"]}><AuditDashboard /></ProtectedPage>} />
-            <Route path="/admin" element={<ProtectedPage roles={["admin"]}><AdminPanel /></ProtectedPage>} />
-            <Route path="/integracao" element={<ProtectedPage roles={["admin"]}><IntegracaoJetimob /></ProtectedPage>} />
-            <Route path="/dev-ai" element={<ProtectedPage roles={["admin"]}><DevAIPage /></ProtectedPage>} />
+            <Route path="/marketing" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="marketing"><MarketingDashboard /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/auditoria" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="auditoria"><AuditDashboard /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/admin" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="admin"><AdminPanel /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/integracao" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="integracao"><IntegracaoJetimob /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/dev-ai" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="dev-ai"><DevAIPage /></ErrorBoundary></ProtectedPage>} />
 
             {/* Backoffice — Ana Paula */}
-            <Route path="/backoffice" element={<ProtectedPage roles={["backoffice", "admin"]}><BackofficeDashboard /></ProtectedPage>} />
-            <Route path="/backoffice/pagadorias" element={<ProtectedPage roles={["backoffice", "admin"]}><PagadoriasPage /></ProtectedPage>} />
-            <Route path="/backoffice/solicitacoes-pagadoria" element={<ProtectedPage roles={["backoffice", "admin"]}><PagadoriaSolicitacoes /></ProtectedPage>} />
-            <Route path="/backoffice/comissoes" element={<ProtectedPage roles={["backoffice", "admin"]}><ComissoesPage /></ProtectedPage>} />
-            <Route path="/backoffice/marketing" element={<ProtectedPage roles={["backoffice", "admin"]}><MarketingCentral /></ProtectedPage>} />
-            <Route path="/backoffice/homi-ana" element={<ProtectedPage roles={["backoffice", "admin"]}><HomiAna /></ProtectedPage>} />
-            <Route path="/backoffice/tarefas" element={<ProtectedPage roles={["backoffice", "admin"]}><BackofficeCentral /></ProtectedPage>} />
-            <Route path="/backoffice/cadastros" element={<ProtectedPage roles={["backoffice", "admin"]}><CadastrosPage /></ProtectedPage>} />
+            <Route path="/backoffice" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice"><BackofficeDashboard /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/backoffice/pagadorias" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice-pagadorias"><PagadoriasPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/backoffice/solicitacoes-pagadoria" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice-solicitacoes"><PagadoriaSolicitacoes /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/backoffice/comissoes" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice-comissoes"><ComissoesPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/backoffice/marketing" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice-marketing"><MarketingCentral /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/backoffice/homi-ana" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="homi-ana"><HomiAna /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/backoffice/tarefas" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice-tarefas"><BackofficeCentral /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/backoffice/cadastros" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice-cadastros"><CadastrosPage /></ErrorBoundary></ProtectedPage>} />
 
             {/* RH — Carol */}
-            <Route path="/rh" element={<ProtectedPage roles={["rh", "admin"]}><RhDashboard /></ProtectedPage>} />
-            <Route path="/rh/recrutamento" element={<ProtectedPage roles={["rh", "admin"]}><RhRecrutamento /></ProtectedPage>} />
-            <Route path="/rh/entrevistas" element={<ProtectedPage roles={["rh", "admin"]}><RhEntrevistas /></ProtectedPage>} />
-            <Route path="/rh/conversas" element={<ProtectedPage roles={["rh", "admin"]}><RhConversas /></ProtectedPage>} />
-            <Route path="/rh/sala-reuniao" element={<ProtectedPage roles={["rh", "admin"]}><RhSalaReuniao /></ProtectedPage>} />
+            <Route path="/rh" element={<ProtectedPage roles={["rh", "admin"]}><ErrorBoundary module="rh"><RhDashboard /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/rh/recrutamento" element={<ProtectedPage roles={["rh", "admin"]}><ErrorBoundary module="rh-recrutamento"><RhRecrutamento /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/rh/entrevistas" element={<ProtectedPage roles={["rh", "admin"]}><ErrorBoundary module="rh-entrevistas"><RhEntrevistas /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/rh/conversas" element={<ProtectedPage roles={["rh", "admin"]}><ErrorBoundary module="rh-conversas"><RhConversas /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/rh/sala-reuniao" element={<ProtectedPage roles={["rh", "admin"]}><ErrorBoundary module="rh-sala-reuniao"><RhSalaReuniao /></ErrorBoundary></ProtectedPage>} />
 
 
             <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
