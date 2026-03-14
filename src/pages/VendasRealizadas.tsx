@@ -601,10 +601,10 @@ export default function VendasRealizadas() {
                             {(isAdmin || isGestor) && (
                               <td className="py-3 px-3">
                                 {(() => {
-                                  const parceria = v.pipeline_lead_id ? parceriaMap[v.pipeline_lead_id] : null;
-                                  if (parceria) {
-                                    const p1 = profiles[parceria.principal_id];
-                                    const p2 = profiles[parceria.parceiro_id];
+                                  const parceria = v.pipeline_lead_id ? parceriaPartners[v.pipeline_lead_id] : null;
+                                  if (parceria && parceria.auth_user_ids.length >= 2) {
+                                    const p1 = authProfiles[parceria.auth_user_ids[0]];
+                                    const p2 = authProfiles[parceria.auth_user_ids[1]];
                                     const name1 = p1?.nome?.split(" ")[0] || "Corretor";
                                     const name2 = p2?.nome?.split(" ")[0] || "Corretor";
                                     return (
