@@ -12,6 +12,9 @@
  *   log.error("pipeline", "Lead creation failed", { leadId }, error);
  *   log.warn("checkpoint", "Missing presenca data", { date });
  *   log.info("roleta", "Lead distributed", { leadId, corretorId });
+ * 
+ * Trace support:
+ *   log.info("pipeline", "Lead saved", { traceId, leadId });
  */
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
@@ -22,6 +25,7 @@ interface LogEntry {
   message: string;
   level: LogLevel;
   category?: ErrorCategory;
+  traceId?: string;
   context?: Record<string, unknown>;
   error?: unknown;
   timestamp: string;
@@ -66,11 +70,14 @@ function createLogFn(level: LogLevel) {
     error?: unknown,
     category?: ErrorCategory
   ) => {
+    // Extract traceId from context for top-level field
+    const traceId = context?.traceId as string | undefined;
     emit({
       module,
       message,
       level,
       category: category || (level === "error" ? "system" : undefined),
+      traceId,
       context,
       error,
       timestamp: new Date().toISOString(),
