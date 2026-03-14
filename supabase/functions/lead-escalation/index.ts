@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
               if (freshLead?.aceite_status !== "pendente_distribuicao") {
                 L.info("Skip redistribute — status changed", { leadId: expired.pipeline_lead_id, status: freshLead?.aceite_status });
               } else {
-                const ok = await distributeWithRetry(supabaseUrl, serviceKey, expired.pipeline_lead_id, traceId);
+                const ok = await distributeWithRetry(supabaseUrl, serviceKey, expired.pipeline_lead_id, traceId, 2, supabase);
                 if (ok) {
                   L.info("Auto-redistribute succeeded", { leadId: expired.pipeline_lead_id });
                 } else {
