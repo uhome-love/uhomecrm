@@ -2132,13 +2132,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lead_progressao_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "v_kpi_negocios"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lead_progressao_visita_id_fkey"
             columns: ["visita_id"]
             isOneToOne: false
@@ -2859,13 +2852,6 @@ export type Database = {
             referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "negocios_atividades_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "v_kpi_negocios"
-            referencedColumns: ["id"]
-          },
         ]
       }
       negocios_tarefas: {
@@ -2923,13 +2909,6 @@ export type Database = {
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "negocios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "negocios_tarefas_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "v_kpi_negocios"
             referencedColumns: ["id"]
           },
         ]
@@ -3509,13 +3488,6 @@ export type Database = {
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "negocios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pagadoria_solicitacoes_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "v_kpi_negocios"
             referencedColumns: ["id"]
           },
         ]
@@ -4134,13 +4106,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "pipeline_leads_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "v_kpi_negocios"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "pipeline_leads_produto_id_fkey"
             columns: ["produto_id"]
             isOneToOne: false
@@ -4668,13 +4633,6 @@ export type Database = {
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "negocios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pos_vendas_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "v_kpi_negocios"
             referencedColumns: ["id"]
           },
         ]
@@ -5980,13 +5938,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "visitas_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "v_kpi_negocios"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "visitas_pipeline_lead_id_fkey"
             columns: ["pipeline_lead_id"]
             isOneToOne: false
@@ -6285,7 +6236,10 @@ export type Database = {
           data_criacao: string | null
           empreendimento: string | null
           fase: string | null
+          fator_split: number | null
           id: string | null
+          is_parceria: boolean | null
+          parceria_id: string | null
           pipeline_lead_id: string | null
           profile_id: string | null
           vgv_efetivo: number | null
