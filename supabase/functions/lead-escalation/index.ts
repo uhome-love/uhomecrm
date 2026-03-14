@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
     const { data: recycledCount, error: recycleError } = await supabase.rpc(
       "reciclar_leads_expirados"
     );
-    if (recycleError) console.error("Recycle error:", recycleError);
+    if (recycleError) L.error("Recycle RPC failed", {}, recycleError);
 
     // 4b. Auto-redistribute recycled leads + notify CEO/gerentes
     if (recycledCount && recycledCount > 0) {
