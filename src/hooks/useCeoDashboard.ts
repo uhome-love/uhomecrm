@@ -65,34 +65,25 @@ export interface OrigemData {
   origem: string; count: number;
 }
 
-// ── KPI fetcher (reused for current + previous period) ──
+// ── KPI fetcher — MIGRATED to official metrics layer ──
 async function fetchKPIs(r: { start: string; end: string }): Promise<KPIs> {
-  const startTs = `${r.start}T00:00:00`;
-  const endTs = `${r.end}T23:59:59`;
+  const allKPIs = await fetchOfficialKPIs(r);
 
-  const [{ count: ligacoes }, { count: aproveitados }, { count: visitasMarcadasCount }, { data: visitasData }, { data: negocios }, { data: negociosAssinados }] = await Promise.all([
-    supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs),
-    supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).eq("resultado", "com_interesse"),
-    supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs),
-    supabase.from("visitas").select("id, status").gte("data_visita", r.start).lte("data_visita", r.end),
-    supabase.from("negocios").select("id, fase, status, vgv_estimado, vgv_final").gte("created_at", startTs).lte("created_at", endTs),
-    supabase.from("negocios").select("id, fase, vgv_estimado, vgv_final").in("fase", ["assinado", "vendido"]).gte("data_assinatura", r.start).lte("data_assinatura", r.end),
-  ]);
-
-  const lig = ligacoes || 0;
-  const aprov = aproveitados || 0;
-  const visitasMarcadas = visitasMarcadasCount || 0;
-  const visitasRealizadas = visitasData?.filter(v => v.status === "realizada").length || 0;
-  const noShows = visitasData?.filter(v => v.status === "no_show").length || 0;
-  const vgvGerado = negocios?.reduce((s, n) => s + (n.vgv_estimado || 0), 0) || 0;
-  const vgvAssinado = (negociosAssinados || []).reduce((s, n) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
-  const propostas = negocios?.filter(n => n.fase === "proposta" || n.fase === "negociacao").length || 0;
-  const negociosPerdidos = negocios?.filter(n => n.status === "perdido" || n.status === "cancelado").length || 0;
+  // Aggregate across all corretores (CEO sees company-wide)
+  const lig = allKPIs.reduce((s, k) => s + k.total_ligacoes, 0);
+  const aprov = allKPIs.reduce((s, k) => s + k.total_aproveitados, 0);
+  const visitasMarcadas = allKPIs.reduce((s, k) => s + k.visitas_marcadas, 0);
+  const visitasRealizadas = allKPIs.reduce((s, k) => s + k.visitas_realizadas, 0);
+  const noShows = allKPIs.reduce((s, k) => s + k.visitas_no_show, 0);
+  const vgvGerado = allKPIs.reduce((s, k) => s + k.vgv_gerado, 0);
+  const vgvAssinado = allKPIs.reduce((s, k) => s + k.vgv_assinado, 0);
+  const propostas = allKPIs.reduce((s, k) => s + k.propostas, 0);
+  const vendas = allKPIs.reduce((s, k) => s + k.vendas, 0);
 
   return {
     ligacoes: lig, aproveitados: aprov, taxaConversao: lig > 0 ? Math.round((aprov / lig) * 100) : 0,
     visitasMarcadas, visitasRealizadas, taxaRealizacao: visitasMarcadas > 0 ? Math.round((visitasRealizadas / visitasMarcadas) * 100) : 0,
-    vgvGerado, vgvAssinado, propostas, negociosPerdidos, noShows,
+    vgvGerado, vgvAssinado, propostas, negociosPerdidos: 0, noShows,
   };
 }
 
