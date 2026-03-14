@@ -138,51 +138,69 @@ export default function VendasRealizadas() {
       const { data: vendas } = await query;
       const rows = (vendas || []) as VendaRow[];
 
-      // Load partnerships with partner details
-      const leadIds = rows.map(v => (v as any).pipeline_lead_id).filter(Boolean);
+      // Detect partnerships from v_kpi_negocios (official source of truth)
+      const dealIds = rows.map(v => v.id);
       let parceriaSet = new Set<string>();
-      let parceriaMap: Record<string, { principal_id: string; parceiro_id: string }> = {};
-      if (leadIds.length > 0) {
-        const { data: parcerias } = await supabase.from("pipeline_parcerias")
-          .select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id")
-          .eq("status", "ativa")
-          .in("pipeline_lead_id", leadIds);
-        (parcerias || []).forEach(p => {
-          parceriaSet.add(p.pipeline_lead_id);
-          parceriaMap[p.pipeline_lead_id] = {
-            principal_id: p.corretor_principal_id,
-            parceiro_id: p.corretor_parceiro_id,
-          };
+      let parceriaPartners: Record<string, PartnerInfo> = {};
+      if (dealIds.length > 0) {
+        const { data: kpiRows } = await supabase.from("v_kpi_negocios")
+          .select("id, auth_user_id, pipeline_lead_id, is_parceria, fator_split")
+          .eq("is_parceria", true)
+          .in("id", dealIds);
+        (kpiRows || []).forEach(r => {
+          const plId = r.pipeline_lead_id;
+          if (!plId) return;
+          parceriaSet.add(plId);
+          if (!parceriaPartners[plId]) parceriaPartners[plId] = { auth_user_ids: [], fator_split: Number(r.fator_split || 0.5) };
+          if (r.auth_user_id && !parceriaPartners[plId].auth_user_ids.includes(r.auth_user_id)) {
+            parceriaPartners[plId].auth_user_ids.push(r.auth_user_id);
+          }
         });
       }
 
-      // Load profiles for corretores + parceiros
-      const corretorIds = new Set(rows.map(v => v.corretor_id).filter(Boolean) as string[]);
-      // Add partner profile IDs
-      Object.values(parceriaMap).forEach(p => {
-        if (p.principal_id) corretorIds.add(p.principal_id);
-        if (p.parceiro_id) corretorIds.add(p.parceiro_id);
-      });
-      const ids = [...corretorIds];
+      // Collect all profile IDs (from negocios.corretor_id) and auth_user_ids (from partnerships)
+      const corretorProfileIds = new Set(rows.map(v => v.corretor_id).filter(Boolean) as string[]);
+      const partnerAuthUserIds = new Set<string>();
+      Object.values(parceriaPartners).forEach(p => p.auth_user_ids.forEach(id => partnerAuthUserIds.add(id)));
+
+      // Load profiles by profile.id (for deal corretor_id)
       let profileMap: Record<string, ProfileInfo> = {};
-      if (ids.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("id, nome, avatar_url, avatar_gamificado_url").in("id", ids);
+      const profileIds = [...corretorProfileIds];
+      if (profileIds.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("id, nome, avatar_url, avatar_gamificado_url").in("id", profileIds);
         (profiles || []).forEach(p => { profileMap[p.id] = p as ProfileInfo; });
       }
 
-      // Fetch annual VGV for corretor tier (year-to-date)
+      // Load profiles by user_id (for partnership auth_user_ids) — keyed by auth user_id
+      let authProfileMap: Record<string, ProfileInfo> = {};
+      const authIds = [...partnerAuthUserIds];
+      if (authIds.length > 0) {
+        const { data: authProfiles } = await supabase.from("profiles").select("id, user_id, nome, avatar_url, avatar_gamificado_url").in("user_id", authIds);
+        (authProfiles || []).forEach(p => {
+          if (p.user_id) authProfileMap[p.user_id] = { id: p.id, nome: p.nome, avatar_url: p.avatar_url, avatar_gamificado_url: p.avatar_gamificado_url };
+        });
+      }
+
+      // Annual VGV per corretor from v_kpi_negocios (split-aware)
       const yearStart = `${new Date().getFullYear()}-01-01`;
       let annualVgvByCorretor: Record<string, number> = {};
-      if (ids.length > 0) {
-        const { data: annualData } = await supabase.from("negocios")
-          .select("corretor_id, vgv_final, vgv_estimado")
+      // Use auth_user_id based annual VGV for commission tiers
+      if (profileIds.length > 0 || authIds.length > 0) {
+        const { data: annualData } = await supabase.from("v_kpi_negocios")
+          .select("auth_user_id, vgv_efetivo")
           .in("fase", ["assinado", "vendido"])
-          .gte("data_assinatura", yearStart)
-          .in("corretor_id", ids);
+          .gte("data_assinatura", yearStart);
         (annualData || []).forEach(n => {
-          const cid = n.corretor_id as string;
-          annualVgvByCorretor[cid] = (annualVgvByCorretor[cid] || 0) + (n.vgv_final || n.vgv_estimado || 0);
+          const uid = n.auth_user_id as string;
+          annualVgvByCorretor[uid] = (annualVgvByCorretor[uid] || 0) + Number(n.vgv_efetivo || 0);
         });
+      }
+
+      // Map profile.id to auth user_id for commission lookup
+      let profileIdToAuthId: Record<string, string> = {};
+      if (profileIds.length > 0) {
+        const { data: pMap } = await supabase.from("profiles").select("id, user_id").in("id", profileIds);
+        (pMap || []).forEach(p => { if (p.user_id) profileIdToAuthId[p.id] = p.user_id; });
       }
 
       // Load pipeline origin data for sold leads
@@ -203,7 +221,7 @@ export default function VendasRealizadas() {
         });
       }
 
-      return { vendas: rows, profiles: profileMap, annualVgvByCorretor, parceriaSet: [...parceriaSet], parceriaMap, origemMap };
+      return { vendas: rows, profiles: profileMap, authProfiles: authProfileMap, annualVgvByCorretor, parceriaSet: [...parceriaSet], parceriaPartners, origemMap, profileIdToAuthId };
     },
   });
 
