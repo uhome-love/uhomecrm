@@ -305,10 +305,46 @@ const NOOP_CONTEXT: HomiContextType = {
   conversationId: null,
 };
 
+// Throttled warning: max 3 unique callers, then suppress
+const _warnedCallers = new Set<string>();
+let _warnCount = 0;
+const MAX_WARNINGS = 3;
+
+function emitFallbackWarning() {
+  if (_warnCount >= MAX_WARNINGS) return;
+
+  // Extract caller hint from stack trace
+  let callerHint = "unknown";
+  try {
+    const stack = new Error().stack || "";
+    // Walk up: emitFallbackWarning → useHomi → actual caller
+    const lines = stack.split("\n").filter(l => l.includes("/src/"));
+    const callerLine = lines.find(l => !l.includes("HomiContext")) || lines[0] || "";
+    const match = callerLine.match(/\/src\/(.+?)(?:\?|:)/);
+    if (match) callerHint = match[1];
+  } catch { /* ignore */ }
+
+  // Deduplicate by caller
+  if (_warnedCallers.has(callerHint)) return;
+  _warnedCallers.add(callerHint);
+  _warnCount++;
+
+  const route = typeof window !== "undefined" ? window.location.pathname : "?";
+  const isSuspense = new Error().stack?.includes("mountLazyComponent") || false;
+
+  console.warn(
+    `[HomiContext] useHomi() called outside HomiProvider — returning no-op defaults\n` +
+    `  caller: ${callerHint}\n` +
+    `  route:  ${route}\n` +
+    `  lazy/suspense: ${isSuspense ? "yes (likely transient)" : "no"}\n` +
+    (_warnCount >= MAX_WARNINGS ? `  (further warnings suppressed)` : "")
+  );
+}
+
 export function useHomi() {
   const ctx = useContext(HomiContext);
   if (!ctx) {
-    console.warn("useHomi called outside HomiProvider — returning no-op defaults");
+    emitFallbackWarning();
     return NOOP_CONTEXT;
   }
   return ctx;
