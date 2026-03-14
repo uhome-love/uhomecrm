@@ -49,17 +49,23 @@ export function getCurrentWindowInfo(): {
   const now = new Date();
   const mins = getMinutesFromMidnight(now.getHours(), now.getMinutes());
 
+  // Detect Saturday (BRT = UTC-3)
+  const brtNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const isSaturday = brtNow.getDay() === 6;
+
   // Janelas de distribuição:
-  // Manhã:   07:30 — 09:30 (cred 07:30-09:30)
+  // Manhã:   07:30 — 09:30 (cred 07:30-09:30, sábado até 10:30)
   // Tarde:   13:30 — 18:00 (cred 12:00-13:30)
   // Noturna: 18:30 — 23:59 (cred 18:30-20:30, com requisitos)
 
   const t0730 = parseTime("07:30");
-  const t0930 = parseTime("09:30");
+  const t0930_cred = isSaturday ? parseTime("10:30") : parseTime("09:30");
   const t1200 = parseTime("12:00");
   const t1330 = parseTime("13:30");
   const t1830 = parseTime("18:30");
   const t2030 = parseTime("20:30");
+
+  const credManhaFimLabel = isSaturday ? "10:30" : "09:30";
 
   let janela: JanelaId;
   let descricao: string;
@@ -74,14 +80,14 @@ export function getCurrentWindowInfo(): {
     emoji = "🌅";
     descricao = "Acumulando leads · Credenciamento manhã abre às 07:30";
     nextTransitionMins = t0730;
-  } else if (mins < t0930) {
-    // 07:30 — 09:30: Manhã ativa, cred manhã aberto
+  } else if (mins < t0930_cred) {
+    // 07:30 — 09:30/10:30: Manhã ativa, cred manhã aberto
     janela = "manha";
     emoji = "☀️";
-    descricao = "Roleta da manhã ativa · Cred manhã aberto";
+    descricao = `Roleta da manhã ativa · Cred manhã aberto até ${credManhaFimLabel}`;
     credenciamentoAberto = true;
     credenciamentoJanela = "manha";
-    nextTransitionMins = t0930;
+    nextTransitionMins = t0930_cred;
   } else if (mins < t1200) {
     // 09:30 — 12:00: Manhã encerrada, aguardando tarde
     janela = "manha";

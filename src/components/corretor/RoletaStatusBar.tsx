@@ -59,12 +59,25 @@ interface JanelaConfig {
 const toDbJanela = (janela: JanelaKey): JanelaDb => (janela === "noite" ? "noturna" : janela);
 const toUiJanela = (janela: string): JanelaKey => (janela === "noturna" ? "noite" : (janela as JanelaKey));
 
+// Detect Saturday (BRT)
+function isSaturdayBRT(): boolean {
+  const now = new Date();
+  const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  return brt.getDay() === 6;
+}
+
 // Janelas de credenciamento com horários de abertura e fechamento
-const JANELAS_CONFIG: JanelaConfig[] = [
-  { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 7.5, fim: 9.5 }, recebimento: "7h30 — 9h30", temRequisitos: false },
-  { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 13.5 }, recebimento: "13h30 — 18h", temRequisitos: false },
-  { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18.5, fim: 20.5 }, recebimento: "18h — 23h30", temRequisitos: true },
-];
+function getJanelasConfig(): JanelaConfig[] {
+  const saturdayMorning = isSaturdayBRT();
+  return [
+    { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 7.5, fim: saturdayMorning ? 10.5 : 9.5 }, recebimento: saturdayMorning ? "7h30 — 10h30" : "7h30 — 9h30", temRequisitos: false },
+    { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 13.5 }, recebimento: "13h30 — 18h", temRequisitos: false },
+    { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18.5, fim: 20.5 }, recebimento: "18h — 23h30", temRequisitos: true },
+  ];
+}
+
+// Keep JANELAS_CONFIG as a getter for backward compat in static references
+const JANELAS_CONFIG = getJanelasConfig();
 
 function getHoraDecimal() {
   const now = new Date();
