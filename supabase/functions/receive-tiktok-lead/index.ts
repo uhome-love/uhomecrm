@@ -426,11 +426,11 @@ Deno.serve(async (req) => {
     try {
       await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json", "x-trace-id": traceId },
         body: JSON.stringify({ action: "distribute_single", pipeline_lead_id: insertedLead.id }),
       });
     } catch (distErr) {
-      console.warn("Auto-distribute failed:", distErr);
+      L.warn("Auto-distribute failed", { leadId: insertedLead.id }, distErr);
     }
 
     // ── Audit ──
