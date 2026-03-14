@@ -6477,7 +6477,12 @@ export type Database = {
         }
         Returns: number
       }
+      cleanup_audit_log: { Args: never; Returns: undefined }
+      cleanup_coaching_sessions: { Args: never; Returns: undefined }
       cleanup_expired_locks: { Args: never; Returns: number }
+      cleanup_homi_briefings: { Args: never; Returns: undefined }
+      cleanup_homi_conversations: { Args: never; Returns: undefined }
+      cleanup_jetimob_processed: { Args: never; Returns: undefined }
       cleanup_ops_events: { Args: never; Returns: undefined }
       criar_notificacao: {
         Args: {
