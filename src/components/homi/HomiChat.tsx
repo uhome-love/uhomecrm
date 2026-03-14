@@ -93,6 +93,7 @@ export default function HomiChat({ onBack }: Props) {
     let assistantSoFar = "";
 
     try {
+      abortRef.current = new AbortController();
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -100,6 +101,7 @@ export default function HomiChat({ onBack }: Props) {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ messages: newMessages }),
+        signal: abortRef.current.signal,
       });
 
       if (!resp.ok) {
@@ -107,7 +109,6 @@ export default function HomiChat({ onBack }: Props) {
         if (resp.status === 429) toast.error("Rate limit excedido, aguarde alguns segundos");
         else if (resp.status === 402) toast.error("Créditos esgotados");
         else toast.error(errorData.error || "Erro ao conectar com o HOMI");
-        setIsLoading(false);
         return;
       }
 
