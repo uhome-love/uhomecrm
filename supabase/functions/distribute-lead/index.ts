@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
         }
 
         if (eligible.length === 0) {
-          console.warn(`No eligible corretor for lead ${lead.id} (emp: ${lead.empreendimento}, seg: ${segmentoId})`);
+          L.warn("No eligible corretor", { leadId: lead.id, empreendimento: lead.empreendimento, segmentoId });
           failed++;
           continue;
         }
