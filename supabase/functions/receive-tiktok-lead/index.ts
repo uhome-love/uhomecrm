@@ -421,6 +421,7 @@ Deno.serve(async (req) => {
     }
 
     L.info("Lead created", { leadId: insertedLead.id, name, empreendimento, campaignId });
+    logOps("info", "business", "Lead created via TikTok Ads", { lead_id: insertedLead.id, name, empreendimento, campaign_id: campaignId });
 
     // Register in permanent dedup registry
     await supabase
