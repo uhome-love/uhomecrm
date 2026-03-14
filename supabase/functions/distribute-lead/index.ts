@@ -300,7 +300,7 @@ Deno.serve(async (req) => {
         }).then(r => { if (r.error) console.warn("audit_log insert:", r.error.message); });
       }
 
-      console.log(`Dispatch complete: ${dispatched} distributed, ${failed} failed`);
+      L.info("Dispatch complete", { dispatched, failed });
       return jsonResponse({ success: true, dispatched, failed });
     }
 
