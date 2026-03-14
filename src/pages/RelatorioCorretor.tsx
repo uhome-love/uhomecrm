@@ -139,25 +139,14 @@ export default function RelatorioCorretor() {
     if (!user || !corretorId || !dataInicio || !dataFim) return;
     setLoadingMetricas(true);
 
-    const { data: cps } = await supabase
-      .from("checkpoints")
-      .select("id")
-      .eq("gerente_id", user.id)
-      .gte("data", dataInicio)
-      .lte("data", dataFim);
-
-    const cpIds = (cps || []).map(c => c.id);
-    if (cpIds.length === 0) {
-      setMetricas(emptyMetricas);
-      setLoadingMetricas(false);
-      return;
-    }
-
+    // Single query via canonical view — no checkpoint join needed
     const { data: lines } = await supabase
-      .from("checkpoint_lines")
+      .from("v_checkpoint_lines_canonical" as any)
       .select("*")
-      .eq("corretor_id", corretorId)
-      .in("checkpoint_id", cpIds);
+      .eq("team_member_id", corretorId)
+      .eq("checkpoint_gerente_id", user.id)
+      .gte("checkpoint_date", dataInicio)
+      .lte("checkpoint_date", dataFim);
 
     const m: Metricas = { ...emptyMetricas };
     Object.keys(m).forEach(k => { (m as any)[k] = { meta: 0, real: 0 }; });
