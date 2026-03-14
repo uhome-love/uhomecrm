@@ -174,10 +174,7 @@ Deno.serve(async (req) => {
     const isTestLead = isLikelyTestLead(name, email, message);
     const platform = "tiktok_ads";
 
-    console.log("TIKTOK-LEAD PARSED:", JSON.stringify({
-      name, phone, telefone, email, campaignId, campaignName,
-      message, propertyCode, formName, adName, adsetName, externalLeadId, isTestLead,
-    }));
+    L.info("Parsed", { name, telefone, campaignId, externalLeadId, isTestLead });
 
     if (isTestLead) {
       console.warn("TIKTOK-LEAD IGNORED — test payload", JSON.stringify({ name, email, externalLeadId }));
