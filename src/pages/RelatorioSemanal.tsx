@@ -288,7 +288,9 @@ export default function RelatorioSemanal() {
           <Card>
             <CardHeader><CardTitle className="text-sm">Entradas por Origem</CardTitle></CardHeader>
             <CardContent>
-              {originLoading ? <Skeleton className="h-48 w-full" /> : (
+              {originLoading ? <Skeleton className="h-48 w-full" /> : !leadsOrigin?.length ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhum lead captado neste período</p>
+              ) : (
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={leadsOrigin} layout="vertical" margin={{ left: 80 }}>
                     <XAxis type="number" />
