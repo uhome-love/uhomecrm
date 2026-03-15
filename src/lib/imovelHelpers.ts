@@ -14,10 +14,14 @@ export function extractImages(item: any): string[] {
 
 export function extractFullImages(item: any): string[] {
   if (item._fotos_full?.length) return item._fotos_full;
-  if (item._fotos_normalized?.length) return item._fotos_normalized;
+  // Try imagens array for high-res sources before falling back to _fotos_normalized (thumbnails)
   const arr = item.imagens;
-  if (!Array.isArray(arr) || arr.length === 0) return [];
-  return arr.map((img: any) => img.link_large || img.link || img.link_medio || img.link_thumb || img.url || img.src || "").filter(Boolean);
+  if (Array.isArray(arr) && arr.length > 0) {
+    const full = arr.map((img: any) => img.link_large || img.link || img.link_medio || img.link_thumb || img.url || img.src || "").filter(Boolean);
+    if (full.length > 0) return full;
+  }
+  if (item._fotos_normalized?.length) return item._fotos_normalized;
+  return [];
 }
 
 export function extractOrigemExterna(item: any) {
