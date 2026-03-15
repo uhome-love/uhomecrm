@@ -22,6 +22,7 @@ import LeadsDistribuidosPanel from "@/components/distribuicao/LeadsDistribuidosP
 import CeoDailyReport from "@/components/ceo/CeoDailyReport";
 import BulkEmpreendimentoAssign from "@/components/ceo/BulkEmpreendimentoAssign";
 import { formatBRLCompact } from "@/lib/utils";
+import HomiBriefingCard from "@/components/ceo/HomiBriefingCard";
 
 // ─── Greeting ───
 function getGreeting() {
