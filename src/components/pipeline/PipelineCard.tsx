@@ -1,6 +1,7 @@
 import { memo, useState, useMemo } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
 import { Phone, MessageCircle, Handshake, ArrowRightLeft, FileText, Flame, Snowflake, ThermometerSun } from "lucide-react";
+import { getScoreTooltip } from "@/lib/scoreTemperatureLabels";
 import { calculateLeadScore } from "@/lib/leadScoring";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -236,7 +237,10 @@ const PipelineCard = memo(function PipelineCard({
           </span>
           <div className="flex items-center gap-1 shrink-0">
             {tempConfig && (
-              <span className={cn("inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold", tempConfig.bg, tempConfig.cls)}>
+              <span
+                className={cn("inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold", tempConfig.bg, tempConfig.cls)}
+                title={lead.oportunidade_score != null ? getScoreTooltip(lead.oportunidade_score) : `${tempConfig.label}`}
+              >
                 <tempConfig.icon className="h-2.5 w-2.5" />
               </span>
             )}

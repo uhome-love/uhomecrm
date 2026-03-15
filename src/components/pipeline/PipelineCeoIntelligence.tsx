@@ -4,12 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronUp, Brain, AlertTriangle, Rocket, Eye, MessageSquare, Users, Archive, ArrowRightLeft, Send } from "lucide-react";
+import { ChevronDown, ChevronUp, Brain, AlertTriangle, Rocket, Eye, MessageSquare, Users, Archive, ArrowRightLeft, Send, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { differenceInDays, differenceInHours } from "date-fns";
+import { SCORE_TEMPERATURE_LEVELS } from "@/lib/scoreTemperatureLabels";
 
 interface Props {
   leads: PipelineLead[];
@@ -46,6 +48,7 @@ function AlertRow({ icon, color, count, label, actionLabel, actionIcon: ActionIc
 export default function PipelineCeoIntelligence({ leads, stages, corretorNomes, onFilterLeads, onDispatch, onReload }: Props) {
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkAction, setBulkAction] = useState("");
   const [bulkCorretor, setBulkCorretor] = useState("");
@@ -177,6 +180,13 @@ export default function PipelineCeoIntelligence({ leads, stages, corretorNomes, 
           )}
           {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setHelpOpen(true); }}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          title="Como funciona o sistema de pontuação"
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+        </button>
       </div>
 
       {/* Intelligence panel */}
@@ -289,6 +299,49 @@ export default function PipelineCeoIntelligence({ leads, stages, corretorNomes, 
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Score Legend Modal */}
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" /> Sistema de Pontuação de Leads
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Cada lead recebe um score de oportunidade (0–100) calculado automaticamente com base em múltiplos fatores.
+            </p>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Faixas de temperatura</p>
+              {SCORE_TEMPERATURE_LEVELS.map(level => (
+                <div key={level.key} className="flex items-start gap-3 p-2.5 rounded-lg border border-border bg-muted/30">
+                  <span className="text-lg shrink-0">{level.emoji}</span>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold ${level.color}`}>
+                      {level.label} <span className="text-muted-foreground font-normal">({level.range})</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{level.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Fatores que aumentam o score</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li className="flex items-center gap-1.5">• Avanço de etapa no funil (+5 a +40)</li>
+                <li className="flex items-center gap-1.5">• Valor estimado (VGV) alto (+3 a +15)</li>
+                <li className="flex items-center gap-1.5">• Temperatura quente / morno (+5 a +10)</li>
+                <li className="flex items-center gap-1.5">• Movimentação recente (+5 a +10)</li>
+                <li className="flex items-center gap-1.5">• Próxima ação definida (+5)</li>
+                <li className="flex items-center gap-1.5">• Gerente envolvido (+5)</li>
+              </ul>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

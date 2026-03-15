@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +43,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { differenceInDaysSafe, differenceInHoursSafe, formatDateSafe, formatDistanceToNowSafe, parseDateBRTSafe } from "@/lib/utils";
+import { getScoreTemperature } from "@/lib/scoreTemperatureLabels";
 
 interface Props {
   lead: PipelineLead;
@@ -270,9 +272,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
             {lead.oportunidade_score != null && (() => {
               const s = lead.oportunidade_score!;
+              const level = getScoreTemperature(s);
               const cls = s >= 81 ? "text-red-500 font-black" : s >= 61 ? "text-orange-500 font-bold" : s >= 31 ? "text-amber-500 font-semibold" : "text-blue-500 font-semibold";
               const emoji = s >= 81 ? "💎" : s >= 61 ? "⚡" : s >= 31 ? "🔥" : "🧊";
-              return <span className={`text-xs shrink-0 ${cls}`}>{emoji} {s}</span>;
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className={`text-xs shrink-0 cursor-help ${cls}`}>{emoji} {s}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[240px]">
+                    <p className="font-semibold text-xs">{level.emoji} {level.label} ({level.range})</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{level.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
             })()}
 
             <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{daysSinceCreation}d</span>
