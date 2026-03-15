@@ -53,7 +53,7 @@ function PhotoLightboxInner({ images, initialIndex, open, onClose }: PhotoLightb
       <div className="flex items-center justify-center h-full px-4 sm:px-8 pt-14 pb-24" onClick={(e) => e.stopPropagation()}>
         <div className="relative w-full h-full flex items-center justify-center">
           <img
-            src={getFullRes(images[current])}
+            src={toHighRes(images[current])}
             alt={`Foto ${current + 1}`}
             className="max-w-[95vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300"
             style={{ opacity: isTransitioning ? 0.6 : 1 }}
