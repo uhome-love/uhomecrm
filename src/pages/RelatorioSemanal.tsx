@@ -11,11 +11,13 @@ import {
   Trophy, Target, TrendingUp, AlertTriangle, Lightbulb, RefreshCw
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, Cell } from "recharts";
-import { format } from "date-fns";
+import { format, getISOWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { formatBRLCompact } from "@/lib/utils";
 import { formatBRLCompact } from "@/lib/utils";
 import {
   getWeekRange,
