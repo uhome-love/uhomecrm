@@ -77,6 +77,7 @@ const GerenteDashboard = lazy(() => import("./pages/GerenteDashboard"));
 const RoletaLeads = lazy(() => import("./pages/RoletaLeads"));
 const ImoveisPage = lazy(() => import("./pages/ImoveisPage"));
 const VitrinePage = lazy(() => import("./pages/VitrinePage"));
+const ImovelPage = lazy(() => import("./pages/ImovelPage"));
 const PosVendas = lazy(() => import("./pages/PosVendas"));
 const MelnickDay = lazy(() => import("./pages/MelnickDay"));
 const OrygemCampanha = lazy(() => import("./pages/OrygemCampanha"));
