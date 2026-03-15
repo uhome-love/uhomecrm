@@ -178,30 +178,20 @@ export default function PipelineKanban() {
 
   if (pipeline.loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="text-sm text-muted-foreground">Carregando pipeline...</span>
-      </div>
+      <LoadingState
+        title="Carregando pipeline..."
+        description="Buscando leads e etapas do funil."
+      />
     );
   }
 
-  // Show error state with retry
   if (pipeline.error || !pipeline.stages || pipeline.stages.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3">
-        <span className="text-destructive font-semibold">Erro ao carregar o Pipeline</span>
-        <span className="text-sm text-muted-foreground">
-          {pipeline.error || "Nenhuma etapa foi encontrada. Tente recarregar."}
-        </span>
-        <div className="flex gap-2">
-          <button onClick={() => pipeline.reload()} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">
-            Tentar novamente
-          </button>
-          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-muted text-muted-foreground rounded-md text-sm">
-            Recarregar página
-          </button>
-        </div>
-      </div>
+      <ErrorState
+        title="Erro ao carregar o Pipeline"
+        description={pipeline.error || "Nenhuma etapa foi encontrada. Tente recarregar."}
+        action={{ label: "Tentar novamente", onClick: () => pipeline.reload() }}
+      />
     );
   }
 
