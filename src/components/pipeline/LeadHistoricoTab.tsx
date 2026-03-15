@@ -69,7 +69,16 @@ interface TimelineItem {
   color: string;
 }
 
-function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead): TimelineItem[] {
+const IMOVEL_EVENT_META: Record<string, { label: string; icon: any; color: string }> = {
+  search_performed: { label: "🔍 Busca de imóveis", icon: SearchIcon, color: "bg-violet-100 text-violet-600" },
+  vitrine_created: { label: "🏠 Vitrine criada", icon: Building2, color: "bg-primary/10 text-primary" },
+  vitrine_sent: { label: "📤 Vitrine enviada", icon: Share2, color: "bg-green-100 text-green-600" },
+  property_previewed: { label: "👁️ Imóvel visualizado", icon: Building2, color: "bg-blue-100 text-blue-600" },
+  property_favorited: { label: "❤️ Imóvel favoritado", icon: Building2, color: "bg-rose-100 text-rose-600" },
+  whatsapp_clicked: { label: "💬 WhatsApp clicado", icon: MessageSquare, color: "bg-green-100 text-green-600" },
+};
+
+function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead, imovelEvents?: LeadImovelEvent[]): TimelineItem[] {
   const items: TimelineItem[] = [];
 
   for (const h of historico) {
@@ -98,6 +107,25 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   for (const t of tarefas) {
     if (t.status === "concluida" && t.concluida_em) {
       items.push({ title: `✅ ${t.titulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600" });
+    }
+  }
+
+  // Lead-imóvel events
+  if (imovelEvents) {
+    for (const ev of imovelEvents) {
+      const meta = IMOVEL_EVENT_META[ev.event_type] || { label: ev.event_type, icon: Building2, color: "bg-muted text-muted-foreground" };
+      const desc = ev.search_query
+        ? `Busca: "${ev.search_query}"`
+        : ev.imovel_codigo
+          ? `Imóvel: ${ev.imovel_codigo}`
+          : undefined;
+      items.push({
+        title: meta.label,
+        description: desc,
+        date: ev.created_at,
+        icon: meta.icon,
+        color: meta.color,
+      });
     }
   }
 
