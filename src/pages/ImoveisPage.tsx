@@ -139,6 +139,15 @@ export default function ImoveisPage() {
         onOpenLightbox={openLightbox}
       />
 
+      {/* Lead context banner */}
+      {hasLeadContext && (
+        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
+          <span className="text-xs font-medium text-primary">
+            🔗 Buscando imóveis para: <strong>{leadNome || "Lead"}</strong>
+          </span>
+        </div>
+      )}
+
       {/* ── Sticky top bar ── */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50">
         <div className="max-w-[1400px] mx-auto px-4 md:px-6">
