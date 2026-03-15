@@ -561,6 +561,86 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_clicks: {
+        Row: {
+          campanha: string
+          canal: string
+          created_at: string
+          email: string | null
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          lead_action: string | null
+          nome: string | null
+          origem: string
+          pipeline_lead_id: string | null
+          redirect_url: string | null
+          redirected: boolean | null
+          status: string
+          tags: string[] | null
+          telefone: string | null
+          telefone_normalizado: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          campanha?: string
+          canal?: string
+          created_at?: string
+          email?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          lead_action?: string | null
+          nome?: string | null
+          origem?: string
+          pipeline_lead_id?: string | null
+          redirect_url?: string | null
+          redirected?: boolean | null
+          status?: string
+          tags?: string[] | null
+          telefone?: string | null
+          telefone_normalizado?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          campanha?: string
+          canal?: string
+          created_at?: string
+          email?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          lead_action?: string | null
+          nome?: string | null
+          origem?: string
+          pipeline_lead_id?: string | null
+          redirect_url?: string | null
+          redirected?: boolean | null
+          status?: string
+          tags?: string[] | null
+          telefone?: string | null
+          telefone_normalizado?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_clicks_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ceo_metas_mensais: {
         Row: {
           created_at: string
