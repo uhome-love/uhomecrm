@@ -216,6 +216,7 @@ const App = () => (
             <Route path="/pos-vendas" element={<ProtectedPage><ErrorBoundary module="pos-vendas"><PosVendas /></ErrorBoundary></ProtectedPage>} />
             <Route path="/imoveis" element={<ProtectedPage><ErrorBoundary module="imoveis"><ImoveisPage /></ErrorBoundary></ProtectedPage>} />
             <Route path="/melnick-day" element={<ProtectedPage><ErrorBoundary module="melnick-day"><MelnickDay /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/melnick-metas" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="melnick-metas"><MelnickMetas /></ErrorBoundary></ProtectedPage>} />
             <Route path="/orygem-60" element={<ProtectedPage><ErrorBoundary module="orygem-60"><OrygemCampanha /></ErrorBoundary></ProtectedPage>} />
             <Route path="/mega-cyrela" element={<ProtectedPage><ErrorBoundary module="mega-cyrela"><MegaCyrela /></ErrorBoundary></ProtectedPage>} />
             <Route path="/anuncios" element={<ProtectedPage><ErrorBoundary module="anuncios"><AnunciosNoAr /></ErrorBoundary></ProtectedPage>} />
