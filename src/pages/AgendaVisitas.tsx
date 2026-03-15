@@ -179,12 +179,6 @@ export default function AgendaVisitas() {
       return isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
     });
   }, [allVisitasByTipo]);
-    const today = startOfDay(new Date());
-    return visitas.filter(v => {
-      const d = new Date(v.data_visita + "T12:00:00");
-      return isBefore(d, today) && (v.status === "marcada" || v.status === "confirmada");
-    });
-  }, [visitas]);
 
   const pendingByCorretor = useMemo(() => {
     const map = new Map<string, { nome: string; count: number }>();
