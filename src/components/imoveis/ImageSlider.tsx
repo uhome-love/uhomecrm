@@ -13,7 +13,7 @@ function ImageSliderInner({ images, alt, onClickImage }: ImageSliderProps) {
   if (images.length === 0) return <div className="w-full h-full flex items-center justify-center cursor-pointer bg-muted" onClick={onClickImage}><Home className="h-10 w-10 text-muted-foreground/30" /></div>;
   return (
     <div className="w-full h-full relative group">
-      <img src={images[current]} alt={alt} className="w-full h-full object-cover cursor-pointer" loading="lazy" onClick={(e) => { e.stopPropagation(); onClickImage?.(); }} />
+      <img src={images[current]} alt={alt} className="w-full h-full object-cover cursor-pointer" loading="lazy" onClick={(e) => { onClickImage?.(e); }} />
       {images.length > 1 && (
         <>
           <button onClick={(e) => { e.stopPropagation(); setCurrent((p) => (p - 1 + images.length) % images.length); }} className="absolute left-1.5 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/95 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-sm" aria-label="Anterior"><ChevronLeft className="h-4 w-4" /></button>
