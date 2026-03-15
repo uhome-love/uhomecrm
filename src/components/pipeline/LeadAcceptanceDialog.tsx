@@ -147,6 +147,9 @@ export default function LeadAcceptanceDialog({ lead, open, onClose, onResult }: 
           {lead.telefone && (
             <p className="text-sm text-muted-foreground">📞 {lead.telefone}</p>
           )}
+          {lead.email && (
+            <p className="text-sm text-muted-foreground">✉️ {lead.email}</p>
+          )}
           {lead.empreendimento && (
             <div className="flex items-center gap-1 text-sm">
               <Building2 className="h-3.5 w-3.5 text-primary" />
