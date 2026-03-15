@@ -67,6 +67,7 @@ import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { toast } from "sonner";
 import { getLevel } from "@/lib/gamification";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import CorretorAvatar from "@/components/corretor/CorretorAvatar";
 
 const homiMascot = "/images/homi-48.png";
