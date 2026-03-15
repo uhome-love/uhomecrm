@@ -1,9 +1,27 @@
 /**
  * Shared helper functions for property (imóvel) data extraction and formatting.
  * Extracted from ImoveisPage to be reused across components.
+ *
+ * IMAGE STRATEGY (centralized):
+ * - Hero/Preview: getPropertyHeroImages() → best resolution available
+ * - Thumbnails:   getPropertyThumbImages() → lightweight thumbs
+ * - Fullscreen:   getPropertyFullscreenImages() → same as hero or better
+ *
+ * Priority order for hero/fullscreen:
+ *   1. _fotos_full (from typesense-sync or jetimob-proxy)
+ *   2. imagens[].link_large
+ *   3. imagens[].link
+ *   4. _fotos_normalized (thumbnails, last resort)
+ *
+ * Priority order for thumbnails:
+ *   1. _fotos_normalized
+ *   2. imagens[].link_thumb
+ *   3. imagens[].link
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+// ── Legacy helpers (used by PropertyCards, ImageSlider) — kept for compatibility ──
 
 export function extractImages(item: any): string[] {
   if (item._fotos_normalized?.length) return item._fotos_normalized;
@@ -14,7 +32,6 @@ export function extractImages(item: any): string[] {
 
 export function extractFullImages(item: any): string[] {
   if (item._fotos_full?.length) return item._fotos_full;
-  // Try imagens array for high-res sources before falling back to _fotos_normalized (thumbnails)
   const arr = item.imagens;
   if (Array.isArray(arr) && arr.length > 0) {
     const full = arr.map((img: any) => img.link_large || img.link || img.link_medio || img.link_thumb || img.url || img.src || "").filter(Boolean);
@@ -23,6 +40,51 @@ export function extractFullImages(item: any): string[] {
   if (item._fotos_normalized?.length) return item._fotos_normalized;
   return [];
 }
+
+// ── Centralized image strategy (new, canonical API) ──
+
+/**
+ * Returns the best-quality images for hero/preview display.
+ * Priority: _fotos_full > imagens[].link_large > imagens[].link > _fotos_normalized
+ */
+export function getPropertyHeroImages(item: any): string[] {
+  // 1. Explicit full-res array (from Typesense mapping or proxy)
+  if (item._fotos_full?.length) return item._fotos_full;
+
+  // 2. Try imagens array for link_large
+  const arr = item.imagens;
+  if (Array.isArray(arr) && arr.length > 0) {
+    const large = arr.map((img: any) => img.link_large || img.link || "").filter(Boolean);
+    if (large.length > 0) return large;
+  }
+
+  // 3. Fallback to normalized thumbs
+  if (item._fotos_normalized?.length) return item._fotos_normalized;
+  return [];
+}
+
+/**
+ * Returns lightweight thumbnail images for strips/grids.
+ * Priority: _fotos_normalized > imagens[].link_thumb > imagens[].link
+ */
+export function getPropertyThumbImages(item: any): string[] {
+  if (item._fotos_normalized?.length) return item._fotos_normalized;
+  const arr = item.imagens;
+  if (Array.isArray(arr) && arr.length > 0) {
+    return arr.map((img: any) => img.link_thumb || img.link || img.url || "").filter(Boolean);
+  }
+  return [];
+}
+
+/**
+ * Returns highest-quality images for fullscreen/lightbox.
+ * Same as hero — if a better source existed, it would go here.
+ */
+export function getPropertyFullscreenImages(item: any): string[] {
+  return getPropertyHeroImages(item);
+}
+
+// ── Other property helpers ──
 
 export function extractOrigemExterna(item: any) {
   const proprietario = item.proprietario_nome || item.proprietario?.nome;
