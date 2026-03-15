@@ -97,6 +97,7 @@ const VitrinePage = lazyRetry(() => import("./pages/VitrinePage"));
 const ImovelPage = lazyRetry(() => import("./pages/ImovelPage"));
 const PosVendas = lazyRetry(() => import("./pages/PosVendas"));
 const MelnickDay = lazyRetry(() => import("./pages/MelnickDay"));
+const MelnickMetas = lazyRetry(() => import("./pages/MelnickMetas"));
 const OrygemCampanha = lazyRetry(() => import("./pages/OrygemCampanha"));
 const MegaCyrela = lazyRetry(() => import("./pages/MegaCyrela"));
 const VendasRealizadas = lazyRetry(() => import("./pages/VendasRealizadas"));
