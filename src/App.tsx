@@ -240,6 +240,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="admin"><AdminPanel /></ErrorBoundary></ProtectedPage>} />
             <Route path="/integracao" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="integracao"><IntegracaoJetimob /></ErrorBoundary></ProtectedPage>} />
             <Route path="/dev-ai" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="dev-ai"><DevAIPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/campaign-analytics" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="campaign-analytics"><CampaignAnalyticsPage /></ErrorBoundary></ProtectedPage>} />
 
             {/* Backoffice — Ana Paula */}
             <Route path="/backoffice" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice"><BackofficeDashboard /></ErrorBoundary></ProtectedPage>} />

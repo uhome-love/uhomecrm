@@ -128,3 +128,6 @@ verify_jwt = false
 
 [functions.imovel-og]
 verify_jwt = false
+
+[functions.campaign-sms-click]
+verify_jwt = false
