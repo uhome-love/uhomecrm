@@ -383,6 +383,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate(`/imoveis?lead_id=${lead.id}&lead_nome=${encodeURIComponent(lead.nome)}`)}>
+                  <Search className="h-3.5 w-3.5 mr-2" /> Buscar imóveis
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setPartnerOpen(true)}>
                   <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
                 </DropdownMenuItem>
