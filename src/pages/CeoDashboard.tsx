@@ -130,6 +130,26 @@ export default function CeoDashboard() {
     reload, reloadRoleta,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
 
+  // Fetch consolidated CEO metas for current month
+  const [ceoMetasConsolidadas, setCeoMetasConsolidadas] = useState<{
+    meta_ligacoes: number; meta_visitas_marcadas: number; meta_visitas_realizadas: number; meta_vgv_assinado: number;
+  }>({ meta_ligacoes: 0, meta_visitas_marcadas: 0, meta_visitas_realizadas: 0, meta_vgv_assinado: 0 });
+
+  useEffect(() => {
+    const mesAtual = format(new Date(), "yyyy-MM");
+    supabase.from("ceo_metas_mensais").select("meta_ligacoes, meta_visitas_marcadas, meta_visitas_realizadas, meta_vgv_assinado").eq("mes", mesAtual)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setCeoMetasConsolidadas({
+            meta_ligacoes: data.reduce((a, m) => a + (m.meta_ligacoes || 0), 0),
+            meta_visitas_marcadas: data.reduce((a, m) => a + (m.meta_visitas_marcadas || 0), 0),
+            meta_visitas_realizadas: data.reduce((a, m) => a + (m.meta_visitas_realizadas || 0), 0),
+            meta_vgv_assinado: data.reduce((a, m) => a + (m.meta_vgv_assinado || 0), 0),
+          });
+        }
+      });
+  }, []);
+
   // Build dashboard data for HOMI
   const dashboardData = useMemo(() => ({
     kpis, prevKpis, alertas, teams, campanhas, pipelineStages,
