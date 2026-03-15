@@ -98,48 +98,8 @@ export default function PipelineKanban() {
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
-  const [parcerias, setParcerias] = useState<Record<string, string>>({});
+  const { data: parcerias = {} } = useParceriasMap();
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState("kanban");
-  const [filaCeoFilter, setFilaCeoFilter] = useState(false);
-  const [corretorFilter, setCorretorFilter] = useState<string>("all");
-  const [dispatchOpen, setDispatchOpen] = useState(false);
-  const [forecastExpanded, setForecastExpanded] = useState(false);
-  
-  // Bulk selection state
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
-  const [bulkActionOpen, setBulkActionOpen] = useState(false);
-
-  const toggleLeadSelection = useCallback((leadId: string) => {
-    setSelectedLeads(prev => {
-      const next = new Set(prev);
-      if (next.has(leadId)) next.delete(leadId);
-      else next.add(leadId);
-      return next;
-    });
-  }, []);
-
-  const clearSelection = useCallback(() => {
-    setSelectedLeads(new Set());
-    setSelectionMode(false);
-  }, []);
-
-  // Load partnerships from v_pipeline_parcerias_visual (names resolved in SQL)
-  const [parceriasLoaded, setParceriasLoaded] = useState(false);
-  useEffect(() => {
-    if (parceriasLoaded || pipeline.loading) return;
-    (async () => {
-      const { data } = await supabase
-        .from("v_pipeline_parcerias_visual")
-        .select("pipeline_lead_id, parceiro_nome");
-      if (!data || data.length === 0) { setParceriasLoaded(true); return; }
-      const result: Record<string, string> = {};
-      data.forEach(p => { result[p.pipeline_lead_id] = p.parceiro_nome || "Parceiro"; });
-      setParcerias(result);
-      setParceriasLoaded(true);
-    })();
-  }, [pipeline.loading, parceriasLoaded]);
 
   const canAdd = isGestor || isAdmin || isCorretor;
 
