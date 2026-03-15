@@ -15,8 +15,14 @@ function normalizePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 10) return null;
+  // Remove country code 55
   if (digits.startsWith("55") && digits.length >= 12) return digits.slice(2);
   return digits;
+}
+
+// Build all normalized variants for matching (with and without 55)
+function phoneVariants(normalized: string): string[] {
+  return [normalized, `55${normalized}`];
 }
 
 Deno.serve(async (req) => {
@@ -77,10 +83,12 @@ Deno.serve(async (req) => {
     let existingLead: Record<string, unknown> | null = null;
 
     if (telefoneNormalizado) {
+      // Search both with and without country code prefix
+      const variants = phoneVariants(telefoneNormalizado);
       const { data } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, tags, stage_id, corretor_id")
-        .eq("telefone_normalizado", telefoneNormalizado)
+        .select("id, nome, email, tags, stage_id, corretor_id")
+        .in("telefone_normalizado", variants)
         .not("aceite_status", "eq", "descartado")
         .order("created_at", { ascending: false })
         .limit(1)
@@ -91,7 +99,7 @@ Deno.serve(async (req) => {
     if (!existingLead && email) {
       const { data } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, tags, stage_id, corretor_id")
+        .select("id, nome, email, tags, stage_id, corretor_id")
         .eq("email", email)
         .not("aceite_status", "eq", "descartado")
         .order("created_at", { ascending: false })
@@ -114,11 +122,21 @@ Deno.serve(async (req) => {
       const currentTags: string[] = (existingLead.tags as string[]) || [];
       const newTags = [...new Set([...currentTags, ...tags])];
 
-      await supabase.from("pipeline_leads").update({
+      const updateData: Record<string, unknown> = {
         tags: newTags,
         campanha: campanha,
         observacoes: obsText,
-      }).eq("id", existingLead.id);
+      };
+      // Update name if we have one and existing is generic
+      if (nome && (!existingLead.nome || existingLead.nome === "Lead Melnick Day")) {
+        updateData.nome = nome;
+      }
+      // Update email if we have one and existing doesn't
+      if (email && !existingLead.email) {
+        updateData.email = email;
+      }
+
+      await supabase.from("pipeline_leads").update(updateData).eq("id", existingLead.id);
 
       // Log progression
       await supabase.from("lead_progressao").insert({
