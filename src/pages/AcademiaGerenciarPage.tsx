@@ -269,6 +269,10 @@ export default function AcademiaGerenciarPage() {
           <h3 className="text-sm font-semibold text-muted-foreground px-1">Trilhas ({trilhas.length})</h3>
           {trilhas.map(t => {
             const cat = CATEGORIAS.find(c => c.key === t.categoria);
+            const eng = engagementMap[t.id];
+            const progressColor = eng
+              ? eng.mediaProgresso >= 70 ? "bg-emerald-500" : eng.mediaProgresso >= 30 ? "bg-amber-500" : "bg-destructive"
+              : "bg-muted";
             return (
               <button
                 key={t.id}
@@ -285,8 +289,25 @@ export default function AcademiaGerenciarPage() {
                 <div className="flex items-center gap-2">
                   {cat && <Badge className={cn("text-[9px]", cat.color)}>{cat.label.split(" ")[0]}</Badge>}
                   <Badge variant="secondary" className="text-[9px]">{t.nivel || "iniciante"}</Badge>
+                  {!t.publicada && <Badge variant="destructive" className="text-[8px] px-1.5 py-0">Oculta para corretores</Badge>}
                   <span className="text-[10px] text-muted-foreground ml-auto">{t.xp_total || 0} XP</span>
                 </div>
+
+                {/* Engagement stats */}
+                {eng ? (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {eng.concluiram} concluíram · {eng.mediaProgresso}% média · {eng.iniciaram} iniciaram
+                    </p>
+                    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+                      <div className={cn("h-full rounded-full transition-all", progressColor)} style={{ width: `${eng.mediaProgresso}%` }} />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground/50 mt-2">Sem engajamento ainda</p>
+                )}
+
                 <div className="flex items-center gap-1 mt-2" onClick={e => e.stopPropagation()}>
                   <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5" onClick={() => openEditTrilha(t)}>
                     <Edit className="h-3 w-3" />
