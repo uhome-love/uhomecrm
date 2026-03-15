@@ -84,6 +84,15 @@ export function getPropertyFullscreenImages(item: any): string[] {
   return getPropertyHeroImages(item);
 }
 
+/**
+ * Returns images for property cards (grid/list thumbnails).
+ * Uses thumbs when available; falls back to hero.
+ */
+export function getPropertyCardImages(item: any): string[] {
+  const thumbs = getPropertyThumbImages(item);
+  return thumbs.length > 0 ? thumbs : getPropertyHeroImages(item);
+}
+
 // ── Other property helpers ──
 
 export function extractOrigemExterna(item: any) {

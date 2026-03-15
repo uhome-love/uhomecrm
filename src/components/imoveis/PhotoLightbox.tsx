@@ -43,7 +43,7 @@ function PhotoLightboxInner({ images, initialIndex, open, onClose }: PhotoLightb
 
   if (!open || images.length === 0) return null;
   return createPortal(
-    <div className="fixed inset-0 z-[100] bg-black/97" onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] bg-black" onClick={onClose}>
       <button onClick={onClose} className="absolute top-4 right-4 z-50 bg-white/10 hover:bg-white/20 rounded-full p-2.5 text-white backdrop-blur-sm transition-all">
         <X className="h-5 w-5" />
       </button>
