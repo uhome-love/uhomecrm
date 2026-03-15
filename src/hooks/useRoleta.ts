@@ -55,9 +55,10 @@ export function getCurrentWindowInfo(): {
   const now = new Date();
   const mins = getMinutesFromMidnight(now.getHours(), now.getMinutes());
 
-  // Detect Saturday (BRT = UTC-3)
+  // Detect Saturday/Sunday (BRT = UTC-3)
   const brtNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const isSaturday = brtNow.getDay() === 6;
+  const isSunday = brtNow.getDay() === 0;
 
   // Janelas de distribuição:
   // Manhã:   07:30 — 09:30 (cred 07:30-09:30, sábado até 10:30)
