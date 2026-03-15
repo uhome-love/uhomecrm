@@ -212,8 +212,8 @@ export function useWeeklyDeals(week: WeekRange) {
 
 // ── Rankings ──
 export function useWeeklyRankings(week: WeekRange) {
-  const s = iso(week.start);
-  const e = iso(week.end);
+  const s = brtStart(week.start);
+  const e = brtEnd(week.end);
   const ds = dateStr(week.start);
   const de = dateStr(week.end);
 
