@@ -21,7 +21,7 @@ export interface ActiveFilter {
   onRemove: () => void;
 }
 
-export function useImoveisFilters(bairroFacets?: BairroFacet[]) {
+export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) {
   // ── Core filter state ──
   const [contrato, setContrato] = useState("venda");
   const [tipo, setTipo] = useState<string[]>([]);
