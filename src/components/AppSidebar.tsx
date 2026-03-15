@@ -694,6 +694,15 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {(isGestor || isAdmin) && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Melnick Metas">
+                    <NavLink to="/melnick-metas" end className="justify-center text-orange-300 hover:bg-orange-500/10 rounded-lg py-1.5" activeClassName="!bg-orange-500/15">
+                      <ClipboardCheck className="h-4 w-4 text-orange-400" />
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Orygem 60 dias">
                   <NavLink to="/orygem-60" end className="justify-center text-emerald-300 hover:bg-emerald-500/10 rounded-lg py-1.5" activeClassName="!bg-emerald-500/15">
