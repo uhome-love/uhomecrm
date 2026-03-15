@@ -395,7 +395,7 @@ export default function RelatorioSemanal() {
                           <td className="text-center">{totalVisits.realizadas}</td>
                           <td className="text-center">{totalVisits.noShow}</td>
                           <td className="text-center">{totalVisits.canceladas}</td>
-                          <td className={`text-center ${totalTaxa >= 60 ? "text-emerald-600" : "text-amber-500"}`}>{totalTaxa}%</td>
+                          <td className={`text-center ${totalTaxa >= 60 ? "text-emerald-600" : totalTaxa >= 40 ? "text-amber-500" : "text-destructive"}`}>{totalTaxa}%</td>
                         </tr>
                       )}
                     </tbody>
