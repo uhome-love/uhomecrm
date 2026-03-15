@@ -96,6 +96,11 @@ export default function CeoDailyReport({ teams, corretoresRank, kpis, totalLeads
           </Button>
         </div>
       </div>
+      <div className="flex justify-end">
+        <Button variant="link" size="sm" className="text-xs gap-1 text-primary" onClick={() => navigate("/relatorio-semanal")}>
+          Ver relatório semanal →
+        </Button>
+      </div>
 
       {/* Report content (this is what gets exported) */}
       <div ref={reportRef} className="space-y-4 bg-background">
