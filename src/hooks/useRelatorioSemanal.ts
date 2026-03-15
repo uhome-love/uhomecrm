@@ -86,6 +86,20 @@ export function useWeeklyKpis(week: WeekRange) {
   });
 }
 
+// ── Origin normalization ──
+function normalizeOrigem(raw: string | null): string {
+  if (!raw) return "Outros";
+  const lower = raw.toLowerCase();
+  if (lower.includes("facebook") || lower.includes("fb")) return "Facebook Ads";
+  if (lower.includes("meta") && !lower.includes("metragem")) return "Meta Ads";
+  if (lower.includes("tiktok") || lower.includes("tik tok")) return "TikTok Ads";
+  if (lower.includes("formulario") || lower.includes("formulário")) return "Formulário";
+  if (lower.includes("oferta") || lower.includes("oa")) return "Oferta Ativa";
+  if (lower.includes("manual")) return "Manual";
+  if (lower.includes("jetimob")) return "Jetimob";
+  return "Outros";
+}
+
 // ── Leads by Origin ──
 export function useLeadsByOrigin(week: WeekRange) {
   return useQuery({
@@ -95,10 +109,10 @@ export function useLeadsByOrigin(week: WeekRange) {
       const { data } = await supabase.from("pipeline_leads").select("origem").gte("created_at", brtStart(week.start)).lte("created_at", brtEnd(week.end));
       const map: Record<string, number> = {};
       (data || []).forEach(l => {
-        const o = l.origem || "Outros";
+        const o = normalizeOrigem(l.origem);
         map[o] = (map[o] || 0) + 1;
       });
-      return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
+      return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, value]) => ({ name, value }));
     },
   });
 }
