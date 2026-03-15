@@ -18,7 +18,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRLCompact } from "@/lib/utils";
-import { formatBRLCompact } from "@/lib/utils";
 import {
   getWeekRange,
   useWeeklyKpis,
