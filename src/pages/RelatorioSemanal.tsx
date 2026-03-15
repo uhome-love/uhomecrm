@@ -108,14 +108,14 @@ function AIAnalysisSection({ week }: { week: WeekRange }) {
       setAnalysis(parsed);
       setLoaded(true);
 
-      // Cache
+      // Cache (ignore errors — RLS may block)
       await supabase.from("homi_briefing_diario").upsert({
         user_id: session.user.id,
         data: weekKey,
         status_geral: "weekly_ceo",
         dados_contexto: parsed,
         gerado_em: new Date().toISOString(),
-      }, { onConflict: "user_id,data" }).select();
+      }, { onConflict: "user_id,data" }).select().then(() => {}).catch(() => {});
     } catch (e) {
       console.error("AI analysis error:", e);
       toast.error("Erro ao gerar análise IA");
