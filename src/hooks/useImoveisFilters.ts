@@ -97,6 +97,7 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) 
     sortBy, setSortBy,
     // Derived
     filteredBairros,
+    tipoOptions,
     activeFilters,
     clearAllFilters,
     filterKey,
