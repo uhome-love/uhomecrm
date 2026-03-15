@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface ImageSliderProps {
   images: string[];
   alt: string;
-  onClickImage?: () => void;
+  onClickImage?: (e?: React.MouseEvent) => void;
 }
 
 function ImageSliderInner({ images, alt, onClickImage }: ImageSliderProps) {
