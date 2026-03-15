@@ -52,9 +52,6 @@ export default function ImoveisPage() {
   } = filters;
 
   // ── UI state (local to page) ──
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
