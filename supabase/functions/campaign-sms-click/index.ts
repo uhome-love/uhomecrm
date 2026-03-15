@@ -20,9 +20,27 @@ function normalizePhone(phone: string | null | undefined): string | null {
   return digits;
 }
 
-// Build all normalized variants for matching (with and without 55)
+// Build all normalized variants for matching (with/without 55, with/without 9th digit)
 function phoneVariants(normalized: string): string[] {
-  return [normalized, `55${normalized}`];
+  const variants = new Set<string>();
+  variants.add(normalized);
+  variants.add(`55${normalized}`);
+  
+  // Handle 9th digit: DDD(2) + 9 + number(8) = 11 digits
+  // If has 9th digit (11 digits, 3rd char is 9), also try without it
+  if (normalized.length === 11 && normalized[2] === "9") {
+    const without9 = normalized.slice(0, 2) + normalized.slice(3);
+    variants.add(without9);
+    variants.add(`55${without9}`);
+  }
+  // If missing 9th digit (10 digits), also try with it
+  if (normalized.length === 10) {
+    const with9 = normalized.slice(0, 2) + "9" + normalized.slice(2);
+    variants.add(with9);
+    variants.add(`55${with9}`);
+  }
+
+  return [...variants];
 }
 
 Deno.serve(async (req) => {
