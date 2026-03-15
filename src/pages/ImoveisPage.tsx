@@ -29,6 +29,7 @@ import { getNum, fmtBRL, fmtCompact } from "@/lib/imovelHelpers";
 import { useImoveisFilters } from "@/hooks/useImoveisFilters";
 import { useImoveisSearch } from "@/hooks/useImoveisSearch";
 import { useTypesenseFacets } from "@/hooks/useTypesenseFacets";
+import { useLeadContext } from "@/hooks/useLeadContext";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
