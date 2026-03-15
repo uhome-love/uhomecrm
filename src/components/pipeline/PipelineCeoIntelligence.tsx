@@ -4,12 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronUp, Brain, AlertTriangle, Rocket, Eye, MessageSquare, Users, Archive, ArrowRightLeft, Send } from "lucide-react";
+import { ChevronDown, ChevronUp, Brain, AlertTriangle, Rocket, Eye, MessageSquare, Users, Archive, ArrowRightLeft, Send, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { PipelineLead, PipelineStage } from "@/hooks/usePipeline";
 import { differenceInDays, differenceInHours } from "date-fns";
+import { SCORE_TEMPERATURE_LEVELS } from "@/lib/scoreTemperatureLabels";
 
 interface Props {
   leads: PipelineLead[];
