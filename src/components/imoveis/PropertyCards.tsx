@@ -114,7 +114,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
       )}
 
       <div className="aspect-[16/10] relative bg-muted overflow-hidden">
-        <ImageSlider images={images} alt={titulo || loc.endereco} onClickImage={(e?: React.MouseEvent) => { e?.stopPropagation(); onOpenLightbox(fullImages.length > 0 ? fullImages : images, 0); }} />
+        <ImageSlider images={images} alt={titulo || loc.endereco} />
         {isCampanha && (
           <Badge className="absolute top-3 left-3 text-[10px] bg-primary/90 text-primary-foreground backdrop-blur-sm shadow-sm">
             <Megaphone className="h-2.5 w-2.5 mr-1" /> Campanha
@@ -222,7 +222,7 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
       )}
       <div className="flex">
         <div className="w-56 h-40 flex-shrink-0 bg-muted relative">
-          <ImageSlider images={images} alt={titulo || loc.endereco} onClickImage={(e?: React.MouseEvent) => { e?.stopPropagation(); onOpenLightbox(fullImages.length > 0 ? fullImages : images, 0); }} />
+          <ImageSlider images={images} alt={titulo || loc.endereco} />
           {isCampanha && <Badge className="absolute top-2 left-2 text-[10px] bg-primary/90 text-primary-foreground"><Megaphone className="h-2.5 w-2.5 mr-0.5" /> Campanha</Badge>}
         </div>
         <div className="flex-1 p-3.5 flex flex-col justify-between min-w-0">
