@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BedDouble, Car, Maximize, MapPin, Heart, Copy, Phone, X, Home, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getPropertyCardImages, extractEndereco, getNum } from "@/lib/imovelHelpers";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -36,32 +37,10 @@ function getCoords(item: any): [number, number] | null {
   const lat = Number(item.latitude || item.lat || item.endereco_latitude);
   const lng = Number(item.longitude || item.lng || item.lon || item.endereco_longitude);
   if (!lat || !lng || isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return null;
-  if (lat < -35 || lat > 5 || lng < -75 || lng > -30) return null; // Brazil bounds sanity
+  if (lat < -35 || lat > 5 || lng < -75 || lng > -30) return null;
   return [lat, lng];
 }
 
-function getNum(item: any, ...keys: string[]): number | null {
-  for (const k of keys) {
-    const v = item[k];
-    if (v != null && v !== "" && v !== 0 && !isNaN(Number(v))) return Number(v);
-  }
-  return null;
-}
-
-function extractImages(item: any): string[] {
-  if (item._fotos_normalized?.length) return item._fotos_normalized;
-  const arr = item.imagens;
-  if (!Array.isArray(arr) || arr.length === 0) return [];
-  return arr.map((img: any) => img.link_thumb || img.link || img.url || img.src || "").filter(Boolean);
-}
-
-function extractEndereco(item: any) {
-  const logradouro = item.endereco_logradouro || item.endereco || item.logradouro || "";
-  const numero = item.endereco_numero || item.numero || "";
-  const bairro = item.endereco_bairro || item.bairro || "";
-  const cidade = item.endereco_cidade || item.cidade || "";
-  return { endereco: `${logradouro}${numero ? `, ${numero}` : ""}`.trim(), bairro, cidade };
-}
 
 const fmtBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
