@@ -95,10 +95,12 @@ export default function CardQuickTaskPopover({ leadId, leadNome }: CardQuickTask
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-foreground/80 hover:bg-accent hover:text-foreground rounded-lg"
+          className="min-h-[44px] text-[11px] px-3 gap-1.5 font-semibold text-foreground/80 hover:bg-accent hover:text-foreground rounded-lg"
+          title="Criar tarefa rápida"
           onClick={(e) => { e.stopPropagation(); setOpen(true); }}
         >
-          <ClipboardList className="h-3.5 w-3.5" /> Tarefa
+          <ClipboardList className="h-4 w-4" />
+          <span className="hidden sm:inline">Tarefa</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-72 p-2.5 space-y-2" onClick={(e) => e.stopPropagation()}>

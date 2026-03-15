@@ -35,10 +35,12 @@ export default function CardActionBar({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
+          className="min-h-[44px] text-[11px] px-3 gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg"
+          title="Abrir WhatsApp"
           onClick={onWhatsApp}
         >
-          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+          <MessageCircle className="h-4 w-4" />
+          <span className="hidden sm:inline">WhatsApp</span>
         </Button>
 
         <QuickActionMenu
@@ -50,17 +52,19 @@ export default function CardActionBar({
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 text-[11px] px-2.5 gap-1.5 font-semibold text-primary hover:bg-primary/10 rounded-lg"
+            className="min-h-[44px] text-[11px] px-3 gap-1.5 font-semibold text-primary hover:bg-primary/10 rounded-lg"
+            title="Ação rápida"
           >
-            <Zap className="h-3.5 w-3.5" /> Ação
+            <Zap className="h-4 w-4" />
+            <span className="hidden sm:inline">Ação</span>
           </Button>
         </QuickActionMenu>
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 hover:bg-accent" onClick={(e) => e.stopPropagation()}>
-            <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+          <Button size="sm" variant="ghost" className="min-h-[44px] w-11 p-0 hover:bg-accent" onClick={(e) => e.stopPropagation()}>
+            <MoreVertical className="h-4 w-4 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>

@@ -147,31 +147,31 @@ export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Pro
                     <div className="flex flex-wrap gap-1 pt-1">
                       {col === "marcada" && (
                         <>
-                          <Button size="sm" variant="outline" className="h-5 text-[9px] px-1.5" onClick={() => onUpdateStatus(v.id, "confirmada")}>
+                          <Button size="sm" variant="outline" className="min-h-[44px] text-[10px] px-3" onClick={() => onUpdateStatus(v.id, "confirmada")}>
                             Confirmar
                           </Button>
-                          <Button size="sm" variant="outline" className="h-5 text-[9px] px-1.5" onClick={() => onUpdateStatus(v.id, "cancelada")}>
+                          <Button size="sm" variant="outline" className="min-h-[44px] text-[10px] px-3" onClick={() => onUpdateStatus(v.id, "cancelada")}>
                             Cancelar
                           </Button>
                         </>
                       )}
                       {col === "confirmada" && (
                         <>
-                          <Button size="sm" variant="outline" className="h-5 text-[9px] px-1.5" onClick={() => onUpdateStatus(v.id, "realizada")}>
+                          <Button size="sm" variant="outline" className="min-h-[44px] text-[10px] px-3" onClick={() => onUpdateStatus(v.id, "realizada")}>
                             Realizada
                           </Button>
-                          <Button size="sm" variant="outline" className="h-5 text-[9px] px-1.5" onClick={() => onUpdateStatus(v.id, "no_show")}>
+                          <Button size="sm" variant="outline" className="min-h-[44px] text-[10px] px-3" onClick={() => onUpdateStatus(v.id, "no_show")}>
                             No Show
                           </Button>
                         </>
                       )}
                       {col === "reagendada" && (
-                        <Button size="sm" variant="outline" className="h-5 text-[9px] px-1.5" onClick={() => onUpdateStatus(v.id, "confirmada")}>
+                        <Button size="sm" variant="outline" className="min-h-[44px] text-[10px] px-3" onClick={() => onUpdateStatus(v.id, "confirmada")}>
                           Confirmar
                         </Button>
                       )}
                       {col === "cancelada" && (
-                        <Button size="sm" variant="outline" className="h-5 text-[9px] px-1.5" onClick={() => onUpdateStatus(v.id, "reagendada")}>
+                        <Button size="sm" variant="outline" className="min-h-[44px] text-[10px] px-3" onClick={() => onUpdateStatus(v.id, "reagendada")}>
                           Reagendar
                         </Button>
                       )}
@@ -179,14 +179,14 @@ export default function VisitasKanban({ visitas, onUpdateStatus, onDelete }: Pro
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-5 text-[9px] px-1.5 text-destructive border-destructive/30"
+                          className="min-h-[44px] text-[10px] px-3 text-destructive border-destructive/30"
                           onClick={() => {
                             if (window.confirm("Tem certeza que deseja excluir esta visita?")) {
                               onDelete(v.id);
                             }
                           }}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       )}
                     </div>
