@@ -3,17 +3,50 @@
  *
  * Responsibilities:
  *  - All filter state variables + setters
+ *  - URL query param sync (read on init, write on change — debounced)
  *  - Derived filteredBairros list (from dynamic facets)
  *  - Active filter tags (for display + removal)
  *  - clearAllFilters action
  *  - Serialized filterKey for change-detection
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { fmtCompact } from "@/lib/imovelHelpers";
 import type { Facet } from "@/hooks/useTypesenseFacets";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+// ── URL param helpers ──
+
+const DEFAULTS = {
+  contrato: "venda",
+  sortBy: "relevancia",
+  areaMin: 0,
+  areaMax: 500,
+  valorMin: 0,
+  valorMax: 5_000_000,
+} as const;
+
+function readStr(sp: URLSearchParams, key: string, fallback: string): string {
+  return sp.get(key) || fallback;
+}
+
+function readArr(sp: URLSearchParams, key: string): string[] {
+  const v = sp.get(key);
+  return v ? v.split(",").filter(Boolean) : [];
+}
+
+function readInt(sp: URLSearchParams, key: string, fallback: number): number {
+  const v = sp.get(key);
+  if (!v) return fallback;
+  const n = parseInt(v, 10);
+  return isNaN(n) ? fallback : n;
+}
+
+function readBool(sp: URLSearchParams, key: string): boolean {
+  return sp.get(key) === "1";
+}
 
 export interface ActiveFilter {
   key: string;
@@ -22,25 +55,72 @@ export interface ActiveFilter {
 }
 
 export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) {
-  // ── Core filter state ──
-  const [contrato, setContrato] = useState("venda");
-  const [tipo, setTipo] = useState<string[]>([]);
-  const [bairro, setBairro] = useState<string[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isInitRef = useRef(true);
+
+  // ── Read initial state from URL ──
+  const initSp = isInitRef.current ? searchParams : null;
+
+  const [contrato, setContrato] = useState(() => readStr(searchParams, "contrato", DEFAULTS.contrato));
+  const [tipo, setTipo] = useState<string[]>(() => readArr(searchParams, "tipo"));
+  const [bairro, setBairro] = useState<string[]>(() => readArr(searchParams, "bairro"));
   const [bairroSearch, setBairroSearch] = useState("");
-  const [dormitorios, setDormitorios] = useState<string[]>([]);
-  const [suitesFilter, setSuitesFilter] = useState("");
-  const [vagas, setVagas] = useState("");
-  const [areaRange, setAreaRange] = useState<[number, number]>([0, 500]);
-  const [valorRange, setValorRange] = useState<[number, number]>([0, 5_000_000]);
-  const [somenteObras, setSomenteObras] = useState(false);
+  const [dormitorios, setDormitorios] = useState<string[]>(() => readArr(searchParams, "dorms"));
+  const [suitesFilter, setSuitesFilter] = useState(() => readStr(searchParams, "suites", ""));
+  const [vagas, setVagas] = useState(() => readStr(searchParams, "vagas", ""));
+  const [areaRange, setAreaRange] = useState<[number, number]>(() => [
+    readInt(searchParams, "area_min", DEFAULTS.areaMin),
+    readInt(searchParams, "area_max", DEFAULTS.areaMax),
+  ]);
+  const [valorRange, setValorRange] = useState<[number, number]>(() => [
+    readInt(searchParams, "valor_min", DEFAULTS.valorMin),
+    readInt(searchParams, "valor_max", DEFAULTS.valorMax),
+  ]);
+  const [somenteObras, setSomenteObras] = useState(() => readBool(searchParams, "obras"));
 
   // ── Mode toggles ──
-  const [campanhaAtiva, setCampanhaAtiva] = useState(false);
-  const [uhomeOnly, setUhomeOnly] = useState(false);
+  const [campanhaAtiva, setCampanhaAtiva] = useState(() => readBool(searchParams, "campanha"));
+  const [uhomeOnly, setUhomeOnly] = useState(() => readBool(searchParams, "uhome"));
 
   // ── Search / sort ──
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("relevancia");
+  const [search, setSearch] = useState(() => readStr(searchParams, "q", ""));
+  const [sortBy, setSortBy] = useState(() => readStr(searchParams, "sort", DEFAULTS.sortBy));
+
+  // ── Write state to URL (debounced, replaceState to avoid history spam) ──
+  const urlWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const syncToUrl = useCallback(() => {
+    const p = new URLSearchParams();
+
+    if (search) p.set("q", search);
+    if (contrato !== DEFAULTS.contrato) p.set("contrato", contrato);
+    if (tipo.length) p.set("tipo", tipo.join(","));
+    if (bairro.length) p.set("bairro", bairro.join(","));
+    if (dormitorios.length) p.set("dorms", dormitorios.join(","));
+    if (suitesFilter && suitesFilter !== "all") p.set("suites", suitesFilter);
+    if (vagas && vagas !== "all") p.set("vagas", vagas);
+    if (areaRange[0] > DEFAULTS.areaMin) p.set("area_min", String(areaRange[0]));
+    if (areaRange[1] < DEFAULTS.areaMax) p.set("area_max", String(areaRange[1]));
+    if (valorRange[0] > DEFAULTS.valorMin) p.set("valor_min", String(valorRange[0]));
+    if (valorRange[1] < DEFAULTS.valorMax) p.set("valor_max", String(valorRange[1]));
+    if (somenteObras) p.set("obras", "1");
+    if (sortBy !== DEFAULTS.sortBy) p.set("sort", sortBy);
+    if (uhomeOnly) p.set("uhome", "1");
+    if (campanhaAtiva) p.set("campanha", "1");
+
+    setSearchParams(p, { replace: true });
+  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, setSearchParams]);
+
+  useEffect(() => {
+    // Skip URL write on first render (we just read from URL)
+    if (isInitRef.current) {
+      isInitRef.current = false;
+      return;
+    }
+    if (urlWriteTimer.current) clearTimeout(urlWriteTimer.current);
+    urlWriteTimer.current = setTimeout(syncToUrl, 500);
+    return () => { if (urlWriteTimer.current) clearTimeout(urlWriteTimer.current); };
+  }, [syncToUrl]);
 
   // ── Derived: filteredBairros from dynamic facets ──
   const allBairros = useMemo(() => bairroFacets || [], [bairroFacets]);

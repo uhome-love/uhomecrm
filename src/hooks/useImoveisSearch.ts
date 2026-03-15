@@ -302,12 +302,12 @@ export function useImoveisSearch({
   const fetchRef = useRef(fetchImoveis);
   fetchRef.current = fetchImoveis;
 
-  // ── Initial load ──
+  // ── Initial load (respects URL-restored filter state) ──
   const mounted = useRef(false);
   useEffect(() => {
     if (mounted.current) return;
     mounted.current = true;
-    fetchRef.current(1, false);
+    fetchRef.current(1);
   }, []);
 
   // ── Reactive debounced filter application ──
