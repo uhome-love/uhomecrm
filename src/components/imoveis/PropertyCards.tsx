@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Loader2, MapPin, Megaphone, UserCircle, Phone, Mail,
-  CheckSquare, Square, Copy, CalendarClock, Heart,
+  CheckSquare, Square, CalendarClock, Heart,
 } from "lucide-react";
 import ImageSlider from "@/components/imoveis/ImageSlider";
 import SharePropertyButton from "@/components/imoveis/SharePropertyButton";
@@ -169,16 +169,6 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
                 bairro={loc.bairro}
                 preco={getPreco(item)}
               />
-              <Button
-                variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary"
-                onClick={() => {
-                  const text = `${titulo} · ${loc.bairro} · ${getPreco(item)} · Cód. ${codigo}`;
-                  navigator.clipboard.writeText(text);
-                  toast.success("Dados copiados!");
-                }}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
               <ResponsavelButton codigo={codigo} />
             </div>
           </div>
@@ -266,9 +256,6 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
                 bairro={loc.bairro}
                 preco={getPreco(item)}
               />
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const text = `${titulo} · ${loc.bairro} · ${getPreco(item)} · Cód. ${codigo || item.id}`; navigator.clipboard.writeText(text); toast.success("Dados copiados!"); }}>
-                <Copy className="h-3 w-3" />
-              </Button>
               {codigo && <ResponsavelButton codigo={codigo} />}
             </div>
           </div>

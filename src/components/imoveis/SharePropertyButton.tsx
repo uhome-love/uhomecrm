@@ -1,5 +1,6 @@
 /**
  * Share dropdown for property cards — Copy link, WhatsApp, Copy data.
+ * Uses PUBLIC_DOMAIN for canonical share URLs.
  */
 
 import React from "react";
@@ -13,6 +14,8 @@ import {
 import { Share2, Link2, MessageCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 
+const PUBLIC_DOMAIN = "https://uhomesales.com";
+
 interface SharePropertyButtonProps {
   codigo: string;
   titulo: string;
@@ -22,7 +25,9 @@ interface SharePropertyButtonProps {
 }
 
 export default function SharePropertyButton({ codigo, titulo, bairro, preco, className }: SharePropertyButtonProps) {
-  const shareUrl = `${window.location.origin}/imovel/${codigo}`;
+  if (!codigo) return null;
+
+  const shareUrl = `${PUBLIC_DOMAIN}/imovel/${codigo}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl);
