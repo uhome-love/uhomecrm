@@ -21,6 +21,8 @@ export function getWeekRange(weekOffset: number): WeekRange {
 
 function iso(d: Date) { return d.toISOString(); }
 function dateStr(d: Date) { return format(d, "yyyy-MM-dd"); }
+function brtStart(d: Date) { return `${dateStr(d)}T00:00:00-03:00`; }
+function brtEnd(d: Date) { return `${dateStr(d)}T23:59:59.999-03:00`; }
 
 // ── KPIs ──
 export function useWeeklyKpis(week: WeekRange) {
