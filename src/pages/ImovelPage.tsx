@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  getPropertyHeroImages, getPropertyThumbImages,
+  getPropertyPreviewImages, getPropertyThumbImages,
   extractOrigemExterna, extractEntrega, extractEndereco,
   getNum, getNumIncZero, fmtBRL, fmtCompact,
 } from "@/lib/imovelHelpers";
