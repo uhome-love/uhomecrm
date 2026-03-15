@@ -214,6 +214,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </header>
             <PushPromptBanner />
+            <MelnickMetaBanner />
             <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 min-w-0">
               {children}
             </main>
