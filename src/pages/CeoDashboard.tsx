@@ -57,26 +57,34 @@ function Variation({ current, previous, suffix = "" }: { current: number; previo
 }
 
 // ─── Semaphore helper ───
-function getSemaphore(value: number, meta: number | undefined | null): { color: string; bg: string; border: string; label: string } | null {
+function getSemaphore(value: number, meta: number | undefined | null): { color: string; label: string } | null {
   if (!meta || meta <= 0) return null;
   const pct = (value / meta) * 100;
-  if (pct >= 100) return { color: "bg-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/30", label: "No alvo" };
-  if (pct >= 70) return { color: "bg-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/30", label: "Atenção" };
-  return { color: "bg-red-500", bg: "bg-red-500/10", border: "border-red-500/30", label: "Abaixo" };
+  if (pct >= 100) return { color: "bg-emerald-500", label: "No alvo" };
+  if (pct >= 70) return { color: "bg-amber-500", label: "Atenção" };
+  return { color: "bg-red-500", label: "Abaixo" };
+}
+
+// ─── Format meta display value ───
+function formatMetaDisplay(value: number, type: "currency" | "number" | "percent"): string {
+  if (type === "currency") return formatBRLCompact(value);
+  if (type === "percent") return `${value}%`;
+  return value.toLocaleString("pt-BR");
 }
 
 // ─── KPI Card ───
-function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor, ceoMeta }: {
-  icon: any; label: string; value: number; displayValue?: string; meta?: number; prev?: number; iconColor?: string; ceoMeta?: number | null;
+function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor, ceoMeta, metaType = "number" }: {
+  icon: any; label: string; value: number; displayValue?: string; meta?: number; prev?: number; iconColor?: string; ceoMeta?: number | null; metaType?: "currency" | "number" | "percent";
 }) {
   const pct = meta && meta > 0 ? Math.min(Math.round((value / meta) * 100), 100) : null;
   const semaphore = getSemaphore(value, ceoMeta);
   const metaPct = ceoMeta && ceoMeta > 0 ? Math.round((value / ceoMeta) * 100) : null;
+  const showNoMeta = ceoMeta !== undefined && (!ceoMeta || ceoMeta <= 0);
 
   return (
     <Card className="relative">
       <CardContent className="pt-4 pb-3 px-4">
-        {/* Semaphore dot */}
+        {/* Semaphore dot — always show when ceoMeta is passed (even null = grey) */}
         {ceoMeta !== undefined && (
           <div className="absolute top-2.5 right-2.5" title={semaphore ? `${metaPct}% da meta (${semaphore.label})` : "Sem meta"}>
             <div className={`h-2.5 w-2.5 rounded-full ${semaphore ? semaphore.color : "bg-muted-foreground/30"}`} />
@@ -92,11 +100,14 @@ function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor
         </div>
         <p className="text-2xl font-bold">{displayValue || value}</p>
 
-        {/* Meta line from ceo_metas_mensais */}
+        {/* Meta line */}
         {ceoMeta !== undefined && ceoMeta !== null && ceoMeta > 0 && (
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            {metaPct}% da meta · meta: {ceoMeta}
+          <p className={`text-[10px] mt-0.5 ${metaPct !== null && metaPct === 0 && value === 0 ? "text-destructive" : "text-muted-foreground"}`}>
+            {metaPct}% da meta · meta: {formatMetaDisplay(ceoMeta, metaType)}
           </p>
+        )}
+        {showNoMeta && (
+          <p className="text-[10px] text-muted-foreground/50 mt-0.5">Sem meta definida</p>
         )}
 
         {pct !== null && (
@@ -134,11 +145,12 @@ export default function CeoDashboard() {
   // Fetch consolidated CEO metas for current month
   const [ceoMetasConsolidadas, setCeoMetasConsolidadas] = useState<{
     meta_ligacoes: number; meta_visitas_marcadas: number; meta_visitas_realizadas: number; meta_vgv_assinado: number;
-  }>({ meta_ligacoes: 0, meta_visitas_marcadas: 0, meta_visitas_realizadas: 0, meta_vgv_assinado: 0 });
+    meta_propostas: number; meta_contratos: number; meta_assinados: number; meta_aproveitados: number;
+  }>({ meta_ligacoes: 0, meta_visitas_marcadas: 0, meta_visitas_realizadas: 0, meta_vgv_assinado: 0, meta_propostas: 0, meta_contratos: 0, meta_assinados: 0, meta_aproveitados: 0 });
 
   useEffect(() => {
     const mesAtual = format(new Date(), "yyyy-MM");
-    supabase.from("ceo_metas_mensais").select("meta_ligacoes, meta_visitas_marcadas, meta_visitas_realizadas, meta_vgv_assinado").eq("mes", mesAtual)
+    supabase.from("ceo_metas_mensais").select("meta_ligacoes, meta_visitas_marcadas, meta_visitas_realizadas, meta_vgv_assinado, meta_propostas, meta_contratos, meta_assinados, meta_aproveitados").eq("mes", mesAtual)
       .then(({ data }) => {
         if (data && data.length > 0) {
           setCeoMetasConsolidadas({
@@ -146,6 +158,10 @@ export default function CeoDashboard() {
             meta_visitas_marcadas: data.reduce((a, m) => a + (m.meta_visitas_marcadas || 0), 0),
             meta_visitas_realizadas: data.reduce((a, m) => a + (m.meta_visitas_realizadas || 0), 0),
             meta_vgv_assinado: data.reduce((a, m) => a + (m.meta_vgv_assinado || 0), 0),
+            meta_propostas: data.reduce((a, m) => a + ((m as any).meta_propostas || 0), 0),
+            meta_contratos: data.reduce((a, m) => a + ((m as any).meta_contratos || 0), 0),
+            meta_assinados: data.reduce((a, m) => a + ((m as any).meta_assinados || 0), 0),
+            meta_aproveitados: data.reduce((a, m) => a + ((m as any).meta_aproveitados || 0), 0),
           });
         }
       });
@@ -427,14 +443,19 @@ export default function CeoDashboard() {
           <Target className="h-4 w-4" /> Gestão de Leads
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <KpiCard icon={Users} label="Total de Leads" value={totalLeadsPeriodo} iconColor="text-blue-600" />
-          <Card>
+          <KpiCard icon={Users} label="Total de Leads" value={totalLeadsPeriodo} iconColor="text-blue-600" ceoMeta={null} />
+          <Card className="relative">
             <CardContent className="pt-4 pb-3 px-4">
+              {/* Grey semaphore dot for no-meta */}
+              <div className="absolute top-2.5 right-2.5" title="Sem meta">
+                <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />
+              </div>
               <div className="flex items-center gap-2 mb-1">
                 <Send className="h-4 w-4 text-orange-500" />
                 <span className="text-xs text-muted-foreground">Leads Distribuídos</span>
               </div>
               <LeadsDistribuidosPanel teamUserIds={null} period={period === "hoje" ? "dia" : period === "semana" ? "semana" : "mes"} compact showPeriodSelector={false} />
+              <p className="text-[10px] text-muted-foreground/50 mt-0.5">Sem meta definida</p>
             </CardContent>
           </Card>
           <KpiCard icon={CalendarDays} label="Visitas Marcadas" value={kpis.visitasMarcadas} prev={prevKpis?.visitasMarcadas} iconColor="text-amber-600" ceoMeta={ceoMetasConsolidadas.meta_visitas_marcadas || null} />
@@ -450,9 +471,11 @@ export default function CeoDashboard() {
           <KpiCard
             icon={TrendingDown}
             label="Conversão Lead→Visita"
-            value={kpis.visitasMarcadas}
+            value={totalLeadsPeriodo > 0 ? Math.round((kpis.visitasMarcadas / totalLeadsPeriodo) * 100) : 0}
             displayValue={`${totalLeadsPeriodo > 0 ? Math.round((kpis.visitasMarcadas / totalLeadsPeriodo) * 100) : 0}%`}
             iconColor="text-purple-600"
+            ceoMeta={null}
+            metaType="percent"
           />
         </div>
       </div>
@@ -470,6 +493,7 @@ export default function CeoDashboard() {
             label="Nº Negócios"
             value={negocioFases.reduce((a, f) => a + f.count, 0)}
             iconColor="text-blue-600"
+            ceoMeta={null}
           />
           <KpiCard
             icon={FileText}
@@ -477,24 +501,28 @@ export default function CeoDashboard() {
             value={negocioFases.filter(f => f.fase === "proposta").reduce((a, f) => a + f.count, 0)}
             prev={prevKpis?.propostas}
             iconColor="text-amber-600"
+            ceoMeta={ceoMetasConsolidadas.meta_propostas || null}
           />
           <KpiCard
             icon={FileText}
             label="Negociação"
             value={negocioFases.filter(f => f.fase === "negociacao").reduce((a, f) => a + f.count, 0)}
             iconColor="text-orange-600"
+            ceoMeta={null}
           />
           <KpiCard
             icon={FileText}
             label="Contratos Gerados"
             value={negocioFases.filter(f => f.fase === "documentacao" || f.fase === "contrato").reduce((a, f) => a + f.count, 0)}
             iconColor="text-purple-600"
+            ceoMeta={ceoMetasConsolidadas.meta_contratos || null}
           />
           <KpiCard
             icon={Trophy}
             label="Assinados"
             value={negocioFases.filter(f => f.fase === "assinado" || f.fase === "vendido").reduce((a, f) => a + f.count, 0)}
             iconColor="text-emerald-600"
+            ceoMeta={ceoMetasConsolidadas.meta_assinados || null}
           />
           <KpiCard
             icon={DollarSign}
@@ -504,6 +532,7 @@ export default function CeoDashboard() {
             prev={prevKpis?.vgvAssinado}
             iconColor="text-emerald-600"
             ceoMeta={ceoMetasConsolidadas.meta_vgv_assinado || null}
+            metaType="currency"
           />
         </div>
       </div>
@@ -522,6 +551,7 @@ export default function CeoDashboard() {
             value={presentesHoje}
             displayValue={`${presentesHoje} corretores`}
             iconColor="text-emerald-600"
+            ceoMeta={null}
           />
           <KpiCard
             icon={Target}
@@ -545,6 +575,7 @@ export default function CeoDashboard() {
             displayValue={`${kpis.aproveitados} (${kpis.taxaConversao}%)`}
             prev={prevKpis?.aproveitados}
             iconColor="text-emerald-600"
+            ceoMeta={ceoMetasConsolidadas.meta_aproveitados || null}
           />
         </div>
       </div>

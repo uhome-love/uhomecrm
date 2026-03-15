@@ -567,7 +567,11 @@ export type Database = {
           gerente_id: string
           id: string
           mes: string
+          meta_aproveitados: number | null
+          meta_assinados: number | null
+          meta_contratos: number | null
           meta_ligacoes: number
+          meta_propostas: number | null
           meta_vgv_assinado: number
           meta_visitas_marcadas: number
           meta_visitas_realizadas: number
@@ -578,7 +582,11 @@ export type Database = {
           gerente_id: string
           id?: string
           mes: string
+          meta_aproveitados?: number | null
+          meta_assinados?: number | null
+          meta_contratos?: number | null
           meta_ligacoes?: number
+          meta_propostas?: number | null
           meta_vgv_assinado?: number
           meta_visitas_marcadas?: number
           meta_visitas_realizadas?: number
@@ -589,7 +597,11 @@ export type Database = {
           gerente_id?: string
           id?: string
           mes?: string
+          meta_aproveitados?: number | null
+          meta_assinados?: number | null
+          meta_contratos?: number | null
           meta_ligacoes?: number
+          meta_propostas?: number | null
           meta_vgv_assinado?: number
           meta_visitas_marcadas?: number
           meta_visitas_realizadas?: number
