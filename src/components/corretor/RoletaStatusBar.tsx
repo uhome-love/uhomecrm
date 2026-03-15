@@ -56,8 +56,8 @@ interface JanelaConfig {
   temRequisitos: boolean;
 }
 
-const toDbJanela = (janela: JanelaKey): JanelaDb => (janela === "noite" ? "noturna" : janela);
-const toUiJanela = (janela: string): JanelaKey => (janela === "noturna" ? "noite" : (janela as JanelaKey));
+const toDbJanela = (janela: JanelaKey): JanelaDb => (janela === "noite" ? "noturna" : janela === "dia_todo" ? "dia_todo" : (janela as JanelaDb));
+const toUiJanela = (janela: string): JanelaKey => (janela === "noturna" ? "noite" : janela === "dia_todo" ? "dia_todo" : (janela as JanelaKey));
 
 // Detect Saturday (BRT)
 function isSaturdayBRT(): boolean {
