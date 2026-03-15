@@ -13,7 +13,7 @@ import {
   Search, Building2, Loader2, ChevronLeft, ChevronRight, Phone,
   MapPin, Megaphone, Check, X, Share2, Link2, Copy, CalendarClock,
   LayoutGrid, List, Heart, Zap,
-  Sparkles, Brain, ArrowRight, Map
+  Sparkles, Brain, ArrowRight, Map, MessageCircle
 } from "lucide-react";
 import PropertyMap from "@/components/imoveis/PropertyMap";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
@@ -760,6 +760,61 @@ export default function ImoveisPage() {
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* ── Mobile fixed selection bar ── */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-0 inset-x-0 z-50 md:hidden safe-bottom">
+          <div className="bg-background/95 backdrop-blur-md border-t border-border/60 px-4 py-3 flex items-center gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
+            style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground truncate">
+                {selectedIds.size} imóve{selectedIds.size === 1 ? "l" : "is"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">selecionado{selectedIds.size > 1 ? "s" : ""}</p>
+            </div>
+            {vitrineLink ? (
+              <>
+                <Button
+                  size="sm" variant="outline"
+                  onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }}
+                  className="h-9 px-3 gap-1.5 rounded-lg text-xs font-semibold shrink-0"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copiar
+                </Button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção de imóveis: ${vitrineLink}`)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  onClick={() => { if (hasLeadContext) trackEvent({ event_type: "vitrine_sent", payload: { link: vitrineLink, channel: "whatsapp" } }); }}
+                >
+                  <Button size="sm" className="h-9 px-3 gap-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
+                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                  </Button>
+                </a>
+              </>
+            ) : (
+              <Button
+                size="sm" disabled={creatingVitrine}
+                onClick={async () => {
+                  if (!user) return;
+                  setCreatingVitrine(true);
+                  try {
+                    const { data, error } = await supabase.from("vitrines").insert({ created_by: user.id, titulo: "Seleção de Imóveis", tipo: "property_selection", imovel_ids: [...selectedIds] as any }).select("id").single();
+                    if (error) throw error;
+                    const link = getVitrinePublicUrl(data.id);
+                    setVitrineLink(link); navigator.clipboard.writeText(link); toast.success("Vitrine criada! Link copiado.");
+                    if (hasLeadContext) trackEvent({ event_type: "vitrine_created", vitrine_id: data.id, payload: { imovel_ids: [...selectedIds], link } });
+                  } catch { toast.error("Erro ao criar vitrine"); } finally { setCreatingVitrine(false); }
+                }}
+                className="h-9 px-4 gap-1.5 rounded-lg text-xs font-bold shrink-0"
+              >
+                {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+                Gerar Vitrine
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>
