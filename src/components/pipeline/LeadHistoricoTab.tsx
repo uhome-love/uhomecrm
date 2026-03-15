@@ -78,6 +78,38 @@ const IMOVEL_EVENT_META: Record<string, { label: string; icon: any; color: strin
   whatsapp_clicked: { label: "💬 WhatsApp clicado", icon: MessageSquare, color: "bg-green-100 text-green-600" },
 };
 
+function getOrigemLabel(origem: string | null | undefined): { emoji: string; label: string } | null {
+  if (!origem) return null;
+  const o = origem.toLowerCase();
+  if (o.includes("meta") || o.includes("facebook")) return { emoji: "📱", label: "Meta Ads" };
+  if (o.includes("tiktok")) return { emoji: "🎵", label: "TikTok Ads" };
+  if (o.includes("google")) return { emoji: "🔍", label: "Google Ads" };
+  if (o.includes("sms") || o.includes("brevo")) return { emoji: "📲", label: "SMS Brevo" };
+  if (o.includes("email")) return { emoji: "✉️", label: "Email Marketing" };
+  if (o.includes("site") || o.includes("uhome")) return { emoji: "🌐", label: "Site" };
+  if (o.includes("indicacao") || o.includes("indicação")) return { emoji: "🤝", label: "Indicação" };
+  if (o.includes("jetimob")) return { emoji: "🏢", label: "Jetimob" };
+  return { emoji: "📍", label: origem };
+}
+
+function LeadOrigemInfo({ lead }: { lead: PipelineLead }) {
+  const origemInfo = getOrigemLabel(lead.origem);
+  const campanha = lead.campanha || lead.formulario;
+  
+  if (!origemInfo && !campanha) return null;
+  
+  const parts: string[] = [];
+  if (origemInfo) parts.push(`${origemInfo.emoji} ${origemInfo.label}`);
+  if (campanha) parts.push(`📋 ${campanha}`);
+  if (lead.plataforma && !parts[0]?.includes(lead.plataforma)) parts.push(`via ${lead.plataforma}`);
+  
+  return (
+    <p className="text-xs text-muted-foreground mt-0.5">
+      {parts.join(" • ")}
+    </p>
+  );
+}
+
 function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead, imovelEvents?: LeadImovelEvent[]): TimelineItem[] {
   const items: TimelineItem[] = [];
 
@@ -318,12 +350,14 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               </div>
             </div>
           ))}
+          {/* Lead origin entry */}
           <div className="relative flex gap-4 pb-4">
             <div className="relative z-10 h-7 w-7 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
               <Plus className="h-3.5 w-3.5" />
             </div>
             <div className="pt-0.5">
               <p className="text-sm font-medium text-foreground">Lead entrou no pipeline</p>
+              <LeadOrigemInfo lead={lead} />
               <p className="text-xs text-muted-foreground/60">{formatDateSafe(lead.created_at, "dd/MM 'às' HH:mm", { locale: ptBR, fallback: "Data inválida" })}</p>
             </div>
           </div>
