@@ -52,8 +52,9 @@ function ResponsavelButton({ codigo }: { codigo: string }) {
     setLoading(true);
     try {
       const { data } = await supabase.functions.invoke("jetimob-proxy", { body: { action: "get_imovel", codigo } });
-      const detail = data?.data || data;
-      const result = (detail && !detail.not_found) ? extractOrigemExterna(detail) : null;
+      // jetimob-proxy returns { imovel: {...}, not_found: bool }
+      const imovel = data?.imovel ?? data?.data?.imovel ?? null;
+      const result = imovel ? extractOrigemExterna(imovel) : null;
       responsavelCache.set(codigo, { origem: result });
       setOrigem(result);
     } catch { /* */ } finally { setLoading(false); setFetched(true); }

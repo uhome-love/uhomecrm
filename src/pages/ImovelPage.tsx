@@ -103,7 +103,8 @@ export default function ImovelPage() {
   const prevImage = () => setImageIdx(i => (i > 0 ? i - 1 : heroImages.length - 1));
   const nextImage = () => setImageIdx(i => (i < heroImages.length - 1 ? i + 1 : 0));
 
-  const shareUrl = `${window.location.origin}/imovel/${codigo}`;
+  const PUBLIC_DOMAIN = "https://uhomesales.com";
+  const shareUrl = `${PUBLIC_DOMAIN}/imovel/${codigo}`;
   const whatsappText = encodeURIComponent(
     [titulo, loc.bairro, preco, shareUrl].filter(Boolean).join(" - ")
   );

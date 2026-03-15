@@ -208,8 +208,10 @@ export default function PropertyPreviewDrawer({
     toast.success("Dados copiados!");
   };
 
+  const PUBLIC_DOMAIN = "https://uhomesales.com";
+  const propertyUrl = codigo ? `${PUBLIC_DOMAIN}/imovel/${codigo}` : "";
   const whatsappText = encodeURIComponent(
-    [titulo, loc.bairro, getPreco(item), codigo ? `Cód. ${codigo}` : ""].filter(Boolean).join(" - ")
+    [titulo, loc.bairro, getPreco(item), propertyUrl].filter(Boolean).join(" - ")
   );
 
   const specs = [
