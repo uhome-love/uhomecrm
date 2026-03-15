@@ -47,11 +47,12 @@ export default function ImovelPage() {
     supabase.functions
       .invoke("jetimob-proxy", { body: { action: "get_imovel", codigo } })
       .then(({ data }) => {
-        const detail = data?.data || data;
-        if (!detail || detail.not_found) {
+        // jetimob-proxy returns { imovel: {...}, not_found: bool }
+        const imovel = data?.imovel ?? data?.data?.imovel ?? null;
+        if (!imovel || data?.not_found) {
           setError(true);
         } else {
-          setItem(detail);
+          setItem(imovel);
         }
       })
       .catch(() => setError(true))
