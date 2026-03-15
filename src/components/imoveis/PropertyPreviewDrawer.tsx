@@ -140,6 +140,29 @@ export default function PropertyPreviewDrawer({
 
   const content = (
     <div className="flex flex-col h-full overflow-hidden">
+      {/* Prev/Next navigation header */}
+      <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-border/50 bg-muted/30">
+        <Button
+          variant="ghost" size="sm"
+          onClick={onPrev}
+          disabled={!hasPrev}
+          className="gap-1 text-xs h-7 px-2"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" /> Anterior
+        </Button>
+        {positionLabel && (
+          <span className="text-[11px] font-medium text-muted-foreground tabular-nums">{positionLabel}</span>
+        )}
+        <Button
+          variant="ghost" size="sm"
+          onClick={onNext}
+          disabled={!hasNext}
+          className="gap-1 text-xs h-7 px-2"
+        >
+          Próximo <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
       {/* Image gallery */}
       <div className="relative bg-muted aspect-[16/10] shrink-0 group">
         {allImages.length > 0 ? (

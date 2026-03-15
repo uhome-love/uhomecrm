@@ -150,6 +150,11 @@ export default function ImoveisPage() {
         isSelected={previewItem ? selectedIds.has(String(previewItem.codigo || previewItem.id_imovel || previewItem.id)) : false}
         onToggleSelect={toggleSelect}
         onOpenLightbox={openLightbox}
+        onPrev={goToPrevPreview}
+        onNext={goToNextPreview}
+        hasPrev={hasPrevPreview}
+        hasNext={hasNextPreview}
+        positionLabel={previewPositionLabel}
       />
 
       {/* Lead context banner */}
