@@ -114,6 +114,8 @@ const RhSalaReuniao = lazyRetry(() => import("./pages/RhSalaReuniao"));
 const RhEntrevistas = lazyRetry(() => import("./pages/RhEntrevistas"));
 const DevAIPage = lazyRetry(() => import("./pages/DevAIPage"));
 const AlertasPage = lazyRetry(() => import("./pages/AlertasPage"));
+const MelnickDayLanding = lazyRetry(() => import("./pages/MelnickDayLanding"));
+const CampaignAnalyticsPage = lazyRetry(() => import("./pages/CampaignAnalyticsPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -170,6 +172,7 @@ const App = () => (
             <Route path="/indica/:codigo" element={<Suspense fallback={<PageLoader />}><ReferralPage /></Suspense>} />
             <Route path="/vitrine/:id" element={<Suspense fallback={<PageLoader />}><VitrinePage /></Suspense>} />
             <Route path="/imovel/:codigo" element={<Suspense fallback={<PageLoader />}><ImovelPage /></Suspense>} />
+            <Route path="/melnickday" element={<Suspense fallback={<PageLoader />}><MelnickDayLanding /></Suspense>} />
             {/* Acessível a todos os autenticados */}
             <Route path="/" element={<ProtectedPage><ErrorBoundary module="home-dashboard"><HomeDashboard /></ErrorBoundary></ProtectedPage>} />
 
@@ -237,6 +240,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="admin"><AdminPanel /></ErrorBoundary></ProtectedPage>} />
             <Route path="/integracao" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="integracao"><IntegracaoJetimob /></ErrorBoundary></ProtectedPage>} />
             <Route path="/dev-ai" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="dev-ai"><DevAIPage /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/campaign-analytics" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="campaign-analytics"><CampaignAnalyticsPage /></ErrorBoundary></ProtectedPage>} />
 
             {/* Backoffice — Ana Paula */}
             <Route path="/backoffice" element={<ProtectedPage roles={["backoffice", "admin"]}><ErrorBoundary module="backoffice"><BackofficeDashboard /></ErrorBoundary></ProtectedPage>} />
