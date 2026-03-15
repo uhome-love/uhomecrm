@@ -570,6 +570,7 @@ export default function ImoveisPage() {
                       if (error) throw error;
                       const link = getVitrinePublicUrl(data.id);
                       setVitrineLink(link); navigator.clipboard.writeText(link); toast.success("Vitrine criada! Link copiado.");
+                      if (hasLeadContext) trackEvent({ event_type: "vitrine_created", vitrine_id: data.id, payload: { imovel_ids: [...selectedIds], link } });
                     } catch { toast.error("Erro ao criar vitrine"); } finally { setCreatingVitrine(false); }
                   }} className="gap-1.5">
                     {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />} Gerar Link
