@@ -357,7 +357,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <FileText className="h-3.5 w-3.5" /> Scripts
             </Button>
             <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => setActiveTab("radar")}>
-              <Building2 className="h-3.5 w-3.5" /> Imóveis
+              <Building2 className="h-3.5 w-3.5" /> Radar
+            </Button>
+            <Button
+              variant="outline" size="sm"
+              className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg border-primary/30 text-primary hover:bg-primary/5"
+              onClick={() => navigate(`/imoveis?lead_id=${lead.id}&lead_nome=${encodeURIComponent(lead.nome)}`)}
+            >
+              <Search className="h-3.5 w-3.5" /> Catálogo
             </Button>
             <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
               <ClipboardList className="h-3.5 w-3.5" /> Tarefa
