@@ -19,6 +19,7 @@ interface Props {
 }
 
 export default function CeoDailyReport({ teams, corretoresRank, kpis, totalLeads, presentesHoje }: Props) {
+  const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
