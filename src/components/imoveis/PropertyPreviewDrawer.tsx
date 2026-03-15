@@ -312,7 +312,7 @@ export default function PropertyPreviewDrawer({
             ))}
             {heroImages.length > 8 && (
               <button
-                onClick={() => onOpenLightbox(heroImages, 8)}
+                onClick={() => setImageIdx(8)}
                 className="shrink-0 w-14 h-10 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground border-2 border-transparent hover:border-primary/30"
               >
                 +{heroImages.length - 8}
