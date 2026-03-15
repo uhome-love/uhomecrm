@@ -242,10 +242,18 @@ export default function CeoCheckpointViewer() {
   };
 
   // Alerts
-  const alerts = gerentesData.filter(g => g.checkpoint_status === "não_criado").map(g => ({
-    type: "warning" as const,
-    text: `${g.gerente_nome} não criou checkpoint hoje`,
-  }));
+  const diaUtil = isDiaUtil(date);
+  const alerts: { type: "warning" | "info"; text: string }[] = [];
+
+  if (!diaUtil) {
+    alerts.push({ type: "info", text: "Dia não útil — checkpoint não obrigatório" });
+  } else {
+    for (const g of gerentesData) {
+      if (g.checkpoint_status === "não_criado") {
+        alerts.push({ type: "warning", text: `${g.gerente_nome} não criou checkpoint hoje` });
+      }
+    }
+  }
 
   for (const g of gerentesData) {
     const txVisita = g.totals.real_visitas_marcadas > 0 ? Math.round((g.totals.real_visitas_realizadas / g.totals.real_visitas_marcadas) * 100) : -1;
