@@ -89,8 +89,7 @@ function ResponsavelButton({ codigo }: { codigo: string }) {
 // ── Grid Card ──
 
 export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx, isCampanha, selectMode, isSelected, onToggleSelect, onFavorite, isFavorite, onOpenLightbox, getPreco, onPreview }: any) {
-  const images = getPropertyHeroImages(item);
-  const fullImages = getPropertyFullscreenImages(item);
+  const images = getPropertyCardImages(item);
   const loc = extractEndereco(item);
   const codigo = item.codigo;
   const titulo = item.titulo_anuncio || item.empreendimento_nome || "";
