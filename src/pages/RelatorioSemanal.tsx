@@ -629,7 +629,7 @@ export default function RelatorioSemanal() {
         </Card>
 
         {/* SECTION 7 — AI Analysis */}
-        <AIAnalysisSection week={week} />
+        <AIAnalysisSection week={week} kpis={kpis} rankings={rankings} visitDays={visitDays} />
       </div>
     </div>
   );
