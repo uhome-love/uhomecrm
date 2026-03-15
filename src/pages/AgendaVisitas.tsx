@@ -391,7 +391,7 @@ export default function AgendaVisitas() {
 
         {/* ─── PERFORMANCE ─── */}
         <TabsContent value="performance" className="mt-3">
-          <VisitasPerformance visitas={visitas} showCorretor={showCorretor} />
+          <VisitasPerformance visitas={allVisitasByTipo} showCorretor={showCorretor} />
         </TabsContent>
 
         {/* ─── ALERTAS ─── */}
