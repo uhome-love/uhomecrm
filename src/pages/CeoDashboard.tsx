@@ -500,6 +500,7 @@ export default function CeoDashboard() {
             displayValue={formatCurrency(kpis.vgvAssinado)}
             prev={prevKpis?.vgvAssinado}
             iconColor="text-emerald-600"
+            ceoMeta={ceoMetasConsolidadas.meta_vgv_assinado || null}
           />
         </div>
       </div>
