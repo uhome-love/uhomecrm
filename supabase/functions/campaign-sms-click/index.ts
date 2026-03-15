@@ -145,6 +145,53 @@ Deno.serve(async (req) => {
         }
         log("info", "Enriched from brevo_contacts", { enrichedNome, enrichedEmail, enrichedPhone, interesseBrevo });
       }
+
+      // ─── Fallback: enrich from existing pipeline_leads if brevo didn't have data ───
+      if (!enrichedNome || enrichedNome === "Lead Melnick Day" || !enrichedPhone) {
+        let fallbackLead: Record<string, unknown> | null = null;
+        const fallbackFields = "nome, email, telefone, telefone_normalizado";
+
+        if (enrichedEmail || email) {
+          const searchEmail = (enrichedEmail || email).toLowerCase().trim();
+          const { data } = await supabase
+            .from("pipeline_leads")
+            .select(fallbackFields)
+            .eq("email", searchEmail)
+            .not("nome", "eq", "Lead Melnick Day")
+            .not("aceite_status", "eq", "descartado")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          fallbackLead = data;
+        }
+
+        if (!fallbackLead && telefoneNormalizado) {
+          const variants = phoneVariants(telefoneNormalizado);
+          const { data } = await supabase
+            .from("pipeline_leads")
+            .select(fallbackFields)
+            .in("telefone_normalizado", variants)
+            .not("nome", "eq", "Lead Melnick Day")
+            .not("aceite_status", "eq", "descartado")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          fallbackLead = data;
+        }
+
+        if (fallbackLead) {
+          if ((!enrichedNome || enrichedNome === "Lead Melnick Day") && fallbackLead.nome) {
+            enrichedNome = fallbackLead.nome as string;
+          }
+          if (!enrichedPhone && fallbackLead.telefone_normalizado) {
+            enrichedPhone = fallbackLead.telefone_normalizado as string;
+          }
+          if (!enrichedEmail && fallbackLead.email) {
+            enrichedEmail = fallbackLead.email as string;
+          }
+          log("info", "Enriched from pipeline_leads fallback", { enrichedNome, enrichedEmail, enrichedPhone });
+        }
+      }
     }
 
     // ─── Try to find existing lead by phone OR email ───
