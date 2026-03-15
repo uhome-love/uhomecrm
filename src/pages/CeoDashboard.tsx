@@ -434,7 +434,7 @@ export default function CeoDashboard() {
               <LeadsDistribuidosPanel teamUserIds={null} period={period === "hoje" ? "dia" : period === "semana" ? "semana" : "mes"} compact showPeriodSelector={false} />
             </CardContent>
           </Card>
-          <KpiCard icon={CalendarDays} label="Visitas Marcadas" value={kpis.visitasMarcadas} prev={prevKpis?.visitasMarcadas} iconColor="text-amber-600" />
+          <KpiCard icon={CalendarDays} label="Visitas Marcadas" value={kpis.visitasMarcadas} prev={prevKpis?.visitasMarcadas} iconColor="text-amber-600" ceoMeta={ceoMetasConsolidadas.meta_visitas_marcadas || null} />
           <KpiCard
             icon={CalendarCheck}
             label="Visitas Realizadas"
@@ -442,6 +442,7 @@ export default function CeoDashboard() {
             displayValue={`${kpis.visitasRealizadas} (${kpis.taxaRealizacao}%)`}
             prev={prevKpis?.visitasRealizadas}
             iconColor="text-emerald-600"
+            ceoMeta={ceoMetasConsolidadas.meta_visitas_realizadas || null}
           />
           <KpiCard
             icon={TrendingDown}
