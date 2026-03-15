@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Pin, PinOff, Send, StickyNote, ArrowRight, CheckCircle2,
-  PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList
+  PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
+  Building2, Share2, Search as SearchIcon
 } from "lucide-react";
 import { formatDateSafe, parseDateTimeSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
@@ -14,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHistorico } from "@/hooks/usePipelineLeadData";
 import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
+import { useLeadImoveisEvents, type LeadImovelEvent } from "@/hooks/useLeadImoveisEvents";
 
 const ATIVIDADE_BUTTONS = [
   { value: "ligacao", label: "Ligou", emoji: "📞" },
