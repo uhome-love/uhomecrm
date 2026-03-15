@@ -493,6 +493,7 @@ export default function CeoDashboard() {
             label="Nº Negócios"
             value={negocioFases.reduce((a, f) => a + f.count, 0)}
             iconColor="text-blue-600"
+            ceoMeta={null}
           />
           <KpiCard
             icon={FileText}
@@ -500,24 +501,28 @@ export default function CeoDashboard() {
             value={negocioFases.filter(f => f.fase === "proposta").reduce((a, f) => a + f.count, 0)}
             prev={prevKpis?.propostas}
             iconColor="text-amber-600"
+            ceoMeta={ceoMetasConsolidadas.meta_propostas || null}
           />
           <KpiCard
             icon={FileText}
             label="Negociação"
             value={negocioFases.filter(f => f.fase === "negociacao").reduce((a, f) => a + f.count, 0)}
             iconColor="text-orange-600"
+            ceoMeta={null}
           />
           <KpiCard
             icon={FileText}
             label="Contratos Gerados"
             value={negocioFases.filter(f => f.fase === "documentacao" || f.fase === "contrato").reduce((a, f) => a + f.count, 0)}
             iconColor="text-purple-600"
+            ceoMeta={ceoMetasConsolidadas.meta_contratos || null}
           />
           <KpiCard
             icon={Trophy}
             label="Assinados"
             value={negocioFases.filter(f => f.fase === "assinado" || f.fase === "vendido").reduce((a, f) => a + f.count, 0)}
             iconColor="text-emerald-600"
+            ceoMeta={ceoMetasConsolidadas.meta_assinados || null}
           />
           <KpiCard
             icon={DollarSign}
@@ -527,6 +532,7 @@ export default function CeoDashboard() {
             prev={prevKpis?.vgvAssinado}
             iconColor="text-emerald-600"
             ceoMeta={ceoMetasConsolidadas.meta_vgv_assinado || null}
+            metaType="currency"
           />
         </div>
       </div>
