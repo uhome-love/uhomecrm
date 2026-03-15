@@ -458,7 +458,12 @@ export default function PipelineKanban() {
                     Visita ×
                   </Badge>
                 )}
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
+                {melnickDayFilter && (
+                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setMelnickDayFilter(false)}>
+                    🔥 Melnick Day ×
+                  </Badge>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => { clearFilters(); setMelnickDayFilter(false); }} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
                   <X className="h-2.5 w-2.5" /> Limpar
                 </Button>
               </div>
