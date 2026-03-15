@@ -84,6 +84,12 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
 }) {
   if (items.length === 0) return null;
 
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  // Auto-expand group if any child route is active
+  const hasActiveChild = items.some((item) => currentPath === item.url || currentPath.startsWith(item.url + "/"));
+
   const shouldCollapse = COLLAPSED_BY_DEFAULT.has(label);
 
   const menuContent = (
@@ -95,7 +101,7 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
             <SidebarMenuButton asChild tooltip={item.title}>
               <NavLink
                 to={item.url}
-                end
+                end={!item.url.includes("/backoffice/")}
                 className={`group/nav text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 ${collapsed ? "px-0 justify-center" : "px-3"}`}
                 activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg [&_svg]:!text-blue-400"
               >
@@ -122,9 +128,12 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
   if (shouldCollapse && !collapsed) {
     return (
       <SidebarGroup className="animate-fade-in mt-4 first:mt-0 py-0" style={{ animationDelay: `${index * 60}ms` }}>
-        <Collapsible defaultOpen={false}>
+        <Collapsible defaultOpen={hasActiveChild}>
           <CollapsibleTrigger className="flex items-center justify-between w-full px-3 mb-1 group/trigger">
-            <span className="text-neutral-500 text-[10px] font-medium tracking-widest uppercase">
+            <span className={cn(
+              "text-[10px] font-medium tracking-widest uppercase",
+              hasActiveChild ? "text-blue-400" : "text-neutral-500"
+            )}>
               {label}
             </span>
             <ChevronDown className="h-3 w-3 text-neutral-500 transition-transform duration-200 group-data-[state=open]/trigger:rotate-180" />
@@ -144,7 +153,10 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
       {collapsed ? (
         index > 0 ? <div className="border-t border-white/10 my-1 mx-2" /> : null
       ) : (
-        <SidebarGroupLabel className="text-neutral-500 text-[10px] font-medium tracking-widest uppercase px-3 mb-1">
+        <SidebarGroupLabel className={cn(
+          "text-[10px] font-medium tracking-widest uppercase px-3 mb-1",
+          hasActiveChild ? "text-blue-400" : "text-neutral-500"
+        )}>
           {label}
         </SidebarGroupLabel>
       )}
