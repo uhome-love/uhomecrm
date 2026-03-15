@@ -73,17 +73,18 @@ function formatMetaDisplay(value: number, type: "currency" | "number" | "percent
 }
 
 // ─── KPI Card ───
-function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor, ceoMeta }: {
-  icon: any; label: string; value: number; displayValue?: string; meta?: number; prev?: number; iconColor?: string; ceoMeta?: number | null;
+function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor, ceoMeta, metaType = "number" }: {
+  icon: any; label: string; value: number; displayValue?: string; meta?: number; prev?: number; iconColor?: string; ceoMeta?: number | null; metaType?: "currency" | "number" | "percent";
 }) {
   const pct = meta && meta > 0 ? Math.min(Math.round((value / meta) * 100), 100) : null;
   const semaphore = getSemaphore(value, ceoMeta);
   const metaPct = ceoMeta && ceoMeta > 0 ? Math.round((value / ceoMeta) * 100) : null;
+  const showNoMeta = ceoMeta !== undefined && (!ceoMeta || ceoMeta <= 0);
 
   return (
     <Card className="relative">
       <CardContent className="pt-4 pb-3 px-4">
-        {/* Semaphore dot */}
+        {/* Semaphore dot — always show when ceoMeta is passed (even null = grey) */}
         {ceoMeta !== undefined && (
           <div className="absolute top-2.5 right-2.5" title={semaphore ? `${metaPct}% da meta (${semaphore.label})` : "Sem meta"}>
             <div className={`h-2.5 w-2.5 rounded-full ${semaphore ? semaphore.color : "bg-muted-foreground/30"}`} />
@@ -99,11 +100,14 @@ function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor
         </div>
         <p className="text-2xl font-bold">{displayValue || value}</p>
 
-        {/* Meta line from ceo_metas_mensais */}
+        {/* Meta line */}
         {ceoMeta !== undefined && ceoMeta !== null && ceoMeta > 0 && (
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            {metaPct}% da meta · meta: {ceoMeta}
+          <p className={`text-[10px] mt-0.5 ${metaPct !== null && metaPct === 0 && value === 0 ? "text-destructive" : "text-muted-foreground"}`}>
+            {metaPct}% da meta · meta: {formatMetaDisplay(ceoMeta, metaType)}
           </p>
+        )}
+        {showNoMeta && (
+          <p className="text-[10px] text-muted-foreground/50 mt-0.5">Sem meta definida</p>
         )}
 
         {pct !== null && (
