@@ -333,6 +333,8 @@ export default function CeoDashboard() {
         </div>
       </div>
 
+      {/* ─── BRIEFING HOMI CEO ─── */}
+      <HomiBriefingCard dashboardData={dashboardData} />
 
       {/* ─── SEÇÃO 1: ROLETA PENDENTES ─── */}
       <Card className={`${localPendentes.length > 0 ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.2)] animate-pulse-border" : "border-emerald-500/30"}`}>
