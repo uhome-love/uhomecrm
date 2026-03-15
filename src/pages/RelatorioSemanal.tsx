@@ -307,7 +307,9 @@ export default function RelatorioSemanal() {
           <Card>
             <CardHeader><CardTitle className="text-sm">Leads por Empreendimento (Top 8)</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              {empLoading ? <Skeleton className="h-48 w-full" /> : (leadsEmp || []).map((emp, i) => (
+              {empLoading ? <Skeleton className="h-48 w-full" /> : !leadsEmp?.length ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhum lead captado neste período</p>
+              ) : (leadsEmp || []).map((emp, i) => (
                 <div key={i} className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="truncate max-w-[200px]">{emp.name}</span>
