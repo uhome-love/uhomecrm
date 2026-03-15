@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, differenceInDays, startOfDay, getISOWeek, isWeekend, parseISO } from "date-fns";
+import { format, differenceInDays, startOfDay, isWeekend, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,20 @@ function useMelnickData() {
   });
 }
 
+/** Helper: relative time label for updated_at */
+function relativeUpdate(updatedAt: string): { label: string; isOld: boolean } {
+  const d = new Date(updatedAt);
+  const now = new Date();
+  const today = format(now, "yyyy-MM-dd");
+  const updDay = format(d, "yyyy-MM-dd");
+  if (updDay === today) {
+    return { label: `hoje às ${format(d, "HH:mm")}`, isOld: false };
+  }
+  const diff = differenceInDays(now, d);
+  if (diff === 1) return { label: "ontem", isOld: false };
+  return { label: `há ${diff} dias`, isOld: diff >= 3 };
+}
+
 // ─── FORM SECTION ───
 function FormSection({ userId, nome }: { userId: string; nome: string }) {
   const today = format(TODAY(), "yyyy-MM-dd");
@@ -112,8 +126,7 @@ function FormSection({ userId, nome }: { userId: string; nome: string }) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["melnick-metas-diarias"] });
-      toast({ title: "✓ Registro salvo com sucesso" });
-      // Dispatch event to hide reminder banner
+      toast({ title: "✓ Forecast salvo com sucesso" });
       window.dispatchEvent(new Event("melnick-meta-saved"));
     },
     onError: () => toast({ title: "Erro ao salvar", variant: "destructive" }),
@@ -124,8 +137,8 @@ function FormSection({ userId, nome }: { userId: string; nome: string }) {
   return (
     <Card className="border-amber-500/30 bg-gradient-to-br from-neutral-900 to-neutral-800">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg text-white flex items-center gap-2">
-          📝 Seu registro de hoje — {format(TODAY(), "dd/MM/yyyy")}
+        <CardTitle className="text-lg text-white flex flex-wrap items-center gap-2">
+          📝 Seu forecast de hoje — {format(TODAY(), "dd/MM/yyyy")}
           {existing ? (
             <Badge variant="outline" className="border-green-500/50 text-green-400 text-xs">
               ✓ Atualizado hoje às {format(new Date(existing.updated_at), "HH:mm")}
@@ -167,8 +180,80 @@ function FormSection({ userId, nome }: { userId: string; nome: string }) {
             </div>
             <div className="sm:col-span-2 lg:col-span-3">
               <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="bg-amber-600 hover:bg-amber-700 text-white">
-                <Save className="h-4 w-4 mr-2" /> {mutation.isPending ? "Salvando..." : "💾 Salvar registro de hoje"}
+                <Save className="h-4 w-4 mr-2" /> {mutation.isPending ? "Salvando..." : "💾 Salvar forecast de hoje"}
               </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── CEO EXECUTIVE SUMMARY ───
+function CeoSummaryCard({ data }: { data: MetaDiaria[] }) {
+  const today = format(TODAY(), "yyyy-MM-dd");
+  const todayData = data.filter((r) => r.data === today);
+
+  const todayTotals = useMemo(() => {
+    const t = { prospects: 0, interessados: 0, pastas_completas: 0, negocios_projetados: 0 };
+    todayData.forEach((r) => {
+      t.prospects += r.prospects || 0;
+      t.interessados += r.interessados || 0;
+      t.pastas_completas += r.pastas_completas || 0;
+      t.negocios_projetados += r.negocios_projetados || 0;
+    });
+    return t;
+  }, [todayData]);
+
+  const campanhaTotals = useMemo(() => {
+    const t = { prospects: 0, interessados: 0, pastas_completas: 0, negocios_projetados: 0 };
+    data.forEach((r) => {
+      t.prospects += r.prospects || 0;
+      t.interessados += r.interessados || 0;
+      t.pastas_completas += r.pastas_completas || 0;
+      t.negocios_projetados += r.negocios_projetados || 0;
+    });
+    return t;
+  }, [data]);
+
+  const allGerentes = useMemo(() => {
+    const map = new Map<string, string>();
+    data.forEach((r) => { if (r.gerente_nome) map.set(r.gerente_id, r.gerente_nome); });
+    return map;
+  }, [data]);
+
+  const todayIds = new Set(todayData.map((r) => r.gerente_id));
+
+  return (
+    <Card className="border-orange-500/40 bg-gradient-to-br from-neutral-900 to-neutral-800">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg text-orange-300">🎯 Forecast Consolidado — Melnick Day</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Hoje</p>
+          <p className="text-sm text-white">
+            <strong>{todayTotals.prospects}</strong> prospects · <strong>{todayTotals.interessados}</strong> interessados · <strong>{todayTotals.pastas_completas}</strong> pastas completas · <strong>{todayTotals.negocios_projetados}</strong> projetados
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Acumulado da campanha</p>
+          <p className="text-sm text-white">
+            <strong>{campanhaTotals.prospects}</strong> prospects · <strong>{campanhaTotals.interessados}</strong> interessados · <strong>{campanhaTotals.pastas_completas}</strong> pastas completas · <strong>{campanhaTotals.negocios_projetados}</strong> projetados
+          </p>
+        </div>
+        {allGerentes.size > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Status dos gerentes hoje</p>
+            <div className="flex flex-wrap gap-2">
+              {Array.from(allGerentes.entries()).map(([gid, gname]) => (
+                todayIds.has(gid) ? (
+                  <Badge key={gid} variant="outline" className="border-green-500/50 text-green-400 text-xs">✅ {gname}</Badge>
+                ) : (
+                  <Badge key={gid} variant="outline" className="border-amber-500/50 text-amber-400 text-xs">⚠️ {gname}</Badge>
+                )
+              ))}
             </div>
           </div>
         )}
@@ -190,10 +275,19 @@ function TodayTab({ data, isAdmin }: { data: MetaDiaria[]; isAdmin: boolean }) {
     return t;
   }, [todayData]);
 
-  // Get all unique gerentes from full data for missing alerts
   const allGerentes = useMemo(() => {
     const map = new Map<string, string>();
     data.forEach((r) => { if (r.gerente_nome) map.set(r.gerente_id, r.gerente_nome); });
+    return map;
+  }, [data]);
+
+  // Last record per gerente (for "Última atualização" column)
+  const lastUpdatePerGerente = useMemo(() => {
+    const map = new Map<string, string>();
+    data.forEach((r) => {
+      const prev = map.get(r.gerente_id);
+      if (!prev || r.updated_at > prev) map.set(r.gerente_id, r.updated_at);
+    });
     return map;
   }, [data]);
 
@@ -205,7 +299,6 @@ function TodayTab({ data, isAdmin }: { data: MetaDiaria[]; isAdmin: boolean }) {
 
   const pct = (a: number, b: number) => (b > 0 ? ((a / b) * 100).toFixed(1) : "0");
 
-  // Highlight: gerente with most negocios_projetados today
   const highlight = useMemo(() => {
     if (todayData.length === 0) return null;
     const max = Math.max(...todayData.map((r) => r.negocios_projetados));
@@ -216,23 +309,42 @@ function TodayTab({ data, isAdmin }: { data: MetaDiaria[]; isAdmin: boolean }) {
 
   return (
     <div className="space-y-4">
-      {missing.length > 0 && (
+      {/* Admin red alert */}
+      {isAdmin && missing.length > 0 && (
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-300">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {missing.map((n) => `🚨 ${n} ainda não registrou o forecast de hoje`).join(" · ")}
+        </div>
+      )}
+      {!isAdmin && missing.length > 0 && (
         <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-300">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           {missing.map((n) => `⚠️ ${n} ainda não registrou hoje`).join(" · ")}
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {FIELDS.map((f) => (
-          <Card key={f.key} className="bg-card">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-muted-foreground">{f.label}</p>
-              <p className="text-2xl font-bold mt-1">{totals[f.key]}</p>
-            </CardContent>
-          </Card>
-        ))}
+      {/* KPI Cards — 3 + 2 layout */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {FIELDS.slice(0, 3).map((f) => (
+            <Card key={f.key} className="bg-card">
+              <CardContent className="p-4 text-center">
+                <p className="text-xs text-muted-foreground">{f.label}</p>
+                <p className="text-2xl font-bold mt-1">{totals[f.key]}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-3 max-w-md sm:max-w-lg mx-auto sm:mx-0">
+          {FIELDS.slice(3).map((f) => (
+            <Card key={f.key} className="bg-card">
+              <CardContent className="p-4 text-center">
+                <p className="text-xs text-muted-foreground">{f.label}</p>
+                <p className="text-2xl font-bold mt-1">{totals[f.key]}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* Conversion rates */}
@@ -250,30 +362,53 @@ function TodayTab({ data, isAdmin }: { data: MetaDiaria[]; isAdmin: boolean }) {
               <tr className="border-b text-muted-foreground text-xs">
                 <th className="text-left p-3">Gerente</th>
                 {FIELDS.map((f) => <th key={f.key} className="text-center p-3 whitespace-nowrap">{f.label.split(" ").slice(1).join(" ")}</th>)}
-                <th className="text-center p-3">Obs</th>
+                {isAdmin && <th className="text-center p-3 whitespace-nowrap">Última atualização</th>}
+                {!isAdmin && <th className="text-center p-3">Obs</th>}
               </tr>
             </thead>
             <tbody>
               {Array.from(allGerentes.entries()).map(([gid, gname]) => {
                 const row = todayData.find((r) => r.gerente_id === gid);
+                const lastUpd = lastUpdatePerGerente.get(gid);
+                const updInfo = lastUpd ? relativeUpdate(lastUpd) : null;
+
                 if (!row) return (
                   <tr key={gid} className="border-b bg-amber-500/5">
                     <td className="p-3 font-medium">{gname}</td>
-                    <td colSpan={FIELDS.length + 1} className="p-3 text-center text-muted-foreground italic text-xs">— sem registro hoje —</td>
+                    <td colSpan={FIELDS.length} className="p-3 text-center text-muted-foreground italic text-xs">— sem registro hoje —</td>
+                    {isAdmin && (
+                      <td className={cn("p-3 text-center text-xs", updInfo?.isOld ? "text-red-400" : "text-muted-foreground")}>
+                        {updInfo ? updInfo.label : "—"}
+                      </td>
+                    )}
+                    {!isAdmin && <td className="p-3 text-center">—</td>}
                   </tr>
                 );
                 return (
                   <tr key={gid} className="border-b">
-                    <td className="p-3 font-medium">{gname}</td>
-                    {FIELDS.map((f) => <td key={f.key} className="p-3 text-center">{row[f.key]}</td>)}
-                    <td className="p-3 text-center">
-                      {row.observacao ? (
-                        <Tooltip>
-                          <TooltipTrigger><MessageSquare className="h-4 w-4 text-amber-400 mx-auto" /></TooltipTrigger>
-                          <TooltipContent className="max-w-xs">{row.observacao}</TooltipContent>
-                        </Tooltip>
-                      ) : "—"}
+                    <td className="p-3">
+                      <span className="font-medium">{gname}</span>
+                      {/* Admin: show obs inline under name */}
+                      {isAdmin && row.observacao && (
+                        <p className="text-xs italic text-muted-foreground mt-0.5">💬 {row.observacao}</p>
+                      )}
                     </td>
+                    {FIELDS.map((f) => <td key={f.key} className="p-3 text-center">{row[f.key]}</td>)}
+                    {isAdmin && (
+                      <td className="p-3 text-center text-xs text-muted-foreground">
+                        {relativeUpdate(row.updated_at).label}
+                      </td>
+                    )}
+                    {!isAdmin && (
+                      <td className="p-3 text-center">
+                        {row.observacao ? (
+                          <Tooltip>
+                            <TooltipTrigger><MessageSquare className="h-4 w-4 text-amber-400 mx-auto" /></TooltipTrigger>
+                            <TooltipContent className="max-w-xs">{row.observacao}</TooltipContent>
+                          </Tooltip>
+                        ) : "—"}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -318,7 +453,6 @@ function HistoryTab({ data }: { data: MetaDiaria[] }) {
     return map;
   }, [data]);
 
-  // Timeline: days each gerente registered
   const gerenteDays = useMemo(() => {
     const map = new Map<string, Set<string>>();
     data.forEach((r) => {
@@ -328,7 +462,6 @@ function HistoryTab({ data }: { data: MetaDiaria[] }) {
     return map;
   }, [data]);
 
-  // Generate days of march
   const marchDays = useMemo(() => {
     const days: string[] = [];
     for (let d = 1; d <= 31; d++) {
@@ -507,7 +640,6 @@ export default function MelnickMetas() {
   const daysToEvento = differenceInDays(EVENTO_DATE, TODAY());
   const daysToEncerra = differenceInDays(ENCERRA_DATE, TODAY());
 
-  // Get user profile name
   const [nome, setNome] = useState("");
   useEffect(() => {
     if (!user) return;
@@ -515,6 +647,9 @@ export default function MelnickMetas() {
       if (data?.nome) setNome(data.nome);
     });
   }, [user]);
+
+  // Show form only for gestors who are NOT pure admins
+  const showForm = isGestor && !encerrada && user;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -534,8 +669,8 @@ export default function MelnickMetas() {
             <Badge variant="outline" className="text-red-400 border-red-500/50">Campanha encerrada em 31/03/2026</Badge>
           )}
         </div>
-        <h1 className="text-2xl font-bold">📊 Metas Melnick Day — Acompanhamento Diário</h1>
-        <p className="text-sm text-muted-foreground">Atualizado diariamente pelos gerentes até 31/03/2026</p>
+        <h1 className="text-2xl font-bold">📊 Forecast Melnick Day — Acompanhamento Diário</h1>
+        <p className="text-sm text-muted-foreground">Forecast atualizado diariamente pelos gerentes até 31/03/2026</p>
       </div>
 
       {encerrada && (
@@ -544,14 +679,11 @@ export default function MelnickMetas() {
         </div>
       )}
 
-      {/* Gestor form */}
-      {isGestor && !isAdmin && !encerrada && user && (
-        <FormSection userId={user.id} nome={nome} />
-      )}
-      {/* Admin can also fill if they are gestor too */}
-      {isGestor && isAdmin && !encerrada && user && (
-        <FormSection userId={user.id} nome={nome} />
-      )}
+      {/* CEO executive summary (admin only, no form) */}
+      {isAdmin && !isLoading && <CeoSummaryCard data={allData} />}
+
+      {/* Gestor form (hidden for pure admin) */}
+      {showForm && !isAdmin && <FormSection userId={user!.id} nome={nome} />}
 
       {/* Consolidated Panel */}
       <Tabs defaultValue="hoje" className="w-full">
