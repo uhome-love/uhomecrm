@@ -308,6 +308,7 @@ export function AppSidebar() {
           {
             label: "Visão Geral",
             items: [
+              { title: "Relatório Semanal", url: "/relatorio-semanal", icon: FileBarChart },
               { title: "Alertas HOMI", url: "/alertas", icon: Bell },
               { title: "Meu Time", url: "/meu-time", icon: Users },
               { title: "Central do Gerente", url: "/central-do-gerente", icon: ClipboardCheck },
