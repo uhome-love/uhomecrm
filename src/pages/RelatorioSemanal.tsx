@@ -354,14 +354,26 @@ export default function RelatorioSemanal() {
             <CardContent>
               {originLoading ? <Skeleton className="h-48 w-full" /> : !leadsOrigin?.length ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Nenhum lead captado neste período</p>
+              ) : isMobile ? (
+                <div className="space-y-2">
+                  {leadsOrigin.map((item, i) => (
+                    <div key={i} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="truncate max-w-[200px]">{item.name}</span>
+                        <span className="font-semibold">{item.value}</span>
+                      </div>
+                      <Progress value={(item.value / maxOrigin) * 100} className="h-1.5" />
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={leadsOrigin} layout="vertical" margin={{ left: 80 }}>
+                <ResponsiveContainer width="100%" height={Math.max(250, leadsOrigin.length * 36)}>
+                  <BarChart data={leadsOrigin} layout="vertical" margin={{ left: 120 }}>
                     <XAxis type="number" />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={75} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={115} />
                     <RTooltip />
                     <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {(leadsOrigin || []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      {leadsOrigin.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
