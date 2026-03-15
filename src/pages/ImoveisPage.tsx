@@ -129,12 +129,9 @@ export default function ImoveisPage() {
     setVitrineLink(null);
   };
 
-  const openLightbox = (imgs: string[], index: number) => { setLightboxImages(imgs); setLightboxIndex(index); setLightboxOpen(true); };
-
   // ── Render ──
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <PhotoLightbox images={lightboxImages} initialIndex={lightboxIndex} open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
       <PropertyPreviewDrawer
         item={previewItem}
         open={previewOpen}
@@ -145,7 +142,6 @@ export default function ImoveisPage() {
         selectMode={selectMode}
         isSelected={previewItem ? selectedIds.has(String(previewItem.codigo || previewItem.id_imovel || previewItem.id)) : false}
         onToggleSelect={toggleSelect}
-        onOpenLightbox={openLightbox}
         onPrev={goToPrevPreview}
         onNext={goToNextPreview}
         hasPrev={hasPrevPreview}
