@@ -82,7 +82,7 @@ export default function ImovelPage() {
     );
   }
 
-  const heroImages = getPropertyHeroImages(item);
+  const heroImages = getPropertyPreviewImages(item);
   const thumbStrip = getPropertyThumbImages(item);
   const displayThumbs = thumbStrip.length > 0 ? thumbStrip : heroImages;
 
