@@ -177,8 +177,8 @@ Deno.serve(async (req) => {
     const { data: newLead, error: insertErr } = await supabase
       .from("pipeline_leads")
       .insert({
-        nome: nome || "Lead SMS Melnick Day",
-        telefone: phone,
+        nome: nome || "Lead Melnick Day",
+        telefone: phone || null,
         telefone_normalizado: telefoneNormalizado,
         email: email || null,
         origem: origem,
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
         stage_id: firstStage.id,
         aceite_status: "pendente_distribuicao",
         tags,
-        observacoes: `Lead entrou via campanha de SMS do Brevo - Melnick Day Porto Alegre (${new Date().toLocaleDateString("pt-BR")})`,
+        observacoes: obsText,
       })
       .select("id")
       .single();
