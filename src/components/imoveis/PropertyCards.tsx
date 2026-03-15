@@ -216,7 +216,7 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
       onClick={() => onPreview?.(item)}
     >
       {selectMode && (
-        <button onClick={() => onToggleSelect(imovelId)} className="absolute top-2 left-2 z-20 bg-background/90 rounded-md p-0.5 shadow-sm">
+        <button onClick={(e) => { e.stopPropagation(); onToggleSelect(imovelId); }} className="absolute top-2 left-2 z-20 bg-background/90 rounded-md p-0.5 shadow-sm">
           {isSelected ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
         </button>
       )}
