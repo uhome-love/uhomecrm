@@ -703,7 +703,7 @@ export default function ImoveisPage() {
                     {sortedImoveis.map((item, idx) => {
                       const isCampanha = campanhaOverrides.some((c) => c.codigo === item.codigo);
                       const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
-                      return <PropertyCardGrid key={item.id_imovel || item.codigo || idx} item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} onOpenLightbox={openLightbox} getPreco={getPreco} />;
+                      return <PropertyCardGrid key={item.id_imovel || item.codigo || idx} item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} onOpenLightbox={openLightbox} getPreco={getPreco} onPreview={openPreview} />;
                     })}
                   </div>
                   {totalPages > 1 && !campanhaAtiva && (
