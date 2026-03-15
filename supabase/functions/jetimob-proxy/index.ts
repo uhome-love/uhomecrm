@@ -257,7 +257,12 @@ serve(async (req) => {
       const imoveis: Record<string, any> = {};
       for (const c of codigos) {
         const matched = foundMap[c] || null;
-        imoveis[c] = matched ? { ...matched, _fotos_normalized: normalizeImages(matched, c) } : null;
+        if (matched) {
+          const imgs = normalizeImages(matched, c);
+          imoveis[c] = { ...matched, _fotos_normalized: imgs.thumbs, _fotos_full: imgs.full };
+        } else {
+          imoveis[c] = null;
+        }
       }
       return new Response(JSON.stringify({ imoveis }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
