@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Pin, PinOff, Send, StickyNote, ArrowRight, CheckCircle2,
-  PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList
+  PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
+  Building2, Share2, Search as SearchIcon
 } from "lucide-react";
 import { formatDateSafe, parseDateTimeSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
@@ -14,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHistorico } from "@/hooks/usePipelineLeadData";
 import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
+import { useLeadImoveisEvents, type LeadImovelEvent } from "@/hooks/useLeadImoveisEvents";
 
 const ATIVIDADE_BUTTONS = [
   { value: "ligacao", label: "Ligou", emoji: "📞" },
@@ -67,7 +69,16 @@ interface TimelineItem {
   color: string;
 }
 
-function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead): TimelineItem[] {
+const IMOVEL_EVENT_META: Record<string, { label: string; icon: any; color: string }> = {
+  search_performed: { label: "🔍 Busca de imóveis", icon: SearchIcon, color: "bg-violet-100 text-violet-600" },
+  vitrine_created: { label: "🏠 Vitrine criada", icon: Building2, color: "bg-primary/10 text-primary" },
+  vitrine_sent: { label: "📤 Vitrine enviada", icon: Share2, color: "bg-green-100 text-green-600" },
+  property_previewed: { label: "👁️ Imóvel visualizado", icon: Building2, color: "bg-blue-100 text-blue-600" },
+  property_favorited: { label: "❤️ Imóvel favoritado", icon: Building2, color: "bg-rose-100 text-rose-600" },
+  whatsapp_clicked: { label: "💬 WhatsApp clicado", icon: MessageSquare, color: "bg-green-100 text-green-600" },
+};
+
+function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead, imovelEvents?: LeadImovelEvent[]): TimelineItem[] {
   const items: TimelineItem[] = [];
 
   for (const h of historico) {
@@ -99,6 +110,25 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
     }
   }
 
+  // Lead-imóvel events
+  if (imovelEvents) {
+    for (const ev of imovelEvents) {
+      const meta = IMOVEL_EVENT_META[ev.event_type] || { label: ev.event_type, icon: Building2, color: "bg-muted text-muted-foreground" };
+      const desc = ev.search_query
+        ? `Busca: "${ev.search_query}"`
+        : ev.imovel_codigo
+          ? `Imóvel: ${ev.imovel_codigo}`
+          : undefined;
+      items.push({
+        title: meta.label,
+        description: desc,
+        date: ev.created_at,
+        icon: meta.icon,
+        color: meta.color,
+      });
+    }
+  }
+
   if (lead.aceito_em) {
     items.push({ title: "✅ Lead aceito", date: lead.aceito_em, icon: CheckCircle2, color: "bg-emerald-100 text-emerald-600" });
   }
@@ -119,7 +149,9 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
   const [followUpDate, setFollowUpDate] = useState("");
   const [newNota, setNewNota] = useState("");
 
-  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead);
+  const { data: imovelEvents } = useLeadImoveisEvents(leadId);
+
+  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents);
 
   const handleSave = async () => {
     const titulo = descricao.trim() || (ATIVIDADE_TIPOS[tipo]?.label || tipo);

@@ -29,12 +29,14 @@ import { getNum, fmtBRL, fmtCompact } from "@/lib/imovelHelpers";
 import { useImoveisFilters } from "@/hooks/useImoveisFilters";
 import { useImoveisSearch } from "@/hooks/useImoveisSearch";
 import { useTypesenseFacets } from "@/hooks/useTypesenseFacets";
+import { useLeadContext } from "@/hooks/useLeadContext";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export default function ImoveisPage() {
   const { user } = useAuth();
   const { searchWithAI, clearAISearch, removeTag, aiLoading, aiResult, aiError, aiProperties, aiTotal, aiSearchTime } = useAISearch();
+  const { leadId, leadNome, hasLeadContext, trackEvent } = useLeadContext();
 
   // ── Dynamic facets ──
   const { bairroFacets, tipoFacets } = useTypesenseFacets();
@@ -137,6 +139,15 @@ export default function ImoveisPage() {
         onOpenLightbox={openLightbox}
       />
 
+      {/* Lead context banner */}
+      {hasLeadContext && (
+        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
+          <span className="text-xs font-medium text-primary">
+            🔗 Buscando imóveis para: <strong>{leadNome || "Lead"}</strong>
+          </span>
+        </div>
+      )}
+
       {/* ── Sticky top bar ── */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50">
         <div className="max-w-[1400px] mx-auto px-4 md:px-6">
@@ -182,7 +193,7 @@ export default function ImoveisPage() {
                       <X className="h-3.5 w-3.5" />
                     </button>
                   )}
-                  <Button onClick={handleSearch} size="sm" className="h-7 px-3 rounded-full text-xs gap-1" disabled={loading}>
+                  <Button onClick={() => { handleSearch(); if (hasLeadContext && search.trim()) trackEvent({ event_type: "search_performed", search_query: search.trim(), payload: { contrato, tipo, bairro, dormitorios } }); }} size="sm" className="h-7 px-3 rounded-full text-xs gap-1" disabled={loading}>
                     {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
                     Buscar
                   </Button>
@@ -546,7 +557,7 @@ export default function ImoveisPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <Input value={vitrineLink} readOnly className="text-xs h-8 w-64" />
                     <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }}><Copy className="h-3.5 w-3.5" /></Button>
-                    <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção de imóveis: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer">
+                    <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção de imóveis: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { if (hasLeadContext) trackEvent({ event_type: "vitrine_sent", payload: { link: vitrineLink, channel: "whatsapp" } }); }}>
                       <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-1"><Phone className="h-3.5 w-3.5" /> WhatsApp</Button>
                     </a>
                   </div>
@@ -559,6 +570,7 @@ export default function ImoveisPage() {
                       if (error) throw error;
                       const link = getVitrinePublicUrl(data.id);
                       setVitrineLink(link); navigator.clipboard.writeText(link); toast.success("Vitrine criada! Link copiado.");
+                      if (hasLeadContext) trackEvent({ event_type: "vitrine_created", vitrine_id: data.id, payload: { imovel_ids: [...selectedIds], link } });
                     } catch { toast.error("Erro ao criar vitrine"); } finally { setCreatingVitrine(false); }
                   }} className="gap-1.5">
                     {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />} Gerar Link

@@ -2093,6 +2093,50 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_imovel_events: {
+        Row: {
+          corretor_id: string
+          created_at: string
+          event_type: string
+          id: string
+          imovel_codigo: string | null
+          lead_id: string
+          payload: Json | null
+          search_query: string | null
+          vitrine_id: string | null
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          imovel_codigo?: string | null
+          lead_id: string
+          payload?: Json | null
+          search_query?: string | null
+          vitrine_id?: string | null
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          imovel_codigo?: string | null
+          lead_id?: string
+          payload?: Json | null
+          search_query?: string | null
+          vitrine_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_imovel_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_messages: {
         Row: {
           canal: Database["public"]["Enums"]["message_channel"]
