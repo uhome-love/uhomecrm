@@ -12,9 +12,26 @@ import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
+// Retry wrapper for lazy imports — handles stale chunk errors after deployments
+function lazyRetry(factory: () => Promise<any>) {
+  return lazy(() =>
+    factory().catch((err) => {
+      // If chunk failed to load, try a hard reload once
+      const key = "chunk_reload";
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        window.location.reload();
+        return new Promise(() => {}); // never resolves — page will reload
+      }
+      sessionStorage.removeItem(key);
+      throw err;
+    })
+  );
+}
+
 // Lazy load all pages including Auth and NotFound
-const Auth = lazy(() => import("./pages/Auth"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const Auth = lazyRetry(() => import("./pages/Auth"));
+const NotFound = lazyRetry(() => import("./pages/NotFound"));
 
 // Lazy load all pages
 const HomeDashboard = lazy(() => import("./pages/HomeDashboard"));
