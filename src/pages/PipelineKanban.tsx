@@ -385,7 +385,7 @@ export default function PipelineKanban() {
               </>
             )}
 
-            {/* 🔥 Melnick Day quick filter */}
+            {/* 🔥 Campanha Melnick Day quick filter */}
             <button
               onClick={() => setMelnickDayFilter(f => !f)}
               className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
@@ -394,7 +394,7 @@ export default function PipelineKanban() {
                   : "bg-card text-muted-foreground border-border hover:border-orange-300 hover:text-orange-600"
               }`}
             >
-              🔥 Melnick Day
+              🔥 Campanha Melnick Day
               {melnickDayCount > 0 && (
                 <Badge className="text-[9px] px-1 py-0 h-3.5 bg-orange-500 text-white border-none">
                   {melnickDayCount}
