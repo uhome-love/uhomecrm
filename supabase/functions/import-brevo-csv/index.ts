@@ -1,6 +1,6 @@
 /**
- * import-brevo-csv — Bulk import Brevo CSV contacts
- * Accepts raw CSV text in POST body, parses and inserts into brevo_contacts
+ * import-brevo-csv — Bulk import Brevo CSV contacts from a URL
+ * POST body: { csv_url: string } — fetches CSV and imports into brevo_contacts
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
@@ -46,62 +46,82 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { csv_lines } = body;
+    const { csv_url, csv_text } = body;
 
-    if (!csv_lines || !Array.isArray(csv_lines)) {
-      return errorResponse("csv_lines array required", 400);
+    let csvContent = csv_text || "";
+    
+    if (csv_url && !csvContent) {
+      console.log("Fetching CSV from:", csv_url);
+      const resp = await fetch(csv_url);
+      if (!resp.ok) return errorResponse(`Failed to fetch CSV: ${resp.status}`, 400);
+      csvContent = await resp.text();
     }
 
+    if (!csvContent) {
+      return errorResponse("csv_url or csv_text required", 400);
+    }
+
+    const lines = csvContent.split("\n").filter((l: string) => l.trim().length > 0);
+    console.log(`Total CSV lines: ${lines.length}`);
+
+    // Skip header
+    const dataLines = lines.slice(1);
+    
     const BATCH_SIZE = 500;
     let inserted = 0;
     let skipped = 0;
+    let errors = 0;
 
-    // Parse CSV lines (skip header if present)
-    const contacts = csv_lines
-      .map((line: string) => {
-        const cols = parseCSVLine(line);
-        if (cols.length < 10) return null;
-        const nome = cols[1] || "";
-        const sobrenome = cols[2] || "";
-        const nomeCompleto = [nome, sobrenome].filter(Boolean).join(" ").trim();
-        const telefone = cols[4] || "";
-        const email = cols[6] || "";
+    for (let i = 0; i < dataLines.length; i += BATCH_SIZE) {
+      const batchLines = dataLines.slice(i, i + BATCH_SIZE);
+      const contacts = batchLines
+        .map((line: string) => {
+          try {
+            const cols = parseCSVLine(line);
+            if (cols.length < 7) return null;
+            const nome = cols[1] || "";
+            const sobrenome = cols[2] || "";
+            const nomeCompleto = [nome, sobrenome].filter(Boolean).join(" ").trim();
+            const telefone = cols[4] || "";
+            const email = cols[6] || "";
 
-        return {
-          brevo_id: cols[0] || null,
-          nome: nome || null,
-          sobrenome: sobrenome || null,
-          nome_completo: nomeCompleto || null,
-          telefone: telefone || null,
-          telefone_normalizado: normalizePhone(telefone),
-          email: email ? email.toLowerCase().trim() : null,
-          conversao_recente: cols[5] || null,
-          primeira_conversao: cols[9] || null,
-          data_conversao_recente: cols[7] || null,
-          data_criacao: cols[8] || null,
-        };
-      })
-      .filter((c: any) => c && (c.telefone_normalizado || c.email));
+            return {
+              brevo_id: cols[0] || null,
+              nome: nome || null,
+              sobrenome: sobrenome || null,
+              nome_completo: nomeCompleto || null,
+              telefone: telefone || null,
+              telefone_normalizado: normalizePhone(telefone),
+              email: email ? email.toLowerCase().trim() : null,
+              conversao_recente: cols[5] || null,
+              primeira_conversao: cols.length > 9 ? (cols[9] || null) : null,
+              data_conversao_recente: cols[7] || null,
+              data_criacao: cols[8] || null,
+            };
+          } catch {
+            return null;
+          }
+        })
+        .filter((c: any) => c && (c.telefone_normalizado || c.email));
 
-    for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
-      const batch = contacts.slice(i, i + BATCH_SIZE);
-      const { error } = await supabase.from("brevo_contacts").upsert(batch, {
-        onConflict: "brevo_id",
-        ignoreDuplicates: true,
-      });
-      if (error) {
-        // Fallback: try insert ignoring duplicates
-        const { error: err2 } = await supabase.from("brevo_contacts").insert(batch);
-        if (err2) {
-          console.error("Batch error:", err2.message, "index:", i);
-          skipped += batch.length;
-          continue;
-        }
+      if (contacts.length === 0) {
+        skipped += batchLines.length;
+        continue;
       }
-      inserted += batch.length;
+
+      const { error } = await supabase.from("brevo_contacts").insert(contacts);
+      if (error) {
+        console.error(`Batch ${i} error:`, error.message);
+        errors += contacts.length;
+      } else {
+        inserted += contacts.length;
+      }
+      
+      console.log(`Batch ${i}-${i + BATCH_SIZE}: inserted=${contacts.length}, total_so_far=${inserted}`);
     }
 
-    return jsonResponse({ success: true, inserted, skipped, total: csv_lines.length });
+    console.log(`Import complete: inserted=${inserted}, skipped=${skipped}, errors=${errors}`);
+    return jsonResponse({ success: true, inserted, skipped, errors, total_lines: dataLines.length });
   } catch (err) {
     console.error("Import error:", err);
     return errorResponse(err instanceof Error ? err.message : "Internal error", 500);
