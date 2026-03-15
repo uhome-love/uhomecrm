@@ -486,19 +486,23 @@ export default function RelatorioSemanal() {
                     { title: "🏆 Visitas", data: rankings?.topVisitas, metric: (c: any) => `${c.taxaVisitas}% taxa` },
                     { title: "🏆 Vendas", data: rankings?.topVendas, metric: (c: any) => formatBRLCompact(c.vgv) },
                   ].map(cat => (
-                    <div key={cat.title}>
+                     <div key={cat.title}>
                       <p className="text-xs font-semibold mb-1">{cat.title}</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {(cat.data || []).map((c: any, i: number) => (
-                          <div key={c.id} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
-                            <span className="text-sm font-bold text-muted-foreground">{i + 1}º</span>
-                            <div className="min-w-0">
-                              <p className="text-xs font-medium truncate">{c.nome}</p>
-                              <p className="text-[10px] text-muted-foreground">{c.equipe} · {cat.metric(c)}</p>
+                      {!(cat.data || []).length ? (
+                        <p className="text-xs text-muted-foreground py-2">Sem dados neste período</p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {(cat.data || []).map((c: any, i: number) => (
+                            <div key={c.id} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
+                              <span className="text-sm font-bold text-muted-foreground">{i + 1}º</span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium truncate">{c.nome}</p>
+                                <p className="text-[10px] text-muted-foreground">{c.equipe} · {cat.metric(c)}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </TabsContent>
