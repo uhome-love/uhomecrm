@@ -108,14 +108,16 @@ function AIAnalysisSection({ week }: { week: WeekRange }) {
       setAnalysis(parsed);
       setLoaded(true);
 
-      // Cache
-      await supabase.from("homi_briefing_diario").upsert({
-        user_id: session.user.id,
-        data: weekKey,
-        status_geral: "weekly_ceo",
-        dados_contexto: parsed,
-        gerado_em: new Date().toISOString(),
-      }, { onConflict: "user_id,data" }).select();
+      // Cache (ignore errors — RLS may block)
+      try {
+        await supabase.from("homi_briefing_diario").upsert({
+          user_id: session.user.id,
+          data: weekKey,
+          status_geral: "weekly_ceo",
+          dados_contexto: parsed,
+          gerado_em: new Date().toISOString(),
+        }, { onConflict: "user_id,data" }).select();
+      } catch { /* ignore cache errors */ }
     } catch (e) {
       console.error("AI analysis error:", e);
       toast.error("Erro ao gerar análise IA");
@@ -136,7 +138,7 @@ function AIAnalysisSection({ week }: { week: WeekRange }) {
         </Button>
       </CardHeader>
       <CardContent>
-        {loading && !analysis ? (
+        {loading ? (
           <div className="space-y-3">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-16 w-full" />
@@ -288,7 +290,9 @@ export default function RelatorioSemanal() {
           <Card>
             <CardHeader><CardTitle className="text-sm">Entradas por Origem</CardTitle></CardHeader>
             <CardContent>
-              {originLoading ? <Skeleton className="h-48 w-full" /> : (
+              {originLoading ? <Skeleton className="h-48 w-full" /> : !leadsOrigin?.length ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhum lead captado neste período</p>
+              ) : (
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={leadsOrigin} layout="vertical" margin={{ left: 80 }}>
                     <XAxis type="number" />
@@ -305,7 +309,9 @@ export default function RelatorioSemanal() {
           <Card>
             <CardHeader><CardTitle className="text-sm">Leads por Empreendimento (Top 8)</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              {empLoading ? <Skeleton className="h-48 w-full" /> : (leadsEmp || []).map((emp, i) => (
+              {empLoading ? <Skeleton className="h-48 w-full" /> : !leadsEmp?.length ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhum lead captado neste período</p>
+              ) : (leadsEmp || []).map((emp, i) => (
                 <div key={i} className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="truncate max-w-[200px]">{emp.name}</span>
@@ -322,7 +328,9 @@ export default function RelatorioSemanal() {
         <Card>
           <CardHeader><CardTitle className="text-sm">Funil da Semana</CardTitle></CardHeader>
           <CardContent>
-            {funnelLoading ? <Skeleton className="h-48 w-full" /> : (
+            {funnelLoading ? <Skeleton className="h-48 w-full" /> : !funnel?.length ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Sem dados de funil disponíveis</p>
+            ) : (
               <div className="space-y-2">
                 {(funnel || []).map((stage, i) => {
                   const width = Math.max((stage.count / maxFunnel) * 100, 5);
@@ -387,7 +395,7 @@ export default function RelatorioSemanal() {
                           <td className="text-center">{totalVisits.realizadas}</td>
                           <td className="text-center">{totalVisits.noShow}</td>
                           <td className="text-center">{totalVisits.canceladas}</td>
-                          <td className={`text-center ${totalTaxa >= 60 ? "text-emerald-600" : "text-amber-500"}`}>{totalTaxa}%</td>
+                          <td className={`text-center ${totalTaxa >= 60 ? "text-emerald-600" : totalTaxa >= 40 ? "text-amber-500" : "text-destructive"}`}>{totalTaxa}%</td>
                         </tr>
                       )}
                     </tbody>
@@ -480,19 +488,23 @@ export default function RelatorioSemanal() {
                     { title: "🏆 Visitas", data: rankings?.topVisitas, metric: (c: any) => `${c.taxaVisitas}% taxa` },
                     { title: "🏆 Vendas", data: rankings?.topVendas, metric: (c: any) => formatBRLCompact(c.vgv) },
                   ].map(cat => (
-                    <div key={cat.title}>
+                     <div key={cat.title}>
                       <p className="text-xs font-semibold mb-1">{cat.title}</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {(cat.data || []).map((c: any, i: number) => (
-                          <div key={c.id} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
-                            <span className="text-sm font-bold text-muted-foreground">{i + 1}º</span>
-                            <div className="min-w-0">
-                              <p className="text-xs font-medium truncate">{c.nome}</p>
-                              <p className="text-[10px] text-muted-foreground">{c.equipe} · {cat.metric(c)}</p>
+                      {!(cat.data || []).length ? (
+                        <p className="text-xs text-muted-foreground py-2">Sem dados neste período</p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {(cat.data || []).map((c: any, i: number) => (
+                            <div key={c.id} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
+                              <span className="text-sm font-bold text-muted-foreground">{i + 1}º</span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium truncate">{c.nome}</p>
+                                <p className="text-[10px] text-muted-foreground">{c.equipe} · {cat.metric(c)}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </TabsContent>
