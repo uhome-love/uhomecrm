@@ -190,7 +190,7 @@ export default function AgendaVisitas() {
     return Array.from(map.values());
   }, [pendingVisitas]);
 
-  // ─── FILTERED list: applies tab date range + all other filters ───
+  // ─── FILTERED list: date already server-side, apply remaining client-side filters ───
   const filtered = useMemo(() => {
     let list = [...visitas];
 
@@ -214,10 +214,6 @@ export default function AgendaVisitas() {
       );
     }
 
-    // Date range from tab (single source of truth)
-    if (dateRange.from) list = list.filter(v => v.data_visita >= dateRange.from!);
-    if (dateRange.to) list = list.filter(v => v.data_visita <= dateRange.to!);
-
     // Quick filter: sem_feedback = pending past visitas
     if (quickFilter === "sem_feedback") {
       const today = startOfDay(new Date());
@@ -235,13 +231,14 @@ export default function AgendaVisitas() {
       return sortOrder === "asc" ? timeA.localeCompare(timeB) : timeB.localeCompare(timeA);
     });
     return list;
-  }, [visitas, statusFilter, corretorFilter, empreendimentoFilter, searchTerm, dateRange, sortOrder, teamFilter, quickFilter]);
+  }, [visitas, statusFilter, corretorFilter, empreendimentoFilter, searchTerm, sortOrder, teamFilter, quickFilter]);
 
+  // Counts from broad dataset so chips show global totals
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const v of visitas) c[v.status] = (c[v.status] || 0) + 1;
+    for (const v of allVisitasByTipo) c[v.status] = (c[v.status] || 0) + 1;
     return c;
-  }, [visitas]);
+  }, [allVisitasByTipo]);
 
   // Calendar: all visitas with search/status/corretor filters but no tab date range
   const allVisitasFiltered = useMemo(() => {
