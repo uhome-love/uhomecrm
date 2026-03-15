@@ -180,6 +180,13 @@ export default function PipelineCeoIntelligence({ leads, stages, corretorNomes, 
           )}
           {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setHelpOpen(true); }}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          title="Como funciona o sistema de pontuação"
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+        </button>
       </div>
 
       {/* Intelligence panel */}
