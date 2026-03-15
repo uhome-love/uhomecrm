@@ -172,9 +172,10 @@ export default function PropertyPreviewDrawer({
 
   if (!item) return null;
 
-  const images = extractImages(item);
+  const thumbs = extractImages(item);
   const fullImages = extractFullImages(item);
-  const allImages = fullImages.length > 0 ? fullImages : images;
+  const heroImages = fullImages.length > 0 ? fullImages : thumbs;
+  const thumbStrip = thumbs.length > 0 ? thumbs : heroImages;
   const loc = extractEndereco(item);
   const codigo = item.codigo;
   const titulo = item.titulo_anuncio || item.empreendimento_nome || "";
