@@ -530,7 +530,7 @@ export default function ImoveisPage() {
                 {sortedImoveis.map((item, idx) => {
                   const isCampanha = campanhaOverrides.some((c) => c.codigo === item.codigo);
                   const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
-                  return <PropertyCardList key={item.id_imovel || item.codigo || idx} item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} onOpenLightbox={openLightbox} getPreco={getPreco} onPreview={openPreview} />;
+                  return <PropertyCardList key={item.id_imovel || item.codigo || idx} item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} getPreco={getPreco} onPreview={openPreview} />;
                 })}
                 {totalPages > 1 && !campanhaAtiva && (
                   <div className="flex items-center justify-center gap-2 py-3">
