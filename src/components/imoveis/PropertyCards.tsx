@@ -229,7 +229,7 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
           <div className="space-y-1">
             <div className="flex items-start justify-between gap-2">
               <p className="text-lg font-bold text-foreground">{getPreco(item)}</p>
-              <button onClick={() => onFavorite(imovelId)} className="shrink-0 p-1 rounded-full hover:bg-muted transition-colors">
+              <button onClick={(e) => { e.stopPropagation(); onFavorite(imovelId); }} className="shrink-0 p-1 rounded-full hover:bg-muted transition-colors">
                 <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
               </button>
             </div>
