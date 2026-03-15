@@ -43,6 +43,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 
+            {/* 🔥 Melnick Day quick filter */}
+            <button
+              onClick={() => setMelnickDayFilter(f => !f)}
+              className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                melnickDayFilter
+                  ? "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-700"
+                  : "bg-card text-muted-foreground border-border hover:border-orange-300 hover:text-orange-600"
+              }`}
+            >
+              🔥 Melnick Day
+              {melnickDayCount > 0 && (
+                <Badge className="text-[9px] px-1 py-0 h-3.5 bg-orange-500 text-white border-none">
+                  {melnickDayCount}
+                </Badge>
+              )}
+            </button>
 
 // ─── Forecast Probability Map ───
 const STAGE_PROBABILITY: Record<string, number> = {
