@@ -561,6 +561,57 @@ export type Database = {
         }
         Relationships: []
       }
+      brevo_contacts: {
+        Row: {
+          brevo_id: string | null
+          conversao_recente: string | null
+          created_at: string | null
+          data_conversao_recente: string | null
+          data_criacao: string | null
+          email: string | null
+          id: string
+          nome: string | null
+          nome_completo: string | null
+          primeira_conversao: string | null
+          sobrenome: string | null
+          telefone: string | null
+          telefone_normalizado: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          brevo_id?: string | null
+          conversao_recente?: string | null
+          created_at?: string | null
+          data_conversao_recente?: string | null
+          data_criacao?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+          nome_completo?: string | null
+          primeira_conversao?: string | null
+          sobrenome?: string | null
+          telefone?: string | null
+          telefone_normalizado?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          brevo_id?: string | null
+          conversao_recente?: string | null
+          created_at?: string | null
+          data_conversao_recente?: string | null
+          data_criacao?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+          nome_completo?: string | null
+          primeira_conversao?: string | null
+          sobrenome?: string | null
+          telefone?: string | null
+          telefone_normalizado?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       campaign_clicks: {
         Row: {
           campanha: string
