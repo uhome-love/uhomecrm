@@ -8,7 +8,13 @@ import { todayBRT } from "@/lib/utils";
 
 // ─── Time Window Logic ───
 
-export type JanelaId = "manha" | "tarde" | "noturna" | "madrugada";
+export type JanelaId = "manha" | "tarde" | "noturna" | "madrugada" | "dia_todo";
+
+export function isSundayBRT(): boolean {
+  const now = new Date();
+  const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  return brt.getDay() === 0;
+}
 
 interface JanelaInfo {
   id: JanelaId;

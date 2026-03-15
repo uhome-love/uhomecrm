@@ -39,7 +39,20 @@ async function resolveSegmento(supabase: any, empreendimento: string | null): Pr
   return null;
 }
 
+function isSundayBRT(): boolean {
+  const now = new Date();
+  const brHour = (now.getUTCHours() - 3 + 24) % 24;
+  // Approximate BRT day: if brHour < UTC hour, we crossed midnight
+  const utcDay = now.getUTCDay();
+  const brDay = brHour < now.getUTCHours() ? (utcDay + 1) % 7 : utcDay;
+  // Fix: recalculate properly using offset
+  const brtMs = now.getTime() - 3 * 60 * 60 * 1000;
+  const brtDate = new Date(brtMs);
+  return brtDate.getUTCDay() === 0; // 0 = Sunday
+}
+
 function getCurrentJanela(): string {
+  if (isSundayBRT()) return "dia_todo";
   const now = new Date();
   const brHour = (now.getUTCHours() - 3 + 24) % 24;
   if (brHour >= 8 && brHour < 13) return "manha";
