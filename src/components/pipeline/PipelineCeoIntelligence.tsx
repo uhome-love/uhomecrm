@@ -48,6 +48,7 @@ function AlertRow({ icon, color, count, label, actionLabel, actionIcon: ActionIc
 export default function PipelineCeoIntelligence({ leads, stages, corretorNomes, onFilterLeads, onDispatch, onReload }: Props) {
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkAction, setBulkAction] = useState("");
   const [bulkCorretor, setBulkCorretor] = useState("");
