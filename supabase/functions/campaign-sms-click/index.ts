@@ -79,11 +79,49 @@ Deno.serve(async (req) => {
       user_agent: user_agent || null,
     };
 
+    // ─── Enrich from brevo_contacts if name/email missing ───
+    let enrichedNome = nome;
+    let enrichedEmail = email;
+    let interesseBrevo: string | null = null;
+
+    if (telefoneNormalizado || email) {
+      let brevoContact: Record<string, unknown> | null = null;
+
+      if (telefoneNormalizado) {
+        const variants = phoneVariants(telefoneNormalizado);
+        const { data } = await supabase
+          .from("brevo_contacts")
+          .select("nome_completo, email, conversao_recente")
+          .in("telefone_normalizado", variants)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        brevoContact = data;
+      }
+
+      if (!brevoContact && email) {
+        const { data } = await supabase
+          .from("brevo_contacts")
+          .select("nome_completo, email, conversao_recente")
+          .eq("email", email.toLowerCase().trim())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        brevoContact = data;
+      }
+
+      if (brevoContact) {
+        if (!enrichedNome && brevoContact.nome_completo) enrichedNome = brevoContact.nome_completo as string;
+        if (!enrichedEmail && brevoContact.email) enrichedEmail = brevoContact.email as string;
+        if (brevoContact.conversao_recente) interesseBrevo = brevoContact.conversao_recente as string;
+        log("info", "Enriched from brevo_contacts", { enrichedNome, enrichedEmail, interesseBrevo });
+      }
+    }
+
     // ─── Try to find existing lead by phone OR email ───
     let existingLead: Record<string, unknown> | null = null;
 
     if (telefoneNormalizado) {
-      // Search both with and without country code prefix
       const variants = phoneVariants(telefoneNormalizado);
       const { data } = await supabase
         .from("pipeline_leads")
@@ -96,11 +134,12 @@ Deno.serve(async (req) => {
       existingLead = data;
     }
 
-    if (!existingLead && email) {
+    if (!existingLead && (enrichedEmail || email)) {
+      const searchEmail = enrichedEmail || email;
       const { data } = await supabase
         .from("pipeline_leads")
         .select("id, nome, email, tags, stage_id, corretor_id")
-        .eq("email", email)
+        .eq("email", searchEmail)
         .not("aceite_status", "eq", "descartado")
         .order("created_at", { ascending: false })
         .limit(1)
