@@ -75,17 +75,6 @@ export default function ImoveisPage() {
   const openPreview = (item: any) => { setPreviewItem(item); setPreviewOpen(true); };
   const closePreview = () => setPreviewOpen(false);
 
-  // Prev/next navigation in preview
-  const previewIndex = previewItem ? sortedImoveis.findIndex((it: any) => {
-    const pid = String(previewItem.codigo || previewItem.id_imovel || previewItem.id);
-    const iid = String(it.codigo || it.id_imovel || it.id);
-    return pid === iid;
-  }) : -1;
-  const hasPrevPreview = previewIndex > 0;
-  const hasNextPreview = previewIndex >= 0 && previewIndex < sortedImoveis.length - 1;
-  const goToPrevPreview = () => { if (hasPrevPreview) setPreviewItem(sortedImoveis[previewIndex - 1]); };
-  const goToNextPreview = () => { if (hasNextPreview) setPreviewItem(sortedImoveis[previewIndex + 1]); };
-  const previewPositionLabel = previewIndex >= 0 ? `${previewIndex + 1} / ${sortedImoveis.length}` : undefined;
   // ── Search ──
   const {
     loading, fetchError, page, totalPages, total, searchTimeMs, sortedImoveis,
