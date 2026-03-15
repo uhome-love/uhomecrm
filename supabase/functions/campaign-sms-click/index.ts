@@ -184,14 +184,15 @@ Deno.serve(async (req) => {
       // ─── Notify the responsible corretor ───
       const corretorId = existingLead.corretor_id as string | null;
       if (corretorId) {
-        const leadNome = (nome || existingLead.nome || "Lead") as string;
+        const leadNome = (enrichedNome || nome || existingLead.nome || "Lead") as string;
+        const interesseMsg = interesseBrevo ? `\nInteresse detectado: ${interesseBrevo}` : "";
         await supabase.from("notifications").insert({
           user_id: corretorId,
           titulo: `🔥 ${leadNome} clicou no Melnick Day!`,
-          mensagem: `Seu lead "${leadNome}" demonstrou interesse clicando na campanha Melnick Day 2026${blocoLabel}. Entre em contato agora!`,
+          mensagem: `Seu lead "${leadNome}" demonstrou interesse clicando na campanha Melnick Day 2026${blocoLabel}. Entre em contato agora!${interesseMsg}`,
           tipo: "lead_reengajado",
           categoria: "leads",
-          dados: { pipeline_lead_id: existingLead.id, campanha, bloco, origem },
+          dados: { pipeline_lead_id: existingLead.id, campanha, bloco, origem, interesse: interesseBrevo },
         });
         log("info", "Corretor notified", { corretorId, leadId: existingLead.id });
       }
