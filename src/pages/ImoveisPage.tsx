@@ -193,7 +193,7 @@ export default function ImoveisPage() {
                       <X className="h-3.5 w-3.5" />
                     </button>
                   )}
-                  <Button onClick={handleSearch} size="sm" className="h-7 px-3 rounded-full text-xs gap-1" disabled={loading}>
+                  <Button onClick={() => { handleSearch(); if (hasLeadContext && search.trim()) trackEvent({ event_type: "search_performed", search_query: search.trim(), payload: { contrato, tipo, bairro, dormitorios } }); }} size="sm" className="h-7 px-3 rounded-full text-xs gap-1" disabled={loading}>
                     {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
                     Buscar
                   </Button>
