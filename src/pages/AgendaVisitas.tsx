@@ -157,11 +157,11 @@ export default function AgendaVisitas() {
     setResultadoVisita(null);
   }, [resultadoVisita, updateVisita, updateStatus]);
 
-  // Derived data
+  // Corretores/empreendimentos from broad dataset for dropdown options
   const { corretores, empreendimentos } = useMemo(() => {
     const cSet = new Map<string, string>();
     const eSet = new Set<string>();
-    for (const v of visitas) {
+    for (const v of allVisitasByTipo) {
       if (v.corretor_nome && v.corretor_id) cSet.set(v.corretor_id, v.corretor_nome);
       if (v.empreendimento) eSet.add(v.empreendimento);
     }
@@ -169,7 +169,7 @@ export default function AgendaVisitas() {
       corretores: Array.from(cSet.entries()).map(([id, nome]) => ({ id, nome })),
       empreendimentos: Array.from(eSet).sort(),
     };
-  }, [visitas]);
+  }, [allVisitasByTipo]);
 
   const pendingVisitas = useMemo(() => {
     const today = startOfDay(new Date());
