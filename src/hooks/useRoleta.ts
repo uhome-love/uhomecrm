@@ -81,7 +81,25 @@ export function getCurrentWindowInfo(): {
   let credenciamentoJanela: JanelaId | null = null;
   let nextTransitionMins: number;
 
-  if (mins < t0730) {
+  // ─── Sunday Exception: No shifts, open all day (08:00–23:59) ───
+  if (isSunday) {
+    const t0800 = parseTime("08:00");
+    const t2359 = parseTime("23:59");
+
+    if (mins < t0800) {
+      janela = "madrugada";
+      emoji = "🌅";
+      descricao = "Domingo · Roleta abre às 08:00";
+      nextTransitionMins = t0800;
+    } else {
+      janela = "dia_todo";
+      emoji = "☀️";
+      descricao = "Domingo · Roleta aberta o dia todo";
+      credenciamentoAberto = true;
+      credenciamentoJanela = "dia_todo";
+      nextTransitionMins = t2359;
+    }
+  } else if (mins < t0730) {
     // 00:00 — 07:30: Madrugada, nenhum credenciamento aberto
     janela = "madrugada";
     emoji = "🌅";
