@@ -237,7 +237,10 @@ const PipelineCard = memo(function PipelineCard({
           </span>
           <div className="flex items-center gap-1 shrink-0">
             {tempConfig && (
-              <span className={cn("inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold", tempConfig.bg, tempConfig.cls)}>
+              <span
+                className={cn("inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold", tempConfig.bg, tempConfig.cls)}
+                title={lead.oportunidade_score != null ? getScoreTooltip(lead.oportunidade_score) : `${tempConfig.label}`}
+              >
                 <tempConfig.icon className="h-2.5 w-2.5" />
               </span>
             )}
