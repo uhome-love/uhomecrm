@@ -411,7 +411,7 @@ export default function PipelineKanban() {
               <ForecastInline leads={filteredLeads} stages={pipeline.stages} expanded={forecastExpanded} onToggle={() => setForecastExpanded(e => !e)} />
             )}
 
-            {activeFiltersCount > 0 && (
+            {(activeFiltersCount > 0 || melnickDayFilter) && (
               <div className="flex items-center gap-1 ml-auto flex-wrap">
                 {filters.temperaturas.length > 0 && (
                   <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
