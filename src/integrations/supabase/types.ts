@@ -1970,6 +1970,56 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_call_results: {
+        Row: {
+          created_at: string
+          faixa_investimento: string | null
+          finalidade: string | null
+          id: string
+          lead_id: string
+          prazo_compra: string | null
+          prioridade: string
+          proxima_acao: string
+          regiao_interesse: string | null
+          resumo: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          faixa_investimento?: string | null
+          finalidade?: string | null
+          id?: string
+          lead_id: string
+          prazo_compra?: string | null
+          prioridade: string
+          proxima_acao: string
+          regiao_interesse?: string | null
+          resumo: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          faixa_investimento?: string | null
+          finalidade?: string | null
+          id?: string
+          lead_id?: string
+          prazo_compra?: string | null
+          prioridade?: string
+          proxima_acao?: string
+          regiao_interesse?: string | null
+          resumo?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_call_results_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integracao_field_mappings: {
         Row: {
           ativo: boolean
