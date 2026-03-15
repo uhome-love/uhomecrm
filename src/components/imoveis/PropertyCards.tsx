@@ -169,16 +169,6 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
                 bairro={loc.bairro}
                 preco={getPreco(item)}
               />
-              <Button
-                variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary"
-                onClick={() => {
-                  const text = `${titulo} · ${loc.bairro} · ${getPreco(item)} · Cód. ${codigo}`;
-                  navigator.clipboard.writeText(text);
-                  toast.success("Dados copiados!");
-                }}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
               <ResponsavelButton codigo={codigo} />
             </div>
           </div>
