@@ -125,3 +125,6 @@ verify_jwt = false
 
 [functions.ia-call-result]
 verify_jwt = false
+
+[functions.imovel-og]
+verify_jwt = false
