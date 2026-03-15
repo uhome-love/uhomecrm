@@ -108,7 +108,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
       onClick={() => onPreview?.(item)}
     >
       {selectMode && (
-        <button onClick={() => onToggleSelect(imovelId)} className="absolute top-3 left-3 z-20 bg-background/90 backdrop-blur-sm rounded-md p-1 shadow-sm">
+        <button onClick={(e) => { e.stopPropagation(); onToggleSelect(imovelId); }} className="absolute top-3 left-3 z-20 bg-background/90 backdrop-blur-sm rounded-md p-1 shadow-sm">
           {isSelected ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
         </button>
       )}
