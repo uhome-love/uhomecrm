@@ -174,7 +174,9 @@ export default function PropertyPreviewDrawer({
 
   const thumbs = extractImages(item);
   const fullImages = extractFullImages(item);
-  const heroImages = fullImages.length > 0 ? fullImages : thumbs;
+  // Apply URL transform to get best resolution: /thumb/ → /large/, _thumb. → .
+  const toFullRes = (url: string) => url.replace(/\/thumb\//i, "/large/").replace(/_thumb\./i, ".");
+  const heroImages = (fullImages.length > 0 ? fullImages : thumbs).map(toFullRes);
   const thumbStrip = thumbs.length > 0 ? thumbs : heroImages;
   const loc = extractEndereco(item);
   const codigo = item.codigo;
