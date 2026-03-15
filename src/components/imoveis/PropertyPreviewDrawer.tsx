@@ -41,11 +41,17 @@ interface PropertyPreviewDrawerProps {
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   onOpenLightbox: (images: string[], index: number) => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
+  positionLabel?: string;
 }
 
 export default function PropertyPreviewDrawer({
   item, open, onClose, isFavorite, onFavorite, getPreco,
   selectMode, isSelected, onToggleSelect, onOpenLightbox,
+  onPrev, onNext, hasPrev = false, hasNext = false, positionLabel,
 }: PropertyPreviewDrawerProps) {
   const [imageIdx, setImageIdx] = useState(0);
   const [origem, setOrigem] = useState<any>(null);
