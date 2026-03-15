@@ -273,19 +273,37 @@ export function useImoveisSearch({
     setSearchTimeMs(null);
     setFetchError(null);
 
+    // Timeout guard: 15s max for the whole fetch
+    const timeoutPromise = new Promise<"timeout">((resolve) =>
+      setTimeout(() => resolve("timeout"), 15_000)
+    );
+
     try {
-      if (campanha) {
+      const fetchPromise = (async () => {
+        if (campanha) {
+          await fetchViaJetimob(pageNum, campanha, uhome);
+          if (seq !== fetchSeqRef.current) return "aborted";
+          return "ok";
+        }
+
+        const tsResult = await fetchViaTypesense(pageNum, seq);
+        if (tsResult === "aborted") return "aborted";
+        if (tsResult === "ok") return "ok";
+
+        console.warn("Typesense error, falling back to jetimob-proxy");
         await fetchViaJetimob(pageNum, campanha, uhome);
-        if (seq !== fetchSeqRef.current) return;
-        return;
+        return "ok";
+      })();
+
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (result === "timeout" && seq === fetchSeqRef.current) {
+        console.error("[useImoveisSearch] Fetch timeout after 15s");
+        setFetchError("O carregamento demorou demais. Verifique sua conexão e tente novamente.");
+        setImoveis([]);
+        setTotal(0);
+        setTotalPages(1);
       }
-
-      const tsResult = await fetchViaTypesense(pageNum, seq);
-      if (tsResult === "aborted") return;
-      if (tsResult === "ok") return;
-
-      console.warn("Typesense error, falling back to jetimob-proxy");
-      await fetchViaJetimob(pageNum, campanha, uhome);
     } catch (err: any) {
       if (seq !== fetchSeqRef.current) return;
       console.error("fetchImoveis critical error:", err);
