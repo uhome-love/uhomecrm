@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePendingLeadAlert } from "@/hooks/usePendingLeadAlert";
 import { useVendaRealtimeNotification } from "@/hooks/useVendaRealtimeNotification";
 import LeadAcceptanceDialog from "@/components/pipeline/LeadAcceptanceDialog";
+import MelnickMetaBanner from "@/components/MelnickMetaBanner";
 import NewLeadBanner from "@/components/notifications/NewLeadBanner";
 import PushPromptBanner from "@/components/notifications/PushPromptBanner";
 import GlobalSearch from "@/components/GlobalSearch";
@@ -213,6 +214,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </header>
             <PushPromptBanner />
+            <MelnickMetaBanner />
             <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 min-w-0">
               {children}
             </main>

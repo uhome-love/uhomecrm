@@ -2883,6 +2883,51 @@ export type Database = {
           },
         ]
       }
+      melnick_metas_diarias: {
+        Row: {
+          created_at: string | null
+          data: string
+          gerente_id: string
+          gerente_nome: string | null
+          id: string
+          interessados: number | null
+          negocios_projetados: number | null
+          observacao: string | null
+          pastas_completas: number | null
+          pastas_montagem: number | null
+          prospects: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data: string
+          gerente_id: string
+          gerente_nome?: string | null
+          id?: string
+          interessados?: number | null
+          negocios_projetados?: number | null
+          observacao?: string | null
+          pastas_completas?: number | null
+          pastas_montagem?: number | null
+          prospects?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          gerente_id?: string
+          gerente_nome?: string | null
+          id?: string
+          interessados?: number | null
+          negocios_projetados?: number | null
+          observacao?: string | null
+          pastas_completas?: number | null
+          pastas_montagem?: number | null
+          prospects?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       negocios: {
         Row: {
           auth_user_id: string | null
