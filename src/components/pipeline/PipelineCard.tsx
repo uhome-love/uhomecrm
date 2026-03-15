@@ -300,6 +300,13 @@ const PipelineCard = memo(function PipelineCard({
           </div>
         )}
 
+        {/* Melnick Day tag */}
+        {(lead.tags || []).includes("MELNICK_DAY") && (
+          <div className="flex items-center gap-1 pt-0.5">
+            <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded-md">🔥 Melnick Day</span>
+          </div>
+        )}
+
         {/* Line 3: Status line (extracted) */}
         <CardStatusLine status={status} stageChangedAt={lead.stage_changed_at} />
       </div>

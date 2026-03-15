@@ -4212,6 +4212,7 @@ export type Database = {
           segmento_id: string | null
           stage_changed_at: string
           stage_id: string
+          tags: string[] | null
           telefone: string | null
           telefone_normalizado: string | null
           telefone2: string | null
@@ -4274,6 +4275,7 @@ export type Database = {
           segmento_id?: string | null
           stage_changed_at?: string
           stage_id: string
+          tags?: string[] | null
           telefone?: string | null
           telefone_normalizado?: string | null
           telefone2?: string | null
@@ -4336,6 +4338,7 @@ export type Database = {
           segmento_id?: string | null
           stage_changed_at?: string
           stage_id?: string
+          tags?: string[] | null
           telefone?: string | null
           telefone_normalizado?: string | null
           telefone2?: string | null

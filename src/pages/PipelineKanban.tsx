@@ -43,7 +43,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 
-
 // ─── Forecast Probability Map ───
 const STAGE_PROBABILITY: Record<string, number> = {
   novo: 10, atendimento: 15, qualificacao: 25, visita_marcada: 40,
@@ -103,6 +102,7 @@ export default function PipelineKanban() {
   const [activeTab, setActiveTab] = useState("kanban");
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
+  const [melnickDayFilter, setMelnickDayFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [forecastExpanded, setForecastExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,8 +139,11 @@ export default function PipelineKanban() {
         result = result.filter(l => l.corretor_id === corretorFilter);
       }
     }
+    if (melnickDayFilter) {
+      result = result.filter(l => (l.tags || []).includes("MELNICK_DAY"));
+    }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, melnickDayFilter]);
 
   const corretorOptions = useMemo(() => {
     const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
@@ -149,6 +152,11 @@ export default function PipelineKanban() {
 
   const filaCeoCount = useMemo(() =>
     pipeline.leads.filter(l => !l.corretor_id).length,
+    [pipeline.leads]
+  );
+
+  const melnickDayCount = useMemo(() =>
+    pipeline.leads.filter(l => (l.tags || []).includes("MELNICK_DAY")).length,
     [pipeline.leads]
   );
 
@@ -377,6 +385,23 @@ export default function PipelineKanban() {
               </>
             )}
 
+            {/* 🔥 Melnick Day quick filter */}
+            <button
+              onClick={() => setMelnickDayFilter(f => !f)}
+              className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                melnickDayFilter
+                  ? "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-700"
+                  : "bg-card text-muted-foreground border-border hover:border-orange-300 hover:text-orange-600"
+              }`}
+            >
+              🔥 Melnick Day
+              {melnickDayCount > 0 && (
+                <Badge className="text-[9px] px-1 py-0 h-3.5 bg-orange-500 text-white border-none">
+                  {melnickDayCount}
+                </Badge>
+              )}
+            </button>
+
             {totalVGV > 0 && (
               <span className="text-[11px] text-muted-foreground">• {formatVGV(totalVGV)} VGV</span>
             )}
@@ -386,7 +411,7 @@ export default function PipelineKanban() {
               <ForecastInline leads={filteredLeads} stages={pipeline.stages} expanded={forecastExpanded} onToggle={() => setForecastExpanded(e => !e)} />
             )}
 
-            {activeFiltersCount > 0 && (
+            {(activeFiltersCount > 0 || melnickDayFilter) && (
               <div className="flex items-center gap-1 ml-auto flex-wrap">
                 {filters.temperaturas.length > 0 && (
                   <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
@@ -433,7 +458,12 @@ export default function PipelineKanban() {
                     Visita ×
                   </Badge>
                 )}
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
+                {melnickDayFilter && (
+                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setMelnickDayFilter(false)}>
+                    🔥 Melnick Day ×
+                  </Badge>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => { clearFilters(); setMelnickDayFilter(false); }} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
                   <X className="h-2.5 w-2.5" /> Limpar
                 </Button>
               </div>

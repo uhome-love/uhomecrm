@@ -50,6 +50,7 @@ export interface PipelineLead {
   created_by?: string | null;
   negocio_id: string | null;
   ultima_acao_at?: string | null;
+  tags?: string[] | null;
   // Marketing attribution (loaded on demand)
   campanha?: string | null;
   campanha_id?: string | null;
@@ -127,7 +128,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     try {
 
-    const selectFields = "id, nome, telefone, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, data_proxima_acao, proxima_acao, motivo_descarte";
+    const selectFields = "id, nome, telefone, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, data_proxima_acao, proxima_acao, motivo_descarte, tags";
     const pageSize = 1000;
 
     let teamUserIds: string[] = [];
