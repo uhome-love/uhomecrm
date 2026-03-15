@@ -258,14 +258,30 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
+    // Wait for role resolution before loading leads to avoid double-fetch
+    if (roleLoading) return;
+
     setError(null);
+    setLoading(true);
+
+    // Timeout guard: if load takes > 30s, stop and show error
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      setError("O carregamento demorou demais. Tente recarregar.");
+    }, 30_000);
+
     Promise.all([loadStages(), loadSegmentos(), loadLeads()])
       .catch((err) => {
         console.error("[usePipeline] Init error:", err);
         setError(err?.message || "Erro ao carregar pipeline");
       })
-      .finally(() => setLoading(false));
-  }, [user, loadStages, loadSegmentos, loadLeads]);
+      .finally(() => {
+        clearTimeout(timeout);
+        setLoading(false);
+      });
+
+    return () => clearTimeout(timeout);
+  }, [user, roleLoading, loadStages, loadSegmentos, loadLeads]);
 
   // ─── Granular realtime: update only the changed lead in local state ───
   useEffect(() => {
