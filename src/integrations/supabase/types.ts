@@ -2883,6 +2883,42 @@ export type Database = {
           },
         ]
       }
+      melnick_campaign_analytics: {
+        Row: {
+          campaign: string
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          origem_canal: string | null
+          pipeline_lead_id: string | null
+          rule_applied: string | null
+          telefone: string | null
+          tipo: string
+        }
+        Insert: {
+          campaign?: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          origem_canal?: string | null
+          pipeline_lead_id?: string | null
+          rule_applied?: string | null
+          telefone?: string | null
+          tipo: string
+        }
+        Update: {
+          campaign?: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          origem_canal?: string | null
+          pipeline_lead_id?: string | null
+          rule_applied?: string | null
+          telefone?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       melnick_metas_diarias: {
         Row: {
           created_at: string | null

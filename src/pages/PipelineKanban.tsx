@@ -18,6 +18,7 @@ const SequenceBuilder = lazy(() => import("@/components/pipeline/SequenceBuilder
 const SequenceLibrary = lazy(() => import("@/components/pipeline/SequenceLibrary"));
 const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
 const PipelineCeoIntelligence = lazy(() => import("@/components/pipeline/PipelineCeoIntelligence"));
+const MelnickCampaignAnalytics = lazy(() => import("@/components/pipeline/MelnickCampaignAnalytics"));
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
 const PipelineReportsDashboard = lazy(() => import("@/components/pipeline/PipelineReportsDashboard"));
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -385,7 +386,7 @@ export default function PipelineKanban() {
               </>
             )}
 
-            {/* 🔥 Melnick Day quick filter */}
+            {/* 🔥 Campanha Melnick Day quick filter */}
             <button
               onClick={() => setMelnickDayFilter(f => !f)}
               className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
@@ -394,7 +395,7 @@ export default function PipelineKanban() {
                   : "bg-card text-muted-foreground border-border hover:border-orange-300 hover:text-orange-600"
               }`}
             >
-              🔥 Melnick Day
+              🔥 Campanha Melnick Day
               {melnickDayCount > 0 && (
                 <Badge className="text-[9px] px-1 py-0 h-3.5 bg-orange-500 text-white border-none">
                   {melnickDayCount}
@@ -495,6 +496,13 @@ export default function PipelineKanban() {
             leads={pipeline.leads}
             corretorNomes={pipeline.corretorNomes}
           />
+        )}
+
+        {/* Melnick Campaign Analytics — shown when filter is active */}
+        {melnickDayFilter && (
+          <Suspense fallback={null}>
+            <MelnickCampaignAnalytics />
+          </Suspense>
         )}
       </div>
 
