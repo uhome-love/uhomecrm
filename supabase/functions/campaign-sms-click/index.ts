@@ -147,8 +147,8 @@ Deno.serve(async (req) => {
       existingLead = data;
     }
 
-    // If no phone AND no email, still log click and redirect
-    if (!telefoneNormalizado && !email) {
+    // If no phone AND no email (even after enrichment), still log click and redirect
+    if (!telefoneNormalizado && !email && !enrichedEmail) {
       log("warn", "No valid phone or email, logging click only", { phone, email });
       await insertClick({ ...clickBase, status: "click_no_contact", lead_action: "none", redirected: true });
       return jsonResponse({ success: true, action: "redirect_only", redirect_url: WHATSAPP_REDIRECT });
