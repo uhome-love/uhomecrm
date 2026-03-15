@@ -68,7 +68,7 @@ export interface PipelineSegmento {
 
 export function usePipeline(pipelineTipo: string = "leads") {
   const { user } = useAuth();
-  const { isGestor, isAdmin } = useUserRole();
+  const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [leads, setLeads] = useState<PipelineLead[]>([]);
   const [segmentos, setSegmentos] = useState<PipelineSegmento[]>([]);
