@@ -103,6 +103,7 @@ export default function PipelineKanban() {
   const [activeTab, setActiveTab] = useState("kanban");
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
+  const [melnickDayFilter, setMelnickDayFilter] = useState(false);
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [forecastExpanded, setForecastExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
