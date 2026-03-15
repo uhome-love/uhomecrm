@@ -18,6 +18,7 @@ const SequenceBuilder = lazy(() => import("@/components/pipeline/SequenceBuilder
 const SequenceLibrary = lazy(() => import("@/components/pipeline/SequenceLibrary"));
 const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
 const PipelineCeoIntelligence = lazy(() => import("@/components/pipeline/PipelineCeoIntelligence"));
+const MelnickCampaignAnalytics = lazy(() => import("@/components/pipeline/MelnickCampaignAnalytics"));
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
 const PipelineReportsDashboard = lazy(() => import("@/components/pipeline/PipelineReportsDashboard"));
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
