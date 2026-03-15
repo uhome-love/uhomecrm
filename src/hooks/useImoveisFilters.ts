@@ -11,7 +11,7 @@
 
 import { useState, useMemo } from "react";
 import { fmtCompact } from "@/lib/imovelHelpers";
-import type { BairroFacet } from "@/hooks/useBairroFacets";
+import type { Facet } from "@/hooks/useTypesenseFacets";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
