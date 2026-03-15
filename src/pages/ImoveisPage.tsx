@@ -13,7 +13,7 @@ import {
   Search, Building2, Loader2, ChevronLeft, ChevronRight, Phone,
   MapPin, Megaphone, Check, X, Share2, Link2, Copy, CalendarClock,
   LayoutGrid, List, Heart, Zap,
-  Sparkles, Brain, ArrowRight, Map
+  Sparkles, Brain, ArrowRight, Map, MessageCircle
 } from "lucide-react";
 import PropertyMap from "@/components/imoveis/PropertyMap";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
