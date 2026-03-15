@@ -402,6 +402,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 <DropdownMenuItem onClick={() => setPartnerOpen(true)}>
                   <Handshake className="h-3.5 w-3.5 mr-2" /> Parceria
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={async () => {
+                  const currentTags: string[] = (lead as any).tags || [];
+                  const hasMelnick = currentTags.includes("MELNICK_DAY");
+                  const newTags = hasMelnick
+                    ? currentTags.filter((t: string) => t !== "MELNICK_DAY")
+                    : [...currentTags, "MELNICK_DAY"];
+                  await onUpdate(lead.id, { tags: newTags } as any);
+                  toast.success(hasMelnick ? "Tag Melnick Day removida" : "Tag Melnick Day adicionada");
+                }}>
+                  <Tag className="h-3.5 w-3.5 mr-2" />
+                  {((lead as any).tags || []).includes("MELNICK_DAY") ? "🔥 Remover Melnick Day" : "🔥 Marcar Melnick Day"}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setInativarOpen(true); }}>
                   <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
