@@ -211,6 +211,12 @@ Deno.serve(async (req) => {
       if (bestEmail && !existingLead.email) {
         updateData.email = bestEmail;
       }
+      // Update phone if we have one and existing doesn't
+      const bestPhone = enrichedPhone || telefoneNormalizado;
+      if (bestPhone && !existingLead.telefone_normalizado) {
+        updateData.telefone_normalizado = bestPhone;
+        updateData.telefone = phone || bestPhone;
+      }
 
       await supabase.from("pipeline_leads").update(updateData).eq("id", existingLead.id);
 
