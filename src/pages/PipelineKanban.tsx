@@ -8,6 +8,7 @@ import type { PipelineStage } from "@/hooks/usePipeline";
 import { useMemo as useMemoReact } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useQueryClient } from "@tanstack/react-query";
+import { useParceriasMap } from "@/hooks/useParcerias";
 
 // Lazy load heavy tab components
 const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
