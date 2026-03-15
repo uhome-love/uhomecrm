@@ -326,7 +326,9 @@ export default function RelatorioSemanal() {
         <Card>
           <CardHeader><CardTitle className="text-sm">Funil da Semana</CardTitle></CardHeader>
           <CardContent>
-            {funnelLoading ? <Skeleton className="h-48 w-full" /> : (
+            {funnelLoading ? <Skeleton className="h-48 w-full" /> : !funnel?.length ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Sem dados de funil disponíveis</p>
+            ) : (
               <div className="space-y-2">
                 {(funnel || []).map((stage, i) => {
                   const width = Math.max((stage.count / maxFunnel) * 100, 5);
