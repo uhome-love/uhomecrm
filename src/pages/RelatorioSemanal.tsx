@@ -125,7 +125,7 @@ function AIAnalysisSection({ week }: { week: WeekRange }) {
   }, [week, session, loaded]);
 
   // Auto-load on mount
-  useState(() => { generate(); });
+  useEffect(() => { generate(); }, []);
 
   return (
     <Card className="bg-card border-border">
