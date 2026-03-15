@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useAcademia, CATEGORIAS, NIVEL_CONFIG, TIPO_CONFIG, type Trilha, type Aula } from "@/hooks/useAcademia";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, GripVertical, Upload } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, GripVertical, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +47,42 @@ export default function AcademiaGerenciarPage() {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [uploadedPath, setUploadedPath] = useState<string | null>(null);
+
+  // Engagement stats per trilha
+  const [engagementMap, setEngagementMap] = useState<Record<string, { iniciaram: number; concluiram: number; mediaProgresso: number }>>({});
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("academia_progresso")
+        .select("trilha_id, status, corretor_id");
+      if (!data || data.length === 0) return;
+
+      const map: Record<string, { users: Set<string>; concluded: Set<string>; total: number; doneCount: number }> = {};
+      for (const row of data) {
+        const tid = row.trilha_id;
+        if (!tid) continue;
+        if (!map[tid]) map[tid] = { users: new Set(), concluded: new Set(), total: 0, doneCount: 0 };
+        const uid = row.corretor_id || (row as any).auth_user_id || "anon";
+        map[tid].users.add(uid);
+        map[tid].total++;
+        if (row.status === "concluida") {
+          map[tid].concluded.add(uid);
+          map[tid].doneCount++;
+        }
+      }
+
+      const result: typeof engagementMap = {};
+      for (const [tid, v] of Object.entries(map)) {
+        result[tid] = {
+          iniciaram: v.users.size,
+          concluiram: v.concluded.size,
+          mediaProgresso: v.total > 0 ? Math.round((v.doneCount / v.total) * 100) : 0,
+        };
+      }
+      setEngagementMap(result);
+    })();
+  }, [trilhas]);
 
   const selectedTrilhaAulas = aulas.filter(a => a.trilha_id === selectedTrilhaId).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
 
@@ -233,6 +269,10 @@ export default function AcademiaGerenciarPage() {
           <h3 className="text-sm font-semibold text-muted-foreground px-1">Trilhas ({trilhas.length})</h3>
           {trilhas.map(t => {
             const cat = CATEGORIAS.find(c => c.key === t.categoria);
+            const eng = engagementMap[t.id];
+            const progressColor = eng
+              ? eng.mediaProgresso >= 70 ? "bg-emerald-500" : eng.mediaProgresso >= 30 ? "bg-amber-500" : "bg-destructive"
+              : "bg-muted";
             return (
               <button
                 key={t.id}
@@ -249,8 +289,25 @@ export default function AcademiaGerenciarPage() {
                 <div className="flex items-center gap-2">
                   {cat && <Badge className={cn("text-[9px]", cat.color)}>{cat.label.split(" ")[0]}</Badge>}
                   <Badge variant="secondary" className="text-[9px]">{t.nivel || "iniciante"}</Badge>
+                  {!t.publicada && <Badge variant="destructive" className="text-[8px] px-1.5 py-0">Oculta para corretores</Badge>}
                   <span className="text-[10px] text-muted-foreground ml-auto">{t.xp_total || 0} XP</span>
                 </div>
+
+                {/* Engagement stats */}
+                {eng ? (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      {eng.concluiram} concluíram · {eng.mediaProgresso}% média · {eng.iniciaram} iniciaram
+                    </p>
+                    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+                      <div className={cn("h-full rounded-full transition-all", progressColor)} style={{ width: `${eng.mediaProgresso}%` }} />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground/50 mt-2">Sem engajamento ainda</p>
+                )}
+
                 <div className="flex items-center gap-1 mt-2" onClick={e => e.stopPropagation()}>
                   <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5" onClick={() => openEditTrilha(t)}>
                     <Edit className="h-3 w-3" />
