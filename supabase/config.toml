@@ -122,3 +122,6 @@ verify_jwt = false
 
 [functions.homi-alerts-engine]
 verify_jwt = false
+
+[functions.ia-call-result]
+verify_jwt = false
