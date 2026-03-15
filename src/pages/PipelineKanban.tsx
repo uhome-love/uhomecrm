@@ -44,6 +44,10 @@ import { toast } from "sonner";
 
 
 
+  const melnickDayCount = useMemo(() =>
+    pipeline.leads.filter(l => (l.tags || []).includes("MELNICK_DAY")).length,
+    [pipeline.leads]
+  );
 
 // ─── Forecast Probability Map ───
 const STAGE_PROBABILITY: Record<string, number> = {
