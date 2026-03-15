@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Loader2, MapPin, Megaphone, UserCircle, Phone, Mail,
-  CheckSquare, Square, Copy, CalendarClock, Heart,
+  CheckSquare, Square, CalendarClock, Heart,
 } from "lucide-react";
 import ImageSlider from "@/components/imoveis/ImageSlider";
 import SharePropertyButton from "@/components/imoveis/SharePropertyButton";
