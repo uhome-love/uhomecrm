@@ -208,7 +208,7 @@ export default function ImovelPage() {
         {/* ── Thumbnail strip ── */}
         {heroImages.length > 1 && (
           <div className="flex gap-1.5 px-4 py-2.5 overflow-x-auto bg-muted/30 scrollbar-none">
-            {thumbStrip.slice(0, 10).map((img, i) => (
+            {displayThumbs.slice(0, 10).map((img, i) => (
               <button
                 key={i}
                 onClick={() => setImageIdx(i)}
