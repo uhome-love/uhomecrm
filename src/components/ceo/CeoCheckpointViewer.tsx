@@ -288,12 +288,22 @@ export default function CeoCheckpointViewer() {
       {/* Checkpoint Alerts */}
       {alerts.length > 0 && (
         <div className="space-y-2">
-          {alerts.map((a, i) => (
-            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-warning/20 bg-warning/5 text-xs text-warning">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              {a.text}
-            </div>
-          ))}
+          {alerts.map((a, i) => {
+            const isInfo = a.type === "info";
+            return (
+              <div
+                key={i}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs ${
+                  isInfo
+                    ? "border-border bg-muted/50 text-muted-foreground"
+                    : "border-warning/20 bg-warning/5 text-warning"
+                }`}
+              >
+                {isInfo ? <CalendarOff className="h-3.5 w-3.5 shrink-0" /> : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
+                {a.text}
+              </div>
+            );
+          })}
         </div>
       )}
 
