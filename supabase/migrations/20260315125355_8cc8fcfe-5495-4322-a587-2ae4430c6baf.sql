@@ -1,0 +1,2 @@
+ALTER TABLE public.roleta_credenciamentos DROP CONSTRAINT roleta_credenciamentos_janela_check;
+ALTER TABLE public.roleta_credenciamentos ADD CONSTRAINT roleta_credenciamentos_janela_check CHECK (janela = ANY (ARRAY['manha'::text, 'tarde'::text, 'noturna'::text, 'dia_todo'::text]));
