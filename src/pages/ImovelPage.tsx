@@ -18,15 +18,13 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  extractImages, extractFullImages, extractOrigemExterna,
-  extractEntrega, extractEndereco, getNum, getNumIncZero, fmtBRL, fmtCompact,
+  getPropertyHeroImages, getPropertyThumbImages,
+  extractOrigemExterna, extractEntrega, extractEndereco,
+  getNum, getNumIncZero, fmtBRL, fmtCompact,
 } from "@/lib/imovelHelpers";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-const toFullRes = (url: string) =>
-  url.replace(/\/thumb\//i, "/large/").replace(/_thumb\./i, ".");
 
 function getPrecoFromItem(item: any): string {
   const v = item.valor_venda || item.valor || item.preco || item.valor_locacao;
@@ -83,10 +81,9 @@ export default function ImovelPage() {
     );
   }
 
-  const thumbs = extractImages(item);
-  const fullImages = extractFullImages(item);
-  const heroImages = (fullImages.length > 0 ? fullImages : thumbs).map(toFullRes);
-  const thumbStrip = thumbs.length > 0 ? thumbs : heroImages;
+  const heroImages = getPropertyHeroImages(item);
+  const thumbStrip = getPropertyThumbImages(item);
+  const displayThumbs = thumbStrip.length > 0 ? thumbStrip : heroImages;
 
   const loc = extractEndereco(item);
   const titulo = item.titulo_anuncio || item.empreendimento_nome || "";
@@ -211,7 +208,7 @@ export default function ImovelPage() {
         {/* ── Thumbnail strip ── */}
         {heroImages.length > 1 && (
           <div className="flex gap-1.5 px-4 py-2.5 overflow-x-auto bg-muted/30 scrollbar-none">
-            {thumbStrip.slice(0, 10).map((img, i) => (
+            {displayThumbs.slice(0, 10).map((img, i) => (
               <button
                 key={i}
                 onClick={() => setImageIdx(i)}

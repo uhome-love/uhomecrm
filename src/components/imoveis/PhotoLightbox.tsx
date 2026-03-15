@@ -37,7 +37,9 @@ function PhotoLightboxInner({ images, initialIndex, open, onClose }: PhotoLightb
     setTimeout(() => setIsTransitioning(false), 300);
   };
 
-  const getFullRes = (url: string) => url.replace(/\/thumb\//, "/large/").replace(/_thumb\./i, ".");
+  // Images passed in should already be high-res from getPropertyFullscreenImages
+  // Keep a minimal fallback for edge cases where thumbs leak through
+  const toHighRes = (url: string) => url.replace(/\/thumb\//i, "/large/").replace(/_thumb\./i, ".");
 
   if (!open || images.length === 0) return null;
   return createPortal(
@@ -51,7 +53,7 @@ function PhotoLightboxInner({ images, initialIndex, open, onClose }: PhotoLightb
       <div className="flex items-center justify-center h-full px-4 sm:px-8 pt-14 pb-24" onClick={(e) => e.stopPropagation()}>
         <div className="relative w-full h-full flex items-center justify-center">
           <img
-            src={getFullRes(images[current])}
+            src={toHighRes(images[current])}
             alt={`Foto ${current + 1}`}
             className="max-w-[95vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300"
             style={{ opacity: isTransitioning ? 0.6 : 1 }}

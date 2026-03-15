@@ -61,25 +61,29 @@ function isCodigoMatch(item: any, requestedCodigo: string): boolean {
   return !!requestedNum && !!meta && meta.includes(requestedNum);
 }
 
-function normalizeImages(imovel: any, _logCodigo?: string): string[] {
-  const fotos: string[] = [];
-  if (imovel.foto_principal) fotos.push(imovel.foto_principal);
-  if (imovel.foto_destaque && imovel.foto_destaque !== imovel.foto_principal) fotos.push(imovel.foto_destaque);
+function normalizeImages(imovel: any, _logCodigo?: string): { thumbs: string[]; full: string[] } {
+  const thumbs: string[] = [];
+  const full: string[] = [];
+  if (imovel.foto_principal) { thumbs.push(imovel.foto_principal); full.push(imovel.foto_principal); }
+  if (imovel.foto_destaque && imovel.foto_destaque !== imovel.foto_principal) { thumbs.push(imovel.foto_destaque); full.push(imovel.foto_destaque); }
   const imgFieldNames = ["imagens", "fotos", "galeria", "photos", "images", "fotos_imovel", "galeria_fotos", "midia", "midias"];
   for (const fieldName of imgFieldNames) {
     const arr = imovel[fieldName];
     if (Array.isArray(arr) && arr.length > 0) {
       for (const item of arr) {
         if (typeof item === "string") {
-          if (item && !fotos.includes(item)) fotos.push(item);
+          if (item && !thumbs.includes(item)) thumbs.push(item);
+          if (item && !full.includes(item)) full.push(item);
         } else if (item && typeof item === "object") {
-          const url = item.link || item.link_thumb || item.url || item.arquivo || item.src || item.path || item.foto || item.imagem || "";
-          if (url && !fotos.includes(url)) fotos.push(url);
+          const thumb = item.link_thumb || item.link || item.url || item.arquivo || item.src || item.path || item.foto || item.imagem || "";
+          const fullUrl = item.link_large || item.link || item.link_medio || item.link_thumb || item.url || item.arquivo || item.src || "";
+          if (thumb && !thumbs.includes(thumb)) thumbs.push(thumb);
+          if (fullUrl && !full.includes(fullUrl)) full.push(fullUrl);
         }
       }
     }
   }
-  return fotos;
+  return { thumbs, full };
 }
 
 // ─── UH-code mapping ───
@@ -231,7 +235,9 @@ serve(async (req) => {
       }
 
       if (imovel) {
-        imovel._fotos_normalized = normalizeImages(imovel, requestedCodigo);
+        const imgs = normalizeImages(imovel, requestedCodigo);
+        imovel._fotos_normalized = imgs.thumbs;
+        imovel._fotos_full = imgs.full;
       }
 
       return new Response(JSON.stringify({ imovel, not_found: !imovel }), {
@@ -251,7 +257,12 @@ serve(async (req) => {
       const imoveis: Record<string, any> = {};
       for (const c of codigos) {
         const matched = foundMap[c] || null;
-        imoveis[c] = matched ? { ...matched, _fotos_normalized: normalizeImages(matched, c) } : null;
+        if (matched) {
+          const imgs = normalizeImages(matched, c);
+          imoveis[c] = { ...matched, _fotos_normalized: imgs.thumbs, _fotos_full: imgs.full };
+        } else {
+          imoveis[c] = null;
+        }
       }
       return new Response(JSON.stringify({ imoveis }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -370,10 +381,14 @@ serve(async (req) => {
       const paginatedResults = results.slice(start, start + pageSize);
 
       // Normalize images only for the paginated results (not all items)
-      const paginatedItems = paginatedResults.map(entry => ({
-        ...entry.item,
-        _fotos_normalized: normalizeImages(entry.item),
-      }));
+      const paginatedItems = paginatedResults.map(entry => {
+        const imgs = normalizeImages(entry.item);
+        return {
+          ...entry.item,
+          _fotos_normalized: imgs.thumbs,
+          _fotos_full: imgs.full,
+        };
+      });
 
       console.timeEnd("list_imoveis");
       console.log(`list_imoveis: ${totalFiltered} filtered, page ${page}/${totalPagesCalc}, returning ${paginatedItems.length}`);

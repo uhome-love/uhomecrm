@@ -21,8 +21,9 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  extractImages, extractFullImages, extractOrigemExterna,
-  extractEntrega, extractEndereco, getNum, getNumIncZero, fmtBRL,
+  getPropertyHeroImages, getPropertyThumbImages, getPropertyFullscreenImages,
+  extractOrigemExterna, extractEntrega, extractEndereco,
+  getNum, getNumIncZero, fmtBRL,
 } from "@/lib/imovelHelpers";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -172,12 +173,10 @@ export default function PropertyPreviewDrawer({
 
   if (!item) return null;
 
-  const thumbs = extractImages(item);
-  const fullImages = extractFullImages(item);
-  // Apply URL transform to get best resolution: /thumb/ → /large/, _thumb. → .
-  const toFullRes = (url: string) => url.replace(/\/thumb\//i, "/large/").replace(/_thumb\./i, ".");
-  const heroImages = (fullImages.length > 0 ? fullImages : thumbs).map(toFullRes);
-  const thumbStrip = thumbs.length > 0 ? thumbs : heroImages;
+  const heroImages = getPropertyHeroImages(item);
+  const thumbStrip = getPropertyThumbImages(item);
+  // If no separate thumbs, use hero images for strip
+  const displayThumbs = thumbStrip.length > 0 ? thumbStrip : heroImages;
   const loc = extractEndereco(item);
   const codigo = item.codigo;
   const titulo = item.titulo_anuncio || item.empreendimento_nome || "";
@@ -296,7 +295,7 @@ export default function PropertyPreviewDrawer({
         {/* ── Thumbnail strip ── */}
         {heroImages.length > 1 && (
           <div className="flex gap-1.5 px-4 py-2.5 overflow-x-auto bg-muted/30 scrollbar-none">
-            {thumbStrip.slice(0, 8).map((img, i) => (
+            {displayThumbs.slice(0, 8).map((img, i) => (
               <button
                 key={i}
                 onClick={() => setImageIdx(i)}
