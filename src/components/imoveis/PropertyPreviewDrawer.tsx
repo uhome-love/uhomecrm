@@ -244,7 +244,7 @@ export default function PropertyPreviewDrawer({
       {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-y-auto">
         {/* ── Hero Image ── */}
-        <div className="relative bg-muted/60 aspect-[4/3] group cursor-pointer" onClick={() => heroImages.length > 0 && onOpenLightbox(heroImages, imageIdx)}>
+        <div className="relative bg-muted/60 aspect-[4/3] group cursor-pointer" onClick={() => heroImages.length > 1 && nextImage()}>
           {heroImages.length > 0 ? (
             <>
               <img
