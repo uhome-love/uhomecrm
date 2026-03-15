@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import PropertyMap from "@/components/imoveis/PropertyMap";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
+import PropertyPreviewDrawer from "@/components/imoveis/PropertyPreviewDrawer";
 import FilterChip from "@/components/imoveis/FilterChip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
