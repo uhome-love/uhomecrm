@@ -300,12 +300,19 @@ Deno.serve(async (req) => {
       const currentTags: string[] = (existingLead.tags as string[]) || [];
       const newTags = [...new Set([...currentTags, ...tags])];
 
+      // Preserve existing observacoes — append instead of overwrite
+      const campaignObs = interesseBrevo
+        ? `${obsText} | Interesse: ${interesseBrevo}`
+        : obsText;
+      const existingObs = (existingLead.observacoes as string) || "";
+      const mergedObs = existingObs
+        ? `${existingObs}\n---\n${campaignObs}`
+        : campaignObs;
+
       const updateData: Record<string, unknown> = {
         tags: newTags,
         campanha: campanha,
-        observacoes: interesseBrevo
-          ? `${obsText} | Interesse: ${interesseBrevo}`
-          : obsText,
+        observacoes: mergedObs,
       };
       // Update name if we have one and existing is generic
       const bestNome = enrichedNome || nome || nameFromEmail(enrichedEmail || email);
