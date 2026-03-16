@@ -105,6 +105,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [tag, setTag] = useState("");
   const [stageId, setStageId] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("https://uhomeia.lovable.app/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1");
+  const [headerImageUrl, setHeaderImageUrl] = useState("");
   const [selectedListaIds, setSelectedListaIds] = useState<string[]>([]);
 
   const [eligibleLeads, setEligibleLeads] = useState<EligibleLead[]>([]);
@@ -171,6 +172,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
         templateParams: {
           body_params: ["nome"],
           button_url: redirectUrl || undefined,
+          header_image_url: headerImageUrl || undefined,
         },
         redirectUrl,
         filtros: { campanha, empreendimento, periodo, limite, origem, tag },
@@ -372,6 +374,10 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
             <div>
               <Label className="text-xs">URL de Rastreamento (botão)</Label>
               <Input value={redirectUrl} onChange={(e) => setRedirectUrl(e.target.value)} className="text-xs" />
+            </div>
+            <div>
+              <Label className="text-xs">URL da Imagem (header)</Label>
+              <Input value={headerImageUrl} onChange={(e) => setHeaderImageUrl(e.target.value)} placeholder="https://... (deixe vazio se não tiver)" className="text-xs" />
             </div>
 
             <Button onClick={handleCriar} disabled={eligibleLeads.length === 0 || createBatch.isPending} className="w-full bg-green-600 hover:bg-green-700 text-white">

@@ -121,18 +121,27 @@ serve(async (req) => {
             },
           };
 
-          // Add parameters if configured
+          // Add components
           const params = batch.template_params || {};
+          const components: any[] = [];
+
+          // Header image
+          if (params.header_image_url) {
+            components.push({
+              type: "header",
+              parameters: [{ type: "image", image: { link: params.header_image_url } }],
+            });
+          }
+
+          // Body params
           if (params.body_params) {
-            templateBody.template.components = [
-              {
-                type: "body",
-                parameters: (params.body_params as string[]).map((key: string) => ({
-                  type: "text",
-                  text: key === "nome" ? (send.nome || "Cliente") : String(key),
-                })),
-              },
-            ];
+            components.push({
+              type: "body",
+              parameters: (params.body_params as string[]).map((key: string) => ({
+                type: "text",
+                text: key === "nome" ? (send.nome || "Cliente") : String(key),
+              })),
+            });
           }
 
           // If template has button with URL tracking
@@ -141,17 +150,16 @@ serve(async (req) => {
               .replace("{{phone}}", phone)
               .replace("{{nome}}", encodeURIComponent(send.nome || ""));
 
-            const btnComponent: any = {
+            components.push({
               type: "button",
               sub_type: "url",
               index: "0",
               parameters: [{ type: "text", text: trackUrl }],
-            };
+            });
+          }
 
-            if (!templateBody.template.components) {
-              templateBody.template.components = [];
-            }
-            templateBody.template.components.push(btnComponent);
+          if (components.length > 0) {
+            templateBody.template.components = components;
           }
 
           // Send via WhatsApp Cloud API
@@ -292,16 +300,29 @@ serve(async (req) => {
         };
 
         const params = batch.template_params || {};
+        const components: any[] = [];
+
+        // Header image
+        if (params.header_image_url) {
+          components.push({
+            type: "header",
+            parameters: [{ type: "image", image: { link: params.header_image_url } }],
+          });
+        }
+
+        // Body params
         if (params.body_params) {
-          templateBody.template.components = [
-            {
-              type: "body",
-              parameters: (params.body_params as string[]).map((key: string) => ({
-                type: "text",
-                text: key === "nome" ? (send.nome || "Cliente") : String(key),
-              })),
-            },
-          ];
+          components.push({
+            type: "body",
+            parameters: (params.body_params as string[]).map((key: string) => ({
+              type: "text",
+              text: key === "nome" ? (send.nome || "Cliente") : String(key),
+            })),
+          });
+        }
+
+        if (components.length > 0) {
+          templateBody.template.components = components;
         }
 
         try {
