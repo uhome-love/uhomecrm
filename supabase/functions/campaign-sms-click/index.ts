@@ -300,12 +300,19 @@ Deno.serve(async (req) => {
       const currentTags: string[] = (existingLead.tags as string[]) || [];
       const newTags = [...new Set([...currentTags, ...tags])];
 
+      // Preserve existing observacoes — append instead of overwrite
+      const campaignObs = interesseBrevo
+        ? `${obsText} | Interesse: ${interesseBrevo}`
+        : obsText;
+      const existingObs = (existingLead.observacoes as string) || "";
+      const mergedObs = existingObs
+        ? `${existingObs}\n---\n${campaignObs}`
+        : campaignObs;
+
       const updateData: Record<string, unknown> = {
         tags: newTags,
         campanha: campanha,
-        observacoes: interesseBrevo
-          ? `${obsText} | Interesse: ${interesseBrevo}`
-          : obsText,
+        observacoes: mergedObs,
       };
       // Update name if we have one and existing is generic
       const bestNome = enrichedNome || nome || nameFromEmail(enrichedEmail || email);
@@ -341,6 +348,19 @@ Deno.serve(async (req) => {
         });
         log("info", "Corretor notified", { corretorId, leadId: existingLead.id });
       }
+
+      // ─── Add atividade to timeline so corretor sees in histórico ───
+      const canalLabel = canal === "email" ? "📧 Email" : canal === "sms" ? "📱 SMS" : "🟢 WhatsApp";
+      const interesseLabel = interesseBrevo ? ` | Interesse: ${interesseBrevo}` : "";
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: existingLead.id,
+        tipo: "email",
+        titulo: `${canalLabel} Campanha Melnick Day`,
+        descricao: `Lead clicou na campanha Melnick Day 2026 via ${canal}${blocoLabel}${interesseLabel}`,
+        data: new Date().toISOString().slice(0, 10),
+        status: "concluida",
+        responsavel_id: corretorId || null,
+      });
 
       // Log progression
       await supabase.from("lead_progressao").insert({
