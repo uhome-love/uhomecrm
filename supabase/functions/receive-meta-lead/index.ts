@@ -130,6 +130,14 @@ Deno.serve(async (req) => {
     let campaignName = v("campaign_name", "campaignName", "campanha");
     let message = v("message", "mensagem", "observacao");
     let platform = v("platform", "source", "origem") || "meta_ads";
+    // Detect Jetimob site leads: message pattern or explicit source
+    const isJetimobSite = (() => {
+      const p = platform.toLowerCase();
+      if (p.includes("jetimob") || p.includes("site_uhome") || p === "site") return true;
+      const msg = (message || "").toLowerCase();
+      if (msg.includes("site uhome") || msg.includes("uhome.com.br") || msg.includes("site uhome negócios")) return true;
+      return false;
+    })();
     let formName = v("form_name", "formName", "formulario");
     let adName = v("ad_name", "adName", "adId");
     let adsetName = v("adset_name", "adsetName", "adgroupId");
