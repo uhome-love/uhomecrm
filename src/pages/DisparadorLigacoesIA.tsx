@@ -39,6 +39,7 @@ const RESULT_FILTERS = [
 
 const CALL_STATUS: Record<string, { label: string; color: string; icon: typeof Phone }> = {
   waiting: { label: "Aguardando", color: "text-muted-foreground", icon: Clock },
+  initiated: { label: "Iniciada", color: "text-blue-500", icon: Phone },
   calling: { label: "Ligando...", color: "text-blue-500", icon: Phone },
   ringing: { label: "Chamando", color: "text-amber-500", icon: Phone },
   "in-progress": { label: "Em andamento", color: "text-emerald-500", icon: Bot },
