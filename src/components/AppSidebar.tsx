@@ -75,7 +75,7 @@ const homiMascot = "/images/homi-48.png";
 
 type NavItem = { title: string; url: string; icon: React.ComponentType<{ className?: string }> };
 
-const COLLAPSED_BY_DEFAULT = new Set(["Visão Geral", "Gestão de Leads", "Gestão de Vendas", "Performance", "Marketing", "Financeiro", "Operacional", "RH & Recepção", "Ferramentas", "Campanhas Comerciais"]);
+const COLLAPSED_BY_DEFAULT = new Set(["Visão Geral", "Gestão de Leads", "Gestão de Vendas", "Performance", "Marketing", "Financeiro", "RH & Recepção", "Ferramentas", "Campanhas Comerciais"]);
 
 function SidebarNavGroup({ label, items, badges, collapsed, index }: {
   label: string;
@@ -344,11 +344,13 @@ export function AppSidebar() {
             ],
           },
           {
-            label: "Operacional",
+            label: "Marketing",
             items: [
               { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
               { title: "Email Marketing", url: "/email-marketing", icon: MailCheck },
-              { title: "Tarefas & Marketing", url: "/backoffice/tarefas", icon: ClipboardCheck },
+              { title: "Disparo WhatsApp", url: "/disparador-whatsapp", icon: Phone },
+              { title: "Disparador Ligação IA", url: "/disparador-ligacoes-ia", icon: Phone },
+              { title: "Tarefas & Marketing (Ana)", url: "/backoffice/tarefas", icon: ClipboardCheck },
             ],
           },
           {
