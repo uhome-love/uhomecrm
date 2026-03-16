@@ -418,6 +418,30 @@ function EmailCampaignsTab() {
     setSending(null);
   };
 
+  const handlePause = async (id: string) => {
+    await updateCampaign(id, { status: "pausada" } as any);
+    toast.success("Campanha pausada");
+  };
+
+  const handleResume = async (id: string) => {
+    setSending(id);
+    await updateCampaign(id, { status: "enviando" } as any);
+    await sendCampaign(id);
+    setSending(null);
+  };
+
+  const handleResend = async (id: string) => {
+    // Reset errors back to pending
+    await supabase.from("email_campaign_recipients")
+      .update({ status: "pendente", erro: null } as any)
+      .eq("campaign_id", id)
+      .eq("status", "erro");
+    setSending(id);
+    await updateCampaign(id, { status: "enviando" } as any);
+    await sendCampaign(id);
+    setSending(null);
+  };
+
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   const STATUS_COLORS: Record<string, string> = { rascunho: "secondary", enviando: "default", enviada: "default", agendada: "outline" };
