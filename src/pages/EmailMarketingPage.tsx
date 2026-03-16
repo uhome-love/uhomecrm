@@ -219,51 +219,127 @@ function EmailTemplatesTab() {
 
 // ─── Campaigns Tab ───
 function EmailCampaignsTab() {
-  const { campaigns, loading, createCampaign, deleteCampaign, sendCampaign } = useEmailCampaigns();
+  const { campaigns, loading, createCampaign, deleteCampaign, sendCampaign, reload: reloadCampaigns } = useEmailCampaigns();
   const { templates } = useEmailTemplates();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [step, setStep] = useState<"info" | "segment" | "preview">("info");
   const [form, setForm] = useState({ nome: "", assunto: "", template_id: "", html_content: "" });
+  const [filters, setFilters] = useState({ empreendimento: "", origem: "", etapa: "", corretor: "", tags: "", temperatura: "" });
+  const [previewLeads, setPreviewLeads] = useState<any[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
+  const [addingRecipients, setAddingRecipients] = useState(false);
 
-  if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  // Filter options
+  const [filterOptions, setFilterOptions] = useState<{
+    empreendimentos: string[]; origens: string[]; corretores: { id: string; nome: string }[]; temperaturas: string[];
+  }>({ empreendimentos: [], origens: [], corretores: [], temperaturas: [] });
+
+  useEffect(() => {
+    (async () => {
+      const [empRes, origRes, corrRes] = await Promise.all([
+        supabase.from("pipeline_leads").select("empreendimento").not("empreendimento", "is", null) as any,
+        supabase.from("pipeline_leads").select("origem").not("origem", "is", null) as any,
+        supabase.from("profiles").select("id, nome").order("nome") as any,
+      ]);
+      const emps = [...new Set((empRes.data || []).map((r: any) => r.empreendimento).filter(Boolean))].sort() as string[];
+      const origs = [...new Set((origRes.data || []).map((r: any) => r.origem).filter(Boolean))].sort() as string[];
+      setFilterOptions({
+        empreendimentos: emps,
+        origens: origs,
+        corretores: (corrRes.data || []),
+        temperaturas: ["quente", "morno", "frio"],
+      });
+    })();
+  }, []);
+
+  const searchLeads = useCallback(async () => {
+    setLoadingLeads(true);
+    let query = supabase.from("pipeline_leads").select("id, nome, email, telefone, empreendimento, origem, temperatura, corretor_id") as any;
+    query = query.not("email", "is", null).neq("email", "");
+    if (filters.empreendimento) query = query.eq("empreendimento", filters.empreendimento);
+    if (filters.origem) query = query.eq("origem", filters.origem);
+    if (filters.corretor) query = query.eq("corretor_id", filters.corretor);
+    if (filters.temperatura) query = query.eq("temperatura", filters.temperatura);
+    query = query.order("created_at", { ascending: false }).limit(500);
+    const { data } = await query;
+
+    // Filter out suppressed emails
+    const emails = (data || []).map((l: any) => l.email).filter(Boolean);
+    let suppressedEmails: string[] = [];
+    if (emails.length > 0) {
+      const { data: suppressed } = await supabase.from("email_suppression_list").select("email").in("email", emails) as any;
+      suppressedEmails = (suppressed || []).map((s: any) => s.email);
+    }
+
+    const filtered = (data || []).filter((l: any) => l.email && !suppressedEmails.includes(l.email));
+    setPreviewLeads(filtered);
+    setLoadingLeads(false);
+  }, [filters]);
 
   const handleCreate = async () => {
     if (!form.nome || !form.assunto) { toast.error("Nome e assunto obrigatórios"); return; }
+    setStep("segment");
+  };
+
+  const handleConfirmSegment = async () => {
+    await searchLeads();
+    setStep("preview");
+  };
+
+  const handleFinalCreate = async () => {
+    if (previewLeads.length === 0) { toast.error("Nenhum lead com email encontrado"); return; }
+    setAddingRecipients(true);
     const tpl = templates.find(t => t.id === form.template_id);
-    const result = await createCampaign({
+    const campaign = await createCampaign({
       nome: form.nome,
       assunto: form.assunto,
       template_id: form.template_id || null,
       html_content: form.html_content || tpl?.html_content || "",
+      filtros: filters,
+      total_destinatarios: previewLeads.length,
     } as any);
-    if (result) setDialogOpen(false);
+
+    if (campaign) {
+      // Insert recipients in batches
+      const batchSize = 100;
+      for (let i = 0; i < previewLeads.length; i += batchSize) {
+        const batch = previewLeads.slice(i, i + batchSize).map(l => ({
+          campaign_id: campaign.id,
+          lead_id: l.id,
+          email: l.email,
+          nome: l.nome,
+          variaveis: { nome: l.nome || "", empreendimento: l.empreendimento || "", origem: l.origem || "" },
+        }));
+        await supabase.from("email_campaign_recipients").insert(batch as any);
+      }
+      toast.success(`${previewLeads.length} destinatários adicionados`);
+      setDialogOpen(false);
+      setStep("info");
+      reloadCampaigns();
+    }
+    setAddingRecipients(false);
   };
 
   const handleSend = async (id: string) => {
+    // Check recipients count
+    const { count } = await supabase.from("email_campaign_recipients").select("id", { count: "exact", head: true }).eq("campaign_id", id).eq("status", "pendente") as any;
+    if (!count || count === 0) { toast.error("Campanha sem destinatários pendentes"); return; }
     setSending(id);
     await sendCampaign(id);
     setSending(null);
   };
 
-  const STATUS_COLORS: Record<string, string> = {
-    rascunho: "secondary",
-    enviando: "default",
-    enviada: "default",
-    agendada: "outline",
-  };
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
-  const STATUS_LABELS: Record<string, string> = {
-    rascunho: "Rascunho",
-    enviando: "Enviando...",
-    enviada: "Enviada",
-    agendada: "Agendada",
-  };
+  const STATUS_COLORS: Record<string, string> = { rascunho: "secondary", enviando: "default", enviada: "default", agendada: "outline" };
+  const STATUS_LABELS: Record<string, string> = { rascunho: "Rascunho", enviando: "Enviando...", enviada: "Enviada", agendada: "Agendada" };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{campaigns.length} campanhas</p>
-        <Button size="sm" onClick={() => { setForm({ nome: "", assunto: "", template_id: "", html_content: "" }); setDialogOpen(true); }} className="gap-1">
+        <Button size="sm" onClick={() => { setForm({ nome: "", assunto: "", template_id: "", html_content: "" }); setFilters({ empreendimento: "", origem: "", etapa: "", corretor: "", tags: "", temperatura: "" }); setPreviewLeads([]); setStep("info"); setDialogOpen(true); }} className="gap-1">
           <Plus className="h-4 w-4" /> Nova Campanha
         </Button>
       </div>
@@ -284,6 +360,9 @@ function EmailCampaignsTab() {
                     <Badge variant={STATUS_COLORS[c.status] as any || "secondary"} className="text-[10px]">
                       {STATUS_LABELS[c.status] || c.status}
                     </Badge>
+                    {c.total_destinatarios > 0 && (
+                      <Badge variant="outline" className="text-[10px]">{c.total_destinatarios} dest.</Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">Assunto: {c.assunto}</p>
                   {c.status === "enviada" && (
@@ -317,37 +396,148 @@ function EmailCampaignsTab() {
         </div>
       )}
 
+      {/* Campaign Wizard Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Nova Campanha</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <Label className="text-xs">Nome da campanha</Label>
-              <Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Assunto</Label>
-              <Input value={form.assunto} onChange={e => setForm(p => ({ ...p, assunto: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Template (opcional)</Label>
-              <Select value={form.template_id} onValueChange={v => setForm(p => ({ ...p, template_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione um template" /></SelectTrigger>
-                <SelectContent>
-                  {templates.filter(t => t.ativo).map(t => (
-                    <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {!form.template_id && (
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {step === "info" && "1/3 · Dados da Campanha"}
+              {step === "segment" && "2/3 · Segmentação de Leads"}
+              {step === "preview" && "3/3 · Confirmar Destinatários"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {step === "info" && (
+            <div className="space-y-4">
               <div className="space-y-1">
-                <Label className="text-xs">HTML do email</Label>
-                <Textarea value={form.html_content} onChange={e => setForm(p => ({ ...p, html_content: e.target.value }))} rows={8} className="font-mono text-xs" />
+                <Label className="text-xs">Nome da campanha</Label>
+                <Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Melnick Day - Março" />
               </div>
-            )}
-            <Button onClick={handleCreate} className="w-full">Criar campanha</Button>
-          </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Assunto do email</Label>
+                <Input value={form.assunto} onChange={e => setForm(p => ({ ...p, assunto: e.target.value }))} placeholder="Ex: 🏠 Oportunidade exclusiva para você!" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Template</Label>
+                <Select value={form.template_id} onValueChange={v => setForm(p => ({ ...p, template_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um template" /></SelectTrigger>
+                  <SelectContent>
+                    {templates.filter(t => t.ativo).map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {!form.template_id && (
+                <div className="space-y-1">
+                  <Label className="text-xs">HTML do email</Label>
+                  <Textarea value={form.html_content} onChange={e => setForm(p => ({ ...p, html_content: e.target.value }))} rows={8} className="font-mono text-xs" />
+                </div>
+              )}
+              <Button onClick={handleCreate} className="w-full">Próximo → Segmentação</Button>
+            </div>
+          )}
+
+          {step === "segment" && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">Filtre os leads que receberão o email. Apenas leads com email serão incluídos. Suprimidos (bounce/unsub) são excluídos automaticamente.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Empreendimento</Label>
+                  <Select value={filters.empreendimento} onValueChange={v => setFilters(p => ({ ...p, empreendimento: v === "_all" ? "" : v }))}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_all">Todos</SelectItem>
+                      {filterOptions.empreendimentos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Origem</Label>
+                  <Select value={filters.origem} onValueChange={v => setFilters(p => ({ ...p, origem: v === "_all" ? "" : v }))}>
+                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_all">Todas</SelectItem>
+                      {filterOptions.origens.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Corretor</Label>
+                  <Select value={filters.corretor} onValueChange={v => setFilters(p => ({ ...p, corretor: v === "_all" ? "" : v }))}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_all">Todos</SelectItem>
+                      {filterOptions.corretores.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Temperatura</Label>
+                  <Select value={filters.temperatura} onValueChange={v => setFilters(p => ({ ...p, temperatura: v === "_all" ? "" : v }))}>
+                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_all">Todas</SelectItem>
+                      {filterOptions.temperaturas.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep("info")} className="flex-1">← Voltar</Button>
+                <Button onClick={handleConfirmSegment} className="flex-1" disabled={loadingLeads}>
+                  {loadingLeads ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar leads →"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === "preview" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="default" className="text-sm px-3 py-1">
+                  {previewLeads.length} leads encontrados
+                </Badge>
+                <p className="text-xs text-muted-foreground">com email válido, sem supressão</p>
+              </div>
+
+              {previewLeads.length > 0 && (
+                <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50 sticky top-0">
+                      <tr>
+                        <th className="text-left p-2 font-medium">Nome</th>
+                        <th className="text-left p-2 font-medium">Email</th>
+                        <th className="text-left p-2 font-medium">Empreendimento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewLeads.slice(0, 50).map(l => (
+                        <tr key={l.id} className="border-t">
+                          <td className="p-2">{l.nome || "—"}</td>
+                          <td className="p-2 text-muted-foreground">{l.email}</td>
+                          <td className="p-2 text-muted-foreground">{l.empreendimento || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {previewLeads.length > 50 && (
+                    <p className="text-center text-xs text-muted-foreground py-2">
+                      ...e mais {previewLeads.length - 50} leads
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep("segment")} className="flex-1">← Filtros</Button>
+                <Button onClick={handleFinalCreate} className="flex-1" disabled={addingRecipients || previewLeads.length === 0}>
+                  {addingRecipients ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                  Criar campanha com {previewLeads.length} destinatários
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
