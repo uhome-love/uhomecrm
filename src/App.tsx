@@ -118,6 +118,7 @@ const MelnickDayLanding = lazyRetry(() => import("./pages/MelnickDayLanding"));
 const WhatsAppLanding = lazyRetry(() => import("./pages/WhatsAppLanding"));
 const CampaignAnalyticsPage = lazyRetry(() => import("./pages/CampaignAnalyticsPage"));
 const ImportBrevoContacts = lazyRetry(() => import("./pages/ImportBrevoContacts"));
+const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const WhatsAppCampaignDispatcher = lazyRetry(() => import("./pages/WhatsAppCampaignDispatcherPage"));
 const EmailMarketingPage = lazyRetry(() => import("./pages/EmailMarketingPage"));
 
