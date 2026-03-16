@@ -401,6 +401,8 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
                   setTemplateName(val);
                   const defaultImg = TEMPLATE_DEFAULT_IMAGES[val];
                   if (defaultImg) setHeaderImageUrl(defaultImg);
+                  const defaultUrl = TEMPLATE_DEFAULT_URLS[val];
+                  if (defaultUrl) setRedirectUrl(defaultUrl);
                 }}
               >
                 <option value="melnick_day_poa_2026">melnick_day_poa_2026 (botão estático)</option>
