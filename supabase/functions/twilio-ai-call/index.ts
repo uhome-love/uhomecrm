@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
       };
     }
 
-    console.info("[twilio-ai-call] Outbound payload:", JSON.stringify(outboundPayload));
+    console.info("[twilio-ai-call] v3 Outbound payload:", JSON.stringify(outboundPayload));
 
     const response = await fetch("https://api.elevenlabs.io/v1/convai/twilio/outbound-call", {
       method: "POST",
