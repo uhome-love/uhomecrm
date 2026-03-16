@@ -52,8 +52,8 @@ serve(async (req) => {
         });
       }
 
-      // Get pending sends for this batch (limit by batch_size)
-      const limit = batch.batch_size || 500;
+      // Get pending sends for this batch (limit to 80 to fit in edge function timeout)
+      const limit = Math.min(batch.batch_size || 80, 80);
       const { data: sends, error: sendsErr } = await supabase
         .from("whatsapp_campaign_sends")
         .select("*")
