@@ -487,24 +487,6 @@ function CampanhasTab({ selectedBatchId, onSelect }: { selectedBatchId: string |
 
   const selectedBatch = batches.find((b) => b.id === selectedBatchId);
 
-  // Calculate live counters from sends data instead of stale batch columns
-  const liveCounts = useMemo(() => {
-    if (!sends.length) return null;
-    const counts = { sent: 0, delivered: 0, read: 0, replied: 0, clicked: 0, aproveitado: 0, failed: 0, skipped: 0, pending: 0 };
-    for (const s of sends) {
-      const st = s.status_envio;
-      if (st === "sent") counts.sent++;
-      else if (st === "delivered") { counts.sent++; counts.delivered++; }
-      else if (st === "read") { counts.sent++; counts.delivered++; counts.read++; }
-      else if (st === "replied") { counts.sent++; counts.delivered++; counts.read++; counts.replied++; }
-      else if (st === "clicked") { counts.sent++; counts.delivered++; counts.clicked++; }
-      else if (st === "aproveitado") { counts.sent++; counts.delivered++; counts.aproveitado++; }
-      else if (st === "failed") counts.failed++;
-      else if (st === "skipped") counts.skipped++;
-      else if (st === "pending") counts.pending++;
-    }
-    return counts;
-  }, [sends]);
 
   const handleDispatch = (batchId: string) => {
     dispatchBatch.mutate({ batchId, action: "dispatch" });
