@@ -507,6 +507,23 @@ Deno.serve(async (req) => {
     L.info("Lead created", { leadId: insertedLead.id, name, empreendimento, campaignId, propertyCode });
     logOps("info", "business", "Lead created via Meta Ads", { lead_id: insertedLead.id, name, empreendimento, campaign_id: campaignId });
 
+    // ── Register entry activity with form info ──
+    const entradaParts: string[] = [];
+    const plataformaLabel = isJetimobSite ? "Site Uhome" : (platform || "Meta Ads");
+    entradaParts.push(plataformaLabel);
+    if (formName) entradaParts.push(`Formulário: ${formName}`);
+    if (campaignName && campaignName !== formName) entradaParts.push(`Campanha: ${campaignName}`);
+    if (empreendimento) entradaParts.push(`Empreendimento: ${empreendimento}`);
+
+    await supabase.from("pipeline_atividades").insert({
+      pipeline_lead_id: insertedLead.id,
+      tipo: "entrada",
+      titulo: `Lead gerado via ${plataformaLabel}${formName ? ` — ${formName}` : ""}`,
+      descricao: entradaParts.join(" • "),
+      status: "concluida",
+      created_by: "00000000-0000-0000-0000-000000000000",
+    }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
+
     // ── Auto-distribute via roleta (with retry) ──
     const distributed = await distributeWithRetry(supabaseUrl, serviceKey, insertedLead.id, traceId, L);
     if (!distributed) {

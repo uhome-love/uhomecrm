@@ -59,6 +59,7 @@ const ATIVIDADE_TIPOS: Record<string, { label: string; icon: any }> = {
   pendencia_doc: { label: "📋 Pendência doc", icon: ClipboardList },
   email: { label: "✉️ Email", icon: Send },
   nao_atendeu: { label: "❌ Não atendeu", icon: PhoneCall },
+  entrada: { label: "🟢 Lead entrou", icon: Plus },
 };
 
 interface TimelineItem {

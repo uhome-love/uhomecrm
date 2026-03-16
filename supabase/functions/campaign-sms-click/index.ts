@@ -498,6 +498,20 @@ Deno.serve(async (req) => {
 
     log("info", "Lead created", { leadId: newLead.id });
 
+    // ── Register entry activity with campaign info ──
+    const entradaParts: string[] = [];
+    entradaParts.push(origem || canal || "Campanha");
+    if (campanha) entradaParts.push(`Campanha: ${campanha}`);
+
+    await supabase.from("pipeline_atividades").insert({
+      pipeline_lead_id: newLead.id,
+      tipo: "entrada",
+      titulo: `Lead gerado via ${origem || canal}${campanha ? ` — ${campanha}` : ""}`,
+      descricao: entradaParts.join(" • "),
+      status: "concluida",
+      created_by: "00000000-0000-0000-0000-000000000000",
+    }).then(() => {}).catch(() => {});
+
     // Distribute via roleta
     try {
       await fetch(`${supabaseUrl}/functions/v1/distribute-lead`, {
