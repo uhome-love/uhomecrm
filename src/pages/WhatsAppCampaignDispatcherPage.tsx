@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import {
   useCampaignBatches,
   useCampaignSends,
+  useCampaignSendCounts,
   useFetchEligibleLeads,
   useFetchOAEligibleLeads,
   useCreateCampaignBatch,
@@ -480,10 +481,12 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
 function CampanhasTab({ selectedBatchId, onSelect }: { selectedBatchId: string | null; onSelect: (id: string | null) => void }) {
   const { data: batches = [], isLoading } = useCampaignBatches();
   const { data: sends = [] } = useCampaignSends(selectedBatchId);
+  const { data: liveCounts } = useCampaignSendCounts(selectedBatchId);
   const dispatchBatch = useDispatchBatch();
   const updateStatus = useUpdateBatchStatus();
 
   const selectedBatch = batches.find((b) => b.id === selectedBatchId);
+
 
   const handleDispatch = (batchId: string) => {
     dispatchBatch.mutate({ batchId, action: "dispatch" });
@@ -598,13 +601,13 @@ function CampanhasTab({ selectedBatchId, onSelect }: { selectedBatchId: string |
             <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-4">
               {[
                 { label: "Total", value: selectedBatch.total_leads, icon: "📋" },
-                { label: "Enviados", value: selectedBatch.total_sent, icon: "✅" },
-                { label: "Entregues", value: selectedBatch.total_delivered, icon: "📬" },
-                { label: "Lidos", value: selectedBatch.total_read, icon: "👁" },
-                { label: "Respondidos", value: selectedBatch.total_replied, icon: "💬" },
-                { label: "Clicados", value: selectedBatch.total_clicked, icon: "🔗" },
-                { label: "Aproveitados", value: selectedBatch.total_aproveitado, icon: "🎯" },
-                { label: "Falhas", value: selectedBatch.total_failed, icon: "❌" },
+                { label: "Enviados", value: liveCounts?.sent ?? selectedBatch.total_sent, icon: "✅" },
+                { label: "Entregues", value: liveCounts?.delivered ?? selectedBatch.total_delivered, icon: "📬" },
+                { label: "Lidos", value: liveCounts?.read ?? selectedBatch.total_read, icon: "👁" },
+                { label: "Respondidos", value: liveCounts?.replied ?? selectedBatch.total_replied, icon: "💬" },
+                { label: "Clicados", value: liveCounts?.clicked ?? selectedBatch.total_clicked, icon: "🔗" },
+                { label: "Aproveitados", value: liveCounts?.aproveitado ?? selectedBatch.total_aproveitado, icon: "🎯" },
+                { label: "Falhas", value: liveCounts?.failed ?? selectedBatch.total_failed, icon: "❌" },
               ].map((m) => (
                 <div key={m.label} className="text-center p-2 rounded-lg bg-muted/50">
                   <span className="text-lg">{m.icon}</span>

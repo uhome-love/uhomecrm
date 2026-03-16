@@ -97,10 +97,65 @@ export function useCampaignSends(batchId: string | null) {
         .from("whatsapp_campaign_sends" as any)
         .select("*")
         .eq("batch_id", batchId)
-        .order("created_at")
-        .limit(1000);
+        .neq("status_envio", "pending")
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (error) throw error;
       return (data || []) as unknown as CampaignSend[];
+    },
+    enabled: !!batchId,
+    refetchInterval: 5000,
+  });
+}
+
+/* ─── Live count of sends by status ─── */
+export interface BatchCounts {
+  total: number;
+  sent: number;
+  delivered: number;
+  read: number;
+  replied: number;
+  clicked: number;
+  aproveitado: number;
+  failed: number;
+  pending: number;
+  skipped: number;
+}
+
+export function useCampaignSendCounts(batchId: string | null) {
+  return useQuery({
+    queryKey: ["wa-campaign-send-counts", batchId],
+    queryFn: async (): Promise<BatchCounts> => {
+      if (!batchId) return { total: 0, sent: 0, delivered: 0, read: 0, replied: 0, clicked: 0, aproveitado: 0, failed: 0, pending: 0, skipped: 0 };
+      
+      const statuses = ["sent", "delivered", "read", "replied", "clicked", "aproveitado", "failed", "pending", "skipped"] as const;
+      const counts: Record<string, number> = {};
+      let total = 0;
+
+      await Promise.all(
+        statuses.map(async (status) => {
+          const { count, error } = await supabase
+            .from("whatsapp_campaign_sends" as any)
+            .select("id", { count: "exact", head: true })
+            .eq("batch_id", batchId)
+            .eq("status_envio", status);
+          counts[status] = error ? 0 : (count || 0);
+          total += counts[status];
+        })
+      );
+
+      return {
+        total,
+        sent: counts.sent || 0,
+        delivered: counts.delivered || 0,
+        read: counts.read || 0,
+        replied: counts.replied || 0,
+        clicked: counts.clicked || 0,
+        aproveitado: counts.aproveitado || 0,
+        failed: counts.failed || 0,
+        pending: counts.pending || 0,
+        skipped: counts.skipped || 0,
+      };
     },
     enabled: !!batchId,
     refetchInterval: 5000,
