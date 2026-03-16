@@ -133,11 +133,21 @@ Deno.serve(async (req) => {
     // Detect Jetimob site leads: message pattern or explicit source
     const isJetimobSite = (() => {
       const p = platform.toLowerCase();
-      if (p.includes("jetimob") || p.includes("site_uhome") || p === "site") return true;
+      if (p.includes("jetimob") || p.includes("site_uhome") || p.includes("uhome.com") || p === "site") return true;
       const msg = (message || "").toLowerCase();
       if (msg.includes("site uhome") || msg.includes("uhome.com.br") || msg.includes("site uhome negócios")) return true;
       return false;
     })();
+
+    // Extract property code from "imovel_referencia" field (e.g. "18273-BT - Venda")
+    let imovelReferencia = v("imovel_referencia", "imovel_ref", "property_ref");
+    if (!imovelReferencia && body.data && typeof body.data === "object") {
+      imovelReferencia = extractStr(body.data.imovel_referencia) || extractStr(body.data.imovel_ref);
+    }
+    if (imovelReferencia && !propertyCode) {
+      // Extract just the code part: "18273-BT - Venda" → "18273-BT"
+      propertyCode = imovelReferencia.split(/\s*-\s*(?:Venda|Locação|Aluguel)/i)[0].trim() || imovelReferencia;
+    }
     let formName = v("form_name", "formName", "formulario");
     let adName = v("ad_name", "adName", "adId");
     let adsetName = v("adset_name", "adsetName", "adgroupId");

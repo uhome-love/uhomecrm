@@ -27,7 +27,7 @@ function getCampaignLabel(origem?: string | null, campanha?: string | null) {
   if (!origem && !campanha) return null;
   const o = origem?.toLowerCase() || "";
   const c = campanha?.toLowerCase() || "";
-  if (o.includes("site_uhome") || o.includes("jetimob") || o === "site") {
+  if (o.includes("site_uhome") || o.includes("jetimob") || o.includes("uhome.com") || o === "site") {
     return "🌐 Site Uhome";
   }
   if (o.includes("brevo_email") || o.includes("email")) {

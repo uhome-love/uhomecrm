@@ -31,7 +31,7 @@ function getCampaignBadge(origem?: string | null, campanha?: string | null) {
   const o = origem?.toLowerCase() || "";
   const c = campanha?.toLowerCase() || "";
 
-  if (o.includes("site_uhome") || o.includes("jetimob") || o === "site") {
+  if (o.includes("site_uhome") || o.includes("jetimob") || o.includes("uhome.com") || o === "site") {
     return { label: "🌐 Site Uhome", className: "border-indigo-300 text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 dark:text-indigo-400" };
   }
   if (o.includes("brevo_email") || o.includes("email")) {
