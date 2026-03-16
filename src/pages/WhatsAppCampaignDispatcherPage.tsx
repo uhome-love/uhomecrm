@@ -90,6 +90,11 @@ export default function WhatsAppCampaignDispatcherPage() {
   );
 }
 
+/* ─── Template default images ─── */
+const TEMPLATE_DEFAULT_IMAGES: Record<string, string> = {
+  melnick_day_poa_2026: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
+};
+
 /* ─── Tab: Nova Campanha ─── */
 function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [nome, setNome] = useState("");
@@ -105,7 +110,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [tag, setTag] = useState("");
   const [stageId, setStageId] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("https://uhomeia.lovable.app/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1");
-  const [headerImageUrl, setHeaderImageUrl] = useState("");
+  const [headerImageUrl, setHeaderImageUrl] = useState(TEMPLATE_DEFAULT_IMAGES["melnick_day_poa_2026"] || "");
   const [selectedListaIds, setSelectedListaIds] = useState<string[]>([]);
 
   const [eligibleLeads, setEligibleLeads] = useState<EligibleLead[]>([]);
@@ -376,7 +381,12 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
           <CardContent className="space-y-3">
             <div>
               <Label className="text-xs">Template Name (Meta)</Label>
-              <Input value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="melnick_day_poa_2026" />
+              <Input value={templateName} onChange={(e) => {
+                const val = e.target.value;
+                setTemplateName(val);
+                const defaultImg = TEMPLATE_DEFAULT_IMAGES[val];
+                if (defaultImg) setHeaderImageUrl(defaultImg);
+              }} placeholder="melnick_day_poa_2026" />
             </div>
             <div>
               <Label className="text-xs">Idioma</Label>
