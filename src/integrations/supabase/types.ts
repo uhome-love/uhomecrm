@@ -361,6 +361,71 @@ export type Database = {
           },
         ]
       }
+      ai_calls: {
+        Row: {
+          agent_id: string | null
+          contexto: string | null
+          created_at: string
+          duracao_segundos: number | null
+          empreendimento: string | null
+          finalizado_at: string | null
+          id: string
+          iniciado_por: string
+          lead_id: string | null
+          nome_lead: string | null
+          resultado: string | null
+          resumo_ia: string | null
+          status: string
+          telefone: string
+          twilio_call_sid: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          contexto?: string | null
+          created_at?: string
+          duracao_segundos?: number | null
+          empreendimento?: string | null
+          finalizado_at?: string | null
+          id?: string
+          iniciado_por: string
+          lead_id?: string | null
+          nome_lead?: string | null
+          resultado?: string | null
+          resumo_ia?: string | null
+          status?: string
+          telefone: string
+          twilio_call_sid?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          contexto?: string | null
+          created_at?: string
+          duracao_segundos?: number | null
+          empreendimento?: string | null
+          finalizado_at?: string | null
+          id?: string
+          iniciado_por?: string
+          lead_id?: string | null
+          nome_lead?: string | null
+          resultado?: string | null
+          resumo_ia?: string | null
+          status?: string
+          telefone?: string
+          twilio_call_sid?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anuncio_materiais: {
         Row: {
           created_at: string
