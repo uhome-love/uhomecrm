@@ -477,14 +477,22 @@ function EmailCampaignsTab() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">Assunto: {c.assunto}</p>
-                  {c.status === "enviada" && (
+                  {(c.status === "enviada" || c.status === "enviando" || c.status === "pausada") && (
                     <div className="flex gap-4 text-[11px] text-muted-foreground mt-2">
                       <span>📤 {c.total_enviados} enviados</span>
-                      <span>📬 {c.total_entregues} entregues</span>
-                      <span>👁 {c.total_aberturas} aberturas</span>
-                      <span>🔗 {c.total_cliques} cliques</span>
-                      <span>⛔ {c.total_bounces} bounces</span>
-                      <span>🚫 {c.total_unsubscribes} unsub</span>
+                      {c.total_erros > 0 && <span>❌ {c.total_erros} erros</span>}
+                      {c.status !== "enviada" && (
+                        <span>⏳ {c.total_destinatarios - (c.total_enviados || 0) - (c.total_erros || 0)} pendentes</span>
+                      )}
+                      {c.status === "enviada" && (
+                        <>
+                          <span>📬 {c.total_entregues} entregues</span>
+                          <span>👁 {c.total_aberturas} aberturas</span>
+                          <span>🔗 {c.total_cliques} cliques</span>
+                          <span>⛔ {c.total_bounces} bounces</span>
+                          <span>🚫 {c.total_unsubscribes} unsub</span>
+                        </>
+                      )}
                     </div>
                   )}
                   <p className="text-[10px] text-muted-foreground">
