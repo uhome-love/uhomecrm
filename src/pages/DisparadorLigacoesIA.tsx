@@ -554,11 +554,21 @@ export default function DisparadorLigacoesIA() {
                         key={i}
                         className="flex items-center justify-between text-sm p-2 rounded bg-muted/20 border border-border"
                       >
-                        <div className="flex items-center gap-2">
-                          <StIcon className={`h-3.5 w-3.5 ${st.color}`} />
-                          <span>{r.lead.nome}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <StIcon className={`h-3.5 w-3.5 shrink-0 ${st.color}`} />
+                          <span className="truncate">{r.lead.nome}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
+                          {r.duration != null && r.duration > 0 && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {Math.floor(r.duration / 60)}:{String(r.duration % 60).padStart(2, '0')}
+                            </span>
+                          )}
+                          {r.resultado && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {r.resultado}
+                            </Badge>
+                          )}
                           <Badge variant="outline" className="text-[10px]">
                             {st.label}
                           </Badge>
