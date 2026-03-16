@@ -481,6 +481,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
 function CampanhasTab({ selectedBatchId, onSelect }: { selectedBatchId: string | null; onSelect: (id: string | null) => void }) {
   const { data: batches = [], isLoading } = useCampaignBatches();
   const { data: sends = [] } = useCampaignSends(selectedBatchId);
+  const { data: liveCounts } = useCampaignSendCounts(selectedBatchId);
   const dispatchBatch = useDispatchBatch();
   const updateStatus = useUpdateBatchStatus();
 
