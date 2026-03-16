@@ -19,6 +19,7 @@ import {
   useFetchOAEligibleLeads,
   useCreateCampaignBatch,
   useDispatchBatch,
+  useDispatchBatchLoop,
   useUpdateBatchStatus,
   type EligibleLead,
   type CampaignBatch,
