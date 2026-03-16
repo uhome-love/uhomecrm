@@ -927,6 +927,14 @@ export default function CeoDashboard() {
         </Card>
       </div>
 
+      {/* ─── SEÇÃO 7.5: DISCAGEM IA ─── */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
+          <Phone className="h-4 w-4" /> Discagem Automática IA
+        </h2>
+        <AiCallPanel />
+      </div>
+
       {/* ─── SEÇÃO 8: RELATÓRIO DO DIA ─── */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
