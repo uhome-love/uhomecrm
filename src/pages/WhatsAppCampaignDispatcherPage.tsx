@@ -225,7 +225,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
                   <p className="text-sm text-muted-foreground">Nenhuma lista encontrada</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-auto">
-                    {oaListas.filter(l => l.status === "ativa").map((lista) => (
+                    {oaListas.filter(l => ["ativa", "liberada"].includes(l.status)).map((lista) => (
                       <label
                         key={lista.id}
                         className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
