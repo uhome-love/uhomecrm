@@ -8,18 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Send, Pause, Play, XCircle, RefreshCw, TestTube, Rocket, Filter, BarChart3, List, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Send, Pause, Play, XCircle, RefreshCw, TestTube, Rocket, Filter, BarChart3, List, CheckCircle2, AlertTriangle, Database, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCampaignBatches,
   useCampaignSends,
   useFetchEligibleLeads,
+  useFetchOAEligibleLeads,
   useCreateCampaignBatch,
   useDispatchBatch,
   useUpdateBatchStatus,
   type EligibleLead,
   type CampaignBatch,
 } from "@/hooks/useWhatsAppCampaign";
+import { useOAListas } from "@/hooks/useOfertaAtiva";
 
 /* ─── Status config ─── */
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -90,6 +93,7 @@ export default function WhatsAppCampaignDispatcherPage() {
 /* ─── Tab: Nova Campanha ─── */
 function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [nome, setNome] = useState("");
+  const [fonte, setFonte] = useState<"pipeline" | "oferta_ativa">("pipeline");
   const [campanha, setCampanha] = useState("melnick_day_2026");
   const [empreendimento, setEmpreendimento] = useState("");
   const [templateName, setTemplateName] = useState("melnick_day_poa_2026");
@@ -101,31 +105,53 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [tag, setTag] = useState("");
   const [stageId, setStageId] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("https://uhomeia.lovable.app/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1");
+  const [selectedListaIds, setSelectedListaIds] = useState<string[]>([]);
 
   const [eligibleLeads, setEligibleLeads] = useState<EligibleLead[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const fetchLeads = useFetchEligibleLeads();
+  const fetchOALeads = useFetchOAEligibleLeads();
   const createBatch = useCreateCampaignBatch();
+  const { listas: oaListas } = useOAListas();
+
+  const toggleListaId = (id: string) => {
+    setSelectedListaIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const handleBuscar = () => {
-    fetchLeads.mutate(
-      {
-        campanha: campanha || undefined,
-        empreendimento: empreendimento || undefined,
-        periodosDias: parseInt(periodo) || 90,
-        limite: parseInt(limite) || 3000,
-        origem: origem || undefined,
-        tag: tag || undefined,
-        stageId: stageId || undefined,
-      },
-      {
-        onSuccess: (leads) => {
-          setEligibleLeads(leads);
-          toast.success(`${leads.length} leads elegíveis encontrados`);
+    if (fonte === "oferta_ativa") {
+      if (selectedListaIds.length === 0) return toast.error("Selecione ao menos uma lista da Oferta Ativa");
+      fetchOALeads.mutate(
+        { listaIds: selectedListaIds, limite: parseInt(limite) || 3000 },
+        {
+          onSuccess: (leads) => {
+            setEligibleLeads(leads);
+            toast.success(`${leads.length} leads da OA (fora do pipeline) encontrados`);
+          },
+        }
+      );
+    } else {
+      fetchLeads.mutate(
+        {
+          campanha: campanha || undefined,
+          empreendimento: empreendimento || undefined,
+          periodosDias: parseInt(periodo) || 90,
+          limite: parseInt(limite) || 3000,
+          origem: origem || undefined,
+          tag: tag || undefined,
+          stageId: stageId || undefined,
         },
-      }
-    );
+        {
+          onSuccess: (leads) => {
+            setEligibleLeads(leads);
+            toast.success(`${leads.length} leads elegíveis encontrados`);
+          },
+        }
+      );
+    }
   };
 
   const handleCriar = () => {
@@ -171,7 +197,84 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {/* Source selector */}
+            <div className="flex gap-2">
+              <Button
+                variant={fonte === "pipeline" ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setFonte("pipeline"); setEligibleLeads([]); }}
+                className="gap-1.5"
+              >
+                <Database className="h-3.5 w-3.5" /> Pipeline Leads
+              </Button>
+              <Button
+                variant={fonte === "oferta_ativa" ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setFonte("oferta_ativa"); setEligibleLeads([]); }}
+                className="gap-1.5"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" /> Oferta Ativa (fora do pipeline)
+              </Button>
+            </div>
+
+            {fonte === "oferta_ativa" ? (
+              /* OA Lista picker */
+              <div className="space-y-3">
+                <Label className="text-xs font-medium">Selecione as listas da Oferta Ativa</Label>
+                {oaListas.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma lista encontrada</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-auto">
+                    {oaListas.filter(l => l.status === "ativa").map((lista) => (
+                      <label
+                        key={lista.id}
+                        className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                          selectedListaIds.includes(lista.id) ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedListaIds.includes(lista.id)}
+                          onCheckedChange={() => toggleListaId(lista.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{lista.nome}</p>
+                          <p className="text-xs text-muted-foreground">{lista.empreendimento} · {lista.total_leads} leads</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Limite de Leads</Label>
+                    <Select value={limite} onValueChange={setLimite}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="500">500</SelectItem>
+                        <SelectItem value="1000">1.000</SelectItem>
+                        <SelectItem value="3000">3.000</SelectItem>
+                        <SelectItem value="5000">5.000</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Tamanho do Lote</Label>
+                    <Select value={batchSize} onValueChange={setBatchSize}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="100">100 por vez</SelectItem>
+                        <SelectItem value="300">300 por vez</SelectItem>
+                        <SelectItem value="500">500 por vez</SelectItem>
+                        <SelectItem value="1000">1.000 por vez</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Pipeline filters */
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs">Nome da Campanha</Label>
                 <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Melnick Day POA" />
@@ -232,11 +335,12 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
                 <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Opcional" />
               </div>
             </div>
+            )}
 
             <div className="flex items-center gap-2 pt-2">
-              <Button onClick={handleBuscar} disabled={fetchLeads.isPending}>
-                {fetchLeads.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Filter className="h-4 w-4 mr-2" />}
-                Buscar Leads Elegíveis
+              <Button onClick={handleBuscar} disabled={fetchLeads.isPending || fetchOALeads.isPending}>
+                {(fetchLeads.isPending || fetchOALeads.isPending) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Filter className="h-4 w-4 mr-2" />}
+                {fonte === "oferta_ativa" ? "Buscar Leads OA (fora do Pipeline)" : "Buscar Leads Elegíveis"}
               </Button>
               {eligibleLeads.length > 0 && (
                 <Badge variant="secondary" className="text-sm px-3 py-1">
