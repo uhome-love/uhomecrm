@@ -256,12 +256,14 @@ serve(async (req) => {
     if (action === "test") {
       if (!batch_id || !send_ids?.length) throw new Error("batch_id and send_ids required");
 
-      // Mark selected as pending, rest as skipped for test
-      // Then dispatch just those
-      const { data: sends } = await supabase
+      console.log("TEST action", JSON.stringify({ batch_id, send_ids }));
+
+      const { data: sends, error: sendsErr } = await supabase
         .from("whatsapp_campaign_sends")
         .select("*")
         .in("id", send_ids);
+
+      console.log("Test sends", JSON.stringify({ count: sends?.length, err: sendsErr?.message, first: sends?.[0] ? { id: sends[0].id, tel: sends[0].telefone, tel_n: sends[0].telefone_normalizado } : null }));
 
       if (!sends?.length) throw new Error("No test sends found");
 
