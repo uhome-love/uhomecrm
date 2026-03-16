@@ -150,17 +150,16 @@ serve(async (req) => {
               .replace("{{phone}}", phone)
               .replace("{{nome}}", encodeURIComponent(send.nome || ""));
 
-            const btnComponent: any = {
+            components.push({
               type: "button",
               sub_type: "url",
               index: "0",
               parameters: [{ type: "text", text: trackUrl }],
-            };
+            });
+          }
 
-            if (!templateBody.template.components) {
-              templateBody.template.components = [];
-            }
-            templateBody.template.components.push(btnComponent);
+          if (components.length > 0) {
+            templateBody.template.components = components;
           }
 
           // Send via WhatsApp Cloud API
