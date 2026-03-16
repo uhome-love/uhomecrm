@@ -193,7 +193,8 @@ Não inclua nenhum texto fora do JSON. Retorne APENAS o JSON.`;
       const { data, error } = await supabase.functions.invoke("homi-chat", {
         body: {
           messages: [{ role: "user", content: prompt }],
-          system: "Você é o HOMI, especialista em gestão comercial imobiliária. Responda APENAS em JSON válido conforme solicitado.",
+          system: "Você é o HOMI, especialista em gestão comercial imobiliária. Responda APENAS em JSON válido conforme solicitado. Não inclua markdown, code blocks ou texto fora do JSON.",
+          stream: false,
         },
       });
 

@@ -63,8 +63,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, empreendimento } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const { messages, empreendimento, stream: wantStream = true, system: customSystem } = await req.json();
+    const shouldStream = wantStream !== false;
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     // ── Load enterprise knowledge from DB (cached 5min) ──
@@ -171,6 +172,10 @@ REGRAS IMPORTANTES:
 
 Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + ragContext;
 
+    const finalSystemPrompt = customSystem
+      ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + ragContext
+      : systemPrompt;
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -180,10 +185,10 @@ Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + r
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: finalSystemPrompt },
           ...messages,
         ],
-        stream: true,
+        stream: shouldStream,
       }),
     });
 
@@ -203,8 +208,17 @@ Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + r
       throw new Error("AI gateway error");
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    if (shouldStream) {
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
+    // Non-streaming: parse and return JSON
+    const aiData = await response.json();
+    const content = aiData.choices?.[0]?.message?.content || "";
+    return new Response(JSON.stringify({ content }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("homi-chat error:", e);
