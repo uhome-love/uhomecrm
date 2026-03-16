@@ -224,7 +224,7 @@ function EmailTemplatesTab() {
 type FonteDados = "pipeline" | "oferta_ativa" | "manual";
 
 function EmailCampaignsTab() {
-  const { campaigns, loading, createCampaign, deleteCampaign, sendCampaign, reload: reloadCampaigns } = useEmailCampaigns();
+  const { campaigns, loading, createCampaign, updateCampaign, deleteCampaign, sendCampaign, reload: reloadCampaigns } = useEmailCampaigns();
   const { templates } = useEmailTemplates();
   const { listas: oaListas } = useOAListas();
   const [dialogOpen, setDialogOpen] = useState(false);
