@@ -20,6 +20,23 @@ interface PendingLead {
   aceite_expira_em: string | null;
   distribuido_em: string | null;
   prioridade_lead: string;
+  campanha?: string | null;
+}
+
+function getCampaignLabel(origem?: string | null, campanha?: string | null) {
+  if (!origem && !campanha) return null;
+  const o = origem?.toLowerCase() || "";
+  const c = campanha?.toLowerCase() || "";
+  if (o.includes("brevo_email") || o.includes("email")) {
+    return c.includes("melnick") ? "📧 Email Melnick Day" : "📧 Campanha Email";
+  }
+  if (o.includes("brevo_sms") || o.includes("sms")) {
+    return c.includes("melnick") ? "📱 SMS Melnick Day" : "📱 Campanha SMS";
+  }
+  if (o.includes("whatsapp")) {
+    return c.includes("melnick") ? "💬 WhatsApp Melnick Day" : "💬 Campanha WhatsApp";
+  }
+  return null;
 }
 
 const REJECTION_REASONS = [
@@ -176,7 +193,7 @@ function LeadPopupCard({ lead, onResult, total, current }: { lead: PendingLead; 
             )}
             {lead.origem && (
               <div className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground">
-                {lead.origem}
+                {getCampaignLabel(lead.origem, lead.campanha) || lead.origem}
               </div>
             )}
           </div>
@@ -262,7 +279,7 @@ export default function AceiteLeads() {
     setLoading(true);
     const { data } = await supabase
       .from("pipeline_leads")
-      .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead")
+      .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead, campanha")
       .eq("corretor_id", user.id)
       .eq("aceite_status", "pendente")
       .order("distribuido_em", { ascending: true });
