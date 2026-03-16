@@ -303,6 +303,10 @@ export default function RoletagensTab({ view = "all" }: { view?: "all" | "roleta
                             </span>
                           )}
                         </div>
+                        {(() => {
+                          const cb = getCampaignBadge(r.origem, r.campanha);
+                          return cb ? <Badge variant="outline" className={`text-[9px] ${cb.className}`}>{cb.label}</Badge> : null;
+                        })()}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
