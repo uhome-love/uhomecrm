@@ -107,7 +107,7 @@ export function useCampaignSends(batchId: string | null) {
   });
 }
 
-/* ─── Fetch eligible leads ─── */
+/* ─── Fetch eligible leads (pipeline) ─── */
 export function useFetchEligibleLeads() {
   const { user } = useAuth();
   return useMutation({
@@ -122,14 +122,6 @@ export function useFetchEligibleLeads() {
       tag?: string;
     }) => {
       let query = supabase
-        .from("pipeline_leads")
-        .select("id, nome, telefone, telefone_normalizado, email, empreendimento, origem, campanha, tags, stage_id, created_at, updated_at, corretor_id")
-        .not("telefone_normalizado", "is", null)
-        .not("motivo_descarte", "is", null) // only non-discarded — will invert below
-        .order("created_at", { ascending: false });
-
-      // Actually we want leads WITHOUT motivo_descarte
-      query = supabase
         .from("pipeline_leads")
         .select("id, nome, telefone, telefone_normalizado, email, empreendimento, origem, campanha, tags, stage_id, created_at, updated_at, corretor_id")
         .not("telefone_normalizado", "is", null)
@@ -173,6 +165,81 @@ export function useFetchEligibleLeads() {
       });
 
       return unique as EligibleLead[];
+    },
+  });
+}
+
+/* ─── Fetch eligible leads from Oferta Ativa (NOT in pipeline) ─── */
+export function useFetchOAEligibleLeads() {
+  return useMutation({
+    mutationFn: async (filters: {
+      listaIds: string[];
+      limite?: number;
+    }) => {
+      if (!filters.listaIds.length) return [];
+
+      // 1. Fetch OA leads from selected lists with phone
+      const limite = filters.limite || 3000;
+      let allOALeads: any[] = [];
+
+      for (const listaId of filters.listaIds) {
+        const { data, error } = await supabase
+          .from("oferta_ativa_leads")
+          .select("id, nome, telefone, telefone2, email, telefone_normalizado, empreendimento, campanha, origem, lista_id, status, created_at, updated_at")
+          .eq("lista_id", listaId)
+          .not("telefone_normalizado", "is", null)
+          .in("status", ["na_fila", "em_cooldown", "aproveitado"])
+          .order("created_at", { ascending: false })
+          .limit(limite);
+        if (error) throw error;
+        if (data) allOALeads.push(...data);
+      }
+
+      // 2. Collect all normalized phones from OA leads
+      const oaPhones = [...new Set(allOALeads.map((l: any) => l.telefone_normalizado).filter(Boolean))];
+      if (oaPhones.length === 0) return [];
+
+      // 3. Check which phones already exist in pipeline_leads (batch of 500)
+      const existingPhones = new Set<string>();
+      for (let i = 0; i < oaPhones.length; i += 500) {
+        const batch = oaPhones.slice(i, i + 500);
+        const { data: pipelineMatches } = await supabase
+          .from("pipeline_leads")
+          .select("telefone_normalizado")
+          .in("telefone_normalizado", batch);
+        if (pipelineMatches) {
+          for (const m of pipelineMatches) {
+            if (m.telefone_normalizado) existingPhones.add(m.telefone_normalizado);
+          }
+        }
+      }
+
+      // 4. Filter: only leads NOT in pipeline
+      const seen = new Set<string>();
+      const unique = allOALeads.filter((l: any) => {
+        if (!l.telefone_normalizado) return false;
+        if (existingPhones.has(l.telefone_normalizado)) return false;
+        if (seen.has(l.telefone_normalizado)) return false;
+        seen.add(l.telefone_normalizado);
+        return true;
+      });
+
+      // 5. Map to EligibleLead shape
+      return unique.slice(0, limite).map((l: any) => ({
+        id: l.id,
+        nome: l.nome || "Sem nome",
+        telefone: l.telefone || null,
+        telefone_normalizado: l.telefone_normalizado,
+        email: l.email || null,
+        empreendimento: l.empreendimento || null,
+        origem: l.origem || "oferta_ativa",
+        campanha: l.campanha || null,
+        tags: null,
+        stage_id: "",
+        created_at: l.created_at,
+        updated_at: l.updated_at,
+        corretor_id: null,
+      })) as EligibleLead[];
     },
   });
 }
