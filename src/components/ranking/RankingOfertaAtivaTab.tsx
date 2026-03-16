@@ -13,8 +13,8 @@ function getInitials(nome: string) {
   return nome.split(" ").map(n => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 }
 
-export default function RankingOfertaAtivaTab({ period }: { period: "hoje" | "semana" | "mes" }) {
-  const { ranking, totalTentativas, isLoading } = useOARanking(period);
+export default function RankingOfertaAtivaTab({ period, dateRange }: { period: "hoje" | "semana" | "mes"; dateRange?: { start: string; end: string } }) {
+  const { ranking, totalTentativas, isLoading } = useOARanking(period, dateRange);
   const { user } = useAuth();
 
   // Fetch avatar URLs for all corretores in the ranking

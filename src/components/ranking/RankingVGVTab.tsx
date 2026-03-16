@@ -23,7 +23,7 @@ function fmtBRL(v: number) {
 
 const periodMap: Record<string, CeoPeriod> = { hoje: "dia", semana: "semana", mes: "mes" };
 
-export default function RankingVGVTab({ period }: { period: "hoje" | "semana" | "mes" }) {
+export default function RankingVGVTab({ period, dateRange }: { period: "hoje" | "semana" | "mes"; dateRange?: { start: string; end: string } }) {
   const { user } = useAuth();
   const { isCorretor } = useUserRole();
   const [corretorGerenteId, setCorretorGerenteId] = useState<string | undefined>();
@@ -42,7 +42,7 @@ export default function RankingVGVTab({ period }: { period: "hoje" | "semana" | 
   }, [isCorretor, user?.id]);
 
   const filterGerenteId = isCorretor ? corretorGerenteId : undefined;
-  const { allCorretores, loading } = useCeoData(periodMap[period] || "dia", undefined, undefined, filterGerenteId);
+  const { allCorretores, loading } = useCeoData(periodMap[period] || "dia", dateRange?.start, dateRange?.end, filterGerenteId);
 
   const sorted = useMemo(() => {
     return [...allCorretores].sort((a, b) => b.real_vgv_assinado - a.real_vgv_assinado);
