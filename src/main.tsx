@@ -2,11 +2,17 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Register service worker for PWA (handles push + offline)
+// Register service worker conservatively to avoid stale published UI
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").then((reg) => {
-      // Auto-activate new service workers silently
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await reg.update();
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        window.location.reload();
+      });
+
       reg.addEventListener("updatefound", () => {
         const newWorker = reg.installing;
         if (!newWorker) return;
@@ -16,7 +22,9 @@ if ("serviceWorker" in navigator) {
           }
         });
       });
-    }).catch(() => {});
+    } catch {
+      // ignore service worker registration errors
+    }
   });
 }
 
