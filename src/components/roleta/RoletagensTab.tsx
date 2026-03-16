@@ -92,7 +92,7 @@ export default function RoletagensTab({ view = "all" }: { view?: "all" | "roleta
       // Get leads that have been distributed (have distribuido_em set)
       const { data: leads } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, telefone, empreendimento, corretor_id, aceite_status, distribuido_em, aceite_expira_em, aceito_em, segmento_id")
+        .select("id, nome, telefone, empreendimento, corretor_id, aceite_status, distribuido_em, aceite_expira_em, aceito_em, segmento_id, origem, campanha")
         .not("distribuido_em", "is", null)
         .order("distribuido_em", { ascending: false })
         .limit(100);

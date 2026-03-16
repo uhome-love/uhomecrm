@@ -262,7 +262,7 @@ export default function AceiteLeads() {
     setLoading(true);
     const { data } = await supabase
       .from("pipeline_leads")
-      .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead")
+      .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead, campanha")
       .eq("corretor_id", user.id)
       .eq("aceite_status", "pendente")
       .order("distribuido_em", { ascending: true });
