@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Trophy, Phone, DollarSign, ClipboardList, Star, Zap, Gamepad2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trophy, Phone, DollarSign, ClipboardList, Star, Zap, Gamepad2, ChevronLeft, ChevronRight, History } from "lucide-react";
 import RankingOfertaAtivaTab from "@/components/ranking/RankingOfertaAtivaTab";
 import RankingVGVTab from "@/components/ranking/RankingVGVTab";
 import RankingGestaoLeadsTab from "@/components/ranking/RankingGestaoLeadsTab";
@@ -142,20 +142,32 @@ export default function RankingEquipe() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-          {(Object.entries(periodLabels) as [Period, string][]).map(([key, label]) => (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {period === "semana" && offset === 0 && (
             <button
-              key={key}
-              className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
-                period === key
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => handlePeriodChange(key)}
+              type="button"
+              onClick={() => setOffset(-1)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
             >
-              {label}
+              <History className="h-3.5 w-3.5" />
+              Semana anterior
             </button>
-          ))}
+          )}
+          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+            {(Object.entries(periodLabels) as [Period, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
+                  period === key
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => handlePeriodChange(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
