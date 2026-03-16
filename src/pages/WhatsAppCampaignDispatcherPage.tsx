@@ -98,10 +98,13 @@ const TEMPLATE_DEFAULT_IMAGES: Record<string, string> = {
   melnick_day_wa_v2: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
 };
 
-/* ─── Templates that use dynamic button URL ─── */
-const TEMPLATES_WITH_DYNAMIC_BUTTON: string[] = [
-  "melnick_day_wa_v2",
-];
+/* ─── Template default redirect URLs ─── */
+const TEMPLATE_DEFAULT_URLS: Record<string, string> = {
+  melnick_day_poa_2026: "https://uhomesales.com/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1",
+  melnick_day_wa_v2: "https://uhomesales.com/wa?phone={{phone}}&nome={{nome}}&origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1",
+};
+
+
 
 /* ─── Tab: Nova Campanha ─── */
 function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
@@ -117,7 +120,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [origem, setOrigem] = useState("");
   const [tag, setTag] = useState("");
   const [stageId, setStageId] = useState("");
-  const [redirectUrl, setRedirectUrl] = useState("https://uhomeia.lovable.app/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1");
+  const [redirectUrl, setRedirectUrl] = useState(TEMPLATE_DEFAULT_URLS["melnick_day_poa_2026"] || "");
   const [headerImageUrl, setHeaderImageUrl] = useState(TEMPLATE_DEFAULT_IMAGES["melnick_day_poa_2026"] || "");
   const [selectedListaIds, setSelectedListaIds] = useState<string[]>([]);
 
@@ -196,7 +199,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
         templateParams: {
           body_params: ["nome"],
           button_url: redirectUrl || undefined,
-          button_dynamic: TEMPLATES_WITH_DYNAMIC_BUTTON.includes(templateName),
+          button_dynamic: !!TEMPLATE_DEFAULT_URLS[templateName]?.includes("{{phone}}"),
           header_image_url: normalizedHeaderImageUrl || undefined,
         },
         redirectUrl,
@@ -398,6 +401,8 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
                   setTemplateName(val);
                   const defaultImg = TEMPLATE_DEFAULT_IMAGES[val];
                   if (defaultImg) setHeaderImageUrl(defaultImg);
+                  const defaultUrl = TEMPLATE_DEFAULT_URLS[val];
+                  if (defaultUrl) setRedirectUrl(defaultUrl);
                 }}
               >
                 <option value="melnick_day_poa_2026">melnick_day_poa_2026 (botão estático)</option>
