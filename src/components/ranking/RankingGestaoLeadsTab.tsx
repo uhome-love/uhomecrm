@@ -25,15 +25,18 @@ interface GestaoRow {
   visitas_realizadas: number;
 }
 
-export default function RankingGestaoLeadsTab({ period }: { period: "hoje" | "semana" | "mes" }) {
+export default function RankingGestaoLeadsTab({ period, dateRange }: { period: "hoje" | "semana" | "mes"; dateRange?: { start: string; end: string } }) {
   const { user } = useAuth();
 
   const { data: ranking = [], isLoading } = useQuery({
-    queryKey: ["ranking-gestao-leads", period],
+    queryKey: ["ranking-gestao-leads", period, dateRange?.start, dateRange?.end],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_ranking_gestao_leads", {
-        p_periodo: periodMap[period] || "dia",
-      });
+      const rpcParams: any = { p_periodo: periodMap[period] || "dia" };
+      if (dateRange) {
+        rpcParams.p_start = dateRange.start;
+        rpcParams.p_end = dateRange.end;
+      }
+      const { data, error } = await supabase.rpc("get_ranking_gestao_leads", rpcParams);
       if (error) throw error;
       return (data || []) as GestaoRow[];
     },

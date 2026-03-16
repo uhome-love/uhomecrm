@@ -32,7 +32,7 @@ interface EficienciaEntry {
   score: number;
 }
 
-export default function RankingEficienciaTab({ period }: { period: "hoje" | "semana" | "mes" | "trimestre" }) {
+export default function RankingEficienciaTab({ period, dateRange }: { period: "hoje" | "semana" | "mes" | "trimestre"; dateRange?: { start: string; end: string } }) {
   const { user } = useAuth();
   const { isCorretor } = useUserRole();
   const [corretorGerenteId, setCorretorGerenteId] = useState<string | undefined>();
@@ -51,7 +51,7 @@ export default function RankingEficienciaTab({ period }: { period: "hoje" | "sem
   }, [isCorretor, user?.id]);
 
   const filterGerenteId = isCorretor ? corretorGerenteId : undefined;
-  const { allCorretores, loading } = useCeoData(periodMap[period] || "dia", undefined, undefined, filterGerenteId);
+  const { allCorretores, loading } = useCeoData(periodMap[period] || "dia", dateRange?.start, dateRange?.end, filterGerenteId);
 
   // Compute efficiency scores
   const sorted = useMemo<EficienciaEntry[]>(() => {

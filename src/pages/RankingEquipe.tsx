@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Trophy, Phone, DollarSign, ClipboardList, Star, Zap, Gamepad2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Trophy, Phone, DollarSign, ClipboardList, Star, Zap, Gamepad2, ChevronLeft, ChevronRight } from "lucide-react";
 import RankingOfertaAtivaTab from "@/components/ranking/RankingOfertaAtivaTab";
 import RankingVGVTab from "@/components/ranking/RankingVGVTab";
 import RankingGestaoLeadsTab from "@/components/ranking/RankingGestaoLeadsTab";
@@ -8,6 +8,8 @@ import RankingEficienciaTab from "@/components/ranking/RankingEficienciaTab";
 import RankingExplanation from "@/components/ranking/RankingExplanation";
 import RankingStreaksBadges from "@/components/ranking/RankingStreaksBadges";
 import { motion } from "framer-motion";
+import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths, isSameWeek, isSameMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type Period = "hoje" | "semana" | "mes" | "trimestre";
 
@@ -65,6 +67,55 @@ type TabKey = "geral" | "oferta-ativa" | "gestao" | "vgv" | "eficiencia";
 export default function RankingEquipe() {
   const [period, setPeriod] = useState<Period>("hoje");
   const [activeTab, setActiveTab] = useState<TabKey>("geral");
+  const [offset, setOffset] = useState(0); // 0 = current, -1 = previous, etc.
+
+  const now = new Date();
+
+  const dateRange = useMemo<{ start: string; end: string } | undefined>(() => {
+    if (period === "hoje" || period === "trimestre") return undefined; // no navigation for these
+    if (offset === 0) return undefined; // current period = use default RPC behavior
+
+    if (period === "semana") {
+      const target = addWeeks(now, offset);
+      const s = startOfWeek(target, { weekStartsOn: 1 });
+      const e = endOfWeek(target, { weekStartsOn: 1 });
+      return { start: format(s, "yyyy-MM-dd"), end: format(e, "yyyy-MM-dd") };
+    }
+    if (period === "mes") {
+      const target = addMonths(now, offset);
+      const s = startOfMonth(target);
+      const e = endOfMonth(target);
+      return { start: format(s, "yyyy-MM-dd"), end: format(e, "yyyy-MM-dd") };
+    }
+    return undefined;
+  }, [period, offset]);
+
+  const periodLabel = useMemo(() => {
+    if (period === "semana") {
+      const target = addWeeks(now, offset);
+      const s = startOfWeek(target, { weekStartsOn: 1 });
+      const e = endOfWeek(target, { weekStartsOn: 1 });
+      const isCurrent = isSameWeek(target, now, { weekStartsOn: 1 });
+      const label = `${format(s, "dd/MM")} - ${format(e, "dd/MM")}`;
+      return isCurrent ? `Semana Atual · ${label}` : label;
+    }
+    if (period === "mes") {
+      const target = addMonths(now, offset);
+      const isCurrent = isSameMonth(target, now);
+      const label = format(target, "MMMM yyyy", { locale: ptBR });
+      const capitalized = label.charAt(0).toUpperCase() + label.slice(1);
+      return isCurrent ? `Mês Atual · ${capitalized}` : capitalized;
+    }
+    return null;
+  }, [period, offset]);
+
+  const canNavigate = period === "semana" || period === "mes";
+  const isCurrentPeriod = offset === 0;
+
+  const handlePeriodChange = (key: Period) => {
+    setPeriod(key);
+    setOffset(0); // reset navigation on period change
+  };
 
   const tabs = [
     { key: "geral" as const, label: "Geral", icon: Star, color: "text-amber-500", activeBg: "bg-amber-500" },
@@ -100,13 +151,39 @@ export default function RankingEquipe() {
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              onClick={() => setPeriod(key)}
+              onClick={() => handlePeriodChange(key)}
             >
               {label}
             </button>
           ))}
         </div>
       </div>
+
+      {/* Week/Month Navigation */}
+      {canNavigate && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setOffset(o => o - 1)}
+            className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-medium text-foreground min-w-[200px] text-center">
+            {periodLabel}
+          </span>
+          <button
+            onClick={() => setOffset(o => Math.min(o + 1, 0))}
+            disabled={isCurrentPeriod}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isCurrentPeriod
+                ? "text-muted-foreground/30 cursor-not-allowed"
+                : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Streaks & Badges */}
       <RankingStreaksBadges />
@@ -139,16 +216,16 @@ export default function RankingEquipe() {
 
       {/* Tab Content */}
       <motion.div
-        key={activeTab + period}
+        key={activeTab + period + offset}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
       >
-        {activeTab === "geral" && <RankingGeralTab period={period} />}
-        {activeTab === "oferta-ativa" && <RankingOfertaAtivaTab period={period === "trimestre" ? "mes" : period} />}
-        {activeTab === "vgv" && <RankingVGVTab period={period === "trimestre" ? "mes" : period} />}
-        {activeTab === "gestao" && <RankingGestaoLeadsTab period={period === "trimestre" ? "mes" : period} />}
-        {activeTab === "eficiencia" && <RankingEficienciaTab period={period} />}
+        {activeTab === "geral" && <RankingGeralTab period={period} dateRange={dateRange} />}
+        {activeTab === "oferta-ativa" && <RankingOfertaAtivaTab period={period === "trimestre" ? "mes" : period} dateRange={dateRange} />}
+        {activeTab === "vgv" && <RankingVGVTab period={period === "trimestre" ? "mes" : period} dateRange={dateRange} />}
+        {activeTab === "gestao" && <RankingGestaoLeadsTab period={period === "trimestre" ? "mes" : period} dateRange={dateRange} />}
+        {activeTab === "eficiencia" && <RankingEficienciaTab period={period} dateRange={dateRange} />}
       </motion.div>
     </div>
   );

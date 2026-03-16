@@ -405,15 +405,18 @@ export function useOAAproveitados() {
 }
 
 // ─── Hook: Stats & Ranking ───
-export function useOARanking(period: "hoje" | "semana" | "mes" = "hoje") {
+export function useOARanking(period: "hoje" | "semana" | "mes" = "hoje", dateRange?: { start: string; end: string }) {
   const { user } = useAuth();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["oa-ranking", period],
+    queryKey: ["oa-ranking", period, dateRange?.start, dateRange?.end],
     queryFn: async () => {
-      const { data: result, error } = await supabase.rpc("get_individual_oa_ranking", {
-        p_period: period,
-      });
+      const rpcParams: any = { p_period: period };
+      if (dateRange) {
+        rpcParams.p_start = dateRange.start;
+        rpcParams.p_end = dateRange.end;
+      }
+      const { data: result, error } = await supabase.rpc("get_individual_oa_ranking", rpcParams);
       if (error) throw error;
       const parsed = result as any;
       return {

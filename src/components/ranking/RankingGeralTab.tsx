@@ -102,7 +102,7 @@ function getNotaColor(nota: number): string {
   return "text-red-500";
 }
 
-export default function RankingGeralTab({ period }: { period: "hoje" | "semana" | "mes" | "trimestre" }) {
+export default function RankingGeralTab({ period, dateRange }: { period: "hoje" | "semana" | "mes" | "trimestre"; dateRange?: { start: string; end: string } }) {
   const { user } = useAuth();
   const { isCorretor } = useUserRole();
   const [corretorGerenteId, setCorretorGerenteId] = useState<string | undefined>();
@@ -122,15 +122,18 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
 
   // 1) OA data (Prospecção)
   const oaPeriod = period === "trimestre" ? "mes" : period;
-  const { ranking: oaRanking, isLoading: oaLoading } = useOARanking(oaPeriod as "hoje" | "semana" | "mes");
+  const { ranking: oaRanking, isLoading: oaLoading } = useOARanking(oaPeriod as "hoje" | "semana" | "mes", dateRange);
 
   // 2) Gestão data
   const { data: gestaoRanking = [], isLoading: gestaoLoading } = useQuery({
-    queryKey: ["ranking-gestao-leads-geral", period],
+    queryKey: ["ranking-gestao-leads-geral", period, dateRange?.start, dateRange?.end],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_ranking_gestao_leads", {
-        p_periodo: periodMap[period] || "dia",
-      });
+      const rpcParams: any = { p_periodo: periodMap[period] || "dia" };
+      if (dateRange) {
+        rpcParams.p_start = dateRange.start;
+        rpcParams.p_end = dateRange.end;
+      }
+      const { data, error } = await supabase.rpc("get_ranking_gestao_leads", rpcParams);
       if (error) throw error;
       return (data || []) as GestaoRow[];
     },
@@ -140,7 +143,7 @@ export default function RankingGeralTab({ period }: { period: "hoje" | "semana" 
 
   // 3) VGV + Eficiência data
   const filterGerenteId = isCorretor ? corretorGerenteId : undefined;
-  const { allCorretores, loading: vgvLoading } = useCeoData((periodMap[period] || "dia") as CeoPeriod, undefined, undefined, filterGerenteId);
+  const { allCorretores, loading: vgvLoading } = useCeoData((periodMap[period] || "dia") as CeoPeriod, dateRange?.start, dateRange?.end, filterGerenteId);
 
   const isLoading = oaLoading || gestaoLoading || vgvLoading;
 
