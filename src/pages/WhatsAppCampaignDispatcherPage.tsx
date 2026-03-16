@@ -155,10 +155,19 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
     }
   };
 
+  const validateHeaderImageUrl = (url: string): boolean => {
+    if (!url) return true; // optional
+    if (!url.startsWith("https://")) return false;
+    return /\.(jpe?g|png)(\?.*)?$/i.test(url);
+  };
+
   const handleCriar = () => {
     if (!nome.trim()) return toast.error("Preencha o nome da campanha");
     if (!templateName.trim()) return toast.error("Preencha o template");
     if (eligibleLeads.length === 0) return toast.error("Busque os leads primeiro");
+    if (headerImageUrl && !validateHeaderImageUrl(headerImageUrl)) {
+      return toast.error("URL da imagem inválida. Use HTTPS e formato jpg, jpeg ou png.");
+    }
     setShowConfirm(true);
   };
 
