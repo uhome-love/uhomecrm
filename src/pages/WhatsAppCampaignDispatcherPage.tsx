@@ -199,7 +199,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
         templateParams: {
           body_params: ["nome"],
           button_url: redirectUrl || undefined,
-          button_dynamic: TEMPLATES_WITH_DYNAMIC_BUTTON.includes(templateName),
+          button_dynamic: !!TEMPLATE_DEFAULT_URLS[templateName]?.includes("{{phone}}"),
           header_image_url: normalizedHeaderImageUrl || undefined,
         },
         redirectUrl,
