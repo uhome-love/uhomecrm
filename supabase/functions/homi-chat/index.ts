@@ -63,6 +63,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const { messages, empreendimento, stream: wantStream = true, system: customSystem } = await req.json();
     const shouldStream = wantStream !== false;
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
