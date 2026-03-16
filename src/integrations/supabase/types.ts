@@ -7497,7 +7497,10 @@ export type Database = {
         Args: { p_periodo?: string }
         Returns: Json
       }
-      get_individual_oa_ranking: { Args: { p_period?: string }; Returns: Json }
+      get_individual_oa_ranking: {
+        Args: { p_end?: string; p_period?: string; p_start?: string }
+        Returns: Json
+      }
       get_kpis_por_periodo: {
         Args: { p_end: string; p_start: string; p_user_id?: string }
         Returns: {
@@ -7520,7 +7523,7 @@ export type Database = {
       }
       get_profile_id_for_auth: { Args: never; Returns: string }
       get_ranking_gestao_leads: {
-        Args: { p_periodo: string }
+        Args: { p_end?: string; p_periodo?: string; p_start?: string }
         Returns: {
           contatos: number
           corretor_id: string
