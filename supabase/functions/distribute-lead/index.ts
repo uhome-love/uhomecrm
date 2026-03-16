@@ -233,11 +233,23 @@ Deno.serve(async (req) => {
       for (const lead of leads) {
         const segmentoId = await resolveSegmento(supabase, lead.empreendimento);
 
+        // ── Exclude corretors who already timed out on this lead ──
+        const excludeAuthIds = new Set<string>();
+        const { data: prevTimeouts } = await supabase
+          .from("distribuicao_historico")
+          .select("corretor_id")
+          .eq("pipeline_lead_id", lead.id)
+          .eq("acao", "timeout");
+        for (const t of prevTimeouts || []) {
+          if (t.corretor_id) excludeAuthIds.add(t.corretor_id);
+        }
+
         const eligible: CorretorCandidate[] = [];
         for (const [profileId, segs] of corretorSegments.entries()) {
           if (segmentoId && !segs.has(segmentoId)) continue;
           const authId = profileToAuth.get(profileId);
           if (!authId) continue;
+          if (excludeAuthIds.has(authId)) continue;
           eligible.push({
             corretorId: profileId,
             authUserId: authId,
