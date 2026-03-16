@@ -127,6 +127,7 @@ function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor
 
 // ─── Main Page ───
 export default function CeoDashboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { period, range } = useDateFilter();
   const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
