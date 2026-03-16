@@ -352,38 +352,38 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             )}
           </div>
 
-          {/* Row 3: Actions bar — all same size */}
-          <div className="flex items-center gap-1 flex-wrap">
+          {/* Row 3: Actions bar — horizontal scroll on mobile */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
             {lead.telefone && (
-              <a href={`tel:${lead.telefone}`} className="flex-1 min-w-0">
-                <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1 rounded-lg">
+              <a href={`tel:${lead.telefone}`} className="shrink-0">
+                <Button variant="outline" size="sm" className="h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap">
                   <Phone className="h-3.5 w-3.5" /> Ligar
                 </Button>
               </a>
             )}
             {lead.telefone && (
-              <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setWhatsappTemplatesOpen(true)}>
+              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setWhatsappTemplatesOpen(true)}>
                 <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
               </Button>
             )}
-            <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => setComunicacaoOpen(true)}>
+            <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => setComunicacaoOpen(true)}>
               <FileText className="h-3.5 w-3.5" /> Scripts
             </Button>
-            <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => setActiveTab("radar")}>
+            <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => setActiveTab("radar")}>
               <Building2 className="h-3.5 w-3.5" /> Radar
             </Button>
             <Button
               variant="outline" size="sm"
-              className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg border-primary/30 text-primary hover:bg-primary/5"
+              className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-primary/30 text-primary hover:bg-primary/5"
               onClick={() => navigate(`/imoveis?lead_id=${lead.id}&lead_nome=${encodeURIComponent(lead.nome)}`)}
             >
               <Search className="h-3.5 w-3.5" /> Catálogo
             </Button>
-            <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
+            <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
               <ClipboardList className="h-3.5 w-3.5" /> Tarefa
             </Button>
             <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
-              <Button variant="outline" size="sm" className="flex-1 min-w-0 h-8 text-xs gap-1 rounded-lg">
+              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap">
                 <Zap className="h-3.5 w-3.5" /> Registrar
               </Button>
             </QuickActionMenu>
