@@ -144,8 +144,8 @@ serve(async (req) => {
             });
           }
 
-          // If template has button with URL tracking
-          if (params.button_url) {
+          // If template has button with dynamic URL tracking (button_dynamic must be true)
+          if (params.button_url && params.button_dynamic) {
             const trackUrl = params.button_url
               .replace("{{phone}}", phone)
               .replace("{{nome}}", encodeURIComponent(send.nome || ""));
