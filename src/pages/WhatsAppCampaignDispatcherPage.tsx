@@ -95,7 +95,13 @@ export default function WhatsAppCampaignDispatcherPage() {
 /* ─── Template default images ─── */
 const TEMPLATE_DEFAULT_IMAGES: Record<string, string> = {
   melnick_day_poa_2026: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
+  melnick_day_wa_v2: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
 };
+
+/* ─── Templates that use dynamic button URL ─── */
+const TEMPLATES_WITH_DYNAMIC_BUTTON: string[] = [
+  "melnick_day_wa_v2",
+];
 
 /* ─── Tab: Nova Campanha ─── */
 function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
@@ -190,6 +196,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
         templateParams: {
           body_params: ["nome"],
           button_url: redirectUrl || undefined,
+          button_dynamic: TEMPLATES_WITH_DYNAMIC_BUTTON.includes(templateName),
           header_image_url: normalizedHeaderImageUrl || undefined,
         },
         redirectUrl,
