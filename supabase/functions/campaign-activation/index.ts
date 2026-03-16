@@ -72,6 +72,18 @@ Deno.serve(async (req) => {
         }).eq("id", existingLead.id);
       }
 
+      // ─── Add atividade to timeline ───
+      const canalLabel = canal === "email" ? "📧 Email" : canal === "sms" ? "📱 SMS" : canal === "whatsapp" ? "🟢 WhatsApp" : `📨 ${canal}`;
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: existingLead.id,
+        tipo: "email",
+        titulo: `${canalLabel} Campanha Melnick Day`,
+        descricao: `Lead respondeu à Campanha de Ativação Melnick Day via ${canal}`,
+        data: new Date().toISOString().slice(0, 10),
+        status: "concluida",
+        responsavel_id: existingLead.corretor_id || null,
+      });
+
       // Create progression record
       await supabase.from("lead_progressao").insert({
         lead_id: existingLead.id,
