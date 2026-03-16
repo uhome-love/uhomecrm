@@ -120,7 +120,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [origem, setOrigem] = useState("");
   const [tag, setTag] = useState("");
   const [stageId, setStageId] = useState("");
-  const [redirectUrl, setRedirectUrl] = useState("https://uhomeia.lovable.app/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1");
+  const [redirectUrl, setRedirectUrl] = useState(TEMPLATE_DEFAULT_URLS["melnick_day_poa_2026"] || "");
   const [headerImageUrl, setHeaderImageUrl] = useState(TEMPLATE_DEFAULT_IMAGES["melnick_day_poa_2026"] || "");
   const [selectedListaIds, setSelectedListaIds] = useState<string[]>([]);
 
