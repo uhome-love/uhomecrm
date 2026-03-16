@@ -25,6 +25,8 @@ interface CallResult {
   duration: number | null;
   callSid: string | null;
   error?: string;
+  resultado?: string | null;
+  resumo_ia?: string | null;
 }
 
 const RESULT_FILTERS = [
@@ -37,6 +39,7 @@ const RESULT_FILTERS = [
 
 const CALL_STATUS: Record<string, { label: string; color: string; icon: typeof Phone }> = {
   waiting: { label: "Aguardando", color: "text-muted-foreground", icon: Clock },
+  initiated: { label: "Iniciada", color: "text-blue-500", icon: Phone },
   calling: { label: "Ligando...", color: "text-blue-500", icon: Phone },
   ringing: { label: "Chamando", color: "text-amber-500", icon: Phone },
   "in-progress": { label: "Em andamento", color: "text-emerald-500", icon: Bot },
@@ -68,6 +71,39 @@ export default function DisparadorLigacoesIA() {
   const [isRunning, setIsRunning] = useState(false);
   const abortRef = useRef(false);
   const pauseRef = useRef(false);
+
+  // ── Realtime subscription for ai_calls status updates ──
+  useEffect(() => {
+    const channel = supabase
+      .channel('ai-calls-status')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'ai_calls' },
+        (payload) => {
+          const updated = payload.new as any;
+          const sid = updated.twilio_call_sid;
+          if (!sid) return;
+          
+          setResults(prev => prev.map(r => {
+            if (r.callSid === sid) {
+              return {
+                ...r,
+                status: updated.status || r.status,
+                duration: updated.duracao_segundos ?? r.duration,
+                resultado: updated.resultado ?? r.resultado,
+                resumo_ia: updated.resumo_ia ?? r.resumo_ia,
+              };
+            }
+            return r;
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Toggle lista selection
   const toggleLista = (id: string) => {
@@ -518,11 +554,21 @@ export default function DisparadorLigacoesIA() {
                         key={i}
                         className="flex items-center justify-between text-sm p-2 rounded bg-muted/20 border border-border"
                       >
-                        <div className="flex items-center gap-2">
-                          <StIcon className={`h-3.5 w-3.5 ${st.color}`} />
-                          <span>{r.lead.nome}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <StIcon className={`h-3.5 w-3.5 shrink-0 ${st.color}`} />
+                          <span className="truncate">{r.lead.nome}</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
+                          {r.duration != null && r.duration > 0 && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {Math.floor(r.duration / 60)}:{String(r.duration % 60).padStart(2, '0')}
+                            </span>
+                          )}
+                          {r.resultado && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {r.resultado}
+                            </Badge>
+                          )}
                           <Badge variant="outline" className="text-[10px]">
                             {st.label}
                           </Badge>
