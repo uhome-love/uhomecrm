@@ -444,8 +444,8 @@ function EmailCampaignsTab() {
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
-  const STATUS_COLORS: Record<string, string> = { rascunho: "secondary", enviando: "default", enviada: "default", agendada: "outline" };
-  const STATUS_LABELS: Record<string, string> = { rascunho: "Rascunho", enviando: "Enviando...", enviada: "Enviada", agendada: "Agendada" };
+  const STATUS_COLORS: Record<string, string> = { rascunho: "secondary", enviando: "default", enviada: "default", agendada: "outline", pausada: "secondary" };
+  const STATUS_LABELS: Record<string, string> = { rascunho: "Rascunho", enviando: "Enviando...", enviada: "Enviada", agendada: "Agendada", pausada: "Pausada" };
 
   return (
     <div className="space-y-4">
