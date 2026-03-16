@@ -30,6 +30,7 @@ const STATUS_MAP: Record<string, { label: string; icon: typeof Phone; color: str
 };
 
 export default function AiCallPanel() {
+  const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [nome, setNome] = useState("");
   const [calling, setCalling] = useState(false);
