@@ -206,11 +206,21 @@ function LeadPopupCard({ lead, onResult, total, current }: { lead: PendingLead; 
                 {getCampaignLabel(lead.origem, lead.campanha) || lead.origem}
               </div>
             )}
+            {propertyCode && (
+              <div className="flex items-center gap-1 bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 px-3 py-1 rounded-full text-xs font-medium">
+                🏠 Cód. {propertyCode}
+              </div>
+            )}
           </div>
 
-          {lead.observacoes && (
+          {lead.observacoes && !propertyCode && (
             <p className="text-xs text-muted-foreground italic text-center bg-muted/50 rounded-lg p-2">
               "{lead.observacoes}"
+            </p>
+          )}
+          {lead.observacoes && propertyCode && (
+            <p className="text-xs text-muted-foreground italic text-center bg-muted/50 rounded-lg p-2">
+              "{lead.observacoes.replace(/\s*\|\s*Cód\.?\s*Imóvel:\s*\S+/i, '').trim()}"
             </p>
           )}
 
