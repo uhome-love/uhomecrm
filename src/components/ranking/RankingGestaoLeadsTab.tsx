@@ -40,9 +40,6 @@ export default function RankingGestaoLeadsTab({ period, dateRange }: { period: "
       if (error) throw error;
       return (data || []) as GestaoRow[];
     },
-      if (error) throw error;
-      return (data || []) as GestaoRow[];
-    },
     enabled: !!user,
     staleTime: 30_000,
   });
