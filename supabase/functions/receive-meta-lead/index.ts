@@ -139,21 +139,21 @@ Deno.serve(async (req) => {
       return false;
     })();
 
-    // Extract property code from "imovel_referencia" field (e.g. "18273-BT - Venda")
-    let imovelReferencia = v("imovel_referencia", "imovel_ref", "property_ref");
-    if (!imovelReferencia && body.data && typeof body.data === "object") {
-      imovelReferencia = extractStr(body.data.imovel_referencia) || extractStr(body.data.imovel_ref);
-    }
-    if (imovelReferencia && !propertyCode) {
-      // Extract just the code part: "18273-BT - Venda" → "18273-BT"
-      propertyCode = imovelReferencia.split(/\s*-\s*(?:Venda|Locação|Aluguel)/i)[0].trim() || imovelReferencia;
-    }
     let formName = v("form_name", "formName", "formulario");
     let adName = v("ad_name", "adName", "adId");
     let adsetName = v("adset_name", "adsetName", "adgroupId");
     let propertyCode = v("property_code", "propertyCode", "codigo_imovel");
     const metaFormId = v("formId");
     let externalLeadId = v("lead_id", "leadId", "meta_lead_id", "leadgen_id", "id");
+
+    // Extract property code from "imovel_referencia" field (e.g. "18273-BT - Venda")
+    let imovelReferencia = v("imovel_referencia", "imovel_ref", "property_ref");
+    if (!imovelReferencia && body.data && typeof body.data === "object") {
+      imovelReferencia = extractStr(body.data.imovel_referencia) || extractStr(body.data.imovel_ref);
+    }
+    if (imovelReferencia && !propertyCode) {
+      propertyCode = imovelReferencia.split(/\s*-\s*(?:Venda|Locação|Aluguel)/i)[0].trim() || imovelReferencia;
+    }
 
     // ── Make.com format: data object with mixed string/array values ──
     if (body.data && typeof body.data === "object" && !Array.isArray(body.data)) {
