@@ -375,6 +375,10 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
               <Label className="text-xs">URL de Rastreamento (botão)</Label>
               <Input value={redirectUrl} onChange={(e) => setRedirectUrl(e.target.value)} className="text-xs" />
             </div>
+            <div>
+              <Label className="text-xs">URL da Imagem (header)</Label>
+              <Input value={headerImageUrl} onChange={(e) => setHeaderImageUrl(e.target.value)} placeholder="https://... (deixe vazio se não tiver)" className="text-xs" />
+            </div>
 
             <Button onClick={handleCriar} disabled={eligibleLeads.length === 0 || createBatch.isPending} className="w-full bg-green-600 hover:bg-green-700 text-white">
               {createBatch.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Rocket className="h-4 w-4 mr-2" />}
