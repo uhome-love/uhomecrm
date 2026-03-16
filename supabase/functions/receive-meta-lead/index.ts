@@ -463,7 +463,7 @@ Deno.serve(async (req) => {
     const { data: insertedLead, error: insertError } = await supabase
       .from("pipeline_leads")
       .insert({
-        nome: name || "Lead Meta Ads",
+        nome: name || (isJetimobSite ? "Lead Site Uhome" : "Lead Meta Ads"),
         telefone,
         email: email || null,
         empreendimento,

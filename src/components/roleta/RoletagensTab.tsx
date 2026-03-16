@@ -29,7 +29,10 @@ function getCampaignBadge(origem?: string | null, campanha?: string | null) {
   if (!origem && !campanha) return null;
   const o = origem?.toLowerCase() || "";
   const c = campanha?.toLowerCase() || "";
-  
+
+  if (o.includes("site_uhome") || o.includes("jetimob") || o === "site") {
+    return { label: "🌐 Site Uhome", className: "border-indigo-300 text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 dark:text-indigo-400" };
+  }
   if (o.includes("brevo_email") || o.includes("email")) {
     const label = c.includes("melnick") ? "📧 Email Melnick Day" : `📧 Email${campanha ? ` ${campanha}` : ""}`;
     return { label, className: "border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400" };
@@ -46,6 +49,13 @@ function getCampaignBadge(origem?: string | null, campanha?: string | null) {
     return { label: `🎯 ${campanha}`, className: "border-purple-300 text-purple-700 bg-purple-50 dark:bg-purple-950/20 dark:text-purple-400" };
   }
   return null;
+}
+
+/** Extract property code from observacoes (e.g. "Cód. Imóvel: 18273-BT") */
+function extractPropertyCode(obs?: string | null): string | null {
+  if (!obs) return null;
+  const match = obs.match(/C[oó]d\.?\s*Im[oó]vel:\s*(\S+)/i);
+  return match ? match[1] : null;
 }
 
 interface LeadPerdido {

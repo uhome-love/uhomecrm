@@ -27,6 +27,9 @@ function getCampaignLabel(origem?: string | null, campanha?: string | null) {
   if (!origem && !campanha) return null;
   const o = origem?.toLowerCase() || "";
   const c = campanha?.toLowerCase() || "";
+  if (o.includes("site_uhome") || o.includes("jetimob") || o === "site") {
+    return "🌐 Site Uhome";
+  }
   if (o.includes("brevo_email") || o.includes("email")) {
     return c.includes("melnick") ? "📧 Email Melnick Day" : "📧 Campanha Email";
   }
@@ -37,6 +40,12 @@ function getCampaignLabel(origem?: string | null, campanha?: string | null) {
     return c.includes("melnick") ? "💬 WhatsApp Melnick Day" : "💬 Campanha WhatsApp";
   }
   return null;
+}
+
+function extractPropertyCode(obs?: string | null): string | null {
+  if (!obs) return null;
+  const match = obs.match(/C[oó]d\.?\s*Im[oó]vel:\s*(\S+)/i);
+  return match ? match[1] : null;
 }
 
 const REJECTION_REASONS = [
