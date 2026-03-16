@@ -197,7 +197,84 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {/* Source selector */}
+            <div className="flex gap-2">
+              <Button
+                variant={fonte === "pipeline" ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setFonte("pipeline"); setEligibleLeads([]); }}
+                className="gap-1.5"
+              >
+                <Database className="h-3.5 w-3.5" /> Pipeline Leads
+              </Button>
+              <Button
+                variant={fonte === "oferta_ativa" ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setFonte("oferta_ativa"); setEligibleLeads([]); }}
+                className="gap-1.5"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" /> Oferta Ativa (fora do pipeline)
+              </Button>
+            </div>
+
+            {fonte === "oferta_ativa" ? (
+              /* OA Lista picker */
+              <div className="space-y-3">
+                <Label className="text-xs font-medium">Selecione as listas da Oferta Ativa</Label>
+                {oaListas.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma lista encontrada</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-auto">
+                    {oaListas.filter(l => l.status === "ativa").map((lista) => (
+                      <label
+                        key={lista.id}
+                        className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                          selectedListaIds.includes(lista.id) ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedListaIds.includes(lista.id)}
+                          onCheckedChange={() => toggleListaId(lista.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{lista.nome}</p>
+                          <p className="text-xs text-muted-foreground">{lista.empreendimento} · {lista.total_leads} leads</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Limite de Leads</Label>
+                    <Select value={limite} onValueChange={setLimite}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="500">500</SelectItem>
+                        <SelectItem value="1000">1.000</SelectItem>
+                        <SelectItem value="3000">3.000</SelectItem>
+                        <SelectItem value="5000">5.000</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Tamanho do Lote</Label>
+                    <Select value={batchSize} onValueChange={setBatchSize}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="100">100 por vez</SelectItem>
+                        <SelectItem value="300">300 por vez</SelectItem>
+                        <SelectItem value="500">500 por vez</SelectItem>
+                        <SelectItem value="1000">1.000 por vez</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Pipeline filters */
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs">Nome da Campanha</Label>
                 <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Melnick Day POA" />
@@ -258,11 +335,12 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
                 <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Opcional" />
               </div>
             </div>
+            )}
 
             <div className="flex items-center gap-2 pt-2">
-              <Button onClick={handleBuscar} disabled={fetchLeads.isPending}>
-                {fetchLeads.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Filter className="h-4 w-4 mr-2" />}
-                Buscar Leads Elegíveis
+              <Button onClick={handleBuscar} disabled={fetchLeads.isPending || fetchOALeads.isPending}>
+                {(fetchLeads.isPending || fetchOALeads.isPending) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Filter className="h-4 w-4 mr-2" />}
+                {fonte === "oferta_ativa" ? "Buscar Leads OA (fora do Pipeline)" : "Buscar Leads Elegíveis"}
               </Button>
               {eligibleLeads.length > 0 && (
                 <Badge variant="secondary" className="text-sm px-3 py-1">
