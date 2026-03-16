@@ -51,9 +51,9 @@ Deno.serve(async (req) => {
   const { lead_id, telefone, nome, empreendimento, context } = body as Record<string, string>;
   if (!telefone) return errorResponse("Missing telefone", 400);
 
-  // ── Check required env vars ──
-  const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_CONVAI_KEY") || Deno.env.get("ELEVENLABS_API_KEY");
-  if (!ELEVENLABS_API_KEY) return errorResponse("ELEVENLABS API KEY not configured", 500);
+  // ── Check required env vars (single source: ELEVENLABS_API_KEY) ──
+  const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+  if (!ELEVENLABS_API_KEY) return errorResponse("ELEVENLABS_API_KEY not configured", 500);
 
   const AGENT_ID = Deno.env.get("ELEVENLABS_AGENT_ID")?.trim();
   if (!AGENT_ID) return errorResponse("ELEVENLABS_AGENT_ID not configured", 500);
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
   if (!PHONE_NUMBER_ID) return errorResponse("ELEVENLABS_PHONE_NUMBER_ID not configured", 500);
   if (!PHONE_NUMBER_ID.startsWith("phnum_")) {
     return errorResponse(
-      "ELEVENLABS_PHONE_NUMBER_ID inválido: use o ID do número no ElevenLabs (formato phnum_...), não API key, SID ou hash.",
+      `ELEVENLABS_PHONE_NUMBER_ID inválido (valor começa com "${PHONE_NUMBER_ID.slice(0, 8)}…"). Formato correto: phnum_...`,
       500,
     );
   }
@@ -73,26 +73,46 @@ Deno.serve(async (req) => {
   toPhone = `+${toPhone}`;
 
   try {
-    const [agentCheckRes, phoneCheckRes] = await Promise.all([
-      fetch(`https://api.elevenlabs.io/v1/convai/agents/${encodeURIComponent(AGENT_ID)}`, {
-        headers: { "xi-api-key": ELEVENLABS_API_KEY },
-      }),
-      fetch(`https://api.elevenlabs.io/v1/convai/phone-numbers/${encodeURIComponent(PHONE_NUMBER_ID)}`, {
-        headers: { "xi-api-key": ELEVENLABS_API_KEY },
-      }),
+    // ── Preflight checks: validate API key, agent, phone number ──
+    const apiHeaders = { "xi-api-key": ELEVENLABS_API_KEY };
+
+    const [userRes, agentRes, phoneRes] = await Promise.all([
+      fetch("https://api.elevenlabs.io/v1/user", { headers: apiHeaders }),
+      fetch(`https://api.elevenlabs.io/v1/convai/agents/${encodeURIComponent(AGENT_ID)}`, { headers: apiHeaders }),
+      fetch(`https://api.elevenlabs.io/v1/convai/phone-numbers/${encodeURIComponent(PHONE_NUMBER_ID)}`, { headers: apiHeaders }),
     ]);
 
-    if (!agentCheckRes.ok) {
-      const agentError = await agentCheckRes.text();
-      console.error("[twilio-ai-call] Invalid ELEVENLABS_AGENT_ID:", agentError);
-      return errorResponse(`ELEVENLABS_AGENT_ID inválido ou não encontrado: ${agentError}`, 500);
+    if (!userRes.ok) {
+      const body = await userRes.text();
+      console.error("[twilio-ai-call] ELEVENLABS_API_KEY inválida:", userRes.status, body);
+      return errorResponse(
+        `ELEVENLABS_API_KEY inválida (GET /v1/user → ${userRes.status}): ${body.slice(0, 300)}`,
+        500,
+      );
     }
+    await userRes.text(); // consume body
 
-    if (!phoneCheckRes.ok) {
-      const phoneError = await phoneCheckRes.text();
-      console.error("[twilio-ai-call] Invalid ELEVENLABS_PHONE_NUMBER_ID:", phoneError);
-      return errorResponse(`ELEVENLABS_PHONE_NUMBER_ID inválido ou não encontrado: ${phoneError}`, 500);
+    if (!agentRes.ok) {
+      const body = await agentRes.text();
+      console.error("[twilio-ai-call] AGENT_ID inválido:", agentRes.status, body);
+      return errorResponse(
+        `ELEVENLABS_AGENT_ID "${AGENT_ID}" não encontrado (GET /v1/convai/agents → ${agentRes.status}): ${body.slice(0, 300)}`,
+        500,
+      );
     }
+    await agentRes.text();
+
+    if (!phoneRes.ok) {
+      const body = await phoneRes.text();
+      console.error("[twilio-ai-call] PHONE_NUMBER_ID inválido:", phoneRes.status, body);
+      return errorResponse(
+        `ELEVENLABS_PHONE_NUMBER_ID "${PHONE_NUMBER_ID}" não encontrado (GET /v1/convai/phone-numbers → ${phoneRes.status}): ${body.slice(0, 300)}`,
+        500,
+      );
+    }
+    await phoneRes.text();
+
+    console.info("[twilio-ai-call] Preflight OK — key, agent, phone validated");
 
     // ── Native ElevenLabs outbound call via Twilio ──
     const response = await fetch("https://api.elevenlabs.io/v1/convai/twilio/outbound-call", {
@@ -111,8 +131,11 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
     if (!response.ok) {
-      console.error("[twilio-ai-call] ElevenLabs outbound error:", data);
-      return errorResponse(`ElevenLabs outbound-call falhou: ${JSON.stringify(data)}`, response.status);
+      console.error("[twilio-ai-call] ElevenLabs outbound error:", JSON.stringify(data));
+      return errorResponse(
+        `ElevenLabs outbound-call falhou (${response.status}): ${JSON.stringify(data)}`,
+        response.status,
+      );
     }
 
     const callSid = data.call_sid || data.sid || data.id || "unknown";
