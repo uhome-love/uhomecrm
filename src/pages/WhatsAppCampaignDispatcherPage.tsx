@@ -8,18 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Send, Pause, Play, XCircle, RefreshCw, TestTube, Rocket, Filter, BarChart3, List, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Send, Pause, Play, XCircle, RefreshCw, TestTube, Rocket, Filter, BarChart3, List, CheckCircle2, AlertTriangle, Database, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import {
   useCampaignBatches,
   useCampaignSends,
   useFetchEligibleLeads,
+  useFetchOAEligibleLeads,
   useCreateCampaignBatch,
   useDispatchBatch,
   useUpdateBatchStatus,
   type EligibleLead,
   type CampaignBatch,
 } from "@/hooks/useWhatsAppCampaign";
+import { useOAListas } from "@/hooks/useOfertaAtiva";
 
 /* ─── Status config ─── */
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
