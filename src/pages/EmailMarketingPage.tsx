@@ -491,11 +491,27 @@ function EmailCampaignsTab() {
                     {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: ptBR })}
                   </p>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-wrap">
                   {c.status === "rascunho" && (
                     <Button size="sm" variant="default" className="gap-1 text-xs" onClick={() => handleSend(c.id)} disabled={sending === c.id}>
                       {sending === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                       Enviar
+                    </Button>
+                  )}
+                  {c.status === "enviando" && (
+                    <Button size="sm" variant="outline" className="gap-1 text-xs text-amber-600 border-amber-300 hover:bg-amber-50" onClick={() => handlePause(c.id)}>
+                      <Pause className="h-3 w-3" /> Pausar
+                    </Button>
+                  )}
+                  {(c.status === "pausada" || c.status === "enviando") && (
+                    <Button size="sm" variant="default" className="gap-1 text-xs" onClick={() => handleResume(c.id)} disabled={sending === c.id}>
+                      {sending === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                      {c.status === "pausada" ? "Retomar" : "Continuar"}
+                    </Button>
+                  )}
+                  {(c.status === "enviada" || c.status === "pausada" || c.status === "enviando") && (
+                    <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => handleResend(c.id)} disabled={sending === c.id}>
+                      <RotateCcw className="h-3 w-3" /> Reenviar erros
                     </Button>
                   )}
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteCampaign(c.id)}>
