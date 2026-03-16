@@ -134,3 +134,12 @@ verify_jwt = false
 
 [functions.whatsapp-webhook]
 verify_jwt = false
+
+[functions.twilio-ai-call]
+verify_jwt = false
+
+[functions.twilio-ai-twiml]
+verify_jwt = false
+
+[functions.twilio-ai-status]
+verify_jwt = false
