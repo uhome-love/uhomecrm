@@ -90,6 +90,11 @@ export default function WhatsAppCampaignDispatcherPage() {
   );
 }
 
+/* ─── Template default images ─── */
+const TEMPLATE_DEFAULT_IMAGES: Record<string, string> = {
+  melnick_day_poa_2026: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
+};
+
 /* ─── Tab: Nova Campanha ─── */
 function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [nome, setNome] = useState("");
@@ -105,7 +110,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
   const [tag, setTag] = useState("");
   const [stageId, setStageId] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("https://uhomeia.lovable.app/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1");
-  const [headerImageUrl, setHeaderImageUrl] = useState("");
+  const [headerImageUrl, setHeaderImageUrl] = useState(TEMPLATE_DEFAULT_IMAGES["melnick_day_poa_2026"] || "");
   const [selectedListaIds, setSelectedListaIds] = useState<string[]>([]);
 
   const [eligibleLeads, setEligibleLeads] = useState<EligibleLead[]>([]);
