@@ -19,6 +19,7 @@ import {
   useFetchOAEligibleLeads,
   useCreateCampaignBatch,
   useDispatchBatch,
+  useDispatchBatchLoop,
   useUpdateBatchStatus,
   type EligibleLead,
   type CampaignBatch,
@@ -483,13 +484,14 @@ function CampanhasTab({ selectedBatchId, onSelect }: { selectedBatchId: string |
   const { data: sends = [] } = useCampaignSends(selectedBatchId);
   const { data: liveCounts } = useCampaignSendCounts(selectedBatchId);
   const dispatchBatch = useDispatchBatch();
+  const { start: startLoop, stop: stopLoop, loopRunning } = useDispatchBatchLoop();
   const updateStatus = useUpdateBatchStatus();
 
   const selectedBatch = batches.find((b) => b.id === selectedBatchId);
 
 
   const handleDispatch = (batchId: string) => {
-    dispatchBatch.mutate({ batchId, action: "dispatch" });
+    startLoop(batchId);
   };
 
   const handleTest = (batchId: string) => {
@@ -498,10 +500,13 @@ function CampanhasTab({ selectedBatchId, onSelect }: { selectedBatchId: string |
     dispatchBatch.mutate({ batchId, action: "test", sendIds: testSends });
   };
 
-  const handlePause = (batchId: string) => updateStatus.mutate({ batchId, status: "paused" });
+  const handlePause = (batchId: string) => {
+    stopLoop();
+    updateStatus.mutate({ batchId, status: "paused" });
+  };
   const handleResume = (batchId: string) => {
     updateStatus.mutate({ batchId, status: "sending" }, {
-      onSuccess: () => dispatchBatch.mutate({ batchId, action: "dispatch" }),
+      onSuccess: () => startLoop(batchId),
     });
   };
   const handleCancel = (batchId: string) => updateStatus.mutate({ batchId, status: "cancelled" });

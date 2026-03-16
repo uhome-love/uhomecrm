@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -378,7 +379,7 @@ export function useCreateCampaignBatch() {
   });
 }
 
-/* ─── Dispatch batch ─── */
+/* ─── Dispatch batch (single call) ─── */
 export function useDispatchBatch() {
   const qc = useQueryClient();
 
@@ -409,6 +410,69 @@ export function useDispatchBatch() {
       toast.error("Erro no disparo: " + err.message);
     },
   });
+}
+
+/* ─── Dispatch batch with auto-loop (calls repeatedly until done) ─── */
+export function useDispatchBatchLoop() {
+  const qc = useQueryClient();
+  const [loopRunning, setLoopRunning] = useState(false);
+  const abortRef = useRef(false);
+
+  const stop = () => { abortRef.current = true; };
+
+  const start = async (batchId: string) => {
+    if (loopRunning) return;
+    setLoopRunning(true);
+    abortRef.current = false;
+    let totalProcessed = 0;
+    let totalFailed = 0;
+    let round = 0;
+
+    try {
+      while (!abortRef.current) {
+        round++;
+        console.log(`[dispatch-loop] round ${round}, batchId=${batchId}`);
+
+        const { data, error } = await supabase.functions.invoke("whatsapp-campaign-dispatch", {
+          body: { action: "dispatch", batch_id: batchId },
+        });
+
+        if (error) {
+          console.error("[dispatch-loop] error:", error);
+          toast.error("Erro no disparo: " + error.message);
+          break;
+        }
+
+        if (data?.stopped) {
+          toast.info(`Disparo ${data.reason === "paused" ? "pausado" : "cancelado"}`);
+          break;
+        }
+
+        if (data?.completed) {
+          toast.success(`Disparo concluído! Total: ${totalProcessed} enviados, ${totalFailed} falhas`);
+          break;
+        }
+
+        totalProcessed += data?.processed || 0;
+        totalFailed += data?.failed || 0;
+
+        // Refresh UI counts
+        qc.invalidateQueries({ queryKey: ["wa-campaign-batches"] });
+        qc.invalidateQueries({ queryKey: ["wa-campaign-sends"] });
+        qc.invalidateQueries({ queryKey: ["wa-send-counts"] });
+
+        // Small pause between rounds
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    } finally {
+      setLoopRunning(false);
+      qc.invalidateQueries({ queryKey: ["wa-campaign-batches"] });
+      qc.invalidateQueries({ queryKey: ["wa-campaign-sends"] });
+      qc.invalidateQueries({ queryKey: ["wa-send-counts"] });
+    }
+  };
+
+  return { start, stop, loopRunning };
 }
 
 /* ─── Update batch status ─── */

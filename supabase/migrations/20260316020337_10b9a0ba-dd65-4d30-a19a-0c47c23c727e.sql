@@ -1,0 +1,1 @@
+UPDATE whatsapp_campaign_batches SET total_sent = 169, updated_at = now() WHERE id = '71a36b18-2971-4f94-a4f9-033f4ce33593'

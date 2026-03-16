@@ -52,8 +52,8 @@ serve(async (req) => {
         });
       }
 
-      // Get pending sends for this batch (limit by batch_size)
-      const limit = batch.batch_size || 500;
+      // Get pending sends for this batch (limit to 80 to fit in edge function timeout)
+      const limit = Math.min(batch.batch_size || 80, 80);
       const { data: sends, error: sendsErr } = await supabase
         .from("whatsapp_campaign_sends")
         .select("*")
@@ -85,8 +85,16 @@ serve(async (req) => {
 
       let sentCount = 0;
       let failCount = 0;
+      const startTime = Date.now();
+      const MAX_EXECUTION_MS = 45_000; // 45s safety margin
 
       for (const send of sends) {
+        // Time guard — stop before edge function timeout
+        if (Date.now() - startTime > MAX_EXECUTION_MS) {
+          console.log(`Time guard hit after ${sentCount} sends, stopping gracefully`);
+          break;
+        }
+
         // Re-check batch status for pause/cancel
         if (sentCount > 0 && sentCount % 50 === 0) {
           const { data: freshBatch } = await supabase
