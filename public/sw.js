@@ -1,29 +1,36 @@
-const CACHE_NAME = "uhomesales-v" + Date.now();
+const CACHE_NAME = "uhomesales-runtime-v2";
+const STATIC_DESTINATIONS = new Set(["script", "style", "document", "worker"]);
 
-self.addEventListener("install", (e) => {
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((names) =>
-      Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
+      Promise.all(names.map((n) => caches.delete(n)))
     ).then(() => clients.claim())
   );
 });
 
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+
   const url = new URL(e.request.url);
   if (url.pathname.startsWith("/~oauth")) return;
   if (url.hostname.includes("supabase")) return;
 
-  // Network-first: always try fresh, fallback to cache
+  // Never cache app shell/assets that can leave the published UI stale
+  if (STATIC_DESTINATIONS.has(e.request.destination)) {
+    e.respondWith(fetch(e.request, { cache: "no-store" }));
+    return;
+  }
+
+  // Cache only lightweight same-origin GETs as offline fallback
   e.respondWith(
     fetch(e.request)
       .then((response) => {
-        // Cache successful responses for offline fallback
-        if (response.ok && url.origin === self.location.origin) {
+        if (response.ok && url.origin === self.location.origin && e.request.destination === "image") {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         }
