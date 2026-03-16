@@ -72,6 +72,39 @@ export default function DisparadorLigacoesIA() {
   const abortRef = useRef(false);
   const pauseRef = useRef(false);
 
+  // ── Realtime subscription for ai_calls status updates ──
+  useEffect(() => {
+    const channel = supabase
+      .channel('ai-calls-status')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'ai_calls' },
+        (payload) => {
+          const updated = payload.new as any;
+          const sid = updated.twilio_call_sid;
+          if (!sid) return;
+          
+          setResults(prev => prev.map(r => {
+            if (r.callSid === sid) {
+              return {
+                ...r,
+                status: updated.status || r.status,
+                duration: updated.duracao_segundos ?? r.duration,
+                resultado: updated.resultado ?? r.resultado,
+                resumo_ia: updated.resumo_ia ?? r.resumo_ia,
+              };
+            }
+            return r;
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Toggle lista selection
   const toggleLista = (id: string) => {
     setSelectedListaIds(prev =>
