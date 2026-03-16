@@ -390,12 +390,19 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
           <CardContent className="space-y-3">
             <div>
               <Label className="text-xs">Template Name (Meta)</Label>
-              <Input value={templateName} onChange={(e) => {
-                const val = e.target.value;
-                setTemplateName(val);
-                const defaultImg = TEMPLATE_DEFAULT_IMAGES[val];
-                if (defaultImg) setHeaderImageUrl(defaultImg);
-              }} placeholder="melnick_day_poa_2026" />
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={templateName}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTemplateName(val);
+                  const defaultImg = TEMPLATE_DEFAULT_IMAGES[val];
+                  if (defaultImg) setHeaderImageUrl(defaultImg);
+                }}
+              >
+                <option value="melnick_day_poa_2026">melnick_day_poa_2026 (botão estático)</option>
+                <option value="melnick_day_wa_v2">melnick_day_wa_v2 (botão dinâmico ✅)</option>
+              </select>
             </div>
             <div>
               <Label className="text-xs">Idioma</Label>
