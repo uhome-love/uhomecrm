@@ -313,6 +313,7 @@ export function AppSidebar() {
               { title: "Alertas HOMI", url: "/alertas", icon: Bell },
               { title: "Meu Time", url: "/meu-time", icon: Users },
               { title: "Central do Gerente", url: "/central-do-gerente", icon: ClipboardCheck },
+              { title: "🎯 Melnick Metas", url: "/melnick-metas", icon: ClipboardCheck },
             ],
           },
           {
