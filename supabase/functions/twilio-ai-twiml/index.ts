@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+  const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_CONVAI_KEY") || Deno.env.get("ELEVENLABS_API_KEY");
   if (!ELEVENLABS_API_KEY) {
     console.error("[twilio-ai-twiml] Missing ELEVENLABS_API_KEY");
     return new Response("<Response><Say>Erro de configuração.</Say></Response>", {
