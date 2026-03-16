@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Mail, Settings, FileText, BarChart3, Send, Plus, Trash2, Eye, Copy, Pencil, Database, FileSpreadsheet, Upload } from "lucide-react";
+import { Loader2, Mail, Settings, FileText, BarChart3, Send, Plus, Trash2, Eye, Copy, Pencil, Database, FileSpreadsheet, Upload, Pause, Play, RotateCcw } from "lucide-react";
 import { useEmailSettings, useEmailTemplates, useEmailCampaigns } from "@/hooks/useEmail";
 import { useOAListas } from "@/hooks/useOfertaAtiva";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
