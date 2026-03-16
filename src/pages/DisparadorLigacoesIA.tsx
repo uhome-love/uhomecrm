@@ -51,7 +51,7 @@ const CALL_STATUS: Record<string, { label: string; color: string; icon: typeof P
 export default function DisparadorLigacoesIA() {
   const navigate = useNavigate();
   const { listas, isLoading: listasLoading } = useOAListas();
-  const activeListas = useMemo(() => listas.filter(l => l.status === "ativa"), [listas]);
+  const activeListas = useMemo(() => listas.filter(l => l.status === "ativa" || l.status === "liberada"), [listas]);
 
   // ── Step 1: Configuration ──
   const [selectedListaIds, setSelectedListaIds] = useState<string[]>([]);
