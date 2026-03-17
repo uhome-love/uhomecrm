@@ -433,8 +433,9 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
                   if (defaultUrl) setRedirectUrl(defaultUrl);
                 }}
               >
+                <option value="ofertas_meday">ofertas_meday (MEDAY Ofertas ✅)</option>
                 <option value="melnick_day_poa_2026">melnick_day_poa_2026 (botão estático)</option>
-                <option value="melnick_day_wa_v2">melnick_day_wa_v2 (botão dinâmico ✅)</option>
+                <option value="melnick_day_wa_v2">melnick_day_wa_v2 (botão dinâmico)</option>
               </select>
             </div>
             <div>
