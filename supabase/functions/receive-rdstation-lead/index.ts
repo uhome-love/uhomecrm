@@ -188,8 +188,7 @@ async function processLead(
     || conversionContent.campaign 
     || "";
 
-  // Custom fields from RD Station (cf_xxx)
-  const customFields = lead.custom_fields || {};
+  // Custom fields from RD Station (cf_xxx) - reuse customFields from above
   if (!empreendimento && customFields.cf_empreendimento) {
     empreendimento = customFields.cf_empreendimento;
   }
