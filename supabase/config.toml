@@ -143,3 +143,18 @@ verify_jwt = false
 
 [functions.twilio-ai-status]
 verify_jwt = false
+
+[functions.elevenlabs-webhook]
+verify_jwt = false
+
+[functions.execute-automations]
+verify_jwt = false
+
+[functions.vapid-public-key]
+verify_jwt = false
+
+[functions.visita-whatsapp-confirm]
+verify_jwt = false
+
+[functions.mailgun-batch-cron]
+verify_jwt = false
