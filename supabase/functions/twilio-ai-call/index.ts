@@ -1,7 +1,7 @@
 /**
  * twilio-ai-call — Initiates an outbound call via ElevenLabs native Twilio integration
  * CEO-only feature for automated lead prospecting calls.
- * Uses POST https://api.elevenlabs.io/v1/convai/twilio/outbound-call
+ * Stores both the ElevenLabs conversation_id and Twilio CallSid for proper webhook matching.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, errorResponse, handleCors } from "../_shared/cors.ts";
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   const { lead_id, telefone, nome, empreendimento, context } = body as Record<string, string>;
   if (!telefone) return errorResponse("Missing telefone", 400);
 
-  // ── Check required env vars (single source: ELEVENLABS_API_KEY) ──
+  // ── Check required env vars ──
   const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
   if (!ELEVENLABS_API_KEY) return errorResponse("ELEVENLABS_API_KEY not configured", 500);
 
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
   toPhone = `+${toPhone}`;
 
   try {
-    // ── Preflight checks: validate API key, agent, phone number ──
+    // ── Preflight checks ──
     const apiHeaders = { "xi-api-key": ELEVENLABS_API_KEY };
 
     const [userRes, agentRes, phoneRes] = await Promise.all([
@@ -83,41 +83,26 @@ Deno.serve(async (req) => {
     ]);
 
     if (!userRes.ok) {
-      const body = await userRes.text();
-      console.error("[twilio-ai-call] ELEVENLABS_API_KEY inválida:", userRes.status, body);
-      return errorResponse(
-        `ELEVENLABS_API_KEY inválida (GET /v1/user → ${userRes.status}): ${body.slice(0, 300)}`,
-        500,
-      );
+      const b = await userRes.text();
+      return errorResponse(`ELEVENLABS_API_KEY inválida (${userRes.status}): ${b.slice(0, 300)}`, 500);
     }
-    await userRes.text(); // consume body
+    await userRes.text();
 
     if (!agentRes.ok) {
-      const body = await agentRes.text();
-      console.error("[twilio-ai-call] AGENT_ID inválido:", agentRes.status, body);
-      return errorResponse(
-        `ELEVENLABS_AGENT_ID "${AGENT_ID}" não encontrado (GET /v1/convai/agents → ${agentRes.status}): ${body.slice(0, 300)}`,
-        500,
-      );
+      const b = await agentRes.text();
+      return errorResponse(`ELEVENLABS_AGENT_ID "${AGENT_ID}" não encontrado (${agentRes.status}): ${b.slice(0, 300)}`, 500);
     }
     await agentRes.text();
 
     if (!phoneRes.ok) {
-      const body = await phoneRes.text();
-      console.error("[twilio-ai-call] PHONE_NUMBER_ID inválido:", phoneRes.status, body);
-      return errorResponse(
-        `ELEVENLABS_PHONE_NUMBER_ID "${PHONE_NUMBER_ID}" não encontrado (GET /v1/convai/phone-numbers → ${phoneRes.status}): ${body.slice(0, 300)}`,
-        500,
-      );
+      const b = await phoneRes.text();
+      return errorResponse(`ELEVENLABS_PHONE_NUMBER_ID "${PHONE_NUMBER_ID}" não encontrado (${phoneRes.status}): ${b.slice(0, 300)}`, 500);
     }
     await phoneRes.text();
 
     console.info("[twilio-ai-call] Preflight OK — key, agent, phone validated");
 
-    // ── Native ElevenLabs outbound call via Twilio ──
-    // Dynamic variables are interpolated by ElevenLabs into the agent's
-    // first_message template (e.g. "Olá {{nome}}, tudo bem?") configured
-    // in the dashboard. We do NOT override first_message from code.
+    // ── Outbound call ──
     const dynamicVariables: Record<string, string> = {};
     if (nome) dynamicVariables.nome = nome;
     if (telefone) dynamicVariables.telefone = toPhone;
@@ -130,8 +115,6 @@ Deno.serve(async (req) => {
       to_number: toPhone,
     };
 
-    // Pass dynamic variables via conversation_initiation_client_data
-    // (the correct field per ElevenLabs API spec)
     if (Object.keys(dynamicVariables).length > 0) {
       outboundPayload.conversation_initiation_client_data = {
         dynamic_variables: dynamicVariables,
@@ -153,31 +136,34 @@ Deno.serve(async (req) => {
     console.info("[twilio-ai-call] ElevenLabs response:", JSON.stringify(data));
 
     if (!response.ok) {
-      console.error("[twilio-ai-call] ElevenLabs outbound error:", JSON.stringify(data));
       return errorResponse(
         `ElevenLabs outbound-call falhou (${response.status}): ${JSON.stringify(data)}`,
         response.status,
       );
     }
 
-    // ElevenLabs may return call_sid, conversation_id, or other identifiers
-    const callSid = data.call_sid || data.conversation_id || data.sid || data.id || "unknown";
+    // Extract both IDs from the response
+    const conversationId = data.conversation_id || null;
+    const callSid = data.callSid || data.call_sid || data.sid || null;
+    // Use conversation_id as the primary identifier (it's what ElevenLabs sends back in webhooks)
+    const primaryId = conversationId || callSid || "unknown";
 
-    // ── Log the call ──
+    // ── Log the call with BOTH identifiers ──
     await adminClient.from("ai_calls").insert({
       lead_id: lead_id || null,
       telefone: toPhone,
       nome_lead: nome || null,
       empreendimento: empreendimento || null,
-      twilio_call_sid: callSid,
+      twilio_call_sid: primaryId,
+      elevenlabs_conversation_id: conversationId,
       agent_id: AGENT_ID,
       status: "initiated",
       iniciado_por: userId,
       contexto: context || null,
     });
 
-    console.info(`[twilio-ai-call] Outbound call initiated: ${callSid}, to=${toPhone}`);
-    return jsonResponse({ success: true, call_sid: callSid });
+    console.info(`[twilio-ai-call] Outbound call initiated: ${primaryId}, to=${toPhone}, callSid=${callSid}`);
+    return jsonResponse({ success: true, call_sid: primaryId, conversation_id: conversationId });
   } catch (err) {
     console.error("[twilio-ai-call] Error:", err);
     return errorResponse(`Internal error: ${err instanceof Error ? err.message : "unknown"}`, 500);

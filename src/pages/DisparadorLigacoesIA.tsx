@@ -1,6 +1,7 @@
 /**
  * DisparadorLigacoesIA — CEO-only page for sequential AI calling via Twilio + ElevenLabs
  * Sessions persist in ai_call_sessions so progress survives navigation.
+ * Real-time feedback via Supabase Realtime + polling fallback.
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import {
   Bot, Phone, PhoneOff, Play, Pause, Square, Loader2, CheckCircle, XCircle,
-  Clock, User, Filter, List, BarChart3, RefreshCw, ChevronLeft, RotateCcw
+  Clock, User, Filter, List, BarChart3, RefreshCw, ChevronLeft, RotateCcw,
+  ThumbsUp, ThumbsDown, MessageSquare, AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOAListas, type OALead } from "@/hooks/useOfertaAtiva";
@@ -56,12 +58,14 @@ const CALL_STATUS: Record<string, { label: string; color: string; icon: typeof P
   calling: { label: "Ligando...", color: "text-blue-500", icon: Phone },
   ringing: { label: "Chamando", color: "text-amber-500", icon: Phone },
   "in-progress": { label: "Em andamento", color: "text-emerald-500", icon: Bot },
-  completed: { label: "Concluída", color: "text-emerald-600", icon: CheckCircle },
-  completed_positive: { label: "✅ Positiva", color: "text-emerald-600", icon: CheckCircle },
+  completed: { label: "Concluída", color: "text-muted-foreground", icon: CheckCircle },
+  completed_positive: { label: "✅ Interesse!", color: "text-emerald-600", icon: ThumbsUp },
   nao_atendeu: { label: "Não atendeu", color: "text-amber-600", icon: PhoneOff },
+  sem_interesse: { label: "Sem interesse", color: "text-muted-foreground", icon: ThumbsDown },
+  com_interesse: { label: "✅ Com interesse", color: "text-emerald-600", icon: ThumbsUp },
   erro: { label: "Erro", color: "text-destructive", icon: XCircle },
   busy: { label: "Ocupado", color: "text-amber-600", icon: PhoneOff },
-  "no-answer": { label: "Sem resposta", color: "text-destructive", icon: XCircle },
+  "no-answer": { label: "Sem resposta", color: "text-amber-500", icon: PhoneOff },
   failed: { label: "Falhou", color: "text-destructive", icon: XCircle },
   canceled: { label: "Cancelada", color: "text-muted-foreground", icon: XCircle },
   skipped: { label: "Sem telefone", color: "text-muted-foreground", icon: XCircle },
@@ -89,6 +93,7 @@ export default function DisparadorLigacoesIA() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [restoringSession, setRestoringSession] = useState(true);
   const [pendingSession, setPendingSession] = useState<SessionRow | null>(null);
+  const [expandedResult, setExpandedResult] = useState<string | null>(null);
   const abortRef = useRef(false);
   const pauseRef = useRef(false);
 
@@ -117,7 +122,6 @@ export default function DisparadorLigacoesIA() {
   }, [user]);
 
   const restoreSession = useCallback(async (session: SessionRow) => {
-    // Load lead info for the remaining queue
     const remainingIds = session.queue_lead_ids.slice(session.current_index);
     if (remainingIds.length === 0) {
       setPendingSession(null);
@@ -129,7 +133,6 @@ export default function DisparadorLigacoesIA() {
       .select("id, nome, telefone, empreendimento")
       .in("id", remainingIds);
 
-    // Also load already-processed calls from ai_calls for this session
     const processedIds = session.queue_lead_ids.slice(0, session.current_index);
     let pastResults: CallResult[] = [];
     if (processedIds.length > 0) {
@@ -162,7 +165,6 @@ export default function DisparadorLigacoesIA() {
       });
     }
 
-    // Maintain original queue order
     const leadMap = new Map((leads || []).map(l => [l.id, l]));
     const orderedQueue = remainingIds
       .map(id => leadMap.get(id))
@@ -173,14 +175,13 @@ export default function DisparadorLigacoesIA() {
     setResultFilter(session.result_filter || "all");
     setDelayBetweenCalls(session.delay_seconds || 5);
     setQueue(orderedQueue);
-    setCurrentIndex(0); // reset to 0 since queue is already sliced
+    setCurrentIndex(0);
     setResults(pastResults);
     setStep("running");
     setIsPaused(true);
     pauseRef.current = true;
     setPendingSession(null);
 
-    // Update session status to paused
     await supabase
       .from("ai_call_sessions" as any)
       .update({ status: "paused", updated_at: new Date().toISOString() } as any)
@@ -197,51 +198,7 @@ export default function DisparadorLigacoesIA() {
     setPendingSession(null);
   }, []);
 
-  // ── Realtime subscription + polling for ai_calls status updates ──
-  const refreshCallResults = useCallback(async () => {
-    setResults(prev => {
-      const sids = prev.filter(r => r.callSid).map(r => r.callSid!);
-      if (sids.length === 0) return prev;
-      
-      // Fire async query and update state when done
-      supabase
-        .from("ai_calls")
-        .select("twilio_call_sid, status, duracao_segundos, resultado, resumo_ia")
-        .in("twilio_call_sid", sids)
-        .then(({ data }) => {
-          if (!data || data.length === 0) return;
-          const callMap = new Map(data.map(c => [c.twilio_call_sid, c]));
-          setResults(current => current.map(r => {
-            if (!r.callSid) return r;
-            const updated = callMap.get(r.callSid);
-            if (!updated) return r;
-            return {
-              ...r,
-              status: updated.status || r.status,
-              duration: updated.duracao_segundos ?? r.duration,
-              resultado: updated.resultado ?? r.resultado,
-              resumo_ia: updated.resumo_ia ?? r.resumo_ia,
-            };
-          }));
-        });
-      
-      return prev;
-    });
-  }, []);
-
-  // Auto-poll every 10s while running or recently done
-  useEffect(() => {
-    if (step !== "running" && step !== "done") return;
-    if (results.length === 0) return;
-    
-    // Initial refresh
-    refreshCallResults();
-    
-    const interval = setInterval(refreshCallResults, 10000);
-    return () => clearInterval(interval);
-  }, [step, results.length, refreshCallResults]);
-
-  // Realtime subscription
+  // ── Realtime subscription for ai_calls updates ──
   useEffect(() => {
     const channel = supabase
       .channel('ai-calls-status')
@@ -251,12 +208,26 @@ export default function DisparadorLigacoesIA() {
         (payload) => {
           const updated = payload.new as any;
           const sid = updated.twilio_call_sid;
-          if (!sid) return;
+          const convId = updated.elevenlabs_conversation_id;
+          if (!sid && !convId) return;
+
           setResults(prev => prev.map(r => {
-            if (r.callSid === sid) {
+            const matches = (r.callSid && (r.callSid === sid || r.callSid === convId));
+            if (matches) {
+              const newStatus = updated.status || r.status;
+              const changed = newStatus !== r.status || updated.resumo_ia !== r.resumo_ia;
+              if (!changed) return r;
+              
+              // Toast for important status changes
+              if (newStatus === "completed_positive" || updated.resultado === "com_interesse") {
+                toast.success(`🎯 ${r.lead.nome}: Interesse detectado!`, { duration: 8000 });
+              } else if (newStatus === "nao_atendeu" || newStatus === "no-answer") {
+                toast.info(`📵 ${r.lead.nome}: Não atendeu`);
+              }
+              
               return {
                 ...r,
-                status: updated.status || r.status,
+                status: newStatus,
                 duration: updated.duracao_segundos ?? r.duration,
                 resultado: updated.resultado ?? r.resultado,
                 resumo_ia: updated.resumo_ia ?? r.resumo_ia,
@@ -269,6 +240,43 @@ export default function DisparadorLigacoesIA() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // ── Polling fallback every 5s while running/done ──
+  const refreshCallResults = useCallback(async () => {
+    const sids = results.filter(r => r.callSid).map(r => r.callSid!);
+    if (sids.length === 0) return;
+
+    const { data } = await supabase
+      .from("ai_calls")
+      .select("twilio_call_sid, elevenlabs_conversation_id, status, duracao_segundos, resultado, resumo_ia")
+      .in("twilio_call_sid", sids);
+
+    if (!data || data.length === 0) return;
+    
+    const callMap = new Map(data.map((c: any) => [c.twilio_call_sid, c]));
+    setResults(current => current.map(r => {
+      if (!r.callSid) return r;
+      const updated = callMap.get(r.callSid);
+      if (!updated) return r;
+      if (updated.status === r.status && updated.resumo_ia === r.resumo_ia) return r;
+      return {
+        ...r,
+        status: updated.status || r.status,
+        duration: updated.duracao_segundos ?? r.duration,
+        resultado: updated.resultado ?? r.resultado,
+        resumo_ia: updated.resumo_ia ?? r.resumo_ia,
+      };
+    }));
+  }, [results]);
+
+  useEffect(() => {
+    if (step !== "running" && step !== "done") return;
+    if (results.length === 0) return;
+    
+    refreshCallResults();
+    const interval = setInterval(refreshCallResults, 5000);
+    return () => clearInterval(interval);
+  }, [step, results.length, refreshCallResults]);
 
   const toggleLista = (id: string) => {
     setSelectedListaIds(prev =>
@@ -347,7 +355,6 @@ export default function DisparadorLigacoesIA() {
     abortRef.current = false;
     pauseRef.current = false;
 
-    // Create or reuse session
     let sid = sessionId;
     if (!sid) {
       const { data: newSession } = await supabase
@@ -380,9 +387,7 @@ export default function DisparadorLigacoesIA() {
       const lead = queue[i];
       setCurrentIndex(i);
 
-      // Persist progress
       if (sid) {
-        // Calculate the absolute index for the session
         const absoluteIndex = results.length + i;
         saveSession(sid, { current_index: absoluteIndex });
       }
@@ -415,7 +420,7 @@ export default function DisparadorLigacoesIA() {
             lead,
             status: "initiated",
             duration: null,
-            callSid: data.call_sid,
+            callSid: data.call_sid || data.conversation_id,
           }]);
         }
       } catch (err: any) {
@@ -463,15 +468,19 @@ export default function DisparadorLigacoesIA() {
     setIsRunning(false);
     setIsPaused(false);
     setSessionId(null);
+    setExpandedResult(null);
   };
 
   // ── Stats ──
   const stats = useMemo(() => {
     const total = results.length;
-    const initiated = results.filter(r => ["initiated", "ringing", "in-progress", "completed", "completed_positive"].includes(r.status)).length;
-    const failed = results.filter(r => ["failed", "busy", "no-answer", "nao_atendeu", "erro"].includes(r.status)).length;
+    const positive = results.filter(r => ["completed_positive", "com_interesse"].includes(r.status) || r.resultado === "com_interesse").length;
+    const negative = results.filter(r => ["completed", "sem_interesse"].includes(r.status) && r.resultado && r.resultado !== "com_interesse").length;
+    const noAnswer = results.filter(r => ["nao_atendeu", "no-answer", "busy"].includes(r.status)).length;
+    const failed = results.filter(r => ["failed", "erro"].includes(r.status)).length;
+    const pending = results.filter(r => ["initiated", "ringing", "in-progress", "calling"].includes(r.status)).length;
     const skipped = results.filter(r => r.status === "skipped").length;
-    return { total, initiated, failed, skipped };
+    return { total, positive, negative, noAnswer, failed, pending, skipped };
   }, [results]);
 
   if (restoringSession) {
@@ -684,14 +693,14 @@ export default function DisparadorLigacoesIA() {
             <CardContent className="pt-5 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {step === "done" ? "Concluído" : isPaused ? "⏸ Pausado" : "🔄 Em execução"}
+                  {step === "done" ? "✅ Concluído" : isPaused ? "⏸ Pausado" : "🔄 Em execução"}
                 </span>
                 <span className="font-semibold">
-                  {currentIndex + (isRunning ? 0 : 0)} / {queue.length}
+                  {Math.min(currentIndex + 1, queue.length)} / {queue.length}
                   {results.length > queue.length && ` (${results.length} total)`}
                 </span>
               </div>
-              <Progress value={((currentIndex) / Math.max(queue.length, 1)) * 100} />
+              <Progress value={((currentIndex + (step === "done" ? 1 : 0)) / Math.max(queue.length, 1)) * 100} />
 
               {step === "running" && currentIndex < queue.length && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
@@ -726,29 +735,51 @@ export default function DisparadorLigacoesIA() {
             </CardContent>
           </Card>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Enhanced Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Card className={stats.positive > 0 ? "border-emerald-500/50 bg-emerald-500/5" : ""}>
+              <CardContent className="pt-4 pb-3 text-center">
+                <p className="text-2xl font-bold text-emerald-600">{stats.positive}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <ThumbsUp className="h-3 w-3" /> Interesse
+                </p>
+              </CardContent>
+            </Card>
             <Card>
               <CardContent className="pt-4 pb-3 text-center">
-                <p className="text-2xl font-bold text-emerald-600">{stats.initiated}</p>
-                <p className="text-xs text-muted-foreground">Ligações</p>
+                <p className="text-2xl font-bold text-amber-500">{stats.noAnswer}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <PhoneOff className="h-3 w-3" /> Não atendeu
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3 text-center">
+                <p className="text-2xl font-bold text-muted-foreground">{stats.negative}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <ThumbsDown className="h-3 w-3" /> Sem interesse
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3 text-center">
+                <p className="text-2xl font-bold text-blue-500">{stats.pending}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <Clock className="h-3 w-3" /> Aguardando
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 pb-3 text-center">
                 <p className="text-2xl font-bold text-destructive">{stats.failed}</p>
-                <p className="text-xs text-muted-foreground">Falhas</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-3 text-center">
-                <p className="text-2xl font-bold text-muted-foreground">{stats.skipped}</p>
-                <p className="text-xs text-muted-foreground">Pulados</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <XCircle className="h-3 w-3" /> Falhas
+                </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Results log */}
+          {/* Results log with expandable resumo */}
           {results.length > 0 && (
             <Card>
               <CardHeader className="pb-2 flex-row items-center justify-between">
@@ -760,39 +791,79 @@ export default function DisparadorLigacoesIA() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="max-h-60 overflow-y-auto space-y-1">
+                <div className="max-h-[400px] overflow-y-auto space-y-1.5">
                   {[...results].reverse().map((r, i) => {
-                    const st = CALL_STATUS[r.status] || CALL_STATUS.waiting;
+                    const st = CALL_STATUS[r.status] || CALL_STATUS[r.resultado || ""] || CALL_STATUS.waiting;
                     const StIcon = st.icon;
+                    const isExpanded = expandedResult === `${r.lead.id}-${i}`;
+                    const hasResumo = r.resumo_ia && r.resumo_ia.length > 0;
+                    const isPositive = r.status === "completed_positive" || r.resultado === "com_interesse";
+
                     return (
                       <div
                         key={`${r.lead.id}-${i}`}
-                        className="flex items-center justify-between text-sm p-2 rounded bg-muted/20 border border-border"
+                        className={`rounded-lg border transition-colors ${
+                          isPositive 
+                            ? "border-emerald-500/50 bg-emerald-500/5" 
+                            : "border-border bg-muted/20"
+                        }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <StIcon className={`h-3.5 w-3.5 shrink-0 ${st.color}`} />
-                          <span className="truncate">{r.lead.nome}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {r.duration != null && r.duration > 0 && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {Math.floor(r.duration / 60)}:{String(r.duration % 60).padStart(2, '0')}
-                            </span>
-                          )}
-                          {r.resultado && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {r.resultado}
+                        <div
+                          className="flex items-center justify-between text-sm p-2.5 cursor-pointer"
+                          onClick={() => hasResumo && setExpandedResult(isExpanded ? null : `${r.lead.id}-${i}`)}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <StIcon className={`h-4 w-4 shrink-0 ${st.color}`} />
+                            <span className="font-medium truncate">{r.lead.nome}</span>
+                            {r.lead.empreendimento && (
+                              <span className="text-[10px] text-muted-foreground hidden md:inline">
+                                {r.lead.empreendimento}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {r.duration != null && r.duration > 0 && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <Clock className="h-3 w-3" />
+                                {Math.floor(r.duration / 60)}:{String(r.duration % 60).padStart(2, '0')}
+                              </span>
+                            )}
+                            {r.resultado && (
+                              <Badge 
+                                variant={isPositive ? "default" : "secondary"} 
+                                className={`text-[10px] ${isPositive ? "bg-emerald-600" : ""}`}
+                              >
+                                {r.resultado}
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-[10px]">
+                              {st.label}
                             </Badge>
-                          )}
-                          <Badge variant="outline" className="text-[10px]">
-                            {st.label}
-                          </Badge>
-                          {r.error && (
-                            <span className="text-[10px] text-destructive truncate max-w-32">
-                              {r.error}
-                            </span>
-                          )}
+                            {hasResumo && (
+                              <MessageSquare className="h-3 w-3 text-muted-foreground" />
+                            )}
+                          </div>
                         </div>
+                        
+                        {/* Expanded: show resumo_ia */}
+                        {isExpanded && hasResumo && (
+                          <div className="px-3 pb-3 pt-0">
+                            <div className="p-2.5 rounded-md bg-background border border-border text-xs text-muted-foreground leading-relaxed">
+                              <p className="font-medium text-foreground mb-1 flex items-center gap-1">
+                                <Bot className="h-3 w-3" /> Resumo da IA
+                              </p>
+                              {r.resumo_ia}
+                            </div>
+                          </div>
+                        )}
+
+                        {r.error && (
+                          <div className="px-3 pb-2">
+                            <p className="text-[10px] text-destructive flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" /> {r.error}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

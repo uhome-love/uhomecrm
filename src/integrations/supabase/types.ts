@@ -409,6 +409,7 @@ export type Database = {
           contexto: string | null
           created_at: string
           duracao_segundos: number | null
+          elevenlabs_conversation_id: string | null
           empreendimento: string | null
           finalizado_at: string | null
           id: string
@@ -427,6 +428,7 @@ export type Database = {
           contexto?: string | null
           created_at?: string
           duracao_segundos?: number | null
+          elevenlabs_conversation_id?: string | null
           empreendimento?: string | null
           finalizado_at?: string | null
           id?: string
@@ -445,6 +447,7 @@ export type Database = {
           contexto?: string | null
           created_at?: string
           duracao_segundos?: number | null
+          elevenlabs_conversation_id?: string | null
           empreendimento?: string | null
           finalizado_at?: string | null
           id?: string
