@@ -5,24 +5,15 @@ import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
-import type { PipelineStage } from "@/hooks/usePipeline";
-import { useMemo as useMemoReact } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParceriasMap } from "@/hooks/useParcerias";
 
-// Lazy load heavy tab components
 const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineFlowDashboard"));
-const MaterialsLibrary = lazy(() => import("@/components/pipeline/MaterialsLibrary"));
-const SequenceBuilder = lazy(() => import("@/components/pipeline/SequenceBuilder"));
-const SequenceLibrary = lazy(() => import("@/components/pipeline/SequenceLibrary"));
 const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
-const PipelineCeoIntelligence = lazy(() => import("@/components/pipeline/PipelineCeoIntelligence"));
 const MelnickCampaignAnalytics = lazy(() => import("@/components/pipeline/MelnickCampaignAnalytics"));
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
-const PipelineReportsDashboard = lazy(() => import("@/components/pipeline/PipelineReportsDashboard"));
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { ChevronDown, ChevronUp, CheckSquare, Square, Send, X } from "lucide-react";
+import { CheckSquare, Square, Send, X } from "lucide-react";
 import PipelineAdvancedFilters, {
   EMPTY_FILTERS,
   applyFilters,
@@ -32,7 +23,7 @@ import PipelineAdvancedFilters, {
 import type { PipelineLead } from "@/hooks/usePipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, RefreshCw, Loader2, Search, LayoutGrid, BarChart3, FolderOpen, Zap, Radar, FileText, Brain, Rocket } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Search, LayoutGrid, BarChart3, Radar, Brain, Rocket } from "lucide-react";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import BulkActionModal from "@/components/pipeline/BulkActionModal";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -42,53 +33,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { getCardStatus } from "@/components/pipeline/CardStatusLine";
 
+// Campaign tag definitions
+const CAMPAIGN_TAGS = [
+  { tag: "MELNICK_DAY", label: "🔥 Melnick Day", color: "orange" },
+  { tag: "OPEN_BOSQUE", label: "🌳 Open Bosque", color: "green" },
+  { tag: "CASA_TUA", label: "🏠 Casa Tua", color: "blue" },
+  { tag: "LAKE_EYRE", label: "💎 Lake Eyre", color: "purple" },
+  { tag: "LAS_CASAS", label: "🏡 Las Casas", color: "amber" },
+  { tag: "ORYGEM", label: "✨ Orygem", color: "cyan" },
+  { tag: "HIGH_GARDEN_IGUATEMI", label: "🌿 High Garden Iguatemi", color: "emerald" },
+  { tag: "SEEN_TRES_FIGUEIRAS", label: "👁 Seen Três Figueiras", color: "violet" },
+  { tag: "ALTO_LINDOIA", label: "🏔 Alto Lindóia", color: "sky" },
+  { tag: "SHIFT", label: "⚡ Shift", color: "slate" },
+  { tag: "CASA_BASTIAN", label: "🏰 Casa Bastian", color: "rose" },
+  { tag: "DUETTO", label: "🎵 Duetto", color: "indigo" },
+  { tag: "TERRACE", label: "🌅 Terrace", color: "teal" },
+];
 
-// ─── Forecast Probability Map ───
-const STAGE_PROBABILITY: Record<string, number> = {
-  novo: 10, atendimento: 15, qualificacao: 25, visita_marcada: 40,
-  visita_realizada: 60, negociacao: 75, proposta: 85, assinatura: 95,
-};
-const EXCLUDED_TYPES = ["venda", "descarte", "caiu"];
+type ClientStatusFilter = "todos" | "em_dia" | "desatualizado" | "tarefa_atrasada";
 
-function ForecastInline({ leads, stages, expanded, onToggle }: {
-  leads: PipelineLead[]; stages: PipelineStage[]; expanded: boolean; onToggle: () => void;
-}) {
-  const forecast = useMemoReact(() => {
-    const stageMap = new Map(stages.map(s => [s.id, s]));
-    const activeLeads = leads.filter(l => { const s = stageMap.get(l.stage_id); return s && !EXCLUDED_TYPES.includes(s.tipo); });
-    let conserv = 0, prov = 0, otim = 0;
-    for (const lead of activeLeads) {
-      const s = stageMap.get(lead.stage_id)!;
-      const vgv = lead.valor_estimado || 0;
-      const prob = STAGE_PROBABILITY[s.tipo] ?? 20;
-      otim += vgv;
-      prov += vgv * (prob / 100);
-      if (prob >= 75) conserv += vgv;
-    }
-    return { conserv, prov: Math.round(prov), otim };
-  }, [leads, stages]);
-
-  const fmt = (v: number) => {
-    if (v >= 1_000_000) return `R$${(v / 1_000_000).toFixed(1)}M`;
-    if (v >= 1_000) return `R$${(v / 1_000).toFixed(0)}k`;
-    return `R$${v}`;
-  };
-
-  return (
-    <button
-      onClick={onToggle}
-      className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors ml-auto"
-    >
-      <span>💰</span>
-      <span className="text-blue-600 font-medium">{fmt(forecast.conserv)}</span>
-      <span>·</span>
-      <span className="text-amber-600 font-medium">{fmt(forecast.prov)}</span>
-      <span>·</span>
-      <span className="text-emerald-600 font-medium">{fmt(forecast.otim)}</span>
-      {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-    </button>
-  );
+function classifyLeadStatus(lead: PipelineLead, proximaTarefa: any): ClientStatusFilter {
+  const status = getCardStatus(lead, proximaTarefa || null);
+  if (status.indicator === "🔴" && status.text.includes("Atrasado")) return "tarefa_atrasada";
+  if (status.indicator === "✅" || !status.text) return "em_dia";
+  return "desatualizado";
 }
 
 export default function PipelineKanban() {
@@ -104,8 +74,8 @@ export default function PipelineKanban() {
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
   const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
+  const [clientStatusFilter, setClientStatusFilter] = useState<ClientStatusFilter>("todos");
   const [dispatchOpen, setDispatchOpen] = useState(false);
-  const [forecastExpanded, setForecastExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
   // Bulk selection state
@@ -143,8 +113,11 @@ export default function PipelineKanban() {
     if (campaignTagFilter && campaignTagFilter !== "all") {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
+    if (clientStatusFilter !== "todos") {
+      result = result.filter(l => classifyLeadStatus(l, null) === clientStatusFilter);
+    }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, clientStatusFilter]);
 
   const corretorOptions = useMemo(() => {
     const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
@@ -156,23 +129,6 @@ export default function PipelineKanban() {
     [pipeline.leads]
   );
 
-  // Compute all campaign tag counts
-  const CAMPAIGN_TAGS = [
-    { tag: "MELNICK_DAY", label: "🔥 Melnick Day", color: "orange" },
-    { tag: "OPEN_BOSQUE", label: "🌳 Open Bosque", color: "green" },
-    { tag: "CASA_TUA", label: "🏠 Casa Tua", color: "blue" },
-    { tag: "LAKE_EYRE", label: "💎 Lake Eyre", color: "purple" },
-    { tag: "LAS_CASAS", label: "🏡 Las Casas", color: "amber" },
-    { tag: "ORYGEM", label: "✨ Orygem", color: "cyan" },
-    { tag: "HIGH_GARDEN_IGUATEMI", label: "🌿 High Garden Iguatemi", color: "emerald" },
-    { tag: "SEEN_TRES_FIGUEIRAS", label: "👁 Seen Três Figueiras", color: "violet" },
-    { tag: "ALTO_LINDOIA", label: "🏔 Alto Lindóia", color: "sky" },
-    { tag: "SHIFT", label: "⚡ Shift", color: "slate" },
-    { tag: "CASA_BASTIAN", label: "🏰 Casa Bastian", color: "rose" },
-    { tag: "DUETTO", label: "🎵 Duetto", color: "indigo" },
-    { tag: "TERRACE", label: "🌅 Terrace", color: "teal" },
-  ];
-
   const campaignTagCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const ct of CAMPAIGN_TAGS) {
@@ -182,18 +138,17 @@ export default function PipelineKanban() {
     return counts;
   }, [pipeline.leads]);
 
-  const totalVGV = useMemo(() =>
-    filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
-    [filteredLeads]
-  );
+  // Client status counts
+  const clientStatusCounts = useMemo(() => {
+    const counts = { em_dia: 0, desatualizado: 0, tarefa_atrasada: 0 };
+    for (const l of pipeline.leads) {
+      const s = classifyLeadStatus(l, null);
+      if (s !== "todos") counts[s]++;
+    }
+    return counts;
+  }, [pipeline.leads]);
 
   const activeFiltersCount = countActiveFilters(filters);
-
-  const formatVGV = (value: number) => {
-    if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(2).replace(".", ",")}M`;
-    if (value >= 1_000) return `R$ ${value.toLocaleString("pt-BR")}`;
-    return `R$ ${value}`;
-  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -202,9 +157,14 @@ export default function PipelineKanban() {
   };
 
   const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
-  const [autoView, setAutoView] = useState<"materiais" | "sequencias">("materiais");
 
-  const clearFilters = () => setFilters({ ...EMPTY_FILTERS });
+  const clearAllFilters = () => {
+    setFilters({ ...EMPTY_FILTERS });
+    setCampaignTagFilter("all");
+    setClientStatusFilter("todos");
+  };
+
+  const hasAnyFilter = activeFiltersCount > 0 || campaignTagFilter !== "all" || clientStatusFilter !== "todos";
 
   if (pipeline.loading) {
     return (
@@ -225,8 +185,6 @@ export default function PipelineKanban() {
     );
   }
 
-  const isKanbanOrIntel = activeTab === "kanban" || activeTab === "inteligencia";
-
   return (
     <ErrorBoundary fallback={
       <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -237,8 +195,8 @@ export default function PipelineKanban() {
     } onError={(err) => console.error("[PipelineKanban] Render crash:", err.message, err.stack)}>
     <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
       {/* Controls — fixed top area */}
-      <div className="shrink-0 space-y-1 pb-1">
-        {/* Top bar */}
+      <div className="shrink-0 space-y-1.5 pb-1.5">
+        {/* Top bar: tabs + search + corretor + actions */}
         <div className="flex items-center gap-2 flex-wrap">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0">
             <TabsList className="h-9">
@@ -250,97 +208,66 @@ export default function PipelineKanban() {
                 <Brain className="h-3.5 w-3.5" />
                 Inteligência
               </TabsTrigger>
-              {canAdd && (
-                <TabsTrigger value="automacoes" className="text-xs gap-1.5 px-3">
-                  <Zap className="h-3.5 w-3.5" />
-                  Automações
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="relatorios" className="text-xs gap-1.5 px-3">
-                <FileText className="h-3.5 w-3.5" />
-                Relatórios
-              </TabsTrigger>
             </TabsList>
           </Tabs>
           <PeriodBadge className="text-[10px] shrink-0" />
 
-          {isKanbanOrIntel && (
-            <>
-              {activeTab === "inteligencia" && (
-                <div className="flex items-center bg-muted rounded-md p-0.5 shrink-0">
-                  <button
-                    onClick={() => setIntelView("funil")}
-                    className={`text-[11px] px-2 py-0.5 rounded transition-colors ${intelView === "funil" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <BarChart3 className="h-3 w-3 inline mr-1" />Funil
-                  </button>
-                  <button
-                    onClick={() => setIntelView("radar")}
-                    className={`text-[11px] px-2 py-0.5 rounded transition-colors ${intelView === "radar" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <Radar className="h-3 w-3 inline mr-1" />Radar
-                  </button>
-                </div>
-              )}
-
-              <div className="relative flex-1 min-w-[120px] sm:min-w-[180px] max-w-sm">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar..."
-                  value={filters.search}
-                  onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                  className="pl-8 h-8 text-xs bg-card"
-                />
-                {filters.search && (
-                  <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
-                )}
-              </div>
-
-              <PipelineAdvancedFilters
-                filters={filters}
-                onChange={setFilters}
-                stages={pipeline.stages}
-                segmentos={pipeline.segmentos}
-                leads={pipeline.leads}
-                corretorNomes={pipeline.corretorNomes}
-                isManager={isGestor || isAdmin}
-              />
-
-              {/* Filtro rápido por corretor (CEO/Gerente) */}
-              {(isAdmin || isGestor) && (
-                <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-                  <SelectTrigger className="h-8 text-xs w-[160px] sm:w-[200px] bg-card shrink-0">
-                    <SelectValue placeholder="Todos os corretores" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os corretores</SelectItem>
-                    {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                    {corretorOptions.map(([id, nome]) => (
-                      <SelectItem key={id} value={id}>{nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </>
-          )}
-
-          {activeTab === "automacoes" && (
+          {activeTab === "inteligencia" && (
             <div className="flex items-center bg-muted rounded-md p-0.5 shrink-0">
               <button
-                onClick={() => setAutoView("materiais")}
-                className={`text-[11px] px-2 py-0.5 rounded transition-colors ${autoView === "materiais" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setIntelView("funil")}
+                className={`text-[11px] px-2 py-0.5 rounded transition-colors ${intelView === "funil" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <FolderOpen className="h-3 w-3 inline mr-1" />Materiais
+                <BarChart3 className="h-3 w-3 inline mr-1" />Funil
               </button>
               <button
-                onClick={() => setAutoView("sequencias")}
-                className={`text-[11px] px-2 py-0.5 rounded transition-colors ${autoView === "sequencias" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setIntelView("radar")}
+                className={`text-[11px] px-2 py-0.5 rounded transition-colors ${intelView === "radar" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <Zap className="h-3 w-3 inline mr-1" />Sequências
+                <Radar className="h-3 w-3 inline mr-1" />Radar
               </button>
             </div>
+          )}
+
+          <div className="relative flex-1 min-w-[120px] sm:min-w-[180px] max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar..."
+              value={filters.search}
+              onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+              className="pl-8 h-8 text-xs bg-card"
+            />
+            {filters.search && (
+              <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+          </div>
+
+          <PipelineAdvancedFilters
+            filters={filters}
+            onChange={setFilters}
+            stages={pipeline.stages}
+            segmentos={pipeline.segmentos}
+            leads={pipeline.leads}
+            corretorNomes={pipeline.corretorNomes}
+            isManager={isGestor || isAdmin}
+          />
+
+          {/* Corretor filter */}
+          {(isAdmin || isGestor) && (
+            <Select value={corretorFilter} onValueChange={setCorretorFilter}>
+              <SelectTrigger className="h-8 text-xs w-[160px] sm:w-[200px] bg-card shrink-0">
+                <SelectValue placeholder="Todos os corretores" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os corretores</SelectItem>
+                {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
+                {corretorOptions.map(([id, nome]) => (
+                  <SelectItem key={id} value={id}>{nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
 
           <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={handleRefresh} disabled={refreshing}>
@@ -369,154 +296,166 @@ export default function PipelineKanban() {
           )}
         </div>
 
-        {/* Summary line + Forecast inline */}
-        {isKanbanOrIntel && (
-          <div className="flex items-center gap-2 flex-wrap px-0.5" style={{ minHeight: 28 }}>
-            <span className="text-xs font-bold text-foreground">
-              {activeFiltersCount > 0
-                ? `${filteredLeads.length}/${pipeline.leads.length}`
-                : `${filteredLeads.length}`} oportunidades
-              {isAdmin && filaCeoCount > 0 && !filaCeoFilter && (
-                <span className="text-purple-600 dark:text-purple-400 font-normal"> ({filaCeoCount} na Fila CEO)</span>
-              )}
-            </span>
+        {/* Filter bar: count + quick filters */}
+        <div className="flex items-center gap-2 flex-wrap px-0.5" style={{ minHeight: 28 }}>
+          <span className="text-xs font-bold text-foreground shrink-0">
+            {hasAnyFilter
+              ? `${filteredLeads.length}/${pipeline.leads.length}`
+              : `${filteredLeads.length}`} oportunidades
+          </span>
 
-            {isAdmin && filaCeoCount > 0 && (
-              <>
-                <button
-                  onClick={() => setFilaCeoFilter(f => !f)}
-                  className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
-                    filaCeoFilter
-                      ? "bg-purple-100 text-purple-700 border-purple-300"
-                      : "bg-card text-muted-foreground border-border hover:border-purple-300 hover:text-purple-600"
-                  }`}
-                >
-                  📥 Fila CEO
-                  <Badge className="text-[9px] px-1 py-0 h-3.5 bg-purple-600 text-white border-none">
-                    {filaCeoCount}
-                  </Badge>
-                </button>
-                <Button
-                  size="sm"
-                  onClick={() => setDispatchOpen(true)}
-                  className="gap-1 h-6 text-[10px] px-2 bg-purple-600 hover:bg-purple-700 text-white border-none"
-                >
-                  <Rocket className="h-3 w-3" />
-                  Disparar
-                </Button>
-              </>
-            )}
+          {/* Fila CEO */}
+          {isAdmin && filaCeoCount > 0 && (
+            <>
+              <button
+                onClick={() => setFilaCeoFilter(f => !f)}
+                className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                  filaCeoFilter
+                    ? "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-700"
+                    : "bg-card text-muted-foreground border-border hover:border-purple-300 hover:text-purple-600"
+                }`}
+              >
+                📥 Fila CEO
+                <Badge className="text-[9px] px-1 py-0 h-3.5 bg-purple-600 text-white border-none">
+                  {filaCeoCount}
+                </Badge>
+              </button>
+              <Button
+                size="sm"
+                onClick={() => setDispatchOpen(true)}
+                className="gap-1 h-6 text-[10px] px-2 bg-purple-600 hover:bg-purple-700 text-white border-none"
+              >
+                <Rocket className="h-3 w-3" />
+                Disparar
+              </Button>
+            </>
+          )}
 
-            {/* Campaign tag filter */}
-            {Object.keys(campaignTagCounts).length > 0 && (
-              <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
-                <SelectTrigger className={`h-7 text-[10px] w-[180px] sm:w-[200px] shrink-0 rounded-full ${
-                  campaignTagFilter !== "all" 
-                    ? "bg-primary/10 border-primary/30 text-primary font-medium" 
-                    : "bg-card"
-                }`}>
-                  <SelectValue placeholder="🏷️ Campanha" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">🏷️ Todas as campanhas</SelectItem>
-                  {CAMPAIGN_TAGS.filter(ct => campaignTagCounts[ct.tag]).map(ct => (
-                    <SelectItem key={ct.tag} value={ct.tag}>
-                      {ct.label} ({campaignTagCounts[ct.tag]})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+          {/* Divider */}
+          <div className="w-px h-4 bg-border shrink-0" />
 
-            {totalVGV > 0 && (
-              <span className="text-[11px] text-muted-foreground">• {formatVGV(totalVGV)} VGV</span>
-            )}
+          {/* Campaign tag filter */}
+          {Object.keys(campaignTagCounts).length > 0 && (
+            <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
+              <SelectTrigger className={`h-7 text-[10px] w-[180px] shrink-0 rounded-full border ${
+                campaignTagFilter !== "all" 
+                  ? "bg-primary/10 border-primary/30 text-primary font-medium" 
+                  : "bg-card text-muted-foreground"
+              }`}>
+                <SelectValue placeholder="🏷️ Campanha" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">🏷️ Todas as campanhas</SelectItem>
+                {CAMPAIGN_TAGS.filter(ct => campaignTagCounts[ct.tag]).map(ct => (
+                  <SelectItem key={ct.tag} value={ct.tag}>
+                    {ct.label} ({campaignTagCounts[ct.tag]})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
-            {/* Inline Forecast */}
-            {activeTab === "kanban" && (
-              <ForecastInline leads={filteredLeads} stages={pipeline.stages} expanded={forecastExpanded} onToggle={() => setForecastExpanded(e => !e)} />
-            )}
-
-            {(activeFiltersCount > 0 || campaignTagFilter !== "all") && (
-              <div className="flex items-center gap-1 ml-auto flex-wrap">
-                {filters.temperaturas.length > 0 && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
-                    Temp ×
-                  </Badge>
-                )}
-                {filters.scoreMin > 0 && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, scoreMin: 0 }))}>
-                    Score≥{filters.scoreMin} ×
-                  </Badge>
-                )}
-                {filters.stages.length > 0 && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, stages: [] }))}>
-                    {filters.stages.length} etapas ×
-                  </Badge>
-                )}
-                {filters.origens.length > 0 && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, origens: [] }))}>
-                    {filters.origens.length} origens ×
-                  </Badge>
-                )}
-                {filters.segmentos.length > 0 && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, segmentos: [] }))}>
-                    {filters.segmentos.length} seg ×
-                  </Badge>
-                )}
-                {filters.diasSemAcao && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, diasSemAcao: "" }))}>
-                    &gt;{filters.diasSemAcao}d ×
-                  </Badge>
-                )}
-                {filters.periodoEntrada && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, periodoEntrada: "" }))}>
-                    Período ×
-                  </Badge>
-                )}
-                {filters.slaStatus && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, slaStatus: "" }))}>
-                    SLA ×
-                  </Badge>
-                )}
-                {filters.comVisita && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, comVisita: "" }))}>
-                    Visita ×
-                  </Badge>
-                )}
-                {campaignTagFilter !== "all" && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setCampaignTagFilter("all")}>
-                    🏷️ {CAMPAIGN_TAGS.find(c => c.tag === campaignTagFilter)?.label || campaignTagFilter} ×
-                  </Badge>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => { clearFilters(); setCampaignTagFilter("all"); }} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
-                  <X className="h-2.5 w-2.5" /> Limpar
-                </Button>
-              </div>
-            )}
+          {/* Client status filter */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
+              className={`text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                clientStatusFilter === "em_dia"
+                  ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700"
+                  : "bg-card text-muted-foreground border-border hover:border-emerald-300 hover:text-emerald-600"
+              }`}
+            >
+              ✅ Em dia {clientStatusCounts.em_dia > 0 && <span className="opacity-70">({clientStatusCounts.em_dia})</span>}
+            </button>
+            <button
+              onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
+              className={`text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                clientStatusFilter === "desatualizado"
+                  ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700"
+                  : "bg-card text-muted-foreground border-border hover:border-amber-300 hover:text-amber-600"
+              }`}
+            >
+              🟡 Desatualizado {clientStatusCounts.desatualizado > 0 && <span className="opacity-70">({clientStatusCounts.desatualizado})</span>}
+            </button>
+            <button
+              onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
+              className={`text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                clientStatusFilter === "tarefa_atrasada"
+                  ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700"
+                  : "bg-card text-muted-foreground border-border hover:border-red-300 hover:text-red-600"
+              }`}
+            >
+              🔴 Atrasado {clientStatusCounts.tarefa_atrasada > 0 && <span className="opacity-70">({clientStatusCounts.tarefa_atrasada})</span>}
+            </button>
           </div>
-        )}
 
-        {/* Role-based action panels */}
-        {isKanbanOrIntel && activeTab === "kanban" && isAdmin && (
-          <PipelineCeoIntelligence
-            leads={pipeline.leads}
-            stages={pipeline.stages}
-            corretorNomes={pipeline.corretorNomes}
-            onFilterLeads={(filterFn, label) => {
-              // Apply a custom filter by setting stage filters or search
-              toast.info(`Filtro aplicado: ${label}`);
-              // Use the filter via the existing system
-              const matchingStageIds = pipeline.stages
-                .filter(s => pipeline.leads.some(l => filterFn(l) && l.stage_id === s.id))
-                .map(s => s.id);
-              setFilters(f => ({ ...f, stages: matchingStageIds }));
-            }}
-            onDispatch={() => setDispatchOpen(true)}
-            onReload={() => pipeline.reload()}
-          />
-        )}
-        {isKanbanOrIntel && activeTab === "kanban" && isGestor && !isAdmin && (
+          {/* Active filter badges */}
+          {hasAnyFilter && (
+            <div className="flex items-center gap-1 ml-auto flex-wrap">
+              {filters.temperaturas.length > 0 && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
+                  Temp ×
+                </Badge>
+              )}
+              {filters.scoreMin > 0 && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, scoreMin: 0 }))}>
+                  Score≥{filters.scoreMin} ×
+                </Badge>
+              )}
+              {filters.stages.length > 0 && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, stages: [] }))}>
+                  {filters.stages.length} etapas ×
+                </Badge>
+              )}
+              {filters.origens.length > 0 && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, origens: [] }))}>
+                  {filters.origens.length} origens ×
+                </Badge>
+              )}
+              {filters.segmentos.length > 0 && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, segmentos: [] }))}>
+                  {filters.segmentos.length} seg ×
+                </Badge>
+              )}
+              {filters.diasSemAcao && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, diasSemAcao: "" }))}>
+                  &gt;{filters.diasSemAcao}d ×
+                </Badge>
+              )}
+              {filters.periodoEntrada && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, periodoEntrada: "" }))}>
+                  Período ×
+                </Badge>
+              )}
+              {filters.slaStatus && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, slaStatus: "" }))}>
+                  SLA ×
+                </Badge>
+              )}
+              {filters.comVisita && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, comVisita: "" }))}>
+                  Visita ×
+                </Badge>
+              )}
+              {campaignTagFilter !== "all" && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setCampaignTagFilter("all")}>
+                  🏷️ {CAMPAIGN_TAGS.find(c => c.tag === campaignTagFilter)?.label || campaignTagFilter} ×
+                </Badge>
+              )}
+              {clientStatusFilter !== "todos" && (
+                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setClientStatusFilter("todos")}>
+                  {clientStatusFilter === "em_dia" ? "✅ Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Desatualizado" : "🔴 Atrasado"} ×
+                </Badge>
+              )}
+              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
+                <X className="h-2.5 w-2.5" /> Limpar
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Manager actions (no CEO Intelligence panel) */}
+        {activeTab === "kanban" && isGestor && !isAdmin && (
           <PipelineManagerActions
             leads={pipeline.leads}
             corretorNomes={pipeline.corretorNomes}
@@ -531,7 +470,7 @@ export default function PipelineKanban() {
         )}
       </div>
 
-      {/* Content area — kanban + side panel */}
+      {/* Content area */}
       <div className="flex-1 min-h-0 overflow-hidden flex">
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
           <ErrorBoundary onError={(err) => console.error("[PipelineBoard] Render crash:", err.message, err.stack)}>
@@ -566,23 +505,6 @@ export default function PipelineKanban() {
                   onSelectLead={setSelectedLead}
                 />
               )
-            ) : activeTab === "automacoes" ? (
-              autoView === "materiais" ? (
-                <div className="h-full overflow-auto p-1">
-                  <MaterialsLibrary />
-                </div>
-              ) : (
-                <div className="h-full overflow-auto p-1 space-y-6">
-                  <SequenceLibrary onSequenceCreated={() => pipeline.reload()} />
-                  <SequenceBuilder />
-                </div>
-              )
-            ) : activeTab === "relatorios" ? (
-              <PipelineReportsDashboard
-                stages={pipeline.stages}
-                leads={pipeline.leads}
-                corretorNomes={pipeline.corretorNomes}
-              />
             ) : null}
           </Suspense>
           </ErrorBoundary>
@@ -610,7 +532,6 @@ export default function PipelineKanban() {
           onOpenChange={(open) => {
             if (!open) {
               setSelectedLead(null);
-              // Refresh card statuses after editing lead details
               queryClient.invalidateQueries({ queryKey: ["pipeline-tarefas-map"] });
               pipeline.reload();
             }
