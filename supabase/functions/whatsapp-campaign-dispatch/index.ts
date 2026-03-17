@@ -353,6 +353,43 @@ serve(async (req) => {
           });
         }
 
+        if (params.button_url && params.button_dynamic) {
+          const phoneForUrl = encodeURIComponent(String(phone));
+          const nomeForUrl = encodeURIComponent(send.nome || "");
+          const emailForUrl = encodeURIComponent(send.email || "");
+
+          let fullUrl = params.button_url
+            .replace("{{phone}}", phoneForUrl)
+            .replace("{{nome}}", nomeForUrl)
+            .replace("{{email}}", emailForUrl);
+
+          let dynamicSuffix = fullUrl;
+          try {
+            const urlObj = new URL(fullUrl);
+            if (!urlObj.searchParams.has("send_id")) {
+              urlObj.searchParams.set("send_id", send.id);
+            }
+            if (!urlObj.searchParams.has("batch_id")) {
+              urlObj.searchParams.set("batch_id", batch_id);
+            }
+            dynamicSuffix = urlObj.search + urlObj.hash;
+            if (dynamicSuffix.startsWith("?")) {
+              dynamicSuffix = dynamicSuffix.substring(1);
+            }
+          } catch {
+            const joiner = fullUrl.includes("?") ? "&" : "?";
+            fullUrl = `${fullUrl}${joiner}send_id=${encodeURIComponent(send.id)}&batch_id=${encodeURIComponent(batch_id)}`;
+            dynamicSuffix = fullUrl;
+          }
+
+          components.push({
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [{ type: "text", text: dynamicSuffix }],
+          });
+        }
+
         if (components.length > 0) {
           templateBody.template.components = components;
         }

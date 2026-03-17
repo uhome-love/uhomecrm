@@ -633,8 +633,10 @@ Deno.serve(async (req) => {
       log("error", "Roleta failed", { leadId: newLead.id, error: e instanceof Error ? e.message : String(e) });
     }
 
-    // ─── Mark WhatsApp campaign send as clicked (new lead) ───
-    await markWhatsAppSendClicked(telefoneNormalizado || enrichedPhone);
+    // ─── Mark WhatsApp campaign send as clicked (legacy fallback when send_id is absent) ───
+    if (!matchedSend?.id) {
+      await markWhatsAppSendClicked(telefoneNormalizado || enrichedPhone);
+    }
 
     // Analytics
     await supabase.from("melnick_campaign_analytics").insert([
