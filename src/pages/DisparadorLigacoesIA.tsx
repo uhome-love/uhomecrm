@@ -1,6 +1,6 @@
 /**
  * DisparadorLigacoesIA — CEO-only page for sequential AI calling via Twilio + ElevenLabs
- * Similar to WhatsApp Campaign Dispatcher but for outbound voice calls.
+ * Sessions persist in ai_call_sessions so progress survives navigation.
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,22 +11,35 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import {
   Bot, Phone, PhoneOff, Play, Pause, Square, Loader2, CheckCircle, XCircle,
-  Clock, User, Filter, List, BarChart3, RefreshCw, ChevronLeft
+  Clock, User, Filter, List, BarChart3, RefreshCw, ChevronLeft, RotateCcw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useOAListas, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
+import { useOAListas, type OALead } from "@/hooks/useOfertaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 // ── Types ──
 interface CallResult {
-  lead: OALead;
+  lead: { id: string; nome: string; telefone: string | null; empreendimento: string | null };
   status: string;
   duration: number | null;
   callSid: string | null;
   error?: string;
   resultado?: string | null;
   resumo_ia?: string | null;
+}
+
+interface SessionRow {
+  id: string;
+  status: string;
+  lista_ids: string[];
+  result_filter: string;
+  delay_seconds: number;
+  queue_lead_ids: string[];
+  current_index: number;
+  total_leads: number;
+  created_at: string;
 }
 
 const RESULT_FILTERS = [
@@ -53,24 +66,133 @@ const CALL_STATUS: Record<string, { label: string; color: string; icon: typeof P
 
 export default function DisparadorLigacoesIA() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { listas, isLoading: listasLoading } = useOAListas();
   const activeListas = useMemo(() => listas.filter(l => l.status === "ativa" || l.status === "liberada"), [listas]);
 
-  // ── Step 1: Configuration ──
+  // ── Config ──
   const [selectedListaIds, setSelectedListaIds] = useState<string[]>([]);
   const [resultFilter, setResultFilter] = useState("all");
-  const [delayBetweenCalls, setDelayBetweenCalls] = useState(5); // seconds
+  const [delayBetweenCalls, setDelayBetweenCalls] = useState(5);
 
-  // ── Step 2: Queue & Execution ──
+  // ── Session state ──
   const [step, setStep] = useState<"config" | "preview" | "running" | "done">("config");
-  const [queue, setQueue] = useState<OALead[]>([]);
+  const [queue, setQueue] = useState<{ id: string; nome: string; telefone: string | null; empreendimento: string | null }[]>([]);
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<CallResult[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [restoringSession, setRestoringSession] = useState(true);
+  const [pendingSession, setPendingSession] = useState<SessionRow | null>(null);
   const abortRef = useRef(false);
   const pauseRef = useRef(false);
+
+  // ── Restore active session on mount ──
+  useEffect(() => {
+    if (!user) { setRestoringSession(false); return; }
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("ai_call_sessions" as any)
+          .select("*")
+          .eq("created_by", user.id)
+          .in("status", ["running", "paused"])
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const session = (data as any)?.[0] as SessionRow | undefined;
+        if (session && session.queue_lead_ids.length > 0) {
+          setPendingSession(session);
+        }
+      } catch (e) {
+        console.error("Failed to check active session:", e);
+      } finally {
+        setRestoringSession(false);
+      }
+    })();
+  }, [user]);
+
+  const restoreSession = useCallback(async (session: SessionRow) => {
+    // Load lead info for the remaining queue
+    const remainingIds = session.queue_lead_ids.slice(session.current_index);
+    if (remainingIds.length === 0) {
+      setPendingSession(null);
+      return;
+    }
+
+    const { data: leads } = await supabase
+      .from("oferta_ativa_leads")
+      .select("id, nome, telefone, empreendimento")
+      .in("id", remainingIds);
+
+    // Also load already-processed calls from ai_calls for this session
+    const processedIds = session.queue_lead_ids.slice(0, session.current_index);
+    let pastResults: CallResult[] = [];
+    if (processedIds.length > 0) {
+      const { data: pastLeads } = await supabase
+        .from("oferta_ativa_leads")
+        .select("id, nome, telefone, empreendimento")
+        .in("id", processedIds);
+      
+      const { data: pastCalls } = await supabase
+        .from("ai_calls")
+        .select("lead_id, status, duracao_segundos, twilio_call_sid, resultado, resumo_ia")
+        .in("lead_id", processedIds)
+        .order("created_at", { ascending: false });
+
+      const callMap = new Map<string, any>();
+      for (const c of pastCalls || []) {
+        if (c.lead_id && !callMap.has(c.lead_id)) callMap.set(c.lead_id, c);
+      }
+
+      pastResults = (pastLeads || []).map(l => {
+        const call = callMap.get(l.id);
+        return {
+          lead: l,
+          status: call?.status || "completed",
+          duration: call?.duracao_segundos ?? null,
+          callSid: call?.twilio_call_sid ?? null,
+          resultado: call?.resultado ?? null,
+          resumo_ia: call?.resumo_ia ?? null,
+        };
+      });
+    }
+
+    // Maintain original queue order
+    const leadMap = new Map((leads || []).map(l => [l.id, l]));
+    const orderedQueue = remainingIds
+      .map(id => leadMap.get(id))
+      .filter(Boolean) as typeof queue;
+
+    setSessionId(session.id);
+    setSelectedListaIds(session.lista_ids);
+    setResultFilter(session.result_filter || "all");
+    setDelayBetweenCalls(session.delay_seconds || 5);
+    setQueue(orderedQueue);
+    setCurrentIndex(0); // reset to 0 since queue is already sliced
+    setResults(pastResults);
+    setStep("running");
+    setIsPaused(true);
+    pauseRef.current = true;
+    setPendingSession(null);
+
+    // Update session status to paused
+    await supabase
+      .from("ai_call_sessions" as any)
+      .update({ status: "paused", updated_at: new Date().toISOString() } as any)
+      .eq("id", session.id);
+
+    toast.success(`Sessão restaurada — ${orderedQueue.length} leads restantes`);
+  }, []);
+
+  const dismissSession = useCallback(async (session: SessionRow) => {
+    await supabase
+      .from("ai_call_sessions" as any)
+      .update({ status: "done", updated_at: new Date().toISOString() } as any)
+      .eq("id", session.id);
+    setPendingSession(null);
+  }, []);
 
   // ── Realtime subscription for ai_calls status updates ──
   useEffect(() => {
@@ -83,7 +205,6 @@ export default function DisparadorLigacoesIA() {
           const updated = payload.new as any;
           const sid = updated.twilio_call_sid;
           if (!sid) return;
-          
           setResults(prev => prev.map(r => {
             if (r.callSid === sid) {
               return {
@@ -99,18 +220,25 @@ export default function DisparadorLigacoesIA() {
         }
       )
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Toggle lista selection
   const toggleLista = (id: string) => {
     setSelectedListaIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   };
+
+  // ── Persist session helper ──
+  const saveSession = useCallback(async (
+    sid: string,
+    updates: Partial<{ status: string; current_index: number }>
+  ) => {
+    await supabase
+      .from("ai_call_sessions" as any)
+      .update({ ...updates, updated_at: new Date().toISOString() } as any)
+      .eq("id", sid);
+  }, []);
 
   // ── Load leads from selected lists ──
   const loadQueue = async () => {
@@ -120,10 +248,9 @@ export default function DisparadorLigacoesIA() {
     }
     setLoadingQueue(true);
     try {
-      // Fetch leads from selected lists
       let query = supabase
         .from("oferta_ativa_leads")
-        .select("*")
+        .select("id, nome, telefone, empreendimento, tentativas_count")
         .in("lista_id", selectedListaIds)
         .in("status", ["na_fila", "em_cooldown"])
         .not("telefone", "is", null)
@@ -132,13 +259,11 @@ export default function DisparadorLigacoesIA() {
       const { data: leads, error } = await query;
       if (error) throw error;
 
-      let filtered = (leads || []) as OALead[];
+      let filtered = (leads || []) as (typeof queue[0] & { tentativas_count: number })[];
 
-      // Apply result filter
       if (resultFilter === "never_called") {
         filtered = filtered.filter(l => l.tentativas_count === 0);
       } else if (resultFilter !== "all") {
-        // Need to check last attempt result — fetch tentativas for these leads
         const leadIds = filtered.map(l => l.id);
         if (leadIds.length > 0) {
           const { data: tentativas } = await supabase
@@ -146,19 +271,14 @@ export default function DisparadorLigacoesIA() {
             .select("lead_id, resultado, created_at")
             .in("lead_id", leadIds)
             .order("created_at", { ascending: false });
-
-          // Get last result per lead
           const lastResult = new Map<string, string>();
           for (const t of tentativas || []) {
-            if (!lastResult.has(t.lead_id)) {
-              lastResult.set(t.lead_id, t.resultado);
-            }
+            if (!lastResult.has(t.lead_id)) lastResult.set(t.lead_id, t.resultado);
           }
           filtered = filtered.filter(l => lastResult.get(l.id) === resultFilter);
         }
       }
 
-      // Filter out leads without phone
       filtered = filtered.filter(l => l.telefone && l.telefone.replace(/\D/g, "").length >= 8);
 
       setQueue(filtered);
@@ -173,16 +293,38 @@ export default function DisparadorLigacoesIA() {
 
   // ── Execute sequential calls ──
   const startCalling = async () => {
+    if (!user) return;
     setStep("running");
     setIsRunning(true);
     setIsPaused(false);
     abortRef.current = false;
     pauseRef.current = false;
 
+    // Create or reuse session
+    let sid = sessionId;
+    if (!sid) {
+      const { data: newSession } = await supabase
+        .from("ai_call_sessions" as any)
+        .insert({
+          created_by: user.id,
+          status: "running",
+          lista_ids: selectedListaIds,
+          result_filter: resultFilter,
+          delay_seconds: delayBetweenCalls,
+          queue_lead_ids: queue.map(l => l.id),
+          current_index: 0,
+          total_leads: queue.length,
+        } as any)
+        .select("id")
+        .single();
+      sid = (newSession as any)?.id;
+      setSessionId(sid);
+    } else {
+      await saveSession(sid, { status: "running" });
+    }
+
     for (let i = currentIndex; i < queue.length; i++) {
       if (abortRef.current) break;
-
-      // Wait while paused
       while (pauseRef.current && !abortRef.current) {
         await new Promise(r => setTimeout(r, 500));
       }
@@ -191,12 +333,18 @@ export default function DisparadorLigacoesIA() {
       const lead = queue[i];
       setCurrentIndex(i);
 
+      // Persist progress
+      if (sid) {
+        // Calculate the absolute index for the session
+        const absoluteIndex = results.length + i;
+        saveSession(sid, { current_index: absoluteIndex });
+      }
+
       if (!lead.telefone) {
         setResults(prev => [...prev, { lead, status: "skipped", duration: null, callSid: null }]);
         continue;
       }
 
-      // Initiate call
       try {
         const { data, error } = await supabase.functions.invoke("twilio-ai-call", {
           body: {
@@ -233,7 +381,6 @@ export default function DisparadorLigacoesIA() {
         }]);
       }
 
-      // Wait between calls (give time for the AI to finish conversation)
       if (i < queue.length - 1 && !abortRef.current) {
         await new Promise(r => setTimeout(r, delayBetweenCalls * 1000));
       }
@@ -241,12 +388,15 @@ export default function DisparadorLigacoesIA() {
 
     setIsRunning(false);
     setStep("done");
+    if (sid) saveSession(sid, { status: "done", current_index: queue.length + results.length });
     toast.success("🏁 Sessão de ligações concluída!");
   };
 
   const handlePause = () => {
-    pauseRef.current = !pauseRef.current;
-    setIsPaused(!isPaused);
+    const newPaused = !pauseRef.current;
+    pauseRef.current = newPaused;
+    setIsPaused(newPaused);
+    if (sessionId) saveSession(sessionId, { status: newPaused ? "paused" : "running" });
   };
 
   const handleStop = () => {
@@ -255,6 +405,7 @@ export default function DisparadorLigacoesIA() {
     setIsPaused(false);
     setIsRunning(false);
     setStep("done");
+    if (sessionId) saveSession(sessionId, { status: "done" });
   };
 
   const handleReset = () => {
@@ -264,18 +415,26 @@ export default function DisparadorLigacoesIA() {
     setCurrentIndex(0);
     setIsRunning(false);
     setIsPaused(false);
+    setSessionId(null);
   };
 
   // ── Stats ──
   const stats = useMemo(() => {
     const total = results.length;
-    const initiated = results.filter(r => r.status === "initiated").length;
-    const failed = results.filter(r => r.status === "failed").length;
+    const initiated = results.filter(r => ["initiated", "ringing", "in-progress", "completed"].includes(r.status)).length;
+    const failed = results.filter(r => ["failed", "busy", "no-answer"].includes(r.status)).length;
     const skipped = results.filter(r => r.status === "skipped").length;
     return { total, initiated, failed, skipped };
   }, [results]);
 
-  // ── Render ──
+  if (restoringSession) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
@@ -294,10 +453,36 @@ export default function DisparadorLigacoesIA() {
         </div>
       </div>
 
+      {/* ─── PENDING SESSION BANNER ─── */}
+      {pendingSession && step === "config" && (
+        <Card className="border-amber-500/50 bg-amber-500/5">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-start gap-3">
+              <RotateCcw className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-sm">Sessão anterior encontrada</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {pendingSession.total_leads} leads no total ·{" "}
+                  {pendingSession.total_leads - pendingSession.current_index} restantes ·{" "}
+                  Criada em {new Date(pendingSession.created_at).toLocaleString("pt-BR")}
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" onClick={() => restoreSession(pendingSession)} className="gap-1.5">
+                    <Play className="h-3.5 w-3.5" /> Retomar Sessão
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => dismissSession(pendingSession)}>
+                    Descartar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ─── STEP 1: CONFIG ─── */}
       {step === "config" && (
         <div className="space-y-4">
-          {/* List Selection */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -345,7 +530,6 @@ export default function DisparadorLigacoesIA() {
             </CardContent>
           </Card>
 
-          {/* Filters */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -379,9 +563,7 @@ export default function DisparadorLigacoesIA() {
                   className="w-full mt-1"
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>3s</span>
-                  <span>30s</span>
-                  <span>60s</span>
+                  <span>3s</span><span>30s</span><span>60s</span>
                 </div>
               </div>
             </CardContent>
@@ -420,14 +602,7 @@ export default function DisparadorLigacoesIA() {
                       <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
                       <span className="font-medium">{lead.nome}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{lead.telefone}</span>
-                      {lead.tentativas_count > 0 && (
-                        <Badge variant="outline" className="text-[10px]">
-                          {lead.tentativas_count} tent.
-                        </Badge>
-                      )}
-                    </div>
+                    <span className="text-xs text-muted-foreground">{lead.telefone}</span>
                   </div>
                 ))}
                 {queue.length > 50 && (
@@ -458,7 +633,6 @@ export default function DisparadorLigacoesIA() {
       {/* ─── STEP 3: RUNNING / DONE ─── */}
       {(step === "running" || step === "done") && (
         <div className="space-y-4">
-          {/* Progress */}
           <Card>
             <CardContent className="pt-5 space-y-3">
               <div className="flex items-center justify-between text-sm">
@@ -466,12 +640,12 @@ export default function DisparadorLigacoesIA() {
                   {step === "done" ? "Concluído" : isPaused ? "⏸ Pausado" : "🔄 Em execução"}
                 </span>
                 <span className="font-semibold">
-                  {results.length} / {queue.length}
+                  {currentIndex + (isRunning ? 0 : 0)} / {queue.length}
+                  {results.length > queue.length && ` (${results.length} total)`}
                 </span>
               </div>
-              <Progress value={(results.length / Math.max(queue.length, 1)) * 100} />
+              <Progress value={((currentIndex) / Math.max(queue.length, 1)) * 100} />
 
-              {/* Current lead */}
               {step === "running" && currentIndex < queue.length && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <span className="relative flex h-3 w-3">
@@ -485,22 +659,13 @@ export default function DisparadorLigacoesIA() {
                 </div>
               )}
 
-              {/* Controls */}
               {step === "running" && (
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={handlePause}
-                    className="flex-1 gap-1.5"
-                  >
+                  <Button variant="outline" onClick={handlePause} className="flex-1 gap-1.5">
                     {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                     {isPaused ? "Retomar" : "Pausar"}
                   </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleStop}
-                    className="flex-1 gap-1.5"
-                  >
+                  <Button variant="destructive" onClick={handleStop} className="flex-1 gap-1.5">
                     <Square className="h-4 w-4" /> Parar
                   </Button>
                 </div>
@@ -519,7 +684,7 @@ export default function DisparadorLigacoesIA() {
             <Card>
               <CardContent className="pt-4 pb-3 text-center">
                 <p className="text-2xl font-bold text-emerald-600">{stats.initiated}</p>
-                <p className="text-xs text-muted-foreground">Ligações Iniciadas</p>
+                <p className="text-xs text-muted-foreground">Ligações</p>
               </CardContent>
             </Card>
             <Card>
@@ -541,7 +706,7 @@ export default function DisparadorLigacoesIA() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Log de Ligações
+                  <BarChart3 className="h-4 w-4" /> Log de Ligações ({results.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -551,7 +716,7 @@ export default function DisparadorLigacoesIA() {
                     const StIcon = st.icon;
                     return (
                       <div
-                        key={i}
+                        key={`${r.lead.id}-${i}`}
                         className="flex items-center justify-between text-sm p-2 rounded bg-muted/20 border border-border"
                       >
                         <div className="flex items-center gap-2 min-w-0">

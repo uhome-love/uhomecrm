@@ -361,6 +361,48 @@ export type Database = {
           },
         ]
       }
+      ai_call_sessions: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          current_index: number | null
+          delay_seconds: number | null
+          id: string
+          lista_ids: string[]
+          queue_lead_ids: string[]
+          result_filter: string | null
+          status: string
+          total_leads: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          current_index?: number | null
+          delay_seconds?: number | null
+          id?: string
+          lista_ids?: string[]
+          queue_lead_ids?: string[]
+          result_filter?: string | null
+          status?: string
+          total_leads?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          current_index?: number | null
+          delay_seconds?: number | null
+          id?: string
+          lista_ids?: string[]
+          queue_lead_ids?: string[]
+          result_filter?: string | null
+          status?: string
+          total_leads?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_calls: {
         Row: {
           agent_id: string | null
