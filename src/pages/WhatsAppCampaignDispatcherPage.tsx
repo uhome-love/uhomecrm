@@ -118,14 +118,14 @@ function StageSelect({ value, onChange }: { value: string; onChange: (v: string)
 const TEMPLATE_DEFAULT_IMAGES: Record<string, string> = {
   melnick_day_poa_2026: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
   melnick_day_wa_v2: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
-  ofertas_meday: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
+  ofertas_meday: "", // imagem fixa no template, não precisa enviar via API
 };
 
 /* ─── Template default redirect URLs ─── */
 const TEMPLATE_DEFAULT_URLS: Record<string, string> = {
   melnick_day_poa_2026: "https://uhomesales.com/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1",
   melnick_day_wa_v2: "https://uhomesales.com/wa?phone={{phone}}&nome={{nome}}&origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1",
-  ofertas_meday: "https://uhomesales.com/wa?phone={{phone}}&nome={{nome}}&origem=whatsapp_api&campanha=ofertas_meday&bloco=cta1",
+  ofertas_meday: "https://uhomesales.com/wa?phone={{phone}}&nome={{nome}}&origem=whatsapp_api&campanha=ofertas_meday",
 };
 
 
