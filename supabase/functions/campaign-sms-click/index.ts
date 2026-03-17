@@ -458,7 +458,7 @@ Deno.serve(async (req) => {
       const interesseLabel = interesseBrevo ? ` | Interesse: ${interesseBrevo}` : "";
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: existingLead.id,
-        tipo: "email",
+        tipo: canal === "whatsapp" ? "whatsapp" : canal === "sms" ? "sms" : "email",
         titulo: `${canalLabel} Campanha Melnick Day`,
         descricao: `Lead clicou na campanha Melnick Day 2026 via ${canal}${blocoLabel}${interesseLabel}`,
         data: new Date().toISOString().slice(0, 10),
