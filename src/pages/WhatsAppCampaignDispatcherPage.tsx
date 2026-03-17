@@ -278,9 +278,27 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
                   <Label className="text-xs">Nome da Campanha</Label>
                   <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: OA Melnick Day" />
                 </div>
-                <Label className="text-xs font-medium">Selecione as listas da Oferta Ativa</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">Selecione as listas da Oferta Ativa</Label>
+                  {oaListas.filter(l => ["ativa", "liberada"].includes(l.status)).length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => {
+                        const activeIds = oaListas.filter(l => ["ativa", "liberada"].includes(l.status)).map(l => l.id);
+                        const allSelected = activeIds.every(id => selectedListaIds.includes(id));
+                        setSelectedListaIds(allSelected ? [] : activeIds);
+                      }}
+                    >
+                      {oaListas.filter(l => ["ativa", "liberada"].includes(l.status)).every(l => selectedListaIds.includes(l.id))
+                        ? "Desmarcar todas"
+                        : "Selecionar todas"}
+                    </Button>
+                  )}
+                </div>
                 {oaListas.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma lista encontrada</p>
+                   <p className="text-sm text-muted-foreground">Nenhuma lista encontrada</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-auto">
                     {oaListas.filter(l => ["ativa", "liberada"].includes(l.status)).map((lista) => (
