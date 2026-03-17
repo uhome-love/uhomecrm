@@ -177,22 +177,37 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const {
+    let {
       phone, nome, email,
       utm_source, utm_medium, utm_campaign,
       canal = "brevo", origem = "SMS_MELNICK_DAY",
       campanha = "MELNICK_DAY_POA_2026",
       bloco = "",
       user_agent,
+      send_id,
+      batch_id,
     } = body;
 
-    const telefoneNormalizado = normalizePhone(phone);
-    const normalizedEmail = email?.toLowerCase().trim() || null;
+    let telefoneNormalizado = normalizePhone(phone);
+    let normalizedEmail = email?.toLowerCase().trim() || null;
+
+    log("info", "Click received", { phone, telefoneNormalizado, nome, email: normalizedEmail, canal, origem, bloco, send_id, batch_id });
+
+    const matchedSend = await markWhatsAppSendClickedById(send_id, batch_id);
+    if (matchedSend) {
+      phone = phone || matchedSend.telefone || matchedSend.telefone_normalizado || "";
+      nome = nome || matchedSend.nome || "";
+      email = email || matchedSend.email || "";
+      origem = matchedSend.origem || origem;
+      campanha = matchedSend.campanha || campanha;
+      bloco = matchedSend.bloco || bloco;
+      telefoneNormalizado = normalizePhone(phone) || normalizePhone(matchedSend.telefone_normalizado) || matchedSend.telefone_normalizado || null;
+      normalizedEmail = email?.toLowerCase().trim() || null;
+    }
+
     const tags = ["MELNICK_DAY", "SMS", "Brevo"];
     const blocoLabel = bloco ? ` - bloco ${bloco}` : "";
     const obsText = `Lead veio do email Melnick Day 2026${blocoLabel} (${new Date().toLocaleDateString("pt-BR")})`;
-
-    log("info", "Click received", { phone, telefoneNormalizado, nome, email: normalizedEmail, canal, origem, bloco });
 
     if (isBlockedTestLead({ nome, email: normalizedEmail, phone: telefoneNormalizado || phone })) {
       log("info", "Blocked test lead", { nome, email: normalizedEmail, phone: telefoneNormalizado || phone });
