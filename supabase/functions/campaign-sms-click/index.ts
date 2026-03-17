@@ -346,18 +346,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── Try to find existing lead by phone OR email ───
+    // ─── Try to find existing lead by send_id, phone OR email ───
     let existingLead: Record<string, unknown> | null = null;
+    const leadFields = "id, nome, email, telefone, telefone_normalizado, tags, stage_id, corretor_id, observacoes";
+
+    if (matchedSend?.pipeline_lead_id) {
+      const { data } = await supabase
+        .from("pipeline_leads")
+        .select(leadFields)
+        .eq("id", matchedSend.pipeline_lead_id)
+        .not("aceite_status", "eq", "descartado")
+        .maybeSingle();
+      existingLead = data;
+    }
 
     // Search with all available phone numbers (original + enriched)
     const phonesToSearch = new Set<string>();
     if (telefoneNormalizado) phoneVariants(telefoneNormalizado).forEach(v => phonesToSearch.add(v));
     if (enrichedPhone && enrichedPhone !== telefoneNormalizado) phoneVariants(enrichedPhone).forEach(v => phonesToSearch.add(v));
 
-    if (phonesToSearch.size > 0) {
+    if (!existingLead && phonesToSearch.size > 0) {
       const { data } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, email, telefone, telefone_normalizado, tags, stage_id, corretor_id")
+        .select(leadFields)
         .in("telefone_normalizado", [...phonesToSearch])
         .not("aceite_status", "eq", "descartado")
         .order("created_at", { ascending: false })
@@ -370,7 +381,7 @@ Deno.serve(async (req) => {
       const searchEmail = (enrichedEmail || email).toLowerCase().trim();
       const { data } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, email, telefone, telefone_normalizado, tags, stage_id, corretor_id")
+        .select(leadFields)
         .ilike("email", searchEmail)
         .not("aceite_status", "eq", "descartado")
         .order("created_at", { ascending: false })
@@ -380,8 +391,8 @@ Deno.serve(async (req) => {
     }
 
     // If no phone AND no email (even after enrichment), still log click and redirect
-    if (!telefoneNormalizado && !email && !enrichedEmail) {
-      log("warn", "No valid phone or email, logging click only", { phone, email });
+    if (!telefoneNormalizado && !enrichedPhone && !normalizedEmail && !matchedSend?.pipeline_lead_id) {
+      log("warn", "No valid phone or email, logging click only", { phone, email, send_id, batch_id });
       await insertClick({ ...clickBase, status: "click_no_contact", lead_action: "none", redirected: true });
       return jsonResponse({ success: true, action: "redirect_only", redirect_url: WHATSAPP_REDIRECT });
     }
