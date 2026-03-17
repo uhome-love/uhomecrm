@@ -158,3 +158,6 @@ verify_jwt = false
 
 [functions.mailgun-batch-cron]
 verify_jwt = false
+
+[functions.receive-rdstation-lead]
+verify_jwt = false
