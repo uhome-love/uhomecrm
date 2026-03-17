@@ -55,8 +55,14 @@ const CAMPAIGN_TAGS = [
 type ClientStatusFilter = "todos" | "em_dia" | "desatualizado" | "tarefa_atrasada";
 
 function classifyLeadStatus(lead: PipelineLead, proximaTarefa: any): ClientStatusFilter {
-  const status = getCardStatus(lead, proximaTarefa || null);
-  if (status.indicator === "🔴" && status.text.includes("Atrasado")) return "tarefa_atrasada";
+  // Build proximaTarefa from lead's own fields if not provided
+  const tarefa = proximaTarefa || (
+    (lead as any).data_proxima_acao
+      ? { tipo: (lead as any).proxima_acao || "follow_up", vence_em: (lead as any).data_proxima_acao, hora_vencimento: null }
+      : null
+  );
+  const status = getCardStatus(lead, tarefa);
+  if (status.indicator === "🔴") return "tarefa_atrasada";
   if (status.indicator === "✅" || !status.text) return "em_dia";
   return "desatualizado";
 }
