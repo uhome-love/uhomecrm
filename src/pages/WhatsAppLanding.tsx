@@ -55,11 +55,13 @@ export default function WhatsAppLanding() {
     const origem = params.get("origem") || "whatsapp_api";
     const campanha = params.get("campanha") || "melnick_day_2026";
     const bloco = params.get("bloco") || "";
+    const send_id = params.get("send_id") || "";
+    const batch_id = params.get("batch_id") || "";
     const utm_source = params.get("utm_source") || origem;
     const utm_medium = params.get("utm_medium") || "whatsapp";
     const utm_campaign = params.get("utm_campaign") || campanha;
 
-    const payload = {
+    const payload: Record<string, string> = {
       phone,
       nome,
       email,
@@ -72,6 +74,10 @@ export default function WhatsAppLanding() {
       bloco,
       user_agent: navigator.userAgent,
     };
+
+    // Critical: pass send_id and batch_id for exact click attribution
+    if (send_id) payload.send_id = send_id;
+    if (batch_id) payload.batch_id = batch_id;
 
     console.info("[WA Landing] Params captured:", { phone, nome, campanha, origem, path: location.pathname, search: location.search });
 
