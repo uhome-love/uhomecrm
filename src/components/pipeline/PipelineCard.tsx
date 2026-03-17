@@ -300,10 +300,33 @@ const PipelineCard = memo(function PipelineCard({
           </div>
         )}
 
-        {/* Melnick Day tag */}
-        {(lead.tags || []).includes("MELNICK_DAY") && (
-          <div className="flex items-center gap-1 pt-0.5">
-            <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded-md">🔥 Melnick Day</span>
+        {/* Campaign tags */}
+        {(lead.tags || []).length > 0 && (
+          <div className="flex items-center gap-1 pt-0.5 flex-wrap">
+            {(lead.tags || []).map(tag => {
+              const TAG_CONFIG: Record<string, { label: string; color: string }> = {
+                MELNICK_DAY: { label: "🔥 Melnick Day", color: "text-orange-600 dark:text-orange-400 bg-orange-500/10" },
+                OPEN_BOSQUE: { label: "🌳 Open Bosque", color: "text-green-600 dark:text-green-400 bg-green-500/10" },
+                CASA_TUA: { label: "🏠 Casa Tua", color: "text-blue-600 dark:text-blue-400 bg-blue-500/10" },
+                LAKE_EYRE: { label: "💎 Lake Eyre", color: "text-purple-600 dark:text-purple-400 bg-purple-500/10" },
+                LAS_CASAS: { label: "🏡 Las Casas", color: "text-amber-600 dark:text-amber-400 bg-amber-500/10" },
+                ORYGEM: { label: "✨ Orygem", color: "text-cyan-600 dark:text-cyan-400 bg-cyan-500/10" },
+                HIGH_GARDEN_IGUATEMI: { label: "🌿 High Garden", color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" },
+                SEEN_TRES_FIGUEIRAS: { label: "👁 Seen", color: "text-violet-600 dark:text-violet-400 bg-violet-500/10" },
+                ALTO_LINDOIA: { label: "🏔 Alto Lindóia", color: "text-sky-600 dark:text-sky-400 bg-sky-500/10" },
+                SHIFT: { label: "⚡ Shift", color: "text-slate-600 dark:text-slate-400 bg-slate-500/10" },
+                CASA_BASTIAN: { label: "🏰 Casa Bastian", color: "text-rose-600 dark:text-rose-400 bg-rose-500/10" },
+                DUETTO: { label: "🎵 Duetto", color: "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10" },
+                TERRACE: { label: "🌅 Terrace", color: "text-teal-600 dark:text-teal-400 bg-teal-500/10" },
+              };
+              const cfg = TAG_CONFIG[tag];
+              if (!cfg) return null;
+              return (
+                <span key={tag} className={`text-[10px] font-bold ${cfg.color} px-1.5 py-0.5 rounded-md`}>
+                  {cfg.label}
+                </span>
+              );
+            })}
           </div>
         )}
 

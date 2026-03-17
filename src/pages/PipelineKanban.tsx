@@ -103,7 +103,7 @@ export default function PipelineKanban() {
   const [activeTab, setActiveTab] = useState("kanban");
   const [filaCeoFilter, setFilaCeoFilter] = useState(false);
   const [corretorFilter, setCorretorFilter] = useState<string>("all");
-  const [melnickDayFilter, setMelnickDayFilter] = useState(false);
+  const [campaignTagFilter, setCampaignTagFilter] = useState<string>("all");
   const [dispatchOpen, setDispatchOpen] = useState(false);
   const [forecastExpanded, setForecastExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -140,11 +140,11 @@ export default function PipelineKanban() {
         result = result.filter(l => l.corretor_id === corretorFilter);
       }
     }
-    if (melnickDayFilter) {
-      result = result.filter(l => (l.tags || []).includes("MELNICK_DAY"));
+    if (campaignTagFilter && campaignTagFilter !== "all") {
+      result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, melnickDayFilter]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter]);
 
   const corretorOptions = useMemo(() => {
     const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
@@ -156,10 +156,31 @@ export default function PipelineKanban() {
     [pipeline.leads]
   );
 
-  const melnickDayCount = useMemo(() =>
-    pipeline.leads.filter(l => (l.tags || []).includes("MELNICK_DAY")).length,
-    [pipeline.leads]
-  );
+  // Compute all campaign tag counts
+  const CAMPAIGN_TAGS = [
+    { tag: "MELNICK_DAY", label: "🔥 Melnick Day", color: "orange" },
+    { tag: "OPEN_BOSQUE", label: "🌳 Open Bosque", color: "green" },
+    { tag: "CASA_TUA", label: "🏠 Casa Tua", color: "blue" },
+    { tag: "LAKE_EYRE", label: "💎 Lake Eyre", color: "purple" },
+    { tag: "LAS_CASAS", label: "🏡 Las Casas", color: "amber" },
+    { tag: "ORYGEM", label: "✨ Orygem", color: "cyan" },
+    { tag: "HIGH_GARDEN_IGUATEMI", label: "🌿 High Garden Iguatemi", color: "emerald" },
+    { tag: "SEEN_TRES_FIGUEIRAS", label: "👁 Seen Três Figueiras", color: "violet" },
+    { tag: "ALTO_LINDOIA", label: "🏔 Alto Lindóia", color: "sky" },
+    { tag: "SHIFT", label: "⚡ Shift", color: "slate" },
+    { tag: "CASA_BASTIAN", label: "🏰 Casa Bastian", color: "rose" },
+    { tag: "DUETTO", label: "🎵 Duetto", color: "indigo" },
+    { tag: "TERRACE", label: "🌅 Terrace", color: "teal" },
+  ];
+
+  const campaignTagCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const ct of CAMPAIGN_TAGS) {
+      const c = pipeline.leads.filter(l => (l.tags || []).includes(ct.tag)).length;
+      if (c > 0) counts[ct.tag] = c;
+    }
+    return counts;
+  }, [pipeline.leads]);
 
   const totalVGV = useMemo(() =>
     filteredLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0),
@@ -386,22 +407,26 @@ export default function PipelineKanban() {
               </>
             )}
 
-            {/* 🔥 Campanha Melnick Day quick filter */}
-            <button
-              onClick={() => setMelnickDayFilter(f => !f)}
-              className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
-                melnickDayFilter
-                  ? "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-700"
-                  : "bg-card text-muted-foreground border-border hover:border-orange-300 hover:text-orange-600"
-              }`}
-            >
-              🔥 Campanha Melnick Day
-              {melnickDayCount > 0 && (
-                <Badge className="text-[9px] px-1 py-0 h-3.5 bg-orange-500 text-white border-none">
-                  {melnickDayCount}
-                </Badge>
-              )}
-            </button>
+            {/* Campaign tag filter */}
+            {Object.keys(campaignTagCounts).length > 0 && (
+              <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
+                <SelectTrigger className={`h-7 text-[10px] w-[180px] sm:w-[200px] shrink-0 rounded-full ${
+                  campaignTagFilter !== "all" 
+                    ? "bg-primary/10 border-primary/30 text-primary font-medium" 
+                    : "bg-card"
+                }`}>
+                  <SelectValue placeholder="🏷️ Campanha" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">🏷️ Todas as campanhas</SelectItem>
+                  {CAMPAIGN_TAGS.filter(ct => campaignTagCounts[ct.tag]).map(ct => (
+                    <SelectItem key={ct.tag} value={ct.tag}>
+                      {ct.label} ({campaignTagCounts[ct.tag]})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             {totalVGV > 0 && (
               <span className="text-[11px] text-muted-foreground">• {formatVGV(totalVGV)} VGV</span>
@@ -412,7 +437,7 @@ export default function PipelineKanban() {
               <ForecastInline leads={filteredLeads} stages={pipeline.stages} expanded={forecastExpanded} onToggle={() => setForecastExpanded(e => !e)} />
             )}
 
-            {(activeFiltersCount > 0 || melnickDayFilter) && (
+            {(activeFiltersCount > 0 || campaignTagFilter !== "all") && (
               <div className="flex items-center gap-1 ml-auto flex-wrap">
                 {filters.temperaturas.length > 0 && (
                   <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
@@ -459,12 +484,12 @@ export default function PipelineKanban() {
                     Visita ×
                   </Badge>
                 )}
-                {melnickDayFilter && (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setMelnickDayFilter(false)}>
-                    🔥 Melnick Day ×
+                {campaignTagFilter !== "all" && (
+                  <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setCampaignTagFilter("all")}>
+                    🏷️ {CAMPAIGN_TAGS.find(c => c.tag === campaignTagFilter)?.label || campaignTagFilter} ×
                   </Badge>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => { clearFilters(); setMelnickDayFilter(false); }} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
+                <Button variant="ghost" size="sm" onClick={() => { clearFilters(); setCampaignTagFilter("all"); }} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
                   <X className="h-2.5 w-2.5" /> Limpar
                 </Button>
               </div>
@@ -499,7 +524,7 @@ export default function PipelineKanban() {
         )}
 
         {/* Melnick Campaign Analytics — shown when filter is active */}
-        {melnickDayFilter && (
+        {campaignTagFilter === "MELNICK_DAY" && (
           <Suspense fallback={null}>
             <MelnickCampaignAnalytics />
           </Suspense>
