@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
       telefone: phone || null,
       telefone_normalizado: telefoneNormalizado,
       nome: nome || null,
-      email: email || null,
+      email: normalizedEmail,
       origem,
       canal,
       campanha,
@@ -249,10 +249,10 @@ Deno.serve(async (req) => {
       user_agent: user_agent || null,
     };
 
-    // ─── Enrich from brevo_contacts — always lookup to fill missing name/phone/email ───
-    let enrichedNome = nome;
-    let enrichedEmail = email;
-    let enrichedPhone = telefoneNormalizado;
+    // ─── Enrich from send/brevo_contacts — fill missing name/phone/email ───
+    let enrichedNome = nome || matchedSend?.nome || "";
+    let enrichedEmail = normalizedEmail || matchedSend?.email || "";
+    let enrichedPhone = telefoneNormalizado || normalizePhone(matchedSend?.telefone_normalizado) || matchedSend?.telefone_normalizado || normalizePhone(matchedSend?.telefone) || null;
     let interesseBrevo: string | null = null;
 
     if (telefoneNormalizado || email) {
