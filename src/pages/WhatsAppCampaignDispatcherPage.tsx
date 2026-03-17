@@ -118,7 +118,7 @@ function StageSelect({ value, onChange }: { value: string; onChange: (v: string)
 const TEMPLATE_DEFAULT_IMAGES: Record<string, string> = {
   melnick_day_poa_2026: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
   melnick_day_wa_v2: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
-  ofertas_meday: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png", // template exige header IMAGE no envio
+  ofertas_meday: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fofertas-meday-header.png",
 };
 
 /* ─── Template default redirect URLs ─── */
