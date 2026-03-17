@@ -57,6 +57,9 @@ const CALL_STATUS: Record<string, { label: string; color: string; icon: typeof P
   ringing: { label: "Chamando", color: "text-amber-500", icon: Phone },
   "in-progress": { label: "Em andamento", color: "text-emerald-500", icon: Bot },
   completed: { label: "Concluída", color: "text-emerald-600", icon: CheckCircle },
+  completed_positive: { label: "✅ Positiva", color: "text-emerald-600", icon: CheckCircle },
+  nao_atendeu: { label: "Não atendeu", color: "text-amber-600", icon: PhoneOff },
+  erro: { label: "Erro", color: "text-destructive", icon: XCircle },
   busy: { label: "Ocupado", color: "text-amber-600", icon: PhoneOff },
   "no-answer": { label: "Sem resposta", color: "text-destructive", icon: XCircle },
   failed: { label: "Falhou", color: "text-destructive", icon: XCircle },
@@ -194,7 +197,51 @@ export default function DisparadorLigacoesIA() {
     setPendingSession(null);
   }, []);
 
-  // ── Realtime subscription for ai_calls status updates ──
+  // ── Realtime subscription + polling for ai_calls status updates ──
+  const refreshCallResults = useCallback(async () => {
+    setResults(prev => {
+      const sids = prev.filter(r => r.callSid).map(r => r.callSid!);
+      if (sids.length === 0) return prev;
+      
+      // Fire async query and update state when done
+      supabase
+        .from("ai_calls")
+        .select("twilio_call_sid, status, duracao_segundos, resultado, resumo_ia")
+        .in("twilio_call_sid", sids)
+        .then(({ data }) => {
+          if (!data || data.length === 0) return;
+          const callMap = new Map(data.map(c => [c.twilio_call_sid, c]));
+          setResults(current => current.map(r => {
+            if (!r.callSid) return r;
+            const updated = callMap.get(r.callSid);
+            if (!updated) return r;
+            return {
+              ...r,
+              status: updated.status || r.status,
+              duration: updated.duracao_segundos ?? r.duration,
+              resultado: updated.resultado ?? r.resultado,
+              resumo_ia: updated.resumo_ia ?? r.resumo_ia,
+            };
+          }));
+        });
+      
+      return prev;
+    });
+  }, []);
+
+  // Auto-poll every 10s while running or recently done
+  useEffect(() => {
+    if (step !== "running" && step !== "done") return;
+    if (results.length === 0) return;
+    
+    // Initial refresh
+    refreshCallResults();
+    
+    const interval = setInterval(refreshCallResults, 10000);
+    return () => clearInterval(interval);
+  }, [step, results.length, refreshCallResults]);
+
+  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel('ai-calls-status')
@@ -421,8 +468,8 @@ export default function DisparadorLigacoesIA() {
   // ── Stats ──
   const stats = useMemo(() => {
     const total = results.length;
-    const initiated = results.filter(r => ["initiated", "ringing", "in-progress", "completed"].includes(r.status)).length;
-    const failed = results.filter(r => ["failed", "busy", "no-answer"].includes(r.status)).length;
+    const initiated = results.filter(r => ["initiated", "ringing", "in-progress", "completed", "completed_positive"].includes(r.status)).length;
+    const failed = results.filter(r => ["failed", "busy", "no-answer", "nao_atendeu", "erro"].includes(r.status)).length;
     const skipped = results.filter(r => r.status === "skipped").length;
     return { total, initiated, failed, skipped };
   }, [results]);
@@ -704,10 +751,13 @@ export default function DisparadorLigacoesIA() {
           {/* Results log */}
           {results.length > 0 && (
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 flex-row items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" /> Log de Ligações ({results.length})
                 </CardTitle>
+                <Button variant="ghost" size="sm" onClick={refreshCallResults} className="gap-1 text-xs">
+                  <RefreshCw className="h-3.5 w-3.5" /> Atualizar
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="max-h-60 overflow-y-auto space-y-1">
