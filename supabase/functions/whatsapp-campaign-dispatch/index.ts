@@ -154,26 +154,32 @@ serve(async (req) => {
 
           // If template has button with dynamic URL tracking (button_dynamic must be true)
           if (params.button_url && params.button_dynamic) {
-            // Meta expects ONLY the dynamic suffix ({{1}}) — not the full URL
-            // E.g. if template URL is "https://uhomesales.com/wa/{{1}}"
-            // we send just the query string part: "?phone=5551...&nome=João&..."
-            const fullUrl = params.button_url
-              .replace("{{phone}}", phone)
-              .replace("{{nome}}", encodeURIComponent(send.nome || ""));
-            
-            // Extract only the dynamic part (everything after the base path)
-            // If button_url starts with the base, extract suffix; otherwise send as-is
+            const phoneForUrl = encodeURIComponent(String(phone));
+            const nomeForUrl = encodeURIComponent(send.nome || "");
+            const emailForUrl = encodeURIComponent(send.email || "");
+
+            let fullUrl = params.button_url
+              .replace("{{phone}}", phoneForUrl)
+              .replace("{{nome}}", nomeForUrl)
+              .replace("{{email}}", emailForUrl);
+
             let dynamicSuffix = fullUrl;
             try {
               const urlObj = new URL(fullUrl);
-              // The dynamic part is the search params (query string)
-              dynamicSuffix = urlObj.search + urlObj.hash; // e.g. "?phone=555...&nome=Joao"
-              // Remove leading "?" — Meta appends it from the template base
+              if (!urlObj.searchParams.has("send_id")) {
+                urlObj.searchParams.set("send_id", send.id);
+              }
+              if (!urlObj.searchParams.has("batch_id")) {
+                urlObj.searchParams.set("batch_id", batch_id);
+              }
+              dynamicSuffix = urlObj.search + urlObj.hash;
               if (dynamicSuffix.startsWith("?")) {
                 dynamicSuffix = dynamicSuffix.substring(1);
               }
             } catch {
-              // If URL parsing fails, use as-is
+              const joiner = fullUrl.includes("?") ? "&" : "?";
+              fullUrl = `${fullUrl}${joiner}send_id=${encodeURIComponent(send.id)}&batch_id=${encodeURIComponent(batch_id)}`;
+              dynamicSuffix = fullUrl;
             }
 
             components.push({
@@ -344,6 +350,43 @@ serve(async (req) => {
               type: "text",
               text: key === "nome" ? (send.nome || "Cliente") : String(key),
             })),
+          });
+        }
+
+        if (params.button_url && params.button_dynamic) {
+          const phoneForUrl = encodeURIComponent(String(phone));
+          const nomeForUrl = encodeURIComponent(send.nome || "");
+          const emailForUrl = encodeURIComponent(send.email || "");
+
+          let fullUrl = params.button_url
+            .replace("{{phone}}", phoneForUrl)
+            .replace("{{nome}}", nomeForUrl)
+            .replace("{{email}}", emailForUrl);
+
+          let dynamicSuffix = fullUrl;
+          try {
+            const urlObj = new URL(fullUrl);
+            if (!urlObj.searchParams.has("send_id")) {
+              urlObj.searchParams.set("send_id", send.id);
+            }
+            if (!urlObj.searchParams.has("batch_id")) {
+              urlObj.searchParams.set("batch_id", batch_id);
+            }
+            dynamicSuffix = urlObj.search + urlObj.hash;
+            if (dynamicSuffix.startsWith("?")) {
+              dynamicSuffix = dynamicSuffix.substring(1);
+            }
+          } catch {
+            const joiner = fullUrl.includes("?") ? "&" : "?";
+            fullUrl = `${fullUrl}${joiner}send_id=${encodeURIComponent(send.id)}&batch_id=${encodeURIComponent(batch_id)}`;
+            dynamicSuffix = fullUrl;
+          }
+
+          components.push({
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [{ type: "text", text: dynamicSuffix }],
           });
         }
 

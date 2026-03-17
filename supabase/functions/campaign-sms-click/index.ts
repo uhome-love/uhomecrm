@@ -97,66 +97,117 @@ Deno.serve(async (req) => {
     if (error) log("error", "Failed to insert click", { error: error.message });
   }
 
-  // Helper: update whatsapp_campaign_sends.clicked_at when lead clicks campaign button
+  // Helper: mark a specific WhatsApp campaign send as clicked (idempotent)
+  async function markWhatsAppSendClickedById(sendId: string | null | undefined, batchIdHint?: string | null) {
+    if (!sendId) return null;
+
+    try {
+      const { data: send, error } = await supabase
+        .from("whatsapp_campaign_sends")
+        .select("id, batch_id, pipeline_lead_id, telefone, telefone_normalizado, nome, email, campanha, origem, bloco, clicked_at, status_envio")
+        .eq("id", sendId)
+        .maybeSingle();
+
+      if (error || !send) {
+        log("warn", "WA send not found for click tracking", { sendId, error: error?.message });
+        return null;
+      }
+
+      if (!send.clicked_at) {
+        const now = new Date().toISOString();
+        await supabase
+          .from("whatsapp_campaign_sends")
+          .update({ clicked_at: now, status_envio: "clicked" })
+          .eq("id", send.id);
+
+        const resolvedBatchId = send.batch_id || batchIdHint || null;
+        if (resolvedBatchId) {
+          const { data: batch } = await supabase
+            .from("whatsapp_campaign_batches")
+            .select("total_clicked")
+            .eq("id", resolvedBatchId)
+            .maybeSingle();
+
+          if (batch) {
+            await supabase
+              .from("whatsapp_campaign_batches")
+              .update({ total_clicked: (batch.total_clicked || 0) + 1 })
+              .eq("id", resolvedBatchId);
+          }
+        }
+
+        send.clicked_at = now;
+        send.status_envio = "clicked";
+      }
+
+      log("info", "Marked whatsapp_campaign_send as clicked", { sendId: send.id, batchId: send.batch_id });
+      return send;
+    } catch (e) {
+      log("error", "Failed to mark WA send clicked by id", { sendId, error: e instanceof Error ? e.message : String(e) });
+      return null;
+    }
+  }
+
+  // Helper: fallback matching by phone when legacy links don't carry a send_id
   async function markWhatsAppSendClicked(phoneNorm: string | null) {
-    if (!phoneNorm) return;
+    if (!phoneNorm) return null;
+
     try {
       const variants = phoneVariants(phoneNorm);
-      const { data: sends } = await supabase
+      const { data: send, error } = await supabase
         .from("whatsapp_campaign_sends")
         .select("id, batch_id")
         .in("telefone_normalizado", variants)
         .in("status_envio", ["sent", "delivered", "read"])
         .is("clicked_at", null)
         .order("sent_at", { ascending: false })
-        .limit(5);
+        .limit(1)
+        .maybeSingle();
 
-      if (sends && sends.length > 0) {
-        const now = new Date().toISOString();
-        for (const send of sends) {
-          await supabase
-            .from("whatsapp_campaign_sends")
-            .update({ clicked_at: now, status_envio: "clicked" })
-            .eq("id", send.id);
-
-          // Increment batch counter
-          const { data: batch } = await supabase
-            .from("whatsapp_campaign_batches")
-            .select("total_clicked")
-            .eq("id", send.batch_id)
-            .single();
-          if (batch) {
-            await supabase
-              .from("whatsapp_campaign_batches")
-              .update({ total_clicked: (batch.total_clicked || 0) + 1 })
-              .eq("id", send.batch_id);
-          }
-        }
-        log("info", "Marked whatsapp_campaign_sends as clicked", { count: sends.length, phoneNorm });
+      if (error || !send) {
+        return null;
       }
+
+      return await markWhatsAppSendClickedById(send.id, send.batch_id);
     } catch (e) {
       log("error", "Failed to mark WA send clicked", { error: e instanceof Error ? e.message : String(e) });
+      return null;
     }
   }
 
   try {
     const body = await req.json();
-    const {
+    let {
       phone, nome, email,
       utm_source, utm_medium, utm_campaign,
       canal = "brevo", origem = "SMS_MELNICK_DAY",
       campanha = "MELNICK_DAY_POA_2026",
       bloco = "",
       user_agent,
+      send_id,
+      batch_id,
     } = body;
 
-    const telefoneNormalizado = normalizePhone(phone);
-    const normalizedEmail = email?.toLowerCase().trim() || null;
+    let telefoneNormalizado = normalizePhone(phone);
+    let normalizedEmail = email?.toLowerCase().trim() || null;
+
+    log("info", "Click received", { phone, telefoneNormalizado, nome, email: normalizedEmail, canal, origem, bloco, send_id, batch_id });
+
+    const matchedSend = await markWhatsAppSendClickedById(send_id, batch_id);
+    if (matchedSend) {
+      phone = phone || matchedSend.telefone || matchedSend.telefone_normalizado || "";
+      nome = nome || matchedSend.nome || "";
+      email = email || matchedSend.email || "";
+      origem = matchedSend.origem || origem;
+      campanha = matchedSend.campanha || campanha;
+      bloco = matchedSend.bloco || bloco;
+      telefoneNormalizado = normalizePhone(phone) || normalizePhone(matchedSend.telefone_normalizado) || matchedSend.telefone_normalizado || null;
+      normalizedEmail = email?.toLowerCase().trim() || null;
+    }
+
     const tags = ["MELNICK_DAY", "SMS", "Brevo"];
     const blocoLabel = bloco ? ` - bloco ${bloco}` : "";
     const obsText = `Lead veio do email Melnick Day 2026${blocoLabel} (${new Date().toLocaleDateString("pt-BR")})`;
-
-    log("info", "Click received", { phone, telefoneNormalizado, nome, email: normalizedEmail, canal, origem, bloco });
 
     if (isBlockedTestLead({ nome, email: normalizedEmail, phone: telefoneNormalizado || phone })) {
       log("info", "Blocked test lead", { nome, email: normalizedEmail, phone: telefoneNormalizado || phone });
@@ -186,7 +237,7 @@ Deno.serve(async (req) => {
       telefone: phone || null,
       telefone_normalizado: telefoneNormalizado,
       nome: nome || null,
-      email: email || null,
+      email: normalizedEmail,
       origem,
       canal,
       campanha,
@@ -198,10 +249,10 @@ Deno.serve(async (req) => {
       user_agent: user_agent || null,
     };
 
-    // ─── Enrich from brevo_contacts — always lookup to fill missing name/phone/email ───
-    let enrichedNome = nome;
-    let enrichedEmail = email;
-    let enrichedPhone = telefoneNormalizado;
+    // ─── Enrich from send/brevo_contacts — fill missing name/phone/email ───
+    let enrichedNome = nome || matchedSend?.nome || "";
+    let enrichedEmail = normalizedEmail || matchedSend?.email || "";
+    let enrichedPhone = telefoneNormalizado || normalizePhone(matchedSend?.telefone_normalizado) || matchedSend?.telefone_normalizado || normalizePhone(matchedSend?.telefone) || null;
     let interesseBrevo: string | null = null;
 
     if (telefoneNormalizado || email) {
@@ -295,18 +346,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ─── Try to find existing lead by phone OR email ───
+    // ─── Try to find existing lead by send_id, phone OR email ───
     let existingLead: Record<string, unknown> | null = null;
+    const leadFields = "id, nome, email, telefone, telefone_normalizado, tags, stage_id, corretor_id, observacoes";
+
+    if (matchedSend?.pipeline_lead_id) {
+      const { data } = await supabase
+        .from("pipeline_leads")
+        .select(leadFields)
+        .eq("id", matchedSend.pipeline_lead_id)
+        .not("aceite_status", "eq", "descartado")
+        .maybeSingle();
+      existingLead = data;
+    }
 
     // Search with all available phone numbers (original + enriched)
     const phonesToSearch = new Set<string>();
     if (telefoneNormalizado) phoneVariants(telefoneNormalizado).forEach(v => phonesToSearch.add(v));
     if (enrichedPhone && enrichedPhone !== telefoneNormalizado) phoneVariants(enrichedPhone).forEach(v => phonesToSearch.add(v));
 
-    if (phonesToSearch.size > 0) {
+    if (!existingLead && phonesToSearch.size > 0) {
       const { data } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, email, telefone, telefone_normalizado, tags, stage_id, corretor_id")
+        .select(leadFields)
         .in("telefone_normalizado", [...phonesToSearch])
         .not("aceite_status", "eq", "descartado")
         .order("created_at", { ascending: false })
@@ -319,7 +381,7 @@ Deno.serve(async (req) => {
       const searchEmail = (enrichedEmail || email).toLowerCase().trim();
       const { data } = await supabase
         .from("pipeline_leads")
-        .select("id, nome, email, telefone, telefone_normalizado, tags, stage_id, corretor_id")
+        .select(leadFields)
         .ilike("email", searchEmail)
         .not("aceite_status", "eq", "descartado")
         .order("created_at", { ascending: false })
@@ -329,8 +391,8 @@ Deno.serve(async (req) => {
     }
 
     // If no phone AND no email (even after enrichment), still log click and redirect
-    if (!telefoneNormalizado && !email && !enrichedEmail) {
-      log("warn", "No valid phone or email, logging click only", { phone, email });
+    if (!telefoneNormalizado && !enrichedPhone && !normalizedEmail && !matchedSend?.pipeline_lead_id) {
+      log("warn", "No valid phone or email, logging click only", { phone, email, send_id, batch_id });
       await insertClick({ ...clickBase, status: "click_no_contact", lead_action: "none", redirected: true });
       return jsonResponse({ success: true, action: "redirect_only", redirect_url: WHATSAPP_REDIRECT });
     }
@@ -396,7 +458,7 @@ Deno.serve(async (req) => {
       const interesseLabel = interesseBrevo ? ` | Interesse: ${interesseBrevo}` : "";
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: existingLead.id,
-        tipo: "email",
+        tipo: canal === "whatsapp" ? "whatsapp" : canal === "sms" ? "sms" : "email",
         titulo: `${canalLabel} Campanha Melnick Day`,
         descricao: `Lead clicou na campanha Melnick Day 2026 via ${canal}${blocoLabel}${interesseLabel}`,
         data: new Date().toISOString().slice(0, 10),
@@ -414,8 +476,10 @@ Deno.serve(async (req) => {
         triggered_by: "campaign-sms-click",
       });
 
-      // ─── Mark WhatsApp campaign send as clicked ───
-      await markWhatsAppSendClicked(telefoneNormalizado || enrichedPhone);
+      // ─── Mark WhatsApp campaign send as clicked (legacy fallback when send_id is absent) ───
+      if (!matchedSend?.id) {
+        await markWhatsAppSendClicked(telefoneNormalizado || enrichedPhone);
+      }
 
 
       await supabase.from("melnick_campaign_analytics").insert({
@@ -569,8 +633,10 @@ Deno.serve(async (req) => {
       log("error", "Roleta failed", { leadId: newLead.id, error: e instanceof Error ? e.message : String(e) });
     }
 
-    // ─── Mark WhatsApp campaign send as clicked (new lead) ───
-    await markWhatsAppSendClicked(telefoneNormalizado || enrichedPhone);
+    // ─── Mark WhatsApp campaign send as clicked (legacy fallback when send_id is absent) ───
+    if (!matchedSend?.id) {
+      await markWhatsAppSendClicked(telefoneNormalizado || enrichedPhone);
+    }
 
     // Analytics
     await supabase.from("melnick_campaign_analytics").insert([
