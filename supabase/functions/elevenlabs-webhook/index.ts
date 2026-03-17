@@ -28,7 +28,10 @@ function phoneVariants(norm: string): string[] {
   return [...variants];
 }
 
-const POSITIVE_STATUSES = ["interesse", "positivo", "com_interesse", "qualificado", "visita_marcada"];
+const POSITIVE_STATUSES = [
+  "interesse", "positivo", "com_interesse", "qualificado", "visita_marcada",
+  "interessado_quente", "interessado_morno", "quer_visita", "quer_whatsapp",
+];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCors();
