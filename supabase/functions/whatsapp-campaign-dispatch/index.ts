@@ -154,15 +154,33 @@ serve(async (req) => {
 
           // If template has button with dynamic URL tracking (button_dynamic must be true)
           if (params.button_url && params.button_dynamic) {
-            const trackUrl = params.button_url
+            // Meta expects ONLY the dynamic suffix ({{1}}) — not the full URL
+            // E.g. if template URL is "https://uhomesales.com/wa/{{1}}"
+            // we send just the query string part: "?phone=5551...&nome=João&..."
+            const fullUrl = params.button_url
               .replace("{{phone}}", phone)
               .replace("{{nome}}", encodeURIComponent(send.nome || ""));
+            
+            // Extract only the dynamic part (everything after the base path)
+            // If button_url starts with the base, extract suffix; otherwise send as-is
+            let dynamicSuffix = fullUrl;
+            try {
+              const urlObj = new URL(fullUrl);
+              // The dynamic part is the search params (query string)
+              dynamicSuffix = urlObj.search + urlObj.hash; // e.g. "?phone=555...&nome=Joao"
+              // Remove leading "?" — Meta appends it from the template base
+              if (dynamicSuffix.startsWith("?")) {
+                dynamicSuffix = dynamicSuffix.substring(1);
+              }
+            } catch {
+              // If URL parsing fails, use as-is
+            }
 
             components.push({
               type: "button",
               sub_type: "url",
               index: "0",
-              parameters: [{ type: "text", text: trackUrl }],
+              parameters: [{ type: "text", text: dynamicSuffix }],
             });
           }
 
