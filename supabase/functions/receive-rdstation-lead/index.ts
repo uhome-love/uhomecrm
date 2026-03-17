@@ -153,10 +153,17 @@ async function processLead(
   L: { info: Function; warn: Function; error: Function },
   logOps: Function
 ) {
+  // ── Debug: log all lead keys to find phone field ──
+  L.info("Lead raw keys", { keys: Object.keys(lead), sample: JSON.stringify(lead).slice(0, 1500) });
+
   // ── Extract fields from RD Station lead format ──
+  // RD Station may send phone in custom_fields or cf_ prefixed fields
+  const customFields = lead.custom_fields || {};
+  const cfPhone = customFields.Telefone || customFields.telefone || customFields.Celular || customFields.celular || customFields.Phone || customFields.phone || "";
+  
   const name = lead.name || lead.nome || lead.full_name || "";
   const email = lead.email || "";
-  const phone = lead.personal_phone || lead.mobile_phone || lead.phone || lead.telefone || lead.celular || "";
+  const phone = lead.personal_phone || lead.mobile_phone || lead.phone || lead.telefone || lead.celular || cfPhone || "";
   const rdLeadId = lead.id || lead.rd_lead_id || "";
   const tags = lead.tags || [];
   const jobTitle = lead.job_title || "";
