@@ -140,11 +140,11 @@ export default function PipelineKanban() {
         result = result.filter(l => l.corretor_id === corretorFilter);
       }
     }
-    if (melnickDayFilter) {
-      result = result.filter(l => (l.tags || []).includes("MELNICK_DAY"));
+    if (campaignTagFilter && campaignTagFilter !== "all") {
+      result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, melnickDayFilter]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter]);
 
   const corretorOptions = useMemo(() => {
     const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
