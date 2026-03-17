@@ -65,6 +65,7 @@ const SEGMENTOS: SegmentoConfig[] = [
       { nome: "Orygem", codigo: "57290-UH" },
       { nome: "Casa Tua", codigo: "52101-UH" },
       { nome: "Las Casas", codigo: "41190-UH" },
+      { nome: "High Garden Iguatemi", codigo: "HGI-UH" },
       { nome: "Melnick Day Médio Padrão", codigo: "76953-UH" },
     ],
   },
