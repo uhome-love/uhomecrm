@@ -1,18 +1,47 @@
 /**
  * WhatsAppLanding — Public landing page for WhatsApp/SMS/Email campaign links
- * Route: /wa
- * Captures URL params, registers click + upserts lead via campaign-sms-click edge function,
+ * Route: /wa and /wa/*
+ * Captures URL params from BOTH query string (?phone=X) AND path segments (/wa/phone=X&nome=Y)
+ * since Meta templates may construct URLs in either format.
+ * Registers click + upserts lead via campaign-sms-click edge function,
  * then redirects to WhatsApp.
  */
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 const WHATSAPP_URL = "https://wa.me/5551992597097?text=Quero%20saber%20mais%20sobre%20o%20Melnick%20Day";
 const EDGE_FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/campaign-sms-click`;
 
-export default function WhatsAppLanding() {
+/**
+ * Parse params from both query string and path segments.
+ * Meta template URLs may produce:
+ *   /wa?phone=X&nome=Y  (query-based — if template URL is "https://domain/wa?{{1}}")
+ *   /wa/phone=X&nome=Y  (path-based — if template URL is "https://domain/wa/{{1}}")
+ */
+function useAllParams(): URLSearchParams {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  // If we have query params, use them directly
+  if (searchParams.toString()) return searchParams;
+
+  // Otherwise, try to parse from path: /wa/phone=X&nome=Y
+  const pathAfterWa = location.pathname.replace(/^\/wa\/?/, "");
+  if (pathAfterWa && pathAfterWa.includes("=")) {
+    // Decode and parse as query string
+    try {
+      return new URLSearchParams(decodeURIComponent(pathAfterWa));
+    } catch {
+      return new URLSearchParams(pathAfterWa);
+    }
+  }
+
+  return searchParams;
+}
+
+export default function WhatsAppLanding() {
+  const params = useAllParams();
   const [status, setStatus] = useState<"loading" | "redirecting">("loading");
   const called = useRef(false);
 
@@ -20,15 +49,15 @@ export default function WhatsAppLanding() {
     if (called.current) return;
     called.current = true;
 
-    const phone = searchParams.get("phone") || searchParams.get("telefone") || "";
-    const nome = searchParams.get("nome") || searchParams.get("name") || "";
-    const email = searchParams.get("email") || "";
-    const origem = searchParams.get("origem") || "whatsapp_api";
-    const campanha = searchParams.get("campanha") || "melnick_day_2026";
-    const bloco = searchParams.get("bloco") || "";
-    const utm_source = searchParams.get("utm_source") || origem;
-    const utm_medium = searchParams.get("utm_medium") || "whatsapp";
-    const utm_campaign = searchParams.get("utm_campaign") || campanha;
+    const phone = params.get("phone") || params.get("telefone") || "";
+    const nome = params.get("nome") || params.get("name") || "";
+    const email = params.get("email") || "";
+    const origem = params.get("origem") || "whatsapp_api";
+    const campanha = params.get("campanha") || "melnick_day_2026";
+    const bloco = params.get("bloco") || "";
+    const utm_source = params.get("utm_source") || origem;
+    const utm_medium = params.get("utm_medium") || "whatsapp";
+    const utm_campaign = params.get("utm_campaign") || campanha;
 
     const payload = {
       phone,
@@ -43,6 +72,8 @@ export default function WhatsAppLanding() {
       bloco,
       user_agent: navigator.userAgent,
     };
+
+    console.info("[WA Landing] Params captured:", { phone, nome, campanha, origem, path: location.pathname, search: location.search });
 
     (async () => {
       try {
@@ -65,7 +96,7 @@ export default function WhatsAppLanding() {
         window.location.href = WHATSAPP_URL;
       }, 600);
     })();
-  }, [searchParams]);
+  }, [params]);
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
