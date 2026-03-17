@@ -476,8 +476,10 @@ Deno.serve(async (req) => {
         triggered_by: "campaign-sms-click",
       });
 
-      // ─── Mark WhatsApp campaign send as clicked ───
-      await markWhatsAppSendClicked(telefoneNormalizado || enrichedPhone);
+      // ─── Mark WhatsApp campaign send as clicked (legacy fallback when send_id is absent) ───
+      if (!matchedSend?.id) {
+        await markWhatsAppSendClicked(telefoneNormalizado || enrichedPhone);
+      }
 
 
       await supabase.from("melnick_campaign_analytics").insert({
