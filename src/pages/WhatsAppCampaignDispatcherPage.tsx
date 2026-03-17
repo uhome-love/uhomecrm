@@ -181,7 +181,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
           limite: parseInt(limite) || 3000,
           origem: origem || undefined,
           tag: tag || undefined,
-          stageId: stageId || undefined,
+          stageId: stageId && stageId !== "all" ? stageId : undefined,
         },
         {
           onSuccess: (leads) => {
