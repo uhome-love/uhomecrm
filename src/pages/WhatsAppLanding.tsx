@@ -79,7 +79,7 @@ export default function WhatsAppLanding() {
     if (send_id) payload.send_id = send_id;
     if (batch_id) payload.batch_id = batch_id;
 
-    console.info("[WA Landing] Params captured:", { phone, nome, campanha, origem, path: location.pathname, search: location.search });
+    console.info("[WA Landing] Params captured:", { phone, nome, campanha, origem, send_id, batch_id, path: location.pathname, search: location.search });
 
     (async () => {
       try {
