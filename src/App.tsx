@@ -180,7 +180,8 @@ const App = () => (
             <Route path="/imovel/:codigo" element={<Suspense fallback={<PageLoader />}><ImovelPage /></Suspense>} />
              <Route path="/melnickday" element={<Suspense fallback={<PageLoader />}><MelnickDayLanding /></Suspense>} />
              <Route path="/md" element={<Suspense fallback={<PageLoader />}><MelnickDayLanding /></Suspense>} />
-             <Route path="/wa" element={<Suspense fallback={<PageLoader />}><WhatsAppLanding /></Suspense>} />
+              <Route path="/wa" element={<Suspense fallback={<PageLoader />}><WhatsAppLanding /></Suspense>} />
+              <Route path="/wa/*" element={<Suspense fallback={<PageLoader />}><WhatsAppLanding /></Suspense>} />
              <Route path="/import-brevo-contacts" element={<Suspense fallback={<PageLoader />}><ImportBrevoContacts /></Suspense>} />
              <Route path="/privacidade" element={<Suspense fallback={<PageLoader />}><PrivacidadePage /></Suspense>} />
             {/* Acessível a todos os autenticados */}
