@@ -335,7 +335,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const vgv = neg.reduce((s: number, n: any) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
           corretoresAll.push({
-            corretor_id: uid, nome: corrNameMap.get(uid) || "Corretor", gerente_nome: gerenteNome,
+            corretor_id: uid as string, nome: corrNameMap.get(uid) as string || "Corretor", gerente_nome: gerenteNome as string,
             ligacoes: lig, aproveitados: aprov, taxa: lig > 0 ? Math.round((aprov / lig) * 100) : 0,
             visitasMarcadas: vm, visitasRealizadas: vr, propostas: prop, vgv,
           });
