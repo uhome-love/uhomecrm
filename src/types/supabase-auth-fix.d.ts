@@ -1,29 +1,18 @@
-// Global type augmentations for supabase-js compatibility
-// Fixes getSession/getUser not found on SupabaseAuthClient
-// and fixes unknown types from PostgREST v14.1 inference
+// Module augmentation (not replacement) for supabase-js auth client
+// Must have at least one top-level import/export to be treated as augmentation
+import type { Session, User } from "@supabase/supabase-js";
 
 declare module "@supabase/supabase-js" {
   interface SupabaseAuthClient {
     getSession(): Promise<{
-      data: { session: import("@supabase/supabase-js").Session | null };
+      data: { session: Session | null };
       error: any;
     }>;
     getUser(): Promise<{
-      data: { user: import("@supabase/supabase-js").User | null };
+      data: { user: User | null };
       error: any;
     }>;
   }
 }
 
-declare module "@supabase/gotrue-js" {
-  interface GoTrueClient {
-    getSession(): Promise<{
-      data: { session: any };
-      error: any;
-    }>;
-    getUser(): Promise<{
-      data: { user: any };
-      error: any;
-    }>;
-  }
-}
+export {};
