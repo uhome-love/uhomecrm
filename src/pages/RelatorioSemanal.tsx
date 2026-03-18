@@ -69,6 +69,13 @@ export default function RelatorioSemanal() {
   const [downloading, setDownloading] = useState(false);
   const isMobile = useIsMobile();
 
+  // KPI detail dialog state
+  const [kpiDetail, setKpiDetail] = useState<{ type: ExecKpiType; label: string } | null>(null);
+  const kpiDateRange = useMemo(() => ({
+    start: format(period.start, "yyyy-MM-dd"),
+    end: format(period.end, "yyyy-MM-dd"),
+  }), [period.start, period.end]);
+
   // Ranking sort state
   const [sortKey, setSortKey] = useState<SortKey>("vgv");
   const [sortAsc, setSortAsc] = useState(false);
