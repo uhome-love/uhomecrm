@@ -220,6 +220,18 @@ export default function ImoveisPage() {
         </div>
       )}
 
+      {/* Lead Match banner */}
+      {leadMatch.hasMatch && (
+        <div className="bg-accent/50 border-b border-accent px-4 py-2 flex items-center justify-center gap-2">
+          <span className="text-xs font-medium text-foreground">
+            🔍 Buscando imóveis para <strong>{leadMatch.matchedLead!.nome}</strong>
+          </span>
+          <button onClick={leadMatch.clearMatch} className="ml-2 p-0.5 rounded-full hover:bg-muted transition-colors">
+            <X className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        </div>
+      )}
+
       {/* ── Sticky top bar ── */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50">
         <div className="max-w-[1400px] mx-auto px-4 md:px-6">
