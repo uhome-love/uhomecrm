@@ -1020,6 +1020,15 @@ export default function CeoDashboard() {
         onOpenChange={setDispatchOpen}
         onDispatched={() => { reload(); loadFilaCeo(); }}
       />
+
+      {/* KPI Detail Dialog */}
+      <KpiDetailDialog
+        open={!!kpiDetail}
+        onOpenChange={(o) => { if (!o) setKpiDetail(null); }}
+        type={kpiDetail?.type || "total_leads"}
+        label={kpiDetail?.label || ""}
+        dateRange={{ start: range.start, end: range.end }}
+      />
     </div>
   );
 }
