@@ -531,6 +531,7 @@ export default function CeoDashboard() {
             prev={prevKpis?.propostas}
             iconColor="text-amber-600"
             ceoMeta={ceoMetasConsolidadas.meta_propostas || null}
+            onClick={() => setKpiDetail({ type: "propostas", label: "Propostas" })}
           />
           <KpiCard
             icon={FileText}
