@@ -212,11 +212,22 @@ export function useAISearch() {
         setAiProperties(scored);
         setAiTotal(result.total);
       } else {
-        // No results — try relaxed search (remove some filters)
+        // No results — try relaxed search keeping text query but removing restrictive filters
+        // Build a minimal filter: keep only price range if present
+        const relaxedParts: string[] = [];
+        if (aiData.filters?.contrato === "locacao") {
+          relaxedParts.push("valor_locacao:>0");
+        } else {
+          relaxedParts.push("valor_venda:>0");
+        }
+        if (aiData.filters?.valor_max) relaxedParts.push(`valor_venda:<=${aiData.filters.valor_max}`);
+        if (aiData.filters?.valor_min) relaxedParts.push(`valor_venda:>=${aiData.filters.valor_min}`);
+
         const relaxedResult = await typesenseSearch({
-          q: aiData.text_query || "*",
+          q: aiData.text_query || query.trim(),
           page: 1,
           per_page: 24,
+          filter_by: relaxedParts.join(" && ") || undefined,
         });
 
         if (relaxedResult && relaxedResult.data.length > 0) {
@@ -227,7 +238,6 @@ export function useAISearch() {
           scored.sort((a: AIPropertyResult, b: AIPropertyResult) => b.score - a.score);
           setAiProperties(scored);
           setAiTotal(relaxedResult.total);
-          // Update explicacao to note relaxed search
           setAiResult({
             ...aiData,
             explicacao: aiData.explicacao + " Não encontrei resultados exatos, mas trouxe alternativas próximas.",
