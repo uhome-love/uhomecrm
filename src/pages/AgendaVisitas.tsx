@@ -108,8 +108,10 @@ export default function AgendaVisitas() {
   // Broad query (no date filter) for calendar, alertas, performance, pending counts
   const { visitas: allVisitas, isLoading: isLoadingAll } = useVisitas();
 
-  // Split by tipo
-  const visitas = useMemo(() => tabVisitas.filter(v => ((v as any).tipo || "lead") === agendaTipo), [tabVisitas, agendaTipo]);
+  // Split by tipo — own visitas only for main tabs
+  const { user } = useAuth();
+  const visitas = useMemo(() => tabVisitas.filter(v => ((v as any).tipo || "lead") === agendaTipo && v.corretor_id === user?.id), [tabVisitas, agendaTipo, user?.id]);
+  const teamVisitas = useMemo(() => tabVisitas.filter(v => ((v as any).tipo || "lead") === agendaTipo && v.corretor_id !== user?.id), [tabVisitas, agendaTipo, user?.id]);
   const allVisitasByTipo = useMemo(() => allVisitas.filter(v => ((v as any).tipo || "lead") === agendaTipo), [allVisitas, agendaTipo]);
   const negocioCount = useMemo(() => allVisitas.filter(v => (v as any).tipo === "negocio").length, [allVisitas]);
   const leadCount = useMemo(() => allVisitas.filter(v => (v as any).tipo !== "negocio").length, [allVisitas]);
