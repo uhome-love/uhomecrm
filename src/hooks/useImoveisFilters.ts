@@ -82,6 +82,9 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
   const [empreendimento, setEmpreendimento] = useState<string[]>(() => readArr(searchParams, "empreendimento"));
   const [empreendimentoSearch, setEmpreendimentoSearch] = useState("");
 
+  // ── Situação filter ──
+  const [situacao, setSituacao] = useState<string[]>(() => readArr(searchParams, "situacao"));
+
   // ── Mode toggles ──
   const [campanhaAtiva, setCampanhaAtiva] = useState(() => readBool(searchParams, "campanha"));
   const [uhomeOnly, setUhomeOnly] = useState(() => readBool(searchParams, "uhome"));
