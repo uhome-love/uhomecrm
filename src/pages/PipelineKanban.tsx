@@ -162,6 +162,13 @@ export default function PipelineKanban() {
     setRefreshing(false);
   };
 
+  // Listen for pipeline-reload events from PipelineBoard (e.g. after descarte)
+  useEffect(() => {
+    const handler = () => pipeline.reload();
+    window.addEventListener("pipeline-reload", handler);
+    return () => window.removeEventListener("pipeline-reload", handler);
+  }, [pipeline.reload]);
+
   const [intelView, setIntelView] = useState<"funil" | "radar">("funil");
 
   const clearAllFilters = () => {
