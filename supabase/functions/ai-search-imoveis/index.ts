@@ -125,8 +125,9 @@ REGRAS IMPORTANTES:
 1. Se o usuário não especificar contrato, assuma VENDA
 2. Se mencionar "aluguel/alugar/locação", defina contrato como "locacao"
 3. NÃO restrinja excessivamente — se houver dúvida, seja mais amplo nos filtros
-4. Se o usuário buscar por nome de empreendimento, coloque no texto_busca
-5. Sempre forneça uma explicação consultiva clara
+4. **CRÍTICO**: Se o usuário buscar por nome de empreendimento (ex: "Shift", "Open Bosque", "Orygem", "Lake Eyre", "Casa Bastian", "Casa Tua", "Las Casas", "Melnick Day"), coloque o nome EXATO no campo texto_busca. NÃO adicione filtros de bairro, tipo ou dormitórios quando a busca é por nome de empreendimento — apenas o texto_busca com o nome.
+5. Se parecer nome de empreendimento mas você não tem certeza, coloque no texto_busca E não adicione outros filtros restritivos
+6. Sempre forneça uma explicação consultiva clara
 
 Use a ferramenta parse_property_search para extrair os filtros. Sempre chame a ferramenta.`;
 
