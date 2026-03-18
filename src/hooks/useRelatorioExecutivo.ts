@@ -173,10 +173,10 @@ export function useRelatorioExecutivo(period: PeriodRange) {
         teamMembersData = (tm || []).map(m => ({ ...m, avatar_url: null }));
       } else if (scope === "gerente") {
         const { data: tm } = await supabase
-          .from("team_members").select("id, nome, equipe, gerente_id, user_id, avatar_url")
+          .from("team_members").select("id, nome, equipe, gerente_id, user_id")
           .eq("gerente_id", authUserId!)
           .eq("status", "ativo");
-        teamMembersData = tm || [];
+        teamMembersData = (tm || []).map(m => ({ ...m, avatar_url: null }));
         scopeUserIds = teamMembersData.map(m => m.user_id).filter(Boolean);
         // Resolve profile IDs for negocios
         if (scopeUserIds.length > 0) {
