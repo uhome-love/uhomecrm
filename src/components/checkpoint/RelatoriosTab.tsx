@@ -64,6 +64,7 @@ export default function RelatoriosTab({ teamUserIds, teamNameMap }: Props) {
     return { start: format(inicio, "yyyy-MM-dd"), end: format(hoje, "yyyy-MM-dd") };
   }, [periodo]);
 
+  const load = useCallback(async () => {
     if (!user || teamUserIds.length === 0) return;
     const hoje = new Date();
     let inicio: Date;
