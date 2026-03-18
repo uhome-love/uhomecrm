@@ -99,7 +99,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
       gerenteIds = [filterGerenteId];
     } else if (gerenteIds.length === 0) {
       // Get all gestores
-      const gestorIds = Array.from(gerenteUserIds);
+      const gestorIds = Array.from(gerenteUserIds) as string[];
       gerenteIds = gestorIds;
     }
     
