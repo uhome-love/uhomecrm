@@ -247,9 +247,18 @@ export function useRelatorioExecutivo(period: PeriodRange) {
       prevVisMarcQ = applyScope(prevVisMarcQ, "corretor_id");
       prevVisRealQ = applyScope(prevVisRealQ, "corretor_id");
 
-      // Negócios
-      let negQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, created_at").gte("created_at", s).lte("created_at", e).limit(10000);
-      let prevNegQ = supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase").gte("created_at", ps).lte("created_at", pe).limit(10000);
+      // Negócios criados (by created_at)
+      let negQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, created_at, data_assinatura").gte("created_at", s).lte("created_at", e).limit(10000);
+      let prevNegQ = supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, data_assinatura").gte("created_at", ps).lte("created_at", pe).limit(10000);
+
+      // Negócios assinados (by data_assinatura within period)
+      let negAssinadosQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, data_assinatura")
+        .in("fase", ["assinado", "vendido"])
+        .gte("data_assinatura", dStart).lte("data_assinatura", dEnd).limit(10000);
+      let prevNegAssinadosQ = supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, data_assinatura")
+        .in("fase", ["assinado", "vendido"])
+        .gte("data_assinatura", pdStart).lte("data_assinatura", pdEnd).limit(10000);
+
       // Negocios uses corretor_id (profile_id) and auth_user_id
       if (scopeProfileIds) {
         const orParts = [
@@ -259,6 +268,8 @@ export function useRelatorioExecutivo(period: PeriodRange) {
         if (orParts.length > 0) {
           negQ = negQ.or(orParts.join(","));
           prevNegQ = prevNegQ.or(orParts.join(","));
+          negAssinadosQ = negAssinadosQ.or(orParts.join(","));
+          prevNegAssinadosQ = prevNegAssinadosQ.or(orParts.join(","));
         }
       }
 
