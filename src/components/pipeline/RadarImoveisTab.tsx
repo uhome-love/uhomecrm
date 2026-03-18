@@ -674,6 +674,11 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
           </TabsTrigger>
         </TabsList>
 
+        {/* ════════ TAB: MATCHES ════════ */}
+        <TabsContent value="matches" className="mt-3">
+          <LeadMatchesWidget leadId={leadId} leadNome={leadNome} leadTelefone={leadTelefone} />
+        </TabsContent>
+
         {/* ════════ TAB: RADAR ════════ */}
         <TabsContent value="radar" className="mt-3 space-y-3">
           {/* Context badges */}
