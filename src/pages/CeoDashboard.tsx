@@ -494,6 +494,7 @@ export default function CeoDashboard() {
             prev={prevKpis?.visitasRealizadas}
             iconColor="text-emerald-600"
             ceoMeta={ceoMetasConsolidadas.meta_visitas_realizadas || null}
+            onClick={() => setKpiDetail({ type: "visitas_realizadas", label: "Visitas Realizadas" })}
           />
           <KpiCard
             icon={TrendingDown}
