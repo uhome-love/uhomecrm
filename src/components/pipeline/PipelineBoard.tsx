@@ -558,7 +558,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     // Visita Marcada → create visita in agenda
     if (extra.criarVisita && extra.dataVisita) {
       try {
-        const userId = (await supabase.auth.getUser()).data?.user?.id;
+        const userId = (await (supabase.auth as any).getUser()).data?.user?.id;
         const { error: visitaError } = await supabase.from("visitas").insert({
           pipeline_lead_id: result.leadId,
           lead_nome: lead.nome,
