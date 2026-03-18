@@ -73,6 +73,7 @@ interface UseImoveisSearchParams {
     sortBy: string;
     construtora: string[];
     empreendimento: string[];
+    situacao: string[];
   };
   /** Serialized filter key for change-detection */
   filterKey: string;
