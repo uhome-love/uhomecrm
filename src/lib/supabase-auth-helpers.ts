@@ -6,7 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function getAuthSession() {
-  const result = await supabase.auth.getSession();
+  const result = await (supabase.auth as any).getSession();
   return (result as any)?.data?.session ?? null;
 }
 
