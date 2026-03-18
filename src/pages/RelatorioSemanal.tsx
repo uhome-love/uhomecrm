@@ -228,13 +228,27 @@ export default function RelatorioSemanal() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+        {/* Team filter for CEO */}
+        {scope === "admin" && teamOptions.length > 0 && (
+          <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+            <SelectTrigger className="w-[220px] mx-auto">
+              <SelectValue placeholder="Todas as equipes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as equipes</SelectItem>
+              {teamOptions.map(eq => (
+                <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div ref={reportRef} className="space-y-6">
         {/* ═══ BLOCO 1 — KPI Cards ═══ */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {KPI_CONFIG.map(({ key, label, icon: Icon, color, isCurrency }) => {
-            const val = data?.kpis?.[key];
+            const val = filteredKpis?.[key];
             return (
               <div key={key} onClick={() => !isLoading && key !== "leadsAtivos" && setKpiDetail({ type: key, label })} className={`bg-background border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow ${key !== "leadsAtivos" ? "cursor-pointer" : ""}`}>
                 {isLoading ? (
