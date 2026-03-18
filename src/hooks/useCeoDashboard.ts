@@ -161,11 +161,14 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
 
   // ── Pipeline + Campanhas + Alertas + Origens ──
   const { data: pipelineData } = useQuery({
-    queryKey: ["ceo-pipeline", user?.id],
+    queryKey: ["ceo-pipeline", user?.id, rangeKey],
     queryFn: async () => {
       const [{ data: stages }, { data: leads }] = await Promise.all([
         supabase.from("pipeline_stages").select("id, nome, tipo, ordem").eq("ativo", true).eq("pipeline_tipo", "leads").order("ordem"),
-        supabase.from("pipeline_leads").select("id, stage_id, empreendimento, updated_at, created_at, origem").limit(1000),
+        supabase.from("pipeline_leads").select("id, stage_id, empreendimento, updated_at, created_at, origem")
+          .gte("created_at", range.start)
+          .lte("created_at", range.end + "T23:59:59")
+          .limit(1000),
       ]);
 
       const stageData = (stages || []).map(s => ({
