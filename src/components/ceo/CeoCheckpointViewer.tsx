@@ -121,7 +121,7 @@ export default function CeoCheckpointViewer() {
           .in("corretor_id", allUserIds)
           .eq("data", date)
       : { data: [] };
-    const goalsMap = new Map((goals || []).map((g: any) => [g.corretor_id, g]));
+    const goalsMap = new Map<string, any>((goals || []).map((g: any) => [g.corretor_id, g]));
 
     // Fallback to recent goals for missing
     const foundGoalIds = new Set((goals || []).map((g: any) => g.corretor_id));

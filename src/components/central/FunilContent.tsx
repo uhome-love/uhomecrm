@@ -96,7 +96,7 @@ export default function FunilContent() {
     }
 
     const { data: team } = await supabase.from("team_members").select("id, nome").eq("gerente_id", user.id);
-    const teamMap = new Map((team || []).map((t: any) => [t.id, t.nome]));
+    const teamMap = new Map<string, string>((team || []).map((t: any) => [t.id, t.nome]));
 
     const by_corretor: AggregatedData["by_corretor"] = {};
     let totals = { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };

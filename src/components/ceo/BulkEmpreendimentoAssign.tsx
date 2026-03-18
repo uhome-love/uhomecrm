@@ -177,7 +177,7 @@ export default function BulkEmpreendimentoAssign({ open, onOpenChange, onComplet
   const handleAutoResolve = async () => {
     setAutoResolving(true);
     try {
-      const { data: session } = await supabase.auth.getSession();
+      const { data: session } = await (supabase.auth as any).getSession();
       const { data, error } = await supabase.functions.invoke("jetimob-sync", {
         body: { backfill_campaign: true },
         headers: { Authorization: `Bearer ${session.session?.access_token}` },
