@@ -616,7 +616,7 @@ export function AppSidebar() {
 
         {/* Campanhas Comerciais - collapsible */}
         {!collapsed ? (
-          <Collapsible defaultOpen className="border-b border-white/10 pb-2 mb-1">
+          <Collapsible defaultOpen={false} className="border-b border-white/10 pb-2 mb-1">
             <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors">
               <span>Campanhas Comerciais</span>
               <ChevronDown className="h-3 w-3 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
