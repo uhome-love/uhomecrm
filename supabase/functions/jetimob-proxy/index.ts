@@ -444,6 +444,46 @@ serve(async (req) => {
       });
     }
 
+    // ═══════════════════════════════════════════
+    // DEBUG: RAW FIELDS FROM JETIMOB
+    // ═══════════════════════════════════════════
+    if (action === "debug_raw_fields") {
+      const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+      // Get a UH item with most fields filled
+      const sample = catalogItems.find(it => String(it.codigo || "").includes("-UH") && it.empreendimento_nome) || catalogItems[0];
+      
+      // Collect all unique keys across first 100 items
+      const allKeys = new Set<string>();
+      for (const item of catalogItems.slice(0, 200)) {
+        for (const key of Object.keys(item)) {
+          allKeys.add(key);
+        }
+      }
+      
+      // Build sample with all fields
+      const sampleFields: Record<string, any> = {};
+      for (const key of [...allKeys].sort()) {
+        const val = sample[key];
+        if (Array.isArray(val)) {
+          sampleFields[key] = `[Array: ${val.length} items]${val.length > 0 ? ` first: ${JSON.stringify(val[0]).slice(0,200)}` : ""}`;
+        } else if (typeof val === "object" && val !== null) {
+          sampleFields[key] = `{Object: keys=[${Object.keys(val).join(",")}]}`;
+        } else {
+          sampleFields[key] = val;
+        }
+      }
+      
+      return new Response(JSON.stringify({
+        total_items: catalogItems.length,
+        total_unique_keys: allKeys.size,
+        all_keys: [...allKeys].sort(),
+        sample_codigo: sample?.codigo,
+        sample_fields: sampleFields,
+      }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("jetimob-proxy error:", e);
