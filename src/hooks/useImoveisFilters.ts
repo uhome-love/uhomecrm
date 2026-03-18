@@ -56,7 +56,7 @@ export interface ActiveFilter {
   onRemove: () => void;
 }
 
-export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], construtoraFacets?: Facet[], empreendimentoFacets?: Facet[], cidadeFacets?: Facet[]) {
+export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], construtoraFacets?: Facet[], empreendimentoFacets?: Facet[], cidadeFacets?: Facet[], fetchBairrosByCidade?: FetchBairrosByCidade) {
   const [searchParams, setSearchParams] = useSearchParams();
   const isInitRef = useRef(true);
 
