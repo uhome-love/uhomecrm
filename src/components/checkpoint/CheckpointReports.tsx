@@ -40,8 +40,8 @@ export default function CheckpointReports() {
     const { data: cps } = await supabase.from("checkpoints").select("id, data").eq("gerente_id", user.id).gte("data", dateRange.start).lte("data", dateRange.end);
     if (!cps || cps.length === 0) { setRows([]); setDailyData([]); setLoading(false); return; }
 
-    const cpIds = cps.map((c: any) => c.id);
-    const cpDateMap = new Map(cps.map((c: any) => [c.id, c.data]));
+    const cpIds = ((cps || []) as any[]).map((c: any) => c.id);
+    const cpDateMap = new Map(((cps || []) as any[]).map((c: any) => [c.id, c.data]));
     const { data: lines } = await supabase.from("checkpoint_lines").select("*, team_members!checkpoint_lines_corretor_id_fkey(nome)").in("checkpoint_id", cpIds);
     const { data: team } = await supabase.from("team_members").select("id, nome").eq("gerente_id", user.id);
 
