@@ -427,6 +427,40 @@ export default function ImoveisPage() {
               </div>
             </FilterChip>
 
+            {/* Cidade */}
+            <FilterChip
+              label={cidade.length === 1 ? cidade[0] : cidade.length > 1 ? `${cidade.length} cidades` : "Cidade"}
+              active={!(cidade.length === 1 && cidade[0] === "Porto Alegre")}
+              onClear={() => setCidade(["Porto Alegre"])}
+            >
+              <div className="space-y-1 w-48">
+                <p className="text-xs font-semibold text-foreground mb-2">Cidade <span className="text-muted-foreground font-normal">(múltipla)</span></p>
+                {cidadeOptions.map((facet) => {
+                  const selected = cidade.includes(facet.value);
+                  return (
+                    <button key={facet.value} onClick={() => {
+                      setCidade(prev => {
+                        if (selected) {
+                          const next = prev.filter(c => c !== facet.value);
+                          return next.length === 0 ? ["Porto Alegre"] : next;
+                        }
+                        return [...prev, facet.value];
+                      });
+                      // Clear bairro selections when city changes
+                      setBairro([]);
+                    }} className={cn(
+                      "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all flex items-center gap-2",
+                      selected ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50"
+                    )}>
+                      <Check className={cn("h-3 w-3 shrink-0", selected ? "opacity-100" : "opacity-0")} />
+                      <span className="flex-1">{facet.value}</span>
+                      {facet.count > 0 && <span className="text-[10px] text-muted-foreground">({facet.count})</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </FilterChip>
+
             {/* Bairro */}
             <FilterChip label={bairro.length > 0 ? (bairro.length <= 2 ? bairro.join(", ") : `${bairro.length} bairros`) : "Bairro"} active={bairro.length > 0} onClear={() => setBairro([])}>
               <div className="w-56">
