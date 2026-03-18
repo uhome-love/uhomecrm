@@ -108,6 +108,14 @@ export function buildFilterBy(filters: {
     parts.push(`is_uhome:=true`);
   }
 
+  // Multi-select cidade
+  const cidades = Array.isArray(filters.cidade) ? filters.cidade.filter(Boolean) : (filters.cidade ? [filters.cidade] : []);
+  if (cidades.length === 1) {
+    parts.push(`cidade:=\`${cidades[0]}\``);
+  } else if (cidades.length > 1) {
+    parts.push(`cidade:[\`${cidades.join("`,`")}\`]`);
+  }
+
   // Multi-select construtora
   const construtoras = Array.isArray(filters.construtora) ? filters.construtora.filter(Boolean) : (filters.construtora ? [filters.construtora] : []);
   if (construtoras.length === 1) {
