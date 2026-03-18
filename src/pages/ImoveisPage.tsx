@@ -98,17 +98,61 @@ export default function ImoveisPage() {
     favorites,
   });
 
+  // ── Lead adherence scoring (when lead context + profile exists) ──
+  const scorePropertyForLead = useCallback((item: any): number => {
+    if (!leadProfile) return 0;
+    let score = 0;
+    const preco = getNum(item, "valor_venda", "valor") || 0;
+    // Valor (25pts)
+    if (leadProfile.valor_min || leadProfile.valor_max) {
+      const aboveMin = !leadProfile.valor_min || preco >= leadProfile.valor_min;
+      const belowMax = !leadProfile.valor_max || preco <= leadProfile.valor_max;
+      if (aboveMin && belowMax) score += 25;
+      else if (!leadProfile.valor_max || preco <= leadProfile.valor_max * 1.15) score += 12;
+    } else score += 12;
+    // Bairro (20pts)
+    const bairro = item.endereco_bairro || item.bairro || "";
+    if (leadProfile.bairros?.length && bairro) {
+      const nb = bairro.toLowerCase();
+      if (leadProfile.bairros.some((b: string) => nb.includes(b.toLowerCase()))) score += 20;
+    } else score += 10;
+    // Dorms (15pts)
+    const dorms = getNum(item, "dormitorios") || 0;
+    if (leadProfile.dormitorios_min && dorms > 0) {
+      if (dorms >= leadProfile.dormitorios_min) score += 15;
+      else if (dorms === leadProfile.dormitorios_min - 1) score += 7;
+    } else score += 7;
+    // Tipo (10pts)
+    if (leadProfile.tipos?.length && item.tipo) {
+      if (leadProfile.tipos.some((t: string) => (item.tipo || "").toLowerCase().includes(t.toLowerCase()))) score += 10;
+    } else score += 5;
+    // Suítes (5pts)
+    if (leadProfile.suites_min && (getNum(item, "suites") || 0) >= leadProfile.suites_min) score += 5;
+    else if (!leadProfile.suites_min) score += 2;
+    // Vagas (5pts)
+    if (leadProfile.vagas_min && (getNum(item, "garagens", "vagas") || 0) >= leadProfile.vagas_min) score += 5;
+    else if (!leadProfile.vagas_min) score += 2;
+
+    return Math.min(Math.round((score / 85) * 100), 99);
+  }, [leadProfile]);
+
+  // When sorting by aderência, re-sort; also attach scores for badge display
+  const displayImoveis = useMemo(() => {
+    if (!hasLeadContext || !leadProfile || sortBy !== "aderencia") return sortedImoveis;
+    return [...sortedImoveis].sort((a, b) => scorePropertyForLead(b) - scorePropertyForLead(a));
+  }, [sortedImoveis, hasLeadContext, leadProfile, sortBy, scorePropertyForLead]);
+
   // Prev/next navigation in preview
-  const previewIndex = previewItem ? sortedImoveis.findIndex((it: any) => {
+  const previewIndex = previewItem ? displayImoveis.findIndex((it: any) => {
     const pid = String(previewItem.codigo || previewItem.id_imovel || previewItem.id);
     const iid = String(it.codigo || it.id_imovel || it.id);
     return pid === iid;
   }) : -1;
   const hasPrevPreview = previewIndex > 0;
-  const hasNextPreview = previewIndex >= 0 && previewIndex < sortedImoveis.length - 1;
-  const goToPrevPreview = () => { if (hasPrevPreview) setPreviewItem(sortedImoveis[previewIndex - 1]); };
-  const goToNextPreview = () => { if (hasNextPreview) setPreviewItem(sortedImoveis[previewIndex + 1]); };
-  const previewPositionLabel = previewIndex >= 0 ? `${previewIndex + 1} / ${sortedImoveis.length}` : undefined;
+  const hasNextPreview = previewIndex >= 0 && previewIndex < displayImoveis.length - 1;
+  const goToPrevPreview = () => { if (hasPrevPreview) setPreviewItem(displayImoveis[previewIndex - 1]); };
+  const goToNextPreview = () => { if (hasNextPreview) setPreviewItem(displayImoveis[previewIndex + 1]); };
+  const previewPositionLabel = previewIndex >= 0 ? `${previewIndex + 1} / ${displayImoveis.length}` : undefined;
 
   // ── Favorites persistence ──
   useEffect(() => {
