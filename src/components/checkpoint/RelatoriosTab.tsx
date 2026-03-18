@@ -464,6 +464,6 @@ export default function RelatoriosTab({ teamUserIds, teamNameMap }: Props) {
         teamNameMap={teamNameMap}
         dateRange={kpiDateRange}
       />
-    </div>
+    </>
   );
 }
