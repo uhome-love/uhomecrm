@@ -15,6 +15,8 @@ import { useSearchParams } from "react-router-dom";
 import { fmtCompact } from "@/lib/imovelHelpers";
 import type { Facet } from "@/hooks/useTypesenseFacets";
 
+type FetchBairrosByCidade = (cidades: string[]) => Promise<Facet[]>;
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ── URL param helpers ──
