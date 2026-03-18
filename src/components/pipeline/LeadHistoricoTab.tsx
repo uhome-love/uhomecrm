@@ -352,7 +352,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               </div>
               <div className="pt-0.5">
                 <p className="text-sm font-medium text-foreground">{item.title}</p>
-                {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                {item.description && <p className="text-xs text-muted-foreground whitespace-pre-wrap">{item.description}</p>}
                 <p className="text-xs text-muted-foreground/60">{formatDateSafe(item.date, "dd/MM 'às' HH:mm", { locale: ptBR, fallback: "Data inválida" })}</p>
               </div>
             </div>
