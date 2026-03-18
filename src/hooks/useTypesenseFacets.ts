@@ -48,7 +48,7 @@ let cachedBairros: Facet[] | null = null;
 let cachedTipos: Facet[] | null = null;
 let cachedConstrutoras: Facet[] | null = null;
 let cachedEmpreendimentos: Facet[] | null = null;
-let cachedSituacoes: Facet[] | null = null;
+let cachedStatusImovel: Facet[] | null = null;
 
 function parseFacetField(facetCounts: any[], fieldName: string): Facet[] {
   const fc = facetCounts.find((f: any) => f.field_name === fieldName);
