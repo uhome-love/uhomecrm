@@ -54,8 +54,8 @@ export function mapTypesenseDoc(doc: any): MappedProperty {
     dormitorios: doc.dormitorios,
     valor_condominio: doc.valor_condominio,
     situacao: doc.situacao,
-    latitude: doc.latitude ?? null,
-    longitude: doc.longitude ?? null,
+    latitude: doc.latitude ?? (Array.isArray(doc.location) ? doc.location[0] : null),
+    longitude: doc.longitude ?? (Array.isArray(doc.location) ? doc.location[1] : null),
     _fotos_normalized: fotos,
     _fotos_full: fotosFull,
     imagens: fotos.map((url: string, i: number) => ({
