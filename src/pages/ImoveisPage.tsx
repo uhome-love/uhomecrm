@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState, EmptyState } from "@/components/ui/screen-states";
 import { supabase } from "@/integrations/supabase/client";
