@@ -351,17 +351,6 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
               </div>
             </div>
           ))}
-          {/* Lead origin entry */}
-          <div className="relative flex gap-4 pb-4">
-            <div className="relative z-10 h-7 w-7 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
-              <Plus className="h-3.5 w-3.5" />
-            </div>
-            <div className="pt-0.5">
-              <p className="text-sm font-medium text-foreground">Lead entrou no pipeline</p>
-              <LeadOrigemInfo lead={lead} />
-              <p className="text-xs text-muted-foreground/60">{formatDateSafe(lead.created_at, "dd/MM 'às' HH:mm", { locale: ptBR, fallback: "Data inválida" })}</p>
-            </div>
-          </div>
         </div>
       </div>
 
