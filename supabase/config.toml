@@ -161,3 +161,6 @@ verify_jwt = false
 
 [functions.receive-rdstation-lead]
 verify_jwt = false
+
+[functions.receive-imovelweb-lead]
+verify_jwt = false
