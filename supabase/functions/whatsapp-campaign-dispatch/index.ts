@@ -357,11 +357,13 @@ serve(async (req) => {
           const phoneForUrl = encodeURIComponent(String(phone));
           const nomeForUrl = encodeURIComponent(send.nome || "");
           const emailForUrl = encodeURIComponent(send.email || "");
+          const campanhaForUrl = encodeURIComponent(batch.campanha || params.campanha || "");
 
           let fullUrl = params.button_url
             .replace("{{phone}}", phoneForUrl)
             .replace("{{nome}}", nomeForUrl)
-            .replace("{{email}}", emailForUrl);
+            .replace("{{email}}", emailForUrl)
+            .replace("{{campanha}}", campanhaForUrl);
 
           let dynamicSuffix = fullUrl;
           try {
@@ -372,10 +374,8 @@ serve(async (req) => {
             if (!urlObj.searchParams.has("batch_id")) {
               urlObj.searchParams.set("batch_id", batch_id);
             }
+            // Keep the full query string including the leading "?" for the Meta API suffix
             dynamicSuffix = urlObj.search + urlObj.hash;
-            if (dynamicSuffix.startsWith("?")) {
-              dynamicSuffix = dynamicSuffix.substring(1);
-            }
           } catch {
             const joiner = fullUrl.includes("?") ? "&" : "?";
             fullUrl = `${fullUrl}${joiner}send_id=${encodeURIComponent(send.id)}&batch_id=${encodeURIComponent(batch_id)}`;
