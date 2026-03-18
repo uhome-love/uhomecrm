@@ -23,6 +23,7 @@ import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadPropertySearch } from "@/hooks/useLeadPropertySearch";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import LeadMatchesWidget from "./LeadMatchesWidget";
 
 /* ═══════════════════════════════════════════
    TYPES
@@ -307,7 +308,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   } = useLeadPropertySearch(leadId);
 
   // ── Tab state ──
-  const [subTab, setSubTab] = useState<"radar" | "perfil" | "historico">("radar");
+  const [subTab, setSubTab] = useState<"radar" | "matches" | "perfil" | "historico">("radar");
 
   // ── Profile form state (initialized from savedProfile or legacy fields) ──
   const [profileForm, setProfileForm] = useState({
@@ -661,6 +662,9 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
           <TabsTrigger value="radar" className="text-xs h-6 flex-1 gap-1">
             <Radar className="h-3 w-3" /> Radar
           </TabsTrigger>
+          <TabsTrigger value="matches" className="text-xs h-6 flex-1 gap-1">
+            <Sparkles className="h-3 w-3" /> Matches
+          </TabsTrigger>
           <TabsTrigger value="perfil" className="text-xs h-6 flex-1 gap-1">
             <Home className="h-3 w-3" /> Perfil
             {savedProfile && <span className="text-[8px] text-emerald-500">●</span>}
@@ -670,6 +674,11 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
             {searchHistory.length > 0 && <Badge variant="secondary" className="h-3.5 text-[8px] px-1">{searchHistory.length}</Badge>}
           </TabsTrigger>
         </TabsList>
+
+        {/* ════════ TAB: MATCHES ════════ */}
+        <TabsContent value="matches" className="mt-3">
+          <LeadMatchesWidget leadId={leadId} leadNome={leadNome} leadTelefone={leadTelefone} />
+        </TabsContent>
 
         {/* ════════ TAB: RADAR ════════ */}
         <TabsContent value="radar" className="mt-3 space-y-3">
