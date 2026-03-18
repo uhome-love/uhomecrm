@@ -184,7 +184,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
           .from("profiles")
           .select("user_id, nome")
           .in("user_id", [...allIds]);
-        for (const p of profiles || []) profileMap[p.user_id] = p.nome;
+        for (const p of (profiles as any[] || [])) profileMap[p.user_id] = p.nome;
       }
 
       // Add locked corretors without attempts

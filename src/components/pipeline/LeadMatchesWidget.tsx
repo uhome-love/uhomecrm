@@ -178,7 +178,7 @@ export default function LeadMatchesWidget({ leadId, leadNome, leadTelefone }: Pr
               <div className="flex flex-wrap gap-1">
                 {Object.entries(m.score_breakdown || {}).map(([key, val]) => (
                   <span key={key} className="text-[8px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    {key}: {val}pts
+                    {key}: {val as any}pts
                   </span>
                 ))}
               </div>

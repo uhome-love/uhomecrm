@@ -174,9 +174,9 @@ export default function CeoTeamPanel() {
     // Build teams
     const teamMap = new Map<string, GerenteTeam>();
     for (const gId of gerenteIds) {
-      const gProfile = profileMap.get(gId);
-      teamMap.set(gId, {
-        gerente_id: gId,
+      const gProfile = profileMap.get(gId) as any;
+      teamMap.set(gId as string, {
+        gerente_id: gId as string,
         gerente_nome: gProfile?.nome || "Gerente",
         gerente_avatar: gProfile?.avatar_url || null,
         gerente_avatar_gamificado: gProfile?.avatar_gamificado_url || null,

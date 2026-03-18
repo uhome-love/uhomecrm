@@ -155,8 +155,8 @@ export default function CeoCheckpointViewer() {
       const lines = rows.map(row => {
         const eff = resolveEffectiveMetrics(row);
         const goal = goalsMap.get(row.auth_user_id);
-        const metaLig = row.meta_ligacoes > 0 ? row.meta_ligacoes : (goal?.meta_ligacoes ?? 0);
-        const metaAprov = row.meta_aproveitados > 0 ? row.meta_aproveitados : (goal?.meta_aproveitados ?? 0);
+        const metaLig = (row as any).meta_ligacoes > 0 ? (row as any).meta_ligacoes : (goal?.meta_ligacoes ?? 0);
+        const metaAprov = (row as any).meta_aproveitados > 0 ? (row as any).meta_aproveitados : (goal?.meta_aproveitados ?? 0);
         const metaVm = row.meta_visitas_marcar > 0 ? row.meta_visitas_marcar : ((goal as any)?.meta_visitas_marcadas ?? 0);
         const isAbsent = ["ausente", "atestado", "folga"].includes(row.presenca);
 

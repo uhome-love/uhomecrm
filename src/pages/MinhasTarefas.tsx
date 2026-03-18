@@ -163,7 +163,7 @@ export default function MinhasTarefas() {
       if (negIds.length > 0) {
         const { data: negs } = await supabase
           .from("negocios").select("id, nome_cliente, telefone, empreendimento").in("id", negIds);
-        const negMap = new Map((negs || []).map(n => [n.id, n]));
+        const negMap = new Map((negs as any[] || []).map((n: any) => [n.id, n]));
         rows.forEach(r => {
           const neg = negMap.get(r.negocio_id);
           if (neg) { r.lead_nome = neg.nome_cliente; r.lead_telefone = neg.telefone; r.lead_empreendimento = neg.empreendimento; r.pipeline_lead_id = neg.id; }

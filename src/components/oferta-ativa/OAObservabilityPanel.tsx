@@ -186,7 +186,7 @@ export default function OAObservabilityPanel() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {Object.entries(results).map(([key, count]) => (
               <div key={key} className="p-2 rounded-lg bg-muted/50 border border-border text-center">
-                <p className="text-lg font-bold text-foreground">{count}</p>
+                <p className="text-lg font-bold text-foreground">{count as any}</p>
                 <p className="text-[10px] text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
               </div>
             ))}
