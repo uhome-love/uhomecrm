@@ -126,7 +126,7 @@ export default function FunilDashboard() {
     let totals = { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
 
     for (const l of lines as any[]) {
-      const nome = teamMap.get(l.corretor_id) || "Desconhecido";
+      const nome = teamMap.get(l.corretor_id) as string || "Desconhecido";
       if (!by_corretor[l.corretor_id as string]) {
         by_corretor[l.corretor_id as string] = { nome, leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
       }

@@ -191,7 +191,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
       for (const cid of activeCorretorIds) {
         if (cid && !byCorretor[cid as string]) {
           byCorretor[cid as string] = {
-            corretor_id: cid, tentativas: 0, aproveitados: 0,
+            corretor_id: cid as string, tentativas: 0, aproveitados: 0,
             ultima_tentativa: null, ligacoes: 0, whatsapps: 0,
           };
         }
