@@ -151,7 +151,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
       if (teamFilter) {
         activeLocks = activeLocks.filter(l => teamFilter.includes(l.em_atendimento_por!));
       }
-      const activeCorretorIds = new Set(activeLocks.map(l => l.em_atendimento_por));
+      const activeCorretorIds = new Set(activeLocks.map(l => l.em_atendimento_por as string));
 
       // Group by corretor
       const byCorretor: Record<string, {
@@ -189,9 +189,9 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
 
       // Add locked corretors without attempts
       for (const cid of activeCorretorIds) {
-        if (cid && !byCorretor[cid]) {
-          byCorretor[cid] = {
-            corretor_id: cid, tentativas: 0, aproveitados: 0,
+        if (cid && !byCorretor[cid as string]) {
+          byCorretor[cid as string] = {
+            corretor_id: cid as string, tentativas: 0, aproveitados: 0,
             ultima_tentativa: null, ligacoes: 0, whatsapps: 0,
           };
         }
