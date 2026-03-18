@@ -167,6 +167,9 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
     return allEmpreendimentos.filter((e) => e.value.toLowerCase().includes(q));
   }, [empreendimentoSearch, allEmpreendimentos]);
 
+  // ── Derived: cidade options ──
+  const cidadeOptions = useMemo(() => cidadeFacets || [{ value: "Porto Alegre", count: 0 }], [cidadeFacets]);
+
   // ── Active filter tags ──
   const activeFilters: ActiveFilter[] = [];
   if (search) activeFilters.push({ key: "search", label: `"${search}"`, onRemove: () => setSearch("") });
