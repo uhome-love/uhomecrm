@@ -139,7 +139,7 @@ export default function TeamScriptAssignment() {
                   <Select value={empreendimento} onValueChange={setEmpreendimento}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      {empreendimentos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                      {empreendimentos.map((e: any) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 ) : (
