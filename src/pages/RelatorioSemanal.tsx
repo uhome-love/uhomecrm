@@ -99,12 +99,14 @@ export default function RelatorioSemanal() {
     else { setSortKey(key); setSortAsc(false); }
   };
 
-  // Filter corretores by selected team
+  // Filter corretores by selected team or corretor
   const filteredCorretores = useMemo(() => {
     if (!data?.corretores) return [];
-    if (selectedTeam === "all") return data.corretores;
-    return data.corretores.filter(c => c.equipe === selectedTeam);
-  }, [data?.corretores, selectedTeam]);
+    let list = data.corretores;
+    if (selectedTeam !== "all") list = list.filter(c => c.equipe === selectedTeam);
+    if (selectedCorretor !== "all") list = list.filter(c => c.id === selectedCorretor);
+    return list;
+  }, [data?.corretores, selectedTeam, selectedCorretor]);
 
   const sortedCorretores = useMemo(() => {
     return [...filteredCorretores].sort((a, b) => {
