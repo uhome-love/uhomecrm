@@ -89,6 +89,7 @@ export default function ImoveisPage() {
       search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas,
       areaRange, valorRange, somenteObras, uhomeOnly, campanhaAtiva, sortBy,
       construtora, empreendimento, situacao,
+      geoRadius: viewMode === "map" ? geoRadius : undefined,
     },
     filterKey,
     setSearch,
