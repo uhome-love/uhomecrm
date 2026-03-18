@@ -178,7 +178,10 @@ export default function RelatorioSemanal() {
     }
   };
 
-  const scopeLabel = scope === "admin" ? "Empresa" : scope === "gerente" ? "Minha Equipe" : "Meus Números";
+  const scopeLabel = scope === "admin" 
+    ? (selectedTeam === "all" ? "Empresa" : selectedTeam)
+    : scope === "gerente" ? "Minha Equipe" : "Meus Números";
+  const teamOptions = useMemo(() => data?.teams?.map(t => t.equipe) || [], [data?.teams]);
 
   return (
     <div className="space-y-6 pb-8">
