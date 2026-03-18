@@ -465,107 +465,137 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const handleTransitionConfirm = useCallback(async (result: TransitionResult) => {
     setTransitionPopup(null);
 
-    // Move the lead with the observation (saves in pipeline_historico automatically)
+    const lead = leads.find(l => l.id === result.leadId);
+    const extra = result.extraData || {};
+    const targetStage = stages.find(s => s.id === result.targetStageId);
+    const isDescarte = targetStage?.tipo === "descarte";
+
+    if (isDescarte && lead) {
+      // ─── Descarte: insert into Oferta Ativa, then DELETE from pipeline ───
+      try {
+        const empreendimento = extra.empreendimento || lead.empreendimento || "";
+
+        // Auto-match OA list by empreendimento
+        let listaId = extra.listaId || null;
+        if (!listaId && empreendimento) {
+          const { data: listas } = await supabase
+            .from("oferta_ativa_listas")
+            .select("id, empreendimento")
+            .in("status", ["ativa", "liberada"]) as any;
+          if (listas?.length) {
+            const match = listas.find((l: any) => l.empreendimento?.toLowerCase() === empreendimento.toLowerCase());
+            if (match) listaId = match.id;
+          }
+        }
+
+        // Insert into Oferta Ativa if we found a list
+        if (listaId) {
+          await supabase.from("oferta_ativa_leads").insert({
+            lista_id: listaId,
+            nome: lead.nome,
+            telefone: lead.telefone || "",
+            email: lead.email || "",
+            empreendimento,
+            status: "na_fila",
+            observacoes: result.observacao || null,
+            corretor_id: lead.corretor_id || null,
+          } as any);
+          toast.success("📋 Lead enviado para Oferta Ativa!");
+        } else {
+          toast.warning("⚠️ Nenhuma lista de Oferta Ativa encontrada para este empreendimento.");
+        }
+
+        // Save history record before deleting
+        const { data: userData } = await supabase.auth.getUser();
+        await supabase.from("pipeline_historico").insert({
+          pipeline_lead_id: lead.id,
+          stage_anterior_id: lead.stage_id,
+          stage_novo_id: result.targetStageId,
+          movido_por: userData?.user?.id || null,
+          observacao: result.observacao || null,
+        });
+
+        // Register activity
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: lead.id,
+          tipo: "descarte",
+          titulo: `Lead descartado — enviado para Oferta Ativa`,
+          descricao: result.observacao || "Descarte sem observação",
+          status: "concluida",
+          created_by: userData?.user?.id || "00000000-0000-0000-0000-000000000000",
+        });
+
+        // DELETE from pipeline_leads
+        const { error: deleteError } = await supabase
+          .from("pipeline_leads")
+          .delete()
+          .eq("id", lead.id);
+
+        if (deleteError) {
+          console.error("Error deleting lead on descarte:", deleteError);
+          toast.error("Erro ao remover lead do pipeline.");
+        } else {
+          // Remove from local state
+          // Trigger reload via onMoveLead won't work since lead is deleted,
+          // so we dispatch a custom approach: just filter out locally
+          toast.success("🗑️ Lead removido do pipeline.");
+        }
+      } catch (err) {
+        console.error("Error in descarte flow:", err);
+        toast.error("Erro no processo de descarte.");
+      }
+
+      // Force reload to sync state
+      window.dispatchEvent(new CustomEvent("pipeline-reload"));
+      return;
+    }
+
+    // ─── Normal transition (non-descarte) ───
     completeTransition(result.leadId, result.targetStageId, result.observacao);
 
-    const lead = leads.find(l => l.id === result.leadId);
-    const targetStage = stages.find(s => s.id === result.targetStageId);
-    const extra = result.extraData || {};
-
-    // ═══ REGISTER IN PIPELINE_ATIVIDADES for timeline visibility ═══
-    const atividadeMap: Record<string, { tipo: string; titulo: string }> = {
-      "sem contato": { tipo: "ligacao", titulo: `Tentativa de contato: ${(extra.acoes || []).join(", ")}` },
-      "contato inic": { tipo: "ligacao", titulo: `Contato inicial: ${extra.retorno?.replace(/_/g, " ") || "realizado"}` },
-      "contato iniciado": { tipo: "ligacao", titulo: `Contato inicial: ${extra.retorno?.replace(/_/g, " ") || "realizado"}` },
-      "qualifica": { tipo: "reuniao", titulo: `Qualificação registrada` },
-      "possível visita": { tipo: "visita", titulo: `Possível visita: ${extra.imovel || "imóvel selecionado"}` },
-      "visita marcada": { tipo: "visita", titulo: `Visita agendada: ${extra.data || ""} ${extra.horario || ""}` },
-      "visita realizada": { tipo: "visita", titulo: `Visita realizada — Interesse: ${extra.interesse?.replace(/_/g, " ") || "registrado"}` },
-      "descarte": { tipo: "retorno", titulo: `Descarte: ${extra.motivo?.replace(/_/g, " ") || "motivo registrado"}` },
-    };
-
-    const stageName = targetStage?.nome.toLowerCase() || "";
-    let atividadeTipo = "retorno";
-    let atividadeTitulo = `Transição para ${targetStage?.nome || "etapa"}`;
-
-    for (const [key, val] of Object.entries(atividadeMap)) {
-      if (stageName.includes(key)) {
-        atividadeTipo = val.tipo;
-        atividadeTitulo = val.titulo;
-        break;
-      }
-    }
-
-    try {
-      await supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: result.leadId,
-        tipo: atividadeTipo,
-        titulo: atividadeTitulo,
-        descricao: result.observacao || null,
-        resultado: extra.interesse || extra.retorno || (extra.acoes ? "realizado" : null),
-        status: "concluida",
-      } as any);
-    } catch (err) {
-      console.error("Error registering atividade:", err);
-    }
-
-    // ═══ SIDE EFFECTS ═══
+    if (!lead) return;
 
     // Visita Marcada → create visita in agenda
-    if (extra.criarVisita && extra.data && extra.horario) {
-      if (lead) {
-        try {
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          const userId = authUser?.id;
+    if (extra.criarVisita && extra.dataVisita) {
+      try {
+        const userId = (await supabase.auth.getUser()).data?.user?.id;
+        const { error: visitaError } = await supabase.from("visitas").insert({
+          pipeline_lead_id: result.leadId,
+          lead_nome: lead.nome,
+          corretor_id: lead.corretor_id || userId,
+          empreendimento: extra.empreendimento || lead.empreendimento,
+          data_visita: extra.dataVisita,
+          hora_visita: extra.horaVisita || null,
+          tipo: "presencial",
+          origem: "crm",
+          status: "marcada",
+          observacoes: extra.observacao || null,
+        } as any);
 
-          // Resolve gerente_id from team_members
-          let gerenteId = lead.corretor_id;
-          if (lead.corretor_id) {
-            const { data: tm } = await supabase.from("team_members")
-              .select("gerente_id").eq("user_id", lead.corretor_id).eq("status", "ativo").limit(1).maybeSingle();
-            if (tm?.gerente_id) gerenteId = tm.gerente_id;
-          }
-
-          const { error: visitaError } = await supabase.from("visitas").insert({
-            pipeline_lead_id: result.leadId,
-            nome_cliente: lead.nome,
-            telefone: lead.telefone || null,
-            empreendimento: extra.empreendimento || lead.empreendimento || null,
-            data_visita: extra.data,
-            hora_visita: extra.horario,
-            local_visita: extra.local || "stand",
-            corretor_id: lead.corretor_id || userId,
-            gerente_id: gerenteId || userId,
-            created_by: userId,
-            origem: "crm",
-            status: "marcada",
-            observacoes: extra.observacao || null,
-          } as any);
-
-          if (visitaError) {
-            console.error("Error creating visita:", visitaError);
-            toast.error("Erro ao criar visita na agenda");
-          } else {
-            toast.success("📅 Visita criada na agenda!");
-          }
-
-          // Create partnership if parceiro selected
-          if (extra.parceiro) {
-            await supabase.from("pipeline_parcerias").insert({
-              pipeline_lead_id: result.leadId,
-              corretor_principal_id: lead.corretor_id || userId,
-              corretor_parceiro_id: extra.parceiro,
-              divisao_principal: 50,
-              divisao_parceiro: 50,
-              motivo: "Visita em parceria",
-              criado_por: userId,
-            }).then(({ error }) => {
-              if (error && error.code !== "23505") console.error("Partnership error:", error);
-            });
-          }
-        } catch (err) {
-          console.error("Error creating visita:", err);
+        if (visitaError) {
+          console.error("Error creating visita:", visitaError);
+          toast.error("Erro ao criar visita na agenda");
+        } else {
+          toast.success("📅 Visita criada na agenda!");
         }
+
+        // Create partnership if parceiro selected
+        if (extra.parceiro) {
+          const userId = (await supabase.auth.getUser()).data?.user?.id;
+          await supabase.from("pipeline_parcerias").insert({
+            pipeline_lead_id: result.leadId,
+            corretor_principal_id: lead.corretor_id || userId,
+            corretor_parceiro_id: extra.parceiro,
+            divisao_principal: 50,
+            divisao_parceiro: 50,
+            motivo: "Visita em parceria",
+            criado_por: userId,
+          }).then(({ error }) => {
+            if (error && error.code !== "23505") console.error("Partnership error:", error);
+          });
+        }
+      } catch (err) {
+        console.error("Error creating visita:", err);
       }
     }
 
@@ -586,25 +616,6 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           observacoes: extra.feedback || null,
         } as any).eq("id", visita.id);
         toast.success("📋 Visita registrada como realizada na agenda!");
-      }
-    }
-
-    // Descarte → send to oferta ativa
-    if (extra.enviarOfertaAtiva && extra.listaId) {
-      if (lead) {
-        try {
-          await supabase.from("oferta_ativa_leads").insert({
-            lista_id: extra.listaId,
-            nome: lead.nome,
-            telefone: lead.telefone || "",
-            empreendimento: extra.empreendimento || lead.empreendimento || "",
-            pipeline_lead_id: result.leadId,
-            status: "pendente",
-          } as any);
-          toast.success("📋 Lead enviado para Oferta Ativa!");
-        } catch (err) {
-          console.error("Error sending to OA:", err);
-        }
       }
     }
 
