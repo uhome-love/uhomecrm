@@ -286,6 +286,8 @@ export function useRelatorioExecutivo(period: PeriodRange) {
         { count: prevVisRealCount },
         { data: negData },
         { data: prevNegData },
+        { data: negAssinadosData },
+        { data: prevNegAssinadosData },
       ] = await Promise.all([
         presQScoped,
         prevPresQScoped,
@@ -299,6 +301,8 @@ export function useRelatorioExecutivo(period: PeriodRange) {
         prevVisRealQ,
         negQ,
         prevNegQ,
+        negAssinadosQ,
+        prevNegAssinadosQ,
       ]);
 
       // ── Calculate KPIs ──
