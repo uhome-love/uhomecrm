@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Trophy, Phone, DollarSign, ClipboardList, Star, Zap, Gamepad2, ChevronLeft, ChevronRight, History } from "lucide-react";
+import { Trophy, Phone, DollarSign, ClipboardList, Star, Zap, Gamepad2, ChevronLeft, ChevronRight, History, CalendarDays } from "lucide-react";
 import RankingOfertaAtivaTab from "@/components/ranking/RankingOfertaAtivaTab";
 import RankingVGVTab from "@/components/ranking/RankingVGVTab";
 import RankingGestaoLeadsTab from "@/components/ranking/RankingGestaoLeadsTab";
@@ -7,17 +7,20 @@ import RankingGeralTab from "@/components/ranking/RankingGeralTab";
 import RankingEficienciaTab from "@/components/ranking/RankingEficienciaTab";
 import RankingExplanation from "@/components/ranking/RankingExplanation";
 import RankingStreaksBadges from "@/components/ranking/RankingStreaksBadges";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths, isSameWeek, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type Period = "hoje" | "semana" | "mes" | "trimestre";
+type Period = "hoje" | "semana" | "mes" | "personalizado";
 
 const periodLabels: Record<Period, string> = {
   hoje: "Hoje",
   semana: "Semana",
   mes: "Mês",
-  trimestre: "Trimestre",
+  personalizado: "Personalizado",
 };
 
 const explanations = {
@@ -67,13 +70,21 @@ type TabKey = "geral" | "oferta-ativa" | "gestao" | "vgv" | "eficiencia";
 export default function RankingEquipe() {
   const [period, setPeriod] = useState<Period>("hoje");
   const [activeTab, setActiveTab] = useState<TabKey>("geral");
-  const [offset, setOffset] = useState(0); // 0 = current, -1 = previous, etc.
+  const [offset, setOffset] = useState(0);
+  const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const now = new Date();
 
   const dateRange = useMemo<{ start: string; end: string } | undefined>(() => {
-    if (period === "hoje" || period === "trimestre") return undefined; // no navigation for these
-    if (offset === 0) return undefined; // current period = use default RPC behavior
+    if (period === "personalizado") {
+      if (customRange.from && customRange.to) {
+        return { start: format(customRange.from, "yyyy-MM-dd"), end: format(customRange.to, "yyyy-MM-dd") };
+      }
+      return undefined;
+    }
+    if (period === "hoje") return undefined;
+    if (offset === 0) return undefined;
 
     if (period === "semana") {
       const target = addWeeks(now, offset);
@@ -88,9 +99,12 @@ export default function RankingEquipe() {
       return { start: format(s, "yyyy-MM-dd"), end: format(e, "yyyy-MM-dd") };
     }
     return undefined;
-  }, [period, offset]);
+  }, [period, offset, customRange]);
 
   const periodLabel = useMemo(() => {
+    if (period === "personalizado" && customRange.from && customRange.to) {
+      return `${format(customRange.from, "dd/MM/yyyy")} - ${format(customRange.to, "dd/MM/yyyy")}`;
+    }
     if (period === "semana") {
       const target = addWeeks(now, offset);
       const s = startOfWeek(target, { weekStartsOn: 1 });
@@ -107,15 +121,20 @@ export default function RankingEquipe() {
       return isCurrent ? `Mês Atual · ${capitalized}` : capitalized;
     }
     return null;
-  }, [period, offset]);
+  }, [period, offset, customRange]);
 
   const canNavigate = period === "semana" || period === "mes";
   const isCurrentPeriod = offset === 0;
 
   const handlePeriodChange = (key: Period) => {
     setPeriod(key);
-    setOffset(0); // reset navigation on period change
+    setOffset(0);
+    if (key === "personalizado") {
+      setCalendarOpen(true);
+    }
   };
+
+  const effectivePeriod = period === "personalizado" ? "mes" : period;
 
   const tabs = [
     { key: "geral" as const, label: "Geral", icon: Star, color: "text-amber-500", activeBg: "bg-amber-500" },
@@ -155,17 +174,53 @@ export default function RankingEquipe() {
           )}
           <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
             {(Object.entries(periodLabels) as [Period, string][]).map(([key, label]) => (
-              <button
-                key={key}
-                className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
-                  period === key
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => handlePeriodChange(key)}
-              >
-                {label}
-              </button>
+              key === "personalizado" ? (
+                <Popover key={key} open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
+                        period === key
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => handlePeriodChange(key)}
+                    >
+                      <CalendarDays className="h-3 w-3" />
+                      {period === "personalizado" && customRange.from && customRange.to
+                        ? `${format(customRange.from, "dd/MM")} - ${format(customRange.to, "dd/MM")}`
+                        : label}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="range"
+                      selected={{ from: customRange.from, to: customRange.to }}
+                      onSelect={(range) => {
+                        setCustomRange({ from: range?.from, to: range?.to });
+                        if (range?.from && range?.to) {
+                          setPeriod("personalizado");
+                          setCalendarOpen(false);
+                        }
+                      }}
+                      numberOfMonths={2}
+                      locale={ptBR}
+                      disabled={{ after: new Date() }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <button
+                  key={key}
+                  className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
+                    period === key
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => handlePeriodChange(key)}
+                >
+                  {label}
+                </button>
+              )
             ))}
           </div>
         </div>
@@ -194,6 +249,15 @@ export default function RankingEquipe() {
           >
             <ChevronRight className="h-4 w-4" />
           </button>
+        </div>
+      )}
+
+      {/* Custom range label */}
+      {period === "personalizado" && periodLabel && (
+        <div className="flex items-center justify-center">
+          <span className="text-sm font-medium text-foreground bg-muted/50 px-4 py-1.5 rounded-lg">
+            {periodLabel}
+          </span>
         </div>
       )}
 
@@ -228,15 +292,15 @@ export default function RankingEquipe() {
 
       {/* Tab Content */}
       <motion.div
-        key={activeTab + period + offset}
+        key={activeTab + period + offset + (customRange.from?.toISOString() || "") + (customRange.to?.toISOString() || "")}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
       >
         {activeTab === "geral" && <RankingGeralTab period={period} dateRange={dateRange} />}
-        {activeTab === "oferta-ativa" && <RankingOfertaAtivaTab period={period === "trimestre" ? "mes" : period} dateRange={dateRange} />}
-        {activeTab === "vgv" && <RankingVGVTab period={period === "trimestre" ? "mes" : period} dateRange={dateRange} />}
-        {activeTab === "gestao" && <RankingGestaoLeadsTab period={period === "trimestre" ? "mes" : period} dateRange={dateRange} />}
+        {activeTab === "oferta-ativa" && <RankingOfertaAtivaTab period={effectivePeriod} dateRange={dateRange} />}
+        {activeTab === "vgv" && <RankingVGVTab period={effectivePeriod} dateRange={dateRange} />}
+        {activeTab === "gestao" && <RankingGestaoLeadsTab period={effectivePeriod} dateRange={dateRange} />}
         {activeTab === "eficiencia" && <RankingEficienciaTab period={period} dateRange={dateRange} />}
       </motion.div>
     </div>
