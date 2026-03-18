@@ -1,12 +1,12 @@
 /**
- * Type compatibility shims for @supabase/supabase-js.
- * Fixes missing type exports and auth method types when the
- * auto-generated Database type uses PostgrestVersion that the
- * installed library version doesn't fully type.
+ * Type compatibility augmentations.
+ * Uses proper module augmentation (not replacement) to add missing types.
  */
 
+// Must be a module for augmentation to work
+export {};
+
 declare module "@supabase/supabase-js" {
-  // Re-export commonly used auth types
   export interface User {
     id: string;
     email?: string;
@@ -27,13 +27,14 @@ declare module "@supabase/supabase-js" {
     user: User;
     [key: string]: any;
   }
+
+  // Fix SupabaseAuthClient missing methods
+  interface SupabaseAuthClient {
+    getSession(): Promise<{ data: { session: Session | null }; error: any }>;
+    getUser(): Promise<{ data: { user: User | null }; error: any }>;
+  }
 }
 
-declare module "input-otp" {
-  import type { Context } from "react";
-  export const OTPInput: any;
-  export const OTPInputContext: Context<{
-    slots: Array<{ char: string | null; hasFakeCaret: boolean; isActive: boolean }>;
-    [key: string]: any;
-  }>;
+declare module "@tanstack/react-query" {
+  export const keepPreviousData: any;
 }
