@@ -88,7 +88,7 @@ export default function ImoveisPage() {
     filters: {
       search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas,
       areaRange, valorRange, somenteObras, uhomeOnly, campanhaAtiva, sortBy,
-      construtora, empreendimento, situacao,
+      construtora, empreendimento, situacao, cidade,
     },
     filterKey,
     setSearch,
