@@ -238,9 +238,10 @@ Deno.serve(async (req) => {
       );
     } catch (err) {
       console.error("❌ Webhook error:", err);
+      // Always return 200 to Meta even on errors
       return new Response(
-        JSON.stringify({ error: err.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ ok: true, error: "internal" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
   }
