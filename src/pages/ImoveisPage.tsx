@@ -519,27 +519,30 @@ export default function ImoveisPage() {
               </div>
             </FilterChip>
 
-            {/* Situação */}
+            {/* Situação — uses status field from Typesense (Usado, Novo, Em construção, Na planta) */}
             <FilterChip
-              label={situacao.length > 0 ? situacao.map(s => s === "pronto" ? "Pronto" : s === "em_obras" ? "Em obras" : "Lançamento").join(", ") : "Situação"}
+              label={situacao.length > 0 ? situacao.join(", ") : "Situação"}
               active={situacao.length > 0}
               onClear={() => setSituacao([])}
             >
               <div className="space-y-2 w-48">
                 <p className="text-xs font-semibold text-foreground mb-2">Situação do imóvel <span className="text-muted-foreground font-normal">(múltipla)</span></p>
-                {[
-                  { value: "pronto", label: "🏠 Pronto para morar" },
-                  { value: "em_obras", label: "🏗️ Em obras" },
-                  { value: "lancamento", label: "🚀 Lançamento" },
-                ].map(opt => {
+                {(statusImovelFacets.length > 0 ? statusImovelFacets : [
+                  { value: "Usado", count: 0 },
+                  { value: "Novo", count: 0 },
+                  { value: "Em construção", count: 0 },
+                  { value: "Na planta", count: 0 },
+                ]).map(opt => {
                   const selected = situacao.includes(opt.value);
+                  const emoji = opt.value === "Usado" ? "🏠" : opt.value === "Novo" ? "✨" : opt.value === "Em construção" ? "🏗️" : "📋";
                   return (
                     <button key={opt.value} onClick={() => setSituacao(prev => selected ? prev.filter(s => s !== opt.value) : [...prev, opt.value])} className={cn(
                       "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all flex items-center gap-2",
                       selected ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50"
                     )}>
                       <Check className={cn("h-3 w-3 shrink-0", selected ? "opacity-100" : "opacity-0")} />
-                      {opt.label}
+                      <span>{emoji} {opt.value}</span>
+                      {opt.count > 0 && <span className="text-[10px] text-muted-foreground ml-auto">({opt.count})</span>}
                     </button>
                   );
                 })}
