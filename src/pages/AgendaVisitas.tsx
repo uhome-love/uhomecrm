@@ -28,7 +28,7 @@ const FIXED_TEAMS = [
 ];
 
 // ─── Tab is the SINGLE SOURCE OF TRUTH for date range ───
-type AgendaTab = "semana-atual" | "semana-anterior" | "mes" | "calendario" | "alertas" | "performance";
+type AgendaTab = "semana-atual" | "semana-anterior" | "mes" | "calendario" | "alertas" | "performance" | "meu-time";
 
 function getDateRangeForTab(tab: AgendaTab): { from: string | null; to: string | null } {
   const today = startOfDay(new Date());
