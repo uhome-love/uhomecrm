@@ -461,7 +461,8 @@ export default function ImoveisPage() {
               </div>
             </FilterChip>
 
-            {/* Construtora */}
+            {/* Construtora — only show if facets exist */}
+            {filteredConstrutoras.length > 0 && (
             <FilterChip label={construtora.length > 0 ? (construtora.length <= 2 ? construtora.join(", ") : `${construtora.length} construtoras`) : "Construtora"} active={construtora.length > 0} onClear={() => setConstrutora([])}>
               <div className="w-56">
                 <Command>
@@ -489,8 +490,10 @@ export default function ImoveisPage() {
                 </Command>
               </div>
             </FilterChip>
+            )}
 
-            {/* Empreendimento */}
+            {/* Empreendimento — only show if facets exist */}
+            {filteredEmpreendimentos.length > 0 && (
             <FilterChip label={empreendimento.length > 0 ? (empreendimento.length <= 2 ? empreendimento.join(", ") : `${empreendimento.length} empreend.`) : "Empreendimento"} active={empreendimento.length > 0} onClear={() => setEmpreendimento([])}>
               <div className="w-56">
                 <Command>
@@ -518,6 +521,7 @@ export default function ImoveisPage() {
                 </Command>
               </div>
             </FilterChip>
+            )}
 
             {/* Situação — uses status field from Typesense (Usado, Novo, Em construção, Na planta) */}
             <FilterChip
