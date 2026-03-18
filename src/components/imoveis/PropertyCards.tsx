@@ -34,6 +34,32 @@ import {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// ── WhatsApp copy helper ──
+function copyPropertyForWhatsApp(item: any, getPreco: (item: any) => string) {
+  const loc = extractEndereco(item);
+  const titulo = item.titulo_anuncio || item.empreendimento_nome || "Imóvel";
+  const dorms = getNum(item, "dormitorios");
+  const area = getNumIncZero(item, "area_privativa", "area_util", "area_total");
+  const vagas = getNum(item, "garagens", "vagas");
+  const preco = getPreco(item);
+
+  let msg = `🏠 *${titulo}*\n`;
+  if (loc.bairro) msg += `📍 ${loc.bairro}${loc.cidade ? `, ${loc.cidade}` : ""}\n`;
+  const specs: string[] = [];
+  if (dorms && dorms > 0) specs.push(`${dorms} dorm`);
+  if (area && area > 0) specs.push(`${area}m²`);
+  if (vagas && vagas > 0) specs.push(`${vagas} vaga${vagas > 1 ? "s" : ""}`);
+  if (specs.length > 0) msg += `${specs.join(" · ")}\n`;
+  msg += `💰 ${preco}\n`;
+  if (item.codigo) {
+    const baseUrl = window.location.origin;
+    msg += `🔗 ${baseUrl}/imovel/${item.codigo}`;
+  }
+
+  navigator.clipboard.writeText(msg);
+  toast.success("Copiado para WhatsApp! 📋");
+}
+
 // ── In-memory cache for ResponsavelButton (session-scoped) ──
 const responsavelCache = new Map<string, { origem: any | null }>();
 
