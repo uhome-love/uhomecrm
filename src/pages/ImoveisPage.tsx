@@ -44,7 +44,7 @@ export default function ImoveisPage() {
   const { bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets, statusImovelFacets, cidadeFacets } = useTypesenseFacets();
 
   // ── Filters ──
-  const filters = useImoveisFilters(bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets);
+  const filters = useImoveisFilters(bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets, cidadeFacets);
   const {
     contrato, tipo, setTipo, bairro, setBairro, bairroSearch, setBairroSearch,
     dormitorios, setDormitorios, suitesFilter, setSuitesFilter,
