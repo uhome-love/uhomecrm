@@ -30,27 +30,50 @@ import {
 } from "@/hooks/useRelatorioExecutivo";
 import ExecutiveKpiDetailDialog, { type ExecKpiType } from "@/components/relatorio/ExecutiveKpiDetailDialog";
 
+/* ── Apple-inspired inline styles ── */
+const appleFont = `-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif`;
+const glassSurface: React.CSSProperties = {
+  background: "rgba(255,255,255,0.04)",
+  backdropFilter: "blur(20px) saturate(180%)",
+  WebkitBackdropFilter: "blur(20px) saturate(180%)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+const glassHighlight: React.CSSProperties = {
+  background: "rgba(255,255,255,0.08)",
+  backdropFilter: "blur(40px) saturate(200%)",
+  WebkitBackdropFilter: "blur(40px) saturate(200%)",
+  border: "1px solid rgba(255,255,255,0.12)",
+};
+const appleCurve = "0.25, 0.46, 0.45, 0.94";
+const fadeUpStyle = (i: number): React.CSSProperties => ({
+  opacity: 0,
+  animation: `appleCardFadeUp 0.4s cubic-bezier(${appleCurve}) ${i * 0.05}s forwards`,
+});
+
 // ── KPI Card Config ──
 const KPI_CONFIG: { key: keyof ExecutiveKpis; label: string; icon: any; color: string; isCurrency?: boolean }[] = [
-  { key: "presencas", label: "Presenças", icon: Users, color: "text-blue-600" },
-  { key: "ligacoes", label: "Ligações", icon: Phone, color: "text-indigo-600" },
-  { key: "leadsRecebidos", label: "Leads Recebidos", icon: Inbox, color: "text-cyan-600" },
-  { key: "leadsAtivos", label: "Leads Ativos", icon: Activity, color: "text-teal-600" },
-  { key: "visitasMarcadas", label: "Visitas Marcadas", icon: CalendarDays, color: "text-amber-600" },
-  { key: "visitasRealizadas", label: "Visitas Realizadas", icon: CalendarCheck, color: "text-emerald-600" },
-  { key: "negociosCriados", label: "Negócios Criados", icon: Briefcase, color: "text-violet-600" },
-  { key: "negociosGerados", label: "Negócios Gerados", icon: TrendingUp, color: "text-orange-600" },
-  { key: "negociosAssinados", label: "Negócios Assinados", icon: FileSignature, color: "text-emerald-700" },
-  { key: "vgvTotal", label: "VGV Total", icon: DollarSign, color: "text-emerald-700", isCurrency: true },
+  { key: "presencas", label: "Presenças", icon: Users, color: "#5e9eff" },
+  { key: "ligacoes", label: "Ligações", icon: Phone, color: "#7c7aff" },
+  { key: "leadsRecebidos", label: "Leads Recebidos", icon: Inbox, color: "#5ac8fa" },
+  { key: "leadsAtivos", label: "Leads Ativos", icon: Activity, color: "#34c759" },
+  { key: "visitasMarcadas", label: "Visitas Marcadas", icon: CalendarDays, color: "#ff9f0a" },
+  { key: "visitasRealizadas", label: "Visitas Realizadas", icon: CalendarCheck, color: "#30d158" },
+  { key: "negociosCriados", label: "Negócios Criados", icon: Briefcase, color: "#af52de" },
+  { key: "negociosGerados", label: "Negócios Gerados", icon: TrendingUp, color: "#ff6723" },
+  { key: "negociosAssinados", label: "Negócios Assinados", icon: FileSignature, color: "#30d158" },
+  { key: "vgvTotal", label: "VGV Total", icon: DollarSign, color: "#30d158", isCurrency: true },
 ];
 
-// ── Variation Badge ──
+// ── Variation Badge (Apple colors) ──
 function VarBadge({ pctChange, periodLabel }: { pctChange: number; periodLabel: string }) {
   if (pctChange === 0) return null;
   const up = pctChange > 0;
   return (
-    <span className={`text-[10px] font-medium flex items-center gap-0.5 ${up ? "text-emerald-600" : "text-destructive"}`}>
-      {up ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+    <span
+      className="text-xs font-semibold flex items-center gap-0.5 mt-1"
+      style={{ color: up ? "#30d158" : "#ff453a", letterSpacing: "0.1px" }}
+    >
+      {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       {Math.abs(pctChange)}% {periodLabel}
     </span>
   );
@@ -121,7 +144,6 @@ export default function RelatorioSemanal() {
   const filteredKpis = useMemo(() => {
     if (!data?.kpis) return data?.kpis;
     if (selectedTeam === "all") return data.kpis;
-    // Sum from filtered corretores
     const cs = filteredCorretores;
     const sumPresencas = cs.reduce((s, c) => s + c.presencas, 0);
     const sumLigacoes = cs.reduce((s, c) => s + c.ligacoes, 0);
@@ -187,56 +209,176 @@ export default function RelatorioSemanal() {
   const teamOptions = useMemo(() => data?.teams?.map(t => t.equipe) || [], [data?.teams]);
 
   return (
-    <div className="space-y-6 pb-8">
+    <div
+      className="apple-report pb-8"
+      style={{
+        fontFamily: appleFont,
+        padding: isMobile ? "16px" : "24px 32px",
+        minHeight: "100vh",
+        background: "#000000",
+      }}
+    >
+      {/* Inject keyframes */}
+      <style>{`
+        @keyframes appleCardFadeUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .apple-report * { box-sizing: border-box; }
+        .apple-report ::-webkit-scrollbar { width: 6px; height: 6px; }
+        .apple-report ::-webkit-scrollbar-track { background: transparent; }
+        .apple-report ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        .apple-glass-card {
+          background: rgba(255,255,255,0.04);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 16px;
+          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .apple-glass-card:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 1px 0 rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .apple-glass-surface {
+          background: rgba(255,255,255,0.04);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 16px;
+        }
+        .apple-glass-highlight {
+          background: rgba(255,255,255,0.08);
+          backdrop-filter: blur(40px) saturate(200%);
+          -webkit-backdrop-filter: blur(40px) saturate(200%);
+          border: 1px solid rgba(255,255,255,0.12);
+        }
+        .apple-pill {
+          border-radius: 100px;
+          padding: 4px 10px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+        .apple-table th {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.3px;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.4);
+          padding: 10px 12px;
+        }
+        .apple-table td {
+          font-size: 13px;
+          padding: 10px 12px;
+          color: rgba(255,255,255,0.85);
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .apple-table tr:hover td {
+          background: rgba(255,255,255,0.03);
+        }
+        .apple-section-title {
+          font-size: 22px;
+          font-weight: 600;
+          letter-spacing: -0.3px;
+          color: rgba(255,255,255,0.95);
+        }
+        .apple-label {
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: 0.2px;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.45);
+        }
+        .apple-value {
+          font-size: 28px;
+          font-weight: 700;
+          letter-spacing: -0.5px;
+          color: rgba(255,255,255,0.95);
+        }
+        .apple-period-btn {
+          padding: 6px 16px;
+          font-size: 14px;
+          font-weight: 500;
+          border-radius: 8px;
+          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          color: rgba(255,255,255,0.5);
+          cursor: pointer;
+          border: none;
+          background: transparent;
+        }
+        .apple-period-btn.active {
+          background: rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.95);
+        }
+        .apple-period-btn:hover:not(.active) {
+          color: rgba(255,255,255,0.7);
+        }
+      `}</style>
+
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8" style={fadeUpStyle(0)}>
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            📊 Relatório Geral
+          <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: -0.5, color: "rgba(255,255,255,0.95)", lineHeight: 1.1 }}>
+            Relatório Geral
           </h1>
-          <p className="text-sm text-muted-foreground">{scopeLabel} · Visão consolidada</p>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", marginTop: 4, fontWeight: 400 }}>
+            {scopeLabel} · Visão consolidada
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePDF} disabled={downloading}>
-            {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}
-            PDF
-          </Button>
-        </div>
+        <button
+          onClick={handlePDF}
+          disabled={downloading}
+          className="apple-glass-card flex items-center gap-2"
+          style={{ padding: "8px 16px", borderRadius: 10, fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.8)", cursor: "pointer" }}
+        >
+          {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          PDF
+        </button>
       </div>
 
       {/* ── Period Toggle + Navigation ── */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <div className="flex items-center bg-muted rounded-lg p-0.5">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8" style={fadeUpStyle(1)}>
+        <div className="apple-glass-highlight flex items-center" style={{ borderRadius: 10, padding: 3 }}>
           <button
             onClick={() => { setMode("semana"); setOffset(0); }}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${mode === "semana" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            className={`apple-period-btn ${mode === "semana" ? "active" : ""}`}
           >
             Semanal
           </button>
           <button
             onClick={() => { setMode("mes"); setOffset(0); }}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${mode === "mes" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            className={`apple-period-btn ${mode === "mes" ? "active" : ""}`}
           >
             Mensal
           </button>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOffset(o => o - 1)}>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setOffset(o => o - 1)}
+            style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", transition: `all 0.2s cubic-bezier(${appleCurve})` }}
+          >
             <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Badge variant="secondary" className="text-sm px-4 py-1.5 font-medium min-w-[200px] text-center justify-center">
+          </button>
+          <span
+            className="apple-glass-highlight"
+            style={{ padding: "6px 20px", borderRadius: 100, fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.8)", minWidth: 200, textAlign: "center", display: "inline-block" }}
+          >
             {period.label}
-          </Badge>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOffset(o => o + 1)} disabled={offset >= 0}>
+          </span>
+          <button
+            onClick={() => setOffset(o => o + 1)}
+            disabled={offset >= 0}
+            style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: offset >= 0 ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", cursor: offset >= 0 ? "not-allowed" : "pointer", transition: `all 0.2s cubic-bezier(${appleCurve})` }}
+          >
             <ChevronRight className="h-4 w-4" />
-          </Button>
+          </button>
         </div>
-        {/* Filters: Team (CEO) + Corretor (Gerente/CEO) */}
+        {/* Filters */}
         {scope !== "corretor" && (data?.corretores?.length ?? 0) > 0 && (
           <div className="flex items-center gap-2 justify-center flex-wrap">
             {scope === "admin" && teamOptions.length > 0 && (
               <Select value={selectedTeam} onValueChange={(v) => { setSelectedTeam(v); setSelectedCorretor("all"); }}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[200px] bg-transparent border-white/10 text-white/80 rounded-lg">
                   <SelectValue placeholder="Todas as equipes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,7 +390,7 @@ export default function RelatorioSemanal() {
               </Select>
             )}
             <Select value={selectedCorretor} onValueChange={setSelectedCorretor}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-[220px] bg-transparent border-white/10 text-white/80 rounded-lg">
                 <SelectValue placeholder="Todos os corretores" />
               </SelectTrigger>
               <SelectContent>
@@ -264,26 +406,38 @@ export default function RelatorioSemanal() {
         )}
       </div>
 
-      <div ref={reportRef} className="space-y-6">
+      <div ref={reportRef} className="space-y-8">
         {/* ═══ BLOCO 1 — KPI Cards ═══ */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {KPI_CONFIG.map(({ key, label, icon: Icon, color, isCurrency }) => {
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {KPI_CONFIG.map(({ key, label, icon: Icon, color, isCurrency }, i) => {
             const val = filteredKpis?.[key];
             return (
-              <div key={key} onClick={() => !isLoading && key !== "leadsAtivos" && setKpiDetail({ type: key, label })} className={`bg-background border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow ${key !== "leadsAtivos" ? "cursor-pointer" : ""}`}>
+              <div
+                key={key}
+                onClick={() => !isLoading && key !== "leadsAtivos" && setKpiDetail({ type: key, label })}
+                className={`apple-glass-card ${key !== "leadsAtivos" ? "cursor-pointer" : ""}`}
+                style={{ ...fadeUpStyle(i + 2), padding: "20px 24px" }}
+              >
                 {isLoading ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-8 w-16" />
-                    <Skeleton className="h-3 w-24" />
+                  <div className="space-y-3">
+                    <div style={{ width: 80, height: 12, borderRadius: 6, background: "rgba(255,255,255,0.06)" }} />
+                    <div style={{ width: 48, height: 28, borderRadius: 6, background: "rgba(255,255,255,0.06)" }} />
+                    <div style={{ width: 100, height: 10, borderRadius: 6, background: "rgba(255,255,255,0.06)" }} />
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Icon className={`h-4 w-4 ${color}`} />
-                      <span className="text-[11px] text-muted-foreground font-medium truncate">{label}</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        style={{
+                          width: 28, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+                          background: `${color}15`, border: `1px solid ${color}30`,
+                        }}
+                      >
+                        <Icon className="h-3.5 w-3.5" style={{ color }} />
+                      </div>
+                      <span className="apple-label" style={{ fontSize: 11, textTransform: "uppercase" }}>{label}</span>
                     </div>
-                    <p className="text-2xl font-bold text-foreground">
+                    <p className="apple-value">
                       {isCurrency ? formatBRLCompact(val?.current ?? 0) : (val?.current ?? 0).toLocaleString("pt-BR")}
                     </p>
                     {key !== "leadsAtivos" && val && (
@@ -299,94 +453,94 @@ export default function RelatorioSemanal() {
         {/* ═══ BLOCO 2 — Gráficos de Tendência ═══ */}
         {!isLoading && data?.dailyTrends && data.dailyTrends.length > 1 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Line chart — daily KPIs */}
-            <div className="bg-background border border-border rounded-xl p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-foreground mb-4">Evolução Diária</h3>
+            <div className="apple-glass-surface" style={{ padding: 24, ...fadeUpStyle(12) }}>
+              <h3 className="apple-section-title" style={{ fontSize: 17, marginBottom: 20 }}>Evolução Diária</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={data.dailyTrends}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="diaLabel" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <RTooltip contentStyle={{ fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="ligacoes" name="Ligações" stroke="#6366f1" strokeWidth={2} dot={{ r: 2 }} />
-                  <Line type="monotone" dataKey="leads" name="Leads" stroke="#06b6d4" strokeWidth={2} dot={{ r: 2 }} />
-                  <Line type="monotone" dataKey="visitas" name="Visitas" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="diaLabel" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} stroke="rgba(255,255,255,0.08)" />
+                  <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} stroke="rgba(255,255,255,0.08)" />
+                  <RTooltip contentStyle={{ fontSize: 12, background: "rgba(30,30,30,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", backdropFilter: "blur(20px)" }} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }} />
+                  <Line type="monotone" dataKey="ligacoes" name="Ligações" stroke="#7c7aff" strokeWidth={2} dot={{ r: 2, fill: "#7c7aff" }} />
+                  <Line type="monotone" dataKey="leads" name="Leads" stroke="#5ac8fa" strokeWidth={2} dot={{ r: 2, fill: "#5ac8fa" }} />
+                  <Line type="monotone" dataKey="visitas" name="Visitas" stroke="#30d158" strokeWidth={2} dot={{ r: 2, fill: "#30d158" }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Bar chart — comparison */}
-            <div className="bg-background border border-border rounded-xl p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-foreground mb-4">Leads × Visitas × Negócios</h3>
+            <div className="apple-glass-surface" style={{ padding: 24, ...fadeUpStyle(13) }}>
+              <h3 className="apple-section-title" style={{ fontSize: 17, marginBottom: 20 }}>Leads × Visitas × Negócios</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data.dailyTrends}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="diaLabel" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <RTooltip contentStyle={{ fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="leads" name="Leads" fill="#06b6d4" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="visitas" name="Visitas" fill="#10b981" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="negocios" name="Negócios" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="diaLabel" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} stroke="rgba(255,255,255,0.08)" />
+                  <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} stroke="rgba(255,255,255,0.08)" />
+                  <RTooltip contentStyle={{ fontSize: 12, background: "rgba(30,30,30,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff" }} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }} />
+                  <Bar dataKey="leads" name="Leads" fill="#5ac8fa" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="visitas" name="Visitas" fill="#30d158" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="negocios" name="Negócios" fill="#af52de" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
         )}
 
-        {/* ═══ BLOCO 2.5 — Visão por Equipe (tabela comparativa) ═══ */}
+        {/* ═══ BLOCO 2.5 — Visão por Equipe ═══ */}
         {!isLoading && data?.teams && data.teams.length > 0 && scope !== "corretor" && (
-          <div className="bg-background border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-border">
-              <h3 className="text-sm font-semibold text-foreground">👥 Visão por Equipe</h3>
-              <p className="text-[10px] text-muted-foreground">Comparativo consolidado entre equipes</p>
+          <div className="apple-glass-surface overflow-hidden" style={fadeUpStyle(14)}>
+            <div style={{ padding: "16px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <h3 className="apple-section-title" style={{ fontSize: 17 }}>Visão por Equipe</h3>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>Comparativo consolidado entre equipes</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full apple-table">
                 <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Equipe</th>
-                    <th className="text-center px-2 py-2.5 font-semibold text-muted-foreground">Corretores</th>
-                    <th className="text-center px-2 py-2.5 font-semibold text-muted-foreground">Presenças</th>
-                    <th className="text-center px-2 py-2.5 font-semibold text-muted-foreground">Ligações</th>
-                    <th className="text-center px-2 py-2.5 font-semibold text-muted-foreground">Leads</th>
-                    <th className="text-center px-2 py-2.5 font-semibold text-muted-foreground">Vis.Marc.</th>
-                    <th className="text-center px-2 py-2.5 font-semibold text-muted-foreground">Vis.Real.</th>
-                    <th className="text-center px-2 py-2.5 font-semibold text-muted-foreground">Neg.Cri.</th>
-                    <th className="text-center px-2 py-2.5 font-semibold text-muted-foreground">Assinados</th>
-                    <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">VGV</th>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <th className="text-left">Equipe</th>
+                    <th className="text-center">Corretores</th>
+                    <th className="text-center">Presenças</th>
+                    <th className="text-center">Ligações</th>
+                    <th className="text-center">Leads</th>
+                    <th className="text-center">Vis.Marc.</th>
+                    <th className="text-center">Vis.Real.</th>
+                    <th className="text-center">Neg.Cri.</th>
+                    <th className="text-center">Assinados</th>
+                    <th className="text-right">VGV</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.teams.map((team, i) => (
-                    <tr key={team.equipe} className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${i % 2 !== 0 ? "bg-muted/5" : ""}`}>
-                      <td className="px-3 py-2.5">
-                        <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${team.color}`}>{team.equipe}</span>
+                  {data.teams.map((team) => (
+                    <tr key={team.equipe}>
+                      <td>
+                        <span className="apple-pill" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.8)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                          {team.equipe}
+                        </span>
                       </td>
-                      <td className="text-center px-2 py-2.5 font-medium">{team.corretores.length}</td>
-                      <td className="text-center px-2 py-2.5 font-semibold">{team.totals.presencas}</td>
-                      <td className="text-center px-2 py-2.5 font-semibold">{team.totals.ligacoes}</td>
-                      <td className="text-center px-2 py-2.5 font-semibold">{team.totals.leads}</td>
-                      <td className="text-center px-2 py-2.5 font-semibold">{team.totals.visitasMarcadas}</td>
-                      <td className="text-center px-2 py-2.5 font-semibold">{team.totals.visitasRealizadas}</td>
-                      <td className="text-center px-2 py-2.5 font-semibold">{team.totals.negociosCriados}</td>
-                      <td className="text-center px-2 py-2.5 font-semibold">{team.totals.negociosAssinados}</td>
-                      <td className="text-right px-3 py-2.5 font-bold text-emerald-600">{formatBRLCompact(team.totals.vgv)}</td>
+                      <td className="text-center" style={{ fontWeight: 500 }}>{team.corretores.length}</td>
+                      <td className="text-center" style={{ fontWeight: 600 }}>{team.totals.presencas}</td>
+                      <td className="text-center" style={{ fontWeight: 600 }}>{team.totals.ligacoes}</td>
+                      <td className="text-center" style={{ fontWeight: 600 }}>{team.totals.leads}</td>
+                      <td className="text-center" style={{ fontWeight: 600 }}>{team.totals.visitasMarcadas}</td>
+                      <td className="text-center" style={{ fontWeight: 600 }}>{team.totals.visitasRealizadas}</td>
+                      <td className="text-center" style={{ fontWeight: 600 }}>{team.totals.negociosCriados}</td>
+                      <td className="text-center" style={{ fontWeight: 600 }}>{team.totals.negociosAssinados}</td>
+                      <td className="text-right" style={{ fontWeight: 700, color: "#30d158" }}>{formatBRLCompact(team.totals.vgv)}</td>
                     </tr>
                   ))}
                   {/* Total row */}
-                  <tr className="border-t-2 border-border bg-muted/30 font-bold">
-                    <td className="px-3 py-2.5 text-foreground">Total</td>
-                    <td className="text-center px-2 py-2.5">{data.teams.reduce((s, t) => s + t.corretores.length, 0)}</td>
-                    <td className="text-center px-2 py-2.5">{data.teams.reduce((s, t) => s + t.totals.presencas, 0)}</td>
-                    <td className="text-center px-2 py-2.5">{data.teams.reduce((s, t) => s + t.totals.ligacoes, 0)}</td>
-                    <td className="text-center px-2 py-2.5">{data.teams.reduce((s, t) => s + t.totals.leads, 0)}</td>
-                    <td className="text-center px-2 py-2.5">{data.teams.reduce((s, t) => s + t.totals.visitasMarcadas, 0)}</td>
-                    <td className="text-center px-2 py-2.5">{data.teams.reduce((s, t) => s + t.totals.visitasRealizadas, 0)}</td>
-                    <td className="text-center px-2 py-2.5">{data.teams.reduce((s, t) => s + t.totals.negociosCriados, 0)}</td>
-                    <td className="text-center px-2 py-2.5">{data.teams.reduce((s, t) => s + t.totals.negociosAssinados, 0)}</td>
-                    <td className="text-right px-3 py-2.5 text-emerald-600">{formatBRLCompact(data.teams.reduce((s, t) => s + t.totals.vgv, 0))}</td>
+                  <tr style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)" }}>
+                    <td style={{ fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>Total</td>
+                    <td className="text-center" style={{ fontWeight: 700 }}>{data.teams.reduce((s, t) => s + t.corretores.length, 0)}</td>
+                    <td className="text-center" style={{ fontWeight: 700 }}>{data.teams.reduce((s, t) => s + t.totals.presencas, 0)}</td>
+                    <td className="text-center" style={{ fontWeight: 700 }}>{data.teams.reduce((s, t) => s + t.totals.ligacoes, 0)}</td>
+                    <td className="text-center" style={{ fontWeight: 700 }}>{data.teams.reduce((s, t) => s + t.totals.leads, 0)}</td>
+                    <td className="text-center" style={{ fontWeight: 700 }}>{data.teams.reduce((s, t) => s + t.totals.visitasMarcadas, 0)}</td>
+                    <td className="text-center" style={{ fontWeight: 700 }}>{data.teams.reduce((s, t) => s + t.totals.visitasRealizadas, 0)}</td>
+                    <td className="text-center" style={{ fontWeight: 700 }}>{data.teams.reduce((s, t) => s + t.totals.negociosCriados, 0)}</td>
+                    <td className="text-center" style={{ fontWeight: 700 }}>{data.teams.reduce((s, t) => s + t.totals.negociosAssinados, 0)}</td>
+                    <td className="text-right" style={{ fontWeight: 700, color: "#30d158" }}>{formatBRLCompact(data.teams.reduce((s, t) => s + t.totals.vgv, 0))}</td>
                   </tr>
                 </tbody>
               </table>
@@ -396,15 +550,15 @@ export default function RelatorioSemanal() {
 
         {/* ═══ BLOCO 3 — Ranking de Corretores ═══ */}
         {!isLoading && sortedCorretores.length > 0 && (
-          <div className="bg-background border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-border">
-              <h3 className="text-sm font-semibold text-foreground">🏆 Ranking de Corretores</h3>
-              <p className="text-[10px] text-muted-foreground">Clique no cabeçalho para ordenar · ⭐ = top da coluna</p>
+          <div className="apple-glass-surface overflow-hidden" style={fadeUpStyle(15)}>
+            <div style={{ padding: "16px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <h3 className="apple-section-title" style={{ fontSize: 17 }}>Ranking de Corretores</h3>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>Clique no cabeçalho para ordenar · ⭐ = top da coluna</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full apple-table">
                 <thead>
-                  <tr className="border-b border-border bg-muted/30">
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                     {([
                       { key: "nome" as SortKey, label: "Corretor", align: "left" },
                       { key: "equipe" as SortKey, label: "Equipe", align: "left" },
@@ -420,7 +574,8 @@ export default function RelatorioSemanal() {
                       <th
                         key={col.key}
                         onClick={() => handleSort(col.key)}
-                        className={`px-3 py-2.5 font-semibold text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none ${col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"}`}
+                        className={`${col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"}`}
+                        style={{ cursor: "pointer", transition: `color 0.2s cubic-bezier(${appleCurve})` }}
                       >
                         <span className="inline-flex items-center gap-1">
                           {col.label}
@@ -432,23 +587,28 @@ export default function RelatorioSemanal() {
                 </thead>
                 <tbody>
                   {sortedCorretores.map((c, i) => (
-                    <tr key={c.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? "" : "bg-muted/5"}`}>
-                      <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">
-                        <span className="text-muted-foreground text-[10px] mr-1.5">#{i + 1}</span>
+                    <tr key={c.id}>
+                      <td style={{ fontWeight: 500, whiteSpace: "nowrap" }}>
+                        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginRight: 6 }}>#{i + 1}</span>
                         {c.nome}
                       </td>
-                      <td className="px-3 py-2.5">
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${c.equipeColor}`}>{c.equipe}</span>
+                      <td>
+                        <span className="apple-pill" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 11 }}>
+                          {c.equipe}
+                        </span>
                       </td>
                       {(["presencas", "ligacoes", "leads", "visitasMarcadas", "visitasRealizadas", "negociosCriados", "negociosAssinados"] as SortKey[]).map(k => (
-                        <td key={k} className="px-3 py-2.5 text-center">
-                          <span className={`font-semibold ${topPerformers[k] === c.id ? "text-amber-600" : "text-foreground"}`}>
+                        <td key={k} className="text-center">
+                          <span style={{ fontWeight: 600, color: topPerformers[k] === c.id ? "#ff9f0a" : "rgba(255,255,255,0.85)" }}>
                             {topPerformers[k] === c.id && "⭐ "}{(c[k] as number) || 0}
                           </span>
                         </td>
                       ))}
-                      <td className="px-3 py-2.5 text-right">
-                        <span className={`font-bold ${topPerformers.vgv === c.id ? "text-amber-600" : c.vgv > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
+                      <td className="text-right">
+                        <span style={{
+                          fontWeight: 700,
+                          color: topPerformers.vgv === c.id ? "#ff9f0a" : c.vgv > 0 ? "#30d158" : "rgba(255,255,255,0.25)"
+                        }}>
                           {topPerformers.vgv === c.id && "⭐ "}{c.vgv > 0 ? formatBRLCompact(c.vgv) : "—"}
                         </span>
                       </td>
@@ -462,31 +622,39 @@ export default function RelatorioSemanal() {
 
         {/* ═══ BLOCO 4 — Breakdown por Equipe ═══ */}
         {!isLoading && data?.teams && data.teams.length > 0 && scope !== "corretor" && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground px-1">📋 Breakdown por Equipe</h3>
+          <div className="space-y-4" style={fadeUpStyle(16)}>
+            <h3 className="apple-section-title" style={{ fontSize: 22, paddingLeft: 4 }}>Breakdown por Equipe</h3>
             {data.teams.map(team => (
               <Collapsible key={team.equipe} open={expandedTeams.has(team.equipe)} onOpenChange={() => toggleTeam(team.equipe)}>
-                <div className="bg-background border border-border rounded-xl shadow-sm overflow-hidden">
-                  <CollapsibleTrigger className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted/20 transition-colors">
+                <div className="apple-glass-surface overflow-hidden">
+                  <CollapsibleTrigger
+                    className="w-full flex items-center justify-between"
+                    style={{ padding: "14px 24px", cursor: "pointer", transition: `background 0.2s cubic-bezier(${appleCurve})` }}
+                  >
                     <div className="flex items-center gap-3">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${team.color}`}>{team.equipe}</span>
-                      <span className="text-xs text-muted-foreground">{team.corretores.length} corretor(es)</span>
+                      <span className="apple-pill" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.8)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        {team.equipe}
+                      </span>
+                      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>{team.corretores.length} corretor(es)</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="hidden md:flex items-center gap-4 text-xs">
-                        <span className="text-muted-foreground">Lig: <strong className="text-foreground">{team.totals.ligacoes}</strong></span>
-                        <span className="text-muted-foreground">Vis: <strong className="text-foreground">{team.totals.visitasRealizadas}</strong></span>
-                        <span className="text-muted-foreground">Neg: <strong className="text-foreground">{team.totals.negociosAssinados}</strong></span>
-                        <span className="text-muted-foreground">VGV: <strong className="text-emerald-600">{formatBRLCompact(team.totals.vgv)}</strong></span>
+                      <div className="hidden md:flex items-center gap-4" style={{ fontSize: 13 }}>
+                        <span style={{ color: "rgba(255,255,255,0.35)" }}>Lig: <strong style={{ color: "rgba(255,255,255,0.8)" }}>{team.totals.ligacoes}</strong></span>
+                        <span style={{ color: "rgba(255,255,255,0.35)" }}>Vis: <strong style={{ color: "rgba(255,255,255,0.8)" }}>{team.totals.visitasRealizadas}</strong></span>
+                        <span style={{ color: "rgba(255,255,255,0.35)" }}>Neg: <strong style={{ color: "rgba(255,255,255,0.8)" }}>{team.totals.negociosAssinados}</strong></span>
+                        <span style={{ color: "rgba(255,255,255,0.35)" }}>VGV: <strong style={{ color: "#30d158" }}>{formatBRLCompact(team.totals.vgv)}</strong></span>
                       </div>
-                      {expandedTeams.has(team.equipe) ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                      {expandedTeams.has(team.equipe)
+                        ? <ChevronUp className="h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+                        : <ChevronDown className="h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+                      }
                     </div>
                   </CollapsibleTrigger>
 
                   <CollapsibleContent>
-                    <div className="border-t border-border">
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                       {/* Team totals */}
-                      <div className="grid grid-cols-4 md:grid-cols-8 gap-2 px-5 py-3 bg-muted/20">
+                      <div className="grid grid-cols-4 md:grid-cols-8 gap-3" style={{ padding: "16px 24px", background: "rgba(255,255,255,0.02)" }}>
                         {[
                           { label: "Presenças", value: team.totals.presencas },
                           { label: "Ligações", value: team.totals.ligacoes },
@@ -498,8 +666,8 @@ export default function RelatorioSemanal() {
                           { label: "VGV", value: team.totals.vgv, isCurrency: true },
                         ].map(item => (
                           <div key={item.label} className="text-center">
-                            <p className="text-[10px] text-muted-foreground">{item.label}</p>
-                            <p className="text-sm font-bold text-foreground">
+                            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.3 }}>{item.label}</p>
+                            <p style={{ fontSize: 16, fontWeight: 700, color: item.isCurrency ? "#30d158" : "rgba(255,255,255,0.9)", marginTop: 2 }}>
                               {item.isCurrency ? formatBRLCompact(item.value) : item.value}
                             </p>
                           </div>
@@ -508,44 +676,45 @@ export default function RelatorioSemanal() {
 
                       {/* Per-corretor mini table */}
                       <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
+                        <table className="w-full apple-table">
                           <thead>
-                            <tr className="border-b border-border bg-muted/10">
-                              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Corretor</th>
-                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Pres.</th>
-                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Lig.</th>
-                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Leads</th>
-                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">V.M.</th>
-                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">V.R.</th>
-                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Neg.</th>
-                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Ass.</th>
-                              <th className="text-right px-3 py-2 font-semibold text-muted-foreground">VGV</th>
+                            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                              <th className="text-left">Corretor</th>
+                              <th className="text-center">Pres.</th>
+                              <th className="text-center">Lig.</th>
+                              <th className="text-center">Leads</th>
+                              <th className="text-center">V.M.</th>
+                              <th className="text-center">V.R.</th>
+                              <th className="text-center">Neg.</th>
+                              <th className="text-center">Ass.</th>
+                              <th className="text-right">VGV</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {team.corretores.sort((a, b) => b.vgv - a.vgv).map((c, i) => {
-                              // Progress bar relative to team max
+                            {team.corretores.sort((a, b) => b.vgv - a.vgv).map((c) => {
                               const teamMax = Math.max(...team.corretores.map(x => x.ligacoes), 1);
                               const barPct = Math.round((c.ligacoes / teamMax) * 100);
 
                               return (
-                                <tr key={c.id} className={`border-b border-border/30 hover:bg-muted/10 ${i % 2 !== 0 ? "bg-muted/5" : ""}`}>
-                                  <td className="px-3 py-2 font-medium text-foreground">{c.nome}</td>
-                                  <td className="text-center px-2 py-2">{c.presencas}</td>
-                                  <td className="text-center px-2 py-2">
-                                    <div className="flex items-center gap-1 justify-center">
-                                      <span className="font-semibold">{c.ligacoes}</span>
-                                      <div className="hidden md:block w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                                        <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${barPct}%` }} />
+                                <tr key={c.id}>
+                                  <td style={{ fontWeight: 500 }}>{c.nome}</td>
+                                  <td className="text-center">{c.presencas}</td>
+                                  <td className="text-center">
+                                    <div className="flex items-center gap-1.5 justify-center">
+                                      <span style={{ fontWeight: 600 }}>{c.ligacoes}</span>
+                                      <div className="hidden md:block" style={{ width: 48, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                                        <div style={{ height: "100%", width: `${barPct}%`, borderRadius: 2, background: "#7c7aff" }} />
                                       </div>
                                     </div>
                                   </td>
-                                  <td className="text-center px-2 py-2">{c.leads}</td>
-                                  <td className="text-center px-2 py-2">{c.visitasMarcadas}</td>
-                                  <td className="text-center px-2 py-2">{c.visitasRealizadas}</td>
-                                  <td className="text-center px-2 py-2">{c.negociosCriados}</td>
-                                  <td className="text-center px-2 py-2">{c.negociosAssinados}</td>
-                                  <td className="text-right px-3 py-2 font-semibold">{c.vgv > 0 ? formatBRLCompact(c.vgv) : "—"}</td>
+                                  <td className="text-center">{c.leads}</td>
+                                  <td className="text-center">{c.visitasMarcadas}</td>
+                                  <td className="text-center">{c.visitasRealizadas}</td>
+                                  <td className="text-center">{c.negociosCriados}</td>
+                                  <td className="text-center">{c.negociosAssinados}</td>
+                                  <td className="text-right" style={{ fontWeight: 600, color: c.vgv > 0 ? "#30d158" : "rgba(255,255,255,0.2)" }}>
+                                    {c.vgv > 0 ? formatBRLCompact(c.vgv) : "—"}
+                                  </td>
                                 </tr>
                               );
                             })}
@@ -564,17 +733,17 @@ export default function RelatorioSemanal() {
         {isLoading && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Skeleton className="h-64 rounded-xl" />
-              <Skeleton className="h-64 rounded-xl" />
+              <div className="apple-glass-surface" style={{ height: 256 }} />
+              <div className="apple-glass-surface" style={{ height: 256 }} />
             </div>
-            <Skeleton className="h-96 rounded-xl" />
+            <div className="apple-glass-surface" style={{ height: 384 }} />
           </div>
         )}
 
         {/* Empty state */}
         {!isLoading && (!data?.corretores || data.corretores.length === 0) && (
-          <div className="bg-background border border-border rounded-xl p-12 text-center">
-            <p className="text-muted-foreground">Sem dados disponíveis para o período selecionado.</p>
+          <div className="apple-glass-surface text-center" style={{ padding: 48 }}>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 15 }}>Sem dados disponíveis para o período selecionado.</p>
           </div>
         )}
       </div>
