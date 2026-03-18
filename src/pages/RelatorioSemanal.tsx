@@ -27,6 +27,7 @@ import {
   type CorretorRow,
   type TeamRow,
 } from "@/hooks/useRelatorioExecutivo";
+import ExecutiveKpiDetailDialog, { type ExecKpiType } from "@/components/relatorio/ExecutiveKpiDetailDialog";
 
 // ── KPI Card Config ──
 const KPI_CONFIG: { key: keyof ExecutiveKpis; label: string; icon: any; color: string; isCurrency?: boolean }[] = [
