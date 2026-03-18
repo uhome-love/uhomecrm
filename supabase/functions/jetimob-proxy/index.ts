@@ -219,19 +219,24 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "Código do imóvel é obrigatório" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Try catalog first (fastest path)
-      const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
-      let imovel = catalogItems.find(item => isCodigoMatch(item, requestedCodigo)) || null;
-
-      // Fallback to direct API
-      if (!imovel) {
-        const directUrl = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/codigo/${encodeURIComponent(requestedCodigo)}?v=6`;
+      // Always try direct API first for full detail (includes proprietário/responsável)
+      let imovel: any = null;
+      const directUrl = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/codigo/${encodeURIComponent(requestedCodigo)}?v=6`;
+      try {
         const response = await fetch(directUrl, { headers: { Accept: "application/json" } });
         if (response.ok) {
           const raw = await response.json();
           const items = Array.isArray(raw?.data) ? raw.data : raw?.imovel ? [raw.imovel] : raw?.codigo ? [raw] : [];
           imovel = items.find((item: any) => isCodigoMatch(item, requestedCodigo)) || items[0] || null;
         }
+      } catch (e) {
+        console.warn("Direct API fetch failed, falling back to catalog:", e);
+      }
+
+      // Fallback to catalog if direct API failed
+      if (!imovel) {
+        const catalogItems = await fetchJetimobCatalog(JETIMOB_API_KEY);
+        imovel = catalogItems.find(item => isCodigoMatch(item, requestedCodigo)) || null;
       }
 
       if (imovel) {
