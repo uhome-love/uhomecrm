@@ -174,12 +174,13 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
   if (campanhaAtiva) activeFilters.push({ key: "campanha", label: "Campanha", onRemove: () => setCampanhaAtiva(false) });
   if (construtora.length > 0) activeFilters.push({ key: "construtora", label: construtora.join(", "), onRemove: () => setConstrutora([]) });
   if (empreendimento.length > 0) activeFilters.push({ key: "empreendimento", label: empreendimento.length <= 2 ? empreendimento.join(", ") : `${empreendimento.length} empreend.`, onRemove: () => setEmpreendimento([]) });
+  if (situacao.length > 0) activeFilters.push({ key: "situacao", label: situacao.map(s => s === "pronto" ? "Pronto" : s === "em_obras" ? "Em obras" : "Lançamento").join(", "), onRemove: () => setSituacao([]) });
 
   const clearAllFilters = () => {
     setTipo([]); setBairro([]); setDormitorios([]); setSuitesFilter(""); setVagas("");
     setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false);
     setSearch(""); setUhomeOnly(false); setCampanhaAtiva(false);
-    setConstrutora([]); setEmpreendimento([]);
+    setConstrutora([]); setEmpreendimento([]); setSituacao([]);
   };
 
   // ── Serialized key for change-detection by search hook ──
