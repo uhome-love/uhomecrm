@@ -2921,6 +2921,57 @@ export type Database = {
           },
         ]
       }
+      lead_property_matches: {
+        Row: {
+          created_at: string | null
+          id: string
+          lead_id: string
+          notified: boolean | null
+          property_id: string
+          score: number
+          score_breakdown: Json | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          notified?: boolean | null
+          property_id: string
+          score?: number
+          score_breakdown?: Json | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          notified?: boolean | null
+          property_id?: string
+          score?: number
+          score_breakdown?: Json | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_property_matches_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_property_matches_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_property_profiles: {
         Row: {
           aceita_financiamento: boolean | null
