@@ -9,10 +9,17 @@ const corsHeaders = {
 
 const COLLECTION_NAME = "imoveis";
 
+// ── Crypto hash for change detection ──
+async function hashPayload(payload: string): Promise<string> {
+  const data = new TextEncoder().encode(payload);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ── Map Jetimob item to Typesense document ──
 function mapImovelToDocument(item: any): Record<string, any> {
   const codigo = String(item.codigo || item.referencia || item.id_imovel || item.id || "");
 
-  // Extract images - store both thumbs and full-res
   const thumbs: string[] = [];
   const full: string[] = [];
   if (item.foto_principal) { thumbs.push(item.foto_principal); full.push(item.foto_principal); }
@@ -38,7 +45,6 @@ function mapImovelToDocument(item: any): Record<string, any> {
   const situacao = String(item.situacao || item.status || item.fase || "").toLowerCase();
   const emObras = situacao.includes("obra") || situacao.includes("constru") || situacao.includes("planta") || situacao.includes("lancamento");
 
-  // Extract coordinates
   const lat = Number(item.latitude || item.lat || item.endereco_latitude || item.endereco?.latitude || 0);
   const lng = Number(item.longitude || item.lng || item.lon || item.endereco_longitude || item.endereco?.longitude || 0);
   const hasCoords = lat !== 0 && lng !== 0 && !isNaN(lat) && !isNaN(lng) && lat >= -35 && lat <= 5 && lng >= -75 && lng <= -30;
@@ -85,6 +91,49 @@ function mapImovelToDocument(item: any): Record<string, any> {
   return doc;
 }
 
+// ── Map Jetimob item to Supabase properties row ──
+function mapImovelToProperty(item: any, thumbs: string[], fullPhotos: string[]) {
+  const codigo = String(item.codigo || item.referencia || item.id_imovel || item.id || "");
+  const situacao = String(item.situacao || item.status || item.fase || "").toLowerCase();
+  const lat = Number(item.latitude || item.lat || item.endereco_latitude || item.endereco?.latitude || 0);
+  const lng = Number(item.longitude || item.lng || item.lon || item.endereco_longitude || item.endereco?.longitude || 0);
+  const hasCoords = lat !== 0 && lng !== 0 && !isNaN(lat) && !isNaN(lng);
+
+  return {
+    jetimob_id: String(item.id_imovel || item.id || codigo),
+    codigo,
+    titulo: item.titulo_anuncio || item.empreendimento_nome || item.titulo || null,
+    descricao: (item.descricao || item.descricao_interna || "").slice(0, 2000) || null,
+    tipo: (item.subtipo || item.tipo_imovel || item.tipo || "").toLowerCase() || null,
+    contrato: item.finalidade || item.contrato || "venda",
+    situacao,
+    endereco: [item.endereco_logradouro || item.endereco || "", item.endereco_numero || ""].filter(Boolean).join(", ") || null,
+    numero: item.endereco_numero || null,
+    bairro: item.endereco_bairro || item.bairro || item.endereco?.bairro || null,
+    cidade: item.endereco_cidade || item.cidade || item.endereco?.cidade || "Porto Alegre",
+    latitude: hasCoords ? lat : null,
+    longitude: hasCoords ? lng : null,
+    dormitorios: Number(item.dormitorios || item.quartos || 0) || null,
+    suites: Number(item.suites || 0) || null,
+    banheiros: Number(item.banheiros || 0) || null,
+    vagas: Number(item.garagens || item.vagas || 0) || null,
+    area_privativa: Number(item.area_privativa || item.area_util || 0) || null,
+    area_total: Number(item.area_total || 0) || null,
+    valor_venda: Number(item.valor_venda || item.preco_venda || item.valor || 0) || null,
+    valor_locacao: Number(item.valor_locacao || item.preco_locacao || item.valor_aluguel || 0) || null,
+    valor_condominio: Number(item.valor_condominio || 0) || null,
+    empreendimento: item.empreendimento_nome || item.empreendimento || item.condominio || null,
+    construtora: item.construtora || item.incorporadora || null,
+    is_uhome: String(codigo).toLowerCase().includes("-uh"),
+    is_destaque: !!item.destaque,
+    fotos: thumbs.slice(0, 15),
+    fotos_full: fullPhotos.slice(0, 15),
+    ativo: true,
+    synced_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -109,7 +158,7 @@ serve(async (req) => {
       sb.from("ops_events").insert({ fn: "typesense-sync", level, category, message, trace_id: traceId, ctx: ctx || {}, error_detail: errorDetail || null }).then(r => { if (r.error) console.warn("ops_events insert err:", r.error.message); });
     };
 
-    // ── Overlap guard: skip if another run started within the last 50 seconds ──
+    // ── Overlap guard ──
     const guardCutoff = new Date(Date.now() - 50_000).toISOString();
     const { data: recentRun } = await sb
       .from("ops_events")
@@ -121,13 +170,11 @@ serve(async (req) => {
       .limit(1);
 
     if (recentRun && recentRun.length > 0) {
-      console.info(JSON.stringify({ fn: "typesense-sync", level: "info", msg: "Skipping overlapping run", traceId, recent_trace: recentRun[0].trace_id, ts: new Date().toISOString() }));
       return new Response(JSON.stringify({ skipped: true, reason: "overlap_guard", recent_trace: recentRun[0].trace_id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Stamp run start
     await sb.from("ops_events").insert({
       fn: "typesense-sync", level: "info", category: "guard",
       message: "run_start", trace_id: traceId, ctx: {}, error_detail: null,
@@ -159,7 +206,6 @@ serve(async (req) => {
     const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw?.result) ? raw.result : Array.isArray(raw) ? raw : [];
 
     if (items.length === 0) {
-      // Done!
       await sb.from("typesense_sync_state").update({
         status: "complete",
         last_indexed_at: new Date().toISOString(),
@@ -172,7 +218,7 @@ serve(async (req) => {
       });
     }
 
-    // Index to Typesense
+    // ── Index to Typesense ──
     const docs = items.map(mapImovelToDocument);
     const jsonl = docs.map(d => JSON.stringify(d)).join("\n");
     const resp = await fetch(`https://${TYPESENSE_HOST}/collections/${COLLECTION_NAME}/documents/import?action=upsert`, {
@@ -186,7 +232,111 @@ serve(async (req) => {
     const errors = results.filter(r => !r.success).length;
     const hasMore = items.length >= pageSize;
 
-    // Update state
+    // ── Mirror to Supabase properties table ──
+    let dbUpserted = 0;
+    let dbPriceChanges = 0;
+    try {
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const batch = items.slice(i, i + BATCH_SIZE);
+        const codigos = batch.map((it: any) => String(it.codigo || it.referencia || it.id_imovel || it.id || "")).filter(Boolean);
+
+        // Fetch existing properties to detect price changes
+        const { data: existing } = await sb
+          .from("properties")
+          .select("codigo, valor_venda, valor_locacao, sync_hash")
+          .in("codigo", codigos);
+
+        const existingMap = new Map((existing || []).map(e => [e.codigo, e]));
+
+        const rows: any[] = [];
+        const priceChanges: any[] = [];
+
+        for (const item of batch) {
+          const doc = mapImovelToDocument(item);
+          const thumbs = doc.fotos || [];
+          const fullPhotos = doc.fotos_full || [];
+          const propRow = mapImovelToProperty(item, thumbs, fullPhotos);
+
+          // Compute hash for change detection
+          const hashInput = JSON.stringify({
+            titulo: propRow.titulo, valor_venda: propRow.valor_venda, valor_locacao: propRow.valor_locacao,
+            bairro: propRow.bairro, dormitorios: propRow.dormitorios, area_privativa: propRow.area_privativa,
+            situacao: propRow.situacao, empreendimento: propRow.empreendimento,
+          });
+          const hash = await hashPayload(hashInput);
+          (propRow as any).sync_hash = hash;
+
+          // Detect price changes
+          const prev = existingMap.get(propRow.codigo);
+          if (prev) {
+            const prevVenda = Number(prev.valor_venda || 0);
+            const newVenda = Number(propRow.valor_venda || 0);
+            if (prevVenda > 0 && newVenda > 0 && prevVenda !== newVenda) {
+              const variacao = ((newVenda - prevVenda) / prevVenda) * 100;
+              priceChanges.push({
+                property_id: null, // Will resolve after upsert
+                property_code: propRow.codigo,
+                campo: "valor_venda",
+                valor_anterior: prevVenda,
+                valor_novo: newVenda,
+                variacao_pct: Math.round(variacao * 100) / 100,
+              });
+            }
+            const prevLoc = Number(prev.valor_locacao || 0);
+            const newLoc = Number(propRow.valor_locacao || 0);
+            if (prevLoc > 0 && newLoc > 0 && prevLoc !== newLoc) {
+              const variacao = ((newLoc - prevLoc) / prevLoc) * 100;
+              priceChanges.push({
+                property_id: null,
+                property_code: propRow.codigo,
+                campo: "valor_locacao",
+                valor_anterior: prevLoc,
+                valor_novo: newLoc,
+                variacao_pct: Math.round(variacao * 100) / 100,
+              });
+            }
+          }
+
+          rows.push(propRow);
+        }
+
+        // Upsert properties
+        const { error: upsertErr } = await sb
+          .from("properties")
+          .upsert(rows, { onConflict: "codigo" });
+
+        if (upsertErr) {
+          console.warn(`Properties upsert error (batch ${i}):`, upsertErr.message);
+        } else {
+          dbUpserted += rows.length;
+        }
+
+        // Insert price changes (resolve property_id)
+        if (priceChanges.length > 0) {
+          const changeCodes = priceChanges.map(pc => pc.property_code);
+          const { data: propIds } = await sb
+            .from("properties")
+            .select("id, codigo")
+            .in("codigo", changeCodes);
+
+          const idMap = new Map((propIds || []).map(p => [p.codigo, p.id]));
+          const priceRows = priceChanges
+            .map(pc => ({ property_id: idMap.get(pc.property_code), campo: pc.campo, valor_anterior: pc.valor_anterior, valor_novo: pc.valor_novo, variacao_pct: pc.variacao_pct }))
+            .filter(pr => pr.property_id);
+
+          if (priceRows.length > 0) {
+            await sb.from("property_price_history").insert(priceRows);
+            dbPriceChanges += priceRows.length;
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn("Properties mirror error (non-fatal):", dbErr);
+      logOps("warn", "business", "Properties mirror error (non-fatal)", { page, error: dbErr instanceof Error ? dbErr.message : String(dbErr) });
+    }
+
+    // Update sync state
     await sb.from("typesense_sync_state").update({
       next_page: hasMore ? page + 1 : page,
       status: hasMore ? "running" : "complete",
@@ -194,12 +344,17 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     }).eq("id", "default");
 
-    console.info(JSON.stringify({ fn: "typesense-sync", level: "info", msg: `Page ${page}: ${indexed} indexed, ${errors} errors, hasMore: ${hasMore}`, traceId, ts: new Date().toISOString() }));
+    console.info(JSON.stringify({
+      fn: "typesense-sync", level: "info", traceId,
+      msg: `Page ${page}: ${indexed} indexed, ${errors} errors, ${dbUpserted} mirrored, ${dbPriceChanges} price changes, hasMore: ${hasMore}`,
+      ts: new Date().toISOString(),
+    }));
+
     if (errors > 0) {
       logOps("warn", "business", `Typesense sync page ${page} had ${errors} indexing errors`, { page, indexed, errors, hasMore });
     }
 
-    return new Response(JSON.stringify({ success: true, page, indexed, errors, hasMore }), {
+    return new Response(JSON.stringify({ success: true, page, indexed, errors, dbUpserted, dbPriceChanges, hasMore }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
