@@ -16,7 +16,7 @@ import {
   LayoutGrid, List, Heart, Zap,
   Sparkles, Brain, ArrowRight, Map, MessageCircle
 } from "lucide-react";
-import PropertyMap from "@/components/imoveis/PropertyMap";
+import PropertyMap, { MapBounds } from "@/components/imoveis/PropertyMap";
 import PropertyPreviewDrawer from "@/components/imoveis/PropertyPreviewDrawer";
 import FilterChip from "@/components/imoveis/FilterChip";
 import { toast } from "sonner";
