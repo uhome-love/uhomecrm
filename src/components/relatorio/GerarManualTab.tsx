@@ -151,66 +151,91 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
 
   const avatarSrc = profile?.avatar_gamificado_url || profile?.avatar_url;
 
+  const extractReportJson = (raw: string): ReportJSON => {
+    const normalized = raw
+      .trim()
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/```$/i, "")
+      .trim();
+
+    const jsonMatch = normalized.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Resposta não contém JSON válido");
+
+    const parsed = JSON.parse(
+      jsonMatch[0]
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2018\u2019]/g, "'")
+    );
+
+    return {
+      resumo_performance: String(parsed?.resumo_performance || ""),
+      pontos_fortes: Array.isArray(parsed?.pontos_fortes) ? parsed.pontos_fortes.map(String) : [],
+      pontos_atencao: Array.isArray(parsed?.pontos_atencao) ? parsed.pontos_atencao.map(String) : [],
+      plano_acao: Array.isArray(parsed?.plano_acao)
+        ? parsed.plano_acao.map((item: any) => ({ acao: String(item?.acao || ""), prazo: String(item?.prazo || "") })).filter((item: any) => item.acao)
+        : [],
+      mensagem_gerente: String(parsed?.mensagem_gerente || ""),
+    };
+  };
+
   const generate = async () => {
     if (!corretorId) { toast.error("Selecione um corretor"); return; }
+    if (!corretorUserId) { toast.error("Este corretor não possui usuário vinculado"); return; }
     if (!contexto.trim()) { toast.error("Preencha o contexto do gerente"); return; }
 
     setGenerating(true);
     setReport(null);
 
     const pd = periodData || { ligacoes: 0, aproveitados: 0, taxaAproveitamento: 0, visitasMarcadas: 0, visitasRealizadas: 0, leadsAtivos: 0, leadsAproveitados: 0, negociosAtivos: 0, vgvAndamento: 0 };
-
-    const prompt = `Gere um relatório 1:1 profissional para a reunião de feedback com o corretor ${corretorNome}.
-
-Período: ${format(new Date(dataInicio + "T12:00:00"), "dd/MM/yyyy")} a ${format(new Date(dataFim + "T12:00:00"), "dd/MM/yyyy")}.
-
-Dados de performance:
-- Ligações realizadas: ${pd.ligacoes}
-- Taxa de aproveitamento: ${pd.taxaAproveitamento}%
-- Aproveitados: ${pd.aproveitados}
-- Visitas marcadas: ${pd.visitasMarcadas}
-- Visitas realizadas: ${pd.visitasRealizadas}
-- Leads ativos no pipeline: ${pd.leadsAtivos}
-- Negócios ativos: ${pd.negociosAtivos}
-- VGV em andamento: ${fmtVgv(pd.vgvAndamento)}
-
-Contexto da gerente: ${contexto}
-
-Observações adicionais: ${observacoes || "Nenhuma"}
-
-IMPORTANTE: Estruture a resposta EXCLUSIVAMENTE em JSON válido com os campos:
-{
-  "resumo_performance": "texto com resumo geral da performance",
-  "pontos_fortes": ["ponto 1", "ponto 2", "ponto 3"],
-  "pontos_atencao": ["atenção 1", "atenção 2"],
-  "plano_acao": [{"acao": "descrição da ação", "prazo": "prazo estimado"}, ...],
-  "mensagem_gerente": "mensagem personalizada de feedback para o corretor"
-}
-
-Não inclua nenhum texto fora do JSON. Retorne APENAS o JSON.`;
+    const metricas = {
+      ligacoes: pd.ligacoes,
+      aproveitados: pd.aproveitados,
+      taxa_aproveitamento: pd.taxaAproveitamento,
+      visitas_marcadas: pd.visitasMarcadas,
+      visitas_realizadas: pd.visitasRealizadas,
+      leads_ativos: pd.leadsAtivos,
+      leads_aproveitados: pd.leadsAproveitados,
+      negocios_ativos: pd.negociosAtivos,
+      vgv_em_andamento: pd.vgvAndamento,
+    };
+    const taxasConversao = {
+      ligacoes_para_visitas_marcadas: pd.ligacoes > 0 ? Math.round((pd.visitasMarcadas / pd.ligacoes) * 100) : 0,
+      visitas_marcadas_para_realizadas: pd.visitasMarcadas > 0 ? Math.round((pd.visitasRealizadas / pd.visitasMarcadas) * 100) : 0,
+    };
+    const scorePerformance = Math.min(100, Math.round(
+      (pd.aproveitados * 2) +
+      (pd.visitasMarcadas * 6) +
+      (pd.visitasRealizadas * 10) +
+      (pd.negociosAtivos * 12) +
+      (pd.taxaAproveitamento * 0.8)
+    ));
 
     try {
-      const { data, error } = await supabase.functions.invoke("homi-chat", {
+      const { data, error } = await supabase.functions.invoke("generate-corretor-report", {
         body: {
-          messages: [{ role: "user", content: prompt }],
-          system: "Você é o HOMI, especialista em gestão comercial imobiliária. Responda APENAS em JSON válido conforme solicitado. Não inclua markdown, code blocks ou texto fora do JSON.",
-          stream: false,
+          corretor_nome: corretorNome,
+          gerente_nome: gerenteNome,
+          periodo_inicio: format(new Date(dataInicio + "T12:00:00"), "dd/MM/yyyy"),
+          periodo_fim: format(new Date(dataFim + "T12:00:00"), "dd/MM/yyyy"),
+          periodo_tipo: periodoTipo,
+          metricas,
+          taxas_conversao: taxasConversao,
+          score_performance: scorePerformance,
+          tendencia: null,
+          contexto_gerente: contexto,
+          observacoes,
+          response_format: "json",
         },
       });
 
       if (error) throw error;
 
-      const content = data?.content || data?.reply || "";
-      // Extract JSON from response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("Resposta não contém JSON válido");
-
-      const parsed: ReportJSON = JSON.parse(jsonMatch[0]);
+      const parsed = extractReportJson(data?.content || "");
       setReport(parsed);
 
-      // Save to relatorios_1_1
       if (user) {
-        await supabase.from("relatorios_1_1" as any).insert({
+        const { error: saveError } = await supabase.from("relatorios_1_1" as any).insert({
           corretor_id: corretorUserId,
           gerente_id: user.id,
           periodo_inicio: dataInicio,
@@ -218,12 +243,18 @@ Não inclua nenhum texto fora do JSON. Retorne APENAS o JSON.`;
           conteudo_json: parsed,
           dados_periodo: pd,
         });
+
+        if (saveError) {
+          console.error("Erro ao salvar relatório 1:1:", saveError);
+          toast.error("Relatório gerado, mas não foi possível salvar o histórico.");
+        }
       }
     } catch (err: any) {
       console.error("Erro ao gerar relatório:", err);
-      toast.error("Erro ao gerar relatório. Tente novamente.");
+      toast.error(err?.message || "Erro ao gerar relatório. Tente novamente.");
+    } finally {
+      setGenerating(false);
     }
-    setGenerating(false);
   };
 
   const exportPdf = () => {

@@ -27,12 +27,35 @@ serve(async (req) => {
       tendencia,
       contexto_gerente,
       observacoes,
+      response_format = "markdown",
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `Você é o "UHOME IA – Relatório 1:1 Coach", um especialista em gestão comercial imobiliária.
+    const wantsJson = response_format === "json";
+
+    const systemPrompt = wantsJson
+      ? `Você é o "UHOME IA – Relatório 1:1 Coach", especialista em gestão comercial imobiliária.
+
+Retorne APENAS JSON válido, sem markdown, sem comentários e sem texto fora do JSON.
+
+Estrutura obrigatória:
+{
+  "resumo_performance": "string",
+  "pontos_fortes": ["string"],
+  "pontos_atencao": ["string"],
+  "plano_acao": [{"acao": "string", "prazo": "string"}],
+  "mensagem_gerente": "string"
+}
+
+Regras:
+- Seja concreto, profissional e direto
+- Baseie-se nos números e no contexto do gerente
+- Gere de 3 a 5 pontos fortes
+- Gere de 2 a 5 pontos de atenção
+- Gere de 3 a 6 ações no plano_acao`
+      : `Você é o "UHOME IA – Relatório 1:1 Coach", um especialista em gestão comercial imobiliária.
 
 Sua função é gerar relatórios profissionais de performance individual para reuniões one-a-one entre gerente e corretor.
 
@@ -99,7 +122,28 @@ REGRAS:
 - Adapte a intensidade ao contexto do gerente
 - Use emojis com moderação para organização visual`;
 
-    const userPrompt = `Gere o relatório 1:1 com os seguintes dados:
+    const userPrompt = wantsJson
+      ? `Gere o relatório 1:1 em JSON com os seguintes dados:
+
+CORRETOR: ${corretor_nome}
+GERENTE: ${gerente_nome}
+PERÍODO: ${periodo_inicio} a ${periodo_fim} (${periodo_tipo})
+
+MÉTRICAS DO PERÍODO:
+${JSON.stringify(metricas, null, 2)}
+
+TAXAS DE CONVERSÃO DO FUNIL:
+${JSON.stringify(taxas_conversao, null, 2)}
+
+SCORE DE PERFORMANCE: ${score_performance}/100
+
+${tendencia ? `TENDÊNCIA (comparação com período anterior):\n${JSON.stringify(tendencia, null, 2)}` : "Sem dados de período anterior para comparação."}
+
+CONTEXTO DO GERENTE SOBRE O CORRETOR:
+${contexto_gerente}
+
+${observacoes ? `OBSERVAÇÕES ADICIONAIS:\n${observacoes}` : ""}`
+      : `Gere o relatório 1:1 com os seguintes dados:
 
 CORRETOR: ${corretor_nome}
 PERÍODO: ${periodo_inicio} a ${periodo_fim} (${periodo_tipo})
