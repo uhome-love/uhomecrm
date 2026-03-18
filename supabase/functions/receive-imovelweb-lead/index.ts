@@ -57,6 +57,17 @@ function normalizePhone(phone: string | null | undefined): string | null {
   return digits;
 }
 
+/** Extract a second phone number from a concatenated string (e.g., "5199876123555199371479") */
+function extractSecondPhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length <= 13) return null; // Only one phone
+  // After first phone (10-13 digits), try to extract second
+  const firstLen = digits.startsWith("55") ? (digits.length >= 24 ? 13 : 12) : 11;
+  const rest = digits.slice(firstLen);
+  return normalizePhone(rest);
+}
+
 async function distributeWithRetry(
   supabaseUrl: string, serviceKey: string, leadId: string, traceId: string,
   L: { warn: (msg: string, ctx?: Record<string, unknown>, err?: unknown) => void },
