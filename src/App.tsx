@@ -113,7 +113,7 @@ const RhConversas = lazyRetry(() => import("./pages/RhConversas"));
 const RhSalaReuniao = lazyRetry(() => import("./pages/RhSalaReuniao"));
 const RhEntrevistas = lazyRetry(() => import("./pages/RhEntrevistas"));
 const DevAIPage = lazyRetry(() => import("./pages/DevAIPage"));
-const AlertasPage = lazyRetry(() => import("./pages/AlertasPage"));
+
 const MelnickDayLanding = lazyRetry(() => import("./pages/MelnickDayLanding"));
 const WhatsAppLanding = lazyRetry(() => import("./pages/WhatsAppLanding"));
 const CampaignAnalyticsPage = lazyRetry(() => import("./pages/CampaignAnalyticsPage"));
@@ -230,7 +230,7 @@ const App = () => (
             <Route path="/pos-vendas" element={<ProtectedPage><ErrorBoundary module="pos-vendas"><PosVendas /></ErrorBoundary></ProtectedPage>} />
             <Route path="/imoveis" element={<ProtectedPage><ErrorBoundary module="imoveis"><ImoveisPage /></ErrorBoundary></ProtectedPage>} />
             <Route path="/melnick-day" element={<ProtectedPage><ErrorBoundary module="melnick-day"><MelnickDay /></ErrorBoundary></ProtectedPage>} />
-            <Route path="/melnick-metas" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="melnick-metas"><MelnickMetas /></ErrorBoundary></ProtectedPage>} />
+            
             <Route path="/orygem-60" element={<ProtectedPage><ErrorBoundary module="orygem-60"><OrygemCampanha /></ErrorBoundary></ProtectedPage>} />
             <Route path="/mega-cyrela" element={<ProtectedPage><ErrorBoundary module="mega-cyrela"><MegaCyrela /></ErrorBoundary></ProtectedPage>} />
             <Route path="/anuncios" element={<ProtectedPage><ErrorBoundary module="anuncios"><AnunciosNoAr /></ErrorBoundary></ProtectedPage>} />
@@ -240,8 +240,6 @@ const App = () => (
             <Route path="/configuracoes" element={<ProtectedPage><ErrorBoundary module="configuracoes"><Configuracoes /></ErrorBoundary></ProtectedPage>} />
             <Route path="/notificacoes" element={<ProtectedPage><ErrorBoundary module="notificacoes"><Notificacoes /></ErrorBoundary></ProtectedPage>} />
 
-            {/* Alertas — gestor + admin */}
-            <Route path="/alertas" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="alertas"><AlertasPage /></ErrorBoundary></ProtectedPage>} />
 
             {/* CEO / Admin only */}
             <Route path="/ceo" element={<ProtectedPage roles={["admin"]}><ErrorBoundary module="ceo-dashboard"><CeoDashboard /></ErrorBoundary></ProtectedPage>} />
