@@ -142,7 +142,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!empreendimento) empreendimento = "Avulso - ImovelWeb";
+    if (!empreendimento) {
+      empreendimento = codigoAnuncio
+        ? `Avulso - ImovelWeb (${codigoAnuncio})`
+        : "Avulso - ImovelWeb";
+    }
 
     // ── Resolve segmento ──
     if (!segmentoId && empreendimento) {
