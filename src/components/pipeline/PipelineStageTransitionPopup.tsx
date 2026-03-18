@@ -496,26 +496,6 @@ function VisitaRealizadaForm({ lead, onConfirm, targetStageId }: { lead: Pipelin
 function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; onConfirm: (r: TransitionResult) => void; targetStageId: string }) {
   const [motivo, setMotivo] = useState("");
   const [empreendimento, setEmpreendimento] = useState(lead.empreendimento || "");
-  const [listas, setListas] = useState<{ id: string; nome: string; empreendimento: string }[]>([]);
-  const [listaId, setListaId] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase.from("oferta_ativa_listas").select("id, nome, empreendimento").in("status", ["ativa", "liberada"]) as any;
-      setListas(data || []);
-      setLoading(false);
-    };
-    load();
-  }, []);
-
-  // Auto-select lista matching empreendimento
-  useEffect(() => {
-    if (empreendimento && listas.length > 0 && !listaId) {
-      const match = listas.find(l => l.empreendimento.toLowerCase() === empreendimento.toLowerCase());
-      if (match) setListaId(match.id);
-    }
-  }, [empreendimento, listas, listaId]);
 
   return (
     <>
@@ -523,6 +503,7 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
         <DialogTitle className="text-base flex items-center gap-2">🗑️ Descarte — Enviar para Oferta Ativa</DialogTitle>
       </DialogHeader>
       <p className="text-xs text-muted-foreground">Lead: <strong>{lead.nome}</strong></p>
+      <p className="text-[10px] text-muted-foreground">O lead será removido do pipeline e enviado automaticamente para a lista da Oferta Ativa do empreendimento selecionado.</p>
 
       <div className="space-y-3">
         <div>
@@ -543,26 +524,7 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
         <div>
           <Label className="text-xs">Empreendimento vinculado *</Label>
           <EmpreendimentoCombobox value={empreendimento} onChange={setEmpreendimento} />
-          <p className="text-[10px] text-muted-foreground mt-1">Vincule ao empreendimento para direcionar à lista correta da Oferta Ativa</p>
-        </div>
-        <div>
-          <Label className="text-xs">Lista da Oferta Ativa</Label>
-          {loading ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground py-2"><Loader2 className="h-3 w-3 animate-spin" /> Carregando listas...</div>
-          ) : listas.length === 0 ? (
-            <p className="text-xs text-amber-600 py-1">Nenhuma lista ativa encontrada</p>
-          ) : (
-            <Select value={listaId} onValueChange={setListaId}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione a lista..." /></SelectTrigger>
-              <SelectContent>
-                {listas.map(l => (
-                  <SelectItem key={l.id} value={l.id}>
-                    {l.nome} ({l.empreendimento})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <p className="text-[10px] text-muted-foreground mt-1">O sistema encontrará automaticamente a lista da Oferta Ativa correspondente</p>
         </div>
       </div>
 
@@ -576,7 +538,7 @@ function DescarteForm({ lead, onConfirm, targetStageId }: { lead: PipelineLead; 
             leadId: lead.id,
             targetStageId,
             observacao: `Descarte: ${motivo.replace(/_/g, " ")} | Empreendimento: ${empreendimento}`,
-            extraData: { motivo, empreendimento, listaId: listaId || null, enviarOfertaAtiva: true },
+            extraData: { motivo, empreendimento, enviarOfertaAtiva: true },
           })}
         >
           🗑️ Confirmar descarte
