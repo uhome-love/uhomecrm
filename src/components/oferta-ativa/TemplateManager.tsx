@@ -202,7 +202,7 @@ export default function TemplateManager() {
                 <SelectTrigger><SelectValue placeholder="Global (todos)" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__global__">🌐 Global (todos)</SelectItem>
-                  {empreendimentos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                  {empreendimentos.map((e: any) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

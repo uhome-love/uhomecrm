@@ -69,7 +69,7 @@ export default function DashboardRankingsPreview() {
       if (ids.length === 0) return [];
       const { data: profiles } = await supabase.from("profiles").select("user_id, nome").in("user_id", ids);
       const nameMap = new Map((profiles || []).map(p => [p.user_id, p.nome || "—"]));
-      return ids.map(id => ({ id, nome: nameMap.get(id) || "—", value: map[id] }))
+      return ids.map(id => ({ id, nome: (nameMap.get(id) || "—") as string, value: map[id] }))
         .sort((a, b) => b.value - a.value);
     },
     staleTime: 60_000,

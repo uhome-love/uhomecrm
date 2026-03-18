@@ -89,7 +89,7 @@ export default function CorretorScriptsView() {
           <SelectTrigger className="w-52"><SelectValue placeholder="Todos empreendimentos" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos empreendimentos</SelectItem>
-            {empreendimentos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+            {empreendimentos.map((e: any) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
           </SelectContent>
         </Select>
       )}

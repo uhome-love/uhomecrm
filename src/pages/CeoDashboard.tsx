@@ -696,7 +696,7 @@ export default function CeoDashboard() {
                   </>
                 ) : (
                   <>
-                    {topCorretoresVgv.map((c, i) => (
+                    {topCorretoresVgv.map((c: any, i: number) => (
                       <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
                         <span className="flex items-center gap-2">
                           <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
