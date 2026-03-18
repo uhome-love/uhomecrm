@@ -603,6 +603,10 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onUpdate={onUpdate}
               />
             </TabsContent>
+
+            <TabsContent value="indicados" className="mt-0">
+              <LeadImoveisIndicadosTab leadId={lead.id} corretorNomes={corretorNomes} />
+            </TabsContent>
           </ScrollArea>
         </Tabs>
 
