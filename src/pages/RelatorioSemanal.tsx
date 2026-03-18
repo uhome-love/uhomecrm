@@ -144,15 +144,15 @@ export default function RelatorioSemanal() {
 
   // Find top performer for each column
   const topPerformers = useMemo(() => {
-    if (!data?.corretores?.length) return {};
+    if (!filteredCorretores.length) return {};
     const keys: SortKey[] = ["presencas", "ligacoes", "leads", "visitasMarcadas", "visitasRealizadas", "negociosCriados", "negociosAssinados", "vgv"];
     const result: Record<string, string> = {};
     keys.forEach(k => {
-      const top = [...data.corretores].sort((a, b) => (b[k] as number) - (a[k] as number))[0];
+      const top = [...filteredCorretores].sort((a, b) => (b[k] as number) - (a[k] as number))[0];
       if (top && (top[k] as number) > 0) result[k] = top.id;
     });
     return result;
-  }, [data?.corretores]);
+  }, [filteredCorretores]);
 
   const prevPeriodLabel = mode === "semana" ? "vs semana ant." : "vs mês ant.";
 
