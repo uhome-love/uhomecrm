@@ -262,6 +262,11 @@ Deno.serve(async (req) => {
     if (!empreendimento && formName) empreendimento = formName;
     if (!empreendimento) empreendimento = "Avulso - TikTok Ads";
 
+    // Normalize empreendimento: strip common suffixes like " - Uhome", " - Venda", etc.
+    if (empreendimento) {
+      empreendimento = empreendimento.replace(/\s*-\s*(Uhome|Venda|Locação|Locacao)$/i, "").trim();
+    }
+
     // ── Dedup ──
     const dedupRegistryId = externalLeadId ? `tiktok:${externalLeadId}` : `tiktok-phone:${telefone}`;
 
