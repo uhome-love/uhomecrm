@@ -190,6 +190,9 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
           <div className="flex items-center justify-between pt-1.5 border-t border-border/40">
             <span className="text-[10px] text-muted-foreground/60 font-mono">{codigo}</span>
             <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco)}>
+                <MessageCircle className="h-4 w-4" />
+              </Button>
               <SharePropertyButton
                 codigo={codigo}
                 titulo={titulo}
