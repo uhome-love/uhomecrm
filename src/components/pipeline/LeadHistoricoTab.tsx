@@ -129,12 +129,17 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
 
   for (const a of atividades) {
     const info = ATIVIDADE_TIPOS[a.tipo];
+    // For 'entrada' activities, show the full descricao (contains origin details like ImovelWeb info)
+    const isEntrada = a.tipo === "entrada";
+    const desc = isEntrada && a.descricao
+      ? a.descricao
+      : `${a.titulo} • ${a.status === "concluida" ? "✅" : "⏳"}`;
     items.push({
-      title: info?.label || a.titulo,
-      description: `${a.titulo} • ${a.status === "concluida" ? "✅" : "⏳"}`,
+      title: isEntrada ? (a.titulo || info?.label || "Lead entrou") : (info?.label || a.titulo),
+      description: desc,
       date: a.created_at,
       icon: info?.icon || PhoneCall,
-      color: a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600",
+      color: isEntrada ? "bg-emerald-100 text-emerald-600" : (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"),
     });
   }
 
