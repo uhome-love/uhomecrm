@@ -891,7 +891,6 @@ export default function ImoveisPage() {
                         </div>
                       );
                     })}
-                    })}
                   </div>
                   {totalPages > 1 && !campanhaAtiva && (
                     <div className="flex items-center justify-center gap-3 pt-6 pb-2">
