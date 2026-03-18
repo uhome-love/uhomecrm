@@ -2716,6 +2716,41 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_imoveis_indicados: {
+        Row: {
+          criado_em: string
+          criado_por: string
+          id: string
+          imovel_codigo: string
+          lead_id: string
+          observacao: string | null
+        }
+        Insert: {
+          criado_em?: string
+          criado_por: string
+          id?: string
+          imovel_codigo: string
+          lead_id: string
+          observacao?: string | null
+        }
+        Update: {
+          criado_em?: string
+          criado_por?: string
+          id?: string
+          imovel_codigo?: string
+          lead_id?: string
+          observacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_imoveis_indicados_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_imovel_events: {
         Row: {
           corretor_id: string
