@@ -71,6 +71,8 @@ interface UseImoveisSearchParams {
     uhomeOnly: boolean;
     campanhaAtiva: boolean;
     sortBy: string;
+    construtora: string[];
+    empreendimento: string[];
   };
   /** Serialized filter key for change-detection */
   filterKey: string;
@@ -174,6 +176,8 @@ export function useImoveisSearch({
         areaRange: filters.areaRange,
         somenteObras: filters.somenteObras,
         uhomeOnly: filters.uhomeOnly,
+        construtora: filters.construtora,
+        empreendimento: filters.empreendimento,
       });
       const sortByStr = filters.search ? "" : buildSortBy(filters.sortBy, filters.contrato);
 

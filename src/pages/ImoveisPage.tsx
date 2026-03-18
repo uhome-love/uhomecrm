@@ -39,17 +39,20 @@ export default function ImoveisPage() {
   const { leadId, leadNome, hasLeadContext, trackEvent } = useLeadContext();
 
   // ── Dynamic facets ──
-  const { bairroFacets, tipoFacets } = useTypesenseFacets();
+  const { bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets } = useTypesenseFacets();
 
   // ── Filters ──
-  const filters = useImoveisFilters(bairroFacets, tipoFacets);
+  const filters = useImoveisFilters(bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets);
   const {
     contrato, tipo, setTipo, bairro, setBairro, bairroSearch, setBairroSearch,
     dormitorios, setDormitorios, suitesFilter, setSuitesFilter,
     vagas, setVagas, areaRange, setAreaRange, valorRange, setValorRange,
     somenteObras, setSomenteObras, campanhaAtiva, setCampanhaAtiva,
     uhomeOnly, setUhomeOnly, search, setSearch, sortBy, setSortBy,
-    filteredBairros, tipoOptions, activeFilters, clearAllFilters, filterKey,
+    construtora, setConstrutora, construtoraSearch, setConstrutoraSearch,
+    empreendimento, setEmpreendimento, empreendimentoSearch, setEmpreendimentoSearch,
+    filteredBairros, tipoOptions, filteredConstrutoras, filteredEmpreendimentos,
+    activeFilters, clearAllFilters, filterKey,
   } = filters;
 
   // ── UI state (local to page) ──
@@ -81,6 +84,7 @@ export default function ImoveisPage() {
     filters: {
       search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas,
       areaRange, valorRange, somenteObras, uhomeOnly, campanhaAtiva, sortBy,
+      construtora, empreendimento,
     },
     filterKey,
     setSearch,
@@ -400,6 +404,64 @@ export default function ImoveisPage() {
                           <CommandItem key={facet.value} value={facet.value} onSelect={() => { setBairro(prev => selected ? prev.filter(x => x !== facet.value) : [...prev, facet.value]); setBairroSearch(""); }}>
                             <Check className={cn("mr-2 h-3 w-3", selected ? "opacity-100" : "opacity-0")} />
                             <span className="flex-1">{facet.value}</span>
+                            {facet.count > 0 && <span className="text-[10px] text-muted-foreground ml-1">({facet.count})</span>}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
+            </FilterChip>
+
+            {/* Construtora */}
+            <FilterChip label={construtora.length > 0 ? (construtora.length <= 2 ? construtora.join(", ") : `${construtora.length} construtoras`) : "Construtora"} active={construtora.length > 0} onClear={() => setConstrutora([])}>
+              <div className="w-56">
+                <Command>
+                  <CommandInput placeholder="Buscar construtora..." value={construtoraSearch} onValueChange={setConstrutoraSearch} className="h-8" />
+                  <CommandList className="max-h-48">
+                    <CommandEmpty>Nenhuma encontrada</CommandEmpty>
+                    <CommandGroup>
+                      {construtora.length > 0 && (
+                        <CommandItem value="__limpar__" onSelect={() => { setConstrutora([]); setConstrutoraSearch(""); }}>
+                          <X className="mr-2 h-3 w-3 text-muted-foreground" /> Limpar seleção
+                        </CommandItem>
+                      )}
+                      {filteredConstrutoras.map((facet) => {
+                        const selected = construtora.includes(facet.value);
+                        return (
+                          <CommandItem key={facet.value} value={facet.value} onSelect={() => { setConstrutora(prev => selected ? prev.filter(x => x !== facet.value) : [...prev, facet.value]); setConstrutoraSearch(""); }}>
+                            <Check className={cn("mr-2 h-3 w-3", selected ? "opacity-100" : "opacity-0")} />
+                            <span className="flex-1">{facet.value}</span>
+                            {facet.count > 0 && <span className="text-[10px] text-muted-foreground ml-1">({facet.count})</span>}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
+            </FilterChip>
+
+            {/* Empreendimento */}
+            <FilterChip label={empreendimento.length > 0 ? (empreendimento.length <= 2 ? empreendimento.join(", ") : `${empreendimento.length} empreend.`) : "Empreendimento"} active={empreendimento.length > 0} onClear={() => setEmpreendimento([])}>
+              <div className="w-56">
+                <Command>
+                  <CommandInput placeholder="Buscar empreendimento..." value={empreendimentoSearch} onValueChange={setEmpreendimentoSearch} className="h-8" />
+                  <CommandList className="max-h-48">
+                    <CommandEmpty>Nenhum encontrado</CommandEmpty>
+                    <CommandGroup>
+                      {empreendimento.length > 0 && (
+                        <CommandItem value="__limpar__" onSelect={() => { setEmpreendimento([]); setEmpreendimentoSearch(""); }}>
+                          <X className="mr-2 h-3 w-3 text-muted-foreground" /> Limpar seleção
+                        </CommandItem>
+                      )}
+                      {filteredEmpreendimentos.map((facet) => {
+                        const selected = empreendimento.includes(facet.value);
+                        return (
+                          <CommandItem key={facet.value} value={facet.value} onSelect={() => { setEmpreendimento(prev => selected ? prev.filter(x => x !== facet.value) : [...prev, facet.value]); setEmpreendimentoSearch(""); }}>
+                            <Check className={cn("mr-2 h-3 w-3", selected ? "opacity-100" : "opacity-0")} />
+                            <span className="flex-1 truncate">{facet.value}</span>
                             {facet.count > 0 && <span className="text-[10px] text-muted-foreground ml-1">({facet.count})</span>}
                           </CommandItem>
                         );

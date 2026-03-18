@@ -2874,6 +2874,192 @@ export type Database = {
           },
         ]
       }
+      lead_property_interactions: {
+        Row: {
+          acao: string
+          canal_envio: string | null
+          corretor_id: string
+          created_at: string | null
+          feedback_lead: string | null
+          id: string
+          lead_id: string
+          motivo_descarte: string | null
+          notas: string | null
+          property_code: string
+        }
+        Insert: {
+          acao: string
+          canal_envio?: string | null
+          corretor_id: string
+          created_at?: string | null
+          feedback_lead?: string | null
+          id?: string
+          lead_id: string
+          motivo_descarte?: string | null
+          notas?: string | null
+          property_code: string
+        }
+        Update: {
+          acao?: string
+          canal_envio?: string | null
+          corretor_id?: string
+          created_at?: string | null
+          feedback_lead?: string | null
+          id?: string
+          lead_id?: string
+          motivo_descarte?: string | null
+          notas?: string | null
+          property_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_property_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_property_profiles: {
+        Row: {
+          aceita_financiamento: boolean | null
+          area_max: number | null
+          area_min: number | null
+          bairros: string[] | null
+          created_at: string | null
+          created_by: string | null
+          dormitorios_min: number | null
+          id: string
+          itens_desejaveis: string[] | null
+          itens_obrigatorios: string[] | null
+          lead_id: string
+          momento_compra: string | null
+          objetivo: string[] | null
+          observacoes: string | null
+          possui_imovel_troca: boolean | null
+          regioes: string[] | null
+          rejeicoes: string[] | null
+          renda_familiar: number | null
+          suites_min: number | null
+          tipos: string[] | null
+          updated_at: string | null
+          urgencia: string | null
+          vagas_min: number | null
+          valor_ideal: number | null
+          valor_max: number | null
+          valor_min: number | null
+        }
+        Insert: {
+          aceita_financiamento?: boolean | null
+          area_max?: number | null
+          area_min?: number | null
+          bairros?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          dormitorios_min?: number | null
+          id?: string
+          itens_desejaveis?: string[] | null
+          itens_obrigatorios?: string[] | null
+          lead_id: string
+          momento_compra?: string | null
+          objetivo?: string[] | null
+          observacoes?: string | null
+          possui_imovel_troca?: boolean | null
+          regioes?: string[] | null
+          rejeicoes?: string[] | null
+          renda_familiar?: number | null
+          suites_min?: number | null
+          tipos?: string[] | null
+          updated_at?: string | null
+          urgencia?: string | null
+          vagas_min?: number | null
+          valor_ideal?: number | null
+          valor_max?: number | null
+          valor_min?: number | null
+        }
+        Update: {
+          aceita_financiamento?: boolean | null
+          area_max?: number | null
+          area_min?: number | null
+          bairros?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          dormitorios_min?: number | null
+          id?: string
+          itens_desejaveis?: string[] | null
+          itens_obrigatorios?: string[] | null
+          lead_id?: string
+          momento_compra?: string | null
+          objetivo?: string[] | null
+          observacoes?: string | null
+          possui_imovel_troca?: boolean | null
+          regioes?: string[] | null
+          rejeicoes?: string[] | null
+          renda_familiar?: number | null
+          suites_min?: number | null
+          tipos?: string[] | null
+          updated_at?: string | null
+          urgencia?: string | null
+          vagas_min?: number | null
+          valor_ideal?: number | null
+          valor_max?: number | null
+          valor_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_property_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_property_searches: {
+        Row: {
+          corretor_id: string
+          created_at: string | null
+          filters: Json | null
+          id: string
+          lead_id: string
+          query_text: string | null
+          result_codes: string[] | null
+          sort_by: string | null
+          total_results: number | null
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          lead_id: string
+          query_text?: string | null
+          result_codes?: string[] | null
+          sort_by?: string | null
+          total_results?: number | null
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string | null
+          filters?: Json | null
+          id?: string
+          lead_id?: string
+          query_text?: string | null
+          result_codes?: string[] | null
+          sort_by?: string | null
+          total_results?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_property_searches_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_tasks: {
         Row: {
           concluida_em: string | null
@@ -5541,6 +5727,260 @@ export type Database = {
           telefone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          aceita_financiamento: boolean | null
+          andar: number | null
+          area_privativa: number | null
+          area_total: number | null
+          ativo: boolean | null
+          bairro: string | null
+          banheiros: number | null
+          campanha_ativa: string | null
+          cep: string | null
+          cidade: string | null
+          codigo: string
+          comissao_percentual: number | null
+          construtora: string | null
+          contrato: string | null
+          created_at: string | null
+          descricao: string | null
+          dormitorios: number | null
+          empreendimento: string | null
+          endereco: string | null
+          estado: string | null
+          estoque_status: string | null
+          features: Json | null
+          finalidade: string[] | null
+          fotos: string[] | null
+          fotos_full: string[] | null
+          id: string
+          inativado_at: string | null
+          is_destaque: boolean | null
+          is_exclusivo: boolean | null
+          is_mcmv: boolean | null
+          is_uhome: boolean | null
+          jetimob_id: string | null
+          jetimob_raw: Json | null
+          latitude: number | null
+          longitude: number | null
+          numero: string | null
+          peso_comercial: number | null
+          posicao_solar: string | null
+          regiao: string | null
+          situacao: string | null
+          suites: number | null
+          sync_hash: string | null
+          synced_at: string | null
+          tags: string[] | null
+          tipo: string | null
+          titulo: string | null
+          tour_virtual_url: string | null
+          updated_at: string | null
+          vagas: number | null
+          valor_condominio: number | null
+          valor_iptu: number | null
+          valor_locacao: number | null
+          valor_venda: number | null
+          video_url: string | null
+        }
+        Insert: {
+          aceita_financiamento?: boolean | null
+          andar?: number | null
+          area_privativa?: number | null
+          area_total?: number | null
+          ativo?: boolean | null
+          bairro?: string | null
+          banheiros?: number | null
+          campanha_ativa?: string | null
+          cep?: string | null
+          cidade?: string | null
+          codigo: string
+          comissao_percentual?: number | null
+          construtora?: string | null
+          contrato?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          dormitorios?: number | null
+          empreendimento?: string | null
+          endereco?: string | null
+          estado?: string | null
+          estoque_status?: string | null
+          features?: Json | null
+          finalidade?: string[] | null
+          fotos?: string[] | null
+          fotos_full?: string[] | null
+          id?: string
+          inativado_at?: string | null
+          is_destaque?: boolean | null
+          is_exclusivo?: boolean | null
+          is_mcmv?: boolean | null
+          is_uhome?: boolean | null
+          jetimob_id?: string | null
+          jetimob_raw?: Json | null
+          latitude?: number | null
+          longitude?: number | null
+          numero?: string | null
+          peso_comercial?: number | null
+          posicao_solar?: string | null
+          regiao?: string | null
+          situacao?: string | null
+          suites?: number | null
+          sync_hash?: string | null
+          synced_at?: string | null
+          tags?: string[] | null
+          tipo?: string | null
+          titulo?: string | null
+          tour_virtual_url?: string | null
+          updated_at?: string | null
+          vagas?: number | null
+          valor_condominio?: number | null
+          valor_iptu?: number | null
+          valor_locacao?: number | null
+          valor_venda?: number | null
+          video_url?: string | null
+        }
+        Update: {
+          aceita_financiamento?: boolean | null
+          andar?: number | null
+          area_privativa?: number | null
+          area_total?: number | null
+          ativo?: boolean | null
+          bairro?: string | null
+          banheiros?: number | null
+          campanha_ativa?: string | null
+          cep?: string | null
+          cidade?: string | null
+          codigo?: string
+          comissao_percentual?: number | null
+          construtora?: string | null
+          contrato?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          dormitorios?: number | null
+          empreendimento?: string | null
+          endereco?: string | null
+          estado?: string | null
+          estoque_status?: string | null
+          features?: Json | null
+          finalidade?: string[] | null
+          fotos?: string[] | null
+          fotos_full?: string[] | null
+          id?: string
+          inativado_at?: string | null
+          is_destaque?: boolean | null
+          is_exclusivo?: boolean | null
+          is_mcmv?: boolean | null
+          is_uhome?: boolean | null
+          jetimob_id?: string | null
+          jetimob_raw?: Json | null
+          latitude?: number | null
+          longitude?: number | null
+          numero?: string | null
+          peso_comercial?: number | null
+          posicao_solar?: string | null
+          regiao?: string | null
+          situacao?: string | null
+          suites?: number | null
+          sync_hash?: string | null
+          synced_at?: string | null
+          tags?: string[] | null
+          tipo?: string | null
+          titulo?: string | null
+          tour_virtual_url?: string | null
+          updated_at?: string | null
+          vagas?: number | null
+          valor_condominio?: number | null
+          valor_iptu?: number | null
+          valor_locacao?: number | null
+          valor_venda?: number | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      property_price_history: {
+        Row: {
+          campo: string
+          created_at: string | null
+          id: string
+          property_id: string
+          valor_anterior: number | null
+          valor_novo: number | null
+          variacao_pct: number | null
+        }
+        Insert: {
+          campo: string
+          created_at?: string | null
+          id?: string
+          property_id: string
+          valor_anterior?: number | null
+          valor_novo?: number | null
+          variacao_pct?: number | null
+        }
+        Update: {
+          campo?: string
+          created_at?: string | null
+          id?: string
+          property_id?: string
+          valor_anterior?: number | null
+          valor_novo?: number | null
+          variacao_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_price_history_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_sync_log: {
+        Row: {
+          atualizados: number | null
+          detalhes: Json | null
+          duracao_ms: number | null
+          erros: number | null
+          finished_at: string | null
+          id: string
+          inativados: number | null
+          novos: number | null
+          started_at: string | null
+          status: string
+          tipo: string
+          total_api: number | null
+        }
+        Insert: {
+          atualizados?: number | null
+          detalhes?: Json | null
+          duracao_ms?: number | null
+          erros?: number | null
+          finished_at?: string | null
+          id?: string
+          inativados?: number | null
+          novos?: number | null
+          started_at?: string | null
+          status?: string
+          tipo: string
+          total_api?: number | null
+        }
+        Update: {
+          atualizados?: number | null
+          detalhes?: Json | null
+          duracao_ms?: number | null
+          erros?: number | null
+          finished_at?: string | null
+          id?: string
+          inativados?: number | null
+          novos?: number | null
+          started_at?: string | null
+          status?: string
+          tipo?: string
+          total_api?: number | null
         }
         Relationships: []
       }

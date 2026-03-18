@@ -2,8 +2,8 @@
  * useTypesenseFacets — fetches distinct facet values + counts from Typesense.
  *
  * Makes a single lightweight facet-only request on mount for multiple fields
- * (bairro, tipo). Returns sorted lists of { value, count } with hardcoded
- * fallbacks on failure.
+ * (bairro, tipo, construtora, empreendimento, situacao). Returns sorted lists
+ * of { value, count } with hardcoded fallbacks on failure.
  *
  * Cache: session-scoped module-level variables to avoid re-fetching on re-mounts.
  */
@@ -46,6 +46,9 @@ const TIPOS_FALLBACK: Facet[] = [
 // ── Module-level cache ──
 let cachedBairros: Facet[] | null = null;
 let cachedTipos: Facet[] | null = null;
+let cachedConstrutoras: Facet[] | null = null;
+let cachedEmpreendimentos: Facet[] | null = null;
+let cachedSituacoes: Facet[] | null = null;
 
 function parseFacetField(facetCounts: any[], fieldName: string): Facet[] {
   const fc = facetCounts.find((f: any) => f.field_name === fieldName);
@@ -59,6 +62,9 @@ function parseFacetField(facetCounts: any[], fieldName: string): Facet[] {
 export function useTypesenseFacets() {
   const [bairroFacets, setBairroFacets] = useState<Facet[]>(cachedBairros || BAIRROS_FALLBACK);
   const [tipoFacets, setTipoFacets] = useState<Facet[]>(cachedTipos || TIPOS_FALLBACK);
+  const [construtoraFacets, setConstrutoraFacets] = useState<Facet[]>(cachedConstrutoras || []);
+  const [empreendimentoFacets, setEmpreendimentoFacets] = useState<Facet[]>(cachedEmpreendimentos || []);
+  const [situacaoFacets, setSituacaoFacets] = useState<Facet[]>(cachedSituacoes || []);
   const [loading, setLoading] = useState(!cachedBairros);
   const fetched = useRef(!!cachedBairros);
 
@@ -72,7 +78,7 @@ export function useTypesenseFacets() {
           body: {
             q: "*",
             per_page: 0,
-            facet_by: "bairro,tipo",
+            facet_by: "bairro,tipo,construtora,empreendimento,situacao",
             max_facet_values: 200,
           },
         });
@@ -83,16 +89,19 @@ export function useTypesenseFacets() {
         }
 
         const bairros = parseFacetField(data.facet_counts, "bairro");
-        if (bairros.length > 0) {
-          cachedBairros = bairros;
-          setBairroFacets(bairros);
-        }
+        if (bairros.length > 0) { cachedBairros = bairros; setBairroFacets(bairros); }
 
         const tipos = parseFacetField(data.facet_counts, "tipo");
-        if (tipos.length > 0) {
-          cachedTipos = tipos;
-          setTipoFacets(tipos);
-        }
+        if (tipos.length > 0) { cachedTipos = tipos; setTipoFacets(tipos); }
+
+        const construtoras = parseFacetField(data.facet_counts, "construtora");
+        if (construtoras.length > 0) { cachedConstrutoras = construtoras; setConstrutoraFacets(construtoras); }
+
+        const empreendimentos = parseFacetField(data.facet_counts, "empreendimento");
+        if (empreendimentos.length > 0) { cachedEmpreendimentos = empreendimentos; setEmpreendimentoFacets(empreendimentos); }
+
+        const situacoes = parseFacetField(data.facet_counts, "situacao");
+        if (situacoes.length > 0) { cachedSituacoes = situacoes; setSituacaoFacets(situacoes); }
       } catch (err) {
         console.warn("Typesense facets fetch failed, using fallback:", err);
       } finally {
@@ -101,7 +110,7 @@ export function useTypesenseFacets() {
     })();
   }, []);
 
-  return { bairroFacets, tipoFacets, facetsLoading: loading };
+  return { bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets, situacaoFacets, facetsLoading: loading };
 }
 
 // Re-export Facet type as BairroFacet for backward compatibility

@@ -54,13 +54,11 @@ export interface ActiveFilter {
   onRemove: () => void;
 }
 
-export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) {
+export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], construtoraFacets?: Facet[], empreendimentoFacets?: Facet[]) {
   const [searchParams, setSearchParams] = useSearchParams();
   const isInitRef = useRef(true);
 
   // ── Read initial state from URL ──
-  const initSp = isInitRef.current ? searchParams : null;
-
   const [contrato, setContrato] = useState(() => readStr(searchParams, "contrato", DEFAULTS.contrato));
   const [tipo, setTipo] = useState<string[]>(() => readArr(searchParams, "tipo"));
   const [bairro, setBairro] = useState<string[]>(() => readArr(searchParams, "bairro"));
@@ -77,6 +75,12 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) 
     readInt(searchParams, "valor_max", DEFAULTS.valorMax),
   ]);
   const [somenteObras, setSomenteObras] = useState(() => readBool(searchParams, "obras"));
+
+  // ── New filters ──
+  const [construtora, setConstrutora] = useState<string[]>(() => readArr(searchParams, "construtora"));
+  const [construtoraSearch, setConstrutoraSearch] = useState("");
+  const [empreendimento, setEmpreendimento] = useState<string[]>(() => readArr(searchParams, "empreendimento"));
+  const [empreendimentoSearch, setEmpreendimentoSearch] = useState("");
 
   // ── Mode toggles ──
   const [campanhaAtiva, setCampanhaAtiva] = useState(() => readBool(searchParams, "campanha"));
@@ -107,9 +111,11 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) 
     if (sortBy !== DEFAULTS.sortBy) p.set("sort", sortBy);
     if (uhomeOnly) p.set("uhome", "1");
     if (campanhaAtiva) p.set("campanha", "1");
+    if (construtora.length) p.set("construtora", construtora.join(","));
+    if (empreendimento.length) p.set("empreendimento", empreendimento.join(","));
 
     setSearchParams(p, { replace: true });
-  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, setSearchParams]);
+  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, setSearchParams]);
 
   useEffect(() => {
     // Skip URL write on first render (we just read from URL)
@@ -133,6 +139,22 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) 
   // ── Derived: tipoOptions from dynamic facets ──
   const tipoOptions = useMemo(() => tipoFacets || [], [tipoFacets]);
 
+  // ── Derived: construtora options ──
+  const allConstrutoras = useMemo(() => construtoraFacets || [], [construtoraFacets]);
+  const filteredConstrutoras = useMemo(() => {
+    if (!construtoraSearch) return allConstrutoras;
+    const q = construtoraSearch.toLowerCase();
+    return allConstrutoras.filter((c) => c.value.toLowerCase().includes(q));
+  }, [construtoraSearch, allConstrutoras]);
+
+  // ── Derived: empreendimento options ──
+  const allEmpreendimentos = useMemo(() => empreendimentoFacets || [], [empreendimentoFacets]);
+  const filteredEmpreendimentos = useMemo(() => {
+    if (!empreendimentoSearch) return allEmpreendimentos;
+    const q = empreendimentoSearch.toLowerCase();
+    return allEmpreendimentos.filter((e) => e.value.toLowerCase().includes(q));
+  }, [empreendimentoSearch, allEmpreendimentos]);
+
   // ── Active filter tags ──
   const activeFilters: ActiveFilter[] = [];
   if (search) activeFilters.push({ key: "search", label: `"${search}"`, onRemove: () => setSearch("") });
@@ -146,17 +168,20 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) 
   if (somenteObras) activeFilters.push({ key: "obras", label: "Em obras", onRemove: () => setSomenteObras(false) });
   if (uhomeOnly) activeFilters.push({ key: "uhome", label: "uHome", onRemove: () => setUhomeOnly(false) });
   if (campanhaAtiva) activeFilters.push({ key: "campanha", label: "Campanha", onRemove: () => setCampanhaAtiva(false) });
+  if (construtora.length > 0) activeFilters.push({ key: "construtora", label: construtora.join(", "), onRemove: () => setConstrutora([]) });
+  if (empreendimento.length > 0) activeFilters.push({ key: "empreendimento", label: empreendimento.length <= 2 ? empreendimento.join(", ") : `${empreendimento.length} empreend.`, onRemove: () => setEmpreendimento([]) });
 
   const clearAllFilters = () => {
     setTipo([]); setBairro([]); setDormitorios([]); setSuitesFilter(""); setVagas("");
     setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false);
     setSearch(""); setUhomeOnly(false); setCampanhaAtiva(false);
+    setConstrutora([]); setEmpreendimento([]);
   };
 
   // ── Serialized key for change-detection by search hook ──
   const filterKey = useMemo(() =>
-    JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva }),
-    [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva]
+    JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento }),
+    [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento]
   );
 
   return {
@@ -175,9 +200,15 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[]) 
     uhomeOnly, setUhomeOnly,
     search, setSearch,
     sortBy, setSortBy,
+    construtora, setConstrutora,
+    construtoraSearch, setConstrutoraSearch,
+    empreendimento, setEmpreendimento,
+    empreendimentoSearch, setEmpreendimentoSearch,
     // Derived
     filteredBairros,
     tipoOptions,
+    filteredConstrutoras,
+    filteredEmpreendimentos,
     activeFilters,
     clearAllFilters,
     filterKey,
