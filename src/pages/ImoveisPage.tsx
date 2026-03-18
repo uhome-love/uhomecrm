@@ -709,6 +709,7 @@ export default function ImoveisPage() {
               <PropertyMap
                 properties={displayImoveis}
                 loading={loading}
+                onBoundsChange={handleMapBoundsChange}
                 onFavorite={toggleFavorite}
                 favorites={favorites}
                 getPreco={getPreco}
