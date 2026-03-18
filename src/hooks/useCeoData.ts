@@ -138,7 +138,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     for (const t of (allTeam || [])) {
       const canonicalId = t.user_id || t.id; // Prefer auth.user_id
       corretorAggMap.set(canonicalId, {
-        corretor_id: canonicalId, corretor_nome: t.nome, gerente_id: t.gerente_id, gerente_nome: profileMap.get(t.gerente_id) || "Gerente",
+        corretor_id: canonicalId as string, corretor_nome: t.nome, gerente_id: t.gerente_id, gerente_nome: profileMap.get(t.gerente_id) as string || "Gerente",
         meta_ligacoes: 0, real_ligacoes: 0, meta_visitas_marcadas: 0, real_visitas_marcadas: 0,
         meta_visitas_realizadas: 0, real_visitas_realizadas: 0, meta_propostas: 0, real_propostas: 0,
         meta_vgv_gerado: 0, real_vgv_gerado: 0, meta_vgv_assinado: 0, real_vgv_assinado: 0, score: 0,
