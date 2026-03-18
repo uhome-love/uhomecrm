@@ -312,7 +312,7 @@ const PipelineCard = memo(function PipelineCard({
                 LAS_CASAS: { label: "🏡 Las Casas", color: "text-amber-600 dark:text-amber-400 bg-amber-500/10" },
                 ORYGEM: { label: "✨ Orygem", color: "text-cyan-600 dark:text-cyan-400 bg-cyan-500/10" },
                 HIGH_GARDEN_IGUATEMI: { label: "🌿 High Garden", color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" },
-                SEEN_TRES_FIGUEIRAS: { label: "👁 Seen", color: "text-violet-600 dark:text-violet-400 bg-violet-500/10" },
+                SEEN_TRES_FIGUEIRAS: { label: "👁 Seen Três Figueiras", color: "text-violet-600 dark:text-violet-400 bg-violet-500/10" },
                 ALTO_LINDOIA: { label: "🏔 Alto Lindóia", color: "text-sky-600 dark:text-sky-400 bg-sky-500/10" },
                 SHIFT: { label: "⚡ Shift", color: "text-slate-600 dark:text-slate-400 bg-slate-500/10" },
                 CASA_BASTIAN: { label: "🏰 Casa Bastian", color: "text-rose-600 dark:text-rose-400 bg-rose-500/10" },

@@ -199,8 +199,33 @@ Deno.serve(async (req) => {
       if (!externalLeadId) externalLeadId = extractStr(body.lead_id) || extractStr(body.leadgen_id) || extractStr(body.id);
     }
 
-    // Use Meta form ID as fallback
-    if (!formName && metaFormId) formName = metaFormId;
+    // ── Map known Meta form IDs to human-readable names ──
+    const META_FORM_ID_MAP: Record<string, string> = {
+      "960687922961852": "Seen Três Figueiras (Imagem)",
+      "1162388785694311": "Casa Bastian (Imagem)",
+      "1193321542872133": "Shift (Video Gabriel)",
+      "1407341861064013": "Open Bosque (Video Lucas)",
+      "1593024068412518": "Melnick Day Alto Padrão (Video Gabrielle)",
+      "1800577237319392": "Shift (Imagem)",
+      "1877406309585794": "Melnick Day Médio Padrão (Video Bruno)",
+      "2055662701942686": "Lake Eyre (Video Lucas)",
+      "3325414164266311": "Casa Tua",
+      "895837159874711": "Melnick Day Compactos (Video Gabriel)",
+      "897551219671969": "Las Casas (Imagem)",
+      "900345566146636": "High Garden Iguatemi",
+      "945021998283301": "High Garden Iguatemi (Imagem)",
+      "921991273926020": "Orygem (Vídeo Gabrielle)",
+      "924855113517986": "Las Casas (Video Gabrielle)",
+      "966583865699014": "Orygem (Vídeo Lucas)",
+    };
+
+    // Resolve form name from ID map, then fallback to raw ID
+    if (!formName && metaFormId) {
+      formName = META_FORM_ID_MAP[metaFormId] || metaFormId;
+    }
+    if (formName && META_FORM_ID_MAP[formName]) {
+      formName = META_FORM_ID_MAP[formName];
+    }
 
     const telefone = normalizePhone(phone);
     const isTestLead = isLikelyTestLead(name, email, message);
