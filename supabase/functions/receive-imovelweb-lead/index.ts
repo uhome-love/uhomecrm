@@ -44,6 +44,15 @@ function normalizePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 10) return null;
+  // Handle concatenated phones: if too long, take first valid phone (10-11 digits, optionally with 55 prefix)
+  if (digits.length > 13) {
+    // Try to extract first valid Brazilian phone (with or without country code)
+    const match = digits.match(/^(55)?(\d{10,11})/);
+    if (match) {
+      return match[2]; // return without country code
+    }
+    return null;
+  }
   if (digits.startsWith("55") && digits.length >= 12) return digits.slice(2);
   return digits;
 }
