@@ -602,6 +602,7 @@ export default function CeoDashboard() {
             prev={prevKpis?.ligacoes}
             iconColor="text-blue-600"
             ceoMeta={ceoMetasConsolidadas.meta_ligacoes || null}
+            onClick={() => setKpiDetail({ type: "tentativas", label: "Nº Tentativas" })}
           />
           <KpiCard
             icon={ThumbsUp}
