@@ -38,6 +38,7 @@ export default function ImoveisPage() {
   const { user } = useAuth();
   const { searchWithAI, clearAISearch, removeTag, aiLoading, aiResult, aiError, aiProperties, aiTotal, aiSearchTime } = useAISearch();
   const { leadId, leadNome, hasLeadContext, trackEvent } = useLeadContext();
+  const { profile: leadProfile } = useLeadPropertyProfile(leadId);
 
   // ── Dynamic facets ──
   const { bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets } = useTypesenseFacets();
