@@ -116,9 +116,10 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
     if (campanhaAtiva) p.set("campanha", "1");
     if (construtora.length) p.set("construtora", construtora.join(","));
     if (empreendimento.length) p.set("empreendimento", empreendimento.join(","));
+    if (situacao.length) p.set("situacao", situacao.join(","));
 
     setSearchParams(p, { replace: true });
-  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, setSearchParams]);
+  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, setSearchParams]);
 
   useEffect(() => {
     // Skip URL write on first render (we just read from URL)
