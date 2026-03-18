@@ -341,7 +341,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           });
         }
         teamDataArr.push({
-          gerente_id: gId, gerente_nome: gerenteNome,
+          gerente_id: gId as string, gerente_nome: gerenteNome as string,
           ligacoes: tLig, aproveitados: tAprov, taxa: tLig > 0 ? Math.round((tAprov / tLig) * 100) : 0,
           visitasMarcadas: tVM, visitasRealizadas: tVR, propostas: tProp, vgv: tVgv,
         });

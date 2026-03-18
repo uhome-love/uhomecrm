@@ -231,7 +231,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
       if (g) {
         g.totals.real_vgv_gerado = pdn.gerado;
         g.totals.real_vgv_assinado = pdn.assinado;
-        g.totals.meta_vgv_assinado = metaVgvMap.get(gId) || 0;
+        g.totals.meta_vgv_assinado = (metaVgvMap.get(gId) || 0) as number;
         // Override checkpoint propostas with PDN count (single source of truth)
         g.totals.real_propostas = pdn.propostas_count;
       }
