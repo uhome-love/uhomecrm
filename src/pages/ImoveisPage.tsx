@@ -79,23 +79,6 @@ export default function ImoveisPage() {
   const openPreview = (item: any) => { setPreviewItem(item); setPreviewOpen(true); };
   const closePreview = () => setPreviewOpen(false);
 
-  // ── Map bounds → geo-radius ──
-  const mapSearchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleMapBoundsChange = useCallback((bounds: MapBounds) => {
-    const lat = (bounds.north + bounds.south) / 2;
-    const lng = (bounds.east + bounds.west) / 2;
-    // Haversine-approximate radius from center to corner
-    const dLat = ((bounds.north - bounds.south) / 2) * 111.32;
-    const dLng = ((bounds.east - bounds.west) / 2) * 111.32 * Math.cos(lat * Math.PI / 180);
-    const radiusKm = Math.max(0.5, Math.sqrt(dLat * dLat + dLng * dLng));
-    setGeoRadius({ lat, lng, radiusKm: Math.round(radiusKm * 10) / 10 });
-    // Debounce the re-fetch
-    if (mapSearchDebounce.current) clearTimeout(mapSearchDebounce.current);
-    mapSearchDebounce.current = setTimeout(() => {
-      fetchRef.current(1);
-    }, 600);
-  }, [fetchRef]);
-
   // ── Search ──
   const {
     loading, fetchError, page, totalPages, total, searchTimeMs, sortedImoveis,
