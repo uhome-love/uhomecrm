@@ -669,6 +669,15 @@ export default function ImoveisPage() {
               >
                 <Building2 className="h-3 w-3" /> uHome
               </button>
+              <button
+                onClick={() => setLeadSearchOpen(true)}
+                className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
+                  leadMatch.hasMatch ? "bg-primary/10 border-primary/30 text-primary" : "bg-background border-border text-muted-foreground hover:border-primary/40"
+                )}
+              >
+                <Users className="h-3 w-3" /> Match Lead
+              </button>
             </div>
           </div>
         </div>
