@@ -124,8 +124,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         supabase.from("profiles").select("id, nome, avatar_gamificado_url").in("id", ids),
         supabase.from("roleta_segmentos").select("id, nome"),
       ]);
-      const pm = new Map(profs?.map(p => [p.id, p]) || []);
-      const sm = new Map(segs?.map(s => [s.id, s.nome]) || []);
+      const pm = new Map((profs as any[])?.map((p: any) => [p.id, p]) || []);
+      const sm = new Map((segs as any[])?.map((s: any) => [s.id, s.nome]) || []);
       return creds.map(c => ({
         ...c,
         corretor_nome: c.corretor_id ? pm.get(c.corretor_id)?.nome || "Corretor" : "Corretor",
