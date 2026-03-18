@@ -249,7 +249,7 @@ export function useRelatorioExecutivo(period: PeriodRange) {
 
       // Negócios
       let negQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, created_at").gte("created_at", s).lte("created_at", e).limit(10000);
-      let prevNegQ = supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase").gte("created_at", ps).lte("created_at", pe);
+      let prevNegQ = supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase").gte("created_at", ps).lte("created_at", pe).limit(10000);
       // Negocios uses corretor_id (profile_id) and auth_user_id
       if (scopeProfileIds) {
         const orParts = [
