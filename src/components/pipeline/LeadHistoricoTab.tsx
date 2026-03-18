@@ -90,6 +90,7 @@ function getOrigemLabel(origem: string | null | undefined): { emoji: string; lab
   if (o.includes("site") || o.includes("uhome")) return { emoji: "🌐", label: "Site" };
   if (o.includes("indicacao") || o.includes("indicação")) return { emoji: "🤝", label: "Indicação" };
   if (o.includes("jetimob")) return { emoji: "🏢", label: "Jetimob" };
+  if (o.includes("imovelweb")) return { emoji: "🏠", label: "ImovelWeb" };
   return { emoji: "📍", label: origem };
 }
 
