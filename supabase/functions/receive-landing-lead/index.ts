@@ -143,7 +143,10 @@ Deno.serve(async (req) => {
         segmentoFromMap = mapRow.segmento;
       }
     }
-    if (!empreendimento) empreendimento = "Avulso - Landing Page";
+    if (!empreendimento) {
+      const isMelnick = source?.toLowerCase().includes("melnick_day") || source?.toLowerCase().includes("melnick-day");
+      empreendimento = isMelnick ? "Melnick Day 2026" : "Avulso - Landing Page";
+    }
 
     // ── Dedup by phone (including permanent registry) ──
     if (telefone) {
