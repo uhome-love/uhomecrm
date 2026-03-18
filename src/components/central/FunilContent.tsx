@@ -101,10 +101,10 @@ export default function FunilContent() {
     const by_corretor: AggregatedData["by_corretor"] = {};
     let totals = { leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
 
-    for (const l of lines) {
-      const nome = teamMap.get(l.corretor_id) || "Desconhecido";
-      if (!by_corretor[l.corretor_id]) {
-        by_corretor[l.corretor_id] = { nome, leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
+    for (const l of lines as any[]) {
+      const nome = teamMap.get(l.corretor_id) as string || "Desconhecido";
+      if (!by_corretor[l.corretor_id as string]) {
+        by_corretor[l.corretor_id as string] = { nome, leads: 0, ligacoes: 0, visitas_marcadas: 0, visitas_realizadas: 0, propostas: 0, vgv_gerado: 0, vgv_assinado: 0 };
       }
       const c = by_corretor[l.corretor_id];
       const vals = { leads: l.real_leads || 0, ligacoes: l.real_ligacoes || 0, visitas_marcadas: l.real_visitas_marcadas || 0, visitas_realizadas: l.real_visitas_realizadas || 0, propostas: l.real_propostas || 0 };

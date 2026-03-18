@@ -279,12 +279,12 @@ export function useRoleta() {
       .from("profiles")
       .select("id, nome, avatar_url")
       .in("id", userIds);
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const profileMap = new Map((profiles as any[])?.map((p: any) => [p.id, p]) || []);
 
     setCredenciamentos(creds.map(c => ({
       ...c,
-      corretor_nome: c.corretor_id ? profileMap.get(c.corretor_id)?.nome || "Corretor" : "Corretor",
-      corretor_avatar: c.corretor_id ? profileMap.get(c.corretor_id)?.avatar_url || null : null,
+      corretor_nome: c.corretor_id ? (profileMap.get(c.corretor_id) as any)?.nome || "Corretor" : "Corretor",
+      corretor_avatar: c.corretor_id ? (profileMap.get(c.corretor_id) as any)?.avatar_url || null : null,
     })));
   }, [hoje]);
 
@@ -346,8 +346,8 @@ export function useRoleta() {
     const enriched = filaData.map(f => ({
       ...f,
       leads_recebidos: f.corretor_id ? profileLeadCount.get(f.corretor_id) ?? (f.leads_recebidos || 0) : 0,
-      corretor_nome: f.corretor_id ? profileMap.get(f.corretor_id)?.nome || "Corretor" : "Corretor",
-      corretor_avatar: f.corretor_id ? profileMap.get(f.corretor_id)?.avatar_url || null : null,
+      corretor_nome: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.nome || "Corretor" : "Corretor",
+      corretor_avatar: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.avatar_url || null : null,
     }));
 
     // Sort by leads_recebidos ascending (fewer leads = higher priority = top of list)

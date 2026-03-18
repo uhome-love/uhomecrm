@@ -79,7 +79,7 @@ export default function MinhaAgendaWidget() {
           .from("pipeline_leads")
           .select("id, nome, telefone, empreendimento")
           .in("id", leadIds);
-        const leadMap = new Map((leads || []).map(l => [l.id, l]));
+        const leadMap = new Map((leads as any[] || []).map(l => [l.id, l]));
         rows.forEach(r => {
           const lead = leadMap.get(r.pipeline_lead_id);
           if (lead) { r.lead_nome = lead.nome; r.lead_telefone = lead.telefone; r.lead_empreendimento = lead.empreendimento; }
@@ -112,7 +112,7 @@ export default function MinhaAgendaWidget() {
           .from("negocios")
           .select("id, nome_cliente")
           .in("id", negIds);
-        const negMap = new Map((negs || []).map(n => [n.id, n]));
+        const negMap = new Map((negs as any[] || []).map(n => [n.id, n]));
         rows.forEach(r => {
           const neg = negMap.get(r.negocio_id);
           if (neg) { r.negocio_nome = neg.nome_cliente; }

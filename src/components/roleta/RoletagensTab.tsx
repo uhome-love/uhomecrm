@@ -185,9 +185,9 @@ export default function RoletagensTab({ view = "all" }: { view?: "all" | "roleta
           pSegIds.length > 0 ? supabase.from("pipeline_segmentos").select("id, nome").in("id", pSegIds) : { data: [] },
         ]);
 
-        const profMap2 = new Map((profs.data || []).map(p => [p.user_id, p.nome]));
-        const leadMap = new Map((leadsData.data || []).map(l => [l.id, l]));
-        const segMap2 = new Map((segs.data || []).map(s => [s.id, s.nome]));
+        const profMap2 = new Map(((profs.data || []) as any[]).map((p: any) => [p.user_id, p.nome]));
+        const leadMap = new Map(((leadsData.data || []) as any[]).map((l: any) => [l.id, l]));
+        const segMap2 = new Map(((segs.data || []) as any[]).map((s: any) => [s.id, s.nome]));
 
         setLeadsPerdidos(perdidos.map(p => {
           const lead = leadMap.get(p.pipeline_lead_id);

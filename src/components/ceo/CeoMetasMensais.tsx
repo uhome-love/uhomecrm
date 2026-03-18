@@ -76,9 +76,9 @@ export default function CeoMetasMensais() {
       return {
         gerente_id: gId,
         gerente_nome: profileMap.get(gId) || "Gerente",
-        meta_vgv_assinado: Number(meta?.meta_vgv_assinado ?? 0),
-        meta_visitas_marcadas: Number(meta?.meta_visitas_marcadas ?? 0),
-        meta_visitas_realizadas: Number(meta?.meta_visitas_realizadas ?? 0),
+        meta_vgv_assinado: Number((meta as any)?.meta_vgv_assinado ?? 0),
+        meta_visitas_marcadas: Number((meta as any)?.meta_visitas_marcadas ?? 0),
+        meta_visitas_realizadas: Number((meta as any)?.meta_visitas_realizadas ?? 0),
         real_vgv_assinado: realVgv,
         real_visitas_marcadas: visitas.vmarc,
         real_visitas_realizadas: visitas.vreal,

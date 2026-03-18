@@ -1,6 +1,18 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+
+interface User {
+  id: string;
+  email?: string;
+  [key: string]: any;
+}
+
+interface Session {
+  access_token: string;
+  refresh_token: string;
+  user: User;
+  [key: string]: any;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -19,13 +31,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((_event: string, session: any) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    (supabase.auth as any).getSession().then(({ data: { session } }: any) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -35,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, nome: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { error } = await (supabase.auth as any).signUp({
       email,
       password,
       options: {
@@ -47,12 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await (supabase.auth as any).signInWithPassword({ email, password });
     return { error };
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await (supabase.auth as any).signOut();
   }, []);
 
   return (

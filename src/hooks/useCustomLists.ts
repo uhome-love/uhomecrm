@@ -128,7 +128,7 @@ export async function resolveCustomListLeads(
     if (!filtros.fontes.includes("perdidos") && !filtros.fontes.includes("pos_venda")) {
       filtered = filtered.filter(l => {
         const stage = stageMap.get(l.stage_id);
-        return stage && allowedPipelineTypes.includes(stage.pipeline_tipo);
+        return stage && allowedPipelineTypes.includes((stage as any).pipeline_tipo);
       });
     }
   }

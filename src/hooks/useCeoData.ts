@@ -94,12 +94,12 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     
     // Even with no checkpoints, still load PDN data
     // Get gerente IDs from either checkpoints or the filter
-    let gerenteIds: string[] = gerenteIdsFromCps;
+    let gerenteIds: string[] = gerenteIdsFromCps as string[];
     if (gerenteIds.length === 0 && filterGerenteId) {
       gerenteIds = [filterGerenteId];
     } else if (gerenteIds.length === 0) {
       // Get all gestores
-      const gestorIds = Array.from(gerenteUserIds);
+      const gestorIds = Array.from(gerenteUserIds) as string[];
       gerenteIds = gestorIds;
     }
     
@@ -126,7 +126,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     for (const gId of gerenteIdsAll) {
       gerenteMap.set(gId, {
         gerente_id: gId,
-        gerente_nome: profileMap.get(gId) || "Gerente",
+        gerente_nome: profileMap.get(gId) as string || "Gerente",
         corretores: [],
         totals: { meta_ligacoes: 0, real_ligacoes: 0, meta_visitas_marcadas: 0, real_visitas_marcadas: 0, meta_visitas_realizadas: 0, real_visitas_realizadas: 0, meta_propostas: 0, real_propostas: 0, meta_vgv_gerado: 0, real_vgv_gerado: 0, meta_vgv_assinado: 0, real_vgv_assinado: 0, score: 0 },
       });
@@ -138,7 +138,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
     for (const t of (allTeam || [])) {
       const canonicalId = t.user_id || t.id; // Prefer auth.user_id
       corretorAggMap.set(canonicalId, {
-        corretor_id: canonicalId, corretor_nome: t.nome, gerente_id: t.gerente_id, gerente_nome: profileMap.get(t.gerente_id) || "Gerente",
+        corretor_id: canonicalId as string, corretor_nome: t.nome, gerente_id: t.gerente_id, gerente_nome: profileMap.get(t.gerente_id) as string || "Gerente",
         meta_ligacoes: 0, real_ligacoes: 0, meta_visitas_marcadas: 0, real_visitas_marcadas: 0,
         meta_visitas_realizadas: 0, real_visitas_realizadas: 0, meta_propostas: 0, real_propostas: 0,
         meta_vgv_gerado: 0, real_vgv_gerado: 0, meta_vgv_assinado: 0, real_vgv_assinado: 0, score: 0,
@@ -231,7 +231,7 @@ export function useCeoData(period: CeoPeriod, customStart?: string, customEnd?: 
       if (g) {
         g.totals.real_vgv_gerado = pdn.gerado;
         g.totals.real_vgv_assinado = pdn.assinado;
-        g.totals.meta_vgv_assinado = metaVgvMap.get(gId) || 0;
+        g.totals.meta_vgv_assinado = (metaVgvMap.get(gId) || 0) as number;
         // Override checkpoint propostas with PDN count (single source of truth)
         g.totals.real_propostas = pdn.propostas_count;
       }

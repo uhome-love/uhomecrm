@@ -742,7 +742,7 @@ export default function MegaCyrela() {
                   onClick={async () => {
                     setCreatingVitrine(true);
                     try {
-                      const { data: { user } } = await supabase.auth.getUser();
+                      const { data: { user } } = await (supabase.auth as any).getUser();
                       if (!user) { toast.error("Faça login"); return; }
                       // Convert relative image paths to absolute URLs so they work on the public vitrine domain
                       const origin = "https://uhomeia.lovable.app";

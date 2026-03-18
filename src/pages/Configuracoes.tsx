@@ -174,7 +174,7 @@ export default function Configuracoes() {
 
     setChangingPassword(true);
 
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await (supabase.auth as any).updateUser({ password: newPassword });
 
     if (error) {
       toast.error("Erro ao trocar senha: " + error.message);

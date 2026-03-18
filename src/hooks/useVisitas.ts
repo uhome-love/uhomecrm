@@ -200,8 +200,8 @@ export function useVisitas(filters?: {
         }
 
         rows.forEach((r) => {
-          r.corretor_nome = nameMap.get(r.corretor_id) || undefined;
-          r.equipe = equipeMap.get(r.corretor_id) || (r.gerente_id ? gerenteNameMap.get(r.gerente_id) : undefined) || undefined;
+          r.corretor_nome = nameMap.get(r.corretor_id) as string || undefined;
+          r.equipe = (equipeMap.get(r.corretor_id) as string) || (r.gerente_id ? gerenteNameMap.get(r.gerente_id) as string : undefined) || undefined;
         });
       }
 

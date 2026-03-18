@@ -68,7 +68,7 @@ export default function RankingOfertaAtiva() {
 
   const uniqueTeams = useMemo(() => {
     const teams = new Set<string>();
-    Object.values(teamMembersMap).forEach(t => teams.add(t));
+    Object.values(teamMembersMap).forEach(t => teams.add(t as string));
     return [...teams].sort();
   }, [teamMembersMap]);
 

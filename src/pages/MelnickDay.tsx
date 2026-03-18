@@ -1017,7 +1017,7 @@ export default function MelnickDay() {
                 onClick={async () => {
                   setCreatingVitrine(true);
                   try {
-                    const { data: { user } } = await supabase.auth.getUser();
+                    const { data: { user } } = await (supabase.auth as any).getUser();
                     if (!user) {
                       toast.error("Faça login para criar uma vitrine");
                       return;

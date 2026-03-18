@@ -506,7 +506,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
 
     const leadEmp = leadData?.empreendimento || "";
     const scored = allResults.map(item => {
-      const { score, justificativas } = scoreProperty(scoringProfile, item, activeObjecoes, leadEmp, discardedCodes);
+      const { score, justificativas } = scoreProperty(scoringProfile, item, activeObjecoes, leadEmp, discardedCodes as Set<string>);
       return { ...item, score, justificativas };
     });
     scored.sort((a, b) => b.score - a.score);
@@ -565,7 +565,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
             imagem: doc.fotos?.[0] || doc.foto_principal || "", tipo: doc.tipo || "",
             score: 0, source: "typesense", justificativas: ["🤖 Sugestão IA"],
           };
-          const { score, justificativas } = scoreProperty(scoringProfile, item, activeObjecoes, leadData?.empreendimento || "", discardedCodes);
+          const { score, justificativas } = scoreProperty(scoringProfile, item, activeObjecoes, leadData?.empreendimento || "", discardedCodes as Set<string>);
           return { ...item, score, justificativas: [...item.justificativas, ...justificativas] };
         });
         const existingKeys = new Set(results.map(r => normalize(r.nome || `${r.id}`)));

@@ -101,7 +101,7 @@ export default function DevAIPage() {
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await (supabase.auth as any).getSession();
       if (!session?.access_token) { toast.error("Sessão expirada"); return; }
 
       const response = await fetch(

@@ -90,9 +90,9 @@ export default function VisitasEquipe() {
 
   // Build corretor color map
   const corretorColors = useMemo(() => {
-    const names = [...new Set(teamVisitas.map(v => v.corretor_nome))];
+    const names = [...new Set(teamVisitas.map(v => v.corretor_nome))] as string[];
     const map = new Map<string, string>();
-    names.forEach((n, i) => map.set(n, CORRETOR_COLORS[i % CORRETOR_COLORS.length]));
+    names.forEach((n: string, i: number) => map.set(n, CORRETOR_COLORS[i % CORRETOR_COLORS.length]));
     return map;
   }, [teamVisitas]);
 
@@ -130,10 +130,10 @@ export default function VisitasEquipe() {
       {/* Corretor legend */}
       {corretorList.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
-          {corretorList.map(name => (
-            <div key={name} className="flex items-center gap-1.5">
-              <div className={cn("h-3 w-3 rounded-full", corretorColors.get(name)?.replace("border-l-", "bg-"))} />
-              <span className="text-xs text-muted-foreground">{name.split(" ")[0]}</span>
+          {(corretorList as string[]).map((name: string) => (
+            <div key={name as string} className="flex items-center gap-1.5">
+              <div className={cn("h-3 w-3 rounded-full", corretorColors.get(name as string)?.replace("border-l-", "bg-"))} />
+              <span className="text-xs text-muted-foreground">{(name as string).split(" ")[0]}</span>
             </div>
           ))}
         </div>

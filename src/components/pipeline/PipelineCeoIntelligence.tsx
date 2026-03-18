@@ -98,7 +98,7 @@ export default function PipelineCeoIntelligence({ leads, stages, corretorNomes, 
       // Get phone numbers
       const corretorIds = [...byCorretor.keys()];
       const { data: profiles } = await supabase.from("profiles").select("user_id, nome, telefone").in("user_id", corretorIds);
-      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+      const profileMap = new Map((profiles as any[] || []).map((p: any) => [p.user_id, p]));
 
       let enviados = 0;
       const destinatarios: any[] = [];

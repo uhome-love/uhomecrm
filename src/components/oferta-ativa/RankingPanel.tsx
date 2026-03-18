@@ -70,10 +70,10 @@ export default function RankingPanel({ darkMode = false }: RankingPanelProps) {
 
   const streakWinner = useMemo(() => {
     if (!streaks) return null;
-    const entries = Object.entries(streaks).filter(([, v]) => v >= 2);
+    const entries = Object.entries(streaks).filter(([, v]) => (v as number) >= 2);
     if (entries.length === 0) return null;
-    entries.sort((a, b) => b[1] - a[1]);
-    return { corretor_id: entries[0][0], streak: entries[0][1] };
+    entries.sort((a, b) => (b[1] as number) - (a[1] as number));
+    return { corretor_id: entries[0][0], streak: entries[0][1] as number };
   }, [streaks]);
 
   const getMedalIcon = (pos: number) => {

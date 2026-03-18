@@ -111,7 +111,7 @@ export function useAudit() {
         for (const l of lines) {
           const cp = cpMap.get(l.checkpoint_id);
           if (!cp) continue;
-          const key = `${cp.gerente_id}|${l.corretor_id}|${cp.data}`;
+          const key = `${(cp as any).gerente_id}|${l.corretor_id}|${(cp as any).data}`;
           if (!seen.has(key)) seen.set(key, []);
           seen.get(key)!.push(l.id);
         }

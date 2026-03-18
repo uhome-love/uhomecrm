@@ -1,9 +1,12 @@
 /**
  * Type compatibility augmentations.
- * Uses proper module augmentation (not replacement) to add missing types.
+ * 
+ * 1. Override SupabaseClient.from() to return `any` — bypasses the
+ *    PostgrestVersion: "14.1" that forces `unknown` returns.
+ * 2. Add missing auth methods to SupabaseAuthClient.
+ * 3. Fix keepPreviousData export.
  */
 
-// Must be a module for augmentation to work
 export {};
 
 declare module "@supabase/supabase-js" {
@@ -28,10 +31,18 @@ declare module "@supabase/supabase-js" {
     [key: string]: any;
   }
 
-  // Fix SupabaseAuthClient missing methods
+  interface SupabaseClient {
+    from(relation: string): any;
+  }
+
   interface SupabaseAuthClient {
     getSession(): Promise<{ data: { session: Session | null }; error: any }>;
-    getUser(): Promise<{ data: { user: User | null }; error: any }>;
+    getUser(jwt?: string): Promise<{ data: { user: User | null }; error: any }>;
+    onAuthStateChange(callback: (event: string, session: Session | null) => void): { data: { subscription: { unsubscribe: () => void } } };
+    signUp(credentials: any): Promise<{ data: any; error: any }>;
+    signInWithPassword(credentials: any): Promise<{ data: any; error: any }>;
+    signOut(): Promise<{ error: any }>;
+    updateUser(attributes: any): Promise<{ data: any; error: any }>;
   }
 }
 

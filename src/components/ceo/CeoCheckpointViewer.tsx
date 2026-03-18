@@ -152,7 +152,7 @@ export default function CeoCheckpointViewer() {
     // 7. Build GerenteCheckpoint for each gestor
     const result: GerenteCheckpoint[] = gestorIds.map(gId => {
       const rows = byGerente.get(gId) || [];
-      const lines = rows.map(row => {
+      const lines = rows.map((row: any) => {
         const eff = resolveEffectiveMetrics(row);
         const goal = goalsMap.get(row.auth_user_id);
         const metaLig = row.meta_ligacoes > 0 ? row.meta_ligacoes : (goal?.meta_ligacoes ?? 0);

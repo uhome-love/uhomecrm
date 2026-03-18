@@ -256,15 +256,15 @@ export default function DisparadorLigacoesIA() {
     const callMap = new Map(data.map((c: any) => [c.twilio_call_sid, c]));
     setResults(current => current.map(r => {
       if (!r.callSid) return r;
-      const updated = callMap.get(r.callSid);
+      const updated = callMap.get(r.callSid) as any;
       if (!updated) return r;
       if (updated.status === r.status && updated.resumo_ia === r.resumo_ia) return r;
       return {
         ...r,
-        status: updated.status || r.status,
-        duration: updated.duracao_segundos ?? r.duration,
-        resultado: updated.resultado ?? r.resultado,
-        resumo_ia: updated.resumo_ia ?? r.resumo_ia,
+        status: (updated as any).status || r.status,
+        duration: (updated as any).duracao_segundos ?? r.duration,
+        resultado: (updated as any).resultado ?? r.resultado,
+        resumo_ia: (updated as any).resumo_ia ?? r.resumo_ia,
       };
     }));
   }, [results]);

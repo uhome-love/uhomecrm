@@ -46,7 +46,7 @@ export default function MelnickCampaignAnalytics() {
 
   if (!analytics) return null;
 
-  const total = Object.values(analytics).reduce((a, b) => a + b, 0);
+  const total = Object.values(analytics).reduce((a: number, b: any) => a + (b as number), 0);
   if (total === 0) return null;
 
   return (

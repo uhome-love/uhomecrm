@@ -48,7 +48,7 @@ export default function RecentCallsHistory() {
         .select("id, nome, telefone")
         .in("id", leadIds);
 
-      const leadMap = new Map((leads || []).map((l) => [l.id, l]));
+      const leadMap = new Map((leads as any[] || []).map((l: any) => [l.id, l]));
 
       return data.map((t) => ({
         ...t,

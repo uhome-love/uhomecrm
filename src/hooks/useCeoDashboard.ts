@@ -124,8 +124,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         supabase.from("profiles").select("id, nome, avatar_gamificado_url").in("id", ids),
         supabase.from("roleta_segmentos").select("id, nome"),
       ]);
-      const pm = new Map(profs?.map(p => [p.id, p]) || []);
-      const sm = new Map(segs?.map(s => [s.id, s.nome]) || []);
+      const pm = new Map((profs as any[])?.map((p: any) => [p.id, p]) || []);
+      const sm = new Map((segs as any[])?.map((s: any) => [s.id, s.nome]) || []);
       return creds.map(c => ({
         ...c,
         corretor_nome: c.corretor_id ? pm.get(c.corretor_id)?.nome || "Corretor" : "Corretor",
@@ -335,13 +335,13 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
           const vgv = neg.reduce((s: number, n: any) => s + (n.vgv_final || n.vgv_estimado || 0), 0);
           tLig += lig; tAprov += aprov; tVM += vm; tVR += vr; tProp += prop; tVgv += vgv;
           corretoresAll.push({
-            corretor_id: uid, nome: corrNameMap.get(uid) || "Corretor", gerente_nome: gerenteNome,
+            corretor_id: uid as string, nome: corrNameMap.get(uid) as string || "Corretor", gerente_nome: gerenteNome as string,
             ligacoes: lig, aproveitados: aprov, taxa: lig > 0 ? Math.round((aprov / lig) * 100) : 0,
             visitasMarcadas: vm, visitasRealizadas: vr, propostas: prop, vgv,
           });
         }
         teamDataArr.push({
-          gerente_id: gId, gerente_nome: gerenteNome,
+          gerente_id: gId as string, gerente_nome: gerenteNome as string,
           ligacoes: tLig, aproveitados: tAprov, taxa: tLig > 0 ? Math.round((tAprov / tLig) * 100) : 0,
           visitasMarcadas: tVM, visitasRealizadas: tVR, propostas: tProp, vgv: tVgv,
         });
