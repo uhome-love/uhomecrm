@@ -506,7 +506,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         }
 
         // Save history record before deleting
-        const { data: userData } = await supabase.auth.getUser();
+        const { data: userData } = await (supabase.auth as any).getUser();
         await supabase.from("pipeline_historico").insert({
           pipeline_lead_id: lead.id,
           stage_anterior_id: lead.stage_id,
