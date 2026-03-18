@@ -341,7 +341,28 @@ Deno.serve(async (req) => {
       logOps("error", "integration", "Distribution failed after retries — lead orphaned", { lead_id: insertedLead.id, name, empreendimento });
     }
 
-    // ── Audit ──
+    // ── Register entry activity ──
+    const entryTitle = isMelnickDay
+      ? `🏠 Lead gerado Landing Page Melnick Day`
+      : `🟢 Lead gerado via Landing Page — ${empreendimento}`;
+    const entryDesc = [
+      isMelnickDay ? "Lead recebido via Landing Page Melnick Day" : `Lead recebido via Landing Page`,
+      empreendimento ? `Empreendimento: ${empreendimento}` : null,
+      message ? `Mensagem: ${message}` : null,
+      email ? `E-mail: ${email}` : null,
+      telefone ? `Telefone: ${telefone}` : null,
+      source ? `Origem: ${source}` : null,
+    ].filter(Boolean).join("\n");
+
+    await supabase.from("pipeline_atividades").insert({
+      pipeline_lead_id: insertedLead.id,
+      tipo: "entrada",
+      titulo: entryTitle,
+      descricao: entryDesc,
+      status: "concluida",
+      created_by: "00000000-0000-0000-0000-000000000000",
+    }).then(r => { if (r.error) L.warn("Entry activity insert failed", {}, r.error); });
+
     await supabase.from("audit_log").insert({
       user_id: "00000000-0000-0000-0000-000000000000",
       modulo: "pipeline",
