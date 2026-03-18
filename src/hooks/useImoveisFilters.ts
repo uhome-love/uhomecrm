@@ -82,6 +82,9 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
   const [empreendimento, setEmpreendimento] = useState<string[]>(() => readArr(searchParams, "empreendimento"));
   const [empreendimentoSearch, setEmpreendimentoSearch] = useState("");
 
+  // ── Situação filter ──
+  const [situacao, setSituacao] = useState<string[]>(() => readArr(searchParams, "situacao"));
+
   // ── Mode toggles ──
   const [campanhaAtiva, setCampanhaAtiva] = useState(() => readBool(searchParams, "campanha"));
   const [uhomeOnly, setUhomeOnly] = useState(() => readBool(searchParams, "uhome"));
@@ -113,9 +116,10 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
     if (campanhaAtiva) p.set("campanha", "1");
     if (construtora.length) p.set("construtora", construtora.join(","));
     if (empreendimento.length) p.set("empreendimento", empreendimento.join(","));
+    if (situacao.length) p.set("situacao", situacao.join(","));
 
     setSearchParams(p, { replace: true });
-  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, setSearchParams]);
+  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, setSearchParams]);
 
   useEffect(() => {
     // Skip URL write on first render (we just read from URL)
@@ -170,18 +174,19 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
   if (campanhaAtiva) activeFilters.push({ key: "campanha", label: "Campanha", onRemove: () => setCampanhaAtiva(false) });
   if (construtora.length > 0) activeFilters.push({ key: "construtora", label: construtora.join(", "), onRemove: () => setConstrutora([]) });
   if (empreendimento.length > 0) activeFilters.push({ key: "empreendimento", label: empreendimento.length <= 2 ? empreendimento.join(", ") : `${empreendimento.length} empreend.`, onRemove: () => setEmpreendimento([]) });
+  if (situacao.length > 0) activeFilters.push({ key: "situacao", label: situacao.map(s => s === "pronto" ? "Pronto" : s === "em_obras" ? "Em obras" : "Lançamento").join(", "), onRemove: () => setSituacao([]) });
 
   const clearAllFilters = () => {
     setTipo([]); setBairro([]); setDormitorios([]); setSuitesFilter(""); setVagas("");
     setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false);
     setSearch(""); setUhomeOnly(false); setCampanhaAtiva(false);
-    setConstrutora([]); setEmpreendimento([]);
+    setConstrutora([]); setEmpreendimento([]); setSituacao([]);
   };
 
   // ── Serialized key for change-detection by search hook ──
   const filterKey = useMemo(() =>
-    JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento }),
-    [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento]
+    JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao }),
+    [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao]
   );
 
   return {
@@ -204,6 +209,7 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
     construtoraSearch, setConstrutoraSearch,
     empreendimento, setEmpreendimento,
     empreendimentoSearch, setEmpreendimentoSearch,
+    situacao, setSituacao,
     // Derived
     filteredBairros,
     tipoOptions,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState, EmptyState } from "@/components/ui/screen-states";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ import { useImoveisFilters } from "@/hooks/useImoveisFilters";
 import { useImoveisSearch } from "@/hooks/useImoveisSearch";
 import { useTypesenseFacets } from "@/hooks/useTypesenseFacets";
 import { useLeadContext } from "@/hooks/useLeadContext";
+import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -37,6 +38,7 @@ export default function ImoveisPage() {
   const { user } = useAuth();
   const { searchWithAI, clearAISearch, removeTag, aiLoading, aiResult, aiError, aiProperties, aiTotal, aiSearchTime } = useAISearch();
   const { leadId, leadNome, hasLeadContext, trackEvent } = useLeadContext();
+  const { profile: leadProfile } = useLeadPropertyProfile(leadId);
 
   // ── Dynamic facets ──
   const { bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets } = useTypesenseFacets();
@@ -51,6 +53,7 @@ export default function ImoveisPage() {
     uhomeOnly, setUhomeOnly, search, setSearch, sortBy, setSortBy,
     construtora, setConstrutora, construtoraSearch, setConstrutoraSearch,
     empreendimento, setEmpreendimento, empreendimentoSearch, setEmpreendimentoSearch,
+    situacao, setSituacao,
     filteredBairros, tipoOptions, filteredConstrutoras, filteredEmpreendimentos,
     activeFilters, clearAllFilters, filterKey,
   } = filters;
@@ -84,7 +87,7 @@ export default function ImoveisPage() {
     filters: {
       search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas,
       areaRange, valorRange, somenteObras, uhomeOnly, campanhaAtiva, sortBy,
-      construtora, empreendimento,
+      construtora, empreendimento, situacao,
     },
     filterKey,
     setSearch,
@@ -95,17 +98,61 @@ export default function ImoveisPage() {
     favorites,
   });
 
+  // ── Lead adherence scoring (when lead context + profile exists) ──
+  const scorePropertyForLead = useCallback((item: any): number => {
+    if (!leadProfile) return 0;
+    let score = 0;
+    const preco = getNum(item, "valor_venda", "valor") || 0;
+    // Valor (25pts)
+    if (leadProfile.valor_min || leadProfile.valor_max) {
+      const aboveMin = !leadProfile.valor_min || preco >= leadProfile.valor_min;
+      const belowMax = !leadProfile.valor_max || preco <= leadProfile.valor_max;
+      if (aboveMin && belowMax) score += 25;
+      else if (!leadProfile.valor_max || preco <= leadProfile.valor_max * 1.15) score += 12;
+    } else score += 12;
+    // Bairro (20pts)
+    const bairro = item.endereco_bairro || item.bairro || "";
+    if (leadProfile.bairros?.length && bairro) {
+      const nb = bairro.toLowerCase();
+      if (leadProfile.bairros.some((b: string) => nb.includes(b.toLowerCase()))) score += 20;
+    } else score += 10;
+    // Dorms (15pts)
+    const dorms = getNum(item, "dormitorios") || 0;
+    if (leadProfile.dormitorios_min && dorms > 0) {
+      if (dorms >= leadProfile.dormitorios_min) score += 15;
+      else if (dorms === leadProfile.dormitorios_min - 1) score += 7;
+    } else score += 7;
+    // Tipo (10pts)
+    if (leadProfile.tipos?.length && item.tipo) {
+      if (leadProfile.tipos.some((t: string) => (item.tipo || "").toLowerCase().includes(t.toLowerCase()))) score += 10;
+    } else score += 5;
+    // Suítes (5pts)
+    if (leadProfile.suites_min && (getNum(item, "suites") || 0) >= leadProfile.suites_min) score += 5;
+    else if (!leadProfile.suites_min) score += 2;
+    // Vagas (5pts)
+    if (leadProfile.vagas_min && (getNum(item, "garagens", "vagas") || 0) >= leadProfile.vagas_min) score += 5;
+    else if (!leadProfile.vagas_min) score += 2;
+
+    return Math.min(Math.round((score / 85) * 100), 99);
+  }, [leadProfile]);
+
+  // When sorting by aderência, re-sort; also attach scores for badge display
+  const displayImoveis = useMemo(() => {
+    if (!hasLeadContext || !leadProfile || sortBy !== "aderencia") return sortedImoveis;
+    return [...sortedImoveis].sort((a, b) => scorePropertyForLead(b) - scorePropertyForLead(a));
+  }, [sortedImoveis, hasLeadContext, leadProfile, sortBy, scorePropertyForLead]);
+
   // Prev/next navigation in preview
-  const previewIndex = previewItem ? sortedImoveis.findIndex((it: any) => {
+  const previewIndex = previewItem ? displayImoveis.findIndex((it: any) => {
     const pid = String(previewItem.codigo || previewItem.id_imovel || previewItem.id);
     const iid = String(it.codigo || it.id_imovel || it.id);
     return pid === iid;
   }) : -1;
   const hasPrevPreview = previewIndex > 0;
-  const hasNextPreview = previewIndex >= 0 && previewIndex < sortedImoveis.length - 1;
-  const goToPrevPreview = () => { if (hasPrevPreview) setPreviewItem(sortedImoveis[previewIndex - 1]); };
-  const goToNextPreview = () => { if (hasNextPreview) setPreviewItem(sortedImoveis[previewIndex + 1]); };
-  const previewPositionLabel = previewIndex >= 0 ? `${previewIndex + 1} / ${sortedImoveis.length}` : undefined;
+  const hasNextPreview = previewIndex >= 0 && previewIndex < displayImoveis.length - 1;
+  const goToPrevPreview = () => { if (hasPrevPreview) setPreviewItem(displayImoveis[previewIndex - 1]); };
+  const goToNextPreview = () => { if (hasNextPreview) setPreviewItem(displayImoveis[previewIndex + 1]); };
+  const previewPositionLabel = previewIndex >= 0 ? `${previewIndex + 1} / ${displayImoveis.length}` : undefined;
 
   // ── Favorites persistence ──
   useEffect(() => {
@@ -472,6 +519,33 @@ export default function ImoveisPage() {
               </div>
             </FilterChip>
 
+            {/* Situação */}
+            <FilterChip
+              label={situacao.length > 0 ? situacao.map(s => s === "pronto" ? "Pronto" : s === "em_obras" ? "Em obras" : "Lançamento").join(", ") : "Situação"}
+              active={situacao.length > 0}
+              onClear={() => setSituacao([])}
+            >
+              <div className="space-y-2 w-48">
+                <p className="text-xs font-semibold text-foreground mb-2">Situação do imóvel <span className="text-muted-foreground font-normal">(múltipla)</span></p>
+                {[
+                  { value: "pronto", label: "🏠 Pronto para morar" },
+                  { value: "em_obras", label: "🏗️ Em obras" },
+                  { value: "lancamento", label: "🚀 Lançamento" },
+                ].map(opt => {
+                  const selected = situacao.includes(opt.value);
+                  return (
+                    <button key={opt.value} onClick={() => setSituacao(prev => selected ? prev.filter(s => s !== opt.value) : [...prev, opt.value])} className={cn(
+                      "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all flex items-center gap-2",
+                      selected ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50"
+                    )}>
+                      <Check className={cn("h-3 w-3 shrink-0", selected ? "opacity-100" : "opacity-0")} />
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </FilterChip>
+
             {/* More filters */}
             <FilterChip
               label="Mais filtros"
@@ -583,14 +657,14 @@ export default function ImoveisPage() {
                   </Card>
                 ))}
               </div>
-            ) : sortedImoveis.length === 0 ? (
+            ) : displayImoveis.length === 0 ? (
               <div className="text-center py-8">
                 <Search className="h-8 w-8 mx-auto text-muted-foreground/20 mb-2" />
                 <p className="text-sm font-medium text-foreground">Nenhum imóvel</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {sortedImoveis.map((item, idx) => {
+                {displayImoveis.map((item, idx) => {
                   const isCampanha = campanhaOverrides.some((c) => c.codigo === item.codigo);
                   const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
                   return <PropertyCardList key={item.id_imovel || item.codigo || idx} item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} getPreco={getPreco} onPreview={openPreview} />;
@@ -609,7 +683,7 @@ export default function ImoveisPage() {
           <div className="flex-1 h-[calc(100vh-120px)]">
             <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
               <PropertyMap
-                properties={sortedImoveis}
+                properties={displayImoveis}
                 loading={loading}
                 onFavorite={toggleFavorite}
                 favorites={favorites}
@@ -764,6 +838,7 @@ export default function ImoveisPage() {
                       <SelectItem value="menor_preco">Menor preço</SelectItem>
                       <SelectItem value="maior_preco">Maior preço</SelectItem>
                       <SelectItem value="maior_area">Maior área</SelectItem>
+                      {hasLeadContext && <SelectItem value="aderencia">Aderência ao lead</SelectItem>}
                     </SelectContent>
                   </Select>
                   <div className="flex border border-border/60 rounded-lg overflow-hidden">
@@ -787,7 +862,7 @@ export default function ImoveisPage() {
                     </Card>
                   ))}
                 </div>
-              ) : sortedImoveis.length === 0 ? (
+              ) : displayImoveis.length === 0 ? (
                 <EmptyState
                   title="Nenhum imóvel encontrado"
                   description="Tente ajustar seus filtros ou termo de busca."
@@ -797,10 +872,24 @@ export default function ImoveisPage() {
               ) : (
                 <>
                   <div className={cn("grid gap-4", "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
-                    {sortedImoveis.map((item, idx) => {
+                    {displayImoveis.map((item, idx) => {
                       const isCampanha = campanhaOverrides.some((c) => c.codigo === item.codigo);
                       const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
-                      return <PropertyCardGrid key={item.id_imovel || item.codigo || idx} item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} getPreco={getPreco} onPreview={openPreview} />;
+                      return (
+                        <div key={item.id_imovel || item.codigo || idx} className="relative">
+                          {hasLeadContext && leadProfile && sortBy === "aderencia" && (() => {
+                            const score = scorePropertyForLead(item);
+                            return score > 0 ? (
+                              <div className={cn("absolute top-3 left-3 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold shadow-sm backdrop-blur-sm",
+                                score >= 80 ? "bg-emerald-500/90 text-white" : score >= 60 ? "bg-primary/90 text-primary-foreground" : score >= 40 ? "bg-amber-500/90 text-white" : "bg-muted/90 text-foreground"
+                              )}>
+                                <Sparkles className="h-2.5 w-2.5" />{score}%
+                              </div>
+                            ) : null;
+                          })()}
+                          <PropertyCardGrid item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} getPreco={getPreco} onPreview={openPreview} />
+                        </div>
+                      );
                     })}
                   </div>
                   {totalPages > 1 && !campanhaAtiva && (

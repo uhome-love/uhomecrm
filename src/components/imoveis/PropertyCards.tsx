@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Loader2, MapPin, Megaphone, UserCircle, Phone, Mail,
-  CheckSquare, Square, CalendarClock, Heart,
+  CheckSquare, Square, CalendarClock, Heart, MessageCircle,
 } from "lucide-react";
 import ImageSlider from "@/components/imoveis/ImageSlider";
 import SharePropertyButton from "@/components/imoveis/SharePropertyButton";
@@ -33,6 +33,32 @@ import {
 } from "@/lib/imovelHelpers";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+// ── WhatsApp copy helper ──
+function copyPropertyForWhatsApp(item: any, getPreco: (item: any) => string) {
+  const loc = extractEndereco(item);
+  const titulo = item.titulo_anuncio || item.empreendimento_nome || "Imóvel";
+  const dorms = getNum(item, "dormitorios");
+  const area = getNumIncZero(item, "area_privativa", "area_util", "area_total");
+  const vagas = getNum(item, "garagens", "vagas");
+  const preco = getPreco(item);
+
+  let msg = `🏠 *${titulo}*\n`;
+  if (loc.bairro) msg += `📍 ${loc.bairro}${loc.cidade ? `, ${loc.cidade}` : ""}\n`;
+  const specs: string[] = [];
+  if (dorms && dorms > 0) specs.push(`${dorms} dorm`);
+  if (area && area > 0) specs.push(`${area}m²`);
+  if (vagas && vagas > 0) specs.push(`${vagas} vaga${vagas > 1 ? "s" : ""}`);
+  if (specs.length > 0) msg += `${specs.join(" · ")}\n`;
+  msg += `💰 ${preco}\n`;
+  if (item.codigo) {
+    const baseUrl = window.location.origin;
+    msg += `🔗 ${baseUrl}/imovel/${item.codigo}`;
+  }
+
+  navigator.clipboard.writeText(msg);
+  toast.success("Copiado para WhatsApp! 📋");
+}
 
 // ── In-memory cache for ResponsavelButton (session-scoped) ──
 const responsavelCache = new Map<string, { origem: any | null }>();
@@ -164,6 +190,9 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
           <div className="flex items-center justify-between pt-1.5 border-t border-border/40">
             <span className="text-[10px] text-muted-foreground/60 font-mono">{codigo}</span>
             <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco)}>
+                <MessageCircle className="h-4 w-4" />
+              </Button>
               <SharePropertyButton
                 codigo={codigo}
                 titulo={titulo}
@@ -250,6 +279,9 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
               )}
             </div>
             <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco)}>
+                <MessageCircle className="h-4 w-4" />
+              </Button>
               <SharePropertyButton
                 codigo={codigo || String(item.id)}
                 titulo={titulo}

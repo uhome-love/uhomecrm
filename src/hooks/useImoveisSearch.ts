@@ -73,6 +73,7 @@ interface UseImoveisSearchParams {
     sortBy: string;
     construtora: string[];
     empreendimento: string[];
+    situacao: string[];
   };
   /** Serialized filter key for change-detection */
   filterKey: string;
@@ -178,6 +179,7 @@ export function useImoveisSearch({
         uhomeOnly: filters.uhomeOnly,
         construtora: filters.construtora,
         empreendimento: filters.empreendimento,
+        situacao: filters.situacao,
       });
       const sortByStr = filters.search ? "" : buildSortBy(filters.sortBy, filters.contrato);
 
