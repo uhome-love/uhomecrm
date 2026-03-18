@@ -85,6 +85,12 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
   // ── Situação filter ──
   const [situacao, setSituacao] = useState<string[]>(() => readArr(searchParams, "situacao"));
 
+  // ── Cidade filter (default Porto Alegre) ──
+  const [cidade, setCidade] = useState<string[]>(() => {
+    const fromUrl = readArr(searchParams, "cidade");
+    return fromUrl.length > 0 ? fromUrl : ["Porto Alegre"];
+  });
+
   // ── Mode toggles ──
   const [campanhaAtiva, setCampanhaAtiva] = useState(() => readBool(searchParams, "campanha"));
   const [uhomeOnly, setUhomeOnly] = useState(() => readBool(searchParams, "uhome"));
