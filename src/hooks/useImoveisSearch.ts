@@ -71,6 +71,8 @@ interface UseImoveisSearchParams {
     uhomeOnly: boolean;
     campanhaAtiva: boolean;
     sortBy: string;
+    construtora: string[];
+    empreendimento: string[];
   };
   /** Serialized filter key for change-detection */
   filterKey: string;
