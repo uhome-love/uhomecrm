@@ -15,7 +15,7 @@ import RankingPodium, { type PodiumEntry } from "./RankingPodium";
 import { useEffect, useState } from "react";
 
 const medals = ["👑", "🥈", "🥉"];
-const periodMap: Record<string, CeoPeriod> = { hoje: "dia", semana: "semana", mes: "mes", trimestre: "mes" };
+const periodMap: Record<string, CeoPeriod> = { hoje: "dia", semana: "semana", mes: "mes", trimestre: "mes", personalizado: "mes" };
 
 function getInitials(nome: string) {
   return nome.split(" ").map(n => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
@@ -32,7 +32,7 @@ interface EficienciaEntry {
   score: number;
 }
 
-export default function RankingEficienciaTab({ period, dateRange }: { period: "hoje" | "semana" | "mes" | "trimestre"; dateRange?: { start: string; end: string } }) {
+export default function RankingEficienciaTab({ period, dateRange }: { period: "hoje" | "semana" | "mes" | "trimestre" | "personalizado"; dateRange?: { start: string; end: string } }) {
   const { user } = useAuth();
   const { isCorretor } = useUserRole();
   const [corretorGerenteId, setCorretorGerenteId] = useState<string | undefined>();

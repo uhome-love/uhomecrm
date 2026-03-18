@@ -28,7 +28,7 @@ import RankingPositionCard from "./RankingPositionCard";
 import RankingPerformanceBadges, { computePerformanceBadges } from "./RankingPerformanceBadges";
 import { motion } from "framer-motion";
 
-const periodMap: Record<string, string> = { hoje: "dia", semana: "semana", mes: "mes", trimestre: "mes" };
+const periodMap: Record<string, string> = { hoje: "dia", semana: "semana", mes: "mes", trimestre: "mes", personalizado: "mes" };
 
 function getInitials(nome: string) {
   return nome.split(" ").map(n => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
@@ -102,7 +102,7 @@ function getNotaColor(nota: number): string {
   return "text-red-500";
 }
 
-export default function RankingGeralTab({ period, dateRange }: { period: "hoje" | "semana" | "mes" | "trimestre"; dateRange?: { start: string; end: string } }) {
+export default function RankingGeralTab({ period, dateRange }: { period: "hoje" | "semana" | "mes" | "trimestre" | "personalizado"; dateRange?: { start: string; end: string } }) {
   const { user } = useAuth();
   const { isCorretor } = useUserRole();
   const [corretorGerenteId, setCorretorGerenteId] = useState<string | undefined>();
@@ -121,7 +121,7 @@ export default function RankingGeralTab({ period, dateRange }: { period: "hoje" 
   }, [isCorretor, user?.id]);
 
   // 1) OA data (Prospecção)
-  const oaPeriod = period === "trimestre" ? "mes" : period;
+  const oaPeriod = (period === "trimestre" || period === "personalizado") ? "mes" : period;
   const { ranking: oaRanking, isLoading: oaLoading } = useOARanking(oaPeriod as "hoje" | "semana" | "mes", dateRange);
 
   // 2) Gestão data
