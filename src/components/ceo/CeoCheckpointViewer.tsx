@@ -154,10 +154,10 @@ export default function CeoCheckpointViewer() {
       const rows = byGerente.get(gId) || [];
       const lines = rows.map((row: any) => {
         const eff = resolveEffectiveMetrics(row);
-        const goal = goalsMap.get(row.auth_user_id);
+        const goal = goalsMap.get(row.auth_user_id) as any;
         const metaLig = row.meta_ligacoes > 0 ? row.meta_ligacoes : (goal?.meta_ligacoes ?? 0);
         const metaAprov = row.meta_aproveitados > 0 ? row.meta_aproveitados : (goal?.meta_aproveitados ?? 0);
-        const metaVm = row.meta_visitas_marcar > 0 ? row.meta_visitas_marcar : ((goal as any)?.meta_visitas_marcadas ?? 0);
+        const metaVm = row.meta_visitas_marcar > 0 ? row.meta_visitas_marcar : (goal?.meta_visitas_marcadas ?? 0);
         const isAbsent = ["ausente", "atestado", "folga"].includes(row.presenca);
 
         return {

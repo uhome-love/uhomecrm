@@ -189,8 +189,8 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
 
       // Add locked corretors without attempts
       for (const cid of activeCorretorIds) {
-        if (cid && !byCorretor[cid]) {
-          byCorretor[cid] = {
+        if (cid && !byCorretor[cid as string]) {
+          byCorretor[cid as string] = {
             corretor_id: cid, tentativas: 0, aproveitados: 0,
             ultima_tentativa: null, ligacoes: 0, whatsapps: 0,
           };
