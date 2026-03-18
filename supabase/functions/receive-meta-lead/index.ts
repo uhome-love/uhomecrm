@@ -296,6 +296,14 @@ Deno.serve(async (req) => {
     if (!empreendimento && formName) empreendimento = formName;
     if (!empreendimento) empreendimento = "Avulso - Meta Ads";
 
+    // Normalize: strip suffixes like " (Imagem)", " (Video ...)", " - Uhome", " - Venda"
+    if (empreendimento) {
+      empreendimento = empreendimento
+        .replace(/\s*\((?:Imagem|Video|Vídeo)[^)]*\)/gi, "")
+        .replace(/\s*-\s*(Uhome|Venda|Locação|Locacao)$/i, "")
+        .trim();
+    }
+
     L.info("Parsed", { name, telefone, campaignId, propertyCode, empreendimento, externalLeadId, isTestLead });
 
     if (isTestLead) {
