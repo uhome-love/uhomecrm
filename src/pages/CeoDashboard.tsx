@@ -470,7 +470,7 @@ export default function CeoDashboard() {
           <Target className="h-4 w-4" /> Gestão de Leads
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <KpiCard icon={Users} label="Total de Leads" value={totalLeadsPeriodo} iconColor="text-blue-600" ceoMeta={null} />
+          <KpiCard icon={Users} label="Total de Leads" value={totalLeadsPeriodo} iconColor="text-blue-600" ceoMeta={null} onClick={() => setKpiDetail({ type: "total_leads", label: "Total de Leads" })} />
           <Card className="relative">
             <CardContent className="pt-4 pb-3 px-4">
               {/* Grey semaphore dot for no-meta */}
