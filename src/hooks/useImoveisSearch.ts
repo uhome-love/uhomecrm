@@ -188,7 +188,7 @@ export function useImoveisSearch({
       const result = await typesenseSearch({
         q: filters.search || "*",
         page: pageNum,
-        per_page: 24,
+        per_page: filters.geoRadius ? 250 : 24,
         filter_by: filterBy || undefined,
         sort_by: sortByStr || undefined,
       });
