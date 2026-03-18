@@ -1,261 +1,114 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  ChevronLeft, ChevronRight, Download, Loader2, Users, ThumbsUp,
-  ArrowUpDown, CalendarCheck, Briefcase, DollarSign, ArrowUp, ArrowDown,
-  Trophy, Target, TrendingUp, AlertTriangle, Lightbulb, RefreshCw
+  ChevronLeft, ChevronRight, Download, Loader2, Users, Phone, Inbox, Activity,
+  CalendarDays, CalendarCheck, Briefcase, TrendingUp, FileSignature, DollarSign,
+  ArrowUp, ArrowDown, ChevronDown, ChevronUp,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, Cell } from "recharts";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer,
+  LineChart, Line, CartesianGrid, Legend,
+} from "recharts";
 import { format, getISOWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from "@/integrations/supabase/client";
 import { formatBRLCompact } from "@/lib/utils";
 import {
-  getWeekRange,
-  useWeeklyKpis,
-  useLeadsByOrigin,
-  useLeadsByEmpreendimento,
-  useFunnelData,
-  useVisitsByDay,
-  useWeeklyDeals,
-  useWeeklyRankings,
-  type WeekRange,
-} from "@/hooks/useRelatorioSemanal";
+  useRelatorioExecutivo,
+  useUserScope,
+  getPeriodRange,
+  type PeriodMode,
+  type ExecutiveKpis,
+  type CorretorRow,
+  type TeamRow,
+} from "@/hooks/useRelatorioExecutivo";
 
-// ── Variation badge ──
-function Var({ current, prev }: { current: number; prev: number }) {
-  if (prev === 0) return null;
-  const pct = Math.round(((current - prev) / prev) * 100);
-  if (pct === 0) return null;
-  const up = pct > 0;
+// ── KPI Card Config ──
+const KPI_CONFIG: { key: keyof ExecutiveKpis; label: string; icon: any; color: string; isCurrency?: boolean }[] = [
+  { key: "presencas", label: "Presenças", icon: Users, color: "text-blue-600" },
+  { key: "ligacoes", label: "Ligações", icon: Phone, color: "text-indigo-600" },
+  { key: "leadsRecebidos", label: "Leads Recebidos", icon: Inbox, color: "text-cyan-600" },
+  { key: "leadsAtivos", label: "Leads Ativos", icon: Activity, color: "text-teal-600" },
+  { key: "visitasMarcadas", label: "Visitas Marcadas", icon: CalendarDays, color: "text-amber-600" },
+  { key: "visitasRealizadas", label: "Visitas Realizadas", icon: CalendarCheck, color: "text-emerald-600" },
+  { key: "negociosCriados", label: "Negócios Criados", icon: Briefcase, color: "text-violet-600" },
+  { key: "negociosGerados", label: "Negócios Gerados", icon: TrendingUp, color: "text-orange-600" },
+  { key: "negociosAssinados", label: "Negócios Assinados", icon: FileSignature, color: "text-emerald-700" },
+  { key: "vgvTotal", label: "VGV Total", icon: DollarSign, color: "text-emerald-700", isCurrency: true },
+];
+
+// ── Variation Badge ──
+function VarBadge({ pctChange, periodLabel }: { pctChange: number; periodLabel: string }) {
+  if (pctChange === 0) return null;
+  const up = pctChange > 0;
   return (
-    <span className={`text-xs font-medium flex items-center gap-0.5 ${up ? "text-emerald-600" : "text-destructive"}`}>
-      {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-      {Math.abs(pct)}% vs semana passada
+    <span className={`text-[10px] font-medium flex items-center gap-0.5 ${up ? "text-emerald-600" : "text-destructive"}`}>
+      {up ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+      {Math.abs(pctChange)}% {periodLabel}
     </span>
   );
 }
 
-// ── KPI Card ──
-const KPI_CONFIG = [
-  { key: "novosLeads", label: "Novos Leads", icon: Users, bg: "bg-blue-500/10", iconColor: "text-blue-500" },
-  { key: "aproveitadosOA", label: "Aproveitados OA", icon: ThumbsUp, bg: "bg-emerald-500/10", iconColor: "text-emerald-500" },
-  { key: "avancosPipeline", label: "Avanços Pipeline", icon: ArrowUpDown, bg: "bg-violet-500/10", iconColor: "text-violet-500" },
-  { key: "visitasRealizadas", label: "Visitas Realizadas", icon: CalendarCheck, bg: "bg-amber-500/10", iconColor: "text-amber-500" },
-  { key: "negociosAbertos", label: "Negócios Abertos", icon: Briefcase, bg: "bg-pink-500/10", iconColor: "text-pink-500" },
-  { key: "assinados", label: "Assinados", icon: DollarSign, bg: "bg-emerald-600/10", iconColor: "text-emerald-600" },
-] as const;
-
-// ── Section 7 - AI Analysis ──
-function AIAnalysisSection({ week, kpis, rankings, visitDays }: { 
-  week: WeekRange; 
-  kpis: any; 
-  rankings: any;
-  visitDays: any;
-}) {
-  const { session } = useAuth();
-  const [analysis, setAnalysis] = useState<{ atencao: string[]; oportunidades: string[]; recomendacao: string } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const weekKey = `weekly_ceo_${format(week.start, "yyyy")}-W${String(getISOWeek(week.start)).padStart(2, "0")}`;
-
-  const generate = useCallback(async (force = false) => {
-    if (!session?.access_token) return;
-    setLoading(true);
-    setError(false);
-    try {
-      // Check cache (unless forced)
-      if (!force) {
-        try {
-          const { data: cached } = await supabase
-            .from("homi_briefing_diario")
-            .select("*")
-            .eq("data", weekKey)
-            .eq("status_geral", "weekly_ceo")
-            .maybeSingle();
-          if (cached?.dados_contexto) {
-            const ctx = cached.dados_contexto as any;
-            if (ctx.atencao || ctx.pontos_atencao) {
-              setAnalysis({ 
-                atencao: ctx.atencao || ctx.pontos_atencao || [], 
-                oportunidades: ctx.oportunidades || [], 
-                recomendacao: ctx.recomendacao || "" 
-              });
-              setLoading(false);
-              return;
-            }
-          }
-        } catch { /* ignore cache read errors */ }
-      }
-
-      // Build context from real data
-      const pct = (cur: number, prev: number) => prev > 0 ? `${Math.round(((cur - prev) / prev) * 100)}%` : "N/A";
-      const totalTaxa = visitDays?.length
-        ? (() => { const m = visitDays.reduce((a: any, d: any) => a + d.marcadas, 0); const r = visitDays.reduce((a: any, d: any) => a + d.realizadas, 0); return m > 0 ? Math.round((r / m) * 100) : 0; })()
-        : 0;
-      const bestTeam = rankings?.teams?.[0];
-      const topCorretor = rankings?.top10?.[0];
-
-      const periodo = `${format(week.start, "dd/MM")} a ${format(week.end, "dd/MM/yyyy")}`;
-      const prompt = `Você é o HOMI CEO, assistente estratégico da Uhome Sales.
-Analise os dados da Semana ${getISOWeek(week.start)} (${periodo}) e gere uma análise executiva estruturada em JSON com exatamente este formato:
-{"pontos_atencao":["ponto 1","ponto 2","ponto 3"],"oportunidades":["oportunidade 1","oportunidade 2"],"recomendacao":"texto da recomendação principal"}
-
-Dados da semana:
-- Novos Leads: ${kpis?.novosLeads?.current ?? 0} (${pct(kpis?.novosLeads?.current ?? 0, kpis?.novosLeads?.prev ?? 0)} vs semana anterior)
-- Aproveitados OA: ${kpis?.aproveitadosOA?.current ?? 0} (${pct(kpis?.aproveitadosOA?.current ?? 0, kpis?.aproveitadosOA?.prev ?? 0)})
-- Avanços Pipeline: ${kpis?.avancosPipeline?.current ?? 0}
-- Visitas Realizadas: ${kpis?.visitasRealizadas?.current ?? 0} (${pct(kpis?.visitasRealizadas?.current ?? 0, kpis?.visitasRealizadas?.prev ?? 0)})
-- Negócios Abertos: ${kpis?.negociosAbertos?.current ?? 0}
-- Assinados: ${kpis?.assinados?.current ?? 0} com VGV R$ ${(kpis?.assinados?.vgv ?? 0).toLocaleString("pt-BR")}
-- Taxa de visitas: ${totalTaxa}%
-- Melhor equipe: ${bestTeam?.equipe ?? "N/A"} com score ${bestTeam?.score?.toFixed(1) ?? "0"}
-- Top corretor: ${topCorretor?.nome ?? "N/A"} com score ${topCorretor?.score?.toFixed(1) ?? "0"}
-
-Responda APENAS com o JSON, sem texto adicional.`;
-
-      const { data, error: fnError } = await supabase.functions.invoke("homi-ceo", {
-        body: { messages: [{ role: "user", content: prompt }] },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-
-      if (fnError) throw fnError;
-
-      let parsed: any;
-      try {
-        const text = typeof data === "string" ? data : data?.content || data?.message || JSON.stringify(data);
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-        if (parsed) {
-          // Normalize key names
-          parsed = {
-            atencao: parsed.atencao || parsed.pontos_atencao || [],
-            oportunidades: parsed.oportunidades || [],
-            recomendacao: parsed.recomendacao || "",
-          };
-        }
-      } catch {
-        // Fallback: show raw text
-        const rawText = typeof data === "string" ? data : data?.content || data?.message || "";
-        parsed = { atencao: [], oportunidades: [], recomendacao: rawText.slice(0, 500) || "Acompanhe os indicadores" };
-      }
-
-      if (!parsed) {
-        parsed = { atencao: ["Dados insuficientes para análise"], oportunidades: ["—"], recomendacao: "Acompanhe os indicadores" };
-      }
-
-      setAnalysis(parsed);
-
-      // Cache
-      try {
-        await supabase.from("homi_briefing_diario").upsert({
-          user_id: session.user.id,
-          data: weekKey,
-          status_geral: "weekly_ceo",
-          dados_contexto: parsed,
-          gerado_em: new Date().toISOString(),
-        }, { onConflict: "user_id,data" }).select();
-      } catch { /* ignore cache errors */ }
-    } catch (e) {
-      console.error("AI analysis error:", e);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [week, session, kpis, rankings, visitDays, weekKey]);
-
-  // Auto-load when kpis are ready
-  useEffect(() => {
-    if (kpis && !analysis && !loading) {
-      generate();
-    }
-  }, [kpis]);
-
-  return (
-    <Card className="bg-card border-border">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base flex items-center gap-2">🤖 Análise HOMI da Semana</CardTitle>
-        <Button variant="ghost" size="sm" onClick={() => generate(true)} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} /> Regenerar
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="grid gap-3 md:grid-cols-3">
-            {[0, 1, 2].map(i => (
-              <div key={i} className="rounded-lg bg-muted/30 p-4 space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-3/4" />
-                <p className="text-[10px] text-muted-foreground animate-pulse">HOMI está analisando a semana...</p>
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <p className="text-sm text-muted-foreground text-center py-4">Não foi possível gerar a análise. Clique em Regenerar.</p>
-        ) : analysis ? (
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg bg-destructive/10 p-4 space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-destructive text-sm">
-                <AlertTriangle className="h-4 w-4" /> Pontos de Atenção
-              </div>
-              {analysis.atencao.length > 0 ? (
-                <ul className="text-xs space-y-1 text-muted-foreground">
-                  {analysis.atencao.map((a, i) => <li key={i}>• {a}</li>)}
-                </ul>
-              ) : <p className="text-xs text-muted-foreground">Nenhum ponto identificado</p>}
-            </div>
-            <div className="rounded-lg bg-amber-500/10 p-4 space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-amber-600 text-sm">
-                <Lightbulb className="h-4 w-4" /> Oportunidades
-              </div>
-              {analysis.oportunidades.length > 0 ? (
-                <ul className="text-xs space-y-1 text-muted-foreground">
-                  {analysis.oportunidades.map((o, i) => <li key={i}>• {o}</li>)}
-                </ul>
-              ) : <p className="text-xs text-muted-foreground">Nenhuma oportunidade identificada</p>}
-            </div>
-            <div className="rounded-lg bg-primary/10 p-4 space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-primary text-sm">
-                <Target className="h-4 w-4" /> Recomendação da Semana
-              </div>
-              <p className="text-xs text-muted-foreground">{analysis.recomendacao || "—"}</p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">Clique em Regenerar para gerar a análise da semana.</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+// ── Sort helpers ──
+type SortKey = keyof CorretorRow;
 
 // ── Main Page ──
 export default function RelatorioSemanal() {
-  const { user } = useAuth();
-  const [weekOffset, setWeekOffset] = useState(0);
-  const week = getWeekRange(weekOffset);
+  const { scope } = useUserScope();
+  const [mode, setMode] = useState<PeriodMode>("semana");
+  const [offset, setOffset] = useState(0);
+  const period = useMemo(() => getPeriodRange(mode, offset), [mode, offset]);
+  const { data, isLoading } = useRelatorioExecutivo(period);
   const reportRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const isMobile = useIsMobile();
 
-  const { data: kpis, isLoading: kpisLoading } = useWeeklyKpis(week);
-  const { data: leadsOrigin, isLoading: originLoading } = useLeadsByOrigin(week);
-  const { data: leadsEmp, isLoading: empLoading } = useLeadsByEmpreendimento(week);
-  const { data: funnel, isLoading: funnelLoading } = useFunnelData(week);
-  const { data: visitDays, isLoading: visitsLoading } = useVisitsByDay(week);
-  const { data: deals, isLoading: dealsLoading } = useWeeklyDeals(week);
-  const { data: rankings, isLoading: rankingsLoading } = useWeeklyRankings(week);
+  // Ranking sort state
+  const [sortKey, setSortKey] = useState<SortKey>("vgv");
+  const [sortAsc, setSortAsc] = useState(false);
+  const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
 
-  const profileName = user?.user_metadata?.nome || user?.email?.split("@")[0] || "CEO";
+  const toggleTeam = (eq: string) => {
+    setExpandedTeams(prev => {
+      const next = new Set(prev);
+      next.has(eq) ? next.delete(eq) : next.add(eq);
+      return next;
+    });
+  };
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(false); }
+  };
+
+  const sortedCorretores = useMemo(() => {
+    if (!data?.corretores) return [];
+    return [...data.corretores].sort((a, b) => {
+      const va = a[sortKey] ?? 0;
+      const vb = b[sortKey] ?? 0;
+      if (typeof va === "string") return sortAsc ? (va as string).localeCompare(vb as string) : (vb as string).localeCompare(va as string);
+      return sortAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
+    });
+  }, [data?.corretores, sortKey, sortAsc]);
+
+  // Find top performer for each column
+  const topPerformers = useMemo(() => {
+    if (!data?.corretores?.length) return {};
+    const keys: SortKey[] = ["presencas", "ligacoes", "leads", "visitasMarcadas", "visitasRealizadas", "negociosCriados", "negociosAssinados", "vgv"];
+    const result: Record<string, string> = {};
+    keys.forEach(k => {
+      const top = [...data.corretores].sort((a, b) => (b[k] as number) - (a[k] as number))[0];
+      if (top && (top[k] as number) > 0) result[k] = top.id;
+    });
+    return result;
+  }, [data?.corretores]);
+
+  const prevPeriodLabel = mode === "semana" ? "vs semana ant." : "vs mês ant.";
 
   const handlePDF = async () => {
     if (!reportRef.current) return;
@@ -265,10 +118,10 @@ export default function RelatorioSemanal() {
       const html2pdfFn = (mod.default || mod) as any;
       await html2pdfFn().set({
         margin: [8, 8, 8, 8],
-        filename: `relatorio-semanal-${format(week.start, "yyyy-MM-dd")}.pdf`,
+        filename: `relatorio-executivo-${format(period.start, "yyyy-MM-dd")}.pdf`,
         image: { type: "jpeg", quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       }).from(reportRef.current.cloneNode(true)).save();
     } catch (e) {
@@ -279,371 +132,309 @@ export default function RelatorioSemanal() {
     }
   };
 
-  const maxFunnel = funnel ? Math.max(...funnel.map(f => f.count), 1) : 1;
-  const maxOrigin = leadsOrigin ? Math.max(...leadsOrigin.map(o => o.value), 1) : 1;
-  const maxEmp = leadsEmp ? Math.max(...leadsEmp.map(e => e.value), 1) : 1;
-
-  // Visit highlights
-  const bestDay = visitDays ? [...visitDays].sort((a, b) => b.realizadas - a.realizadas)[0] : null;
-  const worstDay = visitDays ? [...visitDays].filter(d => d.marcadas > 0).sort((a, b) => a.taxa - b.taxa)[0] : null;
-  const totalVisits = visitDays ? visitDays.reduce((acc, d) => ({
-    marcadas: acc.marcadas + d.marcadas,
-    confirmadas: acc.confirmadas + d.confirmadas,
-    realizadas: acc.realizadas + d.realizadas,
-    noShow: acc.noShow + d.noShow,
-    canceladas: acc.canceladas + d.canceladas,
-  }), { marcadas: 0, confirmadas: 0, realizadas: 0, noShow: 0, canceladas: 0 }) : null;
-  const totalTaxa = totalVisits && totalVisits.marcadas > 0 ? Math.round((totalVisits.realizadas / totalVisits.marcadas) * 100) : 0;
-
-  const COLORS = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#f97316"];
+  const scopeLabel = scope === "admin" ? "Empresa" : scope === "gerente" ? "Minha Equipe" : "Meus Números";
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">📊 Relatório Semanal</h1>
-          <p className="text-sm text-muted-foreground">Visão consolidada da semana operacional</p>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            📊 Dashboard Executivo
+          </h1>
+          <p className="text-sm text-muted-foreground">{scopeLabel} · Visão consolidada</p>
         </div>
-        <Button variant="outline" size="sm" onClick={handlePDF} disabled={downloading}>
-          {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}
-          Baixar PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePDF} disabled={downloading}>
+            {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}
+            PDF
+          </Button>
+        </div>
       </div>
 
-      {/* Week selector */}
-      <div className="flex items-center justify-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(w => w - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-        <Badge variant="secondary" className="text-sm px-4 py-1.5">{week.label}</Badge>
-        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(w => w + 1)} disabled={weekOffset >= 0}><ChevronRight className="h-4 w-4" /></Button>
+      {/* ── Period Toggle + Navigation ── */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex items-center bg-muted rounded-lg p-0.5">
+          <button
+            onClick={() => { setMode("semana"); setOffset(0); }}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${mode === "semana" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Semanal
+          </button>
+          <button
+            onClick={() => { setMode("mes"); setOffset(0); }}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${mode === "mes" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Mensal
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOffset(o => o - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Badge variant="secondary" className="text-sm px-4 py-1.5 font-medium min-w-[200px] text-center justify-center">
+            {period.label}
+          </Badge>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOffset(o => o + 1)} disabled={offset >= 0}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div ref={reportRef} className="space-y-6">
-        {/* SECTION 1 — KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {KPI_CONFIG.map(({ key, label, icon: Icon, bg, iconColor }) => {
-            const val = kpis?.[key as keyof typeof kpis] as any;
+        {/* ═══ BLOCO 1 — KPI Cards ═══ */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {KPI_CONFIG.map(({ key, label, icon: Icon, color, isCurrency }) => {
+            const val = data?.kpis?.[key];
             return (
-              <Card key={key} className="overflow-hidden">
-                <CardContent className={`pt-4 pb-3 px-4 ${bg}`}>
-                  {kpisLoading ? (
-                    <Skeleton className="h-16 w-full" />
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Icon className={`h-4 w-4 ${iconColor}`} />
-                        <span className="text-xs text-muted-foreground truncate">{label}</span>
-                      </div>
-                      <p className="text-2xl font-bold">{val?.current ?? 0}</p>
-                      {key === "assinados" && val?.vgv > 0 && (
-                        <p className="text-xs text-emerald-600 font-medium">{formatBRLCompact(val.vgv)}</p>
-                      )}
-                      <Var current={val?.current ?? 0} prev={val?.prev ?? 0} />
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <div key={key} className="bg-background border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Icon className={`h-4 w-4 ${color}`} />
+                      <span className="text-[11px] text-muted-foreground font-medium truncate">{label}</span>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {isCurrency ? formatBRLCompact(val?.current ?? 0) : (val?.current ?? 0).toLocaleString("pt-BR")}
+                    </p>
+                    {key !== "leadsAtivos" && val && (
+                      <VarBadge pctChange={val.pctChange} periodLabel={prevPeriodLabel} />
+                    )}
+                  </>
+                )}
+              </div>
             );
           })}
         </div>
 
-        {/* SECTION 2 — Leads */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Entradas por Origem</CardTitle></CardHeader>
-            <CardContent>
-              {originLoading ? <Skeleton className="h-48 w-full" /> : !leadsOrigin?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Nenhum lead captado neste período</p>
-              ) : isMobile ? (
-                <div className="space-y-2">
-                  {leadsOrigin.map((item, i) => (
-                    <div key={i} className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="truncate max-w-[200px]">{item.name}</span>
-                        <span className="font-semibold">{item.value}</span>
-                      </div>
-                      <Progress value={(item.value / maxOrigin) * 100} className="h-1.5" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={Math.max(250, leadsOrigin.length * 36)}>
-                  <BarChart data={leadsOrigin} layout="vertical" margin={{ left: 120 }}>
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={115} />
-                    <RTooltip />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {leadsOrigin.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Leads por Empreendimento (Top 8)</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              {empLoading ? <Skeleton className="h-48 w-full" /> : !leadsEmp?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Nenhum lead captado neste período</p>
-              ) : (leadsEmp || []).map((emp, i) => (
-                <div key={i} className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="truncate max-w-[200px]">{emp.name}</span>
-                    <span className="font-semibold">{emp.value}</span>
-                  </div>
-                  <Progress value={(emp.value / maxEmp) * 100} className="h-1.5" />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+        {/* ═══ BLOCO 2 — Gráficos de Tendência ═══ */}
+        {!isLoading && data?.dailyTrends && data.dailyTrends.length > 1 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Line chart — daily KPIs */}
+            <div className="bg-background border border-border rounded-xl p-5 shadow-sm">
+              <h3 className="text-sm font-semibold text-foreground mb-4">Evolução Diária</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={data.dailyTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="diaLabel" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <RTooltip contentStyle={{ fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Line type="monotone" dataKey="ligacoes" name="Ligações" stroke="#6366f1" strokeWidth={2} dot={{ r: 2 }} />
+                  <Line type="monotone" dataKey="leads" name="Leads" stroke="#06b6d4" strokeWidth={2} dot={{ r: 2 }} />
+                  <Line type="monotone" dataKey="visitas" name="Visitas" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
 
-        {/* SECTION 3 — Funnel */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Funil da Semana</CardTitle></CardHeader>
-          <CardContent>
-            {funnelLoading ? <Skeleton className="h-48 w-full" /> : !funnel?.length ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Sem dados de funil disponíveis</p>
-            ) : (
-              <div className="space-y-2">
-                {(funnel || []).map((stage, i) => {
-                  const width = Math.max((stage.count / maxFunnel) * 100, 5);
-                  const isLast = i >= (funnel?.length || 0) - 1;
-                  const rateColor = stage.conversionRate >= 60 ? "text-emerald-600" : stage.conversionRate >= 40 ? "text-amber-500" : "text-destructive";
-                  return (
-                    <div key={stage.id} className="flex items-center gap-3">
-                      <span className="text-xs w-28 truncate text-muted-foreground">{stage.nome}</span>
-                      <div className="flex-1 flex items-center gap-2">
-                        <div className="h-6 rounded bg-primary/80 flex items-center justify-end px-2 transition-all" style={{ width: `${width}%` }}>
-                          <span className="text-[10px] text-primary-foreground font-bold">{stage.count}</span>
-                        </div>
-                        {!isLast && (
-                          <span className={`text-[10px] font-medium ${rateColor}`}>
-                            → {stage.conversionRate}%
+            {/* Bar chart — comparison */}
+            <div className="bg-background border border-border rounded-xl p-5 shadow-sm">
+              <h3 className="text-sm font-semibold text-foreground mb-4">Leads × Visitas × Negócios</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={data.dailyTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="diaLabel" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <RTooltip contentStyle={{ fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="leads" name="Leads" fill="#06b6d4" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="visitas" name="Visitas" fill="#10b981" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="negocios" name="Negócios" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ BLOCO 3 — Ranking de Corretores ═══ */}
+        {!isLoading && sortedCorretores.length > 0 && (
+          <div className="bg-background border border-border rounded-xl shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-border">
+              <h3 className="text-sm font-semibold text-foreground">🏆 Ranking de Corretores</h3>
+              <p className="text-[10px] text-muted-foreground">Clique no cabeçalho para ordenar · ⭐ = top da coluna</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    {([
+                      { key: "nome" as SortKey, label: "Corretor", align: "left" },
+                      { key: "equipe" as SortKey, label: "Equipe", align: "left" },
+                      { key: "presencas" as SortKey, label: "Pres.", align: "center" },
+                      { key: "ligacoes" as SortKey, label: "Ligações", align: "center" },
+                      { key: "leads" as SortKey, label: "Leads", align: "center" },
+                      { key: "visitasMarcadas" as SortKey, label: "Vis.Marc.", align: "center" },
+                      { key: "visitasRealizadas" as SortKey, label: "Vis.Real.", align: "center" },
+                      { key: "negociosCriados" as SortKey, label: "Neg.Cri.", align: "center" },
+                      { key: "negociosAssinados" as SortKey, label: "Assinados", align: "center" },
+                      { key: "vgv" as SortKey, label: "VGV", align: "right" },
+                    ]).map(col => (
+                      <th
+                        key={col.key}
+                        onClick={() => handleSort(col.key)}
+                        className={`px-3 py-2.5 font-semibold text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none ${col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"}`}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {col.label}
+                          {sortKey === col.key && (sortAsc ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedCorretores.map((c, i) => (
+                    <tr key={c.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? "" : "bg-muted/5"}`}>
+                      <td className="px-3 py-2.5 font-medium text-foreground whitespace-nowrap">
+                        <span className="text-muted-foreground text-[10px] mr-1.5">#{i + 1}</span>
+                        {c.nome}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${c.equipeColor}`}>{c.equipe}</span>
+                      </td>
+                      {(["presencas", "ligacoes", "leads", "visitasMarcadas", "visitasRealizadas", "negociosCriados", "negociosAssinados"] as SortKey[]).map(k => (
+                        <td key={k} className="px-3 py-2.5 text-center">
+                          <span className={`font-semibold ${topPerformers[k] === c.id ? "text-amber-600" : "text-foreground"}`}>
+                            {topPerformers[k] === c.id && "⭐ "}{(c[k] as number) || 0}
                           </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* SECTION 4 — Visits */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Visitas da Semana</CardTitle></CardHeader>
-          <CardContent>
-            {visitsLoading ? <Skeleton className="h-48 w-full" /> : (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b text-muted-foreground">
-                        <th className="text-left py-2 pr-2">Dia</th>
-                        <th className="text-center py-2 px-1">Marc.</th>
-                        <th className="text-center py-2 px-1">Conf.</th>
-                        <th className="text-center py-2 px-1">Realiz.</th>
-                        <th className="text-center py-2 px-1">No Show</th>
-                        <th className="text-center py-2 px-1">Cancel.</th>
-                        <th className="text-center py-2 px-1">Taxa%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(visitDays || []).map((d, i) => (
-                        <tr key={i} className="border-b border-border/50">
-                          <td className="py-1.5 pr-2 capitalize font-medium">{d.dia}</td>
-                          <td className="text-center">{d.marcadas}</td>
-                          <td className="text-center">{d.confirmadas}</td>
-                          <td className="text-center font-semibold">{d.realizadas}</td>
-                          <td className="text-center text-destructive">{d.noShow}</td>
-                          <td className="text-center text-muted-foreground">{d.canceladas}</td>
-                          <td className={`text-center font-semibold ${d.taxa >= 60 ? "text-emerald-600" : d.taxa >= 40 ? "text-amber-500" : "text-destructive"}`}>{d.taxa}%</td>
-                        </tr>
+                        </td>
                       ))}
-                      {totalVisits && (
-                        <tr className="font-bold border-t-2">
-                          <td className="py-1.5">Total</td>
-                          <td className="text-center">{totalVisits.marcadas}</td>
-                          <td className="text-center">{totalVisits.confirmadas}</td>
-                          <td className="text-center">{totalVisits.realizadas}</td>
-                          <td className="text-center">{totalVisits.noShow}</td>
-                          <td className="text-center">{totalVisits.canceladas}</td>
-                          <td className={`text-center ${totalTaxa >= 60 ? "text-emerald-600" : totalTaxa >= 40 ? "text-amber-500" : "text-destructive"}`}>{totalTaxa}%</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                {bestDay && (
-                  <div className="mt-3 space-y-1 text-xs">
-                    <p>🏆 <strong>Melhor dia:</strong> {bestDay.diaShort} com {bestDay.realizadas} visitas realizadas ({bestDay.taxa}%)</p>
-                    {worstDay && <p>⚠️ <strong>Pior dia:</strong> {worstDay.diaShort} com {worstDay.taxa}% de realização</p>}
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* SECTION 5 — Deals */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Negócios da Semana</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {dealsLoading ? <Skeleton className="h-32 w-full" /> : (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  {(deals?.pipeline || []).map(p => {
-                    const isGreen = ["assinado", "vendido"].includes(p.fase);
-                    return (
-                      <div key={p.fase} className={`rounded-lg p-3 text-center ${isGreen ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-muted/50"}`}>
-                        <p className="text-xs text-muted-foreground capitalize">{p.fase}</p>
-                        <p className="text-lg font-bold">{p.count}</p>
-                        <p className={`text-[10px] font-medium ${isGreen ? "text-emerald-600" : "text-muted-foreground"}`}>
-                          {formatBRLCompact(p.vgv)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-semibold mb-2">Assinados na Semana</h4>
-                  {(deals?.assinados?.length || 0) > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b text-muted-foreground">
-                            <th className="text-left py-1.5">Cliente</th>
-                            <th className="text-left py-1.5">Empreendimento</th>
-                            <th className="text-right py-1.5">VGV</th>
-                            <th className="text-left py-1.5">Corretor</th>
-                            <th className="text-left py-1.5">Data</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {deals!.assinados.map((d: any) => (
-                            <tr key={d.id} className="border-b border-border/50">
-                              <td className="py-1.5">{d.nome_cliente || "—"}</td>
-                              <td className="py-1.5">{d.empreendimento || "—"}</td>
-                              <td className="py-1.5 text-right font-semibold text-emerald-600">{formatBRLCompact(d.vgv_final || 0)}</td>
-                              <td className="py-1.5">{d.corretor_nome}</td>
-                              <td className="py-1.5">{d.data_assinatura ? format(new Date(d.data_assinatura), "dd/MM") : "—"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">Nenhuma assinatura ainda — a semana ainda não acabou! 💪</p>
-                  )}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* SECTION 6 — Rankings */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Melhores Desempenhos</CardTitle></CardHeader>
-          <CardContent>
-            {rankingsLoading ? <Skeleton className="h-48 w-full" /> : (
-              <Tabs defaultValue="geral" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="geral">Geral</TabsTrigger>
-                  <TabsTrigger value="equipe">Por Equipe</TabsTrigger>
-                  <TabsTrigger value="corretor">Por Corretor</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="geral" className="mt-4 space-y-4">
-                  {[
-                    { title: "🏆 Prospecção OA", data: rankings?.topProspeccao, metric: (c: any) => `${c.aproveitados} aproveitados` },
-                    { title: "🏆 Gestão de Leads", data: rankings?.topGestao, metric: (c: any) => `${c.avancos} avanços` },
-                    { title: "🏆 Visitas", data: rankings?.topVisitas, metric: (c: any) => `${c.taxaVisitas}% taxa` },
-                    { title: "🏆 Vendas", data: rankings?.topVendas, metric: (c: any) => formatBRLCompact(c.vgv) },
-                  ].map(cat => (
-                     <div key={cat.title}>
-                      <p className="text-xs font-semibold mb-1">{cat.title}</p>
-                      {!(cat.data || []).length ? (
-                        <p className="text-xs text-muted-foreground py-2">Sem dados neste período</p>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-2">
-                          {(cat.data || []).map((c: any, i: number) => (
-                            <div key={c.id} className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
-                              <span className="text-sm font-bold text-muted-foreground">{i + 1}º</span>
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium truncate">{c.nome}</p>
-                                <p className="text-[10px] text-muted-foreground">{c.equipe} · {cat.metric(c)}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                      <td className="px-3 py-2.5 text-right">
+                        <span className={`font-bold ${topPerformers.vgv === c.id ? "text-amber-600" : c.vgv > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
+                          {topPerformers.vgv === c.id && "⭐ "}{c.vgv > 0 ? formatBRLCompact(c.vgv) : "—"}
+                        </span>
+                      </td>
+                    </tr>
                   ))}
-                </TabsContent>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-                <TabsContent value="equipe" className="mt-4">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b text-muted-foreground">
-                          <th className="text-left py-2">Equipe</th>
-                          <th className="text-center py-2">Aproveit.</th>
-                          <th className="text-center py-2">V. Realizadas</th>
-                          <th className="text-center py-2">VGV</th>
-                          <th className="text-center py-2">Score</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(rankings?.teams || []).map((t: any, i: number) => (
-                          <tr key={t.equipe} className={`border-b border-border/50 ${i === 0 ? "bg-emerald-500/5" : ""}`}>
-                            <td className="py-1.5 font-medium flex items-center gap-1">
-                              {i === 0 && <span>🥇</span>}{t.equipe}
-                            </td>
-                            <td className="text-center">{t.aproveitados}</td>
-                            <td className="text-center">{t.visitasRealizadas}</td>
-                            <td className="text-center">{formatBRLCompact(t.vgv)}</td>
-                            <td className="text-center font-semibold">{t.score.toFixed(1)}</td>
-                          </tr>
+        {/* ═══ BLOCO 4 — Breakdown por Equipe ═══ */}
+        {!isLoading && data?.teams && data.teams.length > 0 && scope !== "corretor" && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground px-1">📋 Breakdown por Equipe</h3>
+            {data.teams.map(team => (
+              <Collapsible key={team.equipe} open={expandedTeams.has(team.equipe)} onOpenChange={() => toggleTeam(team.equipe)}>
+                <div className="bg-background border border-border rounded-xl shadow-sm overflow-hidden">
+                  <CollapsibleTrigger className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted/20 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${team.color}`}>{team.equipe}</span>
+                      <span className="text-xs text-muted-foreground">{team.corretores.length} corretor(es)</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="hidden md:flex items-center gap-4 text-xs">
+                        <span className="text-muted-foreground">Lig: <strong className="text-foreground">{team.totals.ligacoes}</strong></span>
+                        <span className="text-muted-foreground">Vis: <strong className="text-foreground">{team.totals.visitasRealizadas}</strong></span>
+                        <span className="text-muted-foreground">Neg: <strong className="text-foreground">{team.totals.negociosAssinados}</strong></span>
+                        <span className="text-muted-foreground">VGV: <strong className="text-emerald-600">{formatBRLCompact(team.totals.vgv)}</strong></span>
+                      </div>
+                      {expandedTeams.has(team.equipe) ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <div className="border-t border-border">
+                      {/* Team totals */}
+                      <div className="grid grid-cols-4 md:grid-cols-8 gap-2 px-5 py-3 bg-muted/20">
+                        {[
+                          { label: "Presenças", value: team.totals.presencas },
+                          { label: "Ligações", value: team.totals.ligacoes },
+                          { label: "Leads", value: team.totals.leads },
+                          { label: "Vis.Marc.", value: team.totals.visitasMarcadas },
+                          { label: "Vis.Real.", value: team.totals.visitasRealizadas },
+                          { label: "Neg.Cri.", value: team.totals.negociosCriados },
+                          { label: "Assinados", value: team.totals.negociosAssinados },
+                          { label: "VGV", value: team.totals.vgv, isCurrency: true },
+                        ].map(item => (
+                          <div key={item.label} className="text-center">
+                            <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                            <p className="text-sm font-bold text-foreground">
+                              {item.isCurrency ? formatBRLCompact(item.value) : item.value}
+                            </p>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </TabsContent>
+                      </div>
 
-                <TabsContent value="corretor" className="mt-4">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b text-muted-foreground">
-                          <th className="text-left py-2">#</th>
-                          <th className="text-left py-2">Nome</th>
-                          <th className="text-left py-2">Equipe</th>
-                          <th className="text-center py-2">Score</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(rankings?.top10 || []).map((c: any, i: number) => (
-                          <tr key={c.id} className="border-b border-border/50">
-                            <td className="py-1.5 font-bold text-muted-foreground">{i + 1}</td>
-                            <td className="py-1.5 font-medium">{c.nome}</td>
-                            <td className="py-1.5 text-muted-foreground">{c.equipe}</td>
-                            <td className="text-center font-semibold">{c.score.toFixed(1)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            )}
-          </CardContent>
-        </Card>
+                      {/* Per-corretor mini table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border bg-muted/10">
+                              <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Corretor</th>
+                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Pres.</th>
+                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Lig.</th>
+                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Leads</th>
+                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">V.M.</th>
+                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">V.R.</th>
+                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Neg.</th>
+                              <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Ass.</th>
+                              <th className="text-right px-3 py-2 font-semibold text-muted-foreground">VGV</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {team.corretores.sort((a, b) => b.vgv - a.vgv).map((c, i) => {
+                              // Progress bar relative to team max
+                              const teamMax = Math.max(...team.corretores.map(x => x.ligacoes), 1);
+                              const barPct = Math.round((c.ligacoes / teamMax) * 100);
 
-        {/* SECTION 7 — AI Analysis */}
-        <AIAnalysisSection week={week} kpis={kpis} rankings={rankings} visitDays={visitDays} />
+                              return (
+                                <tr key={c.id} className={`border-b border-border/30 hover:bg-muted/10 ${i % 2 !== 0 ? "bg-muted/5" : ""}`}>
+                                  <td className="px-3 py-2 font-medium text-foreground">{c.nome}</td>
+                                  <td className="text-center px-2 py-2">{c.presencas}</td>
+                                  <td className="text-center px-2 py-2">
+                                    <div className="flex items-center gap-1 justify-center">
+                                      <span className="font-semibold">{c.ligacoes}</span>
+                                      <div className="hidden md:block w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                                        <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${barPct}%` }} />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="text-center px-2 py-2">{c.leads}</td>
+                                  <td className="text-center px-2 py-2">{c.visitasMarcadas}</td>
+                                  <td className="text-center px-2 py-2">{c.visitasRealizadas}</td>
+                                  <td className="text-center px-2 py-2">{c.negociosCriados}</td>
+                                  <td className="text-center px-2 py-2">{c.negociosAssinados}</td>
+                                  <td className="text-right px-3 py-2 font-semibold">{c.vgv > 0 ? formatBRLCompact(c.vgv) : "—"}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            ))}
+          </div>
+        )}
+
+        {/* Loading state */}
+        {isLoading && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Skeleton className="h-64 rounded-xl" />
+              <Skeleton className="h-64 rounded-xl" />
+            </div>
+            <Skeleton className="h-96 rounded-xl" />
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && (!data?.corretores || data.corretores.length === 0) && (
+          <div className="bg-background border border-border rounded-xl p-12 text-center">
+            <p className="text-muted-foreground">Sem dados disponíveis para o período selecionado.</p>
+          </div>
+        )}
       </div>
     </div>
   );
