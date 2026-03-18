@@ -64,6 +64,7 @@ export default function ImoveisPage() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [searchMode, setSearchMode] = useState<"normal" | "ai">("normal");
   const [aiQuery, setAiQuery] = useState("");
+  const [geoRadius, setGeoRadius] = useState<{ lat: number; lng: number; radiusKm: number } | undefined>();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Vitrine selection
