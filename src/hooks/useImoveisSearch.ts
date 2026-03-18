@@ -272,7 +272,7 @@ export function useImoveisSearch({
       if (e?.name === "AbortError" || controller.signal.aborted) return;
       toast.error("Erro de conexão");
     }
-  }, [filters.search, filters.contrato, filters.tipo, filters.bairro, filters.dormitorios, filters.suitesFilter, filters.vagas, filters.areaRange, filters.valorRange, filters.somenteObras, filters.campanhaAtiva, filters.uhomeOnly, campanhaOverrides]);
+  }, [filters.search, filters.contrato, filters.tipo, filters.bairro, filters.dormitorios, filters.suitesFilter, filters.vagas, filters.areaRange, filters.valorRange, filters.somenteObras, filters.campanhaAtiva, filters.uhomeOnly, filters.cidade, campanhaOverrides]);
 
   // ── Main fetch orchestrator ──
   const fetchImoveis = useCallback(async (pageNum: number, campanha = filters.campanhaAtiva, uhome = filters.uhomeOnly) => {
