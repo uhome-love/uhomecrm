@@ -127,7 +127,7 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
     if (cidade.length > 0 && !(cidade.length === 1 && cidade[0] === "Porto Alegre")) p.set("cidade", cidade.join(","));
 
     setSearchParams(p, { replace: true });
-  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, setSearchParams]);
+  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, cidade, setSearchParams]);
 
   useEffect(() => {
     // Skip URL write on first render (we just read from URL)
