@@ -98,11 +98,63 @@ Deno.serve(async (req) => {
 
           // Process incoming messages (replies)
           const messages = value?.messages || [];
+          const contacts = value?.contacts || [];
+
           for (const msg of messages) {
             const from = msg?.from; // e.g. "5551999990000"
             if (!from) continue;
 
-            // Update the most recent send to this phone number as "replied"
+            const contactName = contacts.find((c: any) => c.wa_id === from)?.profile?.name || null;
+
+            // ── Save to whatsapp_respostas ──
+            let mensagemTexto = "";
+            let tipoMsg = "texto";
+            let formPhone: string | null = null;
+            let formEmail: string | null = null;
+
+            if (msg.type === "text" && msg.text?.body) {
+              mensagemTexto = msg.text.body;
+              tipoMsg = "texto";
+            } else if (msg.type === "interactive" && msg.interactive?.type === "nfm_reply") {
+              tipoMsg = "formulario";
+              try {
+                const responseJson = JSON.parse(msg.interactive.nfm_reply?.response_json || "{}");
+                formPhone = responseJson.phone || responseJson.telefone || null;
+                formEmail = responseJson.email || null;
+                mensagemTexto = JSON.stringify(responseJson);
+              } catch {
+                mensagemTexto = msg.interactive.nfm_reply?.response_json || "";
+              }
+            } else if (msg.type === "interactive" && msg.interactive?.type === "button_reply") {
+              mensagemTexto = msg.interactive.button_reply?.title || "";
+              tipoMsg = "botao";
+            } else if (["image", "document", "audio", "video"].includes(msg.type)) {
+              mensagemTexto = msg[msg.type]?.caption || `[${msg.type}]`;
+              tipoMsg = msg.type;
+            } else if (msg.type === "reaction") {
+              mensagemTexto = msg.reaction?.emoji || "👍";
+              tipoMsg = "reaction";
+            } else {
+              mensagemTexto = JSON.stringify(msg);
+              tipoMsg = msg.type || "desconhecido";
+            }
+
+            const { error: insertErr } = await supabase.from("whatsapp_respostas").insert({
+              phone: from,
+              nome: contactName,
+              mensagem: mensagemTexto,
+              tipo: tipoMsg,
+              payload_raw: msg,
+              form_phone: formPhone,
+              form_email: formEmail,
+            });
+            if (insertErr) {
+              console.error(`❌ Error saving whatsapp_respostas:`, insertErr.message);
+            } else {
+              console.log(`📥 Saved response from ${from} (${tipoMsg})`);
+            }
+
+            // ── Update campaign send status to "replied" ──
             const { data: updatedSends, error } = await supabase
               .from("whatsapp_campaign_sends")
               .update({
@@ -122,7 +174,6 @@ Deno.serve(async (req) => {
             const leadId = sendRecord?.pipeline_lead_id;
 
             if (leadId) {
-              // Fetch lead info
               const { data: lead } = await supabase
                 .from("pipeline_leads")
                 .select("id, nome, empreendimento, corretor_id, observacoes")
@@ -131,9 +182,8 @@ Deno.serve(async (req) => {
 
               if (lead) {
                 const leadNome = lead.nome || "Lead";
-                const msgText = msg?.text?.body || msg?.type || "mensagem";
+                const msgText = mensagemTexto || msg?.type || "mensagem";
 
-                // Get batch/campaign name for context
                 let campanhaLabel = "WhatsApp";
                 if (sendRecord?.batch_id) {
                   const { data: batch } = await supabase
@@ -144,7 +194,6 @@ Deno.serve(async (req) => {
                   if (batch) campanhaLabel = batch.nome || batch.campanha || "WhatsApp";
                 }
 
-                // 1) Notify the corretor
                 if (lead.corretor_id) {
                   await supabase.from("notifications").insert({
                     user_id: lead.corretor_id,
@@ -157,7 +206,6 @@ Deno.serve(async (req) => {
                   console.log(`📩 Corretor ${lead.corretor_id} notified about reply from ${leadNome}`);
                 }
 
-                // 2) Register activity in lead timeline
                 await supabase.from("pipeline_atividades").insert({
                   pipeline_lead_id: lead.id,
                   tipo: "whatsapp",
@@ -168,7 +216,6 @@ Deno.serve(async (req) => {
                   responsavel_id: lead.corretor_id || null,
                 });
 
-                // 3) Append to observacoes
                 const newObs = `[${new Date().toISOString().slice(0, 16)}] 📩 Resposta WhatsApp (${campanhaLabel}): "${msgText.slice(0, 200)}"`;
                 const mergedObs = lead.observacoes
                   ? `${lead.observacoes}\n---\n${newObs}`
@@ -191,9 +238,10 @@ Deno.serve(async (req) => {
       );
     } catch (err) {
       console.error("❌ Webhook error:", err);
+      // Always return 200 to Meta even on errors
       return new Response(
-        JSON.stringify({ error: err.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ ok: true, error: "internal" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
   }

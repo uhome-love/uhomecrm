@@ -7075,6 +7075,45 @@ export type Database = {
           },
         ]
       }
+      whatsapp_respostas: {
+        Row: {
+          campanha: string | null
+          created_at: string
+          form_email: string | null
+          form_phone: string | null
+          id: string
+          mensagem: string | null
+          nome: string | null
+          payload_raw: Json | null
+          phone: string
+          tipo: string
+        }
+        Insert: {
+          campanha?: string | null
+          created_at?: string
+          form_email?: string | null
+          form_phone?: string | null
+          id?: string
+          mensagem?: string | null
+          nome?: string | null
+          payload_raw?: Json | null
+          phone: string
+          tipo?: string
+        }
+        Update: {
+          campanha?: string | null
+          created_at?: string
+          form_email?: string | null
+          form_phone?: string | null
+          id?: string
+          mensagem?: string | null
+          nome?: string | null
+          payload_raw?: Json | null
+          phone?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       v_checkpoint_daily: {
