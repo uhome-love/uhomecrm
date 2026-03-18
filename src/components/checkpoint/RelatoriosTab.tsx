@@ -453,5 +453,16 @@ export default function RelatoriosTab({ teamUserIds, teamNameMap }: Props) {
         </>
       )}
     </div>
+
+      <ManagerKpiDetailDialog
+        open={!!kpiDetail}
+        onOpenChange={(o) => { if (!o) setKpiDetail(null); }}
+        type={kpiDetail?.type || "ligacoes"}
+        label={kpiDetail?.label || ""}
+        teamUserIds={teamUserIds}
+        teamNameMap={teamNameMap}
+        dateRange={kpiDateRange}
+      />
+    </div>
   );
 }
