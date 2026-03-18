@@ -566,6 +566,7 @@ export default function CeoDashboard() {
             iconColor="text-emerald-600"
             ceoMeta={ceoMetasConsolidadas.meta_vgv_assinado || null}
             metaType="currency"
+            onClick={() => setKpiDetail({ type: "vgv_assinado", label: "VGV Assinado" })}
           />
         </div>
       </div>
