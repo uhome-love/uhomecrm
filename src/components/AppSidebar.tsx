@@ -307,10 +307,9 @@ export function AppSidebar() {
         topItem: { title: "Dashboard CEO", url: "/ceo", icon: Home },
         groups: [
           {
-            label: "Visão Geral",
+            label: "Principal",
             items: [
-              { title: "Relatório Semanal", url: "/relatorio-semanal", icon: FileBarChart },
-              { title: "Meu Time", url: "/meu-time", icon: Users },
+              { title: "Relatório Geral", url: "/relatorio-semanal", icon: FileBarChart },
               { title: "Checkpoint", url: "/central-do-gerente", icon: ClipboardCheck },
             ],
           },
