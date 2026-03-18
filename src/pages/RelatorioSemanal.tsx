@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -76,6 +77,9 @@ export default function RelatorioSemanal() {
     end: format(period.end, "yyyy-MM-dd"),
   }), [period.start, period.end]);
 
+  // Team filter (CEO only)
+  const [selectedTeam, setSelectedTeam] = useState<string>("all");
+
   // Ranking sort state
   const [sortKey, setSortKey] = useState<SortKey>("vgv");
   const [sortAsc, setSortAsc] = useState(false);
@@ -94,27 +98,61 @@ export default function RelatorioSemanal() {
     else { setSortKey(key); setSortAsc(false); }
   };
 
-  const sortedCorretores = useMemo(() => {
+  // Filter corretores by selected team
+  const filteredCorretores = useMemo(() => {
     if (!data?.corretores) return [];
-    return [...data.corretores].sort((a, b) => {
+    if (selectedTeam === "all") return data.corretores;
+    return data.corretores.filter(c => c.equipe === selectedTeam);
+  }, [data?.corretores, selectedTeam]);
+
+  const sortedCorretores = useMemo(() => {
+    return [...filteredCorretores].sort((a, b) => {
       const va = a[sortKey] ?? 0;
       const vb = b[sortKey] ?? 0;
       if (typeof va === "string") return sortAsc ? (va as string).localeCompare(vb as string) : (vb as string).localeCompare(va as string);
       return sortAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
     });
-  }, [data?.corretores, sortKey, sortAsc]);
+  }, [filteredCorretores, sortKey, sortAsc]);
+
+  // Filtered KPIs: recalculate from corretores when a team is selected
+  const filteredKpis = useMemo(() => {
+    if (!data?.kpis) return data?.kpis;
+    if (selectedTeam === "all") return data.kpis;
+    // Sum from filtered corretores
+    const cs = filteredCorretores;
+    const sumPresencas = cs.reduce((s, c) => s + c.presencas, 0);
+    const sumLigacoes = cs.reduce((s, c) => s + c.ligacoes, 0);
+    const sumLeads = cs.reduce((s, c) => s + c.leads, 0);
+    const sumVisMarcadas = cs.reduce((s, c) => s + c.visitasMarcadas, 0);
+    const sumVisRealizadas = cs.reduce((s, c) => s + c.visitasRealizadas, 0);
+    const sumNegCriados = cs.reduce((s, c) => s + c.negociosCriados, 0);
+    const sumNegAssinados = cs.reduce((s, c) => s + c.negociosAssinados, 0);
+    const sumVgv = cs.reduce((s, c) => s + c.vgv, 0);
+    const mk = (cur: number) => ({ current: cur, prev: 0, pctChange: 0 });
+    return {
+      ...data.kpis,
+      presencas: mk(sumPresencas),
+      ligacoes: mk(sumLigacoes),
+      leadsRecebidos: mk(sumLeads),
+      visitasMarcadas: mk(sumVisMarcadas),
+      visitasRealizadas: mk(sumVisRealizadas),
+      negociosCriados: mk(sumNegCriados),
+      negociosAssinados: mk(sumNegAssinados),
+      vgvTotal: { ...mk(sumVgv), currentRaw: sumVgv, prevRaw: 0 },
+    } as typeof data.kpis;
+  }, [data?.kpis, selectedTeam, filteredCorretores]);
 
   // Find top performer for each column
   const topPerformers = useMemo(() => {
-    if (!data?.corretores?.length) return {};
+    if (!filteredCorretores.length) return {};
     const keys: SortKey[] = ["presencas", "ligacoes", "leads", "visitasMarcadas", "visitasRealizadas", "negociosCriados", "negociosAssinados", "vgv"];
     const result: Record<string, string> = {};
     keys.forEach(k => {
-      const top = [...data.corretores].sort((a, b) => (b[k] as number) - (a[k] as number))[0];
+      const top = [...filteredCorretores].sort((a, b) => (b[k] as number) - (a[k] as number))[0];
       if (top && (top[k] as number) > 0) result[k] = top.id;
     });
     return result;
-  }, [data?.corretores]);
+  }, [filteredCorretores]);
 
   const prevPeriodLabel = mode === "semana" ? "vs semana ant." : "vs mês ant.";
 
@@ -140,7 +178,10 @@ export default function RelatorioSemanal() {
     }
   };
 
-  const scopeLabel = scope === "admin" ? "Empresa" : scope === "gerente" ? "Minha Equipe" : "Meus Números";
+  const scopeLabel = scope === "admin" 
+    ? (selectedTeam === "all" ? "Empresa" : selectedTeam)
+    : scope === "gerente" ? "Minha Equipe" : "Meus Números";
+  const teamOptions = useMemo(() => data?.teams?.map(t => t.equipe) || [], [data?.teams]);
 
   return (
     <div className="space-y-6 pb-8">
@@ -187,13 +228,27 @@ export default function RelatorioSemanal() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+        {/* Team filter for CEO */}
+        {scope === "admin" && teamOptions.length > 0 && (
+          <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+            <SelectTrigger className="w-[220px] mx-auto">
+              <SelectValue placeholder="Todas as equipes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as equipes</SelectItem>
+              {teamOptions.map(eq => (
+                <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div ref={reportRef} className="space-y-6">
         {/* ═══ BLOCO 1 — KPI Cards ═══ */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {KPI_CONFIG.map(({ key, label, icon: Icon, color, isCurrency }) => {
-            const val = data?.kpis?.[key];
+            const val = filteredKpis?.[key];
             return (
               <div key={key} onClick={() => !isLoading && key !== "leadsAtivos" && setKpiDetail({ type: key, label })} className={`bg-background border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow ${key !== "leadsAtivos" ? "cursor-pointer" : ""}`}>
                 {isLoading ? (
