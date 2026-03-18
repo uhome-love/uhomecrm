@@ -432,28 +432,6 @@ export default function CeoDashboard() {
         </CardContent>
       </Card>
 
-      {/* ─── DISPARADOR WHATSAPP ─── */}
-      <Card className="border-green-500/30">
-        <CardContent className="pt-4 pb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
-              <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-sm font-semibold">📲 Disparador WhatsApp</span>
-              <p className="text-xs text-muted-foreground">Campanhas em lote via WhatsApp API</p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => navigate("/disparador-whatsapp")}
-            className="w-full sm:w-auto gap-1.5 bg-green-600 hover:bg-green-700 text-white mt-2"
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-            Abrir Disparador
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* ─── SEÇÃO 2: GESTÃO DE LEADS ─── */}
       {/* ═══════════════════════════════════════════════════════ */}
