@@ -279,7 +279,7 @@ export function useRoleta() {
       .from("profiles")
       .select("id, nome, avatar_url")
       .in("id", userIds);
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const profileMap = new Map((profiles as any[])?.map((p: any) => [p.id, p]) || []);
 
     setCredenciamentos(creds.map(c => ({
       ...c,
