@@ -98,9 +98,9 @@ export function buildFilterBy(filters: {
   const situacoes = Array.isArray(filters.situacao) ? filters.situacao.filter(Boolean) : (filters.situacao ? [filters.situacao] : []);
   if (situacoes.length > 0) {
     if (situacoes.length === 1) {
-      parts.push(`status:=${situacoes[0]}`);
+      parts.push(`status:=\`${situacoes[0]}\``);
     } else {
-      parts.push(`status:[${situacoes.join(",")}]`);
+      parts.push(`status:[\`${situacoes.join("`,`")}\`]`);
     }
   }
   if (filters.uhomeOnly) {
@@ -110,17 +110,17 @@ export function buildFilterBy(filters: {
   // Multi-select construtora
   const construtoras = Array.isArray(filters.construtora) ? filters.construtora.filter(Boolean) : (filters.construtora ? [filters.construtora] : []);
   if (construtoras.length === 1) {
-    parts.push(`construtora:=${construtoras[0]}`);
+    parts.push(`construtora:=\`${construtoras[0]}\``);
   } else if (construtoras.length > 1) {
-    parts.push(`construtora:[${construtoras.join(",")}]`);
+    parts.push(`construtora:[\`${construtoras.join("`,`")}\`]`);
   }
 
   // Multi-select empreendimento
   const empreendimentos = Array.isArray(filters.empreendimento) ? filters.empreendimento.filter(Boolean) : (filters.empreendimento ? [filters.empreendimento] : []);
   if (empreendimentos.length === 1) {
-    parts.push(`empreendimento:=${empreendimentos[0]}`);
+    parts.push(`empreendimento:=\`${empreendimentos[0]}\``);
   } else if (empreendimentos.length > 1) {
-    parts.push(`empreendimento:[${empreendimentos.join(",")}]`);
+    parts.push(`empreendimento:[\`${empreendimentos.join("`,`")}\`]`);
   }
 
   return parts.join(" && ");
