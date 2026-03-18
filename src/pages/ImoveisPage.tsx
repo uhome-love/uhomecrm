@@ -958,6 +958,19 @@ export default function ImoveisPage() {
                               </div>
                             ) : null;
                           })()}
+                          {leadMatch.hasMatch && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); leadMatch.toggleImovel(imovelId); }}
+                              className={cn(
+                                "absolute top-3 right-3 z-20 p-1.5 rounded-full shadow-sm backdrop-blur-sm transition-all",
+                                leadMatch.matchedCodigos.has(imovelId)
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background/70 text-muted-foreground hover:bg-background"
+                              )}
+                            >
+                              <Bookmark className={cn("h-4 w-4", leadMatch.matchedCodigos.has(imovelId) && "fill-current")} />
+                            </button>
+                          )}
                           <PropertyCardGrid item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} getPreco={getPreco} onPreview={openPreview} />
                         </div>
                       );
