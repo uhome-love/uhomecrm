@@ -23,7 +23,7 @@ import LeadsDistribuidosPanel from "@/components/distribuicao/LeadsDistribuidosP
 import CeoDailyReport from "@/components/ceo/CeoDailyReport";
 import BulkEmpreendimentoAssign from "@/components/ceo/BulkEmpreendimentoAssign";
 import { formatBRLCompact } from "@/lib/utils";
-import HomiBriefingCard from "@/components/ceo/HomiBriefingCard";
+
 import AiCallPanel from "@/components/ceo/AiCallPanel";
 import KpiDetailDialog, { type KpiDetailType } from "@/components/ceo/KpiDetailDialog";
 
@@ -172,12 +172,6 @@ export default function CeoDashboard() {
       });
   }, []);
 
-  // Build dashboard data for HOMI
-  const dashboardData = useMemo(() => ({
-    kpis, prevKpis, alertas, teams, campanhas, pipelineStages,
-    filaCeoCount, origens, leadsPorEmpreendimento, visitasPorEmp,
-    negocioFases, vgvEmRisco, topCorretoresVgv, period,
-  }), [kpis, prevKpis, alertas, teams, campanhas, pipelineStages, filaCeoCount, origens, leadsPorEmpreendimento, visitasPorEmp, negocioFases, vgvEmRisco, topCorretoresVgv, period]);
 
   const now = new Date();
   const weekNum = Math.ceil(now.getDate() / 7);
@@ -354,8 +348,6 @@ export default function CeoDashboard() {
         </div>
       </div>
 
-      {/* ─── BRIEFING HOMI CEO ─── */}
-      <HomiBriefingCard dashboardData={dashboardData} />
 
       {/* ─── SEÇÃO 1: ROLETA PENDENTES ─── */}
       <Card className={`${localPendentes.length > 0 ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.2)] animate-pulse-border" : "border-emerald-500/30"}`}>
