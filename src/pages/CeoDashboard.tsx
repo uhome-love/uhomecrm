@@ -522,6 +522,7 @@ export default function CeoDashboard() {
             value={negocioFases.reduce((a, f) => a + f.count, 0)}
             iconColor="text-blue-600"
             ceoMeta={null}
+            onClick={() => setKpiDetail({ type: "negocios", label: "Nº Negócios" })}
           />
           <KpiCard
             icon={FileText}
