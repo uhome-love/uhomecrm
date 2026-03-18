@@ -385,9 +385,7 @@ export function AppSidebar() {
           {
             label: "Visão Geral",
             items: [
-              { title: "Alertas HOMI", url: "/alertas", icon: Bell },
-              { title: "Central do Gerente", url: "/central-do-gerente", icon: ClipboardCheck },
-              { title: "🎯 Melnick Metas", url: "/melnick-metas", icon: ClipboardCheck },
+              { title: "Checkpoint", url: "/central-do-gerente", icon: ClipboardCheck },
             ],
           },
           {
