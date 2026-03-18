@@ -395,8 +395,10 @@ export function useRelatorioExecutivo(period: PeriodRange) {
 
         const myNeg = (negData || []).filter(n => n.corretor_id === pid || n.auth_user_id === uid);
         const negociosCriados = myNeg.length;
-        const negociosAssinados = myNeg.filter(n => ["assinado", "vendido"].includes(n.fase || "")).length;
-        const vgv = myNeg.filter(n => ["assinado", "vendido"].includes(n.fase || ""))
+        // Assinados & VGV: use data_assinatura-based query results
+        const myNegAssinados = (negAssinadosData || []).filter(n => n.corretor_id === pid || n.auth_user_id === uid);
+        const negociosAssinados = myNegAssinados.length;
+        const vgv = myNegAssinados
           .reduce((s, n) => s + Number(n.vgv_final || n.vgv_estimado || 0), 0);
 
         const presencas = presPerProfile[pid]?.size || 0;
