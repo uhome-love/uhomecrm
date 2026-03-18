@@ -104,6 +104,9 @@ export function useTypesenseFacets() {
 
         const statusValues = parseFacetField(data.facet_counts, "status");
         if (statusValues.length > 0) { cachedStatusImovel = statusValues; setStatusImovelFacets(statusValues); }
+
+        const cidades = parseFacetField(data.facet_counts, "cidade");
+        if (cidades.length > 0) { cachedCidades = cidades; setCidadeFacets(cidades); }
       } catch (err) {
         console.warn("Typesense facets fetch failed, using fallback:", err);
       } finally {
