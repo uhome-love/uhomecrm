@@ -476,6 +476,29 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <span className="font-semibold text-amber-600 dark:text-amber-400">⚠️ Sem próxima ação</span>
             )}
           </div>
+
+          {/* Row 5: Observações / Dados do anúncio (ImovelWeb, etc.) */}
+          {lead.observacoes && (
+            <Collapsible>
+              <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors group">
+                <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
+                <FileText className="h-3 w-3" />
+                {lead.origem === "imovelweb" ? "Dados do anúncio ImovelWeb" : "Observações do lead"}
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-1.5">
+                <div className="text-[11px] text-muted-foreground bg-muted/50 rounded-md px-3 py-2 whitespace-pre-wrap leading-relaxed border border-border/50">
+                  {lead.observacoes}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* origem_detalhe inline */}
+          {lead.origem_detalhe && !lead.observacoes && (
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <FileText className="h-3 w-3" /> {lead.origem_detalhe}
+            </p>
+          )}
         </div>
 
         {/* ════════════ ABAS ════════════ */}
