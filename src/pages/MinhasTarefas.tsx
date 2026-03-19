@@ -433,32 +433,45 @@ export default function MinhasTarefas() {
 
                   {tarefa.descricao && <p className="text-xs text-muted-foreground italic">📝 "{tarefa.descricao}"</p>}
 
-                  {!isConcluida && (
-                    <div className="flex items-center gap-1 pt-1 flex-wrap">
-                      {tarefa.lead_telefone && (
-                        <>
-                          <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${tarefa.lead_telefone}`, "_self")}>
-                            <Phone className="h-3.5 w-3.5" /> Ligar
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => openWhatsApp(tarefa.lead_telefone!)}>
-                            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                          </Button>
-                        </>
-                      )}
-                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => setScriptsOpen(true)}>
-                        <BookOpen className="h-3.5 w-3.5" /> Scripts
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => handleConcluir(tarefa.id, tarefa.pipeline_lead_id)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => openEditTarefa(tarefa)}>
-                        <Pencil className="h-3.5 w-3.5" /> Editar
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => { setAdiarId(tarefa.id); setAdiarData(""); setAdiarHora(""); }}>
-                        <Calendar className="h-3.5 w-3.5" /> Adiar
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1 pt-1 flex-wrap">
+                    {!isConcluida && tarefa.lead_telefone && (
+                      <>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => window.open(`tel:${tarefa.lead_telefone}`, "_self")}>
+                          <Phone className="h-3.5 w-3.5" /> Ligar
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => openWhatsApp(tarefa.lead_telefone!)}>
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        </Button>
+                      </>
+                    )}
+                    {!isConcluida && (
+                      <>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => setScriptsOpen(true)}>
+                          <BookOpen className="h-3.5 w-3.5" /> Scripts
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => handleConcluir(tarefa.id, tarefa.pipeline_lead_id)}>
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => openEditTarefa(tarefa)}>
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => { setAdiarId(tarefa.id); setAdiarData(""); setAdiarHora(""); }}>
+                          <Calendar className="h-3.5 w-3.5" /> Adiar
+                        </Button>
+                      </>
+                    )}
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1 text-primary" onClick={() => {
+                      setSelectedLeadId(tarefa.pipeline_lead_id);
+                      setSelectedLeadNome(tarefa.lead_nome || "Lead");
+                      setNovoTipo("follow_up");
+                      setNovoData(dateToBRT(new Date()));
+                      setNovoHora("10:00");
+                      setNovoObs("");
+                      setShowNovaTarefa(true);
+                    }}>
+                      <Plus className="h-3.5 w-3.5" /> Nova Tarefa
+                    </Button>
+                  </div>
                 </div>
               </Card>
             );
