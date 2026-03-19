@@ -129,7 +129,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
   }, []);
 
   const loadLeads = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     if (loadingLeadsRef.current) return; // prevent concurrent loads
     loadingLeadsRef.current = true;
     try {
@@ -147,7 +147,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       const { data: teamMembers, error: teamError } = await supabase
         .from("team_members")
         .select("user_id")
-        .eq("gerente_id", user.id);
+        .eq("gerente_id", userId);
 
       if (teamError) {
         console.error("Error loading team members:", teamError);
