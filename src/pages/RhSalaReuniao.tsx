@@ -222,32 +222,32 @@ export default function RhSalaReuniao() {
 
       {/* Add Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingReserva ? "Editar Reserva" : "Nova Reserva"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div><Label className="text-xs">Data</Label><Input type="date" value={data} onChange={e => setData(e.target.value)} className="h-9" /></div>
+            <div><Label className="text-xs">Data</Label><Input type="date" value={data} onChange={e => setData(e.target.value)} className="h-10" /></div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Início</Label>
                 <Select value={horaInicio} onValueChange={setHoraInicio}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>{HORARIOS.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}</SelectContent>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-[200px]">{HORARIOS.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs">Fim</Label>
                 <Select value={horaFim} onValueChange={setHoraFim}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>{HORARIOS.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}</SelectContent>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-[200px]">{HORARIOS.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
-            <div><Label className="text-xs">Responsável *</Label><Input value={responsavel} onChange={e => setResponsavel(e.target.value)} className="h-9" /></div>
-            <div><Label className="text-xs">Assunto</Label><Input value={assunto} onChange={e => setAssunto(e.target.value)} className="h-9" placeholder="Opcional" /></div>
+            <div><Label className="text-xs">Responsável *</Label><Input value={responsavel} onChange={e => setResponsavel(e.target.value)} className="h-10" /></div>
+            <div><Label className="text-xs">Assunto</Label><Input value={assunto} onChange={e => setAssunto(e.target.value)} className="h-10" placeholder="Opcional" /></div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button size="sm" onClick={handleSave}>{editingReserva ? "Salvar" : "Reservar"}</Button>
           </DialogFooter>
