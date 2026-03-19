@@ -327,8 +327,8 @@ export default function PipelineKanban() {
 
         {/* Line 2 — 44px */}
         <div
-          className="flex items-center justify-between"
-          style={{ height: 44, padding: "0 28px" }}
+          className="flex items-center justify-between overflow-x-auto"
+          style={{ minHeight: 44, padding: "0 14px", gap: 6 }}
         >
           {/* LEFT: Segmented control + filters */}
           <div className="flex items-center" style={{ gap: 6 }}>
