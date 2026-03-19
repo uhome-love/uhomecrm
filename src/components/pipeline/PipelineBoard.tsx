@@ -28,9 +28,9 @@ interface PipelineBoardProps {
   onToggleSelect?: (leadId: string) => void;
 }
 
-const COLUMN_WIDTH_DESKTOP = 300;
-const COLUMN_WIDTH_MOBILE = 280;
-const COLUMN_GAP = 12;
+const COLUMN_WIDTH_DESKTOP = 268;
+const COLUMN_WIDTH_MOBILE = 268;
+const COLUMN_GAP = 13;
 
 function getColumnWidth() {
   return typeof window !== "undefined" && window.innerWidth < 640 ? COLUMN_WIDTH_MOBILE : COLUMN_WIDTH_DESKTOP;
@@ -644,7 +644,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   }, []);
 
   return (
-    <div className="relative flex flex-col h-full w-full max-w-full min-w-0 overflow-hidden">
+    <div className="relative flex flex-col h-full w-full max-w-full min-w-0 overflow-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Animation keyframes */}
       <style>{`
         @keyframes confettiFall {
@@ -665,28 +665,38 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.7; }
         }
+        @keyframes pipelineFadeUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
 
-      {/* Mini-map nav pills — colored by stage */}
-      <div className="shrink-0 flex items-center gap-1.5 mb-2 px-0.5 overflow-x-auto scrollbar-none">
+      {/* Mini-map nav pills */}
+      <div className="shrink-0 flex items-center gap-1.5 mb-2 px-0.5 overflow-x-auto scrollbar-none" style={{ paddingTop: 12 }}>
         {visibleStages.map((stage, idx) => {
           const stageLeads = leadsByStage.get(stage.id) || [];
           const isActive = idx === activeIndex;
           const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📍";
-          const stageColorCls = PIPELINE_STAGE_COLORS[stage.nome] || "";
           return (
             <button
               key={stage.id}
               onClick={() => scrollToIndex(idx)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 border ${
-                isActive
-                  ? `${stageColorCls} border shadow-sm font-bold scale-[1.02]`
-                  : "bg-card/80 text-muted-foreground border-border/30 hover:border-primary/30 hover:bg-card"
-              }`}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600,
+                whiteSpace: "nowrap",
+                background: isActive ? "#fff" : "transparent",
+                border: isActive ? "1px solid #E2E8F0" : "1px solid transparent",
+                boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                color: isActive ? "#1E293B" : "#94A3B8",
+                cursor: "pointer",
+                transition: "all 0.2s cubic-bezier(0.25,0.46,0.45,0.94)",
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+              }}
             >
-              <span className="text-sm">{emoji}</span>
+              <span style={{ fontSize: 14 }}>{emoji}</span>
               <span>{stage.nome}</span>
-              <span className="font-black text-foreground">
+              <span style={{ fontWeight: 800, color: isActive ? "#1E293B" : "#94A3B8" }}>
                 {stageLeads.length}
               </span>
             </button>
@@ -723,60 +733,114 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           className={`flex gap-3 h-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-none ${isDraggingScroll && scrollDragActive.current ? "cursor-grabbing select-none" : ""}`}
           style={{ scrollSnapType: dragLeadId.current ? "none" : "x proximity" }}
         >
-          {visibleStages.map((stage) => {
+          {visibleStages.map((stage, colIdx) => {
             const stageLeads = leadsByStage.get(stage.id) || [];
             const isDragOver = dragOverStage === stage.id;
             const isFlashing = flashStage === stage.id;
             const totalVGV = stageLeads.reduce((sum, l) => sum + (l.valor_estimado || 0), 0);
             const alerts = getStageAlerts(stageLeads);
             const avgTime = getAvgTimeLabel(stageLeads);
-            const stageBg = PIPELINE_STAGE_BG[stage.nome] || { bg: "rgba(0,0,0,0.02)", border: "rgba(0,0,0,0.08)", headerBg: "rgba(0,0,0,0.04)" };
+
+            // Theme colors per stage
+            const STAGE_THEMES: Record<string, { emojiBg: string; badgeBg: string; badgeColor: string; gradient: string }> = {
+              "Novo Lead": { emojiBg: "#EFF6FF", badgeBg: "#EFF6FF", badgeColor: "#1D4ED8", gradient: "linear-gradient(90deg, #2563EB, #60A5FA)" },
+              "Sem Contato": { emojiBg: "#FEF2F2", badgeBg: "#FEF2F2", badgeColor: "#DC2626", gradient: "linear-gradient(90deg, #EF4444, #FCA5A5)" },
+              "Contato Iniciado": { emojiBg: "#F0FDF4", badgeBg: "#F0FDF4", badgeColor: "#059669", gradient: "linear-gradient(90deg, #10B981, #34D399)" },
+              "Qualificação": { emojiBg: "#FDF4FF", badgeBg: "#FDF4FF", badgeColor: "#7C3AED", gradient: "linear-gradient(90deg, #8B5CF6, #C084FC)" },
+              "Possível Visita": { emojiBg: "#FFFBEB", badgeBg: "#FFFBEB", badgeColor: "#B45309", gradient: "linear-gradient(90deg, #F59E0B, #FCD34D)" },
+              "Visita Marcada": { emojiBg: "#FFFBEB", badgeBg: "#FFFBEB", badgeColor: "#B45309", gradient: "linear-gradient(90deg, #F59E0B, #FCD34D)" },
+              "Visita Realizada": { emojiBg: "#F0FDF4", badgeBg: "#F0FDF4", badgeColor: "#059669", gradient: "linear-gradient(90deg, #10B981, #34D399)" },
+              "Descarte": { emojiBg: "#FEF2F2", badgeBg: "#FEF2F2", badgeColor: "#DC2626", gradient: "linear-gradient(90deg, #EF4444, #FCA5A5)" },
+              "Convertido": { emojiBg: "#F5F3FF", badgeBg: "#F5F3FF", badgeColor: "#7C3AED", gradient: "linear-gradient(90deg, #8B5CF6, #C084FC)" },
+            };
+            const theme = STAGE_THEMES[stage.nome] || { emojiBg: "#F1F5F9", badgeBg: "#F1F5F9", badgeColor: "#64748B", gradient: "linear-gradient(90deg, #94A3B8, #CBD5E1)" };
+            const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📍";
+
+            // Progress bar percentage (based on count relative to total)
+            const maxLeads = Math.max(...[...leadsByStage.values()].map(a => a.length), 1);
+            const progressPct = Math.min((stageLeads.length / maxLeads) * 100, 100);
 
             return (
               <div
                 key={stage.id}
-                className={`flex flex-col shrink-0 h-full rounded-xl transition-all duration-200 ${
-                  isDragOver
-                    ? "ring-2 ring-primary/50 shadow-xl shadow-primary/10 scale-[1.01]"
-                    : "shadow-sm"
-                }`}
+                className="flex flex-col shrink-0 h-full"
                 style={{
                   width: `${getColumnWidth()}px`,
                   scrollSnapAlign: "start",
-                  background: isDragOver ? `${stageBg.bg.replace("0.06", "0.12")}` : stageBg.bg,
-                  border: `1px solid ${stageBg.border}`,
-                  animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
-                  ["--flash-color" as any]: stage.cor,
+                  animation: `pipelineFadeUp 0.35s cubic-bezier(0.25,0.46,0.45,0.94) ${colIdx * 0.05}s both`,
+                  transition: isDragOver ? "all 0.2s ease" : undefined,
                 }}
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
-                {/* Column header */}
+                {/* Column header card */}
                 <div
-                  className="shrink-0 px-3 py-3 rounded-t-xl"
-                  style={{ background: stageBg.headerBg, borderBottom: `2px solid ${stage.cor}50` }}
+                  className="shrink-0"
+                  style={{
+                    background: "#fff",
+                    border: isDragOver ? "1px solid #93C5FD" : "1px solid #E2E8F0",
+                    borderRadius: 14,
+                    padding: "12px 14px",
+                    boxShadow: isDragOver ? "0 4px 16px rgba(37,99,235,0.12)" : "0 1px 2px rgba(0,0,0,0.05)",
+                    marginBottom: 8,
+                    animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
+                    ["--flash-color" as any]: stage.cor,
+                    transition: "all 0.2s ease",
+                  }}
                 >
-                  <div className="flex items-center gap-1.5 justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-5 w-1 rounded-full shrink-0" style={{ backgroundColor: stage.cor }} />
-                      <span className="text-sm shrink-0">{PIPELINE_STAGE_EMOJIS[stage.nome] || "📍"}</span>
-                      <span className="text-xs font-bold text-foreground truncate">{stage.nome}</span>
-                      <span className="text-xs font-black text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-md">{stageLeads.length}</span>
+                  {/* Top: emoji + name + badge */}
+                  <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 8,
+                      background: theme.emojiBg,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 15, flexShrink: 0,
+                    }}>
+                      {emoji}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {totalVGV > 0 && (
-                        <span className="text-[10px] font-bold text-foreground bg-muted/30 px-1.5 py-0.5 rounded-md">
-                          {formatVGV(totalVGV)}
-                        </span>
-                      )}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1E293B", flex: 1 }}>
+                      {stage.nome}
+                    </span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: theme.badgeColor,
+                      background: theme.badgeBg, padding: "2px 9px", borderRadius: 100,
+                    }}>
+                      {stageLeads.length}
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div style={{
+                    height: 3, borderRadius: 100, background: "#F1F5F9",
+                    marginBottom: 8, overflow: "hidden",
+                  }}>
+                    <div style={{
+                      height: "100%", borderRadius: 100,
+                      background: theme.gradient,
+                      width: `${progressPct}%`,
+                      transition: "width 0.3s ease",
+                    }} />
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="flex items-center justify-between">
+                    {totalVGV > 0 ? (
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: "#1E293B",
+                        fontFamily: "'DM Mono', monospace",
+                      }}>
+                        {formatVGV(totalVGV)}
+                      </span>
+                    ) : <span />}
+                    <div className="flex items-center gap-2">
                       {avgTime && (
-                        <span className="text-[10px] font-medium text-muted-foreground">
-                          {avgTime}
+                        <span style={{ fontSize: 10, color: "#94A3B8" }}>
+                          ⏱ {avgTime}
                         </span>
                       )}
                       {alerts.semCorretor > 0 && (
-                        <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400">
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED" }}>
                           👤{alerts.semCorretor}
                         </span>
                       )}

@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { differenceInHours, differenceInDays, isToday as isTodayFn, isTomorrow as isTomorrowFn, isYesterday as isYesterdayFn, startOfDay, format } from "date-fns";
-import { cn } from "@/lib/utils";
 import type { PipelineLead } from "@/hooks/usePipeline";
 
 const TIPO_LABELS: Record<string, string> = {
@@ -87,30 +86,23 @@ interface CardStatusLineProps {
   stageChangedAt: string | null | undefined;
 }
 
-export default function CardStatusLine({ status, stageChangedAt }: CardStatusLineProps) {
-  const daysInStage = useMemo(() => {
-    const d = toValidDate(stageChangedAt);
-    if (!d) return null;
-    const days = differenceInDays(new Date(), d);
-    if (!Number.isFinite(days) || days < 1) return null;
-    return days;
-  }, [stageChangedAt]);
+export default function CardStatusLine({ status }: CardStatusLineProps) {
+  // Determine colors based on status
+  const statusColor = useMemo(() => {
+    if (status.indicator === "🔴") return "#DC2626";
+    if (status.indicator === "🟡" || status.indicator === "⚠️") return "#D97706";
+    return "#059669";
+  }, [status.indicator]);
 
   return (
-    <div className="flex items-center justify-between gap-1 pt-0.5">
-      <p className={cn("text-[11px] truncate font-medium", status.text ? status.textCls : "text-muted-foreground")}>
+    <div className="flex items-center justify-between gap-1" style={{ paddingTop: 2 }}>
+      <p style={{
+        fontSize: 11, fontWeight: 600, color: statusColor,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+      }}>
         {status.text || "✅ Em dia"}
       </p>
-      {daysInStage !== null && (
-        <span className={cn(
-          "text-[9px] font-semibold shrink-0 px-1.5 py-0.5 rounded-md",
-          daysInStage >= 7 ? "text-destructive bg-destructive/10" :
-          daysInStage >= 3 ? "text-amber-600 dark:text-amber-400 bg-amber-500/10" :
-          "text-muted-foreground bg-muted/50"
-        )}>
-          {daysInStage}d na etapa
-        </span>
-      )}
     </div>
   );
 }
