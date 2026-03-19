@@ -79,6 +79,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const [error, setError] = useState<string | null>(null);
   // Guard: suppress realtime events during local mutations to prevent flicker
   const localMutationRef = useRef(false);
+  // Track last visible timestamp for tab-switch debounce
+  const lastVisibleRef = useRef(Date.now());
+  // Guard against concurrent loadLeads calls
+  const loadingLeadsRef = useRef(false);
 
   const loadStages = useCallback(async () => {
     try {
@@ -125,7 +129,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
   const loadLeads = useCallback(async () => {
     if (!user) return;
-
+    if (loadingLeadsRef.current) return; // prevent concurrent loads
+    loadingLeadsRef.current = true;
     try {
 
     const selectFields = "id, nome, telefone, email, segmento_id, empreendimento, stage_id, stage_changed_at, ordem_no_stage, corretor_id, gerente_id, temperatura, oportunidade_score, aceite_status, origem, valor_estimado, created_at, updated_at, negocio_id, ultima_acao_at, data_proxima_acao, proxima_acao, motivo_descarte, tags, campanha, formulario, plataforma";
@@ -254,6 +259,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
     } catch (err) {
       console.error("[usePipeline] loadLeads crash:", err);
       toast.error("Erro ao carregar leads. Tente recarregar a página.");
+    } finally {
+      loadingLeadsRef.current = false;
     }
   }, [user, isGestor, isAdmin]);
 
@@ -347,16 +354,15 @@ export function usePipeline(pipelineTipo: string = "leads") {
     };
   }, [user]);
 
-  // Auto-refresh when tab becomes visible — only if stale (>2 min away)
+  // Auto-refresh when tab becomes visible — only if stale (>5 min away)
   useEffect(() => {
     if (!user) return;
-    let lastVisible = Date.now();
     const handleVisibility = () => {
       if (document.visibilityState === "hidden") {
-        lastVisible = Date.now();
+        lastVisibleRef.current = Date.now();
       } else if (document.visibilityState === "visible") {
-        const away = Date.now() - lastVisible;
-        if (away > 2 * 60 * 1000) { // only reload if away > 2 min
+        const away = Date.now() - lastVisibleRef.current;
+        if (away > 5 * 60 * 1000) { // only reload if away > 5 min
           loadLeads();
         }
       }
