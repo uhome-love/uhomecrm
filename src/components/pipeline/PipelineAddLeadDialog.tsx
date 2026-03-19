@@ -34,6 +34,7 @@ interface DuplicateResult {
   telefone: string;
   corretor_nome?: string;
   empreendimento?: string;
+  etapa_nome?: string;
   source: "pipeline" | "oferta_ativa";
 }
 
