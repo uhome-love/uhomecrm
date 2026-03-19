@@ -79,6 +79,10 @@ export function usePipeline(pipelineTipo: string = "leads") {
   const [error, setError] = useState<string | null>(null);
   // Guard: suppress realtime events during local mutations to prevent flicker
   const localMutationRef = useRef(false);
+  // Track last visible timestamp for tab-switch debounce
+  const lastVisibleRef = useRef(Date.now());
+  // Guard against concurrent loadLeads calls
+  const loadingLeadsRef = useRef(false);
 
   const loadStages = useCallback(async () => {
     try {
