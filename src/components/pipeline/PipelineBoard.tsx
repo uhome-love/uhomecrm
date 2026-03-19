@@ -260,7 +260,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     },
     enabled: leadIds.length > 0,
     staleTime: 30_000,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   // Auto-fix: move leads with negocio_id that are stuck in non-convertido stages

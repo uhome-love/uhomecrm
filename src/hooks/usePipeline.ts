@@ -69,6 +69,7 @@ export interface PipelineSegmento {
 
 export function usePipeline(pipelineTipo: string = "leads") {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [leads, setLeads] = useState<PipelineLead[]>([]);
@@ -128,7 +129,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
   }, []);
 
   const loadLeads = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     if (loadingLeadsRef.current) return; // prevent concurrent loads
     loadingLeadsRef.current = true;
     try {
@@ -146,7 +147,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       const { data: teamMembers, error: teamError } = await supabase
         .from("team_members")
         .select("user_id")
-        .eq("gerente_id", user.id);
+        .eq("gerente_id", userId);
 
       if (teamError) {
         console.error("Error loading team members:", teamError);
@@ -188,7 +189,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
         query = query.in("corretor_id", teamUserIds);
       } else {
         // Corretores: only their own ACCEPTED leads (pendente ones show on AceiteLeads page)
-        query = query.eq("corretor_id", user.id).eq("aceite_status", "aceito");
+        query = query.eq("corretor_id", userId).eq("aceite_status", "aceito");
       }
 
       const { data, error } = await query;
@@ -262,15 +263,15 @@ export function usePipeline(pipelineTipo: string = "leads") {
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [user, isGestor, isAdmin]);
+  }, [userId, isGestor, isAdmin]);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (!userId) { setLoading(false); return; }
     // Wait for role resolution before loading leads to avoid double-fetch
     if (roleLoading) return;
 
     setError(null);
-    setLoading(true);
+    setLoading(prev => (stages.length === 0 && leads.length === 0 && segmentos.length === 0 ? true : prev));
 
     // Timeout guard: if load takes > 30s, stop and show error
     const timeout = setTimeout(() => {
@@ -289,11 +290,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
       });
 
     return () => clearTimeout(timeout);
-  }, [user, roleLoading, loadStages, loadSegmentos, loadLeads]);
+  }, [userId, roleLoading, loadStages, loadSegmentos, loadLeads]);
 
   // ─── Granular realtime: update only the changed lead in local state ───
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let batchTimer: ReturnType<typeof setTimeout> | null = null;
     const pendingEvents: Array<{ eventType: string; new_record: any; old_record: any }> = [];
 
@@ -352,24 +353,19 @@ export function usePipeline(pipelineTipo: string = "leads") {
       if (batchTimer) clearTimeout(batchTimer);
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [userId]);
 
-  // Auto-refresh when tab becomes visible — only if stale (>5 min away)
+  // Ao voltar para a aba, mantemos o estado atual e evitamos reload automático do board.
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     const handleVisibility = () => {
       if (document.visibilityState === "hidden") {
         lastVisibleRef.current = Date.now();
-      } else if (document.visibilityState === "visible") {
-        const away = Date.now() - lastVisibleRef.current;
-        if (away > 5 * 60 * 1000) { // only reload if away > 5 min
-          loadLeads();
-        }
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [user, loadLeads]);
+  }, [userId]);
 
   const moveLead = useCallback(async (leadId: string, newStageId: string, observacao?: string) => {
     if (!user) return;
