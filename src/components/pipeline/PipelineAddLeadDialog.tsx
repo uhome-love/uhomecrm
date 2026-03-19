@@ -218,6 +218,7 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
                       <div className="text-muted-foreground">
                         {dup.source === "pipeline" ? "📋 Pipeline" : "📞 Oferta Ativa"}
                         {dup.corretor_nome && ` · 👤 ${dup.corretor_nome}`}
+                        {dup.etapa_nome && ` · 📍 ${dup.etapa_nome}`}
                       </div>
                     </div>
                   ))}
