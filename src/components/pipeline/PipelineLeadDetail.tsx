@@ -371,9 +371,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <FileText className="h-3.5 w-3.5" /> Scripts
             </Button>
             
-            <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => { setActiveTab("tarefas"); setShowNovaTarefa(true); }}>
-              <ClipboardList className="h-3.5 w-3.5" /> Tarefa
-            </Button>
+            
             <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
               <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap">
                 <Zap className="h-3.5 w-3.5" /> Registrar
