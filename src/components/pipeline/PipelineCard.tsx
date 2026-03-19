@@ -3,7 +3,6 @@ import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/useP
 import { Phone, MessageCircle, Handshake, ArrowRightLeft, FileText, Flame, Snowflake, ThermometerSun } from "lucide-react";
 import { getScoreTooltip } from "@/lib/scoreTemperatureLabels";
 import { calculateLeadScore } from "@/lib/leadScoring";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +12,6 @@ import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
-import { cn } from "@/lib/utils";
 
 // Extracted sub-components
 import CardStatusLine, { getCardStatus } from "./CardStatusLine";
@@ -48,6 +46,14 @@ function cleanName(name: string) {
   const secondHalf = name.substring(half).trim();
   if (firstHalf === secondHalf) return firstHalf;
   return name;
+}
+
+// Empreendimento color hash
+function empColorHash(s: string): string {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  const colors = ["#2563EB", "#059669", "#D97706", "#DC2626", "#7C3AED", "#EA580C"];
+  return colors[Math.abs(hash) % colors.length];
 }
 
 interface ProximaTarefa {
@@ -108,6 +114,26 @@ const PipelineCard = memo(function PipelineCard({
     if (t === "frio") return { icon: Snowflake, cls: "text-blue-400", bg: "bg-blue-400/10", label: "Frio" };
     return null;
   }, [lead.temperatura]);
+
+  // Determine stripe color based on status
+  const stripeGradient = useMemo(() => {
+    if (status.indicator === "🔴") return "linear-gradient(90deg, #DC2626, #F87171)";
+    if (status.indicator === "🟡" || status.indicator === "⚠️") return "linear-gradient(90deg, #D97706, #FCD34D)";
+    return "linear-gradient(90deg, #059669, #34D399)";
+  }, [status.indicator]);
+
+  // Days in stage for badge
+  const daysInStage = useMemo(() => {
+    const d = new Date(lead.stage_changed_at);
+    if (isNaN(d.getTime())) return 0;
+    return Math.floor((Date.now() - d.getTime()) / 86400000);
+  }, [lead.stage_changed_at]);
+
+  const daysBadge = useMemo(() => {
+    if (daysInStage <= 2) return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
+    if (daysInStage <= 5) return { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" };
+    return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
+  }, [daysInStage]);
 
   const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -209,6 +235,15 @@ const PipelineCard = memo(function PipelineCard({
     }
   };
 
+  // Origin tag
+  const originTag = useMemo(() => {
+    const o = lead.origem?.toLowerCase() || "";
+    if (o.includes("oferta")) return { label: "OA", bg: "#F5F3FF", color: "#7C3AED" };
+    if (o.includes("portal") || o.includes("zap") || o.includes("olx")) return { label: "PORTAL", bg: "#FFF7ED", color: "#EA580C" };
+    if (daysInStage === 0) return { label: "NOVO", bg: "#EFF6FF", color: "#1D4ED8" };
+    return null;
+  }, [lead.origem, daysInStage]);
+
   return (
     <div
       draggable
@@ -221,108 +256,179 @@ const PipelineCard = memo(function PipelineCard({
       }}
       onDragEnd={(e) => e.preventDefault()}
       onClick={handleCardClick}
-      className={cn(
-        "group relative rounded-xl border-l-[3px] border border-border/40 bg-card cursor-grab active:cursor-grabbing",
-        "hover:shadow-lg hover:shadow-primary/5 hover:border-border/60 hover:-translate-y-[1px]",
-        "transition-all duration-200 select-none overflow-hidden",
-        status.borderCls
-      )}
+      style={{
+        background: "#fff",
+        border: "1px solid #E2E8F0",
+        borderRadius: 14,
+        overflow: "hidden",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+        cursor: "grab",
+        transition: "all 0.18s cubic-bezier(0.25,0.46,0.45,0.94)",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = "#93C5FD";
+        e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.10)";
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "#E2E8F0";
+        e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
+      className="group select-none active:cursor-grabbing"
     >
-      {/* Content */}
-      <div className="px-3 pt-3 pb-2 space-y-1.5">
-        {/* Line 1: Name + score badge + temperature */}
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-[13px] font-bold text-foreground truncate leading-tight tracking-tight">
+      {/* Stripe top 3px */}
+      <div style={{ height: 3, background: stripeGradient }} />
+
+      {/* Body */}
+      <div style={{ padding: "13px 14px 11px" }}>
+        {/* ROW 1: Name + tags + days badge */}
+        <div className="flex items-center justify-between gap-1.5" style={{ marginBottom: 6 }}>
+          <span style={{
+            fontSize: 14, fontWeight: 700, letterSpacing: "-0.3px",
+            color: "#1E293B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            flex: 1,
+          }}>
             {cleanName(lead.nome)}
           </span>
           <div className="flex items-center gap-1 shrink-0">
+            {originTag && (
+              <span style={{
+                fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em",
+                padding: "3px 7px", borderRadius: 5,
+                background: originTag.bg, color: originTag.color,
+              }}>
+                {originTag.label}
+              </span>
+            )}
             {tempConfig && (
-              <span
-                className={cn("inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold", tempConfig.bg, tempConfig.cls)}
-                title={lead.oportunidade_score != null ? getScoreTooltip(lead.oportunidade_score) : `${tempConfig.label}`}
+              <span className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold ${tempConfig.bg} ${tempConfig.cls}`}
+                title={lead.oportunidade_score != null ? getScoreTooltip(lead.oportunidade_score) : tempConfig.label}
               >
                 <tempConfig.icon className="h-2.5 w-2.5" />
               </span>
             )}
-            <span className={cn(
-              "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-black",
-              leadScore.bgColor, leadScore.color
-            )}>
-              {leadScore.label}
+            <span style={{
+              fontSize: 10, fontWeight: 700,
+              padding: "2px 8px", borderRadius: 100,
+              background: daysBadge.bg, color: daysBadge.color,
+              border: `1px solid ${daysBadge.border}`,
+            }}>
+              {daysInStage}d
             </span>
-            {status.indicator && (
-              <span className={cn("text-sm", status.indicatorCls)}>
-                {status.indicator}
-              </span>
-            )}
           </div>
         </div>
 
-        {/* Line 2: Corretor + Empreendimento · Phone · Origin */}
+        {/* ROW 2: Corretor */}
         {corretorNome && (
-          <div className="text-[11px] text-muted-foreground truncate leading-tight flex items-center gap-1.5">
-            <Avatar className="h-4 w-4 shrink-0 ring-1 ring-primary/20">
-              <AvatarImage src={corretorAvatar} className="object-cover" />
-              <AvatarFallback className="text-[7px] bg-primary/15 text-primary font-bold">{corretorNome[0]}</AvatarFallback>
-            </Avatar>
-            <span className="text-[11px] font-semibold text-primary truncate">{corretorNome.split(" ").slice(0, 2).join(" ")}</span>
+          <div className="flex items-center gap-1.5" style={{ marginBottom: 5 }}>
+            <div style={{
+              width: 20, height: 20, borderRadius: "50%",
+              background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
+              boxShadow: "0 0 0 1.5px #fff, 0 1px 2px rgba(0,0,0,0.1)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 9, fontWeight: 700, color: "#fff",
+              overflow: "hidden",
+            }}>
+              {corretorAvatar ? (
+                <img src={corretorAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                corretorNome[0]
+              )}
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#2563EB" }}>
+              {corretorNome.split(" ").slice(0, 2).join(" ")}
+            </span>
           </div>
         )}
-        <div className="text-xs text-muted-foreground truncate leading-tight flex items-center gap-1">
-          <span className="truncate">
-            {displayEmpreendimento ? (
-              <span className="font-semibold text-foreground/80">{displayEmpreendimento}</span>
-            ) : (
-              <span className="text-amber-500/80 font-medium">🏠 Sem empreend.</span>
-            )}
-            {lead.telefone && <span className="text-muted-foreground"> · {formatPhone(lead.telefone)}</span>}
-          </span>
-          {lead.origem?.toLowerCase().includes("oferta") && (
-            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-violet-500/15 text-violet-500 dark:text-violet-400 border border-violet-500/20">
-              OA
+
+        {/* ROW 3: Empreendimento + Phone */}
+        <div className="flex items-center gap-2" style={{ marginBottom: 5 }}>
+          {displayEmpreendimento && (
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              background: "#F1F5F9", border: "1px solid #E2E8F0",
+              borderRadius: 6, padding: "3px 8px",
+              fontSize: 11, fontWeight: 600, color: "#334155",
+              maxWidth: "60%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: empColorHash(displayEmpreendimento),
+                flexShrink: 0,
+              }} />
+              {displayEmpreendimento}
+            </span>
+          )}
+          {lead.telefone && (
+            <span style={{
+              fontSize: 11, color: "#94A3B8",
+              fontFamily: "'DM Mono', monospace",
+            }}>
+              {formatPhone(lead.telefone)}
             </span>
           )}
         </div>
 
-        {/* Partnership badge */}
-        {parceiroNome && (
-          <div className="flex items-center gap-1 pt-0.5">
-            <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-              <Handshake className="h-3 w-3" /> Parceria: {parceiroNome.split(" ").slice(0, 2).join(" ")}
-            </span>
-          </div>
-        )}
+        {/* Score badge row */}
+        <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 18, height: 18, borderRadius: 4,
+            fontSize: 10, fontWeight: 800,
+            background: leadScore.label === "A" ? "#ECFDF5" : leadScore.label === "B" ? "#EFF6FF" : leadScore.label === "C" ? "#FFFBEB" : "#FEF2F2",
+            color: leadScore.label === "A" ? "#059669" : leadScore.label === "B" ? "#2563EB" : leadScore.label === "C" ? "#D97706" : "#DC2626",
+          }}>
+            {leadScore.label}
+          </span>
 
-        {/* Negócio badge */}
-        {lead.negocio_id && (
-          <div className="flex items-center gap-1 pt-0.5">
-            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md">✅ Negócio criado</span>
-          </div>
-        )}
+          {/* Partnership badge */}
+          {parceiroNome && (
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: "#7C3AED",
+              background: "#F5F3FF", padding: "2px 6px", borderRadius: 5,
+              display: "inline-flex", alignItems: "center", gap: 3,
+            }}>
+              <Handshake style={{ height: 10, width: 10 }} /> {parceiroNome.split(" ")[0]}
+            </span>
+          )}
+
+          {/* Negócio badge */}
+          {lead.negocio_id && (
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: "#059669",
+              background: "#ECFDF5", padding: "2px 6px", borderRadius: 5,
+            }}>✅ Negócio</span>
+          )}
+        </div>
 
         {/* Campaign tags */}
         {(lead.tags || []).length > 0 && (
-          <div className="flex items-center gap-1 pt-0.5 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap" style={{ marginBottom: 4 }}>
             {(lead.tags || []).map(tag => {
-              const TAG_CONFIG: Record<string, { label: string; color: string }> = {
-                MELNICK_DAY: { label: "🔥 Melnick Day", color: "text-orange-600 dark:text-orange-400 bg-orange-500/10" },
-                OPEN_BOSQUE: { label: "🌳 Open Bosque", color: "text-green-600 dark:text-green-400 bg-green-500/10" },
-                CASA_TUA: { label: "🏠 Casa Tua", color: "text-blue-600 dark:text-blue-400 bg-blue-500/10" },
-                LAKE_EYRE: { label: "💎 Lake Eyre", color: "text-purple-600 dark:text-purple-400 bg-purple-500/10" },
-                LAS_CASAS: { label: "🏡 Las Casas", color: "text-amber-600 dark:text-amber-400 bg-amber-500/10" },
-                ORYGEM: { label: "✨ Orygem", color: "text-cyan-600 dark:text-cyan-400 bg-cyan-500/10" },
-                HIGH_GARDEN_IGUATEMI: { label: "🌿 High Garden", color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" },
-                SEEN_TRES_FIGUEIRAS: { label: "👁 Seen Três Figueiras", color: "text-violet-600 dark:text-violet-400 bg-violet-500/10" },
-                ALTO_LINDOIA: { label: "🏔 Alto Lindóia", color: "text-sky-600 dark:text-sky-400 bg-sky-500/10" },
-                SHIFT: { label: "⚡ Shift", color: "text-slate-600 dark:text-slate-400 bg-slate-500/10" },
-                CASA_BASTIAN: { label: "🏰 Casa Bastian", color: "text-rose-600 dark:text-rose-400 bg-rose-500/10" },
-                DUETTO: { label: "🎵 Duetto", color: "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10" },
-                TERRACE: { label: "🌅 Terrace", color: "text-teal-600 dark:text-teal-400 bg-teal-500/10" },
+              const TAG_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+                MELNICK_DAY: { label: "🔥 Melnick Day", color: "#EA580C", bg: "#FFF7ED" },
+                OPEN_BOSQUE: { label: "🌳 Open Bosque", color: "#059669", bg: "#ECFDF5" },
+                CASA_TUA: { label: "🏠 Casa Tua", color: "#2563EB", bg: "#EFF6FF" },
+                LAKE_EYRE: { label: "💎 Lake Eyre", color: "#7C3AED", bg: "#F5F3FF" },
+                LAS_CASAS: { label: "🏡 Las Casas", color: "#D97706", bg: "#FFFBEB" },
+                ORYGEM: { label: "✨ Orygem", color: "#0891B2", bg: "#ECFEFF" },
+                HIGH_GARDEN_IGUATEMI: { label: "🌿 High Garden", color: "#059669", bg: "#ECFDF5" },
+                SEEN_TRES_FIGUEIRAS: { label: "👁 Seen", color: "#7C3AED", bg: "#F5F3FF" },
+                ALTO_LINDOIA: { label: "🏔 Alto Lindóia", color: "#0284C7", bg: "#F0F9FF" },
+                SHIFT: { label: "⚡ Shift", color: "#475569", bg: "#F1F5F9" },
+                CASA_BASTIAN: { label: "🏰 Bastian", color: "#E11D48", bg: "#FFF1F2" },
+                DUETTO: { label: "🎵 Duetto", color: "#4F46E5", bg: "#EEF2FF" },
+                TERRACE: { label: "🌅 Terrace", color: "#0D9488", bg: "#F0FDFA" },
               };
               const cfg = TAG_CONFIG[tag];
               if (!cfg) return null;
               return (
-                <span key={tag} className={`text-[10px] font-bold ${cfg.color} px-1.5 py-0.5 rounded-md`}>
+                <span key={tag} style={{
+                  fontSize: 9, fontWeight: 700, color: cfg.color, background: cfg.bg,
+                  padding: "2px 6px", borderRadius: 5,
+                }}>
                   {cfg.label}
                 </span>
               );
@@ -330,18 +436,22 @@ const PipelineCard = memo(function PipelineCard({
           </div>
         )}
 
-        {/* Line 3: Status line (extracted) */}
+        {/* ROW 4: Status */}
         <CardStatusLine status={status} stageChangedAt={lead.stage_changed_at} />
       </div>
 
       {/* Create Negócio button — only on Visita Realizada without linked deal */}
       {stage?.nome?.toLowerCase().includes("visita realizada") && !lead.negocio_id && !negocioCriado && (
-        <div data-actions-area className="px-3 pb-1.5">
+        <div data-actions-area style={{ padding: "0 14px 8px" }}>
           <Button
             size="sm"
             variant="outline"
             disabled={criandoNegocio}
-            className="w-full h-7 text-[11px] gap-1.5 font-semibold border-green-500/40 text-green-600 dark:text-green-400 hover:bg-green-500/10"
+            className="w-full h-7 text-[11px] gap-1.5 font-semibold"
+            style={{
+              borderColor: "#A7F3D0", color: "#059669",
+              borderRadius: 8,
+            }}
             onClick={handleCreateNegocio}
           >
             {criandoNegocio ? (
@@ -354,8 +464,11 @@ const PipelineCard = memo(function PipelineCard({
       )}
 
       {negocioCriado && (
-        <div data-actions-area className="px-3 pb-1.5">
-          <div className="w-full h-7 flex items-center justify-center text-[11px] font-semibold text-green-600 dark:text-green-400 bg-green-500/10 rounded-md">
+        <div data-actions-area style={{ padding: "0 14px 8px" }}>
+          <div style={{
+            width: "100%", height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 600, color: "#059669", background: "#ECFDF5", borderRadius: 8,
+          }}>
             ✅ Negócio criado com sucesso!
           </div>
         </div>
@@ -363,12 +476,13 @@ const PipelineCard = memo(function PipelineCard({
 
       {/* Convertido stage — "Voltar para Pipeline" */}
       {stage?.tipo === "convertido" && (
-        <div data-actions-area className="px-3 pb-1.5 space-y-1">
-          <div className="text-[10px] text-muted-foreground text-center">🎯 Negócio em andamento</div>
+        <div data-actions-area style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 10, color: "#94A3B8", textAlign: "center" }}>🎯 Negócio em andamento</div>
           <Button
             size="sm"
             variant="outline"
-            className="w-full h-7 text-[11px] gap-1.5 font-semibold border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+            className="w-full h-7 text-[11px] gap-1.5 font-semibold"
+            style={{ borderColor: "#FDE68A", color: "#D97706", borderRadius: 8 }}
             onClick={(e) => {
               e.stopPropagation();
               if (!onMoveLead) return;
@@ -385,9 +499,10 @@ const PipelineCard = memo(function PipelineCard({
         </div>
       )}
 
-      <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+      {/* Footer separator */}
+      <div style={{ height: 1, background: "#F1F5F9" }} />
 
-      {/* Line 4: Action bar (extracted) */}
+      {/* Card Footer — 3 equal buttons */}
       <CardActionBar
         leadId={lead.id}
         leadNome={lead.nome}

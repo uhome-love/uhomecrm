@@ -28,7 +28,6 @@ import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
 import BulkActionModal from "@/components/pipeline/BulkActionModal";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,7 +54,6 @@ const CAMPAIGN_TAGS = [
 type ClientStatusFilter = "todos" | "em_dia" | "desatualizado" | "tarefa_atrasada";
 
 function classifyLeadStatus(lead: PipelineLead, proximaTarefa: any): ClientStatusFilter {
-  // Build proximaTarefa from lead's own fields if not provided
   const tarefa = proximaTarefa || (
     (lead as any).data_proxima_acao
       ? { tipo: (lead as any).proxima_acao || "follow_up", vence_em: (lead as any).data_proxima_acao, hora_vencimento: null }
@@ -206,288 +204,470 @@ export default function PipelineKanban() {
         <button onClick={() => window.location.reload()} className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm">Recarregar</button>
       </div>
     } onError={(err) => console.error("[PipelineKanban] Render crash:", err.message, err.stack)}>
-    <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
-      {/* Controls — fixed top area */}
-      <div className="shrink-0 space-y-1.5 pb-1.5">
-        {/* Top bar: tabs + search + corretor + actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-shrink-0">
-            <TabsList className="h-9">
-              <TabsTrigger value="kanban" className="text-xs gap-1.5 px-3">
-                <LayoutGrid className="h-3.5 w-3.5" />
-                Kanban
-              </TabsTrigger>
-              <TabsTrigger value="inteligencia" className="text-xs gap-1.5 px-3">
-                <Brain className="h-3.5 w-3.5" />
-                Inteligência
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <PeriodBadge className="text-[10px] shrink-0" />
-
-          {activeTab === "inteligencia" && (
-            <div className="flex items-center bg-muted rounded-md p-0.5 shrink-0">
-              <button
-                onClick={() => setIntelView("funil")}
-                className={`text-[11px] px-2 py-0.5 rounded transition-colors ${intelView === "funil" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+    <div
+      className="flex flex-col w-full max-w-full min-w-0 overflow-hidden"
+      style={{
+        height: "calc(100vh - 56px)",
+        background: "#ECF0F6",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+      }}
+    >
+      {/* ═══ HEADER — 2 lines, sticky, clean ═══ */}
+      <div
+        className="shrink-0"
+        style={{
+          background: "#fff",
+          borderBottom: "1px solid #E2E8F0",
+          boxShadow: "0 1px 0 #F1F5F9, 0 4px 16px rgba(0,0,0,0.05)",
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+        }}
+      >
+        {/* Line 1 — 58px */}
+        <div
+          className="flex items-center justify-between"
+          style={{ height: 58, padding: "0 28px", borderBottom: "1px solid #E2E8F0" }}
+        >
+          {/* LEFT: Logo + divider + label */}
+          <div className="flex items-center">
+            <div className="flex items-center gap-2">
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: "linear-gradient(135deg, #2563EB, #3B82F6)",
+                }}
               >
-                <BarChart3 className="h-3 w-3 inline mr-1" />Funil
-              </button>
-              <button
-                onClick={() => setIntelView("radar")}
-                className={`text-[11px] px-2 py-0.5 rounded transition-colors ${intelView === "radar" ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Radar className="h-3 w-3 inline mr-1" />Radar
-              </button>
+                <span style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>U</span>
+              </div>
+              <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.3px", color: "#1E293B" }}>
+                U<span style={{ color: "#2563EB" }}>home</span>
+              </span>
             </div>
-          )}
+            <div style={{ width: 1, height: 20, background: "#E2E8F0", margin: "0 18px" }} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#64748B" }}>Pipeline de Leads</span>
+          </div>
 
-          <div className="relative flex-1 min-w-[120px] sm:min-w-[180px] max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Buscar..."
-              value={filters.search}
-              onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-              className="pl-8 h-8 text-xs bg-card"
+          {/* RIGHT: Search + Novo Lead + Avatar */}
+          <div className="flex items-center" style={{ gap: 10 }}>
+            <div className="relative" style={{ width: filters.search ? 232 : 192, transition: "width 0.2s ease" }}>
+              <Search className="absolute top-1/2 -translate-y-1/2" style={{ left: 10, height: 14, width: 14, color: "#94A3B8" }} />
+              <input
+                placeholder="Buscar..."
+                value={filters.search}
+                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+                className="w-full outline-none"
+                style={{
+                  height: 36, borderRadius: 10, background: "#F8FAFC",
+                  border: "1px solid #E2E8F0", paddingLeft: 32, paddingRight: 10,
+                  fontSize: 13, fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  transition: "all 0.2s ease",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#BFDBFE";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.09)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#E2E8F0";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              />
+              {filters.search && (
+                <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <X className="h-3 w-3" style={{ color: "#94A3B8" }} />
+                </button>
+              )}
+            </div>
+
+            {canAdd && activeTab === "kanban" && (
+              <button
+                onClick={() => setAddOpen(true)}
+                style={{
+                  background: "#2563EB", color: "#fff", borderRadius: 10,
+                  padding: "8px 18px", fontWeight: 700, fontSize: 13, border: "none",
+                  boxShadow: "0 2px 8px rgba(37,99,235,0.28)", cursor: "pointer",
+                  transition: "all 0.2s cubic-bezier(0.25,0.46,0.45,0.94)",
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#1D4ED8";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.35)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#2563EB";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.28)";
+                }}
+              >
+                ＋ Novo Lead
+              </button>
+            )}
+
+            <div
+              style={{
+                width: 34, height: 34, borderRadius: "50%",
+                background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
+                boxShadow: "0 0 0 2px #fff, 0 0 0 3.5px #E2E8F0",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 13, fontWeight: 700, color: "#fff",
+              }}
+            >
+              {authUser?.email?.[0]?.toUpperCase() || "U"}
+            </div>
+          </div>
+        </div>
+
+        {/* Line 2 — 44px */}
+        <div
+          className="flex items-center justify-between"
+          style={{ height: 44, padding: "0 28px" }}
+        >
+          {/* LEFT: Segmented control + filters */}
+          <div className="flex items-center" style={{ gap: 6 }}>
+            {/* Segmented Control */}
+            <div
+              className="flex items-center"
+              style={{ background: "#F1F5F9", borderRadius: 9, padding: 3 }}
+            >
+              {[
+                { key: "kanban", label: "Kanban", icon: <LayoutGrid style={{ height: 12, width: 12 }} /> },
+                { key: "inteligencia", label: "Inteligência", icon: <Brain style={{ height: 12, width: 12 }} /> },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className="flex items-center gap-1.5"
+                  style={{
+                    padding: "4px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600,
+                    background: activeTab === tab.key ? "#fff" : "transparent",
+                    boxShadow: activeTab === tab.key ? "0 1px 3px rgba(0,0,0,0.09)" : "none",
+                    color: activeTab === tab.key ? "#1E293B" : "#64748B",
+                    border: "none", cursor: "pointer",
+                    transition: "all 0.2s cubic-bezier(0.25,0.46,0.45,0.94)",
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === "inteligencia" && (
+              <div className="flex items-center" style={{ background: "#F1F5F9", borderRadius: 9, padding: 3, marginLeft: 4 }}>
+                <button
+                  onClick={() => setIntelView("funil")}
+                  style={{
+                    padding: "4px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600,
+                    background: intelView === "funil" ? "#fff" : "transparent",
+                    boxShadow: intelView === "funil" ? "0 1px 3px rgba(0,0,0,0.09)" : "none",
+                    color: intelView === "funil" ? "#1E293B" : "#64748B",
+                    border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
+                  <BarChart3 className="h-3 w-3 inline mr-1" />Funil
+                </button>
+                <button
+                  onClick={() => setIntelView("radar")}
+                  style={{
+                    padding: "4px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600,
+                    background: intelView === "radar" ? "#fff" : "transparent",
+                    boxShadow: intelView === "radar" ? "0 1px 3px rgba(0,0,0,0.09)" : "none",
+                    color: intelView === "radar" ? "#1E293B" : "#64748B",
+                    border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
+                  <Radar className="h-3 w-3 inline mr-1" />Radar
+                </button>
+              </div>
+            )}
+
+            <div style={{ width: 1, height: 16, background: "#E2E8F0", margin: "0 4px" }} />
+
+            {/* Corretor filter */}
+            {(isAdmin || isGestor) && (
+              <Select value={corretorFilter} onValueChange={setCorretorFilter}>
+                <SelectTrigger
+                  className="h-7 text-[11px] w-[160px] sm:w-[180px] shrink-0"
+                  style={{
+                    borderRadius: 8, fontSize: 11, fontWeight: 600,
+                    border: corretorFilter !== "all" ? "1px solid #BFDBFE" : "1px solid #E2E8F0",
+                    background: corretorFilter !== "all" ? "#EFF6FF" : "#fff",
+                    color: corretorFilter !== "all" ? "#1D4ED8" : "#64748B",
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
+                  <SelectValue placeholder="Todos os corretores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os corretores</SelectItem>
+                  {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
+                  {corretorOptions.map(([id, nome]) => (
+                    <SelectItem key={id} value={id}>{nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Campaign tag filter */}
+            {Object.keys(campaignTagCounts).length > 0 && (
+              <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
+                <SelectTrigger
+                  className="h-7 text-[11px] w-[160px] shrink-0"
+                  style={{
+                    borderRadius: 8, fontSize: 11, fontWeight: 600,
+                    border: campaignTagFilter !== "all" ? "1px solid #BFDBFE" : "1px solid #E2E8F0",
+                    background: campaignTagFilter !== "all" ? "#EFF6FF" : "#fff",
+                    color: campaignTagFilter !== "all" ? "#1D4ED8" : "#64748B",
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
+                  <SelectValue placeholder="🏷️ Campanha" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">🏷️ Todas as campanhas</SelectItem>
+                  {CAMPAIGN_TAGS.filter(ct => campaignTagCounts[ct.tag]).map(ct => (
+                    <SelectItem key={ct.tag} value={ct.tag}>
+                      {ct.label} ({campaignTagCounts[ct.tag]})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <PipelineAdvancedFilters
+              filters={filters}
+              onChange={setFilters}
+              stages={pipeline.stages}
+              segmentos={pipeline.segmentos}
+              leads={pipeline.leads}
+              corretorNomes={pipeline.corretorNomes}
+              isManager={isGestor || isAdmin}
             />
-            {filters.search && (
-              <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
-                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+
+            {/* Refresh */}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              style={{
+                width: 30, height: 30, borderRadius: 8,
+                border: "1px solid #E2E8F0", background: "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} style={{ color: "#64748B" }} />
+            </button>
+
+            {isAdmin && activeTab === "kanban" && (
+              <button
+                onClick={() => {
+                  if (selectionMode) { clearSelection(); } else { setSelectionMode(true); }
+                }}
+                style={{
+                  height: 30, borderRadius: 8, padding: "0 10px",
+                  border: selectionMode ? "1px solid #2563EB" : "1px solid #E2E8F0",
+                  background: selectionMode ? "#EFF6FF" : "#fff",
+                  color: selectionMode ? "#2563EB" : "#64748B",
+                  fontSize: 11, fontWeight: 600, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 4,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
+                {selectionMode ? <CheckSquare style={{ height: 12, width: 12 }} /> : <Square style={{ height: 12, width: 12 }} />}
+                <span className="hidden sm:inline">{selectionMode ? "Selecionando..." : "Selecionar"}</span>
               </button>
             )}
           </div>
 
-          <PipelineAdvancedFilters
-            filters={filters}
-            onChange={setFilters}
-            stages={pipeline.stages}
-            segmentos={pipeline.segmentos}
-            leads={pipeline.leads}
-            corretorNomes={pipeline.corretorNomes}
-            isManager={isGestor || isAdmin}
-          />
+          {/* RIGHT: Lead count + status chips */}
+          <div className="flex items-center" style={{ gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8" }}>
+              {hasAnyFilter
+                ? `${filteredLeads.length}/${pipeline.leads.length}`
+                : filteredLeads.length.toLocaleString("pt-BR")} leads
+            </span>
 
-          {/* Corretor filter */}
-          {(isAdmin || isGestor) && (
-            <Select value={corretorFilter} onValueChange={setCorretorFilter}>
-              <SelectTrigger className="h-8 text-xs w-[160px] sm:w-[200px] bg-card shrink-0">
-                <SelectValue placeholder="Todos os corretores" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os corretores</SelectItem>
-                {isAdmin && <SelectItem value="sem_corretor">Sem corretor</SelectItem>}
-                {corretorOptions.map(([id, nome]) => (
-                  <SelectItem key={id} value={id}>{nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+            {/* Fila CEO */}
+            {isAdmin && filaCeoCount > 0 && (
+              <>
+                <button
+                  onClick={() => setFilaCeoFilter(f => !f)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "4px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
+                    background: filaCeoFilter ? "#F5F3FF" : "#fff",
+                    color: filaCeoFilter ? "#7C3AED" : "#94A3B8",
+                    border: filaCeoFilter ? "1.5px solid #C4B5FD" : "1px solid #E2E8F0",
+                    cursor: "pointer", transition: "all 0.15s ease",
+                  }}
+                >
+                  📥 Fila CEO <span style={{ fontWeight: 800 }}>{filaCeoCount}</span>
+                </button>
+                <button
+                  onClick={() => setDispatchOpen(true)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    height: 24, padding: "0 8px", borderRadius: 8, fontSize: 10, fontWeight: 700,
+                    background: "#7C3AED", color: "#fff", border: "none", cursor: "pointer",
+                  }}
+                >
+                  <Rocket style={{ height: 12, width: 12 }} /> Disparar
+                </button>
+              </>
+            )}
 
-          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-          </Button>
-
-          {canAdd && activeTab === "kanban" && (
-            <Button onClick={() => setAddOpen(true)} size="sm" className="gap-1 h-8 text-[11px]">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Novo Lead</span>
-            </Button>
-          )}
-
-          {isAdmin && activeTab === "kanban" && (
-            <Button
-              variant={selectionMode ? "default" : "outline"}
-              size="sm"
-              className={`gap-1 h-8 text-[11px] ${selectionMode ? "bg-primary" : ""}`}
-              onClick={() => {
-                if (selectionMode) { clearSelection(); } else { setSelectionMode(true); }
-              }}
-            >
-              {selectionMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{selectionMode ? "Selecionando..." : "Selecionar"}</span>
-            </Button>
-          )}
-        </div>
-
-        {/* Filter bar: count + quick filters */}
-        <div className="flex items-center gap-2 flex-wrap px-0.5" style={{ minHeight: 28 }}>
-          <span className="text-xs font-bold text-foreground shrink-0">
-            {hasAnyFilter
-              ? `${filteredLeads.length}/${pipeline.leads.length}`
-              : `${filteredLeads.length}`} oportunidades
-          </span>
-
-          {/* Fila CEO */}
-          {isAdmin && filaCeoCount > 0 && (
-            <>
-              <button
-                onClick={() => setFilaCeoFilter(f => !f)}
-                className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
-                  filaCeoFilter
-                    ? "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-700"
-                    : "bg-card text-muted-foreground border-border hover:border-purple-300 hover:text-purple-600"
-                }`}
-              >
-                📥 Fila CEO
-                <Badge className="text-[9px] px-1 py-0 h-3.5 bg-purple-600 text-white border-none">
-                  {filaCeoCount}
-                </Badge>
-              </button>
-              <Button
-                size="sm"
-                onClick={() => setDispatchOpen(true)}
-                className="gap-1 h-6 text-[10px] px-2 bg-purple-600 hover:bg-purple-700 text-white border-none"
-              >
-                <Rocket className="h-3 w-3" />
-                Disparar
-              </Button>
-            </>
-          )}
-
-          {/* Divider */}
-          <div className="w-px h-4 bg-border shrink-0" />
-
-          {/* Campaign tag filter */}
-          {Object.keys(campaignTagCounts).length > 0 && (
-            <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
-              <SelectTrigger className={`h-7 text-[10px] w-[180px] shrink-0 rounded-full border ${
-                campaignTagFilter !== "all" 
-                  ? "bg-primary/10 border-primary/30 text-primary font-medium" 
-                  : "bg-card text-muted-foreground"
-              }`}>
-                <SelectValue placeholder="🏷️ Campanha" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">🏷️ Todas as campanhas</SelectItem>
-                {CAMPAIGN_TAGS.filter(ct => campaignTagCounts[ct.tag]).map(ct => (
-                  <SelectItem key={ct.tag} value={ct.tag}>
-                    {ct.label} ({campaignTagCounts[ct.tag]})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Client status filter */}
-          <div className="flex items-center gap-1">
+            {/* Status chips */}
             <button
               onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
-                clientStatusFilter === "em_dia"
-                  ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700"
-                  : "bg-card text-muted-foreground border-border hover:border-emerald-300 hover:text-emerald-600"
-              }`}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "4px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
+                background: clientStatusFilter === "em_dia" ? "#ECFDF5" : "#fff",
+                color: "#059669",
+                border: clientStatusFilter === "em_dia" ? "1.5px solid #A7F3D0" : "1px solid #E2E8F0",
+                cursor: "pointer", transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.filter = "brightness(0.95)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "none"; }}
             >
-              ✅ Em dia {clientStatusCounts.em_dia > 0 && <span className="opacity-70">({clientStatusCounts.em_dia})</span>}
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#059669" }} />
+              Em dia {clientStatusCounts.em_dia > 0 && clientStatusCounts.em_dia}
             </button>
             <button
               onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
-                clientStatusFilter === "desatualizado"
-                  ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700"
-                  : "bg-card text-muted-foreground border-border hover:border-amber-300 hover:text-amber-600"
-              }`}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "4px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
+                background: clientStatusFilter === "desatualizado" ? "#FFFBEB" : "#fff",
+                color: "#D97706",
+                border: clientStatusFilter === "desatualizado" ? "1.5px solid #FDE68A" : "1px solid #E2E8F0",
+                cursor: "pointer", transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.filter = "brightness(0.95)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "none"; }}
             >
-              🟡 Desatualizado {clientStatusCounts.desatualizado > 0 && <span className="opacity-70">({clientStatusCounts.desatualizado})</span>}
+              Desatualizado {clientStatusCounts.desatualizado > 0 && clientStatusCounts.desatualizado}
             </button>
             <button
               onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors ${
-                clientStatusFilter === "tarefa_atrasada"
-                  ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700"
-                  : "bg-card text-muted-foreground border-border hover:border-red-300 hover:text-red-600"
-              }`}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "4px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
+                background: clientStatusFilter === "tarefa_atrasada" ? "#FEF2F2" : "#fff",
+                color: "#DC2626",
+                border: clientStatusFilter === "tarefa_atrasada" ? "1.5px solid #FECACA" : "1px solid #E2E8F0",
+                cursor: "pointer", transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.filter = "brightness(0.95)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.filter = "none"; e.currentTarget.style.transform = "none"; }}
             >
-              🔴 Atrasado {clientStatusCounts.tarefa_atrasada > 0 && <span className="opacity-70">({clientStatusCounts.tarefa_atrasada})</span>}
+              Atrasado {clientStatusCounts.tarefa_atrasada > 0 && clientStatusCounts.tarefa_atrasada}
             </button>
-          </div>
 
-          {/* Active filter badges */}
-          {hasAnyFilter && (
-            <div className="flex items-center gap-1 ml-auto flex-wrap">
-              {filters.temperaturas.length > 0 && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
-                  Temp ×
-                </Badge>
-              )}
-              {filters.scoreMin > 0 && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, scoreMin: 0 }))}>
-                  Score≥{filters.scoreMin} ×
-                </Badge>
-              )}
-              {filters.stages.length > 0 && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, stages: [] }))}>
-                  {filters.stages.length} etapas ×
-                </Badge>
-              )}
-              {filters.origens.length > 0 && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, origens: [] }))}>
-                  {filters.origens.length} origens ×
-                </Badge>
-              )}
-              {filters.segmentos.length > 0 && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, segmentos: [] }))}>
-                  {filters.segmentos.length} seg ×
-                </Badge>
-              )}
-              {filters.diasSemAcao && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, diasSemAcao: "" }))}>
-                  &gt;{filters.diasSemAcao}d ×
-                </Badge>
-              )}
-              {filters.periodoEntrada && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, periodoEntrada: "" }))}>
-                  Período ×
-                </Badge>
-              )}
-              {filters.slaStatus && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, slaStatus: "" }))}>
-                  SLA ×
-                </Badge>
-              )}
-              {filters.comVisita && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, comVisita: "" }))}>
-                  Visita ×
-                </Badge>
-              )}
-              {campaignTagFilter !== "all" && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setCampaignTagFilter("all")}>
-                  🏷️ {CAMPAIGN_TAGS.find(c => c.tag === campaignTagFilter)?.label || campaignTagFilter} ×
-                </Badge>
-              )}
-              {clientStatusFilter !== "todos" && (
-                <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setClientStatusFilter("todos")}>
-                  {clientStatusFilter === "em_dia" ? "✅ Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Desatualizado" : "🔴 Atrasado"} ×
-                </Badge>
-              )}
-              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-[10px] h-5 text-destructive gap-0.5 px-1.5">
-                <X className="h-2.5 w-2.5" /> Limpar
-              </Button>
-            </div>
+            {hasAnyFilter && (
+              <button
+                onClick={clearAllFilters}
+                style={{
+                  fontSize: 10, fontWeight: 600, color: "#DC2626",
+                  background: "none", border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 2,
+                }}
+              >
+                <X style={{ height: 10, width: 10 }} /> Limpar
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Active filter badges row */}
+      {hasAnyFilter && (
+        <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
+          {filters.temperaturas.length > 0 && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
+              Temp ×
+            </Badge>
+          )}
+          {filters.scoreMin > 0 && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, scoreMin: 0 }))}>
+              Score≥{filters.scoreMin} ×
+            </Badge>
+          )}
+          {filters.stages.length > 0 && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, stages: [] }))}>
+              {filters.stages.length} etapas ×
+            </Badge>
+          )}
+          {filters.origens.length > 0 && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, origens: [] }))}>
+              {filters.origens.length} origens ×
+            </Badge>
+          )}
+          {filters.segmentos.length > 0 && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, segmentos: [] }))}>
+              {filters.segmentos.length} seg ×
+            </Badge>
+          )}
+          {filters.diasSemAcao && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, diasSemAcao: "" }))}>
+              &gt;{filters.diasSemAcao}d ×
+            </Badge>
+          )}
+          {filters.periodoEntrada && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, periodoEntrada: "" }))}>
+              Período ×
+            </Badge>
+          )}
+          {filters.slaStatus && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, slaStatus: "" }))}>
+              SLA ×
+            </Badge>
+          )}
+          {filters.comVisita && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, comVisita: "" }))}>
+              Visita ×
+            </Badge>
+          )}
+          {campaignTagFilter !== "all" && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setCampaignTagFilter("all")}>
+              🏷️ {CAMPAIGN_TAGS.find(c => c.tag === campaignTagFilter)?.label || campaignTagFilter} ×
+            </Badge>
+          )}
+          {clientStatusFilter !== "todos" && (
+            <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setClientStatusFilter("todos")}>
+              {clientStatusFilter === "em_dia" ? "✅ Em dia" : clientStatusFilter === "desatualizado" ? "🟡 Desatualizado" : "🔴 Atrasado"} ×
+            </Badge>
           )}
         </div>
+      )}
 
-        {/* Manager actions (no CEO Intelligence panel) */}
-        {activeTab === "kanban" && isGestor && !isAdmin && (
+      {/* Manager actions */}
+      {activeTab === "kanban" && isGestor && !isAdmin && (
+        <div style={{ padding: "0 28px" }}>
           <PipelineManagerActions
             leads={pipeline.leads}
             corretorNomes={pipeline.corretorNomes}
           />
-        )}
+        </div>
+      )}
 
-        {/* Melnick Campaign Analytics — shown when filter is active */}
-        {campaignTagFilter === "MELNICK_DAY" && (
+      {/* Melnick Campaign Analytics */}
+      {campaignTagFilter === "MELNICK_DAY" && (
+        <div style={{ padding: "0 28px" }}>
           <Suspense fallback={null}>
             <MelnickCampaignAnalytics />
           </Suspense>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Content area */}
-      <div className="flex-1 min-h-0 overflow-hidden flex">
+      <div className="flex-1 min-h-0 overflow-hidden flex" style={{ padding: "0 16px" }}>
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
           <ErrorBoundary onError={(err) => console.error("[PipelineBoard] Render crash:", err.message, err.stack)}>
-          <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
+          <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "#94A3B8" }} /></div>}>
             {activeTab === "kanban" ? (
               <PipelineBoard
                 stages={pipeline.stages || []}
@@ -575,27 +755,38 @@ export default function PipelineKanban() {
 
       {/* Floating selection toolbar */}
       {selectionMode && selectedLeads.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl bg-card border border-border shadow-2xl">
-          <span className="text-sm font-bold text-foreground">
+        <div
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
+          style={{
+            padding: "12px 20px", borderRadius: 14, background: "#fff",
+            border: "1px solid #E2E8F0",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#1E293B" }}>
             {selectedLeads.size} selecionado{selectedLeads.size !== 1 ? "s" : ""}
           </span>
-          <Button
-            size="sm"
-            className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
+          <button
             onClick={() => setBulkActionOpen(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "#2563EB", color: "#fff", borderRadius: 10,
+              padding: "8px 16px", fontWeight: 700, fontSize: 12, border: "none",
+              cursor: "pointer",
+            }}
           >
-            <Send className="h-3.5 w-3.5" />
-            Ações em Massa
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="gap-1 text-destructive hover:text-destructive"
+            <Send style={{ height: 14, width: 14 }} /> Ações em Massa
+          </button>
+          <button
             onClick={clearSelection}
+            style={{
+              display: "flex", alignItems: "center", gap: 4,
+              background: "none", color: "#DC2626", border: "none",
+              fontWeight: 600, fontSize: 12, cursor: "pointer",
+            }}
           >
-            <X className="h-3.5 w-3.5" />
-            Cancelar
-          </Button>
+            <X style={{ height: 14, width: 14 }} /> Cancelar
+          </button>
         </div>
       )}
     </div>
