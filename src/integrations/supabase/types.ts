@@ -8018,6 +8018,17 @@ export type Database = {
         }
         Returns: number
       }
+      check_phone_duplicate: {
+        Args: { p_telefone: string }
+        Returns: {
+          corretor_nome: string
+          lead_empreendimento: string
+          lead_id: string
+          lead_nome: string
+          lead_stage_id: string
+          lead_telefone: string
+        }[]
+      }
       cleanup_audit_log: { Args: never; Returns: undefined }
       cleanup_coaching_sessions: { Args: never; Returns: undefined }
       cleanup_expired_locks: { Args: never; Returns: number }
