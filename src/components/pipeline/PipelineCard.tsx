@@ -344,14 +344,18 @@ const PipelineCard = memo(function PipelineCard({
         )}
 
         {/* ROW 3: Empreendimento + Phone */}
-        <div className="flex items-center gap-2" style={{ marginBottom: 5 }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6,
+          flexWrap: "nowrap", overflow: "hidden", marginBottom: 5,
+        }}>
           {displayEmpreendimento && (
             <span style={{
               display: "inline-flex", alignItems: "center", gap: 4,
               background: "#F1F5F9", border: "1px solid #E2E8F0",
               borderRadius: 6, padding: "3px 8px",
               fontSize: 11, fontWeight: 600, color: "#334155",
-              maxWidth: "60%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              flexShrink: 0, maxWidth: 140,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>
               <div style={{
                 width: 6, height: 6, borderRadius: "50%",
@@ -365,76 +369,58 @@ const PipelineCard = memo(function PipelineCard({
             <span style={{
               fontSize: 11, color: "#94A3B8",
               fontFamily: "'DM Mono', monospace",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              flexShrink: 1, minWidth: 0,
             }}>
               {formatPhone(lead.telefone)}
             </span>
           )}
         </div>
 
-        {/* Score badge row */}
-        <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 18, height: 18, borderRadius: 4,
-            fontSize: 10, fontWeight: 800,
-            background: leadScore.label === "A" ? "#ECFDF5" : leadScore.label === "B" ? "#EFF6FF" : leadScore.label === "C" ? "#FFFBEB" : "#FEF2F2",
-            color: leadScore.label === "A" ? "#059669" : leadScore.label === "B" ? "#2563EB" : leadScore.label === "C" ? "#D97706" : "#DC2626",
-          }}>
-            {leadScore.label}
-          </span>
-
-          {/* Partnership badge */}
-          {parceiroNome && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: "#7C3AED",
-              background: "#F5F3FF", padding: "2px 6px", borderRadius: 5,
-              display: "inline-flex", alignItems: "center", gap: 3,
-            }}>
-              <Handshake style={{ height: 10, width: 10 }} /> {parceiroNome.split(" ")[0]}
-            </span>
-          )}
-
-          {/* Negócio badge */}
-          {lead.negocio_id && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: "#059669",
-              background: "#ECFDF5", padding: "2px 6px", borderRadius: 5,
-            }}>✅ Negócio</span>
-          )}
-        </div>
-
-        {/* Campaign tags */}
-        {(lead.tags || []).length > 0 && (
-          <div className="flex items-center gap-1 flex-wrap" style={{ marginBottom: 4 }}>
-            {(lead.tags || []).map(tag => {
-              const TAG_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-                MELNICK_DAY: { label: "🔥 Melnick Day", color: "#EA580C", bg: "#FFF7ED" },
-                OPEN_BOSQUE: { label: "🌳 Open Bosque", color: "#059669", bg: "#ECFDF5" },
-                CASA_TUA: { label: "🏠 Casa Tua", color: "#2563EB", bg: "#EFF6FF" },
-                LAKE_EYRE: { label: "💎 Lake Eyre", color: "#7C3AED", bg: "#F5F3FF" },
-                LAS_CASAS: { label: "🏡 Las Casas", color: "#D97706", bg: "#FFFBEB" },
-                ORYGEM: { label: "✨ Orygem", color: "#0891B2", bg: "#ECFEFF" },
-                HIGH_GARDEN_IGUATEMI: { label: "🌿 High Garden", color: "#059669", bg: "#ECFDF5" },
-                SEEN_TRES_FIGUEIRAS: { label: "👁 Seen", color: "#7C3AED", bg: "#F5F3FF" },
-                ALTO_LINDOIA: { label: "🏔 Alto Lindóia", color: "#0284C7", bg: "#F0F9FF" },
-                SHIFT: { label: "⚡ Shift", color: "#475569", bg: "#F1F5F9" },
-                CASA_BASTIAN: { label: "🏰 Bastian", color: "#E11D48", bg: "#FFF1F2" },
-                DUETTO: { label: "🎵 Duetto", color: "#4F46E5", bg: "#EEF2FF" },
-                TERRACE: { label: "🌅 Terrace", color: "#0D9488", bg: "#F0FDFA" },
-              };
-              const cfg = TAG_CONFIG[tag];
-              if (!cfg) return null;
-              return (
-                <span key={tag} style={{
-                  fontSize: 9, fontWeight: 700, color: cfg.color, background: cfg.bg,
-                  padding: "2px 6px", borderRadius: 5,
-                }}>
-                  {cfg.label}
-                </span>
-              );
-            })}
+        {/* Badges row — score inline with partnership/negocio */}
+        {(parceiroNome || lead.negocio_id) && (
+          <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
+            {parceiroNome && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: "#7C3AED",
+                background: "#F5F3FF", padding: "2px 6px", borderRadius: 5,
+                display: "inline-flex", alignItems: "center", gap: 3,
+              }}>
+                <Handshake style={{ height: 10, width: 10 }} /> {parceiroNome.split(" ")[0]}
+              </span>
+            )}
+            {lead.negocio_id && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: "#059669",
+                background: "#ECFDF5", padding: "2px 6px", borderRadius: 5,
+              }}>✅ Negócio</span>
+            )}
           </div>
         )}
+
+        {/* Campaign tags - non-empreendimento only */}
+        {(lead.tags || []).length > 0 && (() => {
+          const NON_EMP_TAGS: Record<string, { label: string; color: string; bg: string }> = {
+            MELNICK_DAY: { label: "🔥 Melnick Day", color: "#EA580C", bg: "#FFF7ED" },
+          };
+          const rendered = (lead.tags || []).map(tag => {
+            const cfg = NON_EMP_TAGS[tag];
+            if (!cfg) return null;
+            return (
+              <span key={tag} style={{
+                fontSize: 9, fontWeight: 700, color: cfg.color, background: cfg.bg,
+                padding: "2px 6px", borderRadius: 5,
+              }}>
+                {cfg.label}
+              </span>
+            );
+          }).filter(Boolean);
+          return rendered.length > 0 ? (
+            <div className="flex items-center gap-1 flex-wrap" style={{ marginBottom: 4 }}>
+              {rendered}
+            </div>
+          ) : null;
+        })()}
 
         {/* ROW 4: Status */}
         <CardStatusLine status={status} stageChangedAt={lead.stage_changed_at} />

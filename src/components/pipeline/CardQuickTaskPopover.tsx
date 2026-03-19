@@ -92,16 +92,24 @@ export default function CardQuickTaskPopover({ leadId, leadNome }: CardQuickTask
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="min-h-[44px] text-[11px] px-3 gap-1.5 font-semibold text-foreground/80 hover:bg-accent hover:text-foreground rounded-lg"
+        <button
           title="Criar tarefa rápida"
           onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+          style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", gap: 2,
+            padding: "10px 6px", minHeight: 54,
+            cursor: "pointer", background: "transparent", border: "none",
+            borderRadius: "0 0 0 13px",
+            transition: "background 0.15s ease",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#F8FAFC"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <ClipboardList className="h-4 w-4" />
-          <span className="hidden sm:inline">Tarefa</span>
-        </Button>
+          <span style={{ fontSize: 15 }}>📋</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#64748B", lineHeight: 1, whiteSpace: "nowrap" }}>Tarefa</span>
+        </button>
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-72 p-2.5 space-y-2" onClick={(e) => e.stopPropagation()}>
         <p className="text-[10px] font-bold text-foreground">➕ Tarefa rápida para {leadNome?.split(" ")[0]}</p>
