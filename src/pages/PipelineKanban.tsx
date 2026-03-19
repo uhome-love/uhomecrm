@@ -3,6 +3,8 @@ import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import PeriodBadge from "@/components/PeriodBadge";
 import { usePipeline } from "@/hooks/usePipeline";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
+import PipelineMobileView from "@/components/pipeline/PipelineMobileView";
+import { useIsMobile } from "@/hooks/use-mobile";
 import PipelineAddLeadDialog from "@/components/pipeline/PipelineAddLeadDialog";
 import PipelineLeadDetail from "@/components/pipeline/PipelineLeadDetail";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -70,6 +72,7 @@ export default function PipelineKanban() {
   const pipeline = usePipeline();
   const { isGestor, isAdmin, isCorretor } = useUserRole();
   const { user: authUser } = useAuth();
+  const isMobile = useIsMobile();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [filters, setFilters] = useState<PipelineFilters>({ ...EMPTY_FILTERS });
@@ -325,9 +328,9 @@ export default function PipelineKanban() {
           </div>
         </div>
 
-        {/* Line 2 — 44px */}
+        {/* Line 2 — 44px — hidden on mobile when kanban */}
         <div
-          className="flex items-center justify-between overflow-x-auto"
+          className={`flex items-center justify-between overflow-x-auto ${isMobile && activeTab === "kanban" ? "hidden" : ""}`}
           style={{ minHeight: 44, padding: "0 14px", gap: 6 }}
         >
           {/* LEFT: Segmented control + filters */}
@@ -589,8 +592,8 @@ export default function PipelineKanban() {
         </div>
       </div>
 
-      {/* Active filter badges row */}
-      {hasAnyFilter && (
+      {/* Active filter badges row — hidden on mobile kanban */}
+      {hasAnyFilter && !(isMobile && activeTab === "kanban") && (
         <div className="flex items-center gap-1 flex-wrap shrink-0" style={{ padding: "6px 28px 0" }}>
           {filters.temperaturas.length > 0 && (
             <Badge variant="secondary" className="text-[9px] gap-0.5 cursor-pointer h-5" onClick={() => setFilters(f => ({ ...f, temperaturas: [] }))}>
@@ -670,45 +673,65 @@ export default function PipelineKanban() {
       )}
 
       {/* Content area */}
-      <div className="flex-1 min-h-0 overflow-hidden flex" style={{ padding: "0 16px" }}>
-        <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
-          <ErrorBoundary onError={(err) => console.error("[PipelineBoard] Render crash:", err.message, err.stack)}>
-          <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "#94A3B8" }} /></div>}>
-            {activeTab === "kanban" ? (
-              <PipelineBoard
-                stages={pipeline.stages || []}
-                leads={filteredLeads || []}
-                segmentos={pipeline.segmentos}
-                corretorNomes={pipeline.corretorNomes}
-                corretorAvatars={pipeline.corretorAvatars}
-                parcerias={parcerias}
-                onMoveLead={pipeline.moveLead}
-                onSelectLead={selectionMode ? (lead) => toggleLeadSelection(lead.id) : setSelectedLead}
-                onTransferred={() => pipeline.reload()}
-                selectionMode={selectionMode}
-                selectedLeads={selectedLeads}
-                onToggleSelect={toggleLeadSelection}
-              />
-            ) : activeTab === "inteligencia" ? (
-              intelView === "funil" ? (
-                <PipelineFlowDashboard
-                  stages={pipeline.stages}
-                  leads={filteredLeads}
+      {isMobile && activeTab === "kanban" ? (
+        <PipelineMobileView
+          stages={pipeline.stages || []}
+          leads={filteredLeads || []}
+          segmentos={pipeline.segmentos}
+          corretorNomes={pipeline.corretorNomes}
+          corretorAvatars={pipeline.corretorAvatars}
+          parcerias={parcerias}
+          onMoveLead={pipeline.moveLead}
+          onSelectLead={selectionMode ? (lead) => toggleLeadSelection(lead.id) : setSelectedLead}
+          onTransferred={() => pipeline.reload()}
+          selectionMode={selectionMode}
+          selectedLeads={selectedLeads}
+          onToggleSelect={toggleLeadSelection}
+          clientStatusCounts={clientStatusCounts}
+          clientStatusFilter={clientStatusFilter}
+          onStatusFilterChange={(f) => setClientStatusFilter(f as ClientStatusFilter)}
+        />
+      ) : (
+        <div className="flex-1 min-h-0 overflow-hidden flex" style={{ padding: "0 16px" }}>
+          <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
+            <ErrorBoundary onError={(err) => console.error("[PipelineBoard] Render crash:", err.message, err.stack)}>
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-6 w-6 animate-spin" style={{ color: "#94A3B8" }} /></div>}>
+              {activeTab === "kanban" ? (
+                <PipelineBoard
+                  stages={pipeline.stages || []}
+                  leads={filteredLeads || []}
+                  segmentos={pipeline.segmentos}
                   corretorNomes={pipeline.corretorNomes}
+                  corretorAvatars={pipeline.corretorAvatars}
+                  parcerias={parcerias}
+                  onMoveLead={pipeline.moveLead}
+                  onSelectLead={selectionMode ? (lead) => toggleLeadSelection(lead.id) : setSelectedLead}
+                  onTransferred={() => pipeline.reload()}
+                  selectionMode={selectionMode}
+                  selectedLeads={selectedLeads}
+                  onToggleSelect={toggleLeadSelection}
                 />
-              ) : (
-                <OpportunityRadar
-                  leads={pipeline.leads}
-                  stages={pipeline.stages}
-                  corretorNomes={pipeline.corretorNomes}
-                  onSelectLead={setSelectedLead}
-                />
-              )
-            ) : null}
-          </Suspense>
-          </ErrorBoundary>
+              ) : activeTab === "inteligencia" ? (
+                intelView === "funil" ? (
+                  <PipelineFlowDashboard
+                    stages={pipeline.stages}
+                    leads={filteredLeads}
+                    corretorNomes={pipeline.corretorNomes}
+                  />
+                ) : (
+                  <OpportunityRadar
+                    leads={pipeline.leads}
+                    stages={pipeline.stages}
+                    corretorNomes={pipeline.corretorNomes}
+                    onSelectLead={setSelectedLead}
+                  />
+                )
+              ) : null}
+            </Suspense>
+            </ErrorBoundary>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Dialogs */}
       {canAdd && (
@@ -759,7 +782,24 @@ export default function PipelineKanban() {
         }}
       />
 
-      {/* Floating selection toolbar */}
+      {/* FAB Mobile — add lead */}
+      {isMobile && canAdd && activeTab === "kanban" && !selectionMode && (
+        <button
+          onClick={() => setAddOpen(true)}
+          className="md:hidden"
+          style={{
+            position: "fixed", bottom: 24, right: 20,
+            width: 52, height: 52, borderRadius: 16,
+            background: "#2563EB", color: "#fff",
+            fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 4px 16px rgba(37,99,235,0.4)",
+            cursor: "pointer", zIndex: 50, border: "none",
+          }}
+        >
+          ＋
+        </button>
+      )}
+
       {selectionMode && selectedLeads.size > 0 && (
         <div
           className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
