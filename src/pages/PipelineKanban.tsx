@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, lazy, Suspense, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import PeriodBadge from "@/components/PeriodBadge";
 import { usePipeline } from "@/hooks/usePipeline";
