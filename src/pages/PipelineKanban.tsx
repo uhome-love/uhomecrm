@@ -234,24 +234,9 @@ export default function PipelineKanban() {
         >
           {/* LEFT: Logo + divider + label */}
           <div className="flex items-center min-w-0 flex-shrink-0">
-            <div className="hidden md:flex items-center gap-2">
-              <div
-                className="flex items-center justify-center"
-                style={{
-                  width: 34, height: 34, borderRadius: 10,
-                  background: "linear-gradient(135deg, #2563EB, #3B82F6)",
-                }}
-              >
-                <span style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>U</span>
-              </div>
-              <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.3px", color: "#1E293B" }}>
-                U<span style={{ color: "#2563EB" }}>home</span>
-              </span>
-            </div>
-            <div className="hidden md:block" style={{ width: 1, height: 20, background: "#E2E8F0", margin: "0 18px" }} />
-            <span className="whitespace-nowrap" style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>
+            <span className="whitespace-nowrap" style={{ fontSize: 18, fontWeight: 700, color: "#1E293B", letterSpacing: "-0.3px" }}>
               <span className="md:hidden">Pipeline</span>
-              <span className="hidden md:inline" style={{ fontWeight: 600, color: "#64748B" }}>Pipeline de Leads</span>
+              <span className="hidden md:inline">Pipeline de Leads</span>
             </span>
           </div>
 
