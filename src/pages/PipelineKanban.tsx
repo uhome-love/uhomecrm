@@ -227,10 +227,10 @@ export default function PipelineKanban() {
         {/* Line 1 — 58px */}
         <div
           className="flex items-center justify-between md:!h-[58px] md:!px-[28px]"
-          style={{ height: 52, padding: "0 16px", borderBottom: "1px solid #E2E8F0" }}
+          style={{ height: 52, padding: "0 14px", borderBottom: "1px solid #E2E8F0", gap: 8 }}
         >
           {/* LEFT: Logo + divider + label */}
-          <div className="flex items-center min-w-0">
+          <div className="flex items-center min-w-0 flex-shrink-0">
             <div className="hidden md:flex items-center gap-2">
               <div
                 className="flex items-center justify-center"
@@ -246,12 +246,15 @@ export default function PipelineKanban() {
               </span>
             </div>
             <div className="hidden md:block" style={{ width: 1, height: 20, background: "#E2E8F0", margin: "0 18px" }} />
-            <span className="whitespace-nowrap" style={{ fontSize: 14, fontWeight: 600, color: "#64748B" }}>Pipeline de Leads</span>
+            <span className="whitespace-nowrap" style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>
+              <span className="md:hidden">Pipeline</span>
+              <span className="hidden md:inline" style={{ fontWeight: 600, color: "#64748B" }}>Pipeline de Leads</span>
+            </span>
           </div>
 
           {/* RIGHT: Search + Novo Lead + Avatar */}
-          <div className="flex items-center" style={{ gap: 10 }}>
-            <div className="relative" style={{ width: filters.search ? 232 : 192, transition: "width 0.2s ease" }}>
+          <div className="flex items-center flex-shrink-0" style={{ gap: 8 }}>
+            <div className="relative hidden sm:block" style={{ width: filters.search ? 232 : 192, transition: "width 0.2s ease" }}>
               <Search className="absolute top-1/2 -translate-y-1/2" style={{ left: 10, height: 14, width: 14, color: "#94A3B8" }} />
               <input
                 placeholder="Buscar..."
@@ -283,9 +286,10 @@ export default function PipelineKanban() {
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
+                className="whitespace-nowrap"
                 style={{
                   background: "#2563EB", color: "#fff", borderRadius: 10,
-                  padding: "8px 18px", fontWeight: 700, fontSize: 13, border: "none",
+                  padding: "8px 14px", fontWeight: 700, fontSize: 12, border: "none",
                   boxShadow: "0 2px 8px rgba(37,99,235,0.28)", cursor: "pointer",
                   transition: "all 0.2s cubic-bezier(0.25,0.46,0.45,0.94)",
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -301,7 +305,8 @@ export default function PipelineKanban() {
                   e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.28)";
                 }}
               >
-                ＋ Novo Lead
+                <span className="hidden sm:inline">＋ Novo Lead</span>
+                <span className="sm:hidden">＋</span>
               </button>
             )}
 
@@ -312,6 +317,7 @@ export default function PipelineKanban() {
                 boxShadow: "0 0 0 2px #fff, 0 0 0 3.5px #E2E8F0",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 13, fontWeight: 700, color: "#fff",
+                flexShrink: 0,
               }}
             >
               {authUser?.email?.[0]?.toUpperCase() || "U"}
