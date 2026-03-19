@@ -28,9 +28,9 @@ interface PipelineBoardProps {
   onToggleSelect?: (leadId: string) => void;
 }
 
-const COLUMN_WIDTH_DESKTOP = 300;
-const COLUMN_WIDTH_MOBILE = 280;
-const COLUMN_GAP = 12;
+const COLUMN_WIDTH_DESKTOP = 268;
+const COLUMN_WIDTH_MOBILE = 268;
+const COLUMN_GAP = 13;
 
 function getColumnWidth() {
   return typeof window !== "undefined" && window.innerWidth < 640 ? COLUMN_WIDTH_MOBILE : COLUMN_WIDTH_DESKTOP;
