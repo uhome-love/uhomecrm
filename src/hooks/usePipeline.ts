@@ -263,15 +263,15 @@ export function usePipeline(pipelineTipo: string = "leads") {
     } finally {
       loadingLeadsRef.current = false;
     }
-  }, [user, isGestor, isAdmin]);
+  }, [userId, isGestor, isAdmin]);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (!userId) { setLoading(false); return; }
     // Wait for role resolution before loading leads to avoid double-fetch
     if (roleLoading) return;
 
     setError(null);
-    setLoading(true);
+    setLoading(prev => (stages.length === 0 && leads.length === 0 && segmentos.length === 0 ? true : prev));
 
     // Timeout guard: if load takes > 30s, stop and show error
     const timeout = setTimeout(() => {
@@ -290,7 +290,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       });
 
     return () => clearTimeout(timeout);
-  }, [user, roleLoading, loadStages, loadSegmentos, loadLeads]);
+  }, [userId, roleLoading, loadStages, loadSegmentos, loadLeads]);
 
   // ─── Granular realtime: update only the changed lead in local state ───
   useEffect(() => {
