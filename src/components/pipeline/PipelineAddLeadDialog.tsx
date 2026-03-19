@@ -159,8 +159,12 @@ export default function PipelineAddLeadDialog({ open, onOpenChange, stages, segm
         setDuplicates([]);
         onOpenChange(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao adicionar lead:", err);
+      const msg = err?.message || "";
+      if (msg.includes("unique") || msg.includes("duplicate")) {
+        setDuplicates([{ id: "db", nome: form.nome, telefone: form.telefone, source: "pipeline" }]);
+      }
     } finally {
       setLoading(false);
     }
