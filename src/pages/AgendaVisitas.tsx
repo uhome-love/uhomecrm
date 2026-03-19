@@ -118,7 +118,11 @@ export default function AgendaVisitas() {
     return byTipo.filter(v => v.corretor_id === user?.id);
   }, [tabVisitas, agendaTipo, user?.id, isAdmin, isGestor]);
   const teamVisitas = useMemo(() => tabVisitas.filter(v => ((v as any).tipo || "lead") === agendaTipo && v.corretor_id !== user?.id), [tabVisitas, agendaTipo, user?.id]);
-  const allVisitasByTipo = useMemo(() => allVisitas.filter(v => ((v as any).tipo || "lead") === agendaTipo), [allVisitas, agendaTipo]);
+  const allVisitasByTipo = useMemo(() => {
+    const byTipo = allVisitas.filter(v => ((v as any).tipo || "lead") === agendaTipo);
+    if (isAdmin || isGestor) return byTipo;
+    return byTipo.filter(v => v.corretor_id === user?.id);
+  }, [allVisitas, agendaTipo, isAdmin, isGestor, user?.id]);
   const negocioCount = useMemo(() => allVisitas.filter(v => (v as any).tipo === "negocio").length, [allVisitas]);
   const leadCount = useMemo(() => allVisitas.filter(v => (v as any).tipo !== "negocio").length, [allVisitas]);
 
