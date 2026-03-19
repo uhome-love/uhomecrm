@@ -362,7 +362,7 @@ export default function AgendaVisitas() {
             </TabsTrigger>
           )}
           <TabsTrigger value="meu-time" className="gap-1.5 text-xs h-8 px-3">
-            <Users className="h-3.5 w-3.5" /> Meu Time
+            <Users className="h-3.5 w-3.5" /> {(isAdmin || isGestor) ? "Meu Time" : "Time"}
             {teamVisitas.length > 0 && <Badge variant="secondary" className="text-[10px] ml-0.5 px-1.5 py-0">{teamVisitas.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="performance" className="gap-1.5 text-xs h-8 px-3">
