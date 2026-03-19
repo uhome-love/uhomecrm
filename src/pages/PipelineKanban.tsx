@@ -221,7 +221,7 @@ export default function PipelineKanban() {
           boxShadow: "0 1px 0 #F1F5F9, 0 4px 16px rgba(0,0,0,0.05)",
           position: "sticky",
           top: 0,
-          zIndex: 100,
+          zIndex: 40,
         }}
       >
         {/* Line 1 — 58px */}
