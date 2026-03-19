@@ -1090,7 +1090,15 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 } catch (e) {
                   console.warn("[OA] Falha ao registrar evento de skip:", e);
                 }
-                await unlockLead(lead.id);
+                // Set proxima_tentativa_apos to push lead back in queue (avoid re-serving immediately)
+                const skipUntil = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+                await supabase.from("oferta_ativa_leads")
+                  .update({
+                    em_atendimento_por: null,
+                    em_atendimento_ate: null,
+                    proxima_tentativa_apos: skipUntil,
+                  } as any)
+                  .eq("id", lead.id);
               }
               await fetchNext();
               toast("Lead pulado — próximo da fila", { duration: 1500 });
