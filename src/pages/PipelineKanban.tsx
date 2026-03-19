@@ -230,8 +230,8 @@ export default function PipelineKanban() {
           style={{ height: 58, padding: "0 28px", borderBottom: "1px solid #E2E8F0" }}
         >
           {/* LEFT: Logo + divider + label */}
-          <div className="flex items-center">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center min-w-0">
+            <div className="hidden md:flex items-center gap-2">
               <div
                 className="flex items-center justify-center"
                 style={{
@@ -245,8 +245,8 @@ export default function PipelineKanban() {
                 U<span style={{ color: "#2563EB" }}>home</span>
               </span>
             </div>
-            <div style={{ width: 1, height: 20, background: "#E2E8F0", margin: "0 18px" }} />
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#64748B" }}>Pipeline de Leads</span>
+            <div className="hidden md:block" style={{ width: 1, height: 20, background: "#E2E8F0", margin: "0 18px" }} />
+            <span className="whitespace-nowrap" style={{ fontSize: 14, fontWeight: 600, color: "#64748B" }}>Pipeline de Leads</span>
           </div>
 
           {/* RIGHT: Search + Novo Lead + Avatar */}
