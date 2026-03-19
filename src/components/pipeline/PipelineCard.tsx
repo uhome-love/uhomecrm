@@ -371,37 +371,26 @@ const PipelineCard = memo(function PipelineCard({
           )}
         </div>
 
-        {/* Score badge row */}
-        <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 18, height: 18, borderRadius: 4,
-            fontSize: 10, fontWeight: 800,
-            background: leadScore.label === "A" ? "#ECFDF5" : leadScore.label === "B" ? "#EFF6FF" : leadScore.label === "C" ? "#FFFBEB" : "#FEF2F2",
-            color: leadScore.label === "A" ? "#059669" : leadScore.label === "B" ? "#2563EB" : leadScore.label === "C" ? "#D97706" : "#DC2626",
-          }}>
-            {leadScore.label}
-          </span>
-
-          {/* Partnership badge */}
-          {parceiroNome && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: "#7C3AED",
-              background: "#F5F3FF", padding: "2px 6px", borderRadius: 5,
-              display: "inline-flex", alignItems: "center", gap: 3,
-            }}>
-              <Handshake style={{ height: 10, width: 10 }} /> {parceiroNome.split(" ")[0]}
-            </span>
-          )}
-
-          {/* Negócio badge */}
-          {lead.negocio_id && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: "#059669",
-              background: "#ECFDF5", padding: "2px 6px", borderRadius: 5,
-            }}>✅ Negócio</span>
-          )}
-        </div>
+        {/* Badges row — score inline with partnership/negocio */}
+        {(parceiroNome || lead.negocio_id) && (
+          <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
+            {parceiroNome && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: "#7C3AED",
+                background: "#F5F3FF", padding: "2px 6px", borderRadius: 5,
+                display: "inline-flex", alignItems: "center", gap: 3,
+              }}>
+                <Handshake style={{ height: 10, width: 10 }} /> {parceiroNome.split(" ")[0]}
+              </span>
+            )}
+            {lead.negocio_id && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: "#059669",
+                background: "#ECFDF5", padding: "2px 6px", borderRadius: 5,
+              }}>✅ Negócio</span>
+            )}
+          </div>
+        )}
 
         {/* Campaign tags - non-empreendimento only */}
         {(lead.tags || []).length > 0 && (() => {
