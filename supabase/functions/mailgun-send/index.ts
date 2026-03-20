@@ -277,13 +277,14 @@ Deno.serve(async (req) => {
         .eq("campaign_id", campaign_id)
         .eq("status", "pendente");
 
-      const newStatus = totalPendentes === 0 ? "enviada" : "enviando";
+      const pendCount = totalPendentes || 0;
+      const newStatus = pendCount === 0 ? "enviada" : "enviando";
 
       await adminClient.from("email_campaigns")
         .update({
           status: newStatus,
-          total_enviados: totalEnviados,
-          total_erros: totalErros,
+          total_enviados: totalEnviados || 0,
+          total_erros: totalErros || 0,
           updated_at: new Date().toISOString(),
         })
         .eq("id", campaign_id);

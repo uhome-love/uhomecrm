@@ -189,12 +189,13 @@ Deno.serve(async (req) => {
       .eq("campaign_id", campaign.id)
       .eq("status", "pendente");
 
+    const pendCount = totalPendentes || 0;
     await admin.from("email_campaigns")
       .update({
-        total_enviados: totalEnviados,
-        total_erros: totalErros,
+        total_enviados: totalEnviados || 0,
+        total_erros: totalErros || 0,
         updated_at: new Date().toISOString(),
-        ...(totalPendentes === 0 ? { status: "enviada" } : {}),
+        ...(pendCount === 0 ? { status: "enviada" } : {}),
       })
       .eq("id", campaign.id);
 
