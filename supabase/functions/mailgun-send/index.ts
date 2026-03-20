@@ -113,11 +113,15 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return errorResponse("Unauthorized", 401);
 
+    const token = authHeader.replace("Bearer ", "");
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !user) return errorResponse("Unauthorized", 401);
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error("mailgun-send auth error:", claimsError);
+      return errorResponse("Unauthorized", 401);
+    }
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const settings = await getSettings(adminClient);
