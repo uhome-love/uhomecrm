@@ -471,7 +471,10 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     const isDescarte = targetStage?.tipo === "descarte";
 
     if (isDescarte && lead) {
-      // ─── Descarte: insert into Oferta Ativa, then DELETE from pipeline ───
+      // ─── Optimistic UI: move lead immediately in the UI ───
+      onMoveLead(lead.id, result.targetStageId, result.observacao);
+
+      // ─── Descarte: insert into Oferta Ativa ───
       try {
         const empreendimento = extra.empreendimento || lead.empreendimento || "";
 
