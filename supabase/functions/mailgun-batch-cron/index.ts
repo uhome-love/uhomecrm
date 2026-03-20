@@ -170,22 +170,32 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, SEND_DELAY_MS));
     }
 
-    // Update campaign totals
-    const { data: totals } = await admin
+    // Update campaign totals using count queries to avoid 1000-row limit
+    const { count: totalEnviados } = await admin
       .from("email_campaign_recipients")
-      .select("status")
-      .eq("campaign_id", campaign.id);
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaign.id)
+      .eq("status", "enviado");
 
-    const totalEnviados = totals?.filter(t => t.status === "enviado").length || 0;
-    const totalErros = totals?.filter(t => t.status === "erro").length || 0;
-    const totalPendentes = totals?.filter(t => t.status === "pendente").length || 0;
+    const { count: totalErros } = await admin
+      .from("email_campaign_recipients")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaign.id)
+      .eq("status", "erro");
 
+    const { count: totalPendentes } = await admin
+      .from("email_campaign_recipients")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaign.id)
+      .eq("status", "pendente");
+
+    const pendCount = totalPendentes || 0;
     await admin.from("email_campaigns")
       .update({
-        total_enviados: totalEnviados,
-        total_erros: totalErros,
+        total_enviados: totalEnviados || 0,
+        total_erros: totalErros || 0,
         updated_at: new Date().toISOString(),
-        ...(totalPendentes === 0 ? { status: "enviada" } : {}),
+        ...(pendCount === 0 ? { status: "enviada" } : {}),
       })
       .eq("id", campaign.id);
 
