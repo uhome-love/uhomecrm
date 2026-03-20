@@ -396,7 +396,7 @@ function EmailCampaignsTab() {
       for (let i = 0; i < previewLeads.length; i += batchSize) {
         const batch = previewLeads.slice(i, i + batchSize).map(l => ({
           campaign_id: campaign.id,
-          lead_id: fonte === "manual" ? null : l.id,
+          lead_id: fonte === "pipeline" ? l.id : null,
           email: l.email,
           nome: l.nome,
           status: "pendente",
