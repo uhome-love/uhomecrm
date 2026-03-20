@@ -18,6 +18,7 @@ export interface CustomListFilters {
   periodoCompra?: string;
   objetivoPosVenda?: string[];
   ordem?: string;
+  statusLead?: string[];
 }
 
 export interface CustomList {
