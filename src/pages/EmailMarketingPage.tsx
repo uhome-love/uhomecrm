@@ -663,25 +663,50 @@ function EmailCampaignsTab() {
                   {oaListas.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma lista encontrada</p>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-auto">
-                      {oaListas.filter(l => ["ativa", "liberada"].includes(l.status)).map(lista => (
-                        <label
-                          key={lista.id}
-                          className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
-                            selectedListaIds.includes(lista.id) ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                          }`}
-                        >
-                          <Checkbox
-                            checked={selectedListaIds.includes(lista.id)}
-                            onCheckedChange={() => toggleListaId(lista.id)}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{lista.nome}</p>
-                            <p className="text-xs text-muted-foreground">{lista.empreendimento} · {lista.total_leads} leads</p>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
+                    <>
+                      {(() => {
+                        const availableListas = oaListas.filter(l => ["ativa", "liberada"].includes(l.status));
+                        const allSelected = availableListas.length > 0 && availableListas.every(l => selectedListaIds.includes(l.id));
+                        return (
+                          <label className="flex items-center gap-2 px-2 py-1.5 cursor-pointer text-sm font-medium text-primary hover:underline">
+                            <Checkbox
+                              checked={allSelected}
+                              onCheckedChange={() => {
+                                if (allSelected) {
+                                  availableListas.forEach(l => {
+                                    if (selectedListaIds.includes(l.id)) toggleListaId(l.id);
+                                  });
+                                } else {
+                                  availableListas.forEach(l => {
+                                    if (!selectedListaIds.includes(l.id)) toggleListaId(l.id);
+                                  });
+                                }
+                              }}
+                            />
+                            {allSelected ? "Desmarcar todos" : "Selecionar todos"}
+                          </label>
+                        );
+                      })()}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-auto">
+                        {oaListas.filter(l => ["ativa", "liberada"].includes(l.status)).map(lista => (
+                          <label
+                            key={lista.id}
+                            className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                              selectedListaIds.includes(lista.id) ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                            }`}
+                          >
+                            <Checkbox
+                              checked={selectedListaIds.includes(lista.id)}
+                              onCheckedChange={() => toggleListaId(lista.id)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{lista.nome}</p>
+                              <p className="text-xs text-muted-foreground">{lista.empreendimento} · {lista.total_leads} leads</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </>
               )}
