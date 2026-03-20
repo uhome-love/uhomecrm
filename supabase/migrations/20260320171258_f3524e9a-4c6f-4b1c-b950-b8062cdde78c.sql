@@ -1,0 +1,1 @@
+UPDATE email_campaigns SET status = 'enviando', updated_at = now() WHERE id = 'cc7f3a58-c9a6-46ad-b98e-6d287e0101d0';
