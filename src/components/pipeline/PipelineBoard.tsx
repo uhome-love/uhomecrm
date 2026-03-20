@@ -525,20 +525,23 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           created_by: userData?.user?.id || "00000000-0000-0000-0000-000000000000",
         });
 
-        // DELETE from pipeline_leads
-        const { error: deleteError } = await supabase
+        // Move lead to descarte stage (not delete — corretores may lack delete permission)
+        const { error: moveError } = await supabase
           .from("pipeline_leads")
-          .delete()
+          .update({
+            stage_id: result.targetStageId,
+            stage_changed_at: new Date().toISOString(),
+            motivo_descarte: extra.motivo ? extra.motivo.replace(/_/g, " ") : (result.observacao || "Descarte"),
+            etapa: "Oferta Ativa",
+            updated_at: new Date().toISOString(),
+          } as any)
           .eq("id", lead.id);
 
-        if (deleteError) {
-          console.error("Error deleting lead on descarte:", deleteError);
-          toast.error("Erro ao remover lead do pipeline.");
+        if (moveError) {
+          console.error("Error moving lead to descarte:", moveError);
+          toast.error("Erro ao mover lead para descarte.");
         } else {
-          // Remove from local state
-          // Trigger reload via onMoveLead won't work since lead is deleted,
-          // so we dispatch a custom approach: just filter out locally
-          toast.success("🗑️ Lead removido do pipeline.");
+          toast.success("🗑️ Lead movido para Descarte" + (listaId ? " e enviado para Oferta Ativa!" : "."));
         }
       } catch (err) {
         console.error("Error in descarte flow:", err);
