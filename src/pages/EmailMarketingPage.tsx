@@ -392,6 +392,7 @@ function EmailCampaignsTab() {
 
     if (campaign) {
       const batchSize = 100;
+      let insertedCount = 0;
       for (let i = 0; i < previewLeads.length; i += batchSize) {
         const batch = previewLeads.slice(i, i + batchSize).map(l => ({
           campaign_id: campaign.id,
@@ -401,9 +402,15 @@ function EmailCampaignsTab() {
           status: "pendente",
           variaveis: { nome: l.nome || "", empreendimento: l.empreendimento || "", origem: l.origem || "" },
         }));
-        await supabase.from("email_campaign_recipients").insert(batch as any);
+        const { error: insertErr } = await supabase.from("email_campaign_recipients").insert(batch as any) as any;
+        if (insertErr) {
+          console.error("Erro ao inserir destinatários batch", i, insertErr);
+          toast.error(`Erro ao inserir lote ${Math.floor(i/batchSize)+1}: ${insertErr.message}`);
+        } else {
+          insertedCount += batch.length;
+        }
       }
-      toast.success(`${previewLeads.length} destinatários adicionados`);
+      toast.success(`${insertedCount} destinatários adicionados`);
       setDialogOpen(false);
       setStep("info");
       reloadCampaigns();
