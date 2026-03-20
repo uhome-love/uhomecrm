@@ -206,6 +206,47 @@ export async function resolveCustomListLeads(
     }
   }
 
+  // Filter by statusLead (desatualizado / atrasado)
+  if (filtros.statusLead && filtros.statusLead.length > 0) {
+    // Fetch pending tasks for these leads
+    const leadIds = filtered.map(l => l.id);
+    const { data: tarefas } = await supabase
+      .from("pipeline_tarefas")
+      .select("lead_id, data_vencimento, status")
+      .in("lead_id", leadIds.slice(0, 500))
+      .eq("status", "pendente");
+
+    const tarefaMap = new Map<string, { hasTask: boolean; hasOverdue: boolean; hasFuture: boolean }>();
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    for (const t of (tarefas || [])) {
+      if (!t.lead_id) continue;
+      const entry = tarefaMap.get(t.lead_id) || { hasTask: false, hasOverdue: false, hasFuture: false };
+      entry.hasTask = true;
+      if (t.data_vencimento && t.data_vencimento < todayStr) entry.hasOverdue = true;
+      if (t.data_vencimento && t.data_vencimento >= todayStr) entry.hasFuture = true;
+      tarefaMap.set(t.lead_id, entry);
+    }
+
+    const wantDesatualizado = filtros.statusLead.includes("desatualizado");
+    const wantAtrasado = filtros.statusLead.includes("atrasado");
+
+    filtered = filtered.filter(l => {
+      const entry = tarefaMap.get(l.id);
+      const refDate = (l as any).ultima_acao_at || (l as any).stage_changed_at || l.updated_at;
+      const hoursSince = refDate ? (now.getTime() - new Date(refDate).getTime()) / 3600000 : 9999;
+
+      // Desatualizado: no tasks AND no contact > 48h
+      const isDesatualizado = (!entry || !entry.hasTask) && hoursSince > 48;
+      // Atrasado: has overdue task
+      const isAtrasado = entry?.hasOverdue && !entry?.hasFuture;
+
+      if (wantDesatualizado && isDesatualizado) return true;
+      if (wantAtrasado && isAtrasado) return true;
+      return false;
+    });
+  }
+
   // Sort
   const ordem = filtros.ordem || "score";
   if (ordem === "score") {
