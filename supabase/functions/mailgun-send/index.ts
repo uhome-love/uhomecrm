@@ -1,110 +1,18 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import {
+  claimCampaignRecipients,
+  getEmailSettings,
+  isRateLimitError,
+  replacePlaceholders,
+  sendViaMailgun,
+  updateCampaignProgress,
+} from "../_shared/mailgun-campaigns.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MAILGUN_API_KEY = Deno.env.get("MAILGUN_API_KEY")!;
-
-interface SendRequest {
-  campaign_id?: string;
-  to: string;
-  to_name?: string;
-  subject: string;
-  html: string;
-  text?: string;
-  from?: string;
-  reply_to?: string;
-  lead_id?: string;
-  recipient_id?: string;
-  tags?: string[];
-  variables?: Record<string, string>;
-}
-
-function replacePlaceholders(content: string, vars: Record<string, string>): string {
-  let result = content;
-  for (const [key, value] of Object.entries(vars)) {
-    result = result.replaceAll(`{{${key}}}`, value || "");
-  }
-  return result;
-}
-
-async function getSettings(adminClient: any): Promise<Record<string, string>> {
-  const { data } = await adminClient.from("email_settings").select("key, value");
-  const settings: Record<string, string> = {};
-  (data || []).forEach((row: any) => { settings[row.key] = row.value || ""; });
-  return settings;
-}
-
-async function sendViaMailgun(
-  settings: Record<string, string>,
-  req: SendRequest,
-  maxRetries = 3
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const domain = settings.mailgun_domain || "";
-  const baseUrl = settings.mailgun_base_url || "https://api.mailgun.net";
-  const from = req.from || settings.mailgun_from || `UhomeSales <noreply@${domain}>`;
-
-  const formData = new FormData();
-  formData.append("from", from);
-  formData.append("to", req.to_name ? `${req.to_name} <${req.to}>` : req.to);
-  formData.append("subject", req.subject);
-  formData.append("html", req.html);
-  if (req.text) formData.append("text", req.text);
-  if (req.reply_to || settings.mailgun_reply_to) {
-    formData.append("h:Reply-To", req.reply_to || settings.mailgun_reply_to);
-  }
-
-  formData.append("o:tracking", "yes");
-  formData.append("o:tracking-opens", settings.tracking_opens === "true" ? "yes" : "no");
-  formData.append("o:tracking-clicks", settings.tracking_clicks === "true" ? "yes" : "no");
-
-  if (req.tags) {
-    req.tags.forEach(t => formData.append("o:tag", t));
-  }
-
-  if (req.campaign_id) formData.append("v:campaign_id", req.campaign_id);
-  if (req.lead_id) formData.append("v:lead_id", req.lead_id);
-  if (req.recipient_id) formData.append("v:recipient_id", req.recipient_id);
-
-  const url = `${baseUrl}/v3/${domain}/messages`;
-  const auth = btoa(`api:${MAILGUN_API_KEY}`);
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: { Authorization: `Basic ${auth}` },
-      body: formData,
-    });
-
-    if (resp.status === 429) {
-      // Rate limited — parse Retry-After or use exponential backoff
-      const retryAfter = resp.headers.get("Retry-After");
-      const waitMs = retryAfter
-        ? Math.max(parseInt(retryAfter, 10) * 1000, 2000)
-        : Math.min(2000 * Math.pow(2, attempt), 30000);
-      console.log(`Rate limited, waiting ${waitMs}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
-      await new Promise(r => setTimeout(r, waitMs));
-      continue;
-    }
-
-    const data = await resp.json();
-    if (!resp.ok) {
-      // Check if it's a rate limit error in the body
-      const msg = data.message || `Mailgun error ${resp.status}`;
-      if (msg.includes("recipient limit exceeded") && attempt < maxRetries) {
-        const waitMs = Math.min(5000 * Math.pow(2, attempt), 60000);
-        console.log(`Recipient limit exceeded, waiting ${waitMs}ms (attempt ${attempt + 1})`);
-        await new Promise(r => setTimeout(r, waitMs));
-        continue;
-      }
-      return { success: false, error: msg };
-    }
-    return { success: true, messageId: data.id };
-  }
-
-  return { success: false, error: "Max retries exceeded (rate limit)" };
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCors();
@@ -124,7 +32,7 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const settings = await getSettings(adminClient);
+    const settings = await getEmailSettings(adminClient);
 
     const body = await req.json();
     const { mode } = body;
@@ -156,7 +64,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ success: false, error: "Email na lista de supressão" });
       }
 
-      const result = await sendViaMailgun(settings, {
+      const result = await sendViaMailgun(settings, MAILGUN_API_KEY, {
         to, to_name, subject: finalSubject, html: finalHtml, text,
         lead_id, tags: ["individual"],
       });
@@ -185,15 +93,20 @@ Deno.serve(async (req) => {
         .update({ status: "enviando", updated_at: new Date().toISOString() })
         .eq("id", campaign_id);
 
-      // Process in batches — default 200 per invocation
-      const batchSize = reqBatchSize || 200;
+      const batchSize = reqBatchSize || 120;
+      const recipients = await claimCampaignRecipients(adminClient, campaign_id, batchSize);
 
-      const { data: recipients } = await adminClient
-        .from("email_campaign_recipients")
-        .select("*")
-        .eq("campaign_id", campaign_id)
-        .eq("status", "pendente")
-        .limit(batchSize);
+      if (!recipients.length) {
+        const totals = await updateCampaignProgress(adminClient, campaign_id);
+        return jsonResponse({
+          success: true,
+          enviados: 0,
+          erros: 0,
+          pendentes: totals.totalPendentes,
+          rate_limited: false,
+          status: totals.status,
+        });
+      }
 
       let enviados = 0;
       let erros = 0;
@@ -205,7 +118,7 @@ Deno.serve(async (req) => {
           .from("email_suppression_list").select("id").eq("email", r.email).limit(1);
         if (suppressed && suppressed.length > 0) {
           await adminClient.from("email_campaign_recipients")
-            .update({ status: "suprimido", erro: "Email na lista de supressão" })
+            .update({ status: "suprimido", erro: "Email na lista de supressão", processing_started_at: null })
             .eq("id", r.id);
           continue;
         }
@@ -218,7 +131,7 @@ Deno.serve(async (req) => {
         html = replacePlaceholders(html, vars);
         subject = replacePlaceholders(subject, vars);
 
-        const result = await sendViaMailgun(settings, {
+        const result = await sendViaMailgun(settings, MAILGUN_API_KEY, {
           campaign_id,
           to: r.email,
           to_name: r.nome || undefined,
@@ -235,15 +148,16 @@ Deno.serve(async (req) => {
               status: "enviado",
               mailgun_message_id: result.messageId,
               enviado_at: new Date().toISOString(),
+              processing_started_at: null,
             })
             .eq("id", r.id);
           enviados++;
         } else {
-          if (result.error?.includes("rate") || result.error?.includes("limit")) {
+          if (isRateLimitError(result.error)) {
             rateLimited = true;
           }
           await adminClient.from("email_campaign_recipients")
-            .update({ status: "erro", erro: result.error })
+            .update({ status: "erro", erro: result.error, processing_started_at: null })
             .eq("id", r.id);
           erros++;
 
@@ -258,44 +172,15 @@ Deno.serve(async (req) => {
         await new Promise(resolve => setTimeout(resolve, 150));
       }
 
-      // Count totals using head:true + count to avoid 1000-row limit
-      const { count: totalEnviados } = await adminClient
-        .from("email_campaign_recipients")
-        .select("id", { count: "exact", head: true })
-        .eq("campaign_id", campaign_id)
-        .eq("status", "enviado");
-
-      const { count: totalErros } = await adminClient
-        .from("email_campaign_recipients")
-        .select("id", { count: "exact", head: true })
-        .eq("campaign_id", campaign_id)
-        .eq("status", "erro");
-
-      const { count: totalPendentes } = await adminClient
-        .from("email_campaign_recipients")
-        .select("id", { count: "exact", head: true })
-        .eq("campaign_id", campaign_id)
-        .eq("status", "pendente");
-
-      const pendCount = totalPendentes || 0;
-      const newStatus = pendCount === 0 ? "enviada" : "enviando";
-
-      await adminClient.from("email_campaigns")
-        .update({
-          status: newStatus,
-          total_enviados: totalEnviados || 0,
-          total_erros: totalErros || 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", campaign_id);
+      const totals = await updateCampaignProgress(adminClient, campaign_id);
 
       return jsonResponse({
         success: true,
         enviados,
         erros,
-        pendentes: totalPendentes,
+        pendentes: totals.totalPendentes,
         rate_limited: rateLimited,
-        status: newStatus,
+        status: totals.status,
       });
     }
 

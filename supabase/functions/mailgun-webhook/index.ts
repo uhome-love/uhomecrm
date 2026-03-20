@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { updateCampaignProgress } from "../_shared/mailgun-campaigns.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -126,6 +127,8 @@ Deno.serve(async (req) => {
             .eq("id", campaignId);
         }
       }
+
+      await updateCampaignProgress(adminClient, campaignId);
     }
 
     // 4. Handle suppression (bounce, complaint, unsubscribe)
