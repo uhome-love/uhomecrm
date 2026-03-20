@@ -65,6 +65,9 @@ export function getCardStatus(lead: PipelineLead, proximaTarefa: ProximaTarefa |
     if (Number.isFinite(hoursInStage) && hoursInStage < 2) {
       return { indicator: null, indicatorCls: "", text: "", textCls: "", borderCls: "border-l-blue-400" };
     }
+    if (Number.isFinite(hoursInStage) && hoursInStage < 24) {
+      return { indicator: "🟡", indicatorCls: "text-amber-500", text: "🟡 Aguardando primeiro contato", textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
+    }
     return { indicator: "🟡", indicatorCls: "text-amber-500", text: "🟡 Sem contato · Aguardando ação", textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
   }
 
@@ -72,13 +75,14 @@ export function getCardStatus(lead: PipelineLead, proximaTarefa: ProximaTarefa |
   if (!Number.isFinite(hoursSinceContact)) {
     return { indicator: "🟡", indicatorCls: "text-amber-500", text: "🟡 Sem contato · Aguardando ação", textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
   }
-  if (hoursSinceContact > 48) {
-    return { indicator: "🔴", indicatorCls: "text-destructive", text: "🔴 Sem contato · Aguardando ação", textCls: "text-destructive font-semibold", borderCls: "border-l-destructive" };
+  if (hoursSinceContact <= 24) {
+    return { indicator: "✅", indicatorCls: "text-green-500", text: "✅ Em dia · contato recente", textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
   }
-  if (hoursSinceContact > 24) {
-    return { indicator: "🟡", indicatorCls: "text-amber-500", text: "🟡 Sem contato · Aguardando ação", textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
+  if (hoursSinceContact <= 48) {
+    return { indicator: "🟡", indicatorCls: "text-amber-500", text: "🟡 Desatualizado · sem contato há +24h", textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
   }
-  return { indicator: "⚠️", indicatorCls: "text-amber-500", text: `⚠️ Desatualizado · falta tarefa`, textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
+  const dias = differenceInDays(now, lastContactDate);
+  return { indicator: "🟡", indicatorCls: "text-amber-500", text: `🟡 Desatualizado · sem contato há ${dias}d`, textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
 }
 
 interface CardStatusLineProps {
