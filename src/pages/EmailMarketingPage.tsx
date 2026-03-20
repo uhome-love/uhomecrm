@@ -419,7 +419,7 @@ function EmailCampaignsTab() {
   };
 
   const handleSend = async (id: string) => {
-    const { count } = await supabase.from("email_campaign_recipients").select("id", { count: "exact", head: true }).eq("campaign_id", id).eq("status", "pendente") as any;
+    const { count } = await supabase.from("email_campaign_recipients").select("id", { count: "exact", head: true }).eq("campaign_id", id).or("status.eq.pendente,status.is.null") as any;
     if (!count || count === 0) { toast.error("Campanha sem destinatários pendentes"); return; }
     setSending(id);
     await sendCampaign(id);
