@@ -1742,6 +1742,7 @@ export type Database = {
           lead_id: string | null
           mailgun_message_id: string | null
           nome: string | null
+          processing_started_at: string | null
           status: string | null
           variaveis: Json | null
         }
@@ -1760,6 +1761,7 @@ export type Database = {
           lead_id?: string | null
           mailgun_message_id?: string | null
           nome?: string | null
+          processing_started_at?: string | null
           status?: string | null
           variaveis?: Json | null
         }
@@ -1778,6 +1780,7 @@ export type Database = {
           lead_id?: string | null
           mailgun_message_id?: string | null
           nome?: string | null
+          processing_started_at?: string | null
           status?: string | null
           variaveis?: Json | null
         }
@@ -8027,6 +8030,18 @@ export type Database = {
           lead_nome: string
           lead_stage_id: string
           lead_telefone: string
+        }[]
+      }
+      claim_email_campaign_recipients: {
+        Args: { p_batch_size?: number; p_campaign_id: string }
+        Returns: {
+          campaign_id: string
+          email: string
+          id: string
+          lead_id: string
+          nome: string
+          status: string
+          variaveis: Json
         }[]
       }
       cleanup_audit_log: { Args: never; Returns: undefined }

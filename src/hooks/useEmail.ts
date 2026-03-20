@@ -138,7 +138,7 @@ export function useEmailCampaigns() {
   useEffect(() => {
     const hasSending = campaigns.some(c => c.status === "enviando");
     if (!hasSending) return;
-    const interval = setInterval(load, 5000);
+    const interval = setInterval(load, 3000);
     return () => clearInterval(interval);
   }, [campaigns, load]);
 
@@ -177,7 +177,9 @@ export function useEmailCampaigns() {
     });
     if (error) { toast.error("Erro ao disparar campanha"); return false; }
     if (data?.error) { toast.error(data.error); return false; }
-    toast.success(`Campanha enviada: ${data.enviados} emails`);
+    toast.success(data?.status === "enviada"
+      ? `Campanha concluída: ${data.enviados} emails processados`
+      : `Campanha iniciada: ${data?.enviados || 0} emails processados e envio contínuo ativo`);
     load();
     return true;
   }, [load]);
