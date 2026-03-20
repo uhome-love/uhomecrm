@@ -237,15 +237,27 @@ Deno.serve(async (req) => {
           observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (ImovelWeb)${mensagem ? ` — "${mensagem}"` : ""}`,
         }).eq("id", existing.id);
 
-        await supabase.from("notifications").insert({
-          user_id: existing.corretor_id,
-          tipo: "lead",
-          categoria: "lead_retorno",
-          titulo: `🔄 Lead reativado! ${existing.nome || name}`,
-          mensagem: `${existing.nome || name} demonstrou novo interesse em ${interestLabel} (ImovelWeb).`,
-          dados: { pipeline_lead_id: existing.id, lead_nome: existing.nome || name, novo_empreendimento: interestLabel },
-          agrupamento_key: `lead_retorno_${existing.id}_${todayStamp}`,
-        });
+        await Promise.all([
+          supabase.from("notifications").insert({
+            user_id: existing.corretor_id,
+            tipo: "lead",
+            categoria: "lead_retorno",
+            titulo: `🔄 Lead reativado! ${existing.nome || name}`,
+            mensagem: `${existing.nome || name} demonstrou novo interesse em ${interestLabel} (ImovelWeb).`,
+            dados: { pipeline_lead_id: existing.id, lead_nome: existing.nome || name, novo_empreendimento: interestLabel },
+            agrupamento_key: `lead_retorno_${existing.id}_${todayStamp}`,
+          }),
+          supabase.from("pipeline_atividades").insert({
+            pipeline_lead_id: existing.id,
+            tipo: "entrada",
+            titulo: `🔄 Novo interesse via ImovelWeb`,
+            descricao: `Lead demonstrou novo interesse em ${interestLabel} (ImovelWeb).${mensagem ? `\nMensagem: "${mensagem}"` : ""}`,
+            data: todayStamp,
+            prioridade: "alta",
+            status: "completed",
+            created_by: existing.corretor_id,
+          }),
+        ]);
 
         try {
           await fetch(`${supabaseUrl}/functions/v1/send-push`, {
