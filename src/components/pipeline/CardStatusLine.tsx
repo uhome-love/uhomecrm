@@ -39,20 +39,22 @@ export function getCardStatus(lead: PipelineLead, proximaTarefa: ProximaTarefa |
   const now = new Date();
   const todayStart = startOfDay(now);
 
+  // Lead has a scheduled task → always "em dia" unless overdue
   if (proximaTarefa?.vence_em) {
     const d = toValidDateFromYMD(proximaTarefa.vence_em);
     const hora = proximaTarefa.hora_vencimento?.slice(0, 5) || "";
     const label = TIPO_LABELS[proximaTarefa.tipo] || proximaTarefa.tipo;
 
     if (!d) {
-      return { indicator: "🟡", indicatorCls: "text-amber-500", text: `🟡 Próximo: ${label} ${hora}`.trim(), textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
+      // Has task but invalid date — still counts as "em dia" (has action pending)
+      return { indicator: "✅", indicatorCls: "text-green-500", text: `✅ Próximo: ${label} ${hora}`.trim(), textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
     }
     if (d < todayStart) {
       const dateLabel = isYesterdayFn(d) ? "ontem" : format(d, "dd/MM");
       return { indicator: "🔴", indicatorCls: "text-destructive", text: `🔴 Atrasado: ${label} ${dateLabel} ${hora}`, textCls: "text-destructive font-semibold", borderCls: "border-l-destructive" };
     }
     if (isTodayFn(d)) {
-      return { indicator: "🟡", indicatorCls: "text-amber-500", text: `🟡 Hoje ${hora}: ${label}`, textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
+      return { indicator: "✅", indicatorCls: "text-green-500", text: `🟡 Hoje ${hora}: ${label}`, textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
     }
     const dateLabel = isTomorrowFn(d) ? "amanhã" : format(d, "dd/MM");
     return { indicator: "✅", indicatorCls: "text-green-500", text: `✅ Próximo: ${label} ${dateLabel} ${hora}`, textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
