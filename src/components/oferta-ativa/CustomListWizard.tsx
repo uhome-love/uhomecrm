@@ -412,7 +412,26 @@ export default function CustomListWizard({ open, onClose, onCreated, initialFilt
         </div>
       )}
 
-      {/* 4. Tempo sem contato */}
+      {/* 4. Status do lead (desatualizado / atrasado) */}
+      {(filtros.fontes.includes("meus_leads") || filtros.fontes.includes("meus_negocios")) && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-foreground">Por status do lead</p>
+          <div className="flex flex-wrap gap-1.5">
+            <ChipToggle
+              label="🟡 Desatualizados (sem tarefa)"
+              selected={filtros.statusLead?.includes("desatualizado") || false}
+              onClick={() => toggleArrayFilter("statusLead", "desatualizado")}
+            />
+            <ChipToggle
+              label="🔴 Atrasados (tarefa vencida)"
+              selected={filtros.statusLead?.includes("atrasado") || false}
+              onClick={() => toggleArrayFilter("statusLead", "atrasado")}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 5. Tempo sem contato */}
       {(filtros.fontes.includes("meus_leads") || filtros.fontes.includes("meus_negocios")) && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-foreground">Tempo sem contato</p>
