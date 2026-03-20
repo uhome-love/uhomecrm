@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
 
       const { data: existing } = await supabase
         .from("pipeline_leads")
-        .select("id, corretor_id, nome, empreendimento")
+        .select("id, corretor_id, nome, empreendimento, observacoes")
         .eq("telefone", telefone)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -232,10 +232,26 @@ Deno.serve(async (req) => {
         const todayStamp = new Date().toISOString().slice(0, 10);
         const interestLabel = empreendimento || existing.empreendimento || "mesmo imóvel";
 
+        // Build detailed description with all available context
+        const detailParts: string[] = [];
+        detailParts.push(`Lead demonstrou novo interesse em ${interestLabel} (ImovelWeb).`);
+        if (codigoAnuncio) detailParts.push(`Código anúncio: ${codigoAnuncio}`);
+        if (mensagem) detailParts.push(`Mensagem: "${mensagem}"`);
+        if (telefone2) detailParts.push(`Tel. adicional: ${telefone2}`);
+        const fullDesc = detailParts.join("\n");
+
+        // Append to observacoes instead of overwriting
+        const prevObs = existing.observacoes || "";
+        const separator = prevObs ? "\n---\n" : "";
+        const newObs = `${prevObs}${separator}[NOVO INTERESSE ${todayStamp}] ${interestLabel} (ImovelWeb)${codigoAnuncio ? ` | Cód: ${codigoAnuncio}` : ""}${mensagem ? ` — "${mensagem}"` : ""}`;
+
         await supabase.from("pipeline_leads").update({
           updated_at: new Date().toISOString(),
-          observacoes: `[NOVO INTERESSE ${todayStamp}] ${interestLabel} (ImovelWeb)${mensagem ? ` — "${mensagem}"` : ""}`,
+          observacoes: newObs,
         }).eq("id", existing.id);
+
+        // Notification message also includes codigo
+        const notifMsg = `${existing.nome || name} demonstrou novo interesse em ${interestLabel} (ImovelWeb).${codigoAnuncio ? ` Cód: ${codigoAnuncio}` : ""}${mensagem ? ` Msg: "${mensagem.slice(0, 100)}"` : ""}`;
 
         await Promise.all([
           supabase.from("notifications").insert({
@@ -243,15 +259,15 @@ Deno.serve(async (req) => {
             tipo: "lead",
             categoria: "lead_retorno",
             titulo: `🔄 Lead reativado! ${existing.nome || name}`,
-            mensagem: `${existing.nome || name} demonstrou novo interesse em ${interestLabel} (ImovelWeb).`,
-            dados: { pipeline_lead_id: existing.id, lead_nome: existing.nome || name, novo_empreendimento: interestLabel },
+            mensagem: notifMsg,
+            dados: { pipeline_lead_id: existing.id, lead_nome: existing.nome || name, novo_empreendimento: interestLabel, codigo_anuncio: codigoAnuncio || null },
             agrupamento_key: `lead_retorno_${existing.id}_${todayStamp}`,
           }),
           supabase.from("pipeline_atividades").insert({
             pipeline_lead_id: existing.id,
             tipo: "entrada",
             titulo: `🔄 Novo interesse via ImovelWeb`,
-            descricao: `Lead demonstrou novo interesse em ${interestLabel} (ImovelWeb).${mensagem ? `\nMensagem: "${mensagem}"` : ""}`,
+            descricao: fullDesc,
             data: todayStamp,
             prioridade: "alta",
             status: "completed",
