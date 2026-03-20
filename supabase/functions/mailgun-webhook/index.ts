@@ -139,6 +139,70 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 5. Register activity on lead timeline + notify corretor
+    if (leadId) {
+      const eventLabels: Record<string, { emoji: string; titulo: string; desc: string }> = {
+        delivered: { emoji: "📬", titulo: "Email entregue", desc: "O email marketing foi entregue com sucesso." },
+        opened: { emoji: "👀", titulo: "Email aberto", desc: "O lead abriu o email marketing." },
+        clicked: { emoji: "🔗", titulo: "Clicou no email", desc: `O lead clicou em um link do email.${url ? ` URL: ${url}` : ""}` },
+        bounced: { emoji: "⚠️", titulo: "Email com bounce", desc: "O email não foi entregue (bounce)." },
+        failed: { emoji: "❌", titulo: "Falha na entrega do email", desc: ed["delivery-status"]?.description || "Falha na entrega." },
+        complained: { emoji: "🚫", titulo: "Reclamação de spam", desc: "O lead marcou o email como spam." },
+        unsubscribed: { emoji: "📭", titulo: "Descadastrou do email", desc: "O lead se descadastrou dos emails." },
+      };
+
+      const label = eventLabels[eventType];
+      if (label) {
+        // Get campaign name for context
+        let campaignName = "";
+        if (campaignId) {
+          const { data: camp } = await adminClient
+            .from("email_campaigns").select("nome").eq("id", campaignId).single();
+          campaignName = camp?.nome || "";
+        }
+
+        const descFull = campaignName
+          ? `${label.desc} Campanha: ${campaignName}`
+          : label.desc;
+
+        // Insert activity on lead timeline
+        await adminClient.from("pipeline_atividades").insert({
+          pipeline_lead_id: leadId,
+          tipo: "email",
+          titulo: `${label.emoji} ${label.titulo}`,
+          descricao: descFull,
+          status: "completed",
+        });
+
+        // Notify corretor for important events (opened, clicked, bounced, complained, unsubscribed)
+        if (["opened", "clicked", "bounced", "complained", "unsubscribed"].includes(eventType)) {
+          // Find the lead's corretor
+          const { data: lead } = await adminClient
+            .from("pipeline_leads")
+            .select("corretor_id, nome")
+            .eq("id", leadId)
+            .single();
+
+          if (lead?.corretor_id) {
+            const leadNome = lead.nome || "Lead";
+            const notifTitulo = `${label.emoji} ${leadNome} — ${label.titulo}`;
+            const notifMsg = campaignName
+              ? `${descFull}`
+              : `${label.desc}`;
+
+            await adminClient.from("notifications").insert({
+              user_id: lead.corretor_id,
+              tipo: "email_marketing",
+              categoria: "lead",
+              titulo: notifTitulo,
+              mensagem: notifMsg,
+              dados: { lead_id: leadId, campaign_id: campaignId, event_type: eventType, url },
+            });
+          }
+        }
+      }
+    }
+
     console.log(`[mailgun-webhook] Processed ${eventType} for ${recipient}`);
     return jsonResponse({ ok: true, event: eventType });
   } catch (err: any) {
