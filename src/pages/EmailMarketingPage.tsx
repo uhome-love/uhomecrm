@@ -398,6 +398,7 @@ function EmailCampaignsTab() {
           lead_id: fonte === "manual" ? null : l.id,
           email: l.email,
           nome: l.nome,
+          status: "pendente",
           variaveis: { nome: l.nome || "", empreendimento: l.empreendimento || "", origem: l.origem || "" },
         }));
         await supabase.from("email_campaign_recipients").insert(batch as any);
