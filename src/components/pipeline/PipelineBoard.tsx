@@ -471,7 +471,10 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
     const isDescarte = targetStage?.tipo === "descarte";
 
     if (isDescarte && lead) {
-      // ─── Descarte: insert into Oferta Ativa, then DELETE from pipeline ───
+      // ─── Optimistic UI: move lead immediately in the UI ───
+      onMoveLead(lead.id, result.targetStageId, result.observacao);
+
+      // ─── Descarte: insert into Oferta Ativa ───
       try {
         const empreendimento = extra.empreendimento || lead.empreendimento || "";
 
@@ -525,24 +528,18 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
           created_by: userData?.user?.id || "00000000-0000-0000-0000-000000000000",
         });
 
-        // Move lead to descarte stage (not delete — corretores may lack delete permission)
+        // Set motivo_descarte (stage_id already updated by onMoveLead above)
         const { error: moveError } = await supabase
           .from("pipeline_leads")
           .update({
-            stage_id: result.targetStageId,
-            stage_changed_at: new Date().toISOString(),
             motivo_descarte: extra.motivo ? extra.motivo.replace(/_/g, " ") : (result.observacao || "Descarte"),
-            etapa: "Oferta Ativa",
-            updated_at: new Date().toISOString(),
-          } as any)
+          })
           .eq("id", lead.id);
 
         if (moveError) {
-          console.error("Error moving lead to descarte:", moveError);
-          toast.error("Erro ao mover lead para descarte.");
-        } else {
-          toast.success("🗑️ Lead movido para Descarte" + (listaId ? " e enviado para Oferta Ativa!" : "."));
+          console.error("Error setting motivo_descarte:", moveError);
         }
+        toast.success("🗑️ Lead movido para Descarte" + (listaId ? " e enviado para Oferta Ativa!" : "."));
       } catch (err) {
         console.error("Error in descarte flow:", err);
         toast.error("Erro no processo de descarte.");
