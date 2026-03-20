@@ -118,6 +118,37 @@ export default function PipelineKanban() {
     }
   }, [searchParams, pipeline.leads]);
 
+  // Load tasks for status classification
+  const leadIds = useMemo(() => pipeline.leads.map(l => l.id), [pipeline.leads]);
+  const leadIdsKey = useMemo(() => leadIds.slice().sort().join(","), [leadIds]);
+  const { data: kanbanTarefasMap = {} } = useQuery({
+    queryKey: ["pipeline-kanban-tarefas", leadIdsKey],
+    queryFn: async () => {
+      if (leadIds.length === 0) return {};
+      const map: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }> = {};
+      for (let i = 0; i < leadIds.length; i += 200) {
+        const chunk = leadIds.slice(i, i + 200);
+        const { data } = await supabase
+          .from("pipeline_tarefas")
+          .select("pipeline_lead_id, tipo, vence_em, hora_vencimento")
+          .in("pipeline_lead_id", chunk)
+          .eq("status", "pendente")
+          .order("vence_em", { ascending: true })
+          .order("hora_vencimento", { ascending: true });
+        if (data) {
+          for (const row of data) {
+            if (!map[row.pipeline_lead_id]) {
+              map[row.pipeline_lead_id] = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
+            }
+          }
+        }
+      }
+      return map;
+    },
+    enabled: leadIds.length > 0,
+    staleTime: 30_000,
+  });
+
   const canAdd = isGestor || isAdmin || isCorretor;
 
   const filteredLeads = useMemo(() => {
@@ -136,10 +167,10 @@ export default function PipelineKanban() {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     if (clientStatusFilter !== "todos") {
-      result = result.filter(l => classifyLeadStatus(l, null) === clientStatusFilter);
+      result = result.filter(l => classifyLeadStatus(l, kanbanTarefasMap[l.id] || null) === clientStatusFilter);
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, clientStatusFilter]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, clientStatusFilter, kanbanTarefasMap]);
 
   const corretorOptions = useMemo(() => {
     const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
@@ -164,11 +195,11 @@ export default function PipelineKanban() {
   const clientStatusCounts = useMemo(() => {
     const counts = { em_dia: 0, desatualizado: 0, tarefa_atrasada: 0 };
     for (const l of pipeline.leads) {
-      const s = classifyLeadStatus(l, null);
+      const s = classifyLeadStatus(l, kanbanTarefasMap[l.id] || null);
       if (s !== "todos") counts[s]++;
     }
     return counts;
-  }, [pipeline.leads]);
+  }, [pipeline.leads, kanbanTarefasMap]);
 
   const activeFiltersCount = countActiveFilters(filters);
 
