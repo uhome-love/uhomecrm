@@ -9,11 +9,6 @@ import {
   updateCampaignProgress,
 } from "../_shared/mailgun-campaigns.ts";
 
-/**
- * mailgun-batch-cron — Called by pg_cron every 2 minutes
- * Sends a small batch of pending campaign emails respecting Mailgun rate limits.
- */
-
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MAILGUN_API_KEY = Deno.env.get("MAILGUN_API_KEY")!;
@@ -27,7 +22,6 @@ Deno.serve(async (req) => {
   try {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Find active campaign (status = 'enviando')
     const { data: campaigns } = await admin
       .from("email_campaigns")
       .select("*")
@@ -39,9 +33,7 @@ Deno.serve(async (req) => {
     }
 
     const campaign = campaigns[0];
-
     const settings = await getEmailSettings(admin);
-
     const recipients = await claimCampaignRecipients(admin, campaign.id, BATCH_SIZE);
 
     if (!recipients || recipients.length === 0) {
@@ -53,7 +45,6 @@ Deno.serve(async (req) => {
     let errors = 0;
 
     for (const r of recipients) {
-      // Check suppression
       const { data: suppressed } = await admin
         .from("email_suppression_list").select("id").eq("email", r.email).limit(1);
       if (suppressed && suppressed.length > 0) {
@@ -70,17 +61,6 @@ Deno.serve(async (req) => {
       vars.email = r.email || "";
       html = replacePlaceholders(html, vars);
       subject = replacePlaceholders(subject, vars);
-
-      const result = await sendViaMailgun(settings, {
-        campaign_id: campaign.id,
-        to: r.email,
-        to_name: r.nome || undefined,
-        subject,
-        html,
-        lead_id: r.lead_id || undefined,
-        recipient_id: r.id,
-        tags: ["campaign", campaign.nome],
-      });
 
       const result = await sendViaMailgun(settings, MAILGUN_API_KEY, {
         campaign_id: campaign.id,
@@ -109,11 +89,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      await new Promise(r => setTimeout(r, SEND_DELAY_MS));
+      await new Promise(resolve => setTimeout(resolve, SEND_DELAY_MS));
     }
 
     const totals = await updateCampaignProgress(admin, campaign.id);
-
     console.log(`Batch done: ${sent} sent, ${errors} errors, ${totals.totalPendentes} remaining`);
     return jsonResponse({ sent, errors, remaining: totals.totalPendentes, status: totals.status });
   } catch (err: any) {
