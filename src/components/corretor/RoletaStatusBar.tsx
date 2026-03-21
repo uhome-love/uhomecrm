@@ -248,6 +248,11 @@ export default function RoletaStatusBar() {
         .eq("data", today)
         .eq("ativo", true);
       
+      // Sync corretor_disponibilidade.na_roleta = false
+      await supabase.from("corretor_disponibilidade")
+        .update({ na_roleta: false, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+      
       if (credErr) console.error("Erro ao sair da roleta (cred):", credErr);
       if (filaErr) console.error("Erro ao sair da fila:", filaErr);
       
