@@ -251,6 +251,14 @@ export default function CeoDashboard() {
 
     // Insert into fila
     await insertFilaForCred(cred);
+    
+    // Sync corretor_disponibilidade.na_roleta = true
+    const { data: prof } = await supabase.from("profiles").select("user_id").eq("id", cred.corretor_id).single();
+    if (prof?.user_id) {
+      await supabase.from("corretor_disponibilidade")
+        .upsert({ user_id: prof.user_id, na_roleta: true, status: "na_empresa", segmentos: [], updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    }
+    
     toast.success(`✅ ${item?.corretor_nome || "Corretor"} aprovado(a) na Roleta!`);
     reloadRoleta();
   }, [user, localPendentes, getProfileId, insertFilaForCred, reloadRoleta]);
