@@ -197,7 +197,28 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Filter: only corretors who are currently active (na_roleta = true)
+      const allAuthUserIds = [...profileToAuth.values()];
+      const { data: dispRows } = await supabase
+        .from("corretor_disponibilidade")
+        .select("user_id")
+        .in("user_id", allAuthUserIds)
+        .eq("na_roleta", true);
+      const activeAuthIds = new Set((dispRows || []).map((d: any) => d.user_id));
+      
+      // Remove inactive corretors from the maps
+      for (const [profileId, authId] of profileToAuth.entries()) {
+        if (!activeAuthIds.has(authId)) {
+          profileToAuth.delete(profileId);
+          authToProfile.delete(authId);
+          corretorSegments.delete(profileId);
+        }
+      }
+      
       const authUserIds = [...profileToAuth.values()];
+      if (authUserIds.length === 0) {
+        return jsonResponse({ success: false, reason: "no_corretores_na_roleta", dispatched: 0 });
+      }
       const { data: todayLeads } = await supabase
         .from("pipeline_leads")
         .select("corretor_id, distribuido_em")
