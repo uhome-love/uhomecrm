@@ -251,6 +251,14 @@ export default function CeoDashboard() {
 
     // Insert into fila
     await insertFilaForCred(cred);
+    
+    // Sync corretor_disponibilidade.na_roleta = true
+    const { data: prof } = await supabase.from("profiles").select("user_id").eq("id", cred.corretor_id).single();
+    if (prof?.user_id) {
+      await supabase.from("corretor_disponibilidade")
+        .upsert({ user_id: prof.user_id, na_roleta: true, status: "na_empresa", segmentos: [], updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    }
+    
     toast.success(`✅ ${item?.corretor_nome || "Corretor"} aprovado(a) na Roleta!`);
     reloadRoleta();
   }, [user, localPendentes, getProfileId, insertFilaForCred, reloadRoleta]);
@@ -271,6 +279,25 @@ export default function CeoDashboard() {
       setLocalPendentes(prev => [...prev, item].filter(Boolean));
       return;
     }
+    
+    // Check if corretor has any remaining approved credenciamentos today; if not, set na_roleta = false
+    if (item?.corretor_id) {
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const { count } = await supabase.from("roleta_credenciamentos")
+        .select("id", { count: "exact", head: true })
+        .eq("corretor_id", item.corretor_id)
+        .eq("data", today)
+        .eq("status", "aprovado");
+      if ((count || 0) === 0) {
+        const { data: prof } = await supabase.from("profiles").select("user_id").eq("id", item.corretor_id).single();
+        if (prof?.user_id) {
+          await supabase.from("corretor_disponibilidade")
+            .update({ na_roleta: false, updated_at: new Date().toISOString() })
+            .eq("user_id", prof.user_id);
+        }
+      }
+    }
+    
     toast.success(`❌ ${item?.corretor_nome || "Corretor"} recusado(a) da Roleta.`);
     reloadRoleta();
   }, [user, localPendentes, getProfileId, reloadRoleta]);
@@ -290,6 +317,12 @@ export default function CeoDashboard() {
         .single();
       if (!error && cred) {
         await insertFilaForCred(cred);
+        // Sync na_roleta = true
+        const { data: prof } = await supabase.from("profiles").select("user_id").eq("id", cred.corretor_id).single();
+        if (prof?.user_id) {
+          await supabase.from("corretor_disponibilidade")
+            .upsert({ user_id: prof.user_id, na_roleta: true, status: "na_empresa", segmentos: [], updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+        }
         ok++;
       }
     }
