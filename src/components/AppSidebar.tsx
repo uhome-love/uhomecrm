@@ -366,6 +366,7 @@ export function AppSidebar() {
               { title: "HOMI CEO", url: "/homi-ceo", icon: Bot },
               { title: "Base HOMI", url: "/homi/base-conhecimento", icon: Brain },
               { title: "Integração", url: "/integracao", icon: Zap },
+              { title: "Diagnóstico Site", url: "/admin/diagnostico-site", icon: Zap },
               { title: "Academia", url: "/academia/gerenciar", icon: GraduationCap },
               { title: "Dev AI", url: "/dev-ai", icon: Terminal },
               { title: "Usuários", url: "/admin", icon: Shield },
