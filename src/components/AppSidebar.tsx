@@ -44,6 +44,7 @@ import {
   Radio,
   Megaphone,
   Terminal,
+  Link2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
