@@ -62,13 +62,21 @@ interface Props {
   onDispatched?: () => void;
 }
 
-type Destino = "manha" | "tarde" | "noturna" | "qualquer" | "oferta_ativa";
+type Destino = "manha" | "tarde" | "noturna" | "qualquer" | "dia_todo" | "oferta_ativa";
 
-const DESTINO_OPTIONS: { id: Destino; label: string; emoji: string; group: "roleta" | "oferta" }[] = [
-  { id: "manha", label: "Roleta da Manhã", emoji: "🌅", group: "roleta" },
-  { id: "tarde", label: "Roleta da Tarde", emoji: "☀️", group: "roleta" },
-  { id: "noturna", label: "Roleta Noturna", emoji: "🌙", group: "roleta" },
-  { id: "qualquer", label: "Qualquer corretor ativo", emoji: "📋", group: "roleta" },
+function isSundayBRT(): boolean {
+  const now = new Date();
+  const brtMs = now.getTime() - 3 * 60 * 60 * 1000;
+  const brtDate = new Date(brtMs);
+  return brtDate.getUTCDay() === 0;
+}
+
+const DESTINO_OPTIONS: { id: Destino; label: string; emoji: string; group: "roleta" | "oferta"; sundayOnly?: boolean; weekdayOnly?: boolean }[] = [
+  { id: "dia_todo", label: "Domingo (Dia Todo)", emoji: "☀️", group: "roleta", sundayOnly: true },
+  { id: "manha", label: "Roleta da Manhã", emoji: "🌅", group: "roleta", weekdayOnly: true },
+  { id: "tarde", label: "Roleta da Tarde", emoji: "☀️", group: "roleta", weekdayOnly: true },
+  { id: "noturna", label: "Roleta Noturna", emoji: "🌙", group: "roleta", weekdayOnly: true },
+  { id: "qualquer", label: "Qualquer corretor ativo (na_roleta)", emoji: "📋", group: "roleta" },
   { id: "oferta_ativa", label: "Enviar para Oferta Ativa", emoji: "📞", group: "oferta" },
 ];
 
@@ -76,7 +84,7 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
-  const [selectedDestino, setSelectedDestino] = useState<Destino>("qualquer");
+  const [selectedDestino, setSelectedDestino] = useState<Destino>(isSundayBRT() ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
 
   useEffect(() => {
@@ -248,7 +256,12 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Disparar para onde?</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1 mb-1">Roleta</p>
               <div className="grid grid-cols-1 gap-1.5">
-                {DESTINO_OPTIONS.filter(d => d.group === "roleta").map(j => (
+                {DESTINO_OPTIONS.filter(d => d.group === "roleta").filter(d => {
+                  const sunday = isSundayBRT();
+                  if (d.sundayOnly && !sunday) return false;
+                  if (d.weekdayOnly && sunday) return false;
+                  return true;
+                }).map(j => (
                   <button
                     key={j.id}
                     onClick={() => setSelectedDestino(j.id)}
