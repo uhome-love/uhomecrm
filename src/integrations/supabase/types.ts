@@ -2596,6 +2596,47 @@ export type Database = {
           },
         ]
       }
+      imoveis_interesse: {
+        Row: {
+          created_at: string | null
+          favoritado_em: string | null
+          id: string
+          imovel_bairro: string | null
+          imovel_id_site: string
+          imovel_preco: number | null
+          imovel_titulo: string | null
+          lead_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          favoritado_em?: string | null
+          id?: string
+          imovel_bairro?: string | null
+          imovel_id_site: string
+          imovel_preco?: number | null
+          imovel_titulo?: string | null
+          lead_id: string
+        }
+        Update: {
+          created_at?: string | null
+          favoritado_em?: string | null
+          id?: string
+          imovel_bairro?: string | null
+          imovel_id_site?: string
+          imovel_preco?: number | null
+          imovel_titulo?: string | null
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imoveis_interesse_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integracao_field_mappings: {
         Row: {
           ativo: boolean
@@ -4906,6 +4947,59 @@ export type Database = {
             columns: ["linked_visit_id"]
             isOneToOne: false
             referencedRelation: "visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perfil_interesse: {
+        Row: {
+          alerta_ativo: boolean | null
+          bairros: string[] | null
+          created_at: string | null
+          diferenciais: string[] | null
+          id: string
+          lead_id: string
+          preco_max: number | null
+          preco_min: number | null
+          quartos_min: number | null
+          query_ia: string | null
+          tipo_imovel: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alerta_ativo?: boolean | null
+          bairros?: string[] | null
+          created_at?: string | null
+          diferenciais?: string[] | null
+          id?: string
+          lead_id: string
+          preco_max?: number | null
+          preco_min?: number | null
+          quartos_min?: number | null
+          query_ia?: string | null
+          tipo_imovel?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alerta_ativo?: boolean | null
+          bairros?: string[] | null
+          created_at?: string | null
+          diferenciais?: string[] | null
+          id?: string
+          lead_id?: string
+          preco_max?: number | null
+          preco_min?: number | null
+          quartos_min?: number | null
+          query_ia?: string | null
+          tipo_imovel?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perfil_interesse_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
