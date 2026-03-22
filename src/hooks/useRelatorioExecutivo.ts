@@ -233,9 +233,14 @@ export function useRelatorioExecutivo(period: PeriodRange) {
       const presQScoped = scopeProfileIds ? presQ.in("corretor_id", scopeProfileIds.length > 0 ? scopeProfileIds : ["__none__"]) : presQ;
       const prevPresQScoped = scopeProfileIds ? prevPresQ.in("corretor_id", scopeProfileIds.length > 0 ? scopeProfileIds : ["__none__"]) : prevPresQ;
 
-      // Ligações — prevLigQ uses count only
-      let prevLigQ = supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).gte("created_at", ps).lte("created_at", pe);
-      prevLigQ = applyScope(prevLigQ, "corretor_id");
+      // Ligações — ALL sources: oferta_ativa_tentativas + pipeline_atividades (tipo=ligacao) + ai_calls
+      // Previous period counts (head-only for performance)
+      let prevLigOAQ = supabase.from("oferta_ativa_tentativas").select("id", { count: "exact", head: true }).gte("created_at", ps).lte("created_at", pe);
+      prevLigOAQ = applyScope(prevLigOAQ, "corretor_id");
+      let prevLigPAQ = supabase.from("pipeline_atividades" as any).select("id", { count: "exact", head: true }).eq("tipo", "ligacao").gte("created_at", ps).lte("created_at", pe);
+      prevLigPAQ = applyScope(prevLigPAQ, "created_by");
+      let prevLigAIQ = supabase.from("ai_calls").select("id", { count: "exact", head: true }).gte("created_at", ps).lte("created_at", pe);
+      prevLigAIQ = applyScope(prevLigAIQ, "iniciado_por");
 
       // Leads recebidos
       let leadsQ = supabase.from("pipeline_leads").select("id, corretor_id, created_at").gte("created_at", s).lte("created_at", e).limit(10000);
@@ -248,7 +253,6 @@ export function useRelatorioExecutivo(period: PeriodRange) {
       const descarteStageIds = (stagesDef || []).filter(s => s.tipo === "descarte").map(s => s.id);
       let leadsAtivosQ = supabase.from("pipeline_leads").select("id, corretor_id", { count: "exact", head: true });
       if (descarteStageIds.length > 0) {
-        // Use not.in for filtering out descarte
         for (const did of descarteStageIds) {
           leadsAtivosQ = leadsAtivosQ.neq("stage_id", did);
         }
@@ -289,17 +293,29 @@ export function useRelatorioExecutivo(period: PeriodRange) {
         }
       }
 
-      // Fetch ligações paginated (separate from Promise.all)
-      const ligDataPromise = fetchAllRows((from, to) => {
+      // Fetch ligações from ALL sources: oferta_ativa + pipeline_atividades + ai_calls
+      const ligOAPromise = fetchAllRows<{ corretor_id: string; created_at: string }>((from, to) => {
         let q = supabase.from("oferta_ativa_tentativas").select("corretor_id, created_at").gte("created_at", s).lte("created_at", e).range(from, to);
         if (scopeUserIds) q = q.in("corretor_id", scopeUserIds.length > 0 ? scopeUserIds : ["__none__"]);
+        return q;
+      });
+      const ligPAPromise = fetchAllRows<{ created_by: string; created_at: string }>((from, to) => {
+        let q = (supabase.from("pipeline_atividades" as any).select("created_by, created_at") as any).eq("tipo", "ligacao").gte("created_at", s).lte("created_at", e).range(from, to);
+        if (scopeUserIds) q = q.in("created_by", scopeUserIds.length > 0 ? scopeUserIds : ["__none__"]);
+        return q;
+      });
+      const ligAIPromise = fetchAllRows<{ iniciado_por: string; created_at: string }>((from, to) => {
+        let q = supabase.from("ai_calls").select("iniciado_por, created_at").gte("created_at", s).lte("created_at", e).range(from, to);
+        if (scopeUserIds) q = q.in("iniciado_por", scopeUserIds.length > 0 ? scopeUserIds : ["__none__"]);
         return q;
       });
 
       const [
         { data: presData },
         { data: prevPresData },
-        { count: prevLigCount },
+        { count: prevLigOACount },
+        { count: prevLigPACount },
+        { count: prevLigAICount },
         { data: leadsData },
         { count: prevLeadsCount },
         { count: leadsAtivosCount },
@@ -310,11 +326,15 @@ export function useRelatorioExecutivo(period: PeriodRange) {
         { data: prevNegData },
         { data: negAssinadosData },
         { data: prevNegAssinadosData },
-        ligData,
+        ligOAData,
+        ligPAData,
+        ligAIData,
       ] = await Promise.all([
         presQScoped,
         prevPresQScoped,
-        prevLigQ,
+        prevLigOAQ,
+        prevLigPAQ,
+        prevLigAIQ,
         leadsQ,
         prevLeadsQ,
         leadsAtivosQ,
@@ -325,8 +345,17 @@ export function useRelatorioExecutivo(period: PeriodRange) {
         prevNegQ,
         negAssinadosQ,
         prevNegAssinadosQ,
-        ligDataPromise,
+        ligOAPromise,
+        ligPAPromise,
+        ligAIPromise,
       ]);
+
+      // Merge all call sources into unified ligData with normalized corretor_id
+      const ligData: { corretor_id: string; created_at: string }[] = [
+        ...(ligOAData || []),
+        ...(ligPAData || []).map(l => ({ corretor_id: (l as any).created_by, created_at: l.created_at })),
+        ...(ligAIData || []).map(l => ({ corretor_id: (l as any).iniciado_por, created_at: l.created_at })),
+      ];
 
       // ── Calculate KPIs ──
 
@@ -339,7 +368,8 @@ export function useRelatorioExecutivo(period: PeriodRange) {
       (prevPresData || []).forEach(p => prevPresSet.add(`${p.corretor_id}-${(p as any).data}`));
       const prevPresCount = prevPresSet.size;
 
-      const ligCount = (ligData || []).length;
+      const ligCount = ligData.length;
+      const prevLigCount = (prevLigOACount ?? 0) + (prevLigPACount ?? 0) + (prevLigAICount ?? 0);
       const leadsCount = (leadsData || []).length;
 
       const visMarcCount = (visData || []).length;
@@ -364,7 +394,7 @@ export function useRelatorioExecutivo(period: PeriodRange) {
 
       const kpis: ExecutiveKpis = {
         presencas: { current: presCount, prev: prevPresCount, pctChange: pctChange(presCount, prevPresCount) },
-        ligacoes: { current: ligCount, prev: prevLigCount ?? 0, pctChange: pctChange(ligCount, prevLigCount ?? 0) },
+        ligacoes: { current: ligCount, prev: prevLigCount, pctChange: pctChange(ligCount, prevLigCount) },
         leadsRecebidos: { current: leadsCount, prev: prevLeadsCount ?? 0, pctChange: pctChange(leadsCount, prevLeadsCount ?? 0) },
         leadsAtivos: { current: leadsAtivosCount ?? 0, prev: 0, pctChange: 0 },
         visitasMarcadas: { current: visMarcCount, prev: prevVisMarcCount ?? 0, pctChange: pctChange(visMarcCount, prevVisMarcCount ?? 0) },
