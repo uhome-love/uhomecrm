@@ -5309,6 +5309,7 @@ export type Database = {
           corretor_id: string | null
           created_at: string
           created_by: string | null
+          dados_site: Json | null
           data_proxima_acao: string | null
           distribuido_em: string | null
           email: string | null
@@ -5335,6 +5336,7 @@ export type Database = {
           ordem_no_stage: number
           origem: string | null
           origem_detalhe: string | null
+          origem_ref: string | null
           plataforma: string | null
           primeiro_contato_em: string | null
           prioridade_acao: string | null
@@ -5355,6 +5357,7 @@ export type Database = {
           telefone_normalizado: string | null
           telefone2: string | null
           temperatura: string | null
+          tipo_acao: string | null
           ultima_acao_at: string | null
           updated_at: string
           valor_estimado: number | null
@@ -5372,6 +5375,7 @@ export type Database = {
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
+          dados_site?: Json | null
           data_proxima_acao?: string | null
           distribuido_em?: string | null
           email?: string | null
@@ -5398,6 +5402,7 @@ export type Database = {
           ordem_no_stage?: number
           origem?: string | null
           origem_detalhe?: string | null
+          origem_ref?: string | null
           plataforma?: string | null
           primeiro_contato_em?: string | null
           prioridade_acao?: string | null
@@ -5418,6 +5423,7 @@ export type Database = {
           telefone_normalizado?: string | null
           telefone2?: string | null
           temperatura?: string | null
+          tipo_acao?: string | null
           ultima_acao_at?: string | null
           updated_at?: string
           valor_estimado?: number | null
@@ -5435,6 +5441,7 @@ export type Database = {
           corretor_id?: string | null
           created_at?: string
           created_by?: string | null
+          dados_site?: Json | null
           data_proxima_acao?: string | null
           distribuido_em?: string | null
           email?: string | null
@@ -5461,6 +5468,7 @@ export type Database = {
           ordem_no_stage?: number
           origem?: string | null
           origem_detalhe?: string | null
+          origem_ref?: string | null
           plataforma?: string | null
           primeiro_contato_em?: string | null
           prioridade_acao?: string | null
@@ -5481,6 +5489,7 @@ export type Database = {
           telefone_normalizado?: string | null
           telefone2?: string | null
           temperatura?: string | null
+          tipo_acao?: string | null
           ultima_acao_at?: string | null
           updated_at?: string
           valor_estimado?: number | null
@@ -6041,6 +6050,7 @@ export type Database = {
           id: string
           jetimob_user_id: string | null
           nome: string
+          slug_ref: string | null
           status_online: string | null
           status_updated_at: string | null
           telefone: string | null
@@ -6062,6 +6072,7 @@ export type Database = {
           id?: string
           jetimob_user_id?: string | null
           nome?: string
+          slug_ref?: string | null
           status_online?: string | null
           status_updated_at?: string | null
           telefone?: string | null
@@ -6083,6 +6094,7 @@ export type Database = {
           id?: string
           jetimob_user_id?: string | null
           nome?: string
+          slug_ref?: string | null
           status_online?: string | null
           status_updated_at?: string | null
           telefone?: string | null
