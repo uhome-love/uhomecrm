@@ -23,6 +23,7 @@ import {
   getNum, getNumIncZero, fmtBRL, fmtCompact,
 } from "@/lib/imovelHelpers";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
+import { track } from "@/lib/tracker";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
