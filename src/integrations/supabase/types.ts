@@ -2602,6 +2602,7 @@ export type Database = {
           favoritado_em: string | null
           id: string
           imovel_bairro: string | null
+          imovel_codigo: string | null
           imovel_id_site: string
           imovel_preco: number | null
           imovel_titulo: string | null
@@ -2613,6 +2614,7 @@ export type Database = {
           favoritado_em?: string | null
           id?: string
           imovel_bairro?: string | null
+          imovel_codigo?: string | null
           imovel_id_site: string
           imovel_preco?: number | null
           imovel_titulo?: string | null
@@ -2624,6 +2626,7 @@ export type Database = {
           favoritado_em?: string | null
           id?: string
           imovel_bairro?: string | null
+          imovel_codigo?: string | null
           imovel_id_site?: string
           imovel_preco?: number | null
           imovel_titulo?: string | null
@@ -3249,6 +3252,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          imovel_codigo: string | null
           imovel_id_site: string | null
           imovel_interesse: string | null
           nome: string
@@ -3272,6 +3276,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          imovel_codigo?: string | null
           imovel_id_site?: string | null
           imovel_interesse?: string | null
           nome: string
@@ -3295,6 +3300,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          imovel_codigo?: string | null
           imovel_id_site?: string | null
           imovel_interesse?: string | null
           nome?: string
@@ -4560,6 +4566,7 @@ export type Database = {
           created_at: string | null
           etapa: string | null
           id: string
+          imovel_codigo: string | null
           imovel_titulo: string | null
           lead_id: string
           motivo_perda: string | null
@@ -4575,6 +4582,7 @@ export type Database = {
           created_at?: string | null
           etapa?: string | null
           id?: string
+          imovel_codigo?: string | null
           imovel_titulo?: string | null
           lead_id: string
           motivo_perda?: string | null
@@ -4590,6 +4598,7 @@ export type Database = {
           created_at?: string | null
           etapa?: string | null
           id?: string
+          imovel_codigo?: string | null
           imovel_titulo?: string | null
           lead_id?: string
           motivo_perda?: string | null
