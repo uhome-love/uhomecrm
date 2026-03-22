@@ -5977,6 +5977,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ativo: boolean | null
           avatar_gamificado_url: string | null
           avatar_preview_url: string | null
           avatar_updated_at: string | null
@@ -5985,6 +5986,7 @@ export type Database = {
           cpf: string | null
           created_at: string
           creci: string | null
+          de_plantao: boolean | null
           email: string | null
           id: string
           jetimob_user_id: string | null
@@ -5996,6 +5998,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ativo?: boolean | null
           avatar_gamificado_url?: string | null
           avatar_preview_url?: string | null
           avatar_updated_at?: string | null
@@ -6004,6 +6007,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           creci?: string | null
+          de_plantao?: boolean | null
           email?: string | null
           id?: string
           jetimob_user_id?: string | null
@@ -6015,6 +6019,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ativo?: boolean | null
           avatar_gamificado_url?: string | null
           avatar_preview_url?: string | null
           avatar_updated_at?: string | null
@@ -6023,6 +6028,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           creci?: string | null
+          de_plantao?: boolean | null
           email?: string | null
           id?: string
           jetimob_user_id?: string | null
