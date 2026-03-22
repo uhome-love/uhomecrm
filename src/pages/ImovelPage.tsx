@@ -4,7 +4,7 @@
  * reusing the same layout patterns as PropertyPreviewDrawer.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
   getNum, getNumIncZero, fmtBRL, fmtCompact,
 } from "@/lib/imovelHelpers";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
+import { track } from "@/lib/tracker";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -39,6 +40,23 @@ export default function ImovelPage() {
   const [error, setError] = useState(false);
   const [imageIdx, setImageIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const trackedRef = useRef(false);
+
+  // Track property view
+  useEffect(() => {
+    if (item && !trackedRef.current) {
+      trackedRef.current = true;
+      track.visitouImovel({
+        id: item.id,
+        slug: item.slug,
+        titulo: item.titulo_anuncio || item.empreendimento_nome,
+        bairro: extractEndereco(item).bairro,
+        preco: item.valor_venda || item.valor || item.preco,
+        codigo: codigo,
+        jetimob_id: item.jetimob_id ?? codigo,
+      });
+    }
+  }, [item]);
 
   useEffect(() => {
     if (!codigo) return;
