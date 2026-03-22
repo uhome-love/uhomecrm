@@ -528,6 +528,7 @@ export function AppSidebar() {
           label: "Ferramentas",
           items: [
             { title: "Imóveis", url: "/imoveis", icon: Home },
+            { title: "Links do Site", url: "/links-site", icon: Link2 },
             { title: "HOMI Assistente", url: "/homi", icon: Bot },
             { title: "Academia", url: "/academia", icon: GraduationCap },
             { title: "Meus Scripts", url: "/scripts", icon: FileEdit },

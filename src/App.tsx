@@ -241,6 +241,7 @@ const App = () => (
             {/* Busca de Leads / Higienização — gestor + admin */}
             <Route path="/busca-leads" element={<ProtectedPage roles={["gestor", "admin"]}><ErrorBoundary module="busca-leads"><BuscaLeads /></ErrorBoundary></ProtectedPage>} />
             <Route path="/configuracoes" element={<ProtectedPage><ErrorBoundary module="configuracoes"><Configuracoes /></ErrorBoundary></ProtectedPage>} />
+            <Route path="/links-site" element={<ProtectedPage><ErrorBoundary module="links-site"><LinksSite /></ErrorBoundary></ProtectedPage>} />
             <Route path="/notificacoes" element={<ProtectedPage><ErrorBoundary module="notificacoes"><Notificacoes /></ErrorBoundary></ProtectedPage>} />
 
 
