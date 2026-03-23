@@ -635,7 +635,7 @@ export default function ImoveisPage() {
         <div className="relative hidden w-[40%] shrink-0 border-l border-border lg:block">
           <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
             <SearchMapBox
-              pins={mapPins}
+              pins={effectiveMapPins}
               onBoundsSearch={(bounds) => { setFilter("bounds", bounds); setPage(0); }}
               onBoundsChange={() => {}}
               onPinClick={(pin) => {

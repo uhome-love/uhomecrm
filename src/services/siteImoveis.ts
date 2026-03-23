@@ -401,6 +401,41 @@ function jitter(val: number, range = 0.003): number {
   return val + (Math.random() - 0.5) * range;
 }
 
+export function siteImovelToMapPin(imovel: SiteImovel, bounds?: BuscaFilters["bounds"]): MapPin | null {
+  let lat = imovel.latitude;
+  let lng = imovel.longitude;
+
+  if (
+    lat == null || lng == null ||
+    !Number.isFinite(lat) || !Number.isFinite(lng) ||
+    lat === 0 || lng === 0 ||
+    lat < -34 || lat > -27 || lng < -55 || lng > -48
+  ) {
+    const centroid = BAIRRO_CENTROIDS[imovel.bairro];
+    if (!centroid) return null;
+    lat = jitter(centroid[0]);
+    lng = jitter(centroid[1]);
+  }
+
+  if (bounds && (lat < bounds.lat_min || lat > bounds.lat_max || lng < bounds.lng_min || lng > bounds.lng_max)) {
+    return null;
+  }
+
+  return {
+    id: imovel.id,
+    slug: imovel.slug,
+    preco: imovel.preco,
+    latitude: lat,
+    longitude: lng,
+    bairro: imovel.bairro,
+    titulo: imovel.titulo || tituloLimpo({ tipo: imovel.tipo || "imóvel", quartos: imovel.quartos, bairro: imovel.bairro }),
+    tipo: imovel.tipo,
+    quartos: imovel.quartos,
+    area_total: imovel.area_total,
+    foto_principal: imovel.foto_principal || undefined,
+  };
+}
+
 /**
  * Fetch map pins — uses real lat/lng from Typesense.
  * Falls back to bairro centroids with jitter when coordinates are missing.
@@ -431,45 +466,12 @@ export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]
     }
 
     for (const doc of data.data) {
-      const docId = String(doc.id || doc.codigo || "");
-      if (!docId || seenIds.has(docId)) continue;
-
-      let lat = Number(doc.latitude);
-      let lng = Number(doc.longitude);
-
-      if (!lat || !lng || isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0 || lat < -34 || lat > -27 || lng < -55 || lng > -48) {
-        const bairro = String(doc.bairro || "");
-        const centroid = BAIRRO_CENTROIDS[bairro];
-        if (centroid) {
-          lat = jitter(centroid[0]);
-          lng = jitter(centroid[1]);
-        } else {
-          continue;
-        }
-      }
-
-      if (bounds && (lat < bounds.lat_min || lat > bounds.lat_max || lng < bounds.lng_min || lng > bounds.lng_max)) {
-        continue;
-      }
-
-      const tipo = String(doc.tipo || "imóvel");
-      const bairro = String(doc.bairro || "");
-      const quartos = doc.dormitorios != null ? Number(doc.dormitorios) : null;
-
-      seenIds.add(docId);
-      pins.push({
-        id: docId,
-        slug: String(doc.slug || doc.codigo || ""),
-        preco: Number(doc.valor_venda || 0),
-        latitude: lat,
-        longitude: lng,
-        bairro,
-        titulo: tituloLimpo({ tipo, quartos, bairro }),
-        tipo,
-        quartos,
-        area_total: doc.area_privativa != null ? Number(doc.area_privativa) : null,
-        foto_principal: (doc.fotos as string[])?.[0] || String(doc.foto_principal || ""),
-      });
+      const mapped = mapDoc(doc);
+      if (!mapped.id || seenIds.has(mapped.id)) continue;
+      const pin = siteImovelToMapPin(mapped, bounds);
+      if (!pin) continue;
+      seenIds.add(mapped.id);
+      pins.push(pin);
     }
 
     if (!bounds && pins.length >= 250) break;
