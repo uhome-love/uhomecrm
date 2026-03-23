@@ -93,7 +93,7 @@ const AcademiaAulaPage = lazyRetry(() => import("./pages/AcademiaAulaPage"));
 const AcademiaGerenciarPage = lazyRetry(() => import("./pages/AcademiaGerenciarPage"));
 const GerenteDashboard = lazyRetry(() => import("./pages/GerenteDashboard"));
 const RoletaLeads = lazyRetry(() => import("./pages/RoletaLeads"));
-const ImoveisPage = lazyRetry(() => import("./pages/ImoveisPage"));
+const ImoveisPage = lazyRetry(() => import("./pages/ImoveisPageNew"));
 const VitrinePage = lazyRetry(() => import("./pages/VitrinePage"));
 const ImovelPage = lazyRetry(() => import("./pages/ImovelPage"));
 const PosVendas = lazyRetry(() => import("./pages/PosVendas"));
