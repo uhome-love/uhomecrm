@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, Upload, Settings, FileText, Activity, Trophy, BarChart3 } from "lucide-react";
+import { Phone } from "lucide-react";
 import ImportListPanel from "@/components/oferta-ativa/ImportListPanel";
 import CampaignManager from "@/components/oferta-ativa/CampaignManager";
 import TemplateManager from "@/components/oferta-ativa/TemplateManager";
@@ -9,102 +8,65 @@ import RankingOfertaAtiva from "@/components/oferta-ativa/RankingOfertaAtiva";
 import OAObservabilityPanel from "@/components/oferta-ativa/OAObservabilityPanel";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
+import { PageHeader } from "@/components/ui/PageHeader";
 
-export default function OfertaAtiva() { // refresh
+const ADMIN_TABS = [
+  { label: "Live",       value: "live"      },
+  { label: "Ranking",    value: "ranking"   },
+  { label: "Radar",      value: "radar"     },
+  { label: "Importar",   value: "importar"  },
+  { label: "Campanhas",  value: "campanhas" },
+  { label: "Templates",  value: "templates" },
+];
+
+const GESTOR_TABS = [
+  { label: "Live",    value: "live"    },
+  { label: "Ranking", value: "ranking" },
+];
+
+export default function OfertaAtiva() {
   const { isAdmin, isGestor, isCorretor } = useUserRole();
-  const [activeTab, setActiveTab] = useState("performance");
+  const [activeTab, setActiveTab] = useState("live");
 
-  // Corretores não acessam esta página — gamificação está na home do corretor
   if (isCorretor && !isGestor && !isAdmin) {
     return <Navigate to="/corretor" replace />;
   }
 
-  // Gestor only sees Live + Ranking tabs
+  // Gestor only sees Live + Ranking
   if (!isAdmin) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
-            <Activity className="h-6 w-6 text-primary" />
-            Oferta Ativa — Minha Equipe
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Acompanhe a performance dos seus corretores em tempo real
-          </p>
-        </div>
-        <Tabs defaultValue="live">
-          <TabsList className="grid w-full grid-cols-2 h-auto">
-            <TabsTrigger value="live" className="gap-1.5 text-xs">
-              <Activity className="h-3.5 w-3.5" /> Live
-            </TabsTrigger>
-            <TabsTrigger value="ranking" className="gap-1.5 text-xs">
-              <Trophy className="h-3.5 w-3.5" /> Ranking
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="live">
-            <PerformanceLivePanel teamOnly />
-          </TabsContent>
-          <TabsContent value="ranking">
-            <RankingOfertaAtiva />
-          </TabsContent>
-        </Tabs>
+      <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
+        <PageHeader
+          title="Oferta ativa"
+          subtitle="Acompanhe a performance dos seus corretores em tempo real"
+          icon={<Phone size={18} strokeWidth={1.5} />}
+          tabs={GESTOR_TABS}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        {activeTab === "live" && <PerformanceLivePanel teamOnly />}
+        {activeTab === "ranking" && <RankingOfertaAtiva />}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
-          <Phone className="h-6 w-6 text-primary" />
-          Oferta Ativa — Gestão
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Importação de listas, campanhas e templates de scripts
-        </p>
-      </div>
+    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
+      <PageHeader
+        title="Oferta ativa"
+        subtitle="Importação de listas, campanhas e templates de scripts"
+        icon={<Phone size={18} strokeWidth={1.5} />}
+        tabs={ADMIN_TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6 h-auto">
-          <TabsTrigger value="performance" className="gap-1.5 text-xs">
-            <Activity className="h-3.5 w-3.5" /> Live
-          </TabsTrigger>
-          <TabsTrigger value="ranking" className="gap-1.5 text-xs">
-            <Trophy className="h-3.5 w-3.5" /> Ranking
-          </TabsTrigger>
-          <TabsTrigger value="observability" className="gap-1.5 text-xs">
-            <BarChart3 className="h-3.5 w-3.5" /> Radar
-          </TabsTrigger>
-          <TabsTrigger value="importar" className="gap-1.5 text-xs">
-            <Upload className="h-3.5 w-3.5" /> Importar
-          </TabsTrigger>
-          <TabsTrigger value="campanhas" className="gap-1.5 text-xs">
-            <Settings className="h-3.5 w-3.5" /> Campanhas
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="gap-1.5 text-xs">
-            <FileText className="h-3.5 w-3.5" /> Templates
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="performance">
-          <PerformanceLivePanel />
-        </TabsContent>
-        <TabsContent value="ranking">
-          <RankingOfertaAtiva />
-        </TabsContent>
-        <TabsContent value="observability">
-          <OAObservabilityPanel />
-        </TabsContent>
-        <TabsContent value="importar">
-          <ImportListPanel />
-        </TabsContent>
-        <TabsContent value="campanhas">
-          <CampaignManager />
-        </TabsContent>
-        <TabsContent value="templates">
-          <TemplateManager />
-        </TabsContent>
-      </Tabs>
+      {activeTab === "live" && <PerformanceLivePanel />}
+      {activeTab === "ranking" && <RankingOfertaAtiva />}
+      {activeTab === "radar" && <OAObservabilityPanel />}
+      {activeTab === "importar" && <ImportListPanel />}
+      {activeTab === "campanhas" && <CampaignManager />}
+      {activeTab === "templates" && <TemplateManager />}
     </div>
   );
 }

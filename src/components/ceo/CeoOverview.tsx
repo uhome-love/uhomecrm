@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCeoData, pct, type CeoPeriod } from "@/hooks/useCeoData";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Phone, MapPin, Target, FileText, DollarSign, TrendingUp, Zap, BarChart3, Activity, AlertTriangle, CheckCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import SaudeOperacao from "./SaudeOperacao";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 import { cn, formatBRLCompact } from "@/lib/utils";
 
 const fmtCurrency = formatBRLCompact;
@@ -17,6 +19,13 @@ const progressTextColor = (p: number) =>
 
 const semaphore = (p: number) =>
   p >= 70 ? "🟢" : p >= 30 ? "🟡" : "🔴";
+
+const PERIOD_TABS = [
+  { label: "Hoje",    value: "dia"    },
+  { label: "Semana",  value: "semana" },
+  { label: "Mês",     value: "mes"    },
+  { label: "Personalizado", value: "custom" },
+];
 
 export default function CeoOverview() {
   const navigate = useNavigate();
@@ -59,14 +68,6 @@ export default function CeoOverview() {
     return items;
   }, [t, gerentes]);
 
-  // 2-row KPI grid
-  const processCards = [
-    { label: "Ligações", icon: Phone, meta: t.meta_ligacoes, real: t.real_ligacoes },
-    { label: "Visitas Marcadas", icon: MapPin, meta: t.meta_visitas_marcadas, real: t.real_visitas_marcadas },
-    { label: "Visitas Realizadas", icon: Target, meta: t.meta_visitas_realizadas, real: t.real_visitas_realizadas },
-    { label: "Propostas", icon: FileText, meta: t.meta_propostas, real: t.real_propostas },
-  ];
-
   const ticketMedio = t.real_vgv_assinado > 0 && t.real_propostas > 0
     ? Math.round(t.real_vgv_assinado / Math.max(t.real_propostas, 1))
     : 0;
@@ -74,63 +75,29 @@ export default function CeoOverview() {
     ? ((t.real_propostas / t.real_ligacoes) * 100).toFixed(1)
     : "0";
 
-  const resultCards = [
-    { label: "VGV Gerado", value: fmtCurrency(t.real_vgv_gerado), meta: null },
-    { label: "VGV Assinado", value: fmtCurrency(t.real_vgv_assinado), meta: t.meta_vgv_assinado, pctVal: overallPct },
-    { label: "Ticket Médio", value: fmtCurrency(ticketMedio), meta: null },
-    { label: "Conversão Geral", value: `${conversaoGeral}%`, meta: null },
-  ];
-
-  const renderKpiCard = (c: { label: string; icon: any; meta: number; real: number }) => {
-    const p = pct(c.real, c.meta);
-    const noMeta = c.meta === 0;
-    return (
-      <div key={c.label} className="rounded-xl border border-border bg-card p-3 shadow-card">
-        <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-          <c.icon className="h-3.5 w-3.5" />
-          <span className="text-[10px] font-medium uppercase">{c.label}</span>
-        </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-display font-bold text-foreground">{c.real.toLocaleString("pt-BR")}</span>
-          {!noMeta && (
-            <span className={cn("text-xs font-semibold", progressTextColor(p))}>{p}%</span>
-          )}
-        </div>
-        {noMeta ? (
-          <p className="text-[10px] text-muted-foreground/50 mt-1">Meta não definida</p>
-        ) : (
-          <>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1.5">
-              <div className={cn("h-full rounded-full transition-all", progressColor(p))} style={{ width: `${Math.min(p, 100)}%` }} />
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Meta: {c.meta.toLocaleString("pt-BR")}</p>
-          </>
-        )}
-      </div>
-    );
-  };
+  const ligPct = pct(t.real_ligacoes, t.meta_ligacoes);
+  const vmarcPct = pct(t.real_visitas_marcadas, t.meta_visitas_marcadas);
+  const vrealPct = pct(t.real_visitas_realizadas, t.meta_visitas_realizadas);
+  const propPct = pct(t.real_propostas, t.meta_propostas);
 
   return (
-    <div className="space-y-4">
-      {/* Period selector */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <Select value={period} onValueChange={(v) => setPeriod(v as CeoPeriod)}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="dia">Hoje</SelectItem>
-            <SelectItem value="semana">Esta semana</SelectItem>
-            <SelectItem value="mes">Este mês</SelectItem>
-            <SelectItem value="custom">Personalizado</SelectItem>
-          </SelectContent>
-        </Select>
-        {period === "custom" && (
-          <>
-            <Input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-40" />
-            <Input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-40" />
-          </>
-        )}
-        <span className="text-xs text-muted-foreground">{dateRange.start} a {dateRange.end}</span>
-      </div>
+    <div className="space-y-4 bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full">
+      {/* PageHeader with tabs */}
+      <PageHeader
+        title="Dashboard CEO"
+        subtitle={`${dateRange.start} a ${dateRange.end} · Dia ${dayOfMonth}/${daysInMonth} do mês`}
+        activeTab={period}
+        onTabChange={(v) => setPeriod(v as CeoPeriod)}
+        tabs={PERIOD_TABS}
+        actions={
+          period === "custom" ? (
+            <div className="flex items-center gap-2">
+              <Input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-36 h-8 text-xs" />
+              <Input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-36 h-8 text-xs" />
+            </div>
+          ) : undefined
+        }
+      />
 
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando dados...</div>
@@ -138,11 +105,11 @@ export default function CeoOverview() {
         <div className="text-center py-12 text-muted-foreground">Sem dados no período selecionado.</div>
       ) : (
         <>
-          {/* ═══ RESUMO EXECUTIVO ═══ */}
-          <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+          {/* Resumo Executivo */}
+          <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-primary" />
-              <h3 className="font-display font-semibold text-sm">Resumo Executivo</h3>
+              <Zap className="h-4 w-4 text-[#4F46E5]" />
+              <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Resumo executivo</h3>
             </div>
             <div className="flex flex-wrap gap-2">
               {summary.map((s, i) => (
@@ -152,9 +119,9 @@ export default function CeoOverview() {
                   className={cn(
                     "flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors",
                     s.link && "cursor-pointer hover:opacity-80",
-                    s.type === "success" ? "bg-success/5 border-success/20 text-success" :
-                    s.type === "warning" ? "bg-warning/5 border-warning/20 text-warning" :
-                    "bg-destructive/5 border-destructive/20 text-destructive"
+                    s.type === "success" ? "bg-[#10b981]/5 border-[#10b981]/20 text-[#10b981]" :
+                    s.type === "warning" ? "bg-[#f59e0b]/5 border-[#f59e0b]/20 text-[#f59e0b]" :
+                    "bg-[#ef4444]/5 border-[#ef4444]/20 text-[#ef4444]"
                   )}
                 >
                   {s.type === "success" ? <CheckCircle className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
@@ -163,126 +130,153 @@ export default function CeoOverview() {
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-2">
-              Dia {dayOfMonth}/{daysInMonth} do mês · Esperado: {expectedPct}% · Realizado: {overallPct}% · Gap: {gap > 0 ? "+" : ""}{gap}pp
+            <p className="text-[10px] text-[#a1a1aa] mt-2">
+              Esperado: {expectedPct}% · Realizado: {overallPct}% · Gap: {gap > 0 ? "+" : ""}{gap}pp
             </p>
           </div>
 
-          {/* ═══ LINHA 1 — MÉTRICAS DE PROCESSO ═══ */}
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider mb-2">Processo</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {processCards.map(renderKpiCard)}
-            </div>
-          </div>
+          {/* KPIs Processo */}
+          <KpiGrid cols={4}>
+            <KpiCard
+              label="Ligações"
+              value={t.real_ligacoes.toLocaleString("pt-BR")}
+              icon={<Phone size={14} strokeWidth={1.5} />}
+              hint={t.meta_ligacoes > 0 ? `${ligPct}% da meta · meta: ${t.meta_ligacoes.toLocaleString("pt-BR")}` : "meta não definida"}
+              variant={ligPct >= 70 ? "success" : ligPct >= 30 ? "warning" : "danger"}
+            />
+            <KpiCard
+              label="Visitas marcadas"
+              value={t.real_visitas_marcadas.toLocaleString("pt-BR")}
+              icon={<MapPin size={14} strokeWidth={1.5} />}
+              hint={t.meta_visitas_marcadas > 0 ? `${vmarcPct}% da meta · meta: ${t.meta_visitas_marcadas.toLocaleString("pt-BR")}` : "meta não definida"}
+              variant={vmarcPct >= 70 ? "success" : vmarcPct >= 30 ? "warning" : "danger"}
+            />
+            <KpiCard
+              label="Visitas realizadas"
+              value={t.real_visitas_realizadas.toLocaleString("pt-BR")}
+              icon={<Target size={14} strokeWidth={1.5} />}
+              hint={t.meta_visitas_realizadas > 0 ? `${vrealPct}% da meta · meta: ${t.meta_visitas_realizadas.toLocaleString("pt-BR")}` : "meta não definida"}
+              variant={vrealPct >= 70 ? "success" : vrealPct >= 30 ? "warning" : "danger"}
+            />
+            <KpiCard
+              label="Propostas"
+              value={t.real_propostas.toLocaleString("pt-BR")}
+              icon={<FileText size={14} strokeWidth={1.5} />}
+              hint={t.meta_propostas > 0 ? `${propPct}% da meta · meta: ${t.meta_propostas.toLocaleString("pt-BR")}` : "meta não definida"}
+              variant={propPct >= 70 ? "success" : propPct >= 30 ? "warning" : "danger"}
+            />
+          </KpiGrid>
 
-          {/* ═══ LINHA 2 — MÉTRICAS DE RESULTADO ═══ */}
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider mb-2">Resultado</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {resultCards.map(c => (
-                <div key={c.label} className="rounded-xl border border-border bg-card p-3 shadow-card">
-                  <p className="text-[10px] text-muted-foreground uppercase font-medium mb-1.5">{c.label}</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-display font-bold text-foreground">{c.value}</span>
-                    {c.pctVal !== undefined && (
-                      <span className={cn("text-xs font-semibold", progressTextColor(c.pctVal))}>{c.pctVal}%</span>
-                    )}
-                  </div>
-                  {c.meta !== null && c.meta > 0 ? (
-                    <>
-                      <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1.5">
-                        <div className={cn("h-full rounded-full transition-all", progressColor(c.pctVal || 0))} style={{ width: `${Math.min(c.pctVal || 0, 100)}%` }} />
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Meta: {fmtCurrency(c.meta)}</p>
-                    </>
-                  ) : c.meta === 0 ? (
-                    <p className="text-[10px] text-muted-foreground/50 mt-1">Meta não definida</p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* KPIs Resultado */}
+          <KpiGrid cols={4}>
+            <KpiCard
+              label="VGV gerado"
+              value={fmtCurrency(t.real_vgv_gerado)}
+              icon={<DollarSign size={14} strokeWidth={1.5} />}
+            />
+            <KpiCard
+              label="VGV assinado"
+              value={fmtCurrency(t.real_vgv_assinado)}
+              icon={<TrendingUp size={14} strokeWidth={1.5} />}
+              variant={overallPct >= 70 ? "success" : overallPct >= 30 ? "warning" : "danger"}
+              hint={t.meta_vgv_assinado > 0 ? `${overallPct}% da meta · meta: ${fmtCurrency(t.meta_vgv_assinado)}` : "meta não definida"}
+            />
+            <KpiCard
+              label="Ticket médio"
+              value={fmtCurrency(ticketMedio)}
+              variant="highlight"
+            />
+            <KpiCard
+              label="Conversão geral"
+              value={`${conversaoGeral}%`}
+            />
+          </KpiGrid>
 
-          {/* ═══ COMPARATIVO DE EQUIPES ═══ */}
-          <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-            <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-primary" />
-              <h3 className="font-display font-semibold text-sm">Performance por Equipe</h3>
-            </div>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border bg-muted/40">
-                  <th className="text-left px-3 py-2 font-semibold w-6"></th>
-                  <th className="text-left px-2 py-2 font-semibold">Equipe</th>
-                  <th className="px-2 py-2 text-center font-semibold">Ligações</th>
-                  <th className="px-2 py-2 text-center font-semibold">V.Marc</th>
-                  <th className="px-2 py-2 text-center font-semibold">V.Real</th>
-                  <th className="px-2 py-2 text-center font-semibold">VGV</th>
-                  <th className="px-2 py-2 text-center font-semibold">Ating.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {gerentes.map(g => {
-                  const gPct = pct(g.totals.real_vgv_assinado, g.totals.meta_vgv_assinado);
-                  const isExpanded = expandedTeam === g.gerente_id;
-                  return (
-                    <>
-                      <tr
-                        key={g.gerente_id}
-                        className="border-b border-border hover:bg-muted/20 cursor-pointer transition-colors"
-                        onClick={() => setExpandedTeam(isExpanded ? null : g.gerente_id)}
-                      >
-                        <td className="px-3 py-2">
-                          {isExpanded ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
-                        </td>
-                        <td className="px-2 py-2 font-medium">{g.gerente_nome}</td>
-                        <td className="px-2 py-2 text-center">{g.totals.real_ligacoes.toLocaleString("pt-BR")}</td>
-                        <td className="px-2 py-2 text-center">{g.totals.real_visitas_marcadas}</td>
-                        <td className="px-2 py-2 text-center">{g.totals.real_visitas_realizadas}</td>
-                        <td className="px-2 py-2 text-center font-medium">{fmtCurrency(g.totals.real_vgv_assinado)}</td>
-                        <td className="px-2 py-2 text-center">
-                          <span className={cn("font-semibold", progressTextColor(gPct))}>
-                            {semaphore(gPct)} {gPct}%
-                          </span>
-                        </td>
-                      </tr>
-                      {isExpanded && g.corretores.map(c => {
-                        const cPct = pct(c.real_vgv_assinado, c.meta_vgv_assinado);
-                        return (
-                          <tr key={c.corretor_id} className="border-b border-border/50 bg-muted/10">
-                            <td className="px-3 py-1.5"></td>
-                            <td className="px-2 py-1.5 text-muted-foreground pl-6">{c.corretor_nome}</td>
-                            <td className="px-2 py-1.5 text-center text-muted-foreground">{c.real_ligacoes}</td>
-                            <td className="px-2 py-1.5 text-center text-muted-foreground">{c.real_visitas_marcadas}</td>
-                            <td className="px-2 py-1.5 text-center text-muted-foreground">{c.real_visitas_realizadas}</td>
-                            <td className="px-2 py-1.5 text-center text-muted-foreground">{fmtCurrency(c.real_vgv_assinado)}</td>
-                            <td className="px-2 py-1.5 text-center">
-                              <span className={cn("text-[10px]", progressTextColor(cPct))}>{cPct}%</span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          {/* Comparativo de Equipes */}
+          <TeamComparisonTable gerentes={gerentes} expandedTeam={expandedTeam} setExpandedTeam={setExpandedTeam} />
 
-          {/* ═══ CONVERSÃO DO FUNIL ═══ */}
+          {/* Conversão do Funil */}
           <FunnelSection t={t} />
 
-          {/* ═══ SAÚDE DA OPERAÇÃO ═══ */}
-          <div className="rounded-xl border border-border bg-card shadow-card p-4">
+          {/* Saúde da Operação */}
+          <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Activity className="h-4 w-4 text-primary" />
-              <h3 className="font-display font-semibold text-sm">Saúde da Operação</h3>
+              <Activity className="h-4 w-4 text-[#4F46E5]" />
+              <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Saúde da operação</h3>
             </div>
             <SaudeOperacao />
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function TeamComparisonTable({ gerentes, expandedTeam, setExpandedTeam }: { gerentes: any[]; expandedTeam: string | null; setExpandedTeam: (v: string | null) => void }) {
+  return (
+    <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#f0f0f0] dark:border-white/[0.07] flex items-center gap-2">
+        <BarChart3 className="h-4 w-4 text-[#4F46E5]" />
+        <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Performance por equipe</h3>
+      </div>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-[#f0f0f0] dark:border-white/[0.07] bg-[#fafafa] dark:bg-white/[0.02]">
+            <th className="text-left px-3 py-2 font-semibold w-6"></th>
+            <th className="text-left px-2 py-2 font-semibold text-[#71717a]">Equipe</th>
+            <th className="px-2 py-2 text-center font-semibold text-[#71717a]">Ligações</th>
+            <th className="px-2 py-2 text-center font-semibold text-[#71717a]">V.Marc</th>
+            <th className="px-2 py-2 text-center font-semibold text-[#71717a]">V.Real</th>
+            <th className="px-2 py-2 text-center font-semibold text-[#71717a]">VGV</th>
+            <th className="px-2 py-2 text-center font-semibold text-[#71717a]">Ating.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {gerentes.map(g => {
+            const gPct = pct(g.totals.real_vgv_assinado, g.totals.meta_vgv_assinado);
+            const isExpanded = expandedTeam === g.gerente_id;
+            return (
+              <>
+                <tr
+                  key={g.gerente_id}
+                  className="border-b border-[#f0f0f0] dark:border-white/[0.07] hover:bg-[#fafafa] dark:hover:bg-white/[0.02] cursor-pointer transition-colors"
+                  onClick={() => setExpandedTeam(isExpanded ? null : g.gerente_id)}
+                >
+                  <td className="px-3 py-2">
+                    {isExpanded ? <ChevronDown className="h-3.5 w-3.5 text-[#a1a1aa]" /> : <ChevronRight className="h-3.5 w-3.5 text-[#a1a1aa]" />}
+                  </td>
+                  <td className="px-2 py-2 font-medium text-[#0a0a0a] dark:text-[#fafafa]">{g.gerente_nome}</td>
+                  <td className="px-2 py-2 text-center text-[#71717a]">{g.totals.real_ligacoes.toLocaleString("pt-BR")}</td>
+                  <td className="px-2 py-2 text-center text-[#71717a]">{g.totals.real_visitas_marcadas}</td>
+                  <td className="px-2 py-2 text-center text-[#71717a]">{g.totals.real_visitas_realizadas}</td>
+                  <td className="px-2 py-2 text-center font-medium text-[#0a0a0a] dark:text-[#fafafa]">{formatBRLCompact(g.totals.real_vgv_assinado)}</td>
+                  <td className="px-2 py-2 text-center">
+                    <span className={cn("font-semibold", gPct >= 70 ? "text-[#10b981]" : gPct >= 30 ? "text-[#f59e0b]" : "text-[#ef4444]")}>
+                      {gPct}%
+                    </span>
+                  </td>
+                </tr>
+                {isExpanded && g.corretores.map((c: any) => {
+                  const cPct = pct(c.real_vgv_assinado, c.meta_vgv_assinado);
+                  return (
+                    <tr key={c.corretor_id} className="border-b border-[#f0f0f0]/50 dark:border-white/[0.04] bg-[#fafafa]/50 dark:bg-white/[0.01]">
+                      <td className="px-3 py-1.5"></td>
+                      <td className="px-2 py-1.5 text-[#a1a1aa] pl-6">{c.corretor_nome}</td>
+                      <td className="px-2 py-1.5 text-center text-[#a1a1aa]">{c.real_ligacoes}</td>
+                      <td className="px-2 py-1.5 text-center text-[#a1a1aa]">{c.real_visitas_marcadas}</td>
+                      <td className="px-2 py-1.5 text-center text-[#a1a1aa]">{c.real_visitas_realizadas}</td>
+                      <td className="px-2 py-1.5 text-center text-[#a1a1aa]">{formatBRLCompact(c.real_vgv_assinado)}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <span className={cn("text-[10px]", cPct >= 70 ? "text-[#10b981]" : cPct >= 30 ? "text-[#f59e0b]" : "text-[#ef4444]")}>{cPct}%</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -307,22 +301,27 @@ function FunnelSection({ t }: { t: any }) {
   }, [t]);
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-card p-4">
+    <div className="rounded-[14px] border border-[#f0f0f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] p-4">
       <div className="flex items-center gap-2 mb-3">
-        <BarChart3 className="h-4 w-4 text-primary" />
-        <h3 className="font-display font-semibold text-sm">Conversão do Funil</h3>
+        <BarChart3 className="h-4 w-4 text-[#4F46E5]" />
+        <h3 className="font-semibold text-sm text-[#0a0a0a] dark:text-[#fafafa]">Conversão do funil</h3>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {funnel.map((step) => {
           const convRate = step.next !== null && step.value > 0 ? Math.round((step.next / step.value) * 100) : null;
           const isBottleneck = convRate !== null && convRate < 20;
           return (
-            <div key={step.label} className={cn("rounded-lg border p-3 text-center", isBottleneck ? "border-destructive/30 bg-destructive/5" : "border-border bg-muted/20")}>
-              <p className="text-[10px] text-muted-foreground uppercase font-medium">{step.label}</p>
-              <p className="text-lg font-display font-bold text-foreground mt-1">{step.value}</p>
+            <div key={step.label} className={cn(
+              "rounded-[10px] border p-3 text-center",
+              isBottleneck ? "border-[#ef4444]/30 bg-[#ef4444]/5" : "border-[#f0f0f0] dark:border-white/[0.07] bg-[#fafafa] dark:bg-white/[0.02]"
+            )}>
+              <p className="text-[10px] text-[#a1a1aa] font-medium">{step.label}</p>
+              <p className="text-lg font-[800] text-[#0a0a0a] dark:text-[#fafafa] mt-1">{step.value}</p>
               {convRate !== null && (
-                <div className={cn("mt-1 text-[10px] font-semibold", isBottleneck ? "text-destructive" : convRate >= 50 ? "text-success" : "text-warning")}>
-                  → {convRate}%{isBottleneck && " ⚠️"}
+                <div className={cn("mt-1 text-[10px] font-semibold",
+                  isBottleneck ? "text-[#ef4444]" : convRate >= 50 ? "text-[#10b981]" : "text-[#f59e0b]"
+                )}>
+                  → {convRate}%
                 </div>
               )}
             </div>
@@ -330,7 +329,7 @@ function FunnelSection({ t }: { t: any }) {
         })}
       </div>
       {funnel.some((s) => s.next !== null && s.value > 0 && Math.round((s.next! / s.value) * 100) < 20) && (
-        <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
+        <div className="mt-2 flex items-center gap-2 text-xs text-[#ef4444]">
           <AlertTriangle className="h-3.5 w-3.5" />
           <span>Gargalo detectado em etapas com conversão abaixo de 20%</span>
         </div>

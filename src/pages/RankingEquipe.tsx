@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths, isSameWeek, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -145,86 +146,20 @@ export default function RankingEquipe() {
   ];
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
-            <Gamepad2 className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-foreground">
-              Arena de Performance
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Seu desempenho em 4 pilares · Entenda, evolua, conquiste
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {period === "semana" && offset === 0 && (
-            <button
-              type="button"
-              onClick={() => setOffset(-1)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              <History className="h-3.5 w-3.5" />
-              Semana anterior
-            </button>
-          )}
-          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            {(Object.entries(periodLabels) as [Period, string][]).map(([key, label]) => (
-              key === "personalizado" ? (
-                <Popover key={key} open={calendarOpen} onOpenChange={setCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
-                        period === key
-                          ? "bg-card text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => handlePeriodChange(key)}
-                    >
-                      <CalendarDays className="h-3 w-3" />
-                      {period === "personalizado" && customRange.from && customRange.to
-                        ? `${format(customRange.from, "dd/MM")} - ${format(customRange.to, "dd/MM")}`
-                        : label}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                      mode="range"
-                      selected={{ from: customRange.from, to: customRange.to }}
-                      onSelect={(range) => {
-                        setCustomRange({ from: range?.from, to: range?.to });
-                        if (range?.from && range?.to) {
-                          setPeriod("personalizado");
-                          setCalendarOpen(false);
-                        }
-                      }}
-                      numberOfMonths={2}
-                      locale={ptBR}
-                      disabled={{ after: new Date() }}
-                    />
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <button
-                  key={key}
-                  className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all ${
-                    period === key
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => handlePeriodChange(key)}
-                >
-                  {label}
-                </button>
-              )
-            ))}
-          </div>
-        </div>
-      </div>
+    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 max-w-5xl mx-auto space-y-4 -m-6 min-h-full">
+      <PageHeader
+        title="Rankings"
+        subtitle="Arena de performance · Entenda, evolua, conquiste"
+        icon={<Star size={18} strokeWidth={1.5} />}
+        tabs={[
+          { label: "Hoje",    value: "hoje"   },
+          { label: "Semana",  value: "semana" },
+          { label: "Mês",     value: "mes"    },
+          { label: "Personalizado", value: "personalizado" },
+        ]}
+        activeTab={period}
+        onTabChange={(v) => handlePeriodChange(v as Period)}
+      />
 
       {/* Week/Month Navigation */}
       {canNavigate && (

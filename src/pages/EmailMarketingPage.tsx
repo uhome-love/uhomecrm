@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -895,31 +896,28 @@ function EmailDashboardTab() {
 
 // ─── Main Page ───
 export default function EmailMarketingPage() {
+  const [activeTab, setActiveTab] = useState("dashboard");
+
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
-      <div>
-        <div className="flex items-center gap-2">
-          <Mail className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-bold">Email Marketing</h1>
-        </div>
-        <p className="text-sm text-muted-foreground mt-1">
-          Campanhas, templates e rastreamento de emails via Mailgun
-        </p>
-      </div>
+    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 space-y-6 max-w-5xl mx-auto -m-6 min-h-full">
+      <PageHeader
+        title="Email marketing"
+        subtitle="Campanhas, templates e rastreamento de emails via Mailgun"
+        icon={<Mail size={18} strokeWidth={1.5} />}
+        tabs={[
+          { label: "Dashboard",     value: "dashboard"   },
+          { label: "Campanhas",     value: "campaigns"   },
+          { label: "Templates",     value: "templates"   },
+          { label: "Configurações", value: "settings"    },
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
-      <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="dashboard" className="gap-1"><BarChart3 className="h-3.5 w-3.5" /> Dashboard</TabsTrigger>
-          <TabsTrigger value="campaigns" className="gap-1"><Send className="h-3.5 w-3.5" /> Campanhas</TabsTrigger>
-          <TabsTrigger value="templates" className="gap-1"><FileText className="h-3.5 w-3.5" /> Templates</TabsTrigger>
-          <TabsTrigger value="settings" className="gap-1"><Settings className="h-3.5 w-3.5" /> Configurações</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dashboard"><EmailDashboardTab /></TabsContent>
-        <TabsContent value="campaigns"><EmailCampaignsTab /></TabsContent>
-        <TabsContent value="templates"><EmailTemplatesTab /></TabsContent>
-        <TabsContent value="settings"><EmailSettingsTab /></TabsContent>
-      </Tabs>
+      {activeTab === "dashboard" && <EmailDashboardTab />}
+      {activeTab === "campaigns" && <EmailCampaignsTab />}
+      {activeTab === "templates" && <EmailTemplatesTab />}
+      {activeTab === "settings" && <EmailSettingsTab />}
     </div>
   );
 }

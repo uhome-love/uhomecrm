@@ -20,6 +20,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatBRL, formatBRLCompact } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 
 const formatCurrency = formatBRLCompact;
 const formatCurrencyFull = (v: number) => formatBRL(v);
@@ -338,103 +340,51 @@ export default function VendasRealizadas() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto">
-      {/* ═══ HEADER ═══ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl px-5 py-5 relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%)" }}>
-        {/* Confetti-like decorations */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(8)].map((_, i) => (
-            <motion.div key={i}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 0.15, scale: 1 }}
-              transition={{ delay: 0.1 + i * 0.05, duration: 0.5 }}
-              className="absolute rounded-full"
-              style={{
-                width: 6 + Math.random() * 12,
-                height: 6 + Math.random() * 12,
-                left: `${10 + Math.random() * 80}%`,
-                top: `${10 + Math.random() * 80}%`,
-                background: ["#fbbf24", "#34d399", "#60a5fa", "#f472b6", "#a78bfa"][i % 5],
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
-              <Trophy className="h-6 w-6 text-emerald-200" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-white flex items-center gap-2">
-                Vendas Realizadas <PartyPopper className="h-5 w-5 text-yellow-300" />
-              </h1>
-              <p className="text-xs text-emerald-200/80 capitalize">{dateRange.label}</p>
-            </div>
-          </div>
-
-          {/* Date filter pills */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
-              <PopoverTrigger asChild>
-                <button className="text-xs px-4 py-2 rounded-full font-semibold bg-white text-emerald-800 shadow-lg flex items-center gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {MESES[selectedMonth]}
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2" align="end">
-                <div className="grid grid-cols-3 gap-1">
-                  {MESES.map((mes, i) => (
-                    <button
-                      key={mes}
-                      onClick={() => { setSelectedMonth(i); setShowMonthPicker(false); }}
-                      className={cn(
-                        "text-xs py-2 px-1 rounded-lg font-medium transition-all",
-                        selectedMonth === i
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted text-foreground",
-                        i > new Date().getMonth() && selectedYear >= new Date().getFullYear()
-                          ? "opacity-40 pointer-events-none"
-                          : ""
-                      )}
-                    >
-                      {mes.slice(0, 3)}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ═══ KPI CARDS ═══ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { icon: Trophy, label: "Vendas", value: totalVendas, format: (v: number) => String(v), color: "hsl(160, 60%, 42%)", emoji: "🏆" },
-            { icon: TrendingUp, label: "VGV Total", value: totalVGV, format: formatCurrency, color: "hsl(142, 70%, 45%)", emoji: "💰" },
-            { icon: DollarSign, label: "Ticket Médio", value: ticketMedio, format: formatCurrency, color: "hsl(210, 70%, 55%)", emoji: "📊" },
-            { icon: Star, label: "Corretagem (5%)", value: totalCorretagem, format: formatCurrency, color: "hsl(45, 90%, 50%)", emoji: "⭐", sub: `5% do VGV total` },
-          ].map((kpi, i) => (
-            <motion.div key={kpi.label} whileHover={{ y: -2 }} transition={{ duration: 0.15 }}
-              className="rounded-2xl p-4 bg-card border border-border/60 hover:shadow-lg transition-shadow relative overflow-hidden">
-              <div className="absolute top-2 right-2 text-2xl opacity-10">{kpi.emoji}</div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <kpi.icon className="h-4 w-4" style={{ color: kpi.color }} />
-                <span className="text-[11px] font-medium text-muted-foreground">{kpi.label}</span>
+    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 space-y-5 max-w-7xl mx-auto -m-6 min-h-full">
+      <PageHeader
+        title="Vendas realizadas"
+        subtitle={dateRange.label}
+        icon={<TrendingUp size={18} strokeWidth={1.5} />}
+        actions={
+          <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {MESES[selectedMonth]}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="end">
+              <div className="grid grid-cols-3 gap-1">
+                {MESES.map((mes, i) => (
+                  <button
+                    key={mes}
+                    onClick={() => { setSelectedMonth(i); setShowMonthPicker(false); }}
+                    className={cn(
+                      "text-xs py-2 px-1 rounded-lg font-medium transition-all",
+                      selectedMonth === i
+                        ? "bg-[#4F46E5] text-white"
+                        : "hover:bg-[#f5f5f5] dark:hover:bg-white/[0.06] text-[#0a0a0a] dark:text-[#fafafa]",
+                      i > new Date().getMonth() && selectedYear >= new Date().getFullYear()
+                        ? "opacity-40 pointer-events-none"
+                        : ""
+                    )}
+                  >
+                    {mes.slice(0, 3)}
+                  </button>
+                ))}
               </div>
-              <p className="text-2xl font-black leading-none" style={{ color: kpi.color }}>
-                {kpi.format(kpi.value)}
-              </p>
-              {kpi.sub && <p className="text-[10px] text-muted-foreground mt-1">{kpi.sub}</p>}
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+            </PopoverContent>
+          </Popover>
+        }
+      />
+
+      <KpiGrid cols={4}>
+        <KpiCard label="Vendas" value={totalVendas} />
+        <KpiCard label="VGV total" value={formatCurrency(totalVGV)} variant="success" />
+        <KpiCard label="Ticket médio" value={formatCurrency(ticketMedio)} variant="highlight" />
+        <KpiCard label="Corretagem (5%)" value={formatCurrency(totalCorretagem)} variant="warning" hint="5% do VGV total" />
+      </KpiGrid>
 
       {/* ═══ TABS ═══ */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
