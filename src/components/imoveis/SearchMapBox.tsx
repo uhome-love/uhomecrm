@@ -182,34 +182,56 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
         paint: { "text-color": "#FFFFFF" },
       });
 
-      map.addImage("pin-bg", createPillImage("#FFFFFF", "rgba(0,0,0,0.2)"));
-      map.addImage("pin-bg-dark", createPillImage("#222222", "#222222"));
-
       map.addLayer({
-        id: "imoveis-pins", type: "symbol", source: "imoveis",
+        id: "imoveis-pin-bubbles", type: "circle", source: "imoveis",
         filter: ["!", ["has", "point_count"]],
-        layout: {
-          "icon-image": "pin-bg", "icon-text-fit": "both",
-          "icon-text-fit-padding": [5, 10, 5, 10],
-          "icon-allow-overlap": false, "icon-ignore-placement": false, "icon-padding": 4,
-          "text-field": ["get", "preco_label"],
-          "text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
-          "text-size": 12, "text-allow-overlap": false, "text-optional": true,
-          "text-anchor": "center", "symbol-sort-key": ["get", "preco"],
+        paint: {
+          "circle-color": "#FFFFFF",
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 18, 12, 22, 14, 26],
+          "circle-stroke-width": 1.5,
+          "circle-stroke-color": "rgba(0,0,0,0.18)",
+          "circle-opacity": 0.98,
+          "circle-blur": 0,
         },
-        paint: { "text-color": "#222222", "icon-opacity": 1 },
       });
 
       map.addLayer({
-        id: "imoveis-pins-hover", type: "symbol", source: "imoveis",
-        filter: ["==", ["get", "id"], ""],
+        id: "imoveis-pin-labels", type: "symbol", source: "imoveis",
+        filter: ["!", ["has", "point_count"]],
         layout: {
-          "icon-image": "pin-bg-dark", "icon-text-fit": "both",
-          "icon-text-fit-padding": [5, 10, 5, 10],
-          "icon-allow-overlap": true,
           "text-field": ["get", "preco_label"],
           "text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
-          "text-size": 12, "text-allow-overlap": true, "text-anchor": "center",
+          "text-size": 11,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+          "text-anchor": "center",
+          "symbol-sort-key": ["get", "preco"],
+        },
+        paint: { "text-color": "#222222" },
+      });
+
+      map.addLayer({
+        id: "imoveis-pins-hover", type: "circle", source: "imoveis",
+        filter: ["==", ["get", "id"], ""],
+        paint: {
+          "circle-color": "#222222",
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 20, 12, 24, 14, 28],
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#222222",
+          "circle-opacity": 1,
+        },
+      });
+
+      map.addLayer({
+        id: "imoveis-pins-hover-label", type: "symbol", source: "imoveis",
+        filter: ["==", ["get", "id"], ""],
+        layout: {
+          "text-field": ["get", "preco_label"],
+          "text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
+          "text-size": 11,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+          "text-anchor": "center",
         },
         paint: { "text-color": "#FFFFFF" },
       });
