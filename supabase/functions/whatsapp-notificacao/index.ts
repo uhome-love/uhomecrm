@@ -71,6 +71,7 @@ serve(async (req) => {
 
     // Fallback text messages for types without templates
     const TEXT_MESSAGES: Record<string, () => string> = {
+      sla_urgente: () => `🚨 *Lead precisa de atenção URGENTE!*\n\n👤 *${dados.nome || "Lead"}*\n🏢 ${dados.empreendimento || "Não identificado"}\n⏰ SLA de atendimento atingido!\n\nAbra o UhomeSales e faça contato agora!`,
       aviso_1h: () => `⚠️ *Lead sem contato há 1 hora!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nFaça a primeira interação agora no UhomeSales!`,
       aviso_1h30: () => `⚠️ *Segundo aviso — 1h30 sem contato!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nUrgente! Acesse o sistema agora.`,
       aviso_repasse: () => `🔴 *ÚLTIMO AVISO — Lead repassado em 30 min!*\n\n👤 *${dados.nome}*\n🏢 ${dados.empreendimento}\n\nApós 3 avisos o lead será repassado para outro corretor.`,
