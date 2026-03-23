@@ -505,6 +505,7 @@ export default function CeoDashboard() {
           <NewKpiCard
             label="Total de leads"
             value={totalLeadsPeriodo}
+            variant="highlight"
             icon={<Users size={14} strokeWidth={1.5} />}
             onClick={() => setKpiDetail({ type: "total_leads", label: "Total de Leads" })}
           />
