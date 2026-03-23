@@ -447,7 +447,7 @@ export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]
   const pins: MapPin[] = [];
   const seenIds = new Set<string>();
   const perPage = 250;
-  const maxPages = bounds ? 8 : 3;
+  const maxPages = bounds ? 12 : 8;
 
   for (let page = 1; page <= maxPages; page += 1) {
     const { data, error } = await supabase.functions.invoke("typesense-search", {
