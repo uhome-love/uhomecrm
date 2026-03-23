@@ -1,8 +1,9 @@
 import UhomeLogo from "@/components/UhomeLogo";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import Sidebar from "@/components/layout/Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useTheme } from "@/hooks/useTheme";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { User, Settings, LogOut, ChevronDown } from "lucide-react";
@@ -75,9 +76,12 @@ function ArenaAutoCollapse({ isSession }: { isSession: boolean }) {
   return null;
 }
 
+type SidebarRole = "admin" | "gestor" | "corretor" | "backoffice" | "rh";
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const { isAdmin, isGestor, isBackoffice, isRh } = useUserRole();
+  const { theme, toggle: onThemeToggle } = useTheme();
   useVendaRealtimeNotification();
   const navigate = useNavigate();
   const [nome, setNome] = useState("");
@@ -85,6 +89,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [cargoLabel, setCargoLabel] = useState("");
   const { pendingLead, showDialog, closeDialog, refresh: refreshPending } = usePendingLeadAlert();
   const { isFullscreen, isSession } = useArenaMode();
+
+  // Derive role for the new Sidebar
+  const sidebarRole: SidebarRole = isBackoffice
+    ? "backoffice"
+    : isAdmin
+    ? "admin"
+    : isRh
+    ? "rh"
+    : isGestor
+    ? "gestor"
+    : "corretor";
 
   const fetchProfile = useCallback(() => {
     if (!user) return;
@@ -123,12 +138,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("profile-updated", handler);
   }, [fetchProfile]);
 
+  // Compute user initials
+  const userInitials = nome
+    ? nome.trim().split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+    : user?.email?.slice(0, 2).toUpperCase() || "U";
+
   return (
     <SidebarProvider defaultOpen={!isSession}>
       <HomiProvider>
         <ArenaAutoCollapse isSession={isSession} />
         <div className="min-h-screen flex w-full">
-          {!isSession && <AppSidebar />}
+          {!isSession && (
+            <Sidebar
+              role={sidebarRole}
+              userName={nome || user?.email?.split("@")[0] || "Usuário"}
+              userRole={cargoLabel}
+              userInitials={userInitials}
+              theme={theme}
+              onThemeToggle={onThemeToggle}
+              showCampaigns={sidebarRole === "admin"}
+            />
+          )}
           <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
             <header
               className="h-14 flex items-center justify-between sticky top-0 z-50 px-4"
