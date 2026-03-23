@@ -276,7 +276,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
           <p className="mt-0.5 truncate text-xs text-muted-foreground">{stats}</p>
         )}
 
-        <p className="mt-1 text-sm font-bold text-foreground tracking-tight">{price}</p>
+        <p className="mt-1 text-[15px] font-semibold text-foreground tracking-tight">{price}</p>
 
         {(imovel.preco_condominio ?? 0) > 0 && (
           <p className="mt-0.5 text-[11px] text-muted-foreground">
