@@ -24,6 +24,8 @@ import CeoDailyReport from "@/components/ceo/CeoDailyReport";
 import BulkEmpreendimentoAssign from "@/components/ceo/BulkEmpreendimentoAssign";
 import { formatBRLCompact } from "@/lib/utils";
 import { CeoDashboardSkeleton } from "@/components/ui/skeleton-dashboard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { KpiCard as NewKpiCard, KpiGrid } from "@/components/ui/KpiCard";
 
 import KpiDetailDialog, { type KpiDetailType } from "@/components/ceo/KpiDetailDialog";
 
