@@ -136,8 +136,8 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
         paint: { "text-color": "#FFFFFF" },
       });
 
-      map.addImage("pin-bg", createPillImage("#FFFFFF", "rgba(0,0,0,0.2)"));
-      map.addImage("pin-bg-dark", createPillImage("#222222", "#222222"));
+      map.addImage("pin-bg", createPillImage("#FFFFFF", "rgba(0,0,0,0.15)"));
+      map.addImage("pin-bg-dark", createPillImage("#1a1a2e", "rgba(0,0,0,0.3)"));
 
       map.addLayer({
         id: "imoveis-pins", type: "symbol", source: "imoveis",
