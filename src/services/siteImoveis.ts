@@ -88,6 +88,44 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function toFiniteNumber(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function extractCoordinates(doc: Record<string, unknown>): { latitude: number | null; longitude: number | null } {
+  const directLat = toFiniteNumber(doc.latitude ?? doc.lat ?? doc.endereco_latitude);
+  const directLng = toFiniteNumber(doc.longitude ?? doc.lng ?? doc.lon ?? doc.endereco_longitude);
+
+  if (directLat != null && directLng != null) {
+    return { latitude: directLat, longitude: directLng };
+  }
+
+  const location = doc.location;
+
+  if (Array.isArray(location) && location.length >= 2) {
+    const lat = toFiniteNumber(location[0]);
+    const lng = toFiniteNumber(location[1]);
+    if (lat != null && lng != null) return { latitude: lat, longitude: lng };
+  }
+
+  if (location && typeof location === "object") {
+    const loc = location as Record<string, unknown>;
+    const lat = toFiniteNumber(loc.lat ?? loc.latitude);
+    const lng = toFiniteNumber(loc.lng ?? loc.lon ?? loc.longitude);
+    if (lat != null && lng != null) return { latitude: lat, longitude: lng };
+  }
+
+  if (typeof location === "string") {
+    const [rawLat, rawLng] = location.split(",").map((part) => part.trim());
+    const lat = toFiniteNumber(rawLat);
+    const lng = toFiniteNumber(rawLng);
+    if (lat != null && lng != null) return { latitude: lat, longitude: lng };
+  }
+
+  return { latitude: null, longitude: null };
+}
+
 export function tituloLimpo(imovel: { tipo: string; quartos: number | null; bairro: string }): string {
   const tipo = capitalize(imovel.tipo);
   const quartos = imovel.quartos ?? 0;
@@ -119,6 +157,7 @@ export function formatPrecoCompact(preco: number): string {
 function mapDoc(doc: any): SiteImovel {
   const fotos: string[] = doc.fotos?.length ? doc.fotos : doc.foto_principal ? [doc.foto_principal] : [];
   const fotosFull: string[] = doc.fotos_full?.length ? doc.fotos_full : fotos;
+  const coords = extractCoordinates(doc);
   return {
     id: doc.id || doc.codigo || "",
     slug: doc.slug || doc.codigo || "",
@@ -144,8 +183,8 @@ function mapDoc(doc: any): SiteImovel {
     condominio_nome: doc.empreendimento || null,
     empreendimento: doc.empreendimento || null,
     construtora: doc.construtora || null,
-    latitude: doc.latitude ?? null,
-    longitude: doc.longitude ?? null,
+    latitude: coords.latitude,
+    longitude: coords.longitude,
     titulo: doc.titulo || null,
     endereco: doc.endereco || null,
     _raw: doc,
