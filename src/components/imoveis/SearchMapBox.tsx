@@ -129,7 +129,9 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReadyRef.current) return;
-    map.setFilter("imoveis-pins-hover", hoveredId ? ["==", ["get", "id"], hoveredId] : ["==", ["get", "id"], ""]);
+    const filter = hoveredId ? ["==", ["get", "id"], hoveredId] : ["==", ["get", "id"], ""];
+    map.setFilter("imoveis-pins-hover", filter);
+    map.setFilter("imoveis-pins-hover-label", filter);
   }, [hoveredId]);
 
   // Init map
