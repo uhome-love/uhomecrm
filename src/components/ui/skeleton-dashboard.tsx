@@ -92,7 +92,7 @@ export function SkeletonCharts() {
                 <Shimmer className="h-3 w-20" />
                 <Shimmer className="h-3 w-8" />
               </div>
-              <Shimmer className="h-2 rounded-full" style={{ width: `${90 - j * 12}%` }} />
+              <Shimmer className={cn("h-2 rounded-full", j === 1 ? "w-[90%]" : j === 2 ? "w-[75%]" : j === 3 ? "w-[60%]" : j === 4 ? "w-[45%]" : "w-[30%]")} />
             </div>
           ))}
         </div>
