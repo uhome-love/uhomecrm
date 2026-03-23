@@ -124,6 +124,7 @@ function SidebarNavGroup({ label, items, badges, collapsed, index }: {
               <NavLink
                 to={item.url}
                 end={!item.url.includes("/backoffice/")}
+                onMouseEnter={() => handlePrefetchHover(item.url)}
                 className={`group/nav text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-all duration-150 rounded-lg relative py-1.5 ${collapsed ? "px-0 justify-center" : "px-3"}`}
                 activeClassName="!text-white !font-semibold !bg-white/10 border-l-2 !border-l-blue-400 !rounded-l-none rounded-r-lg [&_svg]:!text-blue-400"
               >
