@@ -505,16 +505,19 @@ export function useRelatorioExecutivo(period: PeriodRange) {
       const teams = Object.values(teamMap).sort((a, b) => b.totals.vgv - a.totals.vgv);
 
       // ── Daily trends ──
+      // Use BRT-aware boundaries so late-night events (21h-23h59 BRT) aren't shifted to the next day
       const dailyTrends: DailyTrend[] = days.map(day => {
         const dayStr = ds(day);
-        const dayTs = dayStr + "T";
+        const dayStartUtc = new Date(`${dayStr}T00:00:00-03:00`).toISOString();
+        const dayEndUtc = new Date(`${dayStr}T23:59:59.999-03:00`).toISOString();
+        const inDay = (ts: string | null) => ts != null && ts >= dayStartUtc && ts <= dayEndUtc;
         return {
           dia: dayStr,
           diaLabel: format(day, "EEE dd/MM", { locale: ptBR }),
-          ligacoes: (ligData || []).filter(l => l.created_at?.startsWith(dayTs)).length,
-          leads: (leadsData || []).filter(l => l.created_at?.startsWith(dayTs)).length,
+          ligacoes: (ligData || []).filter(l => inDay(l.created_at)).length,
+          leads: (leadsData || []).filter(l => inDay(l.created_at)).length,
           visitas: (visData || []).filter(v => v.data_visita === dayStr && v.status === "realizada").length,
-          negocios: (negData || []).filter(n => n.created_at?.startsWith(dayTs)).length,
+          negocios: (negData || []).filter(n => inDay(n.created_at)).length,
         };
       });
 
