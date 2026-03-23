@@ -32,7 +32,7 @@ import {
   formatPreco, CIDADES_PERMITIDAS, PROPERTY_TYPES,
 } from "@/services/siteImoveis";
 import {
-  useImoveisSearchStore, filtersFromParams, filtersToParams,
+  useImoveisSearchStore, filtersFromParams, filtersToParams, type MapBounds,
 } from "@/stores/imoveisSearchStore";
 import { useAuth } from "@/hooks/useAuth";
 import { useAISearch } from "@/hooks/useAISearch";
@@ -134,6 +134,7 @@ export default function ImoveisPage() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [mobileMapOpen, setMobileMapOpen] = useState(false);
   const [viewedSlugs, setViewedSlugs] = useState<Set<string>>(getViewedSlugs);
+  const [listBounds, setListBounds] = useState<MapBounds | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Sort dropdown
@@ -273,6 +274,12 @@ export default function ImoveisPage() {
     return filtered.filter(b => b.toLowerCase().includes(q)).slice(0, 10);
   }, [bairroInput, bairrosSelecionados, bairros]);
 
+  const hasSearchFilters = !!(
+    filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
+    filters.areaMin || filters.areaMax || filters.quartos || filters.vagas ||
+    filters.q || (filters.cidade && filters.cidade !== "Porto Alegre")
+  );
+
   const addBairro = useCallback((nome: string) => {
     const next = [...bairrosSelecionados, nome];
     setFilter("bairro", next.join(","));
@@ -304,10 +311,13 @@ export default function ImoveisPage() {
     ordem: filters.ordem,
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
-    bounds: filters.bounds,
-  }), [filters, bairrosSelecionados, page]);
+    bounds: listBounds,
+  }), [filters, bairrosSelecionados, page, listBounds]);
 
-  const debouncedQueryFilters = useDebounce(queryFilters, 300);
+  const debouncedQueryFilters = useDebounce(
+    queryFilters,
+    page > 0 ? 0 : (!hasSearchFilters && !listBounds ? 0 : 300)
+  );
 
   // ── Data query ──
   const { data: result, isLoading, isError, error: fetchError, isFetching } = useQuery({
@@ -338,9 +348,12 @@ export default function ImoveisPage() {
     }
   }, [currentPageData, page]);
 
-  const imoveis = allImoveis;
+  const imoveis = page === 0
+    ? (allImoveis.length > 0 ? allImoveis : currentPageData)
+    : allImoveis;
   const hasMore = imoveis.length < total;
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const isInitialListPending = page === 0 && imoveis.length === 0 && (isLoading || isFetching);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
@@ -383,11 +396,7 @@ export default function ImoveisPage() {
   }, [mapPins, imoveis, filters.bounds]);
 
   // ── Active filters count ──
-  const hasActiveFilters = !!(
-    filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
-    filters.areaMin || filters.areaMax || filters.quartos || filters.vagas ||
-    filters.q || (filters.cidade && filters.cidade !== "Porto Alegre")
-  );
+  const hasActiveFilters = hasSearchFilters || !!aiActiveQuery || !!listBounds;
 
   // ── Preview drawer ──
   const openPreview = useCallback((item: SiteImovel) => {
@@ -435,6 +444,7 @@ export default function ImoveisPage() {
 
   // Clear bounds
   const clearBounds = useCallback(() => {
+    setListBounds(null);
     setFilter("bounds", null);
     setPage(0);
     setAllImoveis([]);
@@ -508,7 +518,7 @@ export default function ImoveisPage() {
     <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
       <SearchMapBox
         pins={effectiveMapPins}
-        onBoundsSearch={(bounds) => { setFilter("bounds", bounds); setPage(0); setAllImoveis([]); }}
+        onBoundsSearch={(bounds) => { setListBounds(bounds); setFilter("bounds", bounds); setPage(0); setAllImoveis([]); }}
         onBoundsChange={() => {}}
         onPinClick={async (pin) => {
           const found = imoveis.find(i => i.id === pin.id);
@@ -894,7 +904,7 @@ export default function ImoveisPage() {
               description={fetchError instanceof Error ? fetchError.message : "Erro desconhecido"}
               action={{ label: "Tentar novamente", onClick: () => {} }}
             />
-          ) : isLoading && page === 0 ? (
+          ) : isInitialListPending ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="space-y-2">
