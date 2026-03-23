@@ -334,7 +334,7 @@ export default function CeoDashboard() {
 
 
   if (loading && !profile) {
-    return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <CeoDashboardSkeleton />;
   }
 
   const totalTeam = teams.reduce((acc, t) => ({
