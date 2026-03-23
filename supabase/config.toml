@@ -170,3 +170,6 @@ verify_jwt = false
 
 [functions.crm-webhook]
 verify_jwt = false
+
+[functions.site-proxy]
+verify_jwt = false
