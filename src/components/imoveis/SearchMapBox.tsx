@@ -38,17 +38,24 @@ function toGeoJSON(pins: MapPin[]): GeoJSON.FeatureCollection {
   };
 }
 
-function createPillImage(fillColor: string, strokeColor: string): ImageData {
+function createPillImage(fillColor: string, strokeColor: string, w = 80, h = 30): ImageData {
   const canvas = document.createElement("canvas");
-  canvas.width = 80; canvas.height = 28;
+  canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = fillColor; ctx.strokeStyle = strokeColor; ctx.lineWidth = 1.5;
-  const r = 14;
-  ctx.beginPath(); ctx.moveTo(r, 0); ctx.lineTo(80 - r, 0); ctx.quadraticCurveTo(80, 0, 80, r);
-  ctx.lineTo(80, 28 - r); ctx.quadraticCurveTo(80, 28, 80 - r, 28); ctx.lineTo(r, 28);
-  ctx.quadraticCurveTo(0, 28, 0, 28 - r); ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  return ctx.getImageData(0, 0, 80, 28);
+  const r = h / 2;
+  // Shadow
+  ctx.shadowColor = "rgba(0,0,0,0.15)";
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+  ctx.beginPath(); ctx.moveTo(r, 0); ctx.lineTo(w - r, 0); ctx.quadraticCurveTo(w, 0, w, r);
+  ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h); ctx.lineTo(r, h);
+  ctx.quadraticCurveTo(0, h, 0, h - r); ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fillStyle = fillColor; ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.strokeStyle = strokeColor; ctx.lineWidth = 1;
+  ctx.stroke();
+  return ctx.getImageData(0, 0, w, h);
 }
 
 interface Props {
