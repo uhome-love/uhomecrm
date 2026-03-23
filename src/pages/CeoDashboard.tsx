@@ -380,7 +380,7 @@ export default function CeoDashboard() {
       {/* ─── GREETING ─── */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-4">
-          <Avatar className="h-12 w-12 ring-2 ring-[#4F46E5]/20">
+          <Avatar className="h-12 w-12 ring-2 ring-[#4F46E5]">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
             <AvatarFallback className="bg-[#4F46E5] text-white font-bold text-sm">
               {(profile?.nome || user?.email || "U").slice(0, 2).toUpperCase()}
