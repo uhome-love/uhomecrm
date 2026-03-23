@@ -230,7 +230,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
       {/* Text */}
       <div className="px-0.5 pt-2.5 pb-1">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate text-[13px] font-semibold text-foreground leading-snug">
+          <span className="line-clamp-2 text-[13px] font-semibold text-foreground leading-snug">
             {tituloCard}
           </span>
           {/* Broker action buttons */}
