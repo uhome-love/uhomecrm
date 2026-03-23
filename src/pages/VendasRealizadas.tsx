@@ -20,6 +20,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatBRL, formatBRLCompact } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
 
 const formatCurrency = formatBRLCompact;
 const formatCurrencyFull = (v: number) => formatBRL(v);
