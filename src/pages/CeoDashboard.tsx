@@ -489,7 +489,7 @@ export default function CeoDashboard() {
             size="sm"
             onClick={() => setDispatchOpen(true)}
             disabled={filaCeoCount === 0}
-            className="w-full sm:w-auto gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"
+            className="w-full sm:w-auto gap-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white"
           >
             <Rocket className="h-3.5 w-3.5" />
             Disparar para Roleta
