@@ -1027,16 +1027,17 @@ export default function CeoDashboard() {
             <CardHeader className="pb-2"><CardTitle className="text-sm">Leads por Empreendimento</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {leadsPorEmpreendimento.slice(0, 8).map(l => {
+                {leadsPorEmpreendimento.slice(0, 8).map((l, idx) => {
                   const maxL = Math.max(...leadsPorEmpreendimento.map(x => x.count), 1);
+                  const empColors = ["bg-primary", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-cyan-500", "bg-violet-500", "bg-orange-500", "bg-indigo-500"];
                   return (
-                    <div key={l.emp} className="space-y-0.5">
+                    <div key={l.emp} className="space-y-0.5 group/bar">
                       <div className="flex justify-between text-xs">
-                        <span className="truncate">{l.emp}</span>
+                        <span className="truncate group-hover/bar:text-foreground transition-colors">{l.emp}</span>
                         <span className="font-semibold">{l.count}</span>
                       </div>
-                      <div className="h-2 rounded bg-muted/40 overflow-hidden">
-                        <div className="h-full rounded bg-amber-500/60 transition-all" style={{ width: `${(l.count / maxL) * 100}%` }} />
+                      <div className="h-2.5 rounded-full bg-muted/40 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-500 ${empColors[idx % empColors.length]}`} style={{ width: `${(l.count / maxL) * 100}%` }} />
                       </div>
                     </div>
                   );
