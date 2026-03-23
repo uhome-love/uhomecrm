@@ -25,6 +25,7 @@ interface Props {
   onToggleSelect?: (id: string) => void;
   onPreview?: (imovel: SiteImovel) => void;
   onHover?: (id: string | null) => void;
+  isViewed?: boolean;
 }
 
 type BadgeStyle = "novo" | "exclusivo";
