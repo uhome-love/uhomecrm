@@ -414,7 +414,7 @@ export default function Sidebar({
         <div key={group.title}>
           {gi > 0 && <div className={cn("h-px mx-3 my-[6px]", div)} />}
           <div className="px-3 pt-3 pb-1">
-            <p className={cn("text-[10px] font-[650] tracking-[0.07em] uppercase px-2 mb-[3px]", txd)}>
+            <p className="text-[10px] font-[650] tracking-[0.07em] uppercase px-2 mb-[3px] text-[rgba(79,70,229,0.6)]">
               {group.title}
             </p>
             {group.items.map(item => {
