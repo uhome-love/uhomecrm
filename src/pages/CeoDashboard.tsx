@@ -581,9 +581,7 @@ export default function CeoDashboard() {
       {/* ─── SEÇÃO 4: PROSPECÇÃO ─── */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
-          <Phone className="h-4 w-4" /> Prospecção
-        </h2>
+        <p className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4F46E5] mb-3">Prospecção</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard
             icon={Users}
