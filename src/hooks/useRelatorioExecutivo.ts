@@ -242,10 +242,13 @@ export function useRelatorioExecutivo(period: PeriodRange) {
       let prevLigAIQ = supabase.from("ai_calls").select("id", { count: "exact", head: true }).gte("created_at", ps).lte("created_at", pe);
       prevLigAIQ = applyScope(prevLigAIQ, "iniciado_por");
 
-      // Leads recebidos
-      let leadsQ = supabase.from("pipeline_leads").select("id, corretor_id, created_at").gte("created_at", s).lte("created_at", e).limit(10000);
+      // Leads recebidos — paginated to avoid 1000-row cap
+      const leadsPromise = fetchAllRows<{ id: string; corretor_id: string; created_at: string }>((from, to) => {
+        let q = supabase.from("pipeline_leads").select("id, corretor_id, created_at").gte("created_at", s).lte("created_at", e).range(from, to);
+        if (scopeUserIds) q = q.in("corretor_id", scopeUserIds.length > 0 ? scopeUserIds : ["__none__"]);
+        return q;
+      });
       let prevLeadsQ = supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", ps).lte("created_at", pe);
-      leadsQ = applyScope(leadsQ, "corretor_id");
       prevLeadsQ = applyScope(prevLeadsQ, "corretor_id");
 
       // Leads ativos (current snapshot — not a period metric, but pipeline_leads not in descarte stages)
