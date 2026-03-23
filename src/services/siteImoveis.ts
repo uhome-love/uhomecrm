@@ -241,13 +241,11 @@ function buildFilterBy(filters: BuscaFilters): string {
     }
   }
 
-  // Geo bounds
+  // Geo bounds — use Typesense geopoint 'location' field
   if (filters.bounds) {
     const { lat_min, lat_max, lng_min, lng_max } = filters.bounds;
-    parts.push(`latitude:>=${lat_min}`);
-    parts.push(`latitude:<=${lat_max}`);
-    parts.push(`longitude:>=${lng_min}`);
-    parts.push(`longitude:<=${lng_max}`);
+    // location:(lat_min, lng_min, lat_max, lng_max) — bounding box
+    parts.push(`location:(${lat_min}, ${lng_min}, ${lat_max}, ${lng_max})`);
   }
 
   return parts.join(" && ");
