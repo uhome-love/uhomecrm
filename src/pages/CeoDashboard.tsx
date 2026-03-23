@@ -376,45 +376,18 @@ export default function CeoDashboard() {
   }), { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0, visitasRealizadas: 0, propostas: 0, vgv: 0 });
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
+    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
       {/* ─── HEADER ─── */}
-      <div className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 p-4 sm:p-5 text-white">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-2 border-white/20 shrink-0">
-            {(profile?.avatar_gamificado_url || profile?.avatar_url) ? (
-              <AvatarImage src={(profile.avatar_gamificado_url || profile.avatar_url)!} className="object-cover" />
-            ) : null}
-            <AvatarFallback className="bg-primary text-primary-foreground text-base sm:text-lg">
-              {(profile?.nome || "C").substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold truncate" style={{ color: "#FFFFFF" }}>{getGreeting()}, {profile?.nome?.split(" ")[0] || "CEO"} 👋</h1>
-            <p className="text-xs sm:text-sm italic mt-0.5 truncate" style={{ color: "#94A3B8" }}>"{frase}"</p>
-            <p className="text-[11px] mt-0.5" style={{ color: "#64748B" }}>
-              {format(now, "EEEE, d 'de' MMMM", { locale: ptBR })} — Semana {weekNum}
-            </p>
-          </div>
-          <div className="hidden sm:flex items-center gap-3 shrink-0">
-            <div className="text-right text-[10px] text-white/40">
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <Clock className="h-3 w-3" /> Atualizado {format(lastUpdate, "HH:mm")}
-              </div>
-              <button onClick={reload} className="flex items-center gap-1 text-white/50 hover:text-white mt-0.5 transition-colors">
-                <RefreshCw className="h-3 w-3" /> Atualizar
-              </button>
-            </div>
-          </div>
-        </div>
-        {/* Period pills — Global Date Filter */}
-        <div className="flex items-center justify-between mt-3 gap-2">
-          <GlobalDateFilterBar variant="header" />
-          <button onClick={reload} className="sm:hidden flex items-center gap-1 text-[10px] text-white/50 hover:text-white">
-            <RefreshCw className="h-3 w-3" /> {format(lastUpdate, "HH:mm")}
+      <PageHeader
+        title="Dashboard CEO"
+        subtitle={`${format(now, "EEEE, d 'de' MMMM", { locale: ptBR })} · Semana ${weekNum}`}
+      />
+      <div className="flex items-center justify-between gap-2">
+        <GlobalDateFilterBar variant="header" />
+        <div className="flex items-center gap-2 text-[10px] text-[#a1a1aa]">
+          <Clock className="h-3 w-3" /> {format(lastUpdate, "HH:mm")}
+          <button onClick={reload} className="hover:text-[#0a0a0a] dark:hover:text-[#fafafa] transition-colors">
+            <RefreshCw className="h-3 w-3" />
           </button>
         </div>
       </div>
