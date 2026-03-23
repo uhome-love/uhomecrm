@@ -628,7 +628,7 @@ export default function CeoDashboard() {
         <div className="flex items-center justify-between mb-3">
           <p className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4F46E5] flex items-center gap-2">
             Rankings
-          </h2>
+          </p>
           <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
             <button
               onClick={() => setRankingView("equipe")}
