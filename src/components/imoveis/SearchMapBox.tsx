@@ -139,7 +139,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [-51.1800, -30.0346],
       zoom: 12,
       dragRotate: false,
