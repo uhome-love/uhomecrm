@@ -239,6 +239,13 @@ export default function ImoveisPage() {
     staleTime: 2 * 60 * 1000,
   });
 
+  const effectiveMapPins = useMemo<MapPinType[]>(() => {
+    if (mapPins.length > 0) return mapPins;
+    return imoveis
+      .map((item) => siteImovelToMapPin(item, filters.bounds))
+      .filter((pin): pin is MapPinType => Boolean(pin));
+  }, [mapPins, imoveis, filters.bounds]);
+
   // ── Active filters count ──
   const hasActiveFilters = !!(
     filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
