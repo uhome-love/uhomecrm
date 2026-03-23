@@ -377,19 +377,40 @@ export default function CeoDashboard() {
 
   return (
     <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
-      {/* ─── HEADER ─── */}
-      <PageHeader
-        title="Dashboard CEO"
-        subtitle={`${format(now, "EEEE, d 'de' MMMM", { locale: ptBR })} · Semana ${weekNum}`}
-      />
-      <div className="flex items-center justify-between gap-2">
-        <GlobalDateFilterBar variant="header" />
-        <div className="flex items-center gap-2 text-[10px] text-[#a1a1aa]">
-          <Clock className="h-3 w-3" /> {format(lastUpdate, "HH:mm")}
-          <button onClick={reload} className="hover:text-[#0a0a0a] dark:hover:text-[#fafafa] transition-colors">
-            <RefreshCw className="h-3 w-3" />
+      {/* ─── GREETING ─── */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-12 w-12 ring-2 ring-[#4F46E5]/20">
+            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+            <AvatarFallback className="bg-[#4F46E5] text-white font-bold text-sm">
+              {(profile?.nome || user?.email || "U").slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h2 className="text-[22px] font-bold tracking-[-0.5px] text-[#0a0a0a] dark:text-white">
+              {getGreeting()}, {profile?.nome?.split(" ")[0] || "CEO"}
+            </h2>
+            <p className="text-[13px] text-[#a1a1aa] mt-0.5 italic">
+              "{frase}"
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-[12px] text-[#a1a1aa]">
+            {format(now, "EEEE, d 'de' MMMM", { locale: ptBR })} · Semana {weekNum}
+          </p>
+          <button
+            onClick={reload}
+            className="text-[12px] text-[#4F46E5] hover:underline mt-1 inline-flex items-center gap-1"
+          >
+            <RefreshCw className="h-3 w-3" /> Atualizar · {format(lastUpdate, "HH:mm")}
           </button>
         </div>
+      </div>
+
+      {/* ─── TABS DE PERÍODO ─── */}
+      <div>
+        <GlobalDateFilterBar variant="header" />
       </div>
 
 
