@@ -273,9 +273,98 @@ export async function fetchSiteImoveis(filters: BuscaFilters = {}): Promise<{ da
   };
 }
 
+/* ── Bairro centroids (Porto Alegre + region) for fallback when lat/lng missing ── */
+const BAIRRO_CENTROIDS: Record<string, [number, number]> = {
+  "Moinhos de Vento": [-30.0270, -51.1990],
+  "Bela Vista": [-30.0450, -51.1900],
+  "Mont'Serrat": [-30.0310, -51.2010],
+  "Petrópolis": [-30.0420, -51.1780],
+  "Três Figueiras": [-30.0310, -51.1700],
+  "Boa Vista": [-30.0200, -51.1790],
+  "Chácara das Pedras": [-30.0360, -51.1600],
+  "Auxiliadora": [-30.0290, -51.1870],
+  "Rio Branco": [-30.0350, -51.2030],
+  "Independência": [-30.0330, -51.2060],
+  "Floresta": [-30.0220, -51.2060],
+  "São João": [-30.0250, -51.2120],
+  "Centro Histórico": [-30.0310, -51.2280],
+  "Centro": [-30.0310, -51.2280],
+  "Cidade Baixa": [-30.0410, -51.2220],
+  "Menino Deus": [-30.0470, -51.2230],
+  "Azenha": [-30.0430, -51.2120],
+  "Santana": [-30.0370, -51.2120],
+  "Farroupilha": [-30.0370, -51.2120],
+  "Partenon": [-30.0560, -51.1730],
+  "Santo Antônio": [-30.0340, -51.1640],
+  "Jardim Botânico": [-30.0510, -51.1750],
+  "Vila Jardim": [-30.0450, -51.1680],
+  "Higienópolis": [-30.0350, -51.1930],
+  "Passo d'Areia": [-30.0100, -51.1640],
+  "São Sebastião": [-30.0120, -51.1540],
+  "Cristo Redentor": [-30.0120, -51.1460],
+  "Vila Ipiranga": [-30.0160, -51.1370],
+  "Jardim Lindóia": [-30.0180, -51.1530],
+  "Jardim São Pedro": [-30.0140, -51.1570],
+  "São Geraldo": [-30.0160, -51.2010],
+  "Navegantes": [-30.0120, -51.2070],
+  "Humaitá": [-30.0060, -51.2010],
+  "Anchieta": [-30.0030, -51.1950],
+  "Sarandi": [-29.9900, -51.1400],
+  "Rubem Berta": [-29.9760, -51.1370],
+  "Jardim Carvalho": [-30.0350, -51.1500],
+  "Vila Nova": [-30.0660, -51.1690],
+  "Camaquã": [-30.0810, -51.2170],
+  "Cavalhada": [-30.0870, -51.2090],
+  "Cristal": [-30.0780, -51.2300],
+  "Tristeza": [-30.1020, -51.2370],
+  "Ipanema": [-30.1130, -51.2400],
+  "Pedra Redonda": [-30.1190, -51.2480],
+  "Espírito Santo": [-30.1100, -51.2280],
+  "Guarujá": [-30.1200, -51.2220],
+  "Nonoai": [-30.0690, -51.2040],
+  "Teresópolis": [-30.0670, -51.1870],
+  "Glória": [-30.0630, -51.1800],
+  "Cascata": [-30.0720, -51.1750],
+  "Medianeira": [-30.0570, -51.1940],
+  "Santa Tereza": [-30.0460, -51.2050],
+  "Praia de Belas": [-30.0460, -51.2350],
+  "Hípica": [-30.1370, -51.2070],
+  "Restinga": [-30.1520, -51.1800],
+  "Belém Velho": [-30.1150, -51.1920],
+  "Belém Novo": [-30.1850, -51.1870],
+  "Lami": [-30.2400, -51.0780],
+  "Vila Assunção": [-30.0970, -51.2470],
+  "Vila Conceição": [-30.0890, -51.2460],
+  "Serraria": [-30.1280, -51.2070],
+  "Aberta dos Morros": [-30.1340, -51.1610],
+  "Lomba do Pinheiro": [-30.0870, -51.1320],
+  "Agronomia": [-30.0740, -51.1320],
+  "Mário Quintana": [-29.9630, -51.0950],
+  "Jardim Sabará": [-30.0430, -51.1450],
+  "Jardim do Salso": [-30.0730, -51.1570],
+  "Santa Cecília": [-30.0290, -51.2080],
+  "Bom Fim": [-30.0360, -51.2110],
+  "Farrapos": [-29.9970, -51.1720],
+  "São José": [-30.0100, -51.1770],
+  "Ponta Grossa": [-30.0790, -51.2470],
+  "Sétimo Céu": [-30.1200, -51.2510],
+  "Jardim Isabel": [-30.0940, -51.1920],
+  "Jardim Itu": [-30.0240, -51.1310],
+  "Coronel Aparício Borges": [-30.0650, -51.1470],
+  "Jardim Floresta": [-29.9980, -51.1640],
+  "Santa Maria Goretti": [-29.9810, -51.1630],
+  "Jardim Leopoldina": [-29.9710, -51.1520],
+  "Vila Jardim Europa": [-30.0570, -51.1530],
+};
+
+// Add jitter to avoid stacking pins at same centroid
+function jitter(val: number, range = 0.003): number {
+  return val + (Math.random() - 0.5) * range;
+}
+
 /**
  * Fetch map pins — uses real lat/lng from Typesense.
- * Filters out entries without valid coordinates.
+ * Falls back to bairro centroids with jitter when coordinates are missing.
  */
 export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]> {
   const { data, error } = await supabase.functions.invoke("typesense-search", {
@@ -294,12 +383,22 @@ export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]
   const pins: MapPin[] = [];
 
   for (const doc of (data?.data || [])) {
-    const lat = Number(doc.latitude);
-    const lng = Number(doc.longitude);
+    let lat = Number(doc.latitude);
+    let lng = Number(doc.longitude);
+    let hasRealCoords = true;
 
-    // Only include pins with valid coordinates in RS/SC region
-    if (!lat || !lng || isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) continue;
-    if (lat < -34 || lat > -27 || lng < -55 || lng > -48) continue;
+    // If no valid coordinates, use bairro centroid with jitter
+    if (!lat || !lng || isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0 || lat < -34 || lat > -27 || lng < -55 || lng > -48) {
+      const bairro = String(doc.bairro || "");
+      const centroid = BAIRRO_CENTROIDS[bairro];
+      if (centroid) {
+        lat = jitter(centroid[0]);
+        lng = jitter(centroid[1]);
+        hasRealCoords = false;
+      } else {
+        continue; // No coords and no known bairro — skip
+      }
+    }
 
     // Client-side bounds filter
     if (bounds && (lat < bounds.lat_min || lat > bounds.lat_max || lng < bounds.lng_min || lng > bounds.lng_max)) continue;
