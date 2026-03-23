@@ -2,11 +2,13 @@
  * /imoveis page — unified search engine mirroring uhome.com.br,
  * adapted for CRM dark theme with broker-specific actions.
  * Layout: cards on the left + map always visible on the right (desktop).
+ * Mobile: list fullscreen + "Ver mapa" button opens fullscreen overlay.
+ * Infinite scroll (load more) instead of pagination per doc spec.
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState, EmptyState } from "@/components/ui/screen-states";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,8 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, Heart, Share2, Link2, Copy,
-  Loader2, ChevronLeft, ChevronRight, X, MapPin, Sparkles,
-  RotateCcw, MessageCircle, Phone, ArrowUpDown, Map as MapIcon,
+  Loader2, X, MapPin, RotateCcw, MessageCircle, Phone,
+  ArrowUpDown, Map as MapIcon, List,
 } from "lucide-react";
 import { FilterPill, PillOption } from "@/components/imoveis/SiteFilterPill";
 import { SitePropertyCard } from "@/components/imoveis/SitePropertyCard";
@@ -36,6 +38,7 @@ import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -85,6 +88,7 @@ function fmtAreaLabel(min: number, max: number): string {
 
 export default function ImoveisPage() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const { filters, setFilter, setFilters, resetFilters } = useImoveisSearchStore();
 
@@ -104,8 +108,10 @@ export default function ImoveisPage() {
 
   // ── View state ──
   const [page, setPage] = useState(0);
+  const [allImoveis, setAllImoveis] = useState<SiteImovel[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [mobileMapOpen, setMobileMapOpen] = useState(false);
 
   // Sort dropdown
   const [sortOpen, setSortOpen] = useState(false);
@@ -180,12 +186,14 @@ export default function ImoveisPage() {
     setFilter("bairro", next.join(","));
     setBairroInput("");
     setPage(0);
+    setAllImoveis([]);
   }, [bairrosSelecionados, setFilter]);
 
   const removeBairro = useCallback((nome: string) => {
     const next = bairrosSelecionados.filter(b => b !== nome);
     setFilter("bairro", next.join(","));
     setPage(0);
+    setAllImoveis([]);
   }, [bairrosSelecionados, setFilter]);
 
   // ── Query filters ──
@@ -210,17 +218,53 @@ export default function ImoveisPage() {
   const debouncedQueryFilters = useDebounce(queryFilters, 300);
 
   // ── Data query ──
-  const { data: result, isLoading, isError, error: fetchError } = useQuery({
+  const { data: result, isLoading, isError, error: fetchError, isFetching } = useQuery({
     queryKey: ["site-imoveis", debouncedQueryFilters],
     queryFn: () => fetchSiteImoveis(debouncedQueryFilters),
     staleTime: 3 * 60 * 1000,
     placeholderData: (prev) => prev,
   });
 
-  const imoveis = result?.data ?? [];
+  const currentPageData = result?.data ?? [];
   const total = result?.count ?? 0;
   const searchTimeMs = result?.search_time_ms;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  // Accumulate items for load-more
+  useEffect(() => {
+    if (currentPageData.length === 0 && page === 0) {
+      setAllImoveis([]);
+      return;
+    }
+    if (page === 0) {
+      setAllImoveis(currentPageData);
+    } else {
+      setAllImoveis(prev => {
+        const existingIds = new Set(prev.map(i => i.id));
+        const newItems = currentPageData.filter(i => !existingIds.has(i.id));
+        return [...prev, ...newItems];
+      });
+    }
+  }, [currentPageData, page]);
+
+  const imoveis = allImoveis;
+  const hasMore = imoveis.length < total;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasMore || isLoading || isFetching) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isFetching) {
+          setPage(p => p + 1);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, isFetching]);
 
   // ── Map pins ──
   const mapPinFilters = useMemo((): BuscaFilters => ({
@@ -285,12 +329,16 @@ export default function ImoveisPage() {
   }, [user, selectedIds]);
 
   // Reset page on filter change
-  useEffect(() => { setPage(0); }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q]);
+  useEffect(() => {
+    setPage(0);
+    setAllImoveis([]);
+  }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q]);
 
   // Clear bounds
   const clearBounds = useCallback(() => {
     setFilter("bounds", null);
     setPage(0);
+    setAllImoveis([]);
   }, [setFilter]);
 
   // ── Helpers ──
@@ -305,6 +353,25 @@ export default function ImoveisPage() {
       ? `, ${bairrosSelecionados.join(", ")}`
       : `, ${bairrosSelecionados.slice(0, 3).join(", ")} +${bairrosSelecionados.length - 3}`
     : "";
+
+  const mapContent = (
+    <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
+      <SearchMapBox
+        pins={effectiveMapPins}
+        onBoundsSearch={(bounds) => { setFilter("bounds", bounds); setPage(0); setAllImoveis([]); }}
+        onBoundsChange={() => {}}
+        onPinClick={async (pin) => {
+          const found = imoveis.find(i => i.id === pin.id);
+          if (found) {
+            openPreview(found);
+            return;
+          }
+          const fetched = pin.slug ? await fetchImovelBySlug(pin.slug) : null;
+          if (fetched) openPreview(fetched);
+        }}
+      />
+    </ErrorBoundary>
+  );
 
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden bg-background">
@@ -323,14 +390,34 @@ export default function ImoveisPage() {
         />
       )}
 
+      {/* ── Mobile fullscreen map overlay ── */}
+      <AnimatePresence>
+        {isMobile && mobileMapOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background flex flex-col"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/95 backdrop-blur-sm">
+              <span className="text-sm font-semibold text-foreground">{total.toLocaleString("pt-BR")} imóveis no mapa</span>
+              <Button variant="ghost" size="sm" onClick={() => setMobileMapOpen(false)} className="gap-1.5">
+                <List className="h-4 w-4" /> Ver lista
+              </Button>
+            </div>
+            <div className="flex-1">{mapContent}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Sticky filter bar ── */}
       <div className="z-30 border-b border-border bg-background">
-        <div className="flex items-center gap-2 overflow-x-auto px-5 py-3 scrollbar-hide">
+        <div className="flex items-center gap-2 overflow-x-auto px-4 sm:px-5 py-3 scrollbar-hide">
           {/* Search input with bairro chips */}
           <div className="relative shrink-0">
             <div
               className="flex flex-wrap items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 transition-colors focus-within:border-primary"
-              style={{ minWidth: 240, maxWidth: 420 }}
+              style={{ minWidth: isMobile ? 180 : 240, maxWidth: isMobile ? 280 : 420 }}
               onClick={() => { setShowBairroDropdown(true); bairroInputRef.current?.focus(); }}
             >
               <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -353,7 +440,7 @@ export default function ImoveisPage() {
                   if (e.key === "Escape") { setShowBairroDropdown(false); bairroInputRef.current?.blur(); }
                 }}
                 placeholder={bairrosSelecionados.length > 0 ? "Adicionar bairro..." : "Bairro, cidade ou tipo..."}
-                className="min-w-[100px] flex-1 border-none bg-transparent py-1 text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
+                className="min-w-[80px] flex-1 border-none bg-transparent py-1 text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
               />
             </div>
             {showBairroDropdown && bairroSuggestions.length > 0 && (
@@ -374,17 +461,17 @@ export default function ImoveisPage() {
           </div>
 
           {/* Cidade */}
-          <FilterPill label={cidadeLabel} value={cidadeLabel} active={!!filters.cidade && filters.cidade !== "Porto Alegre"} onClear={() => { setFilter("cidade", "Porto Alegre"); setPage(0); }}>
-            <PillOption selected={!filters.cidade || filters.cidade === "Porto Alegre"} onClick={() => { setFilter("cidade", "Porto Alegre"); setPage(0); }}>Porto Alegre</PillOption>
+          <FilterPill label={cidadeLabel} value={cidadeLabel} active={!!filters.cidade && filters.cidade !== "Porto Alegre"} onClear={() => { setFilter("cidade", "Porto Alegre"); setPage(0); setAllImoveis([]); }}>
+            <PillOption selected={!filters.cidade || filters.cidade === "Porto Alegre"} onClick={() => { setFilter("cidade", "Porto Alegre"); setPage(0); setAllImoveis([]); }}>Porto Alegre</PillOption>
             {CIDADES_PERMITIDAS.filter(c => c !== "Porto Alegre").map(c => (
-              <PillOption key={c} selected={filters.cidade === c} onClick={() => { setFilter("cidade", filters.cidade === c ? "Porto Alegre" : c); setPage(0); }}>{c}</PillOption>
+              <PillOption key={c} selected={filters.cidade === c} onClick={() => { setFilter("cidade", filters.cidade === c ? "Porto Alegre" : c); setPage(0); setAllImoveis([]); }}>{c}</PillOption>
             ))}
           </FilterPill>
 
           {/* Tipo */}
-          <FilterPill label="Tipo" value={tipoLabel} active={!!filters.tipo} onClear={() => { setFilter("tipo", ""); setPage(0); }}>
+          <FilterPill label="Tipo" value={tipoLabel} active={!!filters.tipo} onClear={() => { setFilter("tipo", ""); setPage(0); setAllImoveis([]); }}>
             {PROPERTY_TYPES.map(t => (
-              <PillOption key={t.value} selected={filters.tipo === t.value} onClick={() => { setFilter("tipo", filters.tipo === t.value ? "" : t.value); setPage(0); }}>{t.label}</PillOption>
+              <PillOption key={t.value} selected={filters.tipo === t.value} onClick={() => { setFilter("tipo", filters.tipo === t.value ? "" : t.value); setPage(0); setAllImoveis([]); }}>{t.label}</PillOption>
             ))}
           </FilterPill>
 
@@ -393,7 +480,7 @@ export default function ImoveisPage() {
             label="Preço"
             value={precoLabel || (filters.precoMin || filters.precoMax ? fmtPrecoLabel(filters.precoMin, filters.precoMax) : undefined)}
             active={!!(filters.precoMin || filters.precoMax)}
-            onClear={() => { setFilter("precoMin", 0); setFilter("precoMax", 0); setPage(0); }}
+            onClear={() => { setFilter("precoMin", 0); setFilter("precoMax", 0); setPage(0); setAllImoveis([]); }}
           >
             {precoRanges.map(r => (
               <PillOption
@@ -404,6 +491,7 @@ export default function ImoveisPage() {
                   setFilter("precoMin", isSel ? 0 : r.min);
                   setFilter("precoMax", isSel ? 0 : r.max);
                   setPage(0);
+                  setAllImoveis([]);
                 }}
               >{r.label}</PillOption>
             ))}
@@ -426,14 +514,14 @@ export default function ImoveisPage() {
           </FilterPill>
 
           {/* Quartos */}
-          <FilterPill label="Quartos" value={filters.quartos ? `${filters.quartos}+ quartos` : undefined} active={!!filters.quartos} onClear={() => { setFilter("quartos", 0); setPage(0); }}>
+          <FilterPill label="Quartos" value={filters.quartos ? `${filters.quartos}+ quartos` : undefined} active={!!filters.quartos} onClear={() => { setFilter("quartos", 0); setPage(0); setAllImoveis([]); }}>
             {quartoOptions.map(q => (
-              <PillOption key={q} selected={filters.quartos === q} onClick={() => { setFilter("quartos", filters.quartos === q ? 0 : q); setPage(0); }}>{q}+ quartos</PillOption>
+              <PillOption key={q} selected={filters.quartos === q} onClick={() => { setFilter("quartos", filters.quartos === q ? 0 : q); setPage(0); setAllImoveis([]); }}>{q}+ quartos</PillOption>
             ))}
           </FilterPill>
 
           {/* Área */}
-          <FilterPill label="Área" value={areaLabel} active={!!(filters.areaMin || filters.areaMax)} onClear={() => { setFilter("areaMin", 0); setFilter("areaMax", 0); setPage(0); }}>
+          <FilterPill label="Área" value={areaLabel} active={!!(filters.areaMin || filters.areaMax)} onClear={() => { setFilter("areaMin", 0); setFilter("areaMax", 0); setPage(0); setAllImoveis([]); }}>
             {areaRanges.map(r => (
               <PillOption
                 key={r.label}
@@ -443,22 +531,23 @@ export default function ImoveisPage() {
                   setFilter("areaMin", isSel ? 0 : r.min);
                   setFilter("areaMax", isSel ? 0 : r.max);
                   setPage(0);
+                  setAllImoveis([]);
                 }}
               >{r.label}</PillOption>
             ))}
           </FilterPill>
 
           {/* Vagas */}
-          <FilterPill label="Vagas" value={filters.vagas ? `${filters.vagas}+ vagas` : undefined} active={!!filters.vagas} onClear={() => { setFilter("vagas", 0); setPage(0); }}>
+          <FilterPill label="Vagas" value={filters.vagas ? `${filters.vagas}+ vagas` : undefined} active={!!filters.vagas} onClear={() => { setFilter("vagas", 0); setPage(0); setAllImoveis([]); }}>
             {[1, 2, 3].map(v => (
-              <PillOption key={v} selected={filters.vagas === v} onClick={() => { setFilter("vagas", filters.vagas === v ? 0 : v); setPage(0); }}>{v}+ vagas</PillOption>
+              <PillOption key={v} selected={filters.vagas === v} onClick={() => { setFilter("vagas", filters.vagas === v ? 0 : v); setPage(0); setAllImoveis([]); }}>{v}+ vagas</PillOption>
             ))}
           </FilterPill>
 
           {/* Divider + actions */}
           <div className="border-l border-border/50 pl-2 ml-1 flex items-center gap-1.5 shrink-0">
             {hasActiveFilters && (
-              <button onClick={() => { resetFilters(); setPage(0); }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-border bg-card text-muted-foreground hover:text-foreground transition-all">
+              <button onClick={() => { resetFilters(); setPage(0); setAllImoveis([]); }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-border bg-card text-muted-foreground hover:text-foreground transition-all">
                 <RotateCcw className="h-3 w-3" /> Limpar
               </button>
             )}
@@ -471,9 +560,9 @@ export default function ImoveisPage() {
       </div>
 
       {/* ── Subheader: counter + bounds badge + sort ── */}
-      <div className={`relative flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-background px-5 py-3 ${sortOpen ? "z-30" : "z-0"}`}>
+      <div className={`relative flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-background px-4 sm:px-5 py-3 ${sortOpen ? "z-30" : "z-0"}`}>
         <div className="flex items-center gap-2">
-          {isLoading ? <Skeleton className="h-7 w-40" /> : (
+          {isLoading && page === 0 ? <Skeleton className="h-7 w-40" /> : (
             <div>
              <div className="text-lg font-extrabold leading-tight text-foreground">
                  {total.toLocaleString("pt-BR")} imóveis
@@ -533,7 +622,7 @@ export default function ImoveisPage() {
 
       {/* ── Vitrine bar ── */}
       <AnimatePresence>
-        {selectMode && selectedIds.size > 0 && (
+        {selectMode && selectedIds.size > 0 && !isMobile && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-border/30">
             <div className="px-5 py-2.5">
               <Card className="p-3 flex items-center justify-between bg-primary/5 border-primary/20 flex-wrap gap-2">
@@ -569,11 +658,11 @@ export default function ImoveisPage() {
               description={fetchError instanceof Error ? fetchError.message : "Erro desconhecido"}
               action={{ label: "Tentar novamente", onClick: () => {} }}
             />
-          ) : isLoading ? (
+          ) : isLoading && page === 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="space-y-2">
-                  <Skeleton className="aspect-[4/3] w-full rounded-xl" />
+                  <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
                   <Skeleton className="h-4 w-2/3" />
                   <Skeleton className="h-3 w-full" />
                   <Skeleton className="h-4 w-1/3" />
@@ -585,11 +674,11 @@ export default function ImoveisPage() {
               title="Nenhum imóvel encontrado"
               description="Tente ajustar seus filtros ou termo de busca."
               icon={<Search className="h-10 w-10 text-muted-foreground/30" />}
-              action={hasActiveFilters ? { label: "Limpar filtros", onClick: () => { resetFilters(); setPage(0); } } : undefined}
+              action={hasActiveFilters ? { label: "Limpar filtros", onClick: () => { resetFilters(); setPage(0); setAllImoveis([]); } } : undefined}
             />
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
                 {imoveis.map((item, idx) => (
                   <SitePropertyCard
                     key={item.id}
@@ -607,25 +696,29 @@ export default function ImoveisPage() {
                 ))}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 pt-6 pb-4">
-                  <button
-                    disabled={page <= 0 || isLoading}
-                    onClick={() => setPage(p => p - 1)}
-                    className="rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-foreground transition-all hover:border-foreground active:scale-[0.97] disabled:opacity-40"
-                  >
-                    ← Anterior
-                  </button>
-                  <span className="text-sm text-muted-foreground font-medium tabular-nums">{page + 1} de {totalPages}</span>
-                  <button
-                    disabled={page >= totalPages - 1 || isLoading}
-                    onClick={() => setPage(p => p + 1)}
-                    className="rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-foreground transition-all hover:border-foreground active:scale-[0.97] disabled:opacity-40"
-                  >
-                    Próxima →
-                  </button>
+              {/* Load more / infinite scroll trigger */}
+              {hasMore && (
+                <div ref={loadMoreRef} className="flex items-center justify-center pt-8 pb-4">
+                  {isFetching ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando mais imóveis...
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setPage(p => p + 1)}
+                      className="rounded-full border border-border px-8 py-3 text-sm font-semibold text-foreground transition-all hover:border-foreground hover:shadow-md active:scale-[0.97]"
+                    >
+                      Ver mais imóveis
+                    </button>
+                  )}
                 </div>
+              )}
+
+              {!hasMore && imoveis.length > 0 && (
+                <p className="text-center text-xs text-muted-foreground pt-6 pb-4">
+                  Mostrando todos os {imoveis.length.toLocaleString("pt-BR")} imóveis
+                </p>
               )}
             </>
           )}
@@ -633,49 +726,46 @@ export default function ImoveisPage() {
 
         {/* Map — desktop always visible */}
         <div className="relative hidden w-[40%] shrink-0 border-l border-border lg:block">
-          <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
-            <SearchMapBox
-              pins={effectiveMapPins}
-              onBoundsSearch={(bounds) => { setFilter("bounds", bounds); setPage(0); }}
-              onBoundsChange={() => {}}
-              onPinClick={async (pin) => {
-                const found = imoveis.find(i => i.id === pin.id);
-                if (found) {
-                  openPreview(found);
-                  return;
-                }
-
-                const fetched = pin.slug ? await fetchImovelBySlug(pin.slug) : null;
-                if (fetched) openPreview(fetched);
-              }}
-            />
-          </ErrorBoundary>
+          {mapContent}
         </div>
       </div>
 
-      {/* ── Mobile vitrine bar ── */}
-      {selectMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-50 md:hidden safe-bottom">
-          <div className="bg-background/95 backdrop-blur-md border-t border-border/60 px-4 py-3 flex items-center gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
+      {/* ── Mobile bottom bar ── */}
+      {isMobile && !mobileMapOpen && (
+        <div className="fixed bottom-0 inset-x-0 z-40 safe-bottom">
+          <div
+            className="bg-background/95 backdrop-blur-md border-t border-border px-4 py-3 flex items-center gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
             style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
           >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">{selectedIds.size} imóve{selectedIds.size === 1 ? "l" : "is"}</p>
-            </div>
-            {vitrineLink ? (
+            {selectMode && selectedIds.size > 0 ? (
               <>
-                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }} className="h-9 px-3 gap-1.5 rounded-lg text-xs font-semibold shrink-0">
-                  <Copy className="h-3.5 w-3.5" /> Copiar
-                </Button>
-                <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer">
-                  <Button size="sm" className="h-9 px-3 gap-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
-                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground truncate">{selectedIds.size} imóve{selectedIds.size === 1 ? "l" : "is"}</p>
+                </div>
+                {vitrineLink ? (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }} className="h-9 px-3 gap-1.5 rounded-lg text-xs font-semibold shrink-0">
+                      <Copy className="h-3.5 w-3.5" /> Copiar
+                    </Button>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer">
+                      <Button size="sm" className="h-9 px-3 gap-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
+                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                      </Button>
+                    </a>
+                  </>
+                ) : (
+                  <Button size="sm" disabled={creatingVitrine} onClick={createVitrine} className="h-9 px-4 gap-1.5 rounded-lg text-xs font-bold shrink-0">
+                    {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />} Gerar Vitrine
                   </Button>
-                </a>
+                )}
               </>
             ) : (
-              <Button size="sm" disabled={creatingVitrine} onClick={createVitrine} className="h-9 px-4 gap-1.5 rounded-lg text-xs font-bold shrink-0">
-                {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />} Gerar Vitrine
+              <Button
+                onClick={() => setMobileMapOpen(true)}
+                className="w-full h-11 gap-2 rounded-xl font-semibold shadow-lg"
+              >
+                <MapIcon className="h-4 w-4" />
+                Ver mapa · {total.toLocaleString("pt-BR")} imóveis
               </Button>
             )}
           </div>

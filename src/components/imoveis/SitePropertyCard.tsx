@@ -54,6 +54,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
   const [hovering, setHovering] = useState(false);
   const [fotoAtiva, setFotoAtiva] = useState(0);
   const [lazyFotos, setLazyFotos] = useState<string[] | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const fotosLoadedRef = useRef(false);
 
   const baseFoto = fotoPrincipal(imovel);
@@ -70,7 +71,6 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
   ].filter(Boolean);
   const stats = statsArr.join(" · ");
   const tipoCapitalized = imovel.tipo.charAt(0).toUpperCase() + imovel.tipo.slice(1);
-  // Doc spec: "{Tipo} {N} quartos — {Bairro}"
   const tituloCard = quartos > 0
     ? `${tipoCapitalized} ${quartos} quarto${quartos > 1 ? "s" : ""} — ${imovel.bairro}`
     : `${tipoCapitalized} para Venda — ${imovel.bairro}`;
@@ -80,7 +80,6 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
   const handleMouseEnter = useCallback(() => {
     setHovering(true);
     onHover?.(imovel.id);
-    // Use fotos already available from Typesense
     if (!fotosLoadedRef.current && imovel.fotos_full?.length > 1) {
       fotosLoadedRef.current = true;
       setLazyFotos(imovel.fotos_full.slice(0, 8));
@@ -111,26 +110,34 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.15) }}
+      transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.12) }}
       className={cn(
         "relative cursor-pointer select-none group",
-        highlighted && "ring-2 ring-primary rounded-xl",
-        selectMode && isSelected && "ring-2 ring-primary rounded-xl",
+        highlighted && "ring-2 ring-primary rounded-2xl",
+        selectMode && isSelected && "ring-2 ring-primary rounded-2xl",
       )}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={() => onPreview?.(imovel)}
     >
       {/* Photo */}
-      <div className="relative w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "4/3" }}>
+      <div className="relative w-full overflow-hidden rounded-2xl bg-muted" style={{ aspectRatio: "4/3" }}>
+        {/* Skeleton placeholder */}
+        {!imgLoaded && (
+          <div className="absolute inset-0 animate-pulse bg-muted" />
+        )}
         {fotos.length > 0 ? (
           <img
             src={fotos[fotoAtiva]}
             alt={`${tipoCapitalized} ${imovel.bairro}`}
             loading={index < 6 ? "eager" : "lazy"}
             decoding="async"
-            className="h-full w-full object-cover transition-transform duration-500"
-            style={{ transform: hovering ? "scale(1.03)" : "scale(1)" }}
+            onLoad={() => setImgLoaded(true)}
+            className={cn(
+              "h-full w-full object-cover transition-all duration-500",
+              imgLoaded ? "opacity-100" : "opacity-0",
+            )}
+            style={{ transform: hovering ? "scale(1.04)" : "scale(1)" }}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-muted">
@@ -138,9 +145,9 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
           </div>
         )}
 
-        {/* Badge — matches site exactly */}
+        {/* Badge */}
         {badge && (
-          <span className={`absolute left-2.5 top-2.5 z-10 rounded-md px-2.5 py-1 text-xs ${badgeClasses[badge.style]}`}>
+          <span className={`absolute left-3 top-3 z-10 rounded-lg px-2.5 py-1 text-[11px] tracking-wide ${badgeClasses[badge.style]}`}>
             {badge.label}
           </span>
         )}
@@ -150,7 +157,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
           <button
             onClick={(e) => { e.stopPropagation(); onToggleSelect?.(imovel.id); }}
             className={cn(
-              "absolute top-2.5 left-2.5 z-20 h-6 w-6 rounded-md border-2 flex items-center justify-center transition-all",
+              "absolute top-3 left-3 z-20 h-6 w-6 rounded-md border-2 flex items-center justify-center transition-all",
               isSelected
                 ? "bg-primary border-primary text-primary-foreground"
                 : "bg-background/70 border-border backdrop-blur-sm"
@@ -160,10 +167,10 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
           </button>
         )}
 
-        {/* Heart — same as site */}
+        {/* Heart */}
         <button
           onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(imovel.id); }}
-          className="absolute right-3 top-3 z-10"
+          className="absolute right-3 top-3 z-10 transition-transform active:scale-90"
         >
           <Heart
             className="h-6 w-6 drop-shadow-md transition-colors"
@@ -173,27 +180,30 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
           />
         </button>
 
-        {/* Nav arrows on hover — same as site */}
+        {/* Nav arrows on hover */}
         {hovering && fotos.length > 1 && (
           <>
             {fotoAtiva > 0 && (
               <button
                 onClick={(e) => { e.stopPropagation(); setFotoAtiva(i => i - 1); }}
-                className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm shadow transition-transform hover:scale-105 active:scale-95"
+                className="absolute left-2.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm shadow-md transition-all hover:scale-110 active:scale-95"
               >‹</button>
             )}
             {fotoAtiva < fotos.length - 1 && (
               <button
                 onClick={(e) => { e.stopPropagation(); setFotoAtiva(i => i + 1); }}
-                className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm shadow transition-transform hover:scale-105 active:scale-95"
+                className="absolute right-2.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm shadow-md transition-all hover:scale-110 active:scale-95"
               >›</button>
             )}
           </>
         )}
 
-        {/* Dots — same as site */}
-        {hovering && fotos.length > 1 && (
-          <div className="absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 gap-1">
+        {/* Dots */}
+        {fotos.length > 1 && (
+          <div className={cn(
+            "absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 gap-1 transition-opacity duration-200",
+            hovering ? "opacity-100" : "opacity-60"
+          )}>
             {fotos.slice(0, 5).map((_, i) => (
               <div
                 key={i}
@@ -209,13 +219,13 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
         )}
       </div>
 
-      {/* Text — matches site layout exactly */}
-      <div className="px-0.5 pt-2.5">
+      {/* Text */}
+      <div className="px-0.5 pt-2.5 pb-1">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate text-[13px] font-semibold text-foreground">
+          <span className="truncate text-[13px] font-semibold text-foreground leading-snug">
             {tituloCard}
           </span>
-          {/* Broker action buttons — visible on hover */}
+          {/* Broker action buttons */}
           <div
             className={cn(
               "flex items-center gap-0.5 shrink-0 transition-opacity",
@@ -258,7 +268,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
           <p className="mt-0.5 truncate text-xs text-muted-foreground">{stats}</p>
         )}
 
-        <p className="mt-1 text-sm font-bold text-foreground">{price}</p>
+        <p className="mt-1 text-sm font-bold text-foreground tracking-tight">{price}</p>
 
         {(imovel.preco_condominio ?? 0) > 0 && (
           <p className="mt-0.5 text-[11px] text-muted-foreground">
