@@ -119,7 +119,7 @@ export function SearchMapBox({ pins = [], hoveredId, onPinHover, onBoundsSearch,
         id: "clusters", type: "circle", source: "imoveis",
         filter: ["has", "point_count"],
         paint: {
-          "circle-color": "hsl(var(--primary))",
+          "circle-color": "#4F46E5",
           "circle-radius": ["step", ["get", "point_count"], 20, 10, 26, 50, 32, 200, 38],
           "circle-stroke-width": 2, "circle-stroke-color": "#FFFFFF", "circle-opacity": 0.92,
         },
