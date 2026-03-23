@@ -36,7 +36,6 @@ export interface SiteImovel {
   longitude: number | null;
   titulo: string | null;
   endereco: string | null;
-  // raw Typesense doc for forward compat
   _raw?: Record<string, unknown>;
 }
 
@@ -47,6 +46,7 @@ export interface MapPin {
   latitude: number;
   longitude: number;
   bairro: string;
+  titulo: string;
   tipo: string;
   quartos: number | null;
   area_total: number | null;
@@ -157,7 +157,6 @@ function mapDoc(doc: any): SiteImovel {
 function buildFilterBy(filters: BuscaFilters): string {
   const parts: string[] = [];
 
-  // Default to venda
   const contrato = filters.contrato || "venda";
   if (contrato === "locacao") {
     parts.push("valor_locacao:>0");
@@ -165,7 +164,6 @@ function buildFilterBy(filters: BuscaFilters): string {
     parts.push("valor_venda:>0");
   }
 
-  // Bairros
   const bairros = filters.bairros?.length
     ? filters.bairros
     : filters.bairro
@@ -177,32 +175,23 @@ function buildFilterBy(filters: BuscaFilters): string {
     parts.push(`bairro:[${bairros.join(",")}]`);
   }
 
-  // Tipo
   if (filters.tipo) {
     const tipos = filters.tipo.split(",").map(s => s.trim()).filter(Boolean);
     if (tipos.length === 1) parts.push(`tipo:=${tipos[0]}`);
     else if (tipos.length > 1) parts.push(`tipo:[${tipos.join(",")}]`);
   }
 
-  // Dormitorios
   if (filters.quartos) parts.push(`dormitorios:>=${filters.quartos}`);
-
-  // Vagas
   if (filters.vagas) parts.push(`vagas:>=${filters.vagas}`);
-
-  // Banheiros
   if (filters.banheiros) parts.push(`banheiros:>=${filters.banheiros}`);
 
-  // Price range
   const priceField = contrato === "locacao" ? "valor_locacao" : "valor_venda";
   if (filters.precoMin) parts.push(`${priceField}:>=${filters.precoMin}`);
   if (filters.precoMax) parts.push(`${priceField}:<=${filters.precoMax}`);
 
-  // Area range
   if (filters.areaMin) parts.push(`area_privativa:>=${filters.areaMin}`);
   if (filters.areaMax) parts.push(`area_privativa:<=${filters.areaMax}`);
 
-  // Cidade
   const cidades = filters.cidades?.length
     ? filters.cidades
     : filters.cidade
@@ -214,7 +203,6 @@ function buildFilterBy(filters: BuscaFilters): string {
     parts.push(`cidade:[\`${cidades.join("`,`")}\`]`);
   }
 
-  // Situação / status
   if (filters.situacao?.length) {
     if (filters.situacao.length === 1) {
       parts.push(`status:=\`${filters.situacao[0]}\``);
@@ -223,7 +211,6 @@ function buildFilterBy(filters: BuscaFilters): string {
     }
   }
 
-  // Construtora
   if (filters.construtora?.length) {
     if (filters.construtora.length === 1) {
       parts.push(`construtora:=\`${filters.construtora[0]}\``);
@@ -232,7 +219,6 @@ function buildFilterBy(filters: BuscaFilters): string {
     }
   }
 
-  // Empreendimento
   if (filters.empreendimento?.length) {
     if (filters.empreendimento.length === 1) {
       parts.push(`empreendimento:=\`${filters.empreendimento[0]}\``);
@@ -240,9 +226,6 @@ function buildFilterBy(filters: BuscaFilters): string {
       parts.push(`empreendimento:[\`${filters.empreendimento.join("`,`")}\`]`);
     }
   }
-
-  // Geo bounds — filter client-side since Typesense schema has no 'location' geopoint field
-  // (bounds filtering is handled after fetching results)
 
   return parts.join(" && ");
 }
@@ -290,87 +273,40 @@ export async function fetchSiteImoveis(filters: BuscaFilters = {}): Promise<{ da
   };
 }
 
+/**
+ * Fetch map pins — uses real lat/lng from Typesense.
+ * Filters out entries without valid coordinates.
+ */
 export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]> {
-  // Typesense doesn't have lat/lng fields — use listing data coords from imoveis that have them
-  // Fetch a larger set and extract those with coordinates from the _raw data
-  const filtersWithoutBounds = { ...filters, bounds: null };
   const { data, error } = await supabase.functions.invoke("typesense-search", {
     body: {
       q: filters.q || "*",
       per_page: 250,
       page: 1,
-      filter_by: buildFilterBy(filtersWithoutBounds),
+      filter_by: buildFilterBy(filters),
       sort_by: buildSortBy(filters.ordem, filters.contrato),
     },
   });
 
   if (error) return [];
 
-  // Since Typesense doesn't have lat/lng, we generate approximate pins from bairro centroids
-  // This provides map visualization even without exact coordinates
-  const BAIRRO_COORDS: Record<string, [number, number]> = {
-    "Moinhos de Vento": [-30.0270, -51.1990],
-    "Bela Vista": [-30.0410, -51.1870],
-    "Petrópolis": [-30.0380, -51.1750],
-    "Mont'Serrat": [-30.0280, -51.1910],
-    "Auxiliadora": [-30.0320, -51.1870],
-    "Boa Vista": [-30.0230, -51.1800],
-    "Três Figueiras": [-30.0190, -51.1680],
-    "Chácara das Pedras": [-30.0280, -51.1620],
-    "Jardim Europa": [-30.0550, -51.1730],
-    "Cristal": [-30.0710, -51.2340],
-    "Menino Deus": [-30.0540, -51.2190],
-    "Centro Histórico": [-30.0300, -51.2290],
-    "Cidade Baixa": [-30.0440, -51.2220],
-    "Rio Branco": [-30.0320, -51.2080],
-    "Independência": [-30.0360, -51.2010],
-    "Santana": [-30.0330, -51.2170],
-    "Floresta": [-30.0260, -51.2110],
-    "Higienópolis": [-30.0360, -51.1930],
-    "Passo d'Areia": [-30.0050, -51.1750],
-    "Vila Ipiranga": [-30.0110, -51.1440],
-    "Jardim Botânico": [-30.0520, -51.1790],
-    "Tristeza": [-30.1100, -51.2370],
-    "Ipanema": [-30.1270, -51.2310],
-    "Cavalhada": [-30.0990, -51.2200],
-    "Camaquã": [-30.0860, -51.2280],
-    "Partenon": [-30.0580, -51.1590],
-    "Teresópolis": [-30.0750, -51.1870],
-    "Vila Jardim": [-30.0150, -51.1570],
-    "Praia de Belas": [-30.0470, -51.2300],
-    "São João": [-30.0130, -51.1810],
-    "Vila Nova": [-30.0880, -51.2080],
-    "Medianeira": [-30.0590, -51.1680],
-    "Glória": [-30.0500, -51.1850],
-    "Santa Cecília": [-30.0140, -51.1870],
-    "Agronomia": [-30.0680, -51.1360],
-    "Nonoai": [-30.0830, -51.2030],
-    "Vila Assunção": [-30.1020, -51.2400],
-    "Sarandi": [-29.9890, -51.1310],
-    "Humaitá": [-30.0020, -51.1930],
-    "Navegantes": [-30.0090, -51.2060],
-    "São Geraldo": [-30.0100, -51.2010],
-    "Farroupilha": [-30.0310, -51.2160],
-  };
-  
   const bounds = filters.bounds;
   const pins: MapPin[] = [];
-  const bairroCounts: Record<string, number> = {};
 
   for (const doc of (data?.data || [])) {
-    const bairro = String(doc.bairro || "");
-    const coords = BAIRRO_COORDS[bairro];
-    if (!coords) continue;
-    
-    // Offset pins slightly so they don't stack
-    const count = bairroCounts[bairro] || 0;
-    bairroCounts[bairro] = count + 1;
-    const jitterLat = (Math.random() - 0.5) * 0.004;
-    const jitterLng = (Math.random() - 0.5) * 0.004;
-    const lat = coords[0] + jitterLat;
-    const lng = coords[1] + jitterLng;
-    
+    const lat = Number(doc.latitude);
+    const lng = Number(doc.longitude);
+
+    // Only include pins with valid coordinates in RS/SC region
+    if (!lat || !lng || isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) continue;
+    if (lat < -34 || lat > -27 || lng < -55 || lng > -48) continue;
+
+    // Client-side bounds filter
     if (bounds && (lat < bounds.lat_min || lat > bounds.lat_max || lng < bounds.lng_min || lng > bounds.lng_max)) continue;
+
+    const tipo = String(doc.tipo || "imóvel");
+    const bairro = String(doc.bairro || "");
+    const quartos = doc.dormitorios != null ? Number(doc.dormitorios) : null;
 
     pins.push({
       id: String(doc.id || doc.codigo || ""),
@@ -379,13 +315,14 @@ export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]
       latitude: lat,
       longitude: lng,
       bairro,
-      tipo: String(doc.tipo || ""),
-      quartos: doc.dormitorios != null ? Number(doc.dormitorios) : null,
+      titulo: tituloLimpo({ tipo, quartos, bairro }),
+      tipo,
+      quartos,
       area_total: doc.area_privativa != null ? Number(doc.area_privativa) : null,
       foto_principal: (doc.fotos as string[])?.[0] || String(doc.foto_principal || ""),
     });
   }
-  
+
   return pins;
 }
 
