@@ -638,9 +638,15 @@ export default function ImoveisPage() {
               pins={effectiveMapPins}
               onBoundsSearch={(bounds) => { setFilter("bounds", bounds); setPage(0); }}
               onBoundsChange={() => {}}
-              onPinClick={(pin) => {
+              onPinClick={async (pin) => {
                 const found = imoveis.find(i => i.id === pin.id);
-                if (found) openPreview(found);
+                if (found) {
+                  openPreview(found);
+                  return;
+                }
+
+                const fetched = pin.slug ? await fetchImovelBySlug(pin.slug) : null;
+                if (fetched) openPreview(fetched);
               }}
             />
           </ErrorBoundary>
