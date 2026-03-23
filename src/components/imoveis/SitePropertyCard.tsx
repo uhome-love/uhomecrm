@@ -13,7 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+// supabase import removed — photos come from Typesense directly
 
 interface Props {
   imovel: SiteImovel;
