@@ -291,15 +291,19 @@ export async function fetchSiteImoveis(filters: BuscaFilters = {}): Promise<{ da
   const offset = filters.offset || 0;
   const page = Math.floor(offset / limit) + 1;
 
+  const payload = {
+    q: filters.q || "*",
+    per_page: limit,
+    page,
+    filter_by: buildFilterBy(filters),
+    sort_by: buildSortBy(filters.ordem, filters.contrato),
+  };
+
   const { data, error } = await supabase.functions.invoke("typesense-search", {
-    body: {
-      q: filters.q || "*",
-      per_page: limit,
-      page,
-      filter_by: buildFilterBy(filters),
-      sort_by: buildSortBy(filters.ordem, filters.contrato),
-    },
+    body: payload,
   });
+
+  console.log("Query result:", { payload, data, error });
 
   if (error) throw new Error(error.message || "Search failed");
   if (data?.error) throw new Error(data.error);
