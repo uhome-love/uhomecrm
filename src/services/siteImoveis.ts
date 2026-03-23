@@ -303,7 +303,7 @@ export async function fetchSiteImoveis(filters: BuscaFilters = {}): Promise<{ da
     body: payload,
   });
 
-  console.log("Query result:", { payload, data, error });
+  
 
   if (error) throw new Error(error.message || "Search failed");
   if (data?.error) throw new Error(data.error);
