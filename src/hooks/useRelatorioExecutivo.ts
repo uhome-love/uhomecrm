@@ -271,11 +271,11 @@ export function useRelatorioExecutivo(period: PeriodRange) {
       prevVisRealQ = applyScope(prevVisRealQ, "corretor_id");
 
       // Negócios criados (by created_at)
-      let negQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, created_at, data_assinatura").gte("created_at", s).lte("created_at", e).limit(10000);
+      let negQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, created_at, data_assinatura, lead_id").gte("created_at", s).lte("created_at", e).limit(10000);
       let prevNegQ = supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, data_assinatura").gte("created_at", ps).lte("created_at", pe).limit(10000);
 
       // Negócios assinados (by data_assinatura within period)
-      let negAssinadosQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, data_assinatura")
+      let negAssinadosQ = supabase.from("negocios").select("id, corretor_id, auth_user_id, vgv_estimado, vgv_final, fase, data_assinatura, lead_id")
         .in("fase", ["assinado", "vendido"])
         .gte("data_assinatura", dStart).lte("data_assinatura", dEnd).limit(10000);
       let prevNegAssinadosQ = supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, data_assinatura")
