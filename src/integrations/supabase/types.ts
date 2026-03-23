@@ -471,6 +471,45 @@ export type Database = {
           },
         ]
       }
+      alertas_busca: {
+        Row: {
+          ativo: boolean
+          canais: Json
+          corretor_id: string
+          created_at: string
+          filtros: Json
+          frequencia: string
+          id: string
+          nome: string
+          query_ia: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          canais?: Json
+          corretor_id: string
+          created_at?: string
+          filtros?: Json
+          frequencia?: string
+          id?: string
+          nome: string
+          query_ia?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          canais?: Json
+          corretor_id?: string
+          created_at?: string
+          filtros?: Json
+          frequencia?: string
+          id?: string
+          nome?: string
+          query_ia?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       anuncio_materiais: {
         Row: {
           created_at: string
