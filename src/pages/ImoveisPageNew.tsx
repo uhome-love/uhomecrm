@@ -415,6 +415,7 @@ export default function ImoveisPage() {
           {isLoading ? <Skeleton className="h-4 w-32" /> : (
             <span className="text-sm font-medium text-foreground">
               {total.toLocaleString()} imóveis
+              {searchTimeMs != null && <span className="text-muted-foreground font-normal ml-1.5">· {searchTimeMs}ms</span>}
             </span>
           )}
         </div>

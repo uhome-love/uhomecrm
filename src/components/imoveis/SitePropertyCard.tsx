@@ -58,24 +58,15 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
 
   const handleMouseEnter = useCallback(() => {
     setHovering(true);
-    if (!fotosLoadedRef.current) {
+    // Use fotos already available from Typesense (fotos_full for high-res)
+    if (!fotosLoadedRef.current && imovel.fotos_full?.length > 1) {
       fotosLoadedRef.current = true;
-      // Lazy-load full photo set from site proxy
-      supabase.functions.invoke("site-proxy", {
-        body: { action: "detail", slug: imovel.slug },
-      }).then(({ data }) => {
-        const fotos = data?.data?.fotos;
-        if (fotos && Array.isArray(fotos) && fotos.length > 0) {
-          const urls = fotos
-            .sort((a: { ordem: number }, b: { ordem: number }) => (a.ordem ?? 0) - (b.ordem ?? 0))
-            .map((f: { url?: string }) => f?.url)
-            .filter(Boolean)
-            .slice(0, 8) as string[];
-          if (urls.length > 0) setLazyFotos(urls);
-        }
-      });
+      setLazyFotos(imovel.fotos_full.slice(0, 8));
+    } else if (!fotosLoadedRef.current && imovel.fotos?.length > 1) {
+      fotosLoadedRef.current = true;
+      setLazyFotos(imovel.fotos.slice(0, 8));
     }
-  }, [imovel.slug]);
+  }, [imovel.fotos, imovel.fotos_full]);
 
   const handleMouseLeave = useCallback(() => {
     setHovering(false);
