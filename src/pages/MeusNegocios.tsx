@@ -260,7 +260,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* Row 4: VGV with quick-fill — show half if partnership */}
           <div className="flex items-center gap-2">
             {negocio.vgv_estimado ? (
-              <span className="text-[14px] font-extrabold flex items-center gap-1" style={{ color: faseInfo?.cor || "#22C55E" }}>
+              <span className="text-[14px] font-bold text-[#10b981] flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5" />
                 {parceriaInfo?.isParceria
                   ? `${formatVGV(negocio.vgv_estimado / 2)} (50%)`
@@ -272,7 +272,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                 onClick={(e) => { e.stopPropagation(); setQuickVgvId(negocio.id); setQuickVgvValue(""); }}
                 className="text-[13px] text-amber-400/90 font-bold hover:text-amber-300 transition-colors flex items-center gap-1"
               >
-                ⚠️ Preencher VGV
+                Preencher VGV
               </button>
             )}
           </div>
