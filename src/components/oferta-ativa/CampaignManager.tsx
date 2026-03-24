@@ -568,7 +568,7 @@ export default function CampaignManager() {
               className="bg-blue-600 hover:bg-blue-700"
             >
               {assigningCampanha ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
-              Agrupar
+              Unificar
             </Button>
           </DialogFooter>
         </DialogContent>
