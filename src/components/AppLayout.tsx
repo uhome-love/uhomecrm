@@ -165,7 +165,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               className={cn(
                 "h-14 flex items-center justify-between sticky top-0 z-50 px-4",
                 theme === "dark"
-                  ? "bg-[#0a0a0d] border-b border-white/[0.05]"
+                  ? "bg-[#0b1222] border-b border-white/[0.05]"
                   : "bg-[#f0f0f5] border-b border-[#e4e4e9]"
               )}
             >
