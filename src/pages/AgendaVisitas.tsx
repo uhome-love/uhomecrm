@@ -420,7 +420,11 @@ export default function AgendaVisitas() {
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-8">Carregando...</p>
           ) : teamVisitas.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma visita do time neste período.</p>
+            <EmptyState
+              icon={<CalendarDays size={22} strokeWidth={1.5} />}
+              title="Nenhuma visita do time"
+              description="As visitas agendadas pelo time aparecerão aqui"
+            />
           ) : (
             <VisitasList visitas={teamVisitas} onUpdateStatus={handleUpdateStatus} onEdit={handleEdit} onDelete={deleteVisita} showCorretor showTeam={false} mode="all" />
           )}
