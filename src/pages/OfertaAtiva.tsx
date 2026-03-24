@@ -35,7 +35,7 @@ export default function OfertaAtiva() {
   // Gestor only sees Live + Ranking
   if (!isAdmin) {
     return (
-      <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
+      <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
         <PageHeader
           title="Oferta ativa"
           subtitle="Acompanhe a performance dos seus corretores em tempo real"
@@ -51,7 +51,7 @@ export default function OfertaAtiva() {
   }
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4">
       <PageHeader
         title="Oferta ativa"
         subtitle="Importação de listas, campanhas e templates de scripts"

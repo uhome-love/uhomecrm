@@ -192,7 +192,7 @@ export default function ImoveisPage() {
 
   // ── Render ──
   return (
-    <div className="min-h-screen bg-[#f0f0f5] dark:bg-[#0f0f12] flex flex-col">
+    <div className="min-h-screen bg-[#f0f0f5] dark:bg-[#0e1525] flex flex-col">
       <PropertyPreviewDrawer
         item={previewItem}
         open={previewOpen}
@@ -233,7 +233,7 @@ export default function ImoveisPage() {
       )}
 
       {/* ── Sticky top bar ── */}
-      <div className="sticky top-0 z-30 bg-[#f0f0f5]/95 dark:bg-[#0f0f12]/95 backdrop-blur-md border-b border-[#e8e8f0] dark:border-white/10">
+      <div className="sticky top-0 z-30 bg-[#f0f0f5]/95 dark:bg-[#0e1525]/95 backdrop-blur-md border-b border-[#e8e8f0] dark:border-white/10">
         <div className="max-w-[1400px] mx-auto px-4 md:px-6">
           {/* Row 1: Header + Search + Actions */}
           <div className="py-2.5 flex items-center gap-2.5">

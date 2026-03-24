@@ -58,7 +58,7 @@ export default function WhatsAppCampaignDispatcherPage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-6">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-6">
       <PageHeader
         title="Disparo WhatsApp"
         subtitle="Campanhas em lote via WhatsApp para leads da base"

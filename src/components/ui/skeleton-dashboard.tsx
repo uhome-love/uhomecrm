@@ -14,7 +14,7 @@ function Shimmer({ className }: { className?: string }) {
 /** Skeleton for the CEO greeting header */
 export function SkeletonHeader() {
   return (
-    <div className="rounded-[14px] bg-[#f7f7fb] dark:bg-[#1a1a1f] border border-[#e8e8f0] dark:border-white/[0.07] p-5">
+    <div className="rounded-[14px] bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] p-5">
       <div className="flex items-center gap-4">
         <Shimmer className="h-12 w-12 rounded-full" />
         <div className="flex-1 space-y-2">

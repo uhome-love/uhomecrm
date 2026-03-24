@@ -809,7 +809,7 @@ export default function MeusNegocios() {
 
   return (
     <div
-      className="flex flex-col min-w-0 overflow-hidden -m-4 sm:-m-6 lg:-m-8 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] bg-[#f0f0f5] dark:bg-[#0f0f12]"
+      className="flex flex-col min-w-0 overflow-hidden -m-4 sm:-m-6 lg:-m-8 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] bg-[#f0f0f5] dark:bg-[#0e1525]"
       style={{ height: "calc(100vh - 56px)" }}
     >
       {/* Header — Line 1 */}

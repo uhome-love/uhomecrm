@@ -377,7 +377,7 @@ export default function CeoDashboard() {
   }), { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0, visitasRealizadas: 0, propostas: 0, vgv: 0 });
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
       {/* ─── GREETING BAR ─── */}
       <GreetingBar
         name={profile?.nome || user?.email?.split("@")[0] || "CEO"}
