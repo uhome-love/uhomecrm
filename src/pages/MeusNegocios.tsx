@@ -845,7 +845,7 @@ export default function MeusNegocios() {
           {/* Filters */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="h-[32px] px-3 text-[12px] text-[#a1a1aa] border border-white/[0.1] rounded-[8px] hover:border-white/[0.2] flex items-center gap-1.5"
+            className="h-[32px] px-3 text-[12px] text-[#71717a] dark:text-[#a1a1aa] border border-[#e8e8f0] dark:border-white/[0.1] rounded-[8px] hover:border-[#4F46E5] dark:hover:border-white/[0.2] flex items-center gap-1.5 bg-white dark:bg-transparent"
           >
             <SlidersHorizontal size={12} strokeWidth={1.5} />
             <span className="hidden sm:inline">Filtros</span>
