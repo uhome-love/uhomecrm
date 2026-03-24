@@ -338,7 +338,7 @@ const PipelineCard = memo(function PipelineCard({
                 corretorNome[0]
               )}
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#2563EB" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#4F46E5" }}>
               {corretorNome.split(" ").slice(0, 2).join(" ")}
             </span>
           </div>
