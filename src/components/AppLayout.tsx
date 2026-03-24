@@ -148,7 +148,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider defaultOpen={!isSession}>
       <HomiProvider>
         <ArenaAutoCollapse isSession={isSession} />
-        <div className="min-h-screen flex w-full">
+        <div className="flex h-screen overflow-hidden w-full bg-[#f0f0f5] dark:bg-[#0f0f12]">
           {!isSession && (
             <Sidebar
               role={sidebarRole}
