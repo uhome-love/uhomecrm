@@ -234,7 +234,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       let leadsPorCorretor: { nome: string; count: number }[] = [];
       if (corrIds.length > 0) {
         const { data: corrProfs } = await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds);
-        const nameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"]));
+        const nameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"] as [string, string]));
         leadsPorCorretor = Array.from(corrLeadMap.entries())
           .map(([id, count]) => ({ nome: nameMap.get(id) || "Corretor", count }))
           .sort((a, b) => b.count - a.count)
