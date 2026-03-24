@@ -1,36 +1,177 @@
-import { useState } from "react";
+import UhomeLogo from "@/components/UhomeLogo";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Navigate } from "react-router-dom";
-import { Loader2, ArrowRight, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User, Loader2, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
-/* ─── CSS Stars ─── */
-function Stars() {
-  const [stars] = useState(() =>
-    Array.from({ length: 80 }, (_, i) => {
-      const size = Math.random() < 0.7 ? 1.5 : Math.random() < 0.5 ? 2 : 2.5;
-      return { id: i, size, top: `${Math.random()*100}%`, left: `${Math.random()*100}%`, dur: `${3+Math.random()*5}s`, delay: `${Math.random()*6}s`, maxOp: 0.3+Math.random()*0.5 };
-    })
-  );
+const homiHero = "/images/homi-mascot-official.png";
+
+const HOMI_PHRASES = [
+  "Pronto para sua melhor sessão hoje? ⚡",
+  "Vamos dominar a Arena! 🔥",
+  "Seus leads estão esperando! 🎯",
+  "Hora de liderar o ranking! 🏆",
+];
+
+const MOTIVATIONAL = [
+  "15.267 leads esperando por você.",
+  "Os melhores corretores já estão dentro.",
+  "Cada login é uma nova chance de liderar.",
+  "A Arena está aberta. Entre agora.",
+];
+
+/* ─── Particle Canvas (blue theme) ─── */
+function ParticleCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId: number;
+    const dpr = window.devicePixelRatio || 1;
+
+    const resize = () => {
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    interface Particle {
+      x: number; y: number; r: number; vx: number; vy: number;
+      baseOpacity: number; opacity: number; twinkle: boolean;
+      twinkleSpeed: number; twinklePhase: number; isBlue: boolean; glow: boolean;
+    }
+
+    const W = () => window.innerWidth;
+    const H = () => window.innerHeight;
+
+    const particles: Particle[] = Array.from({ length: 90 }, (_, i) => {
+      const isStar = i < 5;
+      const isBlue = Math.random() < 0.25;
+      return {
+        x: Math.random() * W(),
+        y: Math.random() * H(),
+        r: isStar ? 2.5 : 0.8 + Math.random() * 1.2,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        baseOpacity: isStar ? 0.8 : 0.15 + Math.random() * 0.35,
+        opacity: 0.4,
+        twinkle: isStar || Math.random() < 0.3,
+        twinkleSpeed: 0.006 + Math.random() * 0.012,
+        twinklePhase: Math.random() * Math.PI * 2,
+        isBlue,
+        glow: isStar,
+      };
+    });
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W(), H());
+      const w = W(), h = H();
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < -10) p.x = w + 10;
+        if (p.x > w + 10) p.x = -10;
+        if (p.y < -10) p.y = h + 10;
+        if (p.y > h + 10) p.y = -10;
+        if (p.twinkle) {
+          p.twinklePhase += p.twinkleSpeed;
+          p.opacity = p.baseOpacity * (0.3 + 0.7 * ((Math.sin(p.twinklePhase) + 1) / 2));
+        }
+        if (p.glow) {
+          ctx.shadowColor = p.isBlue ? "rgba(59,130,246,0.6)" : "rgba(147,197,253,0.5)";
+          ctx.shadowBlur = 10;
+        } else {
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.isBlue
+          ? `rgba(59,130,246,${p.opacity})`
+          : `rgba(255,255,255,${p.opacity})`;
+        ctx.fill();
+      }
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }} />;
+}
+
+/* ─── Homi Speech Bubble ─── */
+function HomiSpeechBubble() {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 1500); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    if (!visible) return;
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => { setIdx(p => (p + 1) % HOMI_PHRASES.length); setFade(true); }, 300);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [visible]);
+
+  if (!visible) return null;
   return (
-    <div className="fixed inset-0 z-0">
-      {stars.map(s => (
-        <div key={s.id} className="absolute rounded-full bg-white" style={{ width: s.size, height: s.size, top: s.top, left: s.left, animation: `twinkle ${s.dur} ease-in-out infinite ${s.delay}`, opacity: 0, ["--max-op" as string]: s.maxOp }} />
-      ))}
+    <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap transition-opacity duration-300 z-20" style={{ opacity: fade ? 1 : 0 }}>
+      <div style={{ background: "rgba(13,27,75,0.95)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: 12, padding: "8px 14px", fontSize: 13, color: "#E2E8F0", boxShadow: "0 0 20px rgba(59,130,246,0.15)" }}>
+        {HOMI_PHRASES[idx]}
+      </div>
+      <div className="mx-auto" style={{ width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid rgba(13,27,75,0.95)" }} />
     </div>
   );
 }
 
-const styles = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-@keyframes twinkle { 0%,100%{opacity:0;transform:scale(0.8)} 50%{opacity:var(--max-op,0.7);transform:scale(1)} }
-@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.anim-up { animation: fadeUp 0.6s ease forwards }
-.anim-up-d1 { animation: fadeUp 0.6s 0.1s ease forwards; opacity:0 }
-`;
+/* ─── Motivational Rotator ─── */
+function MotivationalLine() {
+  const [idx, setIdx] = useState(0);
+  const [fade, setFade] = useState(true);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => { setIdx(p => (p + 1) % MOTIVATIONAL.length); setFade(true); }, 300);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <p className="text-center transition-opacity duration-300 mt-4" style={{ opacity: fade ? 1 : 0, color: "rgba(255,255,255,0.3)", fontSize: 13 }}>
+      {MOTIVATIONAL[idx]}
+    </p>
+  );
+}
 
-const inputClass = "w-full h-[44px] pl-[38px] pr-3 bg-white/[0.06] border border-white/10 rounded-[10px] text-[14px] text-[#f0f0f8] placeholder:text-[rgba(240,240,248,0.35)] outline-none transition-all focus:border-[#4F46E5] focus:bg-[rgba(79,70,229,0.07)] focus:shadow-[0_0_0_3px_rgba(79,70,229,0.15)]";
+/* ─── CSS Animations ─── */
+const styles = `
+@keyframes fade-in-up { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
+@keyframes fade-in-scale { from { opacity:0; transform:scale(0.92) } to { opacity:1; transform:scale(1) } }
+@keyframes homiEntrada { 0%{transform:translateY(60px);opacity:0} 60%{transform:translateY(-8px);opacity:1} 80%{transform:translateY(3px)} 100%{transform:translateY(0)} }
+@keyframes homiAceno { 0%,100%{transform:translateY(0) rotate(0)} 25%{transform:translateY(-5px) rotate(2deg)} 75%{transform:translateY(-2px) rotate(-1.5deg)} }
+@keyframes pulse-glow-blue { 0%,100%{box-shadow:0 0 20px rgba(59,130,246,0.4),0 0 0 0 rgba(59,130,246,0.3)} 50%{box-shadow:0 0 20px rgba(59,130,246,0.4),0 0 0 8px rgba(59,130,246,0)} }
+@keyframes glow-pulse-blue { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
+.anim-fiu { animation: fade-in-up 0.5s cubic-bezier(.22,1,.36,1) both }
+.anim-fis { animation: fade-in-scale 0.6s cubic-bezier(.22,1,.36,1) both }
+.anim-d1 { animation-delay:.12s } .anim-d2 { animation-delay:.25s } .anim-d3 { animation-delay:.38s }
+.homi-entrance { opacity:0; animation: homiEntrada .8s cubic-bezier(.34,1.56,.64,1) forwards; animation-delay:.3s }
+.homi-wave { animation: homiAceno 3s ease-in-out infinite; animation-delay:1.2s }
+.auth-input:focus { border-color: rgba(59,130,246,0.5) !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1), 0 0 16px rgba(59,130,246,0.08) !important }
+`;
 
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
@@ -38,14 +179,15 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#12141f" }}>
-      <Loader2 className="h-8 w-8 animate-spin text-[#4F46E5]" />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0A0F1E" }}>
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#3B82F6" }} />
+      </div>
+    );
+  }
   if (user) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,150 +210,103 @@ export default function Auth() {
     } finally { setSubmitting(false); }
   };
 
+  const inputCls = "auth-input pl-10 h-12 w-full text-white placeholder:opacity-40 transition-all duration-200 focus:ring-0 focus:outline-none";
+  const inputStyle: React.CSSProperties = { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, color: "white" };
+
   return (
-    <div className="relative min-h-screen overflow-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div className="relative min-h-screen flex flex-col items-center justify-between overflow-hidden" style={{ background: "#0A0F1E" }}>
       <style>{styles}</style>
 
-      {/* Backgrounds */}
-      <div className="fixed inset-0 z-0" style={{ background: "radial-gradient(ellipse 80% 60% at 20% 50%, rgba(79,70,229,0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 80%, rgba(16,185,129,0.07) 0%, transparent 55%), radial-gradient(ellipse 40% 40% at 60% 10%, rgba(129,140,248,0.10) 0%, transparent 50%), linear-gradient(160deg, #15172a 0%, #0e1020 40%, #111420 100%)" }} />
-      <div className="fixed inset-0 z-0 opacity-[0.06]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
-      <Stars />
+      {/* BG layers — blue radials, no green */}
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 800px 500px at 50% 10%, rgba(59,130,246,0.08) 0%, transparent 70%)" }} />
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 400px 300px at 50% 20%, rgba(13,27,75,0.12) 0%, transparent 60%)" }} />
+      <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
+      <ParticleCanvas />
 
-      {/* Fixed logo top-left */}
-      <div className="fixed top-7 left-6 lg:left-12 z-10 flex items-center gap-2.5 anim-up">
-        <div className="w-9 h-9 rounded-[9px] bg-[#4F46E5] flex items-center justify-center" style={{ boxShadow: "0 4px 16px rgba(79,70,229,0.40)" }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
-            <path d="M9 21V12h6v9" />
-          </svg>
-        </div>
-        <div className="flex flex-col gap-px">
-          <span className="text-[15px] font-bold text-[#f0f0f8] leading-none tracking-[-0.3px]">UhomeSales</span>
-          <span className="text-[10px] font-medium text-[rgba(240,240,248,0.35)] leading-none flex items-center gap-1">
-            Powered by
-            <span className="inline-block w-[5px] h-[5px] rounded-full bg-[#f59e0b]" style={{ boxShadow: "0 0 6px rgba(245,158,11,0.7)", animation: "pulse-dot 2s ease-in-out infinite" }} />
-            Homi AI
-          </span>
-        </div>
-      </div>
+      {/* CONTENT */}
+      <div className="relative z-10 w-full max-w-[400px] px-5 pt-10 pb-4 flex-1 flex flex-col">
 
-      {/* Main grid */}
-      <div className="relative z-[1] grid grid-cols-1 lg:grid-cols-2 h-screen max-w-[1280px] mx-auto px-6 lg:px-12 items-center gap-8 lg:gap-16">
+        {/* Badge top text — white 30% opacity */}
+        <p className="text-center anim-fiu" style={{ letterSpacing: "0.3em", color: "rgba(255,255,255,0.3)", fontSize: 11, marginBottom: 4 }}>
+          ✦ UHOMESALES ✦
+        </p>
 
-        {/* Left: branding */}
-        <div className="hidden lg:block anim-up">
-          <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-[5px] text-[11px] font-semibold uppercase tracking-[0.04em] mb-6" style={{ background: "rgba(79,70,229,0.15)", border: "1px solid rgba(79,70,229,0.30)", color: "#818cf8" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#818cf8]" />
-            CRM Imobiliário
-          </div>
-
-          <h1 className="font-extrabold leading-[1.12] tracking-[-1.5px] text-[#f0f0f8] mb-4" style={{ fontSize: "clamp(32px, 3.5vw, 44px)" }}>
-            A plataforma dos<br /><span className="text-[#818cf8]">corretores</span> que<br />vendem mais.
-          </h1>
-
-          <p className="text-[15px] text-[rgba(240,240,248,0.55)] leading-relaxed max-w-[380px] mb-10">
-            Gestão de leads, pipeline, performance e IA embarcada em um só lugar.
-          </p>
-
-          <div className="flex items-stretch">
-            <div className="pr-7">
-              <p className="text-[26px] font-extrabold tracking-[-1px] leading-none text-[#f0f0f8] mb-1">2.780+</p>
-              <p className="text-[11px] font-medium text-[rgba(240,240,248,0.35)] uppercase tracking-[0.05em]">leads gerenciados</p>
-            </div>
-            <div className="border-l border-white/10 px-7">
-              <p className="text-[26px] font-extrabold tracking-[-1px] leading-none text-[#10b981] mb-1">R$ 36M</p>
-              <p className="text-[11px] font-medium text-[rgba(240,240,248,0.35)] uppercase tracking-[0.05em]">VGV no pipeline</p>
-            </div>
-            <div className="border-l border-white/10 pl-7">
-              <p className="text-[26px] font-extrabold tracking-[-1px] leading-none text-[#f0f0f8] mb-1">26</p>
-              <p className="text-[11px] font-medium text-[rgba(240,240,248,0.35)] uppercase tracking-[0.05em]">corretores ativos</p>
-            </div>
-          </div>
+        {/* Logo — text-based, no image tint issues */}
+        <div className="flex flex-col items-center anim-fis" style={{ marginBottom: 4 }}>
+          <UhomeLogo size="lg" showTagline />
         </div>
 
-        {/* Right: form */}
-        <div className="flex justify-center items-center">
-          <div className="w-full max-w-[420px]">
-            {/* Mobile logo */}
-            <div className="lg:hidden flex flex-col items-center gap-4 pt-2 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-[9px] bg-[#4F46E5] flex items-center justify-center" style={{ boxShadow: "0 4px 16px rgba(79,70,229,0.40)" }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
-                    <path d="M9 21V12h6v9" />
-                  </svg>
+        {/* Subtitle */}
+        <p className="text-center anim-fiu anim-d1" style={{ color: "rgba(255,255,255,0.6)", fontSize: 15, marginTop: 4, marginBottom: 20 }}>
+          A plataforma dos corretores que vendem mais.
+        </p>
+
+        {/* FORM */}
+        <div className="anim-fiu anim-d2">
+          <form onSubmit={handleSubmit}>
+            <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, backdropFilter: "blur(10px)", padding: 24 }}>
+              <div className="space-y-3">
+                {!isLogin && (
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+                    <Input placeholder="Seu nome completo" value={nome} onChange={e => setNome(e.target.value)} className={inputCls} style={inputStyle} required={!isLogin} />
+                  </div>
+                )}
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+                  <Input type="email" placeholder="Seu e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} style={inputStyle} required />
                 </div>
-                <div className="flex flex-col gap-px">
-                  <span className="text-[15px] font-bold text-[#f0f0f8] leading-none tracking-[-0.3px]">UhomeSales</span>
-                  <span className="text-[10px] font-medium text-[rgba(240,240,248,0.35)] leading-none flex items-center gap-1">
-                    Powered by
-                    <span className="inline-block w-[5px] h-[5px] rounded-full bg-[#f59e0b]" style={{ boxShadow: "0 0 6px rgba(245,158,11,0.7)", animation: "pulse-dot 2s ease-in-out infinite" }} />
-                    Homi AI
-                  </span>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+                  <Input type="password" placeholder="Sua senha" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} style={inputStyle} minLength={6} required />
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <Button type="submit" disabled={submitting} className="h-12 flex-1 gap-2 font-black text-sm border-0 rounded-xl text-white" style={{ background: "linear-gradient(135deg, #3B82F6, #2563EB)", letterSpacing: "0.05em", animation: submitting ? "none" : "pulse-glow-blue 2s ease-in-out infinite" }}>
+                    {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /><span>Entrando...</span></> : <>{isLogin ? "ENTRAR" : "CRIAR CONTA"}<ArrowRight className="h-4 w-4" /></>}
+                  </Button>
+                  {isLogin && (
+                    <button type="button" className="text-xs transition-colors whitespace-nowrap" style={{ color: "rgba(255,255,255,0.3)" }}>
+                      Esqueceu?
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
+          </form>
 
-            {/* Card */}
-            <div className="rounded-[20px] p-9 anim-up-d1" style={{ background: "rgba(255,255,255,0.055)", border: "1px solid rgba(255,255,255,0.10)", backdropFilter: "blur(24px)", boxShadow: "0 0 0 0.5px rgba(255,255,255,0.05) inset, 0 24px 64px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.20)" }}>
-              <h2 className="text-[22px] font-extrabold tracking-[-0.5px] text-[#f0f0f8] mb-1.5">
-                {isLogin ? "Bem-vindo de volta" : "Criar conta"}
-              </h2>
-              <p className="text-[13px] text-[rgba(240,240,248,0.55)] mb-7">
-                {isLogin ? "Entre com suas credenciais para continuar" : "Preencha seus dados para começar"}
-              </p>
+          {/* Toggle */}
+          <p className="text-center text-sm mt-4">
+            <span style={{ color: "rgba(255,255,255,0.4)" }}>{isLogin ? "Não tem conta?" : "Já tem conta?"} </span>
+            <button onClick={() => setIsLogin(!isLogin)} className="font-semibold transition-colors" style={{ color: "#60A5FA" }}>
+              {isLogin ? "Criar conta" : "Entrar"}
+            </button>
+          </p>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
-                  <div>
-                    <label className="text-[12px] font-semibold text-[rgba(240,240,248,0.55)] mb-[7px] block tracking-[0.01em]">Nome</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-[15px] w-[15px] text-[rgba(240,240,248,0.35)]" />
-                      <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome completo" required={!isLogin} className={inputClass} style={{ fontFamily: "inherit" }} />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-[12px] font-semibold text-[rgba(240,240,248,0.55)] mb-[7px] block tracking-[0.01em]">Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-[15px] w-[15px] text-[rgba(240,240,248,0.35)]" />
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@email.com" required autoComplete="email" className={inputClass} style={{ fontFamily: "inherit" }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-[7px]">
-                    <label className="text-[12px] font-semibold text-[rgba(240,240,248,0.55)] tracking-[0.01em]">Senha</label>
-                    {isLogin && <button type="button" className="text-[12px] font-medium text-[#818cf8] hover:underline">Esqueceu?</button>}
-                  </div>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-[15px] w-[15px] text-[rgba(240,240,248,0.35)]" />
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={6} required autoComplete={isLogin ? "current-password" : "new-password"} className={inputClass + " !pr-10"} style={{ fontFamily: "inherit" }} />
-                    <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgba(240,240,248,0.35)] hover:text-[rgba(240,240,248,0.55)] transition-colors">
-                      {showPassword ? <EyeOff className="h-[15px] w-[15px]" /> : <Eye className="h-[15px] w-[15px]" />}
-                    </button>
-                  </div>
-                </div>
-
-                <button type="submit" disabled={submitting} className="w-full h-[46px] bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[14px] font-bold rounded-[10px] flex items-center justify-center gap-2 transition-all disabled:opacity-60 !mt-5 hover:-translate-y-px" style={{ boxShadow: "0 4px 20px rgba(79,70,229,0.40)", fontFamily: "inherit" }}>
-                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Entrando...</> : <>{isLogin ? "Entrar" : "Criar conta"} <ArrowRight className="h-4 w-4" /></>}
-                </button>
-              </form>
-
-              <div className="h-px bg-white/[0.07] my-5" />
-              <p className="text-center text-[13px] text-[rgba(240,240,248,0.35)]">
-                {isLogin ? "Não tem conta? " : "Já tem conta? "}
-                <button onClick={() => setIsLogin(!isLogin)} className="font-semibold text-[#818cf8] hover:underline">{isLogin ? "Criar conta" : "Entrar"}</button>
-              </p>
-            </div>
-          </div>
+          {/* Motivational */}
+          <MotivationalLine />
         </div>
+
+        <div className="flex-1" />
       </div>
 
-      {/* Fixed footer */}
-      <div className="fixed bottom-6 right-6 lg:right-12 z-10 text-[11.5px] text-[rgba(240,240,248,0.35)]">
-        Powered by <span className="text-[#818cf8] font-semibold">Homi AI</span> · © {new Date().getFullYear()} Uhome
+      {/* HOMI + Footer */}
+      <div className="relative z-10 flex flex-col items-center pb-6 pt-2 gap-3">
+        <div className="relative homi-entrance">
+          <HomiSpeechBubble />
+          <div className="homi-wave">
+            <div className="absolute inset-0 -m-4 rounded-full blur-[40px]" style={{ background: "rgba(59,130,246,0.15)", animation: "glow-pulse-blue 3s ease-in-out infinite" }} />
+            <img
+              src={homiHero}
+              alt="Homi AI"
+              className="relative object-contain"
+              style={{ height: 80, filter: "brightness(1.1) saturate(1.2) drop-shadow(0 0 24px rgba(59,130,246,0.4))" }}
+            />
+          </div>
+        </div>
+        <p className="text-center tracking-wider" style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>
+          © {new Date().getFullYear()} Uhome · Impulsione suas vendas · Todos os direitos reservados
+        </p>
       </div>
     </div>
   );
