@@ -973,9 +973,9 @@ export default function MeusNegocios() {
                   {faseNegocios.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
                       <div className="h-10 w-10 rounded-full flex items-center justify-center mb-2" style={{ background: `${fase.cor}10`, border: `1px dashed ${fase.cor}30` }}>
-                        <span className="text-white/20 text-sm">+</span>
+                        <span className="text-[#a1a1aa] dark:text-white/20 text-sm">+</span>
                       </div>
-                      <span className="text-[11px] text-white/20">Arraste negócios aqui</span>
+                      <span className="text-[11px] text-[#a1a1aa] dark:text-white/20">Arraste negócios aqui</span>
                     </div>
                   )}
                   {faseNegocios.map(negocio => (
