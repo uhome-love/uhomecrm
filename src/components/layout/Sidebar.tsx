@@ -406,6 +406,7 @@ export default function Sidebar({
           side="left"
           className={cn("w-[260px] p-0 flex flex-col", isDark ? "bg-[#0c0c0e]" : "bg-[#e8e8f0]")}
         >
+          <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
           <div className="flex flex-col h-full overflow-y-auto" style={{ scrollbarWidth: "none" }}>
             {renderFullNav()}
           </div>
