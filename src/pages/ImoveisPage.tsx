@@ -897,11 +897,11 @@ export default function ImoveisPage() {
                 </div>
               )}
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+                <div>
                   {loading ? <Skeleton className="h-4 w-24" /> : (
                     <>
-                      <span className="text-sm font-medium text-foreground">{total.toLocaleString()} imóveis</span>
-                      {searchTimeMs != null && <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Zap className="h-2.5 w-2.5" /> {searchTimeMs}ms</span>}
+                      <p className="text-[14px] font-bold text-[#0a0a0a] dark:text-white">{total.toLocaleString()} imóveis</p>
+                      <p className="text-[11px] text-[#a1a1aa]">Mostrando {displayImoveis.length}{searchTimeMs != null ? ` · ${searchTimeMs}ms` : ""}{cidade.length === 1 ? ` · ${cidade[0]}` : ""}</p>
                     </>
                   )}
                 </div>
