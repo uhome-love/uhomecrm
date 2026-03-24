@@ -468,7 +468,7 @@ export default function CeoDashboard() {
       </Card>
 
       {/* ─── FILA CEO ─── */}
-      <Card className={filaCeoCount > 0 ? "border-[#4F46E5]/40 shadow-[0_0_0_1px_rgba(79,70,229,0.15)]" : ""}>
+      <Card className={`bg-white dark:bg-white/[0.04] border border-[#eeeeee] dark:border-white/[0.07] rounded-[14px] ${filaCeoCount > 0 ? "border-[#4F46E5]/40 shadow-[0_0_0_1px_rgba(79,70,229,0.15)]" : ""}`}>
         <CardContent className="pt-4 pb-3">
           <div className="flex items-center gap-2 mb-1">
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-[#4F46E5]/10 flex items-center justify-center shrink-0">
