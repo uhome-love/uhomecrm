@@ -146,7 +146,7 @@ export default function RankingEquipe() {
   ];
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 max-w-5xl mx-auto space-y-4 -m-6 min-h-full">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 max-w-5xl mx-auto space-y-4 -m-6 min-h-full">
       <PageHeader
         title="Rankings"
         subtitle="Arena de performance · Entenda, evolua, conquiste"

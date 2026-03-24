@@ -334,7 +334,7 @@ export default function AgendaVisitas() {
   };
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-3">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-3">
 
       {/* ═══════ LINE 1: Title + Filters + Toggle + Nova Visita ═══════ */}
       <div className="flex items-center gap-2 flex-wrap">

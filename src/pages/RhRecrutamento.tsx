@@ -84,7 +84,7 @@ export default function RhRecrutamento() {
   const getCandidatosByEtapa = (etapa: string) => candidatos.filter(c => c.etapa === etapa);
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 overflow-hidden">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4 overflow-hidden">
       <PageHeader
         title="Candidatos"
         subtitle="Pipeline de recrutamento"

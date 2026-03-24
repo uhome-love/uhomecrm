@@ -54,7 +54,7 @@ export default function PosVendas() {
   }
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
       <Tabs defaultValue="pipeline" className="flex flex-col h-full">
         <div className="shrink-0 space-y-3 pb-3">
           <PageHeader

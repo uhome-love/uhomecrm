@@ -52,7 +52,7 @@ export function KpiCard({
     <div
       onClick={onClick}
       className={cn(
-        "bg-[#f7f7fb] dark:bg-[#1a1a1f]",
+        "bg-[#f7f7fb] dark:bg-[#141e30]",
         "border border-[#e8e8f0] dark:border-white/[0.07] shadow-none",
         "border-l-[3px] border-l-[#4F46E5]",
         "rounded-[14px] p-4 pl-4",
