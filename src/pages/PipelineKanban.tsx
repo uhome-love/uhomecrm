@@ -619,18 +619,9 @@ export default function PipelineKanban() {
                 </Select>
               )}
 
-              <PipelineAdvancedFilters
-                filters={filters}
-                onChange={setFilters}
-                stages={pipeline.stages}
-                segmentos={pipeline.segmentos}
-                leads={pipeline.leads}
-                corretorNomes={pipeline.corretorNomes}
-                isManager={isGestor || isAdmin}
-              />
             </div>
 
-            {/* RIGHT: Search + Novo Lead + Avatar */}
+            {/* RIGHT: Search + Novo Lead */}
             <div className="flex items-center flex-shrink-0 ml-auto" style={{ gap: 8 }}>
               <div className="relative" style={{ width: filters.search ? 232 : 192, transition: "width 0.2s ease" }}>
                 <Search className="absolute top-1/2 -translate-y-1/2" style={{ left: 10, height: 14, width: 14, color: "#94A3B8" }} />
