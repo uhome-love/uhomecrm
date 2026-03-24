@@ -281,7 +281,7 @@ export default function CeoDashboard() {
   const contratoGerado = negocioFases.find((f: any) => f.fase === "documentacao");
   const vgvContrato = contratoGerado?.vgv || 0;
   const countContrato = contratoGerado?.count || 0;
-  const leadsDistribuidos = totalLeadsPeriodo - filaCeoCount;
+  const leadsDistribuidos = enviadosRoleta;
 
   // Pipeline funnel totals
   const funnelTotal = pipelineStages.reduce((a, s) => a + s.count, 0) || 1;
