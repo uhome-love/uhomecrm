@@ -163,8 +163,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <header
               className="h-14 flex items-center justify-between sticky top-0 z-50 px-4"
               style={{
-                background: "hsl(var(--sidebar-background))",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                background: theme === "dark" ? "hsl(var(--sidebar-background))" : "#ffffff",
+                borderBottom: theme === "dark" ? "1px solid rgba(255,255,255,0.06)" : "1px solid #eeeeee",
               }}
             >
               <div className="flex items-center gap-3">
