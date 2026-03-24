@@ -465,6 +465,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     corretoresRank: teamsData?.corretoresRank || [],
     origens: pipelineData?.origens || [],
     leadsPorEmpreendimento: pipelineData?.leadsPorEmpreendimento || [],
+    leadsPorCorretor: pipelineData?.leadsPorCorretor || [],
     visitasPorEmp,
     totalLeadsPeriodo: extraKpis?.totalLeadsPeriodo || 0,
     leadsReaproveitadosOA: extraKpis?.leadsReaproveitadosOA || 0,
