@@ -887,10 +887,10 @@ export default function MeusNegocios() {
 
         {/* Line 2 — summary */}
         <div className="flex items-center gap-3 mt-2 pb-2">
-          <span className="text-[12px] text-[#52525b]">{filteredNegocios.length} negócios</span>
-          <span className="text-[12px] text-[#52525b]">·</span>
+          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
+          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">·</span>
           {totalVGV > 0 && (
-            <span className="text-[12px] text-[#10b981] font-semibold">{formatVGV(totalVGV)} VGV total</span>
+            <span className="text-[12px] text-[#10b981] dark:text-[#34d399] font-semibold">{formatVGV(totalVGV)} VGV total</span>
           )}
         </div>
       </div>
