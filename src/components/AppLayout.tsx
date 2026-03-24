@@ -171,7 +171,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             >
             >
               <div className="flex items-center gap-3">
-                <SidebarTrigger className={theme === "dark" ? "text-gray-400 hover:text-white" : "text-[#52525b] hover:text-[#0a0a0a]"} />
+                <SidebarTrigger className={theme === "dark" ? "text-[#71717a] hover:text-[#fafafa]" : "text-[#52525b] hover:text-[#0a0a0a]"} />
                 <div className="hidden sm:flex items-center">
                   <UhomeLogo size="md" />
                 </div>
