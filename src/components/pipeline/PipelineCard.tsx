@@ -282,7 +282,7 @@ const PipelineCard = memo(function PipelineCard({
       <div style={{ height: 3, background: stripeGradient }} />
 
       {/* Body */}
-      <div style={{ padding: "13px 14px 11px" }}>
+      <div style={{ padding: "13px 14px 11px", minHeight: 120 }}>
         {/* ROW 1: Name + tags + days badge */}
         <div className="flex items-center justify-between gap-1.5" style={{ marginBottom: 6 }}>
           <span style={{
