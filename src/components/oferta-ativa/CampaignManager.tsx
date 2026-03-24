@@ -116,6 +116,18 @@ function ListaCard({ lista, isAdmin, isSelected, onToggle, onUpdate, onDelete, o
               <Button
                 size="sm"
                 variant="outline"
+                className="gap-1 text-xs h-7 text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
+                onClick={() => {
+                  if (confirm(`Limpar leads já contatados (descartados/aproveitados) da lista "${lista.nome}"?`)) {
+                    onClean(lista.id);
+                  }
+                }}
+              >
+                <Sparkles className="h-3 w-3" /> Limpar
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
                 className="gap-1 text-xs h-7 text-destructive border-destructive/30 hover:bg-destructive/10"
                 onClick={() => {
                   if (confirm(`Excluir a lista "${lista.nome}" e todos os seus leads? Esta ação não pode ser desfeita.`)) {
