@@ -109,12 +109,12 @@ export function usePushSubscription() {
 
       // Subscribe to push — use Uint8Array directly (avoid .buffer offset issues)
       const applicationServerKey = urlBase64ToUint8Array(key);
+      // Create a clean ArrayBuffer copy to avoid SharedArrayBuffer type issues
+      const keyBuffer = new ArrayBuffer(applicationServerKey.byteLength);
+      new Uint8Array(keyBuffer).set(applicationServerKey);
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: applicationServerKey.buffer.slice(
-          applicationServerKey.byteOffset,
-          applicationServerKey.byteOffset + applicationServerKey.byteLength
-        ),
+        applicationServerKey: keyBuffer,
       });
 
       const subJson = subscription.toJSON();
