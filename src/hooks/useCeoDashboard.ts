@@ -168,7 +168,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         supabase.from("pipeline_leads").select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id")
           .gte("created_at", range.start)
           .lte("created_at", range.end + "T23:59:59")
-          .limit(1000),
+          .limit(2000),
       ]);
 
       const stageData = (stages || []).map(s => ({
