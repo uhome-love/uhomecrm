@@ -5,6 +5,7 @@ import { PIPELINE_STAGE_EMOJIS } from "@/lib/celebrations";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { isTaskHigherPriority, type ProximaTarefa } from "./CardStatusLine";
 
 interface PipelineMobileViewProps {
   stages: PipelineStage[];
@@ -84,7 +85,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
     queryKey: ["pipeline-tarefas-map-mobile", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return {};
-      const map: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }> = {};
+      const map: Record<string, ProximaTarefa> = {};
       for (let i = 0; i < leadIds.length; i += 200) {
         const chunk = leadIds.slice(i, i + 200);
         const { data } = await supabase
@@ -96,8 +97,10 @@ const PipelineMobileView = memo(function PipelineMobileView({
           .order("hora_vencimento", { ascending: true });
         if (data) {
           for (const row of data) {
-            if (!map[row.pipeline_lead_id]) {
-              map[row.pipeline_lead_id] = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
+            const nextTask: ProximaTarefa = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
+            const currentTask = map[row.pipeline_lead_id];
+            if (!currentTask || isTaskHigherPriority(nextTask, currentTask)) {
+              map[row.pipeline_lead_id] = nextTask;
             }
           }
         }

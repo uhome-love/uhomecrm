@@ -36,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { getCardStatus } from "@/components/pipeline/CardStatusLine";
+import { getLeadStatusFilter, isTaskHigherPriority, type LeadClientStatus, type ProximaTarefa } from "@/components/pipeline/CardStatusLine";
 
 // Campaign tag definitions
 const CAMPAIGN_TAGS = [
@@ -55,27 +55,7 @@ const CAMPAIGN_TAGS = [
   { tag: "TERRACE", label: "🌅 Terrace", color: "teal" },
 ];
 
-type ClientStatusFilter = "todos" | "em_dia" | "desatualizado" | "tarefa_atrasada";
-
-function classifyLeadStatus(_lead: PipelineLead, proximaTarefa: any): ClientStatusFilter {
-  // Task-based classification:
-  // 🔴 Atrasado = has overdue task
-  // 🟡 Desatualizado = no pending task at all
-  // 🟢 Em dia = has future/today task
-  if (!proximaTarefa?.vence_em) {
-    // Check inline data_proxima_acao fallback
-    const inlineDate = (_lead as any).data_proxima_acao;
-    if (!inlineDate) return "desatualizado"; // no task
-    const d = new Date(inlineDate);
-    if (isNaN(d.getTime())) return "desatualizado";
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    return d < todayStart ? "tarefa_atrasada" : "em_dia";
-  }
-  const d = new Date(proximaTarefa.vence_em);
-  if (isNaN(d.getTime())) return "em_dia"; // has task but invalid date → assume em dia
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  return d < todayStart ? "tarefa_atrasada" : "em_dia";
-}
+type ClientStatusFilter = "todos" | LeadClientStatus;
 
 export default function PipelineKanban() {
   const queryClient = useQueryClient();
@@ -134,7 +114,7 @@ export default function PipelineKanban() {
     queryKey: ["pipeline-kanban-tarefas", leadIdsKey],
     queryFn: async () => {
       if (leadIds.length === 0) return {};
-      const map: Record<string, { tipo: string; vence_em: string | null; hora_vencimento: string | null }> = {};
+      const map: Record<string, ProximaTarefa> = {};
       for (let i = 0; i < leadIds.length; i += 200) {
         const chunk = leadIds.slice(i, i + 200);
         const { data } = await supabase
@@ -146,8 +126,10 @@ export default function PipelineKanban() {
           .order("hora_vencimento", { ascending: true });
         if (data) {
           for (const row of data) {
-            if (!map[row.pipeline_lead_id]) {
-              map[row.pipeline_lead_id] = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
+            const nextTask: ProximaTarefa = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
+            const currentTask = map[row.pipeline_lead_id];
+            if (!currentTask || isTaskHigherPriority(nextTask, currentTask)) {
+              map[row.pipeline_lead_id] = nextTask;
             }
           }
         }
