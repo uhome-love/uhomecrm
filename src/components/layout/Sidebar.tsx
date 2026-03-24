@@ -343,42 +343,67 @@ export default function Sidebar({
           )}
         </div>
       )}
-      {groups.map((group, gi) => (
-        <div key={group.title}>
-          {gi > 0 && <div className={cn("h-px mx-3 my-[6px]", div)} />}
-          <div className="px-3 pt-3 pb-1">
-            <p className="text-[10px] font-[650] tracking-[0.07em] uppercase px-2 mb-[3px] text-[rgba(79,70,229,0.6)]">
-              {group.title}
-            </p>
-            {group.items.map(item => {
-              const active = isActive(item.path);
-              return (
+      {groups.map((group, gi) => {
+        const canCollapse = !NON_COLLAPSIBLE.includes(group.title);
+        const isGroupCollapsed = canCollapse && !!collapsedGroups[group.title];
+        // Auto-expand if active route is inside
+        const hasActiveItem = group.items.some(item => isActive(item.path));
+
+        return (
+          <div key={group.title}>
+            {gi > 0 && <div className={cn("h-px mx-3 my-[6px]", div)} />}
+            <div className="px-3 pt-3 pb-1">
+              {canCollapse ? (
                 <button
-                  key={item.path}
-                  onClick={() => { navigate(item.path); if (isMobile) setOpenMobile(false); }}
-                  className={cn(
-                    "w-full flex items-center gap-[10px] px-2 py-[7px] rounded-[8px]",
-                    "text-[13.5px] tracking-[-0.15px] transition-all text-left",
-                    active ? itemOn : itemBase
-                  )}
+                  onClick={() => toggleGroup(group.title)}
+                  className="w-full flex items-center justify-between px-2 mb-[3px] group/label"
                 >
-                  <span className={cn("w-[18px] flex items-center justify-center flex-shrink-0",
-                    active ? iconOn : iconDef)}>
-                    {item.icon}
-                  </span>
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {item.badge !== undefined && (
-                    <span className={cn("text-[10px] font-semibold rounded-full px-1.5 py-px",
-                      isDark ? "bg-white/10 text-[#71717a]" : "bg-[#f0f0f0] text-[#a1a1aa]")}>
-                      {item.badge}
-                    </span>
-                  )}
+                  <p className="text-[10px] font-[650] tracking-[0.07em] uppercase text-[rgba(79,70,229,0.6)]">
+                    {group.title}
+                  </p>
+                  <ChevronRight
+                    size={10} strokeWidth={2}
+                    className={cn(
+                      "transition-transform duration-200 text-[rgba(79,70,229,0.4)]",
+                      !isGroupCollapsed && "rotate-90"
+                    )}
+                  />
                 </button>
-              );
-            })}
+              ) : (
+                <p className="text-[10px] font-[650] tracking-[0.07em] uppercase px-2 mb-[3px] text-[rgba(79,70,229,0.6)]">
+                  {group.title}
+                </p>
+              )}
+              {(!isGroupCollapsed || hasActiveItem) && group.items.map(item => {
+                const active = isActive(item.path);
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => { navigate(item.path); if (isMobile) setOpenMobile(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-[10px] px-2 py-[7px] rounded-[8px]",
+                      "text-[13.5px] tracking-[-0.15px] transition-all text-left",
+                      active ? itemOn : itemBase
+                    )}
+                  >
+                    <span className={cn("w-[18px] flex items-center justify-center flex-shrink-0",
+                      active ? iconOn : iconDef)}>
+                      {item.icon}
+                    </span>
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {item.badge !== undefined && (
+                      <span className={cn("text-[10px] font-semibold rounded-full px-1.5 py-px",
+                        isDark ? "bg-white/10 text-[#71717a]" : "bg-[#f0f0f0] text-[#a1a1aa]")}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       <div className={cn("mt-auto px-3 py-3 flex items-center gap-2.5", foot)}>
         <div className="w-[28px] h-[28px] rounded-full bg-[#4F46E5] flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
           {userInitials}
