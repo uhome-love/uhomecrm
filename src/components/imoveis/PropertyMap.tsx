@@ -429,7 +429,7 @@ export default function PropertyMap({
       )}
 
       {/* Property count badge */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-sm px-3 py-1.5 rounded-[8px] shadow-md border border-[#e8e8f0] dark:border-white/10">
+      <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 dark:bg-[#141e30]/95 backdrop-blur-sm px-3 py-1.5 rounded-[8px] shadow-md border border-[#e8e8f0] dark:border-white/10">
         <span className="text-[12px] font-medium text-[#0a0a0a] dark:text-white">
           {mappableProperties.length} imóveis no mapa
         </span>

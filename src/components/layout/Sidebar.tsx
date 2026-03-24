@@ -297,7 +297,7 @@ export default function Sidebar({
   const collapsed = sidebarState === "collapsed";
 
   // ── tokens ──
-  const sb    = isDark ? "bg-[#0c0c0e] border-r border-white/5"       : "bg-[#e8e8f0] border-r border-[#dddde8]";
+  const sb    = isDark ? "bg-[#091020] border-r border-white/5"       : "bg-[#e8e8f0] border-r border-[#dddde8]";
   const tx    = isDark ? "text-[#fafafa]"     : "text-[#0a0a0a]";
   const txm   = isDark ? "text-[#a1a1aa]"     : "text-[#52525b]";
   const txd   = isDark ? "text-[#3f3f46]"     : "text-[#c4c4c7]";
