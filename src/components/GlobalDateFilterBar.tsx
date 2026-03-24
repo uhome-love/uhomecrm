@@ -57,14 +57,10 @@ export default function GlobalDateFilterBar({ variant = "inline", className }: P
         <PopoverTrigger asChild>
           <button
             className={cn(
-              "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 border",
+              "px-3 py-1.5 text-[13px] font-medium rounded-[7px] transition-all flex items-center gap-1.5",
               period === "custom"
-                ? isHeader
-                  ? "bg-[#1e293b] text-white border-primary"
-                  : "bg-primary text-primary-foreground border-primary"
-                : isHeader
-                  ? "text-slate-400 hover:text-white border-transparent"
-                  : "text-muted-foreground hover:text-foreground border-transparent hover:border-border"
+                ? "bg-[#4F46E5] text-white"
+                : "text-[#71717a] hover:text-[#0a0a0a] hover:bg-[#e8e8f0] dark:hover:text-white dark:hover:bg-white/[0.08]"
             )}
           >
             <CalendarRange className="h-3 w-3" />

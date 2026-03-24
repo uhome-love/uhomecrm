@@ -206,29 +206,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2.5 h-9 px-3 hover:bg-white/5 rounded-xl">
+                   <Button variant="ghost" className={cn("flex items-center gap-2.5 h-9 px-3 rounded-xl", theme === "dark" ? "hover:bg-white/5" : "hover:bg-[#f0f0f5]")}>
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
                         alt={nome || "Avatar"}
                         className="rounded-full object-cover shrink-0"
-                        style={{ width: 36, height: 36, border: "2px solid #7C3AED" }}
+                        style={{ width: 36, height: 36, border: "2px solid #4F46E5" }}
                       />
                     ) : (
                       <div
                         className="flex items-center justify-center rounded-full font-bold text-white text-[11px] shrink-0"
-                        style={{ width: 36, height: 36, background: "#7C3AED", border: "2px solid #7C3AED" }}
+                        style={{ width: 36, height: 36, background: "#4F46E5", border: "2px solid #4F46E5" }}
                       >
                         {nome ? nome.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : <User className="h-4 w-4" />}
                       </div>
                     )}
                     <div className="text-left hidden sm:block">
-                      <p className="leading-tight" style={{ color: "#FFFFFF", fontSize: 14, fontWeight: 600 }}>
+                      <p className="leading-tight" style={{ color: theme === "dark" ? "#FFFFFF" : "#0a0a0a", fontSize: 14, fontWeight: 600 }}>
                         {nome || user?.email?.split("@")[0]}
                       </p>
-                      <p className="leading-tight" style={{ color: "#9CA3AF", fontSize: 12 }}>{cargoLabel}</p>
+                      <p className="leading-tight" style={{ color: theme === "dark" ? "#9CA3AF" : "#71717a", fontSize: 12 }}>{cargoLabel}</p>
                     </div>
-                    <ChevronDown className="h-3.5 w-3.5 hidden sm:block" style={{ color: "#6B7280" }} />
+                    <ChevronDown className="h-3.5 w-3.5 hidden sm:block" style={{ color: theme === "dark" ? "#6B7280" : "#a1a1aa" }} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
