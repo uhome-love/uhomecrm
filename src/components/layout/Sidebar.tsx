@@ -355,12 +355,8 @@ export default function Sidebar({
       style={{ scrollbarWidth: "none" }}
     >
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-5 pt-5 pb-4">
-        <img
-          src={uhomeLogo}
-          alt="UhomeSales"
-          className="h-8 w-auto object-contain"
-        />
+      <div className="px-5 pt-5 pb-4">
+        <UhomeLogo size="md" showTagline />
       </div>
 
       {/* ── Campanhas ativas (só admin) ───────────────────────────────────── */}
