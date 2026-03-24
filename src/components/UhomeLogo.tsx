@@ -81,10 +81,10 @@ function HomiTaglineIcon({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className="inline-block align-middle" style={{ marginTop: -1 }}>
       {/* Body */}
-      <rect x="5" y="10" width="14" height="11" rx="4" fill="#3B82F6" />
+      <rect x="5" y="10" width="14" height="11" rx="4" fill="#4F46E5" />
       {/* Head / hood */}
-      <path d="M12 2 L5 9 L19 9 Z" fill="#3B82F6" />
-      <rect x="6" y="7" width="12" height="6" rx="2" fill="#3B82F6" />
+      <path d="M12 2 L5 9 L19 9 Z" fill="#4F46E5" />
+      <rect x="6" y="7" width="12" height="6" rx="2" fill="#4F46E5" />
       {/* Face visor */}
       <rect x="7.5" y="8" width="9" height="5" rx="2" fill="#0F172A" />
       {/* Eyes */}
