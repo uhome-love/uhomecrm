@@ -18,6 +18,7 @@ import {
   Trash2, ArrowRightLeft, Lock, Unlock, ShieldAlert, Clock, History,
   AlertTriangle, Loader2, UserPlus,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
