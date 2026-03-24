@@ -193,17 +193,11 @@ function mapDoc(doc: any): SiteImovel {
 
 /* ── Build Typesense filter_by ── */
 
-function buildGeoBoundsFilter(bounds?: BuscaFilters["bounds"]): string | null {
-  if (!bounds) return null;
-
-  const { lat_min, lat_max, lng_min, lng_max } = bounds;
-  const values = [lat_min, lat_max, lng_min, lng_max];
-  if (values.some((value) => !Number.isFinite(value))) return null;
-  if (lat_min >= lat_max || lng_min >= lng_max) return null;
-
-  // Uses geopoint polygon filter when `location` field is available in the schema.
-  // Falls back gracefully if the field doesn't exist (Typesense returns error, caught by caller).
-  return `location:(${lat_min}, ${lng_min}, ${lat_max}, ${lng_min}, ${lat_max}, ${lng_max}, ${lat_min}, ${lng_max})`;
+function buildGeoBoundsFilter(_bounds?: BuscaFilters["bounds"]): string | null {
+  // Geo-bounds filtering is handled client-side via siteImovelToMapPin bounds check.
+  // Server-side geo-filtering requires rebuilding the Typesense collection with the
+  // `location` geopoint field populated (schema is ready in typesense-admin/sync).
+  return null;
 }
 
 function buildFilterBy(filters: BuscaFilters): string {
