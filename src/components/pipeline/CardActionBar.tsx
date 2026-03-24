@@ -41,11 +41,11 @@ export default function CardActionBar({
         {/* Dividers */}
         <div style={{
           position: "absolute", left: "33.33%", top: "20%", bottom: "20%",
-          width: 1, background: "#F1F5F9",
+          width: 1, background: "#e8e8f0",
         }} />
         <div style={{
           position: "absolute", left: "66.66%", top: "20%", bottom: "20%",
-          width: 1, background: "#F1F5F9",
+          width: 1, background: "#e8e8f0",
         }} />
 
         {/* Button 1: Tarefa */}

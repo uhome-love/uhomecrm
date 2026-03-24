@@ -672,8 +672,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         }
       `}</style>
 
-      {/* Mini-map nav pills */}
-      <div className="shrink-0 flex items-center gap-1.5 mb-2 px-0.5 overflow-x-auto scrollbar-none" style={{ paddingTop: 12 }}>
+      {/* Mini-map nav pills — Stage tabs line 3 */}
+      <div className="shrink-0 flex items-center gap-1 mb-2 px-0.5 overflow-x-auto scrollbar-none pb-0.5" style={{ paddingTop: 10 }}>
         {visibleStages.map((stage, idx) => {
           const stageLeads = leadsByStage.get(stage.id) || [];
           const isActive = idx === activeIndex;
@@ -682,22 +682,21 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
             <button
               key={stage.id}
               onClick={() => scrollToIndex(idx)}
+              className="transition-all"
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "6px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600,
+                padding: "5px 10px", borderRadius: 7, fontSize: 11, fontWeight: 500,
                 whiteSpace: "nowrap",
-                background: isActive ? "#fff" : "transparent",
-                border: isActive ? "1px solid #E2E8F0" : "1px solid transparent",
-                boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                color: isActive ? "#1E293B" : "#94A3B8",
+                background: isActive ? "#fff" : "#f7f7fb",
+                border: isActive ? "1px solid #4F46E5" : "1px solid #e8e8f0",
+                color: isActive ? "#0a0a0a" : "#52525b",
                 cursor: "pointer",
-                transition: "all 0.2s cubic-bezier(0.25,0.46,0.45,0.94)",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
-              <span style={{ fontSize: 14 }}>{emoji}</span>
+              {emoji && <span style={{ fontSize: 12 }}>{emoji}</span>}
               <span>{stage.nome}</span>
-              <span style={{ fontWeight: 800, color: isActive ? "#1E293B" : "#94A3B8" }}>
+              <span style={{ fontWeight: 700, color: "#4F46E5", marginLeft: 2 }}>
                 {stageLeads.length}
               </span>
             </button>
@@ -780,45 +779,44 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   className="shrink-0"
                   style={{
                     background: "#fff",
-                    border: isDragOver ? "1px solid #93C5FD" : "1px solid #E2E8F0",
-                    borderRadius: 14,
-                    padding: "12px 14px",
-                    boxShadow: isDragOver ? "0 4px 16px rgba(37,99,235,0.12)" : "0 1px 2px rgba(0,0,0,0.05)",
+                    border: isDragOver ? "1px solid #4F46E5" : "1px solid #e8e8f0",
+                    borderRadius: 12,
+                    padding: "10px 12px",
+                    boxShadow: isDragOver ? "0 4px 16px rgba(79,70,229,0.10)" : "0 1px 2px rgba(0,0,0,0.04)",
                     marginBottom: 8,
                     animation: isFlashing ? "columnFlash 0.6s ease-out" : undefined,
-                    ["--flash-color" as any]: stage.cor,
+                    ["--flash-color" as any]: "#4F46E5",
                     transition: "all 0.2s ease",
                   }}
                 >
                   {/* Top: emoji + name + badge */}
-                  <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
+                  <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
                     <div style={{
-                      width: 28, height: 28, borderRadius: 8,
+                      width: 26, height: 26, borderRadius: 7,
                       background: theme.emojiBg,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 15, flexShrink: 0,
+                      fontSize: 13, flexShrink: 0,
                     }}>
                       {emoji}
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1E293B", flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#0a0a0a", flex: 1 }}>
                       {stage.nome}
                     </span>
                     <span style={{
-                      fontSize: 11, fontWeight: 700, color: theme.badgeColor,
-                      background: theme.badgeBg, padding: "2px 9px", borderRadius: 100,
+                      fontSize: 13, fontWeight: 700, color: "#4F46E5",
                     }}>
                       {stageLeads.length}
                     </span>
                   </div>
 
-                  {/* Progress bar */}
+                  {/* Progress bar — unified #4F46E5 */}
                   <div style={{
-                    height: 3, borderRadius: 100, background: "#F1F5F9",
-                    marginBottom: 8, overflow: "hidden",
+                    height: 2, borderRadius: 100, background: "#f0f0f5",
+                    marginBottom: 6, overflow: "hidden",
                   }}>
                     <div style={{
                       height: "100%", borderRadius: 100,
-                      background: theme.gradient,
+                      background: "#4F46E5",
                       width: `${progressPct}%`,
                       transition: "width 0.3s ease",
                     }} />
@@ -828,7 +826,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   <div className="flex items-center justify-between">
                     {totalVGV > 0 ? (
                       <span style={{
-                        fontSize: 11, fontWeight: 700, color: "#1E293B",
+                        fontSize: 11, fontWeight: 600, color: "#a1a1aa",
                         fontFamily: "'DM Mono', monospace",
                       }}>
                         {formatVGV(totalVGV)}
@@ -836,12 +834,12 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     ) : <span />}
                     <div className="flex items-center gap-2">
                       {avgTime && (
-                        <span style={{ fontSize: 10, color: "#94A3B8" }}>
+                        <span style={{ fontSize: 11, color: "#a1a1aa" }}>
                           ⏱ {avgTime}
                         </span>
                       )}
                       {alerts.semCorretor > 0 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#4F46E5" }}>
                           👤{alerts.semCorretor}
                         </span>
                       )}

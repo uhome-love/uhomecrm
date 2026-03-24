@@ -286,8 +286,8 @@ const PipelineCard = memo(function PipelineCard({
         {/* ROW 1: Name + tags + days badge */}
         <div className="flex items-center justify-between gap-1.5" style={{ marginBottom: 6 }}>
           <span style={{
-            fontSize: 14, fontWeight: 700, letterSpacing: "-0.3px",
-            color: "#1E293B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            fontSize: 14, fontWeight: 600, letterSpacing: "-0.3px",
+            color: "#0a0a0a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             flex: 1,
           }}>
             {cleanName(lead.nome)}
@@ -295,9 +295,10 @@ const PipelineCard = memo(function PipelineCard({
           <div className="flex items-center gap-1 shrink-0">
             {originTag && (
               <span style={{
-                fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em",
-                padding: "3px 7px", borderRadius: 5,
-                background: originTag.bg, color: originTag.color,
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em",
+                padding: "2px 6px", borderRadius: 4,
+                background: originTag.label === "NOVO" ? "rgba(79,70,229,0.1)" : originTag.bg,
+                color: originTag.label === "NOVO" ? "#4F46E5" : originTag.color,
               }}>
                 {originTag.label}
               </span>
@@ -337,7 +338,7 @@ const PipelineCard = memo(function PipelineCard({
                 corretorNome[0]
               )}
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#2563EB" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#4F46E5" }}>
               {corretorNome.split(" ").slice(0, 2).join(" ")}
             </span>
           </div>
@@ -351,9 +352,9 @@ const PipelineCard = memo(function PipelineCard({
           {displayEmpreendimento && (
             <span style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              background: "#F1F5F9", border: "1px solid #E2E8F0",
+              background: "#f7f7fb", border: "1px solid #e8e8f0",
               borderRadius: 6, padding: "3px 8px",
-              fontSize: 11, fontWeight: 600, color: "#334155",
+              fontSize: 11, fontWeight: 600, color: "#52525b",
               flexShrink: 0, maxWidth: 140,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>
@@ -486,7 +487,7 @@ const PipelineCard = memo(function PipelineCard({
       )}
 
       {/* Footer separator */}
-      <div style={{ height: 1, background: "#F1F5F9" }} />
+      <div style={{ height: 1, background: "#e8e8f0" }} />
 
       {/* Card Footer — 3 equal buttons */}
       <CardActionBar
