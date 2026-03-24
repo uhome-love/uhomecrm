@@ -128,6 +128,7 @@ export default function CeoDashboard() {
   const [kpiDetail, setKpiDetail] = useState<{ type: KpiDetailType; label: string } | null>(null);
   const [funnelFilter, setFunnelFilter] = useState<"all" | string>("all");
   const [funnelCorretorFilter, setFunnelCorretorFilter] = useState<"all" | string>("all");
+  const [showAllCorretorLeads, setShowAllCorretorLeads] = useState(false);
 
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
