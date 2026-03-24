@@ -475,7 +475,7 @@ export default function CeoDashboard() {
               <Inbox className="h-4 w-4 sm:h-5 sm:w-5 text-[#4F46E5]" />
             </div>
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-sm font-semibold whitespace-nowrap">📥 Fila CEO</span>
+              <span className="text-sm font-semibold whitespace-nowrap">Fila CEO</span>
               {filaCeoCount > 0 && <Badge className="bg-[#4F46E5] text-white border-none text-xs">{filaCeoCount}</Badge>}
             </div>
           </div>
