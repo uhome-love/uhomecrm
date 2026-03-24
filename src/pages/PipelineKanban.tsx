@@ -779,10 +779,11 @@ export default function PipelineKanban() {
 
             {/* RIGHT: Lead count + status chips */}
             <div className="flex items-center" style={{ gap: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8" }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8" }}>
                 {hasAnyFilter
                   ? `${filteredLeads.length}/${pipeline.leads.length}`
                   : filteredLeads.length.toLocaleString("pt-BR")} leads
+                {isAdmin && filaCeoCount > 0 && <> · Fila CEO {filaCeoCount}</>}
               </span>
 
               {isAdmin && filaCeoCount > 0 && (
@@ -790,25 +791,25 @@ export default function PipelineKanban() {
                   <button
                     onClick={() => setFilaCeoFilter(f => !f)}
                     style={{
-                      display: "flex", alignItems: "center", gap: 4,
-                      padding: "4px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
-                      background: filaCeoFilter ? "#F5F3FF" : "#fff",
+                      display: "flex", alignItems: "center", gap: 3,
+                      padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
+                      background: filaCeoFilter ? "#F5F3FF" : "transparent",
                       color: filaCeoFilter ? "#7C3AED" : "#94A3B8",
                       border: filaCeoFilter ? "1.5px solid #C4B5FD" : "1px solid #E2E8F0",
                       cursor: "pointer",
                     }}
                   >
-                    📥 Fila CEO <span style={{ fontWeight: 800 }}>{filaCeoCount}</span>
+                    📥 {filaCeoCount}
                   </button>
                   <button
                     onClick={() => setDispatchOpen(true)}
                     style={{
-                      display: "flex", alignItems: "center", gap: 4,
-                      height: 24, padding: "0 8px", borderRadius: 8, fontSize: 10, fontWeight: 700,
+                      display: "flex", alignItems: "center", gap: 3,
+                      height: 20, padding: "0 6px", borderRadius: 6, fontSize: 9, fontWeight: 700,
                       background: "#7C3AED", color: "#fff", border: "none", cursor: "pointer",
                     }}
                   >
-                    <Rocket style={{ height: 12, width: 12 }} /> Disparar
+                    <Rocket style={{ height: 10, width: 10 }} /> Disparar
                   </button>
                 </>
               )}
@@ -817,42 +818,44 @@ export default function PipelineKanban() {
               <button
                 onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
                 style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "4px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
-                  background: clientStatusFilter === "em_dia" ? "#ECFDF5" : "#fff",
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
+                  background: clientStatusFilter === "em_dia" ? "#ECFDF5" : "transparent",
                   color: "#059669",
                   border: clientStatusFilter === "em_dia" ? "1.5px solid #A7F3D0" : "1px solid #E2E8F0",
                   cursor: "pointer",
                 }}
               >
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#059669" }} />
-                Em dia {clientStatusCounts.em_dia > 0 && clientStatusCounts.em_dia}
+                <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#059669" }} />
+                {clientStatusCounts.em_dia}
               </button>
               <button
                 onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
                 style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "4px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
-                  background: clientStatusFilter === "desatualizado" ? "#FFFBEB" : "#fff",
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
+                  background: clientStatusFilter === "desatualizado" ? "#FFFBEB" : "transparent",
                   color: "#D97706",
                   border: clientStatusFilter === "desatualizado" ? "1.5px solid #FDE68A" : "1px solid #E2E8F0",
                   cursor: "pointer",
                 }}
               >
-                Desatualizado {clientStatusCounts.desatualizado > 0 && clientStatusCounts.desatualizado}
+                <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#D97706" }} />
+                {clientStatusCounts.desatualizado}
               </button>
               <button
                 onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
                 style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "4px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700,
-                  background: clientStatusFilter === "tarefa_atrasada" ? "#FEF2F2" : "#fff",
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
+                  background: clientStatusFilter === "tarefa_atrasada" ? "#FEF2F2" : "transparent",
                   color: "#DC2626",
                   border: clientStatusFilter === "tarefa_atrasada" ? "1.5px solid #FECACA" : "1px solid #E2E8F0",
                   cursor: "pointer",
                 }}
               >
-                Atrasado {clientStatusCounts.tarefa_atrasada > 0 && clientStatusCounts.tarefa_atrasada}
+                <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#DC2626" }} />
+                {clientStatusCounts.tarefa_atrasada}
               </button>
 
               {hasAnyFilter && (
