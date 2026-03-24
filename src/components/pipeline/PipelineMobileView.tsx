@@ -176,38 +176,6 @@ const PipelineMobileView = memo(function PipelineMobileView({
         })}
       </div>
 
-      {/* Status Chips */}
-      <div style={{
-        display: "flex", gap: 6, padding: "8px 16px",
-        background: "#fff", borderBottom: "1px solid #F1F5F9",
-      }}>
-        {[
-          { key: "em_dia", label: "Em dia", count: clientStatusCounts.em_dia, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
-          { key: "desatualizado", label: "Desatualizado", count: clientStatusCounts.desatualizado, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-          { key: "tarefa_atrasada", label: "Atrasado", count: clientStatusCounts.tarefa_atrasada, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-        ].map(chip => {
-          const isActive = clientStatusFilter === chip.key;
-          return (
-            <button
-              key={chip.key}
-              onClick={() => onStatusFilterChange(isActive ? "todos" : chip.key)}
-              style={{
-                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-                padding: "5px 6px", borderRadius: 100,
-                fontSize: 11, fontWeight: 700,
-                background: isActive ? chip.bg : "#fff",
-                color: chip.color,
-                border: isActive ? `1.5px solid ${chip.border}` : "1px solid #E2E8F0",
-                cursor: "pointer", whiteSpace: "nowrap",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-            >
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: chip.color, flexShrink: 0 }} />
-              {chip.count}
-            </button>
-          );
-        })}
-      </div>
 
       {/* Cards List */}
       <div
