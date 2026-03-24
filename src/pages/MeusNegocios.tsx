@@ -204,13 +204,9 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
       <div
         draggable
         onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
-        className="group rounded-xl cursor-pointer active:cursor-grabbing transition-all duration-200 select-none overflow-hidden hover:scale-[1.02] hover:shadow-lg"
+        className="group rounded-xl cursor-pointer active:cursor-grabbing transition-all duration-200 select-none overflow-hidden hover:scale-[1.02] hover:shadow-lg bg-white border border-[#e8e8f0] dark:bg-[rgba(255,255,255,0.04)] dark:border-white/[0.08] dark:backdrop-blur-[16px]"
         style={{
-          background: "rgba(255,255,255,0.04)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          border: `1px solid rgba(255,255,255,0.08)`,
-          boxShadow: `0 0 12px ${faseInfo?.cor || "#6B7280"}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
+          boxShadow: `0 0 12px ${faseInfo?.cor || "#6B7280"}15`,
         }}
       >
         {/* Glow top bar */}
