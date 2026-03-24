@@ -247,7 +247,8 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
           const total = all.length;
           const worked = aproveitados + descartados;
           return {
-            lista_id: lista.id, nome: lista.nome, empreendimento: lista.empreendimento,
+            lista_id: lista.id, nome: lista.nome, empreendimento: (lista as any).empreendimento,
+            campanha: (lista as any).campanha || null,
             total, na_fila, aproveitados, descartados, em_cooldown,
             percent_complete: total > 0 ? Math.round((worked / total) * 100) : 0,
           };
