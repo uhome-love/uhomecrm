@@ -179,7 +179,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const empMap = new Map<string, { leads: number; avancou: number; parados: number }>();
       const now = new Date();
       // Filter: only marketing leads (not Oferta Ativa) for empreendimento chart
-      const mktLeads = (leads || []).filter(l => l.origem !== "Oferta Ativa");
+      const mktLeads = (leads || []).filter(l => !l.origem?.toLowerCase().includes("oferta ativa") && l.origem?.toLowerCase() !== "oferta_ativa");
       for (const l of mktLeads) {
         const emp = l.empreendimento || "Sem empreendimento";
         const curr = empMap.get(emp) || { leads: 0, avancou: 0, parados: 0 };
@@ -417,11 +417,12 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const startTs = `${range.start}T00:00:00`;
       const endTs = `${range.end}T23:59:59`;
 
-      const [{ count: leadsCount }, { count: leadsOACount }, { count: visitasCriadasCount }, { count: novoInteresseCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).neq("origem", "Oferta Ativa"),
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).eq("origem", "Oferta Ativa"),
+      const [{ count: leadsCount }, { count: leadsOACount }, { count: visitasCriadasCount }, { count: novoInteresseCount }, { count: enviadosRoletaCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
+        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).not("origem", "ilike", "%oferta%ativa%"),
+        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).ilike("origem", "%oferta%ativa%"),
         supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).neq("status", "cancelada"),
         supabase.from("campaign_clicks").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).eq("lead_action", "updated"),
+        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).not("corretor_id", "is", null).not("origem", "ilike", "%oferta%ativa%"),
         supabase.from("roleta_credenciamentos").select("corretor_id").eq("data", hoje).in("status", ["aprovado", "saiu"]),
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
       ]);
@@ -434,6 +435,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         leadsReaproveitadosOA: leadsOACount || 0,
         totalVisitasCriadas: visitasCriadasCount || 0,
         novoInteresse: novoInteresseCount || 0,
+        enviadosRoleta: enviadosRoletaCount || 0,
         presentesHoje: dispIds.size,
         metasDiaTotal: {
           ligacoes: (goals || []).reduce((a, g) => a + (g.meta_ligacoes || 0), 0),
@@ -474,6 +476,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     leadsReaproveitadosOA: extraKpis?.leadsReaproveitadosOA || 0,
     totalVisitasCriadas: extraKpis?.totalVisitasCriadas || 0,
     novoInteresse: extraKpis?.novoInteresse || 0,
+    enviadosRoleta: extraKpis?.enviadosRoleta || 0,
     presentesHoje: extraKpis?.presentesHoje || 0,
     metasDiaTotal: extraKpis?.metasDiaTotal || { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0 },
     reload: useCallback(() => {

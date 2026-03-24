@@ -70,7 +70,7 @@ export default function KpiDetailDialog({ open, onOpenChange, type, label, dateR
         .select("id, nome, origem, empreendimento, created_at")
         .gte("created_at", start)
         .lte("created_at", end + "T23:59:59")
-        .neq("origem", "Oferta Ativa")
+        .not("origem", "ilike", "%oferta%ativa%")
         .order("created_at", { ascending: false })
         .limit(200);
       setRows((data || []).map(l => ({
