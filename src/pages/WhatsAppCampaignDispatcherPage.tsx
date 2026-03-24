@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Send, Pause, Play, XCircle, RefreshCw, TestTube, Rocket, Filter, BarChart3, List, CheckCircle2, AlertTriangle, Database, FileSpreadsheet } from "lucide-react";
+import { Loader2, Send, Pause, Play, XCircle, RefreshCw, TestTube, Rocket, Filter, BarChart3, List, CheckCircle2, AlertTriangle, Database, FileSpreadsheet, MessageSquare } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { toast } from "sonner";
 import {
   useCampaignBatches,
