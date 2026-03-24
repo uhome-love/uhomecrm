@@ -818,10 +818,10 @@ export default function MeusNegocios() {
           <div className="w-7 h-7 rounded-[7px] bg-[#4F46E5] flex items-center justify-center flex-shrink-0">
             <Briefcase size={13} strokeWidth={1.5} className="text-white" />
           </div>
-          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-white">Pipeline negócios</h1>
-          <span className="text-[12px] text-[#52525b]">{filteredNegocios.length} negócios</span>
+          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-white">Pipeline negócios</h1>
+          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
           {totalVGV > 0 && (
-            <span className="text-[12px] font-bold text-[#10b981]">{formatVGV(totalVGV)}</span>
+            <span className="text-[12px] font-bold text-[#10b981] dark:text-[#34d399]">{formatVGV(totalVGV)}</span>
           )}
 
           <div className="flex-1" />
