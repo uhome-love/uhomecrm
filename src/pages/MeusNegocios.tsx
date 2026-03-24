@@ -316,8 +316,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
 
         {/* Action bar - glass effect */}
         <div
-          className="flex items-center border-t border-white/[0.06]"
-          style={{ background: "rgba(255,255,255,0.02)" }}
+          className="flex items-center border-t border-[#e8e8f0] dark:border-white/[0.06] bg-[#f7f7fb] dark:bg-[rgba(255,255,255,0.02)]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Ligar */}
