@@ -193,17 +193,12 @@ function mapDoc(doc: any): SiteImovel {
 
 /* ── Build Typesense filter_by ── */
 
-function buildGeoBoundsFilter(bounds?: BuscaFilters["bounds"]): string | null {
-  if (!bounds) return null;
-
-  const { lat_min, lat_max, lng_min, lng_max } = bounds;
-  const values = [lat_min, lat_max, lng_min, lng_max];
-  if (values.some((value) => !Number.isFinite(value))) return null;
-  if (lat_min >= lat_max || lng_min >= lng_max) return null;
-
-  // Typesense uses a geopoint field called `location` with polygon-based filtering.
-  // We define the 4 corners of the bounding rectangle (SW, NW, NE, SE).
-  return `location:(${lat_min}, ${lng_min}, ${lat_max}, ${lng_min}, ${lat_max}, ${lng_max}, ${lat_min}, ${lng_max})`;
+function buildGeoBoundsFilter(_bounds?: BuscaFilters["bounds"]): string | null {
+  // Geo-bounds filtering is done client-side because the Typesense schema
+  // does not currently have `location` or `latitude`/`longitude` as filterable fields.
+  // To enable server-side geo-filtering, the Typesense collection schema must be updated
+  // to add `location` as a geopoint field with facet/filter enabled.
+  return null;
 }
 
 function buildFilterBy(filters: BuscaFilters): string {
