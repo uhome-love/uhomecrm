@@ -56,13 +56,14 @@ function ListaStats({ listaId }: { listaId: string }) {
   );
 }
 
-function ListaCard({ lista, isAdmin, isSelected, onToggle, onUpdate, onDelete }: {
+function ListaCard({ lista, isAdmin, isSelected, onToggle, onUpdate, onDelete, onClean }: {
   lista: OALista;
   isAdmin: boolean;
   isSelected: boolean;
   onToggle: () => void;
   onUpdate: (id: string, data: any) => void;
   onDelete: (id: string) => void;
+  onClean: (id: string) => void;
 }) {
   const st = STATUS_CONFIG[lista.status] || STATUS_CONFIG.pendente;
   return (
