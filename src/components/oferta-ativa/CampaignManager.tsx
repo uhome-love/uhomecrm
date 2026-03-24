@@ -390,7 +390,7 @@ export default function CampaignManager() {
                   setShowCampanhaDialog(true);
                 }}
               >
-                <FolderOpen className="h-3.5 w-3.5" /> Agrupar em Campanha
+                 <FolderOpen className="h-3.5 w-3.5" /> Unificar Listas
               </Button>
               {someHaveCampanha && (
                 <Button
