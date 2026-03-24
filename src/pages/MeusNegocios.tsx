@@ -861,8 +861,7 @@ export default function MeusNegocios() {
 
           <Button
             size="icon"
-            className="h-9 w-9 shrink-0 rounded-lg text-white border-none"
-            style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}
+            className="h-9 w-9 shrink-0 rounded-lg text-white border-none bg-[#4F46E5] hover:bg-[#4338CA]"
             onClick={handleRefresh}
             disabled={refreshing}
           >
