@@ -121,12 +121,21 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       ],
     },
     {
-      title: "Leads & Vendas",
+      title: "Gestão de Leads",
       items: [
+        { label: "Anúncios no ar",     path: "/anuncios",          icon: <Megaphone    size={15} strokeWidth={1.5} /> },
+        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
-        { label: "Pipeline negócios",  path: "/pipeline-negocios", icon: <BarChart3    size={15} strokeWidth={1.5} /> },
+        { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
         { label: "Busca de leads",     path: "/busca-leads",       icon: <Search       size={15} strokeWidth={1.5} /> },
-        { label: "Disponibilidade",    path: "/disponibilidade",   icon: <Clock        size={15} strokeWidth={1.5} /> },
+      ],
+    },
+    {
+      title: "Gestão de Negócios",
+      items: [
+        { label: "Pipeline negócios",  path: "/pipeline-negocios", icon: <BarChart3    size={15} strokeWidth={1.5} /> },
+        { label: "Vendas realizadas",  path: "/vendas-realizadas", icon: <TrendingUp   size={15} strokeWidth={1.5} /> },
+        { label: "Pós-vendas",         path: "/pos-vendas",        icon: <Heart        size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -135,6 +144,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
         { label: "Forecast",           path: "/forecast",          icon: <LineChart    size={15} strokeWidth={1.5} /> },
+        { label: "Disponibilidade",    path: "/disponibilidade",   icon: <Clock        size={15} strokeWidth={1.5} /> },
       ],
     },
     {
