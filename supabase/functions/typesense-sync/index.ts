@@ -86,6 +86,7 @@ function mapImovelToDocument(item: any): Record<string, any> {
   if (hasCoords) {
     doc.latitude = lat;
     doc.longitude = lng;
+    doc.location = [lat, lng];
   }
 
   return doc;

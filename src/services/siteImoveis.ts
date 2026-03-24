@@ -194,10 +194,9 @@ function mapDoc(doc: any): SiteImovel {
 /* ── Build Typesense filter_by ── */
 
 function buildGeoBoundsFilter(_bounds?: BuscaFilters["bounds"]): string | null {
-  // Geo-bounds filtering is done client-side because the Typesense schema
-  // does not currently have `location` or `latitude`/`longitude` as filterable fields.
-  // To enable server-side geo-filtering, the Typesense collection schema must be updated
-  // to add `location` as a geopoint field with facet/filter enabled.
+  // Geo-bounds filtering is handled client-side via siteImovelToMapPin bounds check.
+  // Server-side geo-filtering requires rebuilding the Typesense collection with the
+  // `location` geopoint field populated (schema is ready in typesense-admin/sync).
   return null;
 }
 
