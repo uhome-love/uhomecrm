@@ -128,6 +128,7 @@ export default function CeoDashboard() {
   const [kpiDetail, setKpiDetail] = useState<{ type: KpiDetailType; label: string } | null>(null);
   const [funnelFilter, setFunnelFilter] = useState<"all" | string>("all");
   const [funnelCorretorFilter, setFunnelCorretorFilter] = useState<"all" | string>("all");
+  const [showAllCorretorLeads, setShowAllCorretorLeads] = useState(false);
 
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
@@ -465,14 +466,19 @@ export default function CeoDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2.5 max-h-56 overflow-y-auto">
-                {leadsPorCorretor.slice(0, 10).map((c, idx) => {
+              <div className={`space-y-2.5 ${showAllCorretorLeads ? "max-h-96" : "max-h-56"} overflow-y-auto`}>
+                {(showAllCorretorLeads ? leadsPorCorretor : leadsPorCorretor.slice(0, 6)).map((c, idx) => {
                   const max = Math.max(...leadsPorCorretor.map(x => x.count), 1);
                   const color = FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
                   return <HBar key={`${c.nome}-${idx}`} label={c.nome} value={c.count} max={max} color={color} />;
                 })}
                 {leadsPorCorretor.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
               </div>
+              {leadsPorCorretor.length > 6 && (
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-[10px] text-[#4F46E5] hover:text-[#4F46E5]/80" onClick={() => setShowAllCorretorLeads(!showAllCorretorLeads)}>
+                  {showAllCorretorLeads ? "Ver menos" : `Ver mais (${leadsPorCorretor.length})`}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
