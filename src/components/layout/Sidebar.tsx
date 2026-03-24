@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
+import uhomeLogo from "@/assets/uhomesales-logo.png";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
