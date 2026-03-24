@@ -487,7 +487,7 @@ const PipelineCard = memo(function PipelineCard({
       )}
 
       {/* Footer separator */}
-      <div style={{ height: 1, background: "#F1F5F9" }} />
+      <div style={{ height: 1, background: "#e8e8f0" }} />
 
       {/* Card Footer — 3 equal buttons */}
       <CardActionBar
