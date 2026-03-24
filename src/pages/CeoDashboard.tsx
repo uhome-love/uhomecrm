@@ -408,9 +408,9 @@ export default function CeoDashboard() {
             sub="Leads da Oferta Ativa" />
           <MiniKpi label="Enviados p/ Roleta" value={leadsDistribuidos > 0 ? leadsDistribuidos : 0}
             sub={filaCeoCount > 0 ? `${filaCeoCount} na fila` : "Fila vazia"} />
-          <MiniKpi label="Presentes Hoje" value={presentesHoje} sub={`${presentesHoje} corretores ativos`} />
-          <MiniKpi label="Conversão Lead→Visita" value={`${totalLeadsPeriodo > 0 ? Math.round((kpis.visitasMarcadas / totalLeadsPeriodo) * 100) : 0}%`}
-            variant={totalLeadsPeriodo > 0 && (kpis.visitasMarcadas / totalLeadsPeriodo) >= 0.1 ? "success" : "warning"} />
+          <MiniKpi label="Novo Interesse" value={novoInteresse}
+            sub="Leads com novo interesse" />
+          <MiniKpi label="Corretores na Roleta" value={presentesHoje} sub={`${presentesHoje} presentes hoje`} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
