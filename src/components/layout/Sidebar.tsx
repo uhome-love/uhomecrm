@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
+import uhomeLogo from "@/assets/uhomesales-logo.png";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -304,9 +305,9 @@ export default function Sidebar({
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
           <img
-            src="/images/uhome-logo-36.png"
+            src={uhomeLogo}
             alt="UhomeSales"
-            className={cn("h-[30px] w-[30px] object-contain", isDark && "brightness-0 invert")}
+            className="h-[30px] w-auto object-contain"
           />
         </div>
 
@@ -360,9 +361,9 @@ export default function Sidebar({
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-5 pt-5 pb-4">
         <img
-          src="/images/uhome-logo-horizontal-azul.png"
+          src={uhomeLogo}
           alt="UhomeSales"
-          className={cn("h-8 w-auto object-contain", isDark && "brightness-0 invert")}
+          className="h-8 w-auto object-contain"
         />
       </div>
 
