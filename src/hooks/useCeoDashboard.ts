@@ -435,6 +435,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         leadsReaproveitadosOA: leadsOACount || 0,
         totalVisitasCriadas: visitasCriadasCount || 0,
         novoInteresse: novoInteresseCount || 0,
+        enviadosRoleta: enviadosRoletaCount || 0,
         presentesHoje: dispIds.size,
         metasDiaTotal: {
           ligacoes: (goals || []).reduce((a, g) => a + (g.meta_ligacoes || 0), 0),
