@@ -588,32 +588,42 @@ export default function CeoDashboard() {
         </div>
 
         <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4">
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-end gap-2 h-40 px-2">
+            <div className="grid grid-cols-7 gap-3">
               {negFunnelOrder.map((fase, idx) => {
                 const data = negocioFases.find((f: any) => f.fase === fase);
                 const count = data?.count || 0;
                 const vgv = data?.vgv || 0;
                 const maxCount = Math.max(...negocioFases.map((f: any) => f.count), 1);
-                const heightPct = maxCount > 0 ? Math.max((count / maxCount) * 100, 12) : 12;
+                const widthPct = maxCount > 0 ? Math.max((count / maxCount) * 100, 18) : 18;
                 const color = negFunnelColors[fase] || "#a1a1aa";
+                const isLast = idx === negFunnelOrder.length - 1;
+                const isCaiu = fase.toLowerCase().includes("caiu") || fase.toLowerCase().includes("perdid");
                 return (
-                  <div key={fase} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[10px] font-bold" style={{ color }}>
-                      {count > 0 ? count : "0"}
+                  <div key={fase} className="flex flex-col items-center text-center gap-2">
+                    <span className="text-2xl font-[800] leading-none" style={{ color }}>
+                      {count}
                     </span>
-                    <div className="w-full max-w-[48px] rounded-t-lg transition-all duration-500" style={{ height: `${heightPct}%`, backgroundColor: color, minHeight: "8px" }} />
-                    <span className="text-[9px] font-medium text-[#71717a] dark:text-[#a1a1aa] text-center leading-tight truncate w-full px-0.5">
+                    <div className="w-full flex justify-center">
+                      <div
+                        className="h-3 rounded-full transition-all duration-700 ease-out"
+                        style={{
+                          width: `${widthPct}%`,
+                          minWidth: "20px",
+                          backgroundColor: color,
+                          opacity: isCaiu ? 0.7 : 1,
+                        }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-semibold text-[#52525b] dark:text-[#a1a1aa] leading-tight">
                       {negFunnelLabels[fase] || fase}
                     </span>
-                    {count > 0 && (
-                      <span className="text-[8px] text-[#71717a] dark:text-[#a1a1aa]">
-                        {formatBRLCompact(vgv)}
-                      </span>
-                    )}
+                    <span className="text-[10px] font-medium text-[#a1a1aa] dark:text-[#71717a]">
+                      {formatBRLCompact(vgv)}
+                    </span>
                   </div>
                 );
               })}
