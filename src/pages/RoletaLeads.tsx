@@ -42,6 +42,7 @@ function CeoView() {
   const [allCorretores, setAllCorretores] = useState<{id: string; nome: string}[]>([]);
   const [selectedCorretor, setSelectedCorretor] = useState("");
   const [selectedSegmento, setSelectedSegmento] = useState("");
+  const [activeTab, setActiveTab] = useState("gestao");
 
   // Load all corretores for manual inclusion
   useEffect(() => {
@@ -54,8 +55,6 @@ function CeoView() {
   }
 
   const pendentes = credenciamentos.filter(c => c.status === "pendente");
-
-  const [activeTab, setActiveTab] = useState("gestao");
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
