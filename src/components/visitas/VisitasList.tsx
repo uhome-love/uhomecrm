@@ -208,7 +208,6 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
         description="As visitas agendadas aparecerão aqui organizadas por dia"
       />
     );
-    );
   }
 
   return (
