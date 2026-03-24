@@ -648,66 +648,111 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
         </motion.div>
       )}
 
-      {/* ═══ Lista Progress ═══ */}
-      {data_.listaProgress.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Activity className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground">Progresso das Listas</h3>
-          </div>
-          <div className="grid gap-3">
-            {data_.listaProgress.map((lp, i) => {
-              const pct = lp.percent_complete;
-              return (
+      {/* ═══ Lista Progress (grouped by campaign) ═══ */}
+      {data_.listaProgress.length > 0 && (() => {
+        // Group lists by campaign
+        const campanhaMap = new Map<string, ListaProgress[]>();
+        const avulsas: ListaProgress[] = [];
+        for (const lp of data_.listaProgress) {
+          if (lp.campanha) {
+            const arr = campanhaMap.get(lp.campanha) || [];
+            arr.push(lp);
+            campanhaMap.set(lp.campanha, arr);
+          } else {
+            avulsas.push(lp);
+          }
+        }
+
+        const campanhas: CampanhaProgress[] = Array.from(campanhaMap.entries()).map(([nome, listas]) => {
+          const total = listas.reduce((s, l) => s + l.total, 0);
+          const na_fila = listas.reduce((s, l) => s + l.na_fila, 0);
+          const aproveitados = listas.reduce((s, l) => s + l.aproveitados, 0);
+          const descartados = listas.reduce((s, l) => s + l.descartados, 0);
+          const em_cooldown = listas.reduce((s, l) => s + l.em_cooldown, 0);
+          const worked = aproveitados + descartados;
+          return {
+            campanha: nome, listas, total, na_fila, aproveitados, descartados, em_cooldown,
+            percent_complete: total > 0 ? Math.round((worked / total) * 100) : 0,
+          };
+        });
+
+        const renderProgressCard = (key: string, nome: string, subtitle: string, stats: { total: number; na_fila: number; em_cooldown: number; aproveitados: number; descartados: number; percent_complete: number }, idx: number, isCampanha?: boolean) => {
+          const pct = stats.percent_complete;
+          return (
+            <motion.div
+              key={key}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              className={`rounded-xl border bg-card p-4 ${isCampanha ? "border-primary/20 bg-primary/[0.02]" : "border-border/50"}`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    {isCampanha && <Target className="h-3.5 w-3.5 text-primary" />}
+                    {nome}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">{subtitle}</p>
+                </div>
+                <div className={`text-sm font-black px-2.5 py-0.5 rounded-lg ${
+                  pct >= 80 ? "text-emerald-400 bg-emerald-500/15" :
+                  pct >= 40 ? "text-blue-400 bg-blue-500/15" :
+                  "text-muted-foreground bg-muted/50"
+                }`}>
+                  {pct}%
+                </div>
+              </div>
+              <div className="h-2 rounded-full bg-muted/50 overflow-hidden mb-2.5">
                 <motion.div
-                  key={lp.lista_id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="rounded-xl border border-border/50 bg-card p-4"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="text-sm font-bold text-foreground">{lp.nome}</p>
-                      <p className="text-[10px] text-muted-foreground">{lp.empreendimento}</p>
-                    </div>
-                    <div className={`text-sm font-black px-2.5 py-0.5 rounded-lg ${
-                      pct >= 80 ? "text-emerald-400 bg-emerald-500/15" :
-                      pct >= 40 ? "text-blue-400 bg-blue-500/15" :
-                      "text-muted-foreground bg-muted/50"
-                    }`}>
-                      {pct}%
-                    </div>
-                  </div>
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className={`h-full rounded-full ${
+                    pct >= 80 ? "bg-gradient-to-r from-emerald-500 to-emerald-400" :
+                    pct >= 40 ? "bg-gradient-to-r from-blue-500 to-blue-400" :
+                    "bg-gradient-to-r from-violet-500 to-violet-400"
+                  }`}
+                  style={{ boxShadow: pct >= 80 ? "0 0 8px rgba(52,211,153,0.4)" : pct >= 40 ? "0 0 8px rgba(96,165,250,0.4)" : "none" }}
+                />
+              </div>
+              <div className="flex gap-3 text-[10px] font-medium text-muted-foreground">
+                <span>📞 {stats.na_fila} fila</span>
+                <span>⏳ {stats.em_cooldown} cool</span>
+                <span className="text-emerald-400">✅ {stats.aproveitados}</span>
+                <span className="text-red-400">❌ {stats.descartados}</span>
+                <span className="ml-auto font-bold text-foreground">{stats.total} total</span>
+              </div>
+            </motion.div>
+          );
+        };
 
-                  {/* Animated progress bar */}
-                  <div className="h-2 rounded-full bg-muted/50 overflow-hidden mb-2.5">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                      className={`h-full rounded-full ${
-                        pct >= 80 ? "bg-gradient-to-r from-emerald-500 to-emerald-400" :
-                        pct >= 40 ? "bg-gradient-to-r from-blue-500 to-blue-400" :
-                        "bg-gradient-to-r from-violet-500 to-violet-400"
-                      }`}
-                      style={{ boxShadow: pct >= 80 ? "0 0 8px rgba(52,211,153,0.4)" : pct >= 40 ? "0 0 8px rgba(96,165,250,0.4)" : "none" }}
-                    />
+        return (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">Progresso das Campanhas</h3>
+            </div>
+            <div className="grid gap-3">
+              {campanhas.map((cp, i) => (
+                <div key={cp.campanha} className="space-y-2">
+                  {renderProgressCard(`camp-${cp.campanha}`, cp.campanha, `${cp.listas.length} lista${cp.listas.length > 1 ? "s" : ""} agrupadas`, cp, i, true)}
+                  <div className="pl-4 border-l-2 border-primary/15 space-y-2">
+                    {cp.listas.map((lp, j) => renderProgressCard(lp.lista_id, lp.nome, lp.empreendimento, lp, j))}
                   </div>
-
-                  <div className="flex gap-3 text-[10px] font-medium text-muted-foreground">
-                    <span>📞 {lp.na_fila} fila</span>
-                    <span>⏳ {lp.em_cooldown} cool</span>
-                    <span className="text-emerald-400">✅ {lp.aproveitados}</span>
-                    <span className="text-red-400">❌ {lp.descartados}</span>
-                    <span className="ml-auto font-bold text-foreground">{lp.total} total</span>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
-      )}
+                </div>
+              ))}
+              {avulsas.length > 0 && campanhas.length > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="h-px flex-1 bg-border/50" />
+                  <span className="text-[10px] text-muted-foreground font-medium">Listas avulsas</span>
+                  <div className="h-px flex-1 bg-border/50" />
+                </div>
+              )}
+              {avulsas.map((lp, i) => renderProgressCard(lp.lista_id, lp.nome, lp.empreendimento, lp, i))}
+            </div>
+          </motion.div>
+        );
+      })()}
     </div>
   );
 }
