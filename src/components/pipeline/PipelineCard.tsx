@@ -286,8 +286,8 @@ const PipelineCard = memo(function PipelineCard({
         {/* ROW 1: Name + tags + days badge */}
         <div className="flex items-center justify-between gap-1.5" style={{ marginBottom: 6 }}>
           <span style={{
-            fontSize: 14, fontWeight: 700, letterSpacing: "-0.3px",
-            color: "#1E293B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            fontSize: 14, fontWeight: 600, letterSpacing: "-0.3px",
+            color: "#0a0a0a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             flex: 1,
           }}>
             {cleanName(lead.nome)}
@@ -295,9 +295,10 @@ const PipelineCard = memo(function PipelineCard({
           <div className="flex items-center gap-1 shrink-0">
             {originTag && (
               <span style={{
-                fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em",
-                padding: "3px 7px", borderRadius: 5,
-                background: originTag.bg, color: originTag.color,
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em",
+                padding: "2px 6px", borderRadius: 4,
+                background: originTag.label === "NOVO" ? "rgba(79,70,229,0.1)" : originTag.bg,
+                color: originTag.label === "NOVO" ? "#4F46E5" : originTag.color,
               }}>
                 {originTag.label}
               </span>
