@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import VisitaRow from "./VisitaRow";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Props {
   visitas: Visita[];
