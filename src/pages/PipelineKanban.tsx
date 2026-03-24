@@ -57,16 +57,24 @@ const CAMPAIGN_TAGS = [
 
 type ClientStatusFilter = "todos" | "em_dia" | "desatualizado" | "tarefa_atrasada";
 
-function classifyLeadStatus(lead: PipelineLead, proximaTarefa: any): ClientStatusFilter {
-  const tarefa = proximaTarefa || (
-    (lead as any).data_proxima_acao
-      ? { tipo: (lead as any).proxima_acao || "follow_up", vence_em: (lead as any).data_proxima_acao, hora_vencimento: null }
-      : null
-  );
-  const status = getCardStatus(lead, tarefa);
-  if (status.indicator === "🔴") return "tarefa_atrasada";
-  if (status.indicator === "✅" || !status.text) return "em_dia";
-  return "desatualizado";
+function classifyLeadStatus(_lead: PipelineLead, proximaTarefa: any): ClientStatusFilter {
+  // Task-based classification:
+  // 🔴 Atrasado = has overdue task
+  // 🟡 Desatualizado = no pending task at all
+  // 🟢 Em dia = has future/today task
+  if (!proximaTarefa?.vence_em) {
+    // Check inline data_proxima_acao fallback
+    const inlineDate = (_lead as any).data_proxima_acao;
+    if (!inlineDate) return "desatualizado"; // no task
+    const d = new Date(inlineDate);
+    if (isNaN(d.getTime())) return "desatualizado";
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    return d < todayStart ? "tarefa_atrasada" : "em_dia";
+  }
+  const d = new Date(proximaTarefa.vence_em);
+  if (isNaN(d.getTime())) return "em_dia"; // has task but invalid date → assume em dia
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  return d < todayStart ? "tarefa_atrasada" : "em_dia";
 }
 
 export default function PipelineKanban() {
