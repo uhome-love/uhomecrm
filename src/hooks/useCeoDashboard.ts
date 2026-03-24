@@ -165,7 +165,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     queryFn: async () => {
       const [{ data: stages }, { data: leads }] = await Promise.all([
         supabase.from("pipeline_stages").select("id, nome, tipo, ordem").eq("ativo", true).eq("pipeline_tipo", "leads").order("ordem"),
-        supabase.from("pipeline_leads").select("id, stage_id, empreendimento, updated_at, created_at, origem")
+        supabase.from("pipeline_leads").select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id")
           .gte("created_at", range.start)
           .lte("created_at", range.end + "T23:59:59")
           .limit(1000),
@@ -221,7 +221,27 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const origens = Array.from(origMap.entries()).map(([origem, count]) => ({ origem, count })).sort((a, b) => b.count - a.count);
       const leadsPorEmpreendimento = Array.from(empMap.entries()).map(([emp, d]) => ({ emp, count: d.leads })).sort((a, b) => b.count - a.count).slice(0, 10);
 
-      return { pipelineStages: stageData, campanhas, alertas, origens, leadsPorEmpreendimento };
+      // Leads por corretor
+      const corrLeadMap = new Map<string, number>();
+      const corrIdSet = new Set<string>();
+      for (const l of (leads || [])) {
+        if (l.corretor_id) {
+          corrLeadMap.set(l.corretor_id, (corrLeadMap.get(l.corretor_id) || 0) + 1);
+          corrIdSet.add(l.corretor_id);
+        }
+      }
+      const corrIds = [...corrIdSet];
+      let leadsPorCorretor: { nome: string; count: number }[] = [];
+      if (corrIds.length > 0) {
+        const { data: corrProfs } = await supabase.from("profiles").select("user_id, nome").in("user_id", corrIds);
+        const nameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"] as [string, string]));
+        leadsPorCorretor = Array.from(corrLeadMap.entries())
+          .map(([id, count]) => ({ nome: (nameMap.get(id) || "Corretor") as string, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+      }
+
+      return { pipelineStages: stageData, campanhas, alertas, origens, leadsPorEmpreendimento, leadsPorCorretor };
     },
     enabled: !!user,
     staleTime: 60_000,
@@ -445,6 +465,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
     corretoresRank: teamsData?.corretoresRank || [],
     origens: pipelineData?.origens || [],
     leadsPorEmpreendimento: pipelineData?.leadsPorEmpreendimento || [],
+    leadsPorCorretor: pipelineData?.leadsPorCorretor || [],
     visitasPorEmp,
     totalLeadsPeriodo: extraKpis?.totalLeadsPeriodo || 0,
     leadsReaproveitadosOA: extraKpis?.leadsReaproveitadosOA || 0,

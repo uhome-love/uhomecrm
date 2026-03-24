@@ -132,7 +132,7 @@ export default function CeoDashboard() {
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
     pipelineStages, campanhas, alertas, negocioFases, vgvEmRisco, topCorretoresVgv,
-    teams, corretoresRank, origens, leadsPorEmpreendimento, visitasPorEmp,
+    teams, corretoresRank, origens, leadsPorEmpreendimento, leadsPorCorretor, visitasPorEmp,
     totalLeadsPeriodo, leadsReaproveitadosOA, totalVisitasCriadas, novoInteresse, presentesHoje, metasDiaTotal,
     reload, reloadRoleta,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
@@ -413,7 +413,7 @@ export default function CeoDashboard() {
           <MiniKpi label="Corretores na Roleta" value={presentesHoje} sub={`${presentesHoje} presentes hoje`} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Leads por Campanha/Empreendimento */}
           <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
@@ -453,6 +453,25 @@ export default function CeoDashboard() {
                   return <HBar key={o.origem} label={o.origem} value={o.count} max={max} color={color} />;
                 })}
                 {origens.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Leads por Corretor */}
+          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                <Users className="h-3.5 w-3.5 text-[#4F46E5]" /> Leads por Corretor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2.5 max-h-56 overflow-y-auto">
+                {leadsPorCorretor.slice(0, 10).map((c, idx) => {
+                  const max = Math.max(...leadsPorCorretor.map(x => x.count), 1);
+                  const color = FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+                  return <HBar key={`${c.nome}-${idx}`} label={c.nome} value={c.count} max={max} color={color} />;
+                })}
+                {leadsPorCorretor.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
               </div>
             </CardContent>
           </Card>
