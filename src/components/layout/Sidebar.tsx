@@ -305,9 +305,9 @@ export default function Sidebar({
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
           <img
-            src="/images/uhome-logo-36.png"
+            src={uhomeLogo}
             alt="UhomeSales"
-            className={cn("h-[30px] w-[30px] object-contain", isDark && "brightness-0 invert")}
+            className="h-[30px] w-auto object-contain"
           />
         </div>
 
