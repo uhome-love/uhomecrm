@@ -249,6 +249,30 @@ export default function CorretorListSelection() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // Group filtered listas by campaign
+  const { campaignGroups, ungroupedListas } = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const matchedListas = q
+      ? liberadas.filter(l =>
+          l.empreendimento.toLowerCase().includes(q) ||
+          (l.campanha?.toLowerCase().includes(q)) ||
+          l.nome.toLowerCase().includes(q)
+        )
+      : liberadas;
+    
+    const groups: Record<string, typeof liberadas> = {};
+    const ungrouped: typeof liberadas = [];
+    for (const l of matchedListas) {
+      if (l.campanha) {
+        if (!groups[l.campanha]) groups[l.campanha] = [];
+        groups[l.campanha].push(l);
+      } else {
+        ungrouped.push(l);
+      }
+    }
+    return { campaignGroups: groups, ungroupedListas: ungrouped };
+  }, [liberadas, search]);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return liberadas;
     const q = search.toLowerCase();
@@ -259,8 +283,31 @@ export default function CorretorListSelection() {
     );
   }, [liberadas, search]);
 
-  const paginatedFiltered = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
-  const hasMore = visibleCount < filtered.length;
+  const paginatedFiltered = useMemo(() => ungroupedListas.slice(0, visibleCount), [ungroupedListas, visibleCount]);
+  const hasMore = visibleCount < ungroupedListas.length;
+
+  const startCampaign = useCallback((campanha: string, listas: OALista[]) => {
+    const listaIds = listas.map(l => l.id);
+    sessionStorage.setItem("campaign_lista_ids", JSON.stringify(listaIds));
+    sessionStorage.setItem("campaign_name", campanha);
+    
+    // Create a virtual OALista representing the campaign
+    const virtualLista: OALista = {
+      id: `campaign_${campanha}`,
+      nome: campanha,
+      empreendimento: campanha,
+      campanha: campanha,
+      origem: "campaign",
+      status: "liberada",
+      max_tentativas: listas[0]?.max_tentativas || 4,
+      cooldown_dias: listas[0]?.cooldown_dias || 1,
+      total_leads: listas.reduce((s, l) => s + (l.total_leads || 0), 0),
+      criado_por: user?.id || "",
+      created_at: listas[0]?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setSelectedLista(virtualLista);
+  }, [user]);
 
   // Reset pagination when search changes
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search]);
