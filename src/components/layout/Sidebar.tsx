@@ -153,6 +153,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Minha rotina",       path: "/corretor",          icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
+        { label: "Central de tarefas", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
         { label: "Aceite de leads",    path: "/aceite",            icon: <UserCheck    size={15} strokeWidth={1.5} /> },
       ],
     },
