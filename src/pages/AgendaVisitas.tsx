@@ -4,7 +4,8 @@ import { format, isBefore, startOfDay, startOfWeek, startOfMonth, endOfWeek, end
 import { ptBR } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, List, AlertTriangle, History, BarChart3, MessageCircle, Users } from "lucide-react";
+import { CalendarDays, List, AlertTriangle, History, BarChart3, MessageCircle, Users, Plus } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useVisitas, STATUS_LABELS, type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import { useUserRole } from "@/hooks/useUserRole";
