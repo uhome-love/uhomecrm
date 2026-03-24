@@ -3,7 +3,7 @@ import type { PipelineStage, PipelineLead, PipelineSegmento } from "@/hooks/useP
 import PipelineCard from "./PipelineCard";
 import PipelineCardHover from "./PipelineCardHover";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlignLeft } from "lucide-react";
 import { differenceInHours, differenceInMinutes } from "date-fns";
 import { PIPELINE_STAGE_EMOJIS, PIPELINE_STAGE_COLORS, PIPELINE_STAGE_BG } from "@/lib/celebrations";
 import { toast } from "sonner";
@@ -149,10 +149,11 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
     >
       {stageLeads.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center mb-2 border border-border/30">
-            <span className="text-muted-foreground/30 text-lg">+</span>
+          <div className="w-10 h-10 rounded-[12px] bg-[#4F46E5]/10 flex items-center justify-center mb-2 text-[#4F46E5]">
+            <AlignLeft size={18} strokeWidth={1.5} />
           </div>
-          <span className="text-[11px] text-muted-foreground/40 font-medium">Arraste leads aqui</span>
+          <span className="text-[12px] font-bold text-[#0a0a0a] dark:text-white tracking-[-0.2px]">Nenhum lead aqui</span>
+          <span className="text-[11px] text-[#a1a1aa] mt-0.5">Os leads desta etapa aparecerão aqui</span>
         </div>
       )}
       {visibleLeads.map((lead) => {

@@ -16,6 +16,7 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { KpiCard, KpiGrid } from "@/components/ui/KpiCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const CANAL_COLORS: Record<string, string> = {
   meta_ads: "#3b82f6",
@@ -248,7 +249,7 @@ export default function MarketingDashboard() {
                       <Bar dataKey="cpl" fill="hsl(var(--warning))" name="CPL" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <p className="text-center py-12 text-muted-foreground text-sm">Sem dados</p>}
+                ) : <EmptyState icon={<Zap size={22} strokeWidth={1.5} />} title="Nenhum dado de marketing" description="Importe um relatório ou sincronize com o Meta Ads" />}
               </CardContent>
             </Card>
           </div>
@@ -470,11 +471,11 @@ Dados: ${JSON.stringify(iaContext)}`}
               </div>
             ))}
             {reports.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Nenhum relatório importado</p>
-                <p className="text-xs mt-1">Clique em "Importar Relatório" para começar</p>
-              </div>
+              <EmptyState
+                icon={<Zap size={22} strokeWidth={1.5} />}
+                title="Nenhum relatório importado"
+                description="Clique em 'Importar Relatório' para começar"
+              />
             )}
           </div>
         </TabsContent>

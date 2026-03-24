@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { type Visita, type VisitaStatus } from "@/hooks/useVisitas";
 import VisitaRow from "./VisitaRow";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Props {
   visitas: Visita[];
@@ -202,12 +203,11 @@ export default function VisitasList({ visitas, onUpdateStatus, onEdit, onDelete,
 
   if (displayGroups.length === 0) {
     return (
-      <div className="text-center py-8 rounded-lg border border-dashed border-border/40 bg-muted/10">
-        <CalendarDays className="h-7 w-7 mx-auto text-muted-foreground/30 mb-2" />
-        <p className="text-xs text-muted-foreground">
-          {mode === "past" ? "Nenhuma visita anterior encontrada" : mode === "all" ? "Nenhuma visita encontrada" : "Nenhuma visita futura agendada"}
-        </p>
-      </div>
+      <EmptyState
+        icon={<CalendarDays size={22} strokeWidth={1.5} />}
+        title="Nenhuma visita neste período"
+        description="As visitas agendadas aparecerão aqui organizadas por dia"
+      />
     );
   }
 

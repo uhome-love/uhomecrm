@@ -19,6 +19,7 @@ import {
   AlertTriangle, Loader2, UserPlus,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -359,17 +360,11 @@ export default function BuscaLeads() {
           </CardContent>
         </Card>
       ) : !isSearching && totalResults === 0 && (
-        <Card className="border-border/50 bg-card/50">
-          <CardContent className="py-16 text-center">
-            <Search className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">
-              Busque por telefone, nome ou email para encontrar leads
-            </p>
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              A busca por telefone é o identificador principal
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<Search size={22} strokeWidth={1.5} />}
+          title="Busque um lead"
+          description="Digite o telefone, nome ou email para encontrar leads da Oferta Ativa"
+        />
       )}
 
       {/* ──── DETAIL MODAL ──── */}

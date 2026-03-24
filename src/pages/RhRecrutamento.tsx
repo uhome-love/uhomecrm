@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Phone, Mail, Users, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 
 const ETAPAS = [
@@ -126,9 +127,12 @@ export default function RhRecrutamento() {
                   </Card>
                 ))}
                 {items.length === 0 && (
-                  <div className="border border-dashed border-border rounded-lg p-4 text-center">
-                    <p className="text-xs text-muted-foreground">Nenhum candidato</p>
-                  </div>
+                  <EmptyState
+                    icon={<Users size={22} strokeWidth={1.5} />}
+                    title="Nenhum candidato"
+                    description="Adicione candidatos para iniciar o processo seletivo"
+                    action={{ label: "Novo candidato", onClick: () => setDialogOpen(true) }}
+                  />
                 )}
               </div>
             </div>

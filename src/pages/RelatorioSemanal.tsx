@@ -10,6 +10,8 @@ import {
   CalendarDays, CalendarCheck, Briefcase, TrendingUp, FileSignature, DollarSign,
   ArrowUp, ArrowDown, ChevronDown, ChevronUp,
 } from "lucide-react";
+import { FileText } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, Legend,
@@ -731,9 +733,11 @@ export default function RelatorioSemanal() {
 
         {/* Empty state */}
         {!isLoading && (!data?.corretores || data.corretores.length === 0) && (
-          <div className="apple-glass-surface text-center" style={{ padding: 48 }}>
-            <p style={{ color: "rgba(0,0,0,0.4)", fontSize: 15 }}>Sem dados disponíveis para o período selecionado.</p>
-          </div>
+          <EmptyState
+            icon={<FileText size={22} strokeWidth={1.5} />}
+            title="Sem dados disponíveis"
+            description="Nenhum dado encontrado para o período selecionado"
+          />
         )}
       </div>
 
