@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { GreetingBar } from "@/components/ui/GreetingBar";
 import { Phone, Lock, Kanban, CalendarDays, AlertCircle, Zap, LogOut, Loader2 } from "lucide-react";
 import { LoadingState } from "@/components/ui/screen-states";
 import { Card, CardContent } from "@/components/ui/card";
@@ -189,26 +190,13 @@ export default function CorretorDashboard() {
       <MetaCelebration show={showMetaCelebration} nome={nome || "Corretor"} onDismiss={() => setShowMetaCelebration(false)} />
 
       {/* HEADER */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-4">
-        <div className="h-14 w-14 rounded-full shrink-0 overflow-hidden flex items-center justify-center"
-          style={{
-            background: avatarUrl ? "transparent" : "linear-gradient(135deg, #3B82F6, #6366F1)",
-            border: avatarUrl ? "2px solid hsl(var(--border))" : "none",
-          }}
-        >
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={nome || "Avatar"} className="h-full w-full object-cover rounded-full" />
-          ) : (
-            <span className="text-lg font-bold text-white">
-              {(nome || "C").slice(0, 2).toUpperCase()}
-            </span>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-semibold text-foreground">{greetingData.greeting}</h1>
-          <p className="text-sm text-muted-foreground truncate">{greetingData.subtitle}</p>
-        </div>
-      </motion.div>
+      <div className="mb-4">
+        <GreetingBar
+          name={nome || "Corretor"}
+          avatarUrl={avatarUrl}
+          subtitle={greetingData.subtitle}
+        />
+      </div>
 
       {/* STATUS BAR */}
       <div className="mb-4">

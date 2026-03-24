@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { GreetingBar } from "@/components/ui/GreetingBar";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useGerenteDashboard, Period, periodLabels, formatCurrency, getInitials, hashColor } from "@/hooks/useGerenteDashboard";
@@ -105,31 +106,12 @@ export default function GerenteDashboard() {
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
       {/* ═══ 1. HEADER ═══ */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap"
-        style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" }}>
-        <div className="flex items-center gap-3.5">
-          {avatarSrc ? (
-            <img src={avatarSrc} alt={nome} className="h-11 w-11 rounded-full object-cover border-2 border-white/20 shrink-0" />
-          ) : (
-            <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/20 shrink-0 font-black text-base text-white bg-primary/60">
-              {getInitials(profile?.nome || "G")}
-            </div>
-          )}
-          <div>
-            <h1 className="text-lg font-bold text-white">{greeting}, {nome}! 👋</h1>
-            <p className="text-[11px] text-slate-400">
-              {format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })} · Semana {weekNum}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <GlobalDateFilterBar variant="header" />
-          <span className="text-[10px] text-slate-500 flex items-center gap-1 shrink-0">
-            <RefreshCw className="h-3 w-3" /> {lastUpdate}
-          </span>
-        </div>
-      </motion.div>
+      <GreetingBar
+        name={profile?.nome || "Gerente"}
+        avatarUrl={avatarSrc}
+        onRefresh={() => window.location.reload()}
+        refreshTime={lastUpdate}
+      />
 
       {teamUserIds.length === 0 && !kpisLoading && (
         <div className="rounded-xl border border-border/60 bg-muted/30 p-4 flex items-center gap-3">
