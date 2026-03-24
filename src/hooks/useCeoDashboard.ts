@@ -223,10 +223,10 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const origens = Array.from(origMap.entries()).map(([origem, count]) => ({ origem, count })).sort((a, b) => b.count - a.count);
       const leadsPorEmpreendimento = Array.from(empMap.entries()).map(([emp, d]) => ({ emp, count: d.leads })).sort((a, b) => b.count - a.count).slice(0, 10);
 
-      // Leads por corretor
+      // Leads por corretor (only marketing, not OA)
       const corrLeadMap = new Map<string, number>();
       const corrIdSet = new Set<string>();
-      for (const l of (leads || [])) {
+      for (const l of mktLeads) {
         if (l.corretor_id) {
           corrLeadMap.set(l.corretor_id, (corrLeadMap.get(l.corretor_id) || 0) + 1);
           corrIdSet.add(l.corretor_id);
