@@ -273,7 +273,7 @@ export default function Sidebar({
   const isMobile  = useIsMobile();
 
   // Track which groups are collapsed (by title). "Principal" always open.
-  const NON_COLLAPSIBLE = ["Principal", "Ferramentas"];
+  const NON_COLLAPSIBLE = ["Principal"];
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const toggleGroup = (title: string) => {
     setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
