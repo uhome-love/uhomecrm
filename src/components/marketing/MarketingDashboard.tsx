@@ -203,7 +203,6 @@ export default function MarketingDashboard() {
         <KpiCard label="Cliques" value={formatNum(totals.cliques)} icon={<MousePointerClick size={14} />} />
         <KpiCard label="Vendas" value={formatNum(totals.vendas)} icon={<Trophy size={14} />} />
       </KpiGrid>
-      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
