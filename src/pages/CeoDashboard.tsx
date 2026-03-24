@@ -377,36 +377,22 @@ export default function CeoDashboard() {
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
-      {/* ─── GREETING CARD ─── */}
-      <div className="bg-[#f7f7fb] dark:bg-[#16161a] border border-[#e8e8f0] dark:border-white/[0.08] rounded-[14px] p-5 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-12 w-12 ring-2 ring-[#4F46E5]">
-            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-            <AvatarFallback className="bg-[#4F46E5] text-white font-bold text-sm">
-              {(profile?.nome || user?.email || "U").slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h2 className="text-[20px] font-bold tracking-[-0.5px] text-[#0a0a0a] dark:text-[#fafafa] leading-none">
-              {getGreeting()}, {profile?.nome?.split(" ")[0] || "CEO"}
-            </h2>
-            <p className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] mt-1 italic">
-              "{frase}"
-            </p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-[12px] text-[#a1a1aa] dark:text-[#52525b]">
-            {format(now, "EEEE, d 'de' MMMM", { locale: ptBR })} · Semana {weekNum}
-          </p>
-          <button
-            onClick={reload}
-            className="text-[12px] text-[#4F46E5] hover:underline mt-1 inline-flex items-center gap-1 ml-auto"
-          >
-            <RefreshCw className="h-3 w-3" /> Atualizar · {format(lastUpdate, "HH:mm")}
-          </button>
-        </div>
-      </div>
+      {/* ─── GREETING BAR ─── */}
+      <GreetingBar
+        name={profile?.nome || user?.email?.split("@")[0] || "CEO"}
+        avatarUrl={profile?.avatar_url}
+        subtitle={`"${frase}"`}
+        filter={period === "hoje" ? "hoje" : period === "ontem" ? "ontem" : period === "semana" ? "semana" : period === "mes" || period === "ultimos_30d" ? "mes" : "personalizado"}
+        dateRange={{ from: range.start?.split("T")[0] || "", to: range.end?.split("T")[0] || "" }}
+        onFilterChange={(f, r) => {
+          // Dispatch period change via GlobalDateFilterBar's context
+          const periodMap: Record<string, string> = { hoje: "hoje", ontem: "ontem", semana: "semana", mes: "mes" };
+          const mapped = periodMap[f] || "personalizado";
+          window.dispatchEvent(new CustomEvent("date-filter-change", { detail: { period: mapped, range: r } }));
+        }}
+        onRefresh={reload}
+        refreshTime={format(lastUpdate, "HH:mm")}
+      />
 
       {/* ─── TABS DE PERÍODO ─── */}
       <GlobalDateFilterBar variant="header" />
