@@ -340,7 +340,7 @@ export default function VendasRealizadas() {
   }
 
   return (
-    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 space-y-5 max-w-7xl mx-auto -m-6 min-h-full">
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 space-y-5 max-w-7xl mx-auto -m-6 min-h-full">
       <PageHeader
         title="Vendas realizadas"
         subtitle={dateRange.label}

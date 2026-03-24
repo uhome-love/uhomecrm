@@ -307,7 +307,7 @@ export default function AgendaVisitas() {
   }, [activeTab]);
 
   return (
-    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-3">
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-3">
       <PageHeader
         title="Agenda de visitas"
         icon={<CalendarDays size={18} strokeWidth={1.5} />}

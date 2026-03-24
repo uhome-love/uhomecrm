@@ -899,7 +899,7 @@ export default function EmailMarketingPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
-    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 space-y-6 max-w-5xl mx-auto -m-6 min-h-full">
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 space-y-6 max-w-5xl mx-auto -m-6 min-h-full">
       <PageHeader
         title="Email marketing"
         subtitle="Campanhas, templates e rastreamento de emails via Mailgun"

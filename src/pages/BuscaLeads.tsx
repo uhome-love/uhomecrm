@@ -195,7 +195,7 @@ export default function BuscaLeads() {
   };
 
   return (
-    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
       <PageHeader
         title="Busca de leads"
         subtitle="Busque, gerencie e higienize leads da Oferta Ativa"

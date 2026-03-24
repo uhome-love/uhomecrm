@@ -376,7 +376,7 @@ export default function CeoDashboard() {
   }), { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0, visitasRealizadas: 0, propostas: 0, vgv: 0 });
 
   return (
-    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
       {/* ─── GREETING ─── */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-4">
@@ -415,7 +415,7 @@ export default function CeoDashboard() {
 
 
       {/* ─── SEÇÃO 1: ROLETA PENDENTES ─── */}
-      <Card className={`bg-white dark:bg-white/[0.04] border border-[#eeeeee] dark:border-white/[0.07] rounded-[14px] ${localPendentes.length > 0 ? "border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.2)] animate-pulse-border" : "border-emerald-500/30"}`}>
+      <Card className={`bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] rounded-[14px] shadow-none ${localPendentes.length > 0 ? "border-primary/50" : "border-emerald-500/30"}`}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -468,7 +468,7 @@ export default function CeoDashboard() {
       </Card>
 
       {/* ─── FILA CEO ─── */}
-      <Card className={`bg-white dark:bg-white/[0.04] border border-[#eeeeee] dark:border-white/[0.07] rounded-[14px] ${filaCeoCount > 0 ? "border-[#4F46E5]/40 shadow-[0_0_0_1px_rgba(79,70,229,0.15)]" : ""}`}>
+      <Card className={`bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] rounded-[14px] shadow-none ${filaCeoCount > 0 ? "border-[#4F46E5]/40" : ""}`}>
         <CardContent className="pt-4 pb-3">
           <div className="flex items-center gap-2 mb-1">
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-[#4F46E5]/10 flex items-center justify-center shrink-0">
