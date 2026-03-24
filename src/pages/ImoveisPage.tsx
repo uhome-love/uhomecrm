@@ -192,7 +192,7 @@ export default function ImoveisPage() {
 
   // ── Render ──
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#f0f0f5] dark:bg-[#0f0f12] flex flex-col">
       <PropertyPreviewDrawer
         item={previewItem}
         open={previewOpen}
