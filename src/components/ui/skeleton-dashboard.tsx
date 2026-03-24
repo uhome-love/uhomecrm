@@ -14,19 +14,17 @@ function Shimmer({ className }: { className?: string }) {
 /** Skeleton for the CEO greeting header */
 export function SkeletonHeader() {
   return (
-    <div className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 p-5">
+    <div className="rounded-[14px] bg-[#f7f7fb] dark:bg-[#1c1c20] border border-[#e8e8f0] dark:border-white/[0.07] p-5">
       <div className="flex items-center gap-4">
-        <Shimmer className="h-16 w-16 rounded-full bg-white/10" />
+        <Shimmer className="h-12 w-12 rounded-full" />
         <div className="flex-1 space-y-2">
-          <Shimmer className="h-6 w-48 bg-white/10" />
-          <Shimmer className="h-4 w-64 bg-white/5" />
-          <Shimmer className="h-3 w-40 bg-white/5" />
+          <Shimmer className="h-5 w-48" />
+          <Shimmer className="h-3 w-64" />
         </div>
-      </div>
-      <div className="flex gap-2 mt-4">
-        {[1, 2, 3, 4, 5].map(i => (
-          <Shimmer key={i} className="h-8 w-16 rounded-full bg-white/10" />
-        ))}
+        <div className="space-y-2 text-right">
+          <Shimmer className="h-3 w-32 ml-auto" />
+          <Shimmer className="h-3 w-24 ml-auto" />
+        </div>
       </div>
     </div>
   );
