@@ -5,38 +5,24 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCeoDashboard, type DashPeriod } from "@/hooks/useCeoDashboard";
 import { useDateFilter } from "@/contexts/DateFilterContext";
 import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
-import PeriodBadge from "@/components/PeriodBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Loader2, Clock, RefreshCw, CheckCircle2, XCircle, Phone, ThumbsUp, CalendarDays, CalendarCheck, DollarSign, Trophy, FileText, TrendingDown, Target, AlertTriangle, Users, BarChart3, Brain, ArrowUp, ArrowDown, Rocket, Inbox, CalendarRange, Send, Building2, MessageCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Loader2, CheckCircle2, XCircle, Phone, CalendarDays, CalendarCheck,
+  DollarSign, Users, BarChart3, Inbox, Rocket, Building2, TrendingUp,
+  Target, Eye, EyeOff, FileText, Megaphone, UserCheck, Activity
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { format, getWeek } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import FilaCeoDispatchModal from "@/components/pipeline/FilaCeoDispatchModal";
-import LeadsDistribuidosPanel from "@/components/distribuicao/LeadsDistribuidosPanel";
-import CeoDailyReport from "@/components/ceo/CeoDailyReport";
 import BulkEmpreendimentoAssign from "@/components/ceo/BulkEmpreendimentoAssign";
 import { formatBRLCompact } from "@/lib/utils";
 import { CeoDashboardSkeleton } from "@/components/ui/skeleton-dashboard";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { KpiCard as NewKpiCard, KpiGrid } from "@/components/ui/KpiCard";
-
 import KpiDetailDialog, { type KpiDetailType } from "@/components/ceo/KpiDetailDialog";
-
-// ─── Greeting ───
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Bom dia";
-  if (h < 18) return "Boa tarde";
-  return "Boa noite";
-}
 
 const FRASES = [
   "Liderar é servir com propósito.",
@@ -47,116 +33,85 @@ const FRASES = [
   "Quem mede, melhora. Quem acompanha, transforma.",
 ];
 
-const formatCurrency = formatBRLCompact;
+const ORIGIN_COLORS: Record<string, string> = {
+  meta_ads: "#3b82f6", "Meta Ads": "#3b82f6",
+  "TikTok Ads": "#ec4899",
+  "Landing Page": "#10b981",
+  imovelweb: "#f97316", ImovelWeb: "#f97316",
+  site_uhome: "#06b6d4", "Site - uhome.com.br": "#06b6d4",
+  jetimob: "#6366f1", indicacao: "#8b5cf6",
+  whatsapp: "#22c55e", rd_station: "#f59e0b",
+  "Oferta Ativa": "#4F46E5",
+};
+const FALLBACK_COLORS = ["#3b82f6","#ec4899","#10b981","#f97316","#06b6d4","#6366f1","#8b5cf6","#f59e0b","#ef4444","#14b8a6"];
 
-function Variation({ current, previous, suffix = "" }: { current: number; previous: number; suffix?: string }) {
-  if (previous === 0) return null;
-  const pct = Math.round(((current - previous) / previous) * 100);
-  if (pct === 0) return null;
-  const up = pct > 0;
+// ─── Section Label ───
+function SectionLabel({ children, icon: Icon }: { children: string; icon: any }) {
   return (
-    <span className={`text-xs font-medium flex items-center gap-0.5 ${up ? "text-emerald-600" : "text-destructive"}`}>
-      {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-      {Math.abs(pct)}%{suffix}
-    </span>
+    <div className="flex items-center gap-2 mb-3">
+      <div className="h-7 w-7 rounded-lg bg-[#4F46E5]/10 flex items-center justify-center">
+        <Icon className="h-3.5 w-3.5 text-[#4F46E5]" />
+      </div>
+      <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4F46E5]">{children}</span>
+    </div>
   );
 }
 
-// ─── Semaphore helper ───
-function getSemaphore(value: number, meta: number | undefined | null): { color: string; label: string } | null {
-  if (!meta || meta <= 0) return null;
-  const pct = (value / meta) * 100;
-  if (pct >= 100) return { color: "bg-emerald-500", label: "No alvo" };
-  if (pct >= 70) return { color: "bg-amber-500", label: "Atenção" };
-  return { color: "bg-red-500", label: "Abaixo" };
-}
-
-// ─── Format meta display value ───
-function formatMetaDisplay(value: number, type: "currency" | "number" | "percent"): string {
-  if (type === "currency") return formatBRLCompact(value);
-  if (type === "percent") return `${value}%`;
-  return value.toLocaleString("pt-BR");
-}
-
-// ─── Origin color map for semantic charts ───
-const ORIGIN_COLORS: Record<string, string> = {
-  meta_ads: "bg-blue-500",
-  "Meta Ads": "bg-blue-500",
-  "TikTok Ads": "bg-pink-500",
-  "Landing Page": "bg-emerald-500",
-  imovelweb: "bg-orange-500",
-  "ImovelWeb": "bg-orange-500",
-  "site_uhome": "bg-cyan-500",
-  "Site - uhome.com.br": "bg-cyan-500",
-  jetimob: "bg-indigo-500",
-  indicacao: "bg-violet-500",
-  whatsapp: "bg-green-500",
-  rd_station: "bg-amber-500",
-};
-const ORIGIN_COLOR_LIST = ["bg-blue-500", "bg-pink-500", "bg-emerald-500", "bg-orange-500", "bg-cyan-500", "bg-indigo-500", "bg-violet-500", "bg-amber-500", "bg-rose-500", "bg-teal-500"];
-function getOriginColor(name: string, index: number): string {
-  return ORIGIN_COLORS[name] || ORIGIN_COLOR_LIST[index % ORIGIN_COLOR_LIST.length];
-}
-
-// ─── KPI Card ───
-function KpiCard({ icon: Icon, label, value, displayValue, meta, prev, iconColor, ceoMeta, metaType = "number", onClick }: {
-  icon: any; label: string; value: number; displayValue?: string; meta?: number; prev?: number; iconColor?: string; ceoMeta?: number | null; metaType?: "currency" | "number" | "percent"; onClick?: () => void;
+// ─── Mini KPI ───
+function MiniKpi({ label, value, sub, variant = "default", onClick }: {
+  label: string; value: string | number; sub?: string;
+  variant?: "default" | "highlight" | "success" | "warning";
+  onClick?: () => void;
 }) {
-  const pct = meta && meta > 0 ? Math.min(Math.round((value / meta) * 100), 100) : null;
-  const semaphore = getSemaphore(value, ceoMeta);
-  const metaPct = ceoMeta && ceoMeta > 0 ? Math.round((value / ceoMeta) * 100) : null;
-  const showNoMeta = ceoMeta !== undefined && (!ceoMeta || ceoMeta <= 0);
-  const isZero = value === 0;
-
+  const colors = {
+    default: "text-foreground",
+    highlight: "text-[#4F46E5]",
+    success: "text-[#10b981]",
+    warning: "text-[#f59e0b]",
+  };
   return (
-    <Card className={`relative group transition-all duration-200 ${onClick ? "cursor-pointer hover:shadow-lg hover:border-primary/40 hover:-translate-y-0.5" : "hover:shadow-sm"}`} onClick={onClick}>
-      <CardContent className="pt-4 pb-3 px-4">
-        {/* Semaphore dot — always show when ceoMeta is passed */}
-        {ceoMeta !== undefined && (
-          <div className="absolute top-2.5 right-2.5" title={semaphore ? `${metaPct}% da meta (${semaphore.label})` : "Sem meta"}>
-            <div className={`h-2.5 w-2.5 rounded-full ${semaphore ? semaphore.color : "bg-muted-foreground/30"} ${semaphore?.color === "bg-emerald-500" ? "animate-pulse" : ""}`} />
-          </div>
-        )}
+    <div
+      onClick={onClick}
+      className={`bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] rounded-xl p-3.5 border-l-[3px] border-l-[#4F46E5] ${onClick ? "cursor-pointer hover:border-[#d0d0d8] dark:hover:border-white/[0.12] transition-colors" : ""}`}
+    >
+      <p className="text-[10px] font-medium text-[#a1a1aa] dark:text-[#52525b] tracking-wide mb-1 truncate">{label}</p>
+      <p className={`text-xl font-[800] leading-none tracking-tight ${colors[variant]}`}>{value}</p>
+      {sub && <p className="text-[10px] text-[#a1a1aa] mt-1 truncate">{sub}</p>}
+    </div>
+  );
+}
 
-        <div className="flex items-start justify-between mb-1 pr-4">
-          <div className="flex items-center gap-2">
-            <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${iconColor ? iconColor.replace("text-", "bg-").replace("600", "100").replace("500", "100") : "bg-primary/10"}`}>
-              <Icon className={`h-3.5 w-3.5 ${iconColor || "text-primary"}`} />
-            </div>
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
-          </div>
-          {prev !== undefined && <Variation current={value} previous={prev} />}
+// ─── Horizontal Bar ───
+function HBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="group/bar">
+      <div className="flex justify-between text-[11px] mb-0.5">
+        <span className="truncate text-[#71717a] group-hover/bar:text-foreground transition-colors">{label}</span>
+        <span className="font-semibold text-foreground ml-2 shrink-0">{value}</span>
+      </div>
+      <div className="h-2 rounded-full bg-[#e8e8f0] dark:bg-white/[0.06] overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Funnel Step ───
+function FunnelStep({ label, value, pct, color, isLast }: { label: string; value: number; pct: number; color: string; isLast?: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex flex-col items-center">
+        <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: color }}>
+          {value}
         </div>
-        <p className={`text-2xl font-bold mt-1 transition-colors ${isZero ? "text-muted-foreground/40" : "text-foreground"}`}>
-          {displayValue || value.toLocaleString("pt-BR")}
-        </p>
-
-        {/* Meta line */}
-        {ceoMeta !== undefined && ceoMeta !== null && ceoMeta > 0 && (
-          <p className={`text-[10px] mt-0.5 ${metaPct !== null && metaPct === 0 && value === 0 ? "text-destructive" : "text-muted-foreground"}`}>
-            {metaPct}% da meta · meta: {formatMetaDisplay(ceoMeta, metaType)}
-          </p>
-        )}
-        {showNoMeta && (
-          <p className="text-[10px] text-muted-foreground/50 mt-0.5">Sem meta definida</p>
-        )}
-
-        {pct !== null && (
-          <div className="mt-2 space-y-1">
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>{pct}% da meta</span>
-              <span>{meta}</span>
-            </div>
-            <Progress value={pct} className="h-1.5" />
-          </div>
-        )}
-
-        {/* Hover hint for clickable cards */}
-        {onClick && (
-          <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary/0 group-hover:bg-primary/60 transition-all rounded-b-xl" />
-        )}
-      </CardContent>
-    </Card>
+        {!isLast && <div className="w-px h-4 bg-[#e8e8f0] dark:bg-white/[0.07]" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-medium text-foreground truncate">{label}</p>
+        <p className="text-[10px] text-[#a1a1aa]">{pct}% do total</p>
+      </div>
+    </div>
   );
 }
 
@@ -171,6 +126,8 @@ export default function CeoDashboard() {
   const [lastDispatch, setLastDispatch] = useState<{ at: string; count: number } | null>(null);
   const [bulkEmpOpen, setBulkEmpOpen] = useState(false);
   const [kpiDetail, setKpiDetail] = useState<{ type: KpiDetailType; label: string } | null>(null);
+  const [funnelFilter, setFunnelFilter] = useState<"all" | string>("all");
+  const [funnelCorretorFilter, setFunnelCorretorFilter] = useState<"all" | string>("all");
 
   const {
     loading, lastUpdate, profile, roletaPendentes, kpis, prevKpis,
@@ -180,36 +137,28 @@ export default function CeoDashboard() {
     reload, reloadRoleta,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
 
-  // Fetch consolidated CEO metas for current month
-  const [ceoMetasConsolidadas, setCeoMetasConsolidadas] = useState<{
-    meta_ligacoes: number; meta_visitas_marcadas: number; meta_visitas_realizadas: number; meta_vgv_assinado: number;
-    meta_propostas: number; meta_contratos: number; meta_assinados: number; meta_aproveitados: number;
-  }>({ meta_ligacoes: 0, meta_visitas_marcadas: 0, meta_visitas_realizadas: 0, meta_vgv_assinado: 0, meta_propostas: 0, meta_contratos: 0, meta_assinados: 0, meta_aproveitados: 0 });
-
+  // CEO metas
+  const [ceoMetas, setCeoMetas] = useState<any>({});
   useEffect(() => {
     const mesAtual = format(new Date(), "yyyy-MM");
-    supabase.from("ceo_metas_mensais").select("meta_ligacoes, meta_visitas_marcadas, meta_visitas_realizadas, meta_vgv_assinado, meta_propostas, meta_contratos, meta_assinados, meta_aproveitados").eq("mes", mesAtual)
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setCeoMetasConsolidadas({
-            meta_ligacoes: data.reduce((a, m) => a + (m.meta_ligacoes || 0), 0),
-            meta_visitas_marcadas: data.reduce((a, m) => a + (m.meta_visitas_marcadas || 0), 0),
-            meta_visitas_realizadas: data.reduce((a, m) => a + (m.meta_visitas_realizadas || 0), 0),
-            meta_vgv_assinado: data.reduce((a, m) => a + (m.meta_vgv_assinado || 0), 0),
-            meta_propostas: data.reduce((a, m) => a + ((m as any).meta_propostas || 0), 0),
-            meta_contratos: data.reduce((a, m) => a + ((m as any).meta_contratos || 0), 0),
-            meta_assinados: data.reduce((a, m) => a + ((m as any).meta_assinados || 0), 0),
-            meta_aproveitados: data.reduce((a, m) => a + ((m as any).meta_aproveitados || 0), 0),
-          });
-        }
-      });
+    supabase.from("ceo_metas_mensais").select("*").eq("mes", mesAtual).then(({ data }) => {
+      if (data && data.length > 0) {
+        setCeoMetas({
+          meta_ligacoes: data.reduce((a: number, m: any) => a + (m.meta_ligacoes || 0), 0),
+          meta_visitas_marcadas: data.reduce((a: number, m: any) => a + (m.meta_visitas_marcadas || 0), 0),
+          meta_visitas_realizadas: data.reduce((a: number, m: any) => a + (m.meta_visitas_realizadas || 0), 0),
+          meta_vgv_assinado: data.reduce((a: number, m: any) => a + (m.meta_vgv_assinado || 0), 0),
+          meta_propostas: data.reduce((a: number, m: any) => a + ((m as any).meta_propostas || 0), 0),
+          meta_contratos: data.reduce((a: number, m: any) => a + ((m as any).meta_contratos || 0), 0),
+          meta_assinados: data.reduce((a: number, m: any) => a + ((m as any).meta_assinados || 0), 0),
+        });
+      }
+    });
   }, []);
 
+  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
-  const now = new Date();
-  const weekNum = Math.ceil(now.getDate() / 7);
-
-  // Load Fila CEO count + last dispatch
+  // Fila CEO
   const loadFilaCeo = useCallback(async () => {
     const [countRes, logRes] = await Promise.all([
       supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).eq("aceite_status", "pendente_distribuicao").is("corretor_id", null),
@@ -221,42 +170,28 @@ export default function CeoDashboard() {
       setLastDispatch({ at: logRes.data[0].created_at, count: d?.dispatched || 0 });
     }
   }, []);
-
   useEffect(() => { loadFilaCeo(); }, [loadFilaCeo]);
 
-  // Approve credenciamento — optimistic
+  // Roleta approval logic
   const [localPendentes, setLocalPendentes] = useState<any[]>([]);
   useEffect(() => { setLocalPendentes(roletaPendentes); }, [roletaPendentes]);
 
-  // Get profile.id (FK target) instead of auth user.id
   const getProfileId = useCallback(async (): Promise<string | null> => {
     if (!user) return null;
     const { data } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
     return data?.id || null;
   }, [user]);
 
-  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-
   const insertFilaForCred = useCallback(async (cred: any) => {
     const segmentoIds = [cred.segmento_1_id, cred.segmento_2_id].filter(Boolean) as string[];
     for (const segId of segmentoIds) {
       const { data: existing } = await supabase.from("roleta_fila")
-        .select("posicao")
-        .eq("data", hoje)
-        .eq("segmento_id", segId)
-        .eq("janela", cred.janela)
-        .eq("ativo", true)
-        .order("posicao", { ascending: false })
-        .limit(1);
+        .select("posicao").eq("data", hoje).eq("segmento_id", segId).eq("janela", cred.janela).eq("ativo", true)
+        .order("posicao", { ascending: false }).limit(1);
       const nextPos = (existing?.[0]?.posicao || 0) + 1;
       await supabase.from("roleta_fila").insert({
-        corretor_id: cred.corretor_id,
-        segmento_id: segId,
-        janela: cred.janela,
-        posicao: nextPos,
-        data: hoje,
-        ativo: true,
-        credenciamento_id: cred.id,
+        corretor_id: cred.corretor_id, segmento_id: segId, janela: cred.janela,
+        posicao: nextPos, data: hoje, ativo: true, credenciamento_id: cred.id,
       });
     }
   }, [hoje]);
@@ -267,32 +202,21 @@ export default function CeoDashboard() {
     if (!profileId) { toast.error("Perfil não encontrado"); return; }
     const item = localPendentes.find((c: any) => c.id === id);
     setLocalPendentes(prev => prev.filter((c: any) => c.id !== id));
-
-    // Get full credenciamento data for fila insertion
     const { data: cred, error } = await supabase.from("roleta_credenciamentos")
       .update({ status: "aprovado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
-      .eq("id", id)
-      .select()
-      .single();
-
+      .eq("id", id).select().single();
     if (error || !cred) {
-      console.error("Erro aprovar roleta:", error);
-      toast.error("Erro ao aprovar: " + (error?.message || ""));
+      toast.error("Erro ao aprovar");
       setLocalPendentes(prev => [...prev, item].filter(Boolean));
       return;
     }
-
-    // Insert into fila
     await insertFilaForCred(cred);
-    
-    // Sync corretor_disponibilidade.na_roleta = true
     const { data: prof } = await supabase.from("profiles").select("user_id").eq("id", cred.corretor_id).single();
     if (prof?.user_id) {
       await supabase.from("corretor_disponibilidade")
         .upsert({ user_id: prof.user_id, na_roleta: true, status: "na_empresa", segmentos: [], updated_at: new Date().toISOString() }, { onConflict: "user_id" });
     }
-    
-    toast.success(`✅ ${item?.corretor_nome || "Corretor"} aprovado(a) na Roleta!`);
+    toast.success(`${item?.corretor_nome || "Corretor"} aprovado(a) na Roleta`);
     reloadRoleta();
   }, [user, localPendentes, getProfileId, insertFilaForCred, reloadRoleta]);
 
@@ -302,38 +226,21 @@ export default function CeoDashboard() {
     if (!profileId) return;
     const item = localPendentes.find((c: any) => c.id === id);
     setLocalPendentes(prev => prev.filter((c: any) => c.id !== id));
-
     const { error } = await supabase.from("roleta_credenciamentos")
       .update({ status: "recusado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
       .eq("id", id);
-
-    if (error) {
-      toast.error("Erro ao recusar");
-      setLocalPendentes(prev => [...prev, item].filter(Boolean));
-      return;
-    }
-    
-    // Check if corretor has any remaining approved credenciamentos today; if not, set na_roleta = false
+    if (error) { toast.error("Erro ao recusar"); setLocalPendentes(prev => [...prev, item].filter(Boolean)); return; }
     if (item?.corretor_id) {
-      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
       const { count } = await supabase.from("roleta_credenciamentos")
-        .select("id", { count: "exact", head: true })
-        .eq("corretor_id", item.corretor_id)
-        .eq("data", today)
-        .eq("status", "aprovado");
+        .select("id", { count: "exact", head: true }).eq("corretor_id", item.corretor_id).eq("data", hoje).eq("status", "aprovado");
       if ((count || 0) === 0) {
         const { data: prof } = await supabase.from("profiles").select("user_id").eq("id", item.corretor_id).single();
-        if (prof?.user_id) {
-          await supabase.from("corretor_disponibilidade")
-            .update({ na_roleta: false, updated_at: new Date().toISOString() })
-            .eq("user_id", prof.user_id);
-        }
+        if (prof?.user_id) await supabase.from("corretor_disponibilidade").update({ na_roleta: false, updated_at: new Date().toISOString() }).eq("user_id", prof.user_id);
       }
     }
-    
-    toast.success(`❌ ${item?.corretor_nome || "Corretor"} recusado(a) da Roleta.`);
+    toast.success(`${item?.corretor_nome || "Corretor"} recusado(a) da Roleta`);
     reloadRoleta();
-  }, [user, localPendentes, getProfileId, reloadRoleta]);
+  }, [user, localPendentes, getProfileId, reloadRoleta, hoje]);
 
   const aprovarTodos = useCallback(async () => {
     if (!user) return;
@@ -345,12 +252,9 @@ export default function CeoDashboard() {
     for (const c of pending) {
       const { data: cred, error } = await supabase.from("roleta_credenciamentos")
         .update({ status: "aprovado", aprovado_por: profileId, aprovado_em: new Date().toISOString() })
-        .eq("id", c.id)
-        .select()
-        .single();
+        .eq("id", c.id).select().single();
       if (!error && cred) {
         await insertFilaForCred(cred);
-        // Sync na_roleta = true
         const { data: prof } = await supabase.from("profiles").select("user_id").eq("id", cred.corretor_id).single();
         if (prof?.user_id) {
           await supabase.from("corretor_disponibilidade")
@@ -359,72 +263,108 @@ export default function CeoDashboard() {
         ok++;
       }
     }
-    toast.success(`✅ ${ok} corretor(es) aprovado(s) na Roleta!`);
+    toast.success(`${ok} corretor(es) aprovado(s) na Roleta`);
     reloadRoleta();
   }, [user, localPendentes, getProfileId, insertFilaForCred, reloadRoleta]);
 
-  const [rankingView, setRankingView] = useState<"equipe" | "corretores">("equipe");
-
-
-  if (loading && !profile) {
-    return <CeoDashboardSkeleton />;
-  }
-
+  // Derived
   const totalTeam = teams.reduce((acc, t) => ({
     ligacoes: acc.ligacoes + t.ligacoes, aproveitados: acc.aproveitados + t.aproveitados,
     visitasMarcadas: acc.visitasMarcadas + t.visitasMarcadas, visitasRealizadas: acc.visitasRealizadas + t.visitasRealizadas,
     propostas: acc.propostas + t.propostas, vgv: acc.vgv + t.vgv,
   }), { ligacoes: 0, aproveitados: 0, visitasMarcadas: 0, visitasRealizadas: 0, propostas: 0, vgv: 0 });
 
+  const totalVisitas = kpis.visitasMarcadas + kpis.visitasRealizadas + kpis.noShows;
+  const totalNeg = negocioFases.reduce((a: number, f: any) => a + f.count, 0);
+  const negTotalVgv = negocioFases.reduce((a: number, f: any) => a + f.vgv, 0);
+  const leadsDistribuidos = totalLeadsPeriodo - filaCeoCount;
+
+  // Pipeline funnel totals
+  const funnelTotal = pipelineStages.reduce((a, s) => a + s.count, 0) || 1;
+  const funnelColors = ["#4F46E5","#6366f1","#818cf8","#a5b4fc","#c7d2fe","#22c55e","#ef4444","#10b981","#f59e0b"];
+
+  // Negocio funnel order
+  const negFunnelOrder = ["novo_negocio","negociacao","proposta","documentacao","contrato","assinado","vendido","distrato"];
+  const negFunnelLabels: Record<string,string> = {
+    novo_negocio:"Novo Negócio", negociacao:"Negociação", proposta:"Proposta",
+    documentacao:"Documentação", contrato:"Contrato", assinado:"Assinado",
+    vendido:"Vendido", distrato:"Distrato"
+  };
+  const negFunnelColors: Record<string,string> = {
+    novo_negocio:"#4F46E5", negociacao:"#6366f1", proposta:"#818cf8",
+    documentacao:"#a78bfa", contrato:"#c084fc", assinado:"#10b981",
+    vendido:"#059669", distrato:"#ef4444"
+  };
+
+  if (loading && !profile) return <CeoDashboardSkeleton />;
+
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
-      {/* ─── GREETING BAR ─── */}
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-5 max-w-[1440px] mx-auto">
+      {/* ═══ GREETING ═══ */}
       <GreetingBar
         name={profile?.nome || user?.email?.split("@")[0] || "CEO"}
         avatarUrl={profile?.avatar_gamificado_url || profile?.avatar_url}
         subtitle={`"${frase}"`}
         filter={period === "hoje" ? "hoje" : period === "ontem" ? "ontem" : period === "semana" ? "semana" : period === "mes" || period === "ultimos_30d" ? "mes" : "personalizado"}
-        dateRange={{ from: range.start?.split("T")[0] || "", to: range.end?.split("T")[0] || "" }}
+        dateRange={{ from: range.start, to: range.end }}
         onFilterChange={(f, r) => {
-          // Dispatch period change via GlobalDateFilterBar's context
           const periodMap: Record<string, string> = { hoje: "hoje", ontem: "ontem", semana: "semana", mes: "mes" };
-          const mapped = periodMap[f] || "personalizado";
-          window.dispatchEvent(new CustomEvent("date-filter-change", { detail: { period: mapped, range: r } }));
+          window.dispatchEvent(new CustomEvent("date-filter-change", { detail: { period: periodMap[f] || "personalizado", range: r } }));
         }}
         onRefresh={reload}
         refreshTime={format(lastUpdate, "HH:mm")}
       />
 
-      {/* ─── TABS DE PERÍODO ─── */}
-      <GlobalDateFilterBar variant="header" />
+      {/* ═══ DATE FILTER + ACTION BUTTONS ═══ */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="flex-1"><GlobalDateFilterBar variant="header" /></div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate("/pipeline-leads")}
+            className="gap-1.5 text-xs border-[#4F46E5]/30 text-[#4F46E5] hover:bg-[#4F46E5]/5"
+          >
+            <Inbox className="h-3.5 w-3.5" />
+            Fila CEO
+            {filaCeoCount > 0 && <Badge className="bg-[#4F46E5] text-white text-[10px] px-1.5 py-0 ml-1">{filaCeoCount}</Badge>}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setDispatchOpen(true)}
+            disabled={filaCeoCount === 0}
+            className="gap-1.5 text-xs bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+          >
+            <Rocket className="h-3.5 w-3.5" />
+            Disparar Roleta
+          </Button>
+        </div>
+      </div>
 
-
-      {/* ─── SEÇÃO 1: ROLETA PENDENTES ─── */}
-      <Card className={`bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] rounded-[14px] shadow-none ${localPendentes.length > 0 ? "border-primary/50" : "border-emerald-500/30"}`}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              Roleta — Aprovações Pendentes
-              {localPendentes.length > 0 && <Badge variant="destructive" className="text-xs">{localPendentes.length}</Badge>}
-            </CardTitle>
-            {localPendentes.length > 1 && (
-              <Button size="sm" onClick={aprovarTodos} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar todos
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {localPendentes.length === 0 ? (
-            <p className="text-sm text-emerald-600 flex items-center gap-2 py-2">✅ Nenhuma aprovação pendente</p>
-          ) : (
+      {/* ═══ APROVAÇÕES PENDENTES ═══ */}
+      {localPendentes.length > 0 && (
+        <Card className="border-[#4F46E5]/40 bg-[#f7f7fb] dark:bg-[#141e30]">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                Aprovações Pendentes
+                <Badge className="bg-[#4F46E5] text-white text-[10px]">{localPendentes.length}</Badge>
+              </CardTitle>
+              {localPendentes.length > 1 && (
+                <Button size="sm" onClick={aprovarTodos} className="bg-[#10b981] hover:bg-[#059669] text-white text-xs">
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar todos
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-2">
               {localPendentes.map((c: any) => (
-                <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg border bg-card">
+                <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border border-[#e8e8f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.03]">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       {c.avatar && <AvatarImage src={c.avatar} />}
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      <AvatarFallback className="text-xs bg-[#4F46E5]/10 text-[#4F46E5]">
                         {(c.corretor_nome || "C").substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -432,493 +372,284 @@ export default function CeoDashboard() {
                       <p className="font-medium text-sm">{c.corretor_nome}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <Badge variant="outline" className="text-[10px]">{c.janela}</Badge>
-                        <Badge className="text-[10px] bg-primary/10 text-primary border-0">{c.seg1_nome}</Badge>
-                        {c.seg2_nome && <Badge className="text-[10px] bg-accent text-accent-foreground border-0">{c.seg2_nome}</Badge>}
+                        <Badge className="text-[10px] bg-[#4F46E5]/10 text-[#4F46E5] border-0">{c.seg1_nome}</Badge>
+                        {c.seg2_nome && <Badge className="text-[10px] bg-muted text-muted-foreground border-0">{c.seg2_nome}</Badge>}
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button size="sm" onClick={() => aprovar(c.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs flex-1 sm:flex-none">
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => aprovar(c.id)} className="bg-[#10b981] hover:bg-[#059669] text-white text-xs flex-1 sm:flex-none">
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aprovar
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => recusar(c.id)} className="text-destructive border-destructive/30 hover:bg-destructive/10 text-xs flex-1 sm:flex-none">
+                    <Button size="sm" variant="outline" onClick={() => recusar(c.id)} className="text-[#ef4444] border-[#ef4444]/30 hover:bg-[#ef4444]/5 text-xs flex-1 sm:flex-none">
                       <XCircle className="h-3.5 w-3.5 mr-1" /> Recusar
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* ─── FILA CEO ─── */}
-      <Card className={`bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] rounded-[14px] shadow-none ${filaCeoCount > 0 ? "border-[#4F46E5]/40" : ""}`}>
-        <CardContent className="pt-4 pb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-[#4F46E5]/10 flex items-center justify-center shrink-0">
-              <Inbox className="h-4 w-4 sm:h-5 sm:w-5 text-[#4F46E5]" />
-            </div>
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-sm font-semibold whitespace-nowrap">Fila CEO</span>
-              {filaCeoCount > 0 && <Badge className="bg-[#4F46E5] text-white border-none text-xs">{filaCeoCount}</Badge>}
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mb-2">
-            {filaCeoCount > 0 ? `${filaCeoCount} leads aguardando distribuição` : "Nenhum lead na fila"}
-            {lastDispatch && (
-              <span className="hidden sm:inline ml-2">• Último disparo: {format(new Date(lastDispatch.at), "dd/MM HH:mm")} ({lastDispatch.count} leads)</span>
-            )}
-          </p>
-          <Button
-            size="sm"
-            onClick={() => setDispatchOpen(true)}
-            disabled={filaCeoCount === 0}
-            className="w-full sm:w-auto gap-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white"
-          >
-            <Rocket className="h-3.5 w-3.5" />
-            Disparar para Roleta
-          </Button>
-        </CardContent>
-      </Card>
-
-
-      {/* ─── SEÇÃO 2: LEADS ─── */}
-      <div>
-        <p className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4F46E5] mb-3">Leads</p>
-        <KpiGrid cols={4}>
-          <NewKpiCard
-            label="Total de leads"
-            value={totalLeadsPeriodo}
-            variant="highlight"
-            icon={<Users size={14} strokeWidth={1.5} />}
-            onClick={() => setKpiDetail({ type: "total_leads", label: "Total de Leads" })}
-          />
-          <NewKpiCard
-            label="Visitas marcadas"
-            value={kpis.visitasMarcadas}
-            icon={<CalendarDays size={14} strokeWidth={1.5} />}
-            variant={(() => { const p = ceoMetasConsolidadas.meta_visitas_marcadas > 0 ? Math.round((kpis.visitasMarcadas / ceoMetasConsolidadas.meta_visitas_marcadas) * 100) : 0; return p >= 70 ? "success" : p >= 30 ? "warning" : "danger"; })() as any}
-            hint={ceoMetasConsolidadas.meta_visitas_marcadas > 0 ? `${Math.round((kpis.visitasMarcadas / ceoMetasConsolidadas.meta_visitas_marcadas) * 100)}% da meta · meta: ${ceoMetasConsolidadas.meta_visitas_marcadas}` : undefined}
-            onClick={() => setKpiDetail({ type: "visitas_marcadas", label: "Visitas Marcadas" })}
-          />
-          <NewKpiCard
-            label="Visitas realizadas"
-            value={`${kpis.visitasRealizadas} (${kpis.taxaRealizacao}%)`}
-            icon={<CalendarCheck size={14} strokeWidth={1.5} />}
-            variant={(() => { const p = ceoMetasConsolidadas.meta_visitas_realizadas > 0 ? Math.round((kpis.visitasRealizadas / ceoMetasConsolidadas.meta_visitas_realizadas) * 100) : 0; return p >= 70 ? "success" : p >= 30 ? "warning" : "danger"; })() as any}
-            hint={ceoMetasConsolidadas.meta_visitas_realizadas > 0 ? `${Math.round((kpis.visitasRealizadas / ceoMetasConsolidadas.meta_visitas_realizadas) * 100)}% da meta · meta: ${ceoMetasConsolidadas.meta_visitas_realizadas}` : undefined}
-            onClick={() => setKpiDetail({ type: "visitas_realizadas", label: "Visitas Realizadas" })}
-          />
-          <NewKpiCard
-            label="Conversão lead→visita"
-            value={`${totalLeadsPeriodo > 0 ? Math.round((kpis.visitasMarcadas / totalLeadsPeriodo) * 100) : 0}%`}
-          />
-        </KpiGrid>
-      </div>
-
-      {/* ─── SEÇÃO 3: NEGÓCIOS ─── */}
-      <div>
-        <p className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4F46E5] mb-3">Negócios</p>
-        <KpiGrid cols={4}>
-          <NewKpiCard
-            label="Nº negócios"
-            value={negocioFases.reduce((a: number, f: any) => a + f.count, 0)}
-            onClick={() => setKpiDetail({ type: "negocios", label: "Nº Negócios" })}
-          />
-          <NewKpiCard
-            label="Propostas"
-            value={negocioFases.filter((f: any) => f.fase === "proposta").reduce((a: number, f: any) => a + f.count, 0)}
-            hint={ceoMetasConsolidadas.meta_propostas > 0 ? `meta: ${ceoMetasConsolidadas.meta_propostas}` : undefined}
-            onClick={() => setKpiDetail({ type: "propostas", label: "Propostas" })}
-          />
-          <NewKpiCard
-            label="Assinados"
-            value={negocioFases.filter((f: any) => f.fase === "assinado" || f.fase === "vendido").reduce((a: number, f: any) => a + f.count, 0)}
-            variant="success"
-            hint={ceoMetasConsolidadas.meta_assinados > 0 ? `meta: ${ceoMetasConsolidadas.meta_assinados}` : undefined}
-            onClick={() => setKpiDetail({ type: "assinados", label: "Assinados" })}
-          />
-          <NewKpiCard
-            label="VGV assinado"
-            value={formatCurrency(kpis.vgvAssinado)}
-            variant={(() => { const p = ceoMetasConsolidadas.meta_vgv_assinado > 0 ? Math.round((kpis.vgvAssinado / ceoMetasConsolidadas.meta_vgv_assinado) * 100) : 0; return p >= 70 ? "success" : p >= 30 ? "warning" : "danger"; })() as any}
-            hint={ceoMetasConsolidadas.meta_vgv_assinado > 0 ? `${Math.round((kpis.vgvAssinado / ceoMetasConsolidadas.meta_vgv_assinado) * 100)}% da meta · meta: ${formatCurrency(ceoMetasConsolidadas.meta_vgv_assinado)}` : undefined}
-            onClick={() => setKpiDetail({ type: "vgv_assinado", label: "VGV Assinado" })}
-          />
-        </KpiGrid>
-        <KpiGrid cols={4} className="mt-3">
-          <NewKpiCard
-            label="Negociação"
-            value={negocioFases.filter((f: any) => f.fase === "negociacao").reduce((a: number, f: any) => a + f.count, 0)}
-            onClick={() => setKpiDetail({ type: "negociacao", label: "Negociação" })}
-          />
-          <NewKpiCard
-            label="Contratos gerados"
-            value={negocioFases.filter((f: any) => f.fase === "documentacao" || f.fase === "contrato").reduce((a: number, f: any) => a + f.count, 0)}
-            hint={ceoMetasConsolidadas.meta_contratos > 0 ? `meta: ${ceoMetasConsolidadas.meta_contratos}` : undefined}
-            onClick={() => setKpiDetail({ type: "contratos", label: "Contratos Gerados" })}
-          />
-        </KpiGrid>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* ─── SEÇÃO 4: PROSPECÇÃO ─── */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <div>
-        <p className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4F46E5] mb-3">Prospecção</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard
-            icon={Users}
-            label="Presentes Hoje"
-            value={presentesHoje}
-            displayValue={`${presentesHoje} corretores`}
-            iconColor="text-emerald-600"
-            ceoMeta={null}
-            onClick={() => setKpiDetail({ type: "presentes_hoje", label: "Presentes Hoje" })}
-          />
-          <KpiCard
-            icon={Target}
-            label="Metas do Dia"
-            value={metasDiaTotal.ligacoes}
-            displayValue={`${metasDiaTotal.ligacoes} lig · ${metasDiaTotal.aproveitados} aprov · ${metasDiaTotal.visitasMarcadas} VM`}
-            iconColor="text-blue-600"
-          />
-          <KpiCard
-            icon={Phone}
-            label="Nº Tentativas"
-            value={kpis.ligacoes}
-            prev={prevKpis?.ligacoes}
-            iconColor="text-blue-600"
-            ceoMeta={ceoMetasConsolidadas.meta_ligacoes || null}
-            onClick={() => setKpiDetail({ type: "tentativas", label: "Nº Tentativas" })}
-          />
-          <KpiCard
-            icon={ThumbsUp}
-            label="Aproveitados"
-            value={kpis.aproveitados}
-            displayValue={`${kpis.aproveitados} (${kpis.taxaConversao}%)`}
-            prev={prevKpis?.aproveitados}
-            iconColor="text-emerald-600"
-            ceoMeta={ceoMetasConsolidadas.meta_aproveitados || null}
-            onClick={() => setKpiDetail({ type: "aproveitados", label: "Aproveitados" })}
-          />
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* LINHA 1 — ROLETA DE LEADS                                 */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section>
+        <SectionLabel icon={Target}>Roleta de Leads</SectionLabel>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <MiniKpi label="Leads Gerados" value={totalLeadsPeriodo} variant="highlight"
+            onClick={() => setKpiDetail({ type: "total_leads", label: "Total de Leads" })} />
+          <MiniKpi label="Enviados p/ Roleta" value={leadsDistribuidos > 0 ? leadsDistribuidos : 0}
+            sub={filaCeoCount > 0 ? `${filaCeoCount} na fila` : "Fila vazia"} />
+          <MiniKpi label="Presentes Hoje" value={presentesHoje} sub={`${presentesHoje} corretores ativos`} />
+          <MiniKpi label="Conversão Lead→Visita" value={`${totalLeadsPeriodo > 0 ? Math.round((kpis.visitasMarcadas / totalLeadsPeriodo) * 100) : 0}%`}
+            variant={totalLeadsPeriodo > 0 && (kpis.visitasMarcadas / totalLeadsPeriodo) >= 0.1 ? "success" : "warning"} />
         </div>
-      </div>
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* ─── SEÇÃO 5: RANKINGS ─── */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#4F46E5] flex items-center gap-2">
-            Rankings
-          </p>
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-            <button
-              onClick={() => setRankingView("equipe")}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${rankingView === "equipe" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Por Equipe
-            </button>
-            <button
-              onClick={() => setRankingView("corretores")}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${rankingView === "corretores" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Todos Corretores
-            </button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Ranking Gestão de Leads */}
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Leads por Campanha/Empreendimento */}
+          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Target className="h-4 w-4 text-blue-600" /> Gestão de Leads
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5 text-[#4F46E5]" /> Leads por Empreendimento
+                </CardTitle>
+                {campanhas.some(c => c.empreendimento === "Sem empreendimento") && (
+                  <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1" onClick={() => setBulkEmpOpen(true)}>Corrigir</Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {rankingView === "equipe" ? (
-                  <>
-                    {teams
-                      .sort((a, b) => (b.visitasMarcadas + b.visitasRealizadas) - (a.visitasMarcadas + a.visitasRealizadas))
-                      .slice(0, 5)
-                      .map((t, i) => (
-                        <div key={t.gerente_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                          <span className="flex items-center gap-2">
-                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                            </span>
-                            <span className="font-medium">{t.gerente_nome}</span>
-                          </span>
-                          <div className="flex items-center gap-3 text-muted-foreground">
-                            <span title="V. Marcadas">{t.visitasMarcadas} VM</span>
-                            <span title="V. Realizadas" className="font-semibold text-foreground">{t.visitasRealizadas} VR</span>
-                          </div>
-                        </div>
-                      ))}
-                    {teams.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
-                  </>
-                ) : (
-                  <>
-                    {[...corretoresRank]
-                      .sort((a, b) => (b.visitasMarcadas + b.visitasRealizadas) - (a.visitasMarcadas + a.visitasRealizadas))
-                      .slice(0, 5)
-                      .map((c, i) => (
-                        <div key={c.corretor_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                          <span className="flex items-center gap-2">
-                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                            </span>
-                            <span className="font-medium">{c.nome}</span>
-                          </span>
-                          <div className="flex items-center gap-3 text-muted-foreground">
-                            <span title="V. Marcadas">{c.visitasMarcadas} VM</span>
-                            <span title="V. Realizadas" className="font-semibold text-foreground">{c.visitasRealizadas} VR</span>
-                          </div>
-                        </div>
-                      ))}
-                    {corretoresRank.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
-                  </>
-                )}
+              <div className="space-y-2.5 max-h-56 overflow-y-auto">
+                {leadsPorEmpreendimento.filter(l => l.emp !== "Sem empreendimento").slice(0, 10).map((l, idx) => {
+                  const max = Math.max(...leadsPorEmpreendimento.map(x => x.count), 1);
+                  const color = FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+                  return <HBar key={l.emp} label={l.emp} value={l.count} max={max} color={color} />;
+                })}
+                {leadsPorEmpreendimento.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
               </div>
             </CardContent>
           </Card>
 
-          {/* Ranking Gestão de Negócios */}
-          <Card>
+          {/* Leads por Origem */}
+          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-emerald-600" /> Gestão de Negócios
+              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                <Megaphone className="h-3.5 w-3.5 text-[#4F46E5]" /> Leads por Origem
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {rankingView === "equipe" ? (
-                  <>
-                    {[...teams]
-                      .sort((a, b) => b.vgv - a.vgv)
-                      .slice(0, 5)
-                      .map((t, i) => (
-                        <div key={t.gerente_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                          <span className="flex items-center gap-2">
-                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                            </span>
-                            <span className="font-medium">{t.gerente_nome}</span>
-                          </span>
-                          <span className="font-semibold">{formatCurrency(t.vgv)}</span>
-                        </div>
-                      ))}
-                    {teams.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
-                  </>
-                ) : (
-                  <>
-                    {topCorretoresVgv.map((c: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                        <span className="flex items-center gap-2">
-                          <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                          </span>
-                          <span className="font-medium">{c.nome}</span>
-                        </span>
-                        <span className="font-semibold">{formatCurrency(c.vgv)}</span>
+              <div className="space-y-2.5 max-h-56 overflow-y-auto">
+                {origens.slice(0, 8).map((o, idx) => {
+                  const max = Math.max(...origens.map(x => x.count), 1);
+                  const color = ORIGIN_COLORS[o.origem] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+                  return <HBar key={o.origem} label={o.origem} value={o.count} max={max} color={color} />;
+                })}
+                {origens.length === 0 && <p className="text-xs text-[#a1a1aa] text-center py-4">Sem dados</p>}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* LINHA 2 — GESTÃO DE LEADS                                 */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section>
+        <SectionLabel icon={BarChart3}>Gestão de Leads</SectionLabel>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Funil do Pipeline - 2/3 */}
+          <Card className="lg:col-span-2 bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-xs font-semibold">Funil do Pipeline</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Select value={funnelFilter} onValueChange={setFunnelFilter}>
+                    <SelectTrigger className="h-7 text-[10px] w-32 bg-white dark:bg-white/[0.05]">
+                      <SelectValue placeholder="Equipe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas Equipes</SelectItem>
+                      {teams.map(t => <SelectItem key={t.gerente_id} value={t.gerente_id}>{t.gerente_nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1.5">
+                {pipelineStages.map((s, idx) => {
+                  const maxCount = Math.max(...pipelineStages.map(x => x.count), 1);
+                  const pct = Math.round((s.count / maxCount) * 100);
+                  const stageColor = s.tipo === "descarte" ? "#ef4444" : s.tipo === "convertido" ? "#10b981" : `hsl(${240 - idx * 15}, 70%, ${55 + idx * 3}%)`;
+                  return (
+                    <div key={s.id} className="flex items-center gap-2 group/stage">
+                      <span className="text-[10px] text-[#71717a] w-28 truncate group-hover/stage:text-foreground transition-colors">{s.nome}</span>
+                      <div className="flex-1 h-6 rounded-lg bg-[#e8e8f0]/50 dark:bg-white/[0.04] relative overflow-hidden">
+                        <div className="h-full rounded-lg transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: stageColor, opacity: 0.8 }} />
+                        <span className="absolute inset-0 flex items-center px-2 text-[10px] font-bold text-foreground">{s.count}</span>
                       </div>
-                    ))}
-                    {topCorretoresVgv.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
-                  </>
-                )}
+                      <span className="text-[9px] text-[#a1a1aa] w-10 text-right">{Math.round((s.count / funnelTotal) * 100)}%</span>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
 
-          {/* Ranking Prospecção / Oferta Ativa */}
-          <Card>
+          {/* Agenda de Visitas - 1/3 */}
+          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Phone className="h-4 w-4 text-blue-600" /> Prospecção OA
+              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                <CalendarCheck className="h-3.5 w-3.5 text-[#4F46E5]" /> Agenda de Visitas
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {rankingView === "equipe" ? (
-                  <>
-                    {[...teams]
-                      .sort((a, b) => b.ligacoes - a.ligacoes)
-                      .slice(0, 5)
-                      .map((t, i) => (
-                        <div key={t.gerente_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                          <span className="flex items-center gap-2">
-                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                            </span>
-                            <span className="font-medium">{t.gerente_nome}</span>
-                          </span>
-                          <div className="flex items-center gap-3 text-muted-foreground">
-                            <span>{t.ligacoes} lig</span>
-                            <span className="font-semibold text-foreground">{t.aproveitados} aprov ({t.taxa}%)</span>
-                          </div>
-                        </div>
-                      ))}
-                    {teams.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
-                  </>
-                ) : (
-                  <>
-                    {[...corretoresRank]
-                      .sort((a, b) => b.ligacoes - a.ligacoes)
-                      .slice(0, 5)
-                      .map((c, i) => (
-                        <div key={c.corretor_id} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-muted/30">
-                          <span className="flex items-center gap-2">
-                            <span className={`font-bold text-sm ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
-                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                            </span>
-                            <span className="font-medium">{c.nome}</span>
-                          </span>
-                          <div className="flex items-center gap-3 text-muted-foreground">
-                            <span>{c.ligacoes} lig</span>
-                            <span className="font-semibold text-foreground">{c.aproveitados} aprov ({c.taxa}%)</span>
-                          </div>
-                        </div>
-                      ))}
-                    {corretoresRank.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
-                  </>
-                )}
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
+                  <p className="text-2xl font-[800] text-[#4F46E5]">{kpis.visitasMarcadas + kpis.visitasRealizadas + kpis.noShows}</p>
+                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Total Visitas</p>
+                </div>
+                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
+                  <p className="text-2xl font-[800] text-[#f59e0b]">{kpis.visitasMarcadas}</p>
+                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Marcadas (Futuras)</p>
+                </div>
+                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
+                  <p className="text-2xl font-[800] text-[#10b981]">{kpis.visitasRealizadas}</p>
+                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">Realizadas</p>
+                </div>
+                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 text-center border border-[#e8e8f0] dark:border-white/[0.05]">
+                  <p className="text-2xl font-[800] text-[#ef4444]">{kpis.noShows}</p>
+                  <p className="text-[10px] text-[#a1a1aa] mt-0.5">No Show</p>
+                </div>
               </div>
+              {ceoMetas.meta_visitas_realizadas > 0 && (
+                <div className="bg-white dark:bg-white/[0.04] rounded-xl p-3 border border-[#e8e8f0] dark:border-white/[0.05]">
+                  <div className="flex justify-between text-[10px] text-[#a1a1aa] mb-1">
+                    <span>Meta Visitas Realizadas</span>
+                    <span className="font-semibold text-foreground">{Math.round((kpis.visitasRealizadas / ceoMetas.meta_visitas_realizadas) * 100)}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#e8e8f0] dark:bg-white/[0.06] overflow-hidden">
+                    <div className="h-full rounded-full bg-[#10b981] transition-all" style={{ width: `${Math.min((kpis.visitasRealizadas / ceoMetas.meta_visitas_realizadas) * 100, 100)}%` }} />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-      </div>
+      </section>
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* ─── SEÇÃO 6: FUNIL E GARGALOS ─── */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
-          <BarChart3 className="h-4 w-4" /> Gestão de Leads — Funil e Gargalos
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
-          {/* Funil (40%) */}
-          <Card className="lg:col-span-4">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Funil do Pipeline</CardTitle></CardHeader>
-            <CardContent className="space-y-1.5">
-              {pipelineStages.map((s) => {
-                const maxCount = Math.max(...pipelineStages.map(x => x.count), 1);
-                const pct = Math.round((s.count / maxCount) * 100);
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* LINHA 3 — GESTÃO DE NEGÓCIOS                              */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section>
+        <SectionLabel icon={DollarSign}>Gestão de Negócios</SectionLabel>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <MiniKpi label="Total de Negócios" value={totalNeg} variant="highlight" />
+          <MiniKpi label="VGV em Contrato" value={formatBRLCompact(negTotalVgv)} sub={`${totalNeg} negócios ativos`} />
+          <MiniKpi label="VGV Assinado" value={formatBRLCompact(kpis.vgvAssinado)} variant="success"
+            sub={ceoMetas.meta_vgv_assinado > 0 ? `${Math.round((kpis.vgvAssinado / ceoMetas.meta_vgv_assinado) * 100)}% da meta` : undefined}
+            onClick={() => setKpiDetail({ type: "vgv_assinado", label: "VGV Assinado" })} />
+          <MiniKpi label="Propostas" value={kpis.propostas}
+            sub={ceoMetas.meta_propostas > 0 ? `meta: ${ceoMetas.meta_propostas}` : undefined}
+            onClick={() => setKpiDetail({ type: "propostas", label: "Propostas" })} />
+        </div>
+
+        <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-2 h-40 px-2">
+              {negFunnelOrder.map((fase, idx) => {
+                const data = negocioFases.find((f: any) => f.fase === fase);
+                const count = data?.count || 0;
+                const vgv = data?.vgv || 0;
+                const maxCount = Math.max(...negocioFases.map((f: any) => f.count), 1);
+                const heightPct = maxCount > 0 ? Math.max((count / maxCount) * 100, 8) : 8;
+                const color = negFunnelColors[fase] || "#a1a1aa";
                 return (
-                  <div key={s.id} className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground w-24 truncate">{s.nome}</span>
-                    <div className="flex-1 h-5 rounded bg-muted/40 relative overflow-hidden">
-                      <div className="h-full rounded bg-primary/20 transition-all" style={{ width: `${pct}%` }} />
-                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold">{s.count}</span>
+                  <div key={fase} className="flex-1 flex flex-col items-center gap-1 group/bar">
+                    <span className="text-[10px] font-bold text-foreground opacity-0 group-hover/bar:opacity-100 transition-opacity">
+                      {count > 0 ? formatBRLCompact(vgv) : ""}
+                    </span>
+                    <div className="w-full max-w-[48px] rounded-t-lg transition-all duration-500 relative" style={{ height: `${heightPct}%`, backgroundColor: color }}>
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">
+                        {count > 0 ? count : ""}
+                      </span>
                     </div>
+                    <span className="text-[8px] text-[#a1a1aa] text-center leading-tight truncate w-full px-0.5">
+                      {negFunnelLabels[fase] || fase}
+                    </span>
                   </div>
                 );
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
-          {/* Campanhas (30%) */}
-          <Card className="lg:col-span-3">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Leads por Campanha</CardTitle>
-                {campanhas.some(c => c.empreendimento === "Sem empreendimento") && (
-                  <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1" onClick={() => setBulkEmpOpen(true)}>
-                    <Building2 className="h-3 w-3" /> Corrigir
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {campanhas.filter(c => c.empreendimento !== "Sem empreendimento").slice(0, 8).map(c => (
-                  <div key={c.empreendimento} className="flex items-center justify-between text-xs p-1.5 rounded hover:bg-muted/30">
-                    <div className="truncate flex-1 mr-2">
-                      <p className="font-medium truncate">{c.empreendimento}</p>
-                      <p className="text-muted-foreground">{c.leads} leads</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className={`text-[10px] ${c.pctParados > 50 ? "border-destructive/50 text-destructive" : c.pctParados > 25 ? "border-amber-500/50 text-amber-600" : "border-emerald-500/50 text-emerald-600"}`}>
-                        {c.pctAvancou}% avançou
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-                {campanhas.filter(c => c.empreendimento !== "Sem empreendimento").length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
-              </div>
-            </CardContent>
-          </Card>
-
-          <BulkEmpreendimentoAssign open={bulkEmpOpen} onOpenChange={setBulkEmpOpen} onComplete={reload} />
-
-          {/* Alertas (30%) */}
-          <Card className="lg:col-span-3">
-            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Alertas</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {alertas.map((a, i) => (
-                  <div key={i} className={`flex items-start gap-2 p-2 rounded-md text-xs ${a.tipo === "red" ? "bg-destructive/5 text-destructive" : a.tipo === "yellow" ? "bg-amber-500/5 text-amber-600" : "bg-emerald-500/5 text-emerald-600"}`}>
-                    <span>{a.tipo === "red" ? "🔴" : a.tipo === "yellow" ? "🟡" : "🟢"}</span>
-                    <span>{a.mensagem}</span>
-                  </div>
-                ))}
-                {alertas.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Nenhum alerta</p>}
-              </div>
-            </CardContent>
-          </Card>
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* LINHA 4 — OFERTA ATIVA                                    */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section>
+        <SectionLabel icon={Phone}>Oferta Ativa</SectionLabel>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <MiniKpi label="Total Ligações" value={kpis.ligacoes.toLocaleString("pt-BR")} variant="highlight"
+            sub={ceoMetas.meta_ligacoes > 0 ? `${Math.round((kpis.ligacoes / ceoMetas.meta_ligacoes) * 100)}% da meta` : undefined}
+            onClick={() => setKpiDetail({ type: "tentativas", label: "Ligações" })} />
+          <MiniKpi label="Aproveitados" value={kpis.aproveitados} variant="success"
+            sub={`Taxa: ${kpis.taxaConversao}%`}
+            onClick={() => setKpiDetail({ type: "aproveitados", label: "Aproveitados" })} />
+          <MiniKpi label="Metas do Dia" value={`${metasDiaTotal.ligacoes} lig`}
+            sub={`${metasDiaTotal.aproveitados} aprov · ${metasDiaTotal.visitasMarcadas} VM`} />
+          <MiniKpi label="Taxa Aproveitamento" value={`${kpis.taxaConversao}%`}
+            variant={kpis.taxaConversao >= 10 ? "success" : kpis.taxaConversao >= 5 ? "warning" : "default"} />
         </div>
-      </div>
 
-      {/* ─── SEÇÃO 7: PERFORMANCE POR EQUIPE ─── */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
-          <Users className="h-4 w-4" /> Performance por Equipe
-        </h2>
-        <Card>
-          <CardContent className="pt-4">
+        <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold">Performance por Equipe</CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="border-b text-muted-foreground text-xs">
+                  <tr className="border-b border-[#e8e8f0] dark:border-white/[0.07] text-[#a1a1aa]">
                     <th className="text-left pb-2 font-medium">Equipe</th>
                     <th className="text-right pb-2 font-medium">Ligações</th>
-                    <th className="text-right pb-2 font-medium">Aproveitados</th>
-                    <th className="text-right pb-2 font-medium">Taxa%</th>
-                    <th className="text-right pb-2 font-medium">V. Marcadas</th>
-                    <th className="text-right pb-2 font-medium">V. Realizadas</th>
-                    <th className="text-right pb-2 font-medium">Propostas</th>
+                    <th className="text-right pb-2 font-medium">Aprov.</th>
+                    <th className="text-right pb-2 font-medium">Taxa</th>
+                    <th className="text-right pb-2 font-medium">V.M</th>
+                    <th className="text-right pb-2 font-medium">V.R</th>
+                    <th className="text-right pb-2 font-medium">Prop.</th>
                     <th className="text-right pb-2 font-medium">VGV</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {teams.map(t => {
-                    const avgLig = totalTeam.ligacoes / Math.max(teams.length, 1);
-                    const avgAprov = totalTeam.aproveitados / Math.max(teams.length, 1);
-                    return (
-                      <tr key={t.gerente_id} className="border-b">
-                        <td className="py-2 font-medium">{t.gerente_nome}</td>
-                        <td className={`py-2 text-right ${t.ligacoes >= avgLig ? "text-emerald-600" : "text-destructive"}`}>{t.ligacoes}</td>
-                        <td className={`py-2 text-right ${t.aproveitados >= avgAprov ? "text-emerald-600" : "text-destructive"}`}>{t.aproveitados}</td>
-                        <td className="py-2 text-right">{t.taxa}%</td>
-                        <td className="py-2 text-right">{t.visitasMarcadas}</td>
-                        <td className="py-2 text-right">{t.visitasRealizadas}</td>
-                        <td className="py-2 text-right">{t.propostas}</td>
-                        <td className="py-2 text-right font-semibold">{formatCurrency(t.vgv)}</td>
-                      </tr>
-                    );
-                  })}
+                  {teams.sort((a, b) => b.ligacoes - a.ligacoes).map(t => (
+                    <tr key={t.gerente_id} className="border-b border-[#e8e8f0]/50 dark:border-white/[0.04] hover:bg-white/50 dark:hover:bg-white/[0.02] transition-colors">
+                      <td className="py-2 font-medium text-foreground">{t.gerente_nome}</td>
+                      <td className="py-2 text-right font-semibold text-[#4F46E5]">{t.ligacoes}</td>
+                      <td className="py-2 text-right text-[#10b981] font-semibold">{t.aproveitados}</td>
+                      <td className="py-2 text-right">{t.taxa}%</td>
+                      <td className="py-2 text-right">{t.visitasMarcadas}</td>
+                      <td className="py-2 text-right">{t.visitasRealizadas}</td>
+                      <td className="py-2 text-right">{t.propostas}</td>
+                      <td className="py-2 text-right font-semibold">{formatBRLCompact(t.vgv)}</td>
+                    </tr>
+                  ))}
                   {teams.length > 0 && (
-                    <tr className="bg-muted/30 font-semibold">
-                      <td className="py-2">Total</td>
-                      <td className="py-2 text-right">{totalTeam.ligacoes}</td>
-                      <td className="py-2 text-right">{totalTeam.aproveitados}</td>
+                    <tr className="bg-[#4F46E5]/5 font-semibold">
+                      <td className="py-2 text-[#4F46E5]">Total</td>
+                      <td className="py-2 text-right text-[#4F46E5]">{totalTeam.ligacoes}</td>
+                      <td className="py-2 text-right text-[#10b981]">{totalTeam.aproveitados}</td>
                       <td className="py-2 text-right">{totalTeam.ligacoes > 0 ? Math.round((totalTeam.aproveitados / totalTeam.ligacoes) * 100) : 0}%</td>
                       <td className="py-2 text-right">{totalTeam.visitasMarcadas}</td>
                       <td className="py-2 text-right">{totalTeam.visitasRealizadas}</td>
                       <td className="py-2 text-right">{totalTeam.propostas}</td>
-                      <td className="py-2 text-right">{formatCurrency(totalTeam.vgv)}</td>
+                      <td className="py-2 text-right">{formatBRLCompact(totalTeam.vgv)}</td>
                     </tr>
                   )}
                 </tbody>
@@ -926,86 +657,144 @@ export default function CeoDashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-
-      {/* ─── SEÇÃO 8: RELATÓRIO DO DIA ─── */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
-          <FileText className="h-4 w-4" /> Relatório do Dia
-        </h2>
-        <CeoDailyReport
-          teams={teams}
-          corretoresRank={corretoresRank}
-          kpis={kpis}
-          totalLeads={totalLeadsPeriodo}
-          presentesHoje={presentesHoje}
-        />
-      </div>
-
-      {/* ─── SEÇÃO 9: MARKETING ─── */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide flex items-center gap-2">
-          <BarChart3 className="h-4 w-4" /> Marketing e Origem
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Leads por Origem</CardTitle></CardHeader>
+        {/* Top Corretores */}
+        {corretoresRank.length > 0 && (
+          <Card className="mt-3 bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold">Top Corretores — Oferta Ativa</CardTitle>
+            </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {origens.slice(0, 8).map((o, idx) => {
-                  const maxO = Math.max(...origens.map(x => x.count), 1);
-                  const barColor = getOriginColor(o.origem, idx);
-                  return (
-                    <div key={o.origem} className="space-y-0.5 group/bar">
-                      <div className="flex justify-between text-xs">
-                        <span className="truncate group-hover/bar:text-foreground transition-colors">{o.origem}</span>
-                        <span className="font-semibold">{o.count}</span>
-                      </div>
-                      <div className="h-2.5 rounded-full bg-muted/40 overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${(o.count / maxO) * 100}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-                {origens.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>}
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="border-b border-[#e8e8f0] dark:border-white/[0.07] text-[#a1a1aa]">
+                      <th className="text-left pb-2 font-medium">#</th>
+                      <th className="text-left pb-2 font-medium">Corretor</th>
+                      <th className="text-left pb-2 font-medium">Equipe</th>
+                      <th className="text-right pb-2 font-medium">Lig.</th>
+                      <th className="text-right pb-2 font-medium">Aprov.</th>
+                      <th className="text-right pb-2 font-medium">Taxa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...corretoresRank].sort((a, b) => b.ligacoes - a.ligacoes).slice(0, 10).map((c, i) => (
+                      <tr key={c.corretor_id} className="border-b border-[#e8e8f0]/50 dark:border-white/[0.04]">
+                        <td className="py-1.5 font-bold text-[#a1a1aa]">{i + 1}</td>
+                        <td className="py-1.5 font-medium text-foreground">{c.nome}</td>
+                        <td className="py-1.5 text-[#a1a1aa]">{c.gerente_nome}</td>
+                        <td className="py-1.5 text-right font-semibold text-[#4F46E5]">{c.ligacoes}</td>
+                        <td className="py-1.5 text-right text-[#10b981] font-semibold">{c.aproveitados}</td>
+                        <td className="py-1.5 text-right">{c.taxa}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
+        )}
+      </section>
 
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Leads por Empreendimento</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {leadsPorEmpreendimento.slice(0, 8).map((l, idx) => {
-                  const maxL = Math.max(...leadsPorEmpreendimento.map(x => x.count), 1);
-                  const empColors = ["bg-primary", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-cyan-500", "bg-violet-500", "bg-orange-500", "bg-indigo-500"];
-                  return (
-                    <div key={l.emp} className="space-y-0.5 group/bar">
-                      <div className="flex justify-between text-xs">
-                        <span className="truncate group-hover/bar:text-foreground transition-colors">{l.emp}</span>
-                        <span className="font-semibold">{l.count}</span>
-                      </div>
-                      <div className="h-2.5 rounded-full bg-muted/40 overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-500 ${empColors[idx % empColors.length]}`} style={{ width: `${(l.count / maxL) * 100}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* LINHA 5 — MARKETING, RH & DADOS GERAIS                    */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section>
+        <SectionLabel icon={Activity}>Dados Gerais</SectionLabel>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Marketing */}
+          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                <Megaphone className="h-3.5 w-3.5 text-[#4F46E5]" /> Marketing
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+                <span className="text-[11px] text-[#71717a]">Total Leads Gerados</span>
+                <span className="text-sm font-bold text-[#4F46E5]">{totalLeadsPeriodo}</span>
               </div>
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+                <span className="text-[11px] text-[#71717a]">Origens Ativas</span>
+                <span className="text-sm font-bold">{origens.length}</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+                <span className="text-[11px] text-[#71717a]">Top Origem</span>
+                <span className="text-sm font-bold">{origens[0]?.origem || "—"}</span>
+              </div>
+              <Button variant="outline" size="sm" className="w-full text-xs text-[#4F46E5] border-[#4F46E5]/20" onClick={() => navigate("/marketing")}>
+                Ver Marketing
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* RH */}
+          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                <UserCheck className="h-3.5 w-3.5 text-[#4F46E5]" /> RH & Equipe
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+                <span className="text-[11px] text-[#71717a]">Presentes Hoje</span>
+                <span className="text-sm font-bold text-[#10b981]">{presentesHoje}</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+                <span className="text-[11px] text-[#71717a]">Equipes Ativas</span>
+                <span className="text-sm font-bold">{teams.length}</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.05]">
+                <span className="text-[11px] text-[#71717a]">Total Corretores</span>
+                <span className="text-sm font-bold">{corretoresRank.length}</span>
+              </div>
+              <Button variant="outline" size="sm" className="w-full text-xs text-[#4F46E5] border-[#4F46E5]/20" onClick={() => navigate("/rh")}>
+                Ver RH
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Alertas & Info */}
+          <Card className="bg-[#f7f7fb] dark:bg-[#141e30] border-[#e8e8f0] dark:border-white/[0.07] shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                <Eye className="h-3.5 w-3.5 text-[#4F46E5]" /> Alertas & Atenção
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {alertas.length > 0 ? alertas.map((a, i) => (
+                <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg text-[11px] ${
+                  a.tipo === "red" ? "bg-[#ef4444]/5 text-[#ef4444]" :
+                  a.tipo === "yellow" ? "bg-[#f59e0b]/5 text-[#f59e0b]" :
+                  "bg-[#10b981]/5 text-[#10b981]"
+                }`}>
+                  <div className={`h-2 w-2 rounded-full mt-1 shrink-0 ${
+                    a.tipo === "red" ? "bg-[#ef4444]" : a.tipo === "yellow" ? "bg-[#f59e0b]" : "bg-[#10b981]"
+                  }`} />
+                  <span>{a.mensagem}</span>
+                </div>
+              )) : (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-[#10b981]/5 text-[#10b981] text-[11px]">
+                  <CheckCircle2 className="h-4 w-4" /> Operação saudável
+                </div>
+              )}
+              {vgvEmRisco > 0 && (
+                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-[#f59e0b]/5 text-[#f59e0b] text-[11px]">
+                  <div className="h-2 w-2 rounded-full mt-1 shrink-0 bg-[#f59e0b]" />
+                  <span>VGV em risco (parados &gt;15d): {formatBRLCompact(vgvEmRisco)}</span>
+                </div>
+              )}
+              <Button variant="outline" size="sm" className="w-full text-xs text-[#4F46E5] border-[#4F46E5]/20 mt-2" onClick={() => navigate("/relatorio-semanal")}>
+                Ver Relatório Geral
+              </Button>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </section>
 
-      {/* Fila CEO Dispatch Modal */}
-      <FilaCeoDispatchModal
-        open={dispatchOpen}
-        onOpenChange={setDispatchOpen}
-        onDispatched={() => { reload(); loadFilaCeo(); }}
-      />
-
-      {/* KPI Detail Dialog */}
+      {/* ═══ MODALS ═══ */}
+      <FilaCeoDispatchModal open={dispatchOpen} onOpenChange={setDispatchOpen} onDispatched={() => { reload(); loadFilaCeo(); }} />
+      <BulkEmpreendimentoAssign open={bulkEmpOpen} onOpenChange={setBulkEmpOpen} onComplete={reload} />
       <KpiDetailDialog
         open={!!kpiDetail}
         onOpenChange={(o) => { if (!o) setKpiDetail(null); }}
