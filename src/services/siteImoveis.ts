@@ -193,6 +193,17 @@ function mapDoc(doc: any): SiteImovel {
 
 /* ── Build Typesense filter_by ── */
 
+function buildGeoBoundsFilter(bounds?: BuscaFilters["bounds"]): string | null {
+  if (!bounds) return null;
+
+  const { lat_min, lat_max, lng_min, lng_max } = bounds;
+  const values = [lat_min, lat_max, lng_min, lng_max];
+  if (values.some((value) => !Number.isFinite(value))) return null;
+  if (lat_min >= lat_max || lng_min >= lng_max) return null;
+
+  return `location:(${lat_min}, ${lng_min}, ${lat_min}, ${lng_max}, ${lat_max}, ${lng_max}, ${lat_max}, ${lng_min})`;
+}
+
 function buildFilterBy(filters: BuscaFilters): string {
   const parts: string[] = [];
 
@@ -265,6 +276,9 @@ function buildFilterBy(filters: BuscaFilters): string {
       parts.push(`empreendimento:[\`${filters.empreendimento.join("`,`")}\`]`);
     }
   }
+
+  const geoBoundsFilter = buildGeoBoundsFilter(filters.bounds);
+  if (geoBoundsFilter) parts.push(geoBoundsFilter);
 
   return parts.join(" && ");
 }
