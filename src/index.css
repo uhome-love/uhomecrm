@@ -712,3 +712,21 @@ body.arena-mode main {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.4);
 }
+
+/* Pipeline card body: fixed height on desktop, auto on mobile */
+.pipeline-card-body {
+  height: 140px;
+  overflow: hidden;
+}
+@media (max-width: 767px) {
+  .pipeline-card-body {
+    height: auto;
+    overflow: visible;
+  }
+  [data-pipeline-card] {
+    border-radius: 12px;
+  }
+  .pipeline-card-body {
+    padding: 10px 12px 8px !important;
+  }
+}
