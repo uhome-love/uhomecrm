@@ -52,7 +52,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/ceo",               icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Checkpoint",         path: "/checkpoint",        icon: <CheckCircle  size={15} strokeWidth={1.5} /> },
         { label: "Relatório semanal",  path: "/relatorio-semanal", icon: <FileText     size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -81,8 +80,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
         { label: "Relatórios 1:1",     path: "/relatorios",        icon: <FileText     size={15} strokeWidth={1.5} /> },
-        { label: "Forecast",           path: "/forecast",          icon: <LineChart    size={15} strokeWidth={1.5} /> },
-        { label: "Funil",              path: "/funil",             icon: <GitBranch    size={15} strokeWidth={1.5} /> },
       ],
     },
     {
@@ -100,7 +97,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Escala diária",      path: "/escala-diaria",     icon: <Clock        size={15} strokeWidth={1.5} /> },
         { label: "Integração Jetimob", path: "/integracao",        icon: <Layers       size={15} strokeWidth={1.5} /> },
         { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Auditoria",          path: "/auditoria",         icon: <ShieldCheck  size={15} strokeWidth={1.5} /> },
         { label: "Usuários",           path: "/admin",             icon: <Users        size={15} strokeWidth={1.5} /> },
       ],
     },
