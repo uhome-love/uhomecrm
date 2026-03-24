@@ -204,13 +204,9 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
       <div
         draggable
         onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
-        className="group rounded-xl cursor-pointer active:cursor-grabbing transition-all duration-200 select-none overflow-hidden hover:scale-[1.02] hover:shadow-lg"
+        className="group rounded-xl cursor-pointer active:cursor-grabbing transition-all duration-200 select-none overflow-hidden hover:scale-[1.02] hover:shadow-lg bg-white border border-[#e8e8f0] dark:bg-[rgba(255,255,255,0.04)] dark:border-white/[0.08] dark:backdrop-blur-[16px]"
         style={{
-          background: "rgba(255,255,255,0.04)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          border: `1px solid rgba(255,255,255,0.08)`,
-          boxShadow: `0 0 12px ${faseInfo?.cor || "#6B7280"}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
+          boxShadow: `0 0 12px ${faseInfo?.cor || "#6B7280"}15`,
         }}
       >
         {/* Glow top bar */}
@@ -220,7 +216,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
         <div className="px-4 pt-3.5 pb-2.5 space-y-2" onClick={onClick}>
           {/* Row 1: Nome + Days badge */}
           <div className="flex items-center justify-between">
-            <p className="text-[14px] font-semibold text-white truncate flex-1">{negocio.nome_cliente}</p>
+            <p className="text-[14px] font-semibold text-[#0a0a0a] dark:text-white truncate flex-1">{negocio.nome_cliente}</p>
             <span className={`text-[11px] font-bold ml-2 shrink-0 px-2 py-0.5 rounded-full ${
               daysInFase <= 3 ? "bg-emerald-500/15 text-emerald-400" : daysInFase <= 7 ? "bg-amber-500/15 text-amber-400" : "bg-red-500/15 text-red-400"
             }`}>
@@ -229,8 +225,8 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           </div>
 
           {/* Row 2: Imóvel */}
-          <p className="text-[12px] text-[#71717a] truncate">
-            {negocio.empreendimento || <span className="italic text-amber-400/80 font-semibold">Sem imóvel</span>}
+          <p className="text-[12px] text-[#71717a] dark:text-[#52525b] truncate">
+            {negocio.empreendimento || <span className="italic text-amber-500 dark:text-amber-400/80 font-semibold">Sem imóvel</span>}
           </p>
 
           {/* Row 3: Corretor responsável (only for admin/gestor) — show both names if partnership */}
@@ -242,25 +238,25 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                   <AvatarFallback className="text-[8px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
                 </Avatar>
                 {parceriaInfo?.isParceria ? (
-                  <span className="text-[12px] font-medium text-[#a1a1aa] truncate">{parceriaInfo.label}</span>
+                  <span className="text-[12px] font-medium text-[#71717a] dark:text-[#a1a1aa] truncate">{parceriaInfo.label}</span>
                 ) : (
-                  <span className="text-[12px] font-medium text-[#a1a1aa] truncate">{corretorInfo.nome?.split(" ")[0]}</span>
+                  <span className="text-[12px] font-medium text-[#71717a] dark:text-[#a1a1aa] truncate">{corretorInfo.nome?.split(" ")[0]}</span>
                 )}
                 {corretorInfo.equipe && !parceriaInfo?.isParceria && (
-                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-white/[0.1] text-[#52525b]">
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-[#e8e8f0] dark:border-white/[0.1] text-[#71717a] dark:text-[#52525b]">
                     {corretorInfo.equipe}
                   </Badge>
                 )}
               </div>
             ) : (
-              <p className="text-[11px] text-[#52525b] italic">Sem corretor</p>
+              <p className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] italic">Sem corretor</p>
             )
           )}
 
           {/* Row 4: VGV with quick-fill — show half if partnership */}
           <div className="flex items-center gap-2">
             {negocio.vgv_estimado ? (
-              <span className="text-[14px] font-bold text-[#10b981] flex items-center gap-1">
+              <span className="text-[14px] font-bold text-[#10b981] dark:text-[#34d399] flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5" />
                 {parceriaInfo?.isParceria
                   ? `${formatVGV(negocio.vgv_estimado / 2)} (50%)`
@@ -288,7 +284,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
         </div>
 
         {/* Row 5: Próximo passo — editable */}
-        <div className="px-3.5 pb-2.5 border-t border-white/[0.04] pt-2" onClick={(e) => e.stopPropagation()}>
+        <div className="px-3.5 pb-2.5 border-t border-[#e8e8f0] dark:border-white/[0.04] pt-2" onClick={(e) => e.stopPropagation()}>
           {editingTask ? (
             <div className="flex items-center gap-1.5">
               <input
@@ -297,21 +293,21 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                 onChange={(e) => setTaskText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleSaveTask(); if (e.key === "Escape") setEditingTask(false); }}
                 placeholder="Definir próximo passo..."
-                className="flex-1 text-[11px] bg-white/5 border border-white/10 rounded px-2 py-1 text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
+                className="flex-1 text-[11px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded px-2 py-1 text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-white/30 focus:outline-none focus:border-[#4F46E5] dark:focus:border-white/20"
               />
-              <button onClick={handleSaveTask} className="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium shrink-0">Salvar</button>
+              <button onClick={handleSaveTask} className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 font-medium shrink-0">Salvar</button>
             </div>
           ) : (
             <button onClick={() => { setTaskText(nextTask?.titulo || ""); setEditingTask(true); }} className="w-full text-left group/task">
               {nextTask ? (
                 <div className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-[#52525b] shrink-0" />
-                  <span className="text-[11px] text-[#52525b] italic truncate group-hover/task:text-[#a1a1aa] transition-colors">{nextTask.titulo}</span>
+                  <Clock className="h-3.5 w-3.5 text-[#a1a1aa] dark:text-[#52525b] shrink-0" />
+                  <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] italic truncate group-hover/task:text-[#71717a] dark:group-hover/task:text-[#a1a1aa] transition-colors">{nextTask.titulo}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <Plus className="h-3.5 w-3.5 text-white/25 shrink-0" />
-                  <span className="text-[11px] text-[#52525b] italic group-hover/task:text-[#a1a1aa] transition-colors">Definir próximo passo...</span>
+                  <Plus className="h-3.5 w-3.5 text-[#a1a1aa] dark:text-white/25 shrink-0" />
+                  <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] italic group-hover/task:text-[#71717a] dark:group-hover/task:text-[#a1a1aa] transition-colors">Definir próximo passo...</span>
                 </div>
               )}
             </button>
@@ -320,14 +316,13 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
 
         {/* Action bar - glass effect */}
         <div
-          className="flex items-center border-t border-white/[0.06]"
-          style={{ background: "rgba(255,255,255,0.02)" }}
+          className="flex items-center border-t border-[#e8e8f0] dark:border-white/[0.06] bg-[#f7f7fb] dark:bg-[rgba(255,255,255,0.02)]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Ligar */}
           <button
             onClick={() => setLigarPopup(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-white hover:bg-white/5 transition-colors border-r border-white/[0.06]"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#4F46E5] dark:hover:text-white hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]"
           >
             <Phone className="h-3.5 w-3.5" /> Ligar
           </button>
@@ -335,12 +330,12 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* WhatsApp */}
           {whatsappUrl ? (
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#10b981] hover:bg-white/5 transition-colors border-r border-white/[0.06]"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#10b981] hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors border-r border-[#e8e8f0] dark:border-white/[0.06]"
             >
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </a>
           ) : (
-            <span className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#52525b] border-r border-white/[0.06]">
+            <span className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#a1a1aa] dark:text-[#52525b] border-r border-[#e8e8f0] dark:border-white/[0.06]">
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </span>
           )}
@@ -348,7 +343,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* Ação */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#4F46E5] hover:bg-white/5 transition-colors">
+              <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#4F46E5] hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors">
                 <Zap className="h-3.5 w-3.5" /> Ação
               </button>
             </DropdownMenuTrigger>
@@ -366,7 +361,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* ⋯ Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="px-2 py-1.5 text-gray-500 hover:text-white hover:bg-white/5 transition-colors">
+              <button className="px-2 py-1.5 text-gray-500 hover:text-[#0a0a0a] dark:hover:text-white hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors">
                 <MoreVertical className="h-3.5 w-3.5" />
               </button>
             </DropdownMenuTrigger>
@@ -814,11 +809,8 @@ export default function MeusNegocios() {
 
   return (
     <div
-      className="flex flex-col min-w-0 overflow-hidden -m-4 sm:-m-6 lg:-m-8 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)]"
-      style={{
-        height: "calc(100vh - 56px)",
-        background: "hsl(222 47% 11%)",
-      }}
+      className="flex flex-col min-w-0 overflow-hidden -m-4 sm:-m-6 lg:-m-8 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] lg:w-[calc(100%+4rem)] bg-[#f0f0f5] dark:bg-[#0f0f12]"
+      style={{ height: "calc(100vh - 56px)" }}
     >
       {/* Header — Line 1 */}
       <div className="shrink-0 px-4 pt-4 pb-1">
@@ -826,26 +818,26 @@ export default function MeusNegocios() {
           <div className="w-7 h-7 rounded-[7px] bg-[#4F46E5] flex items-center justify-center flex-shrink-0">
             <Briefcase size={13} strokeWidth={1.5} className="text-white" />
           </div>
-          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-white">Pipeline negócios</h1>
-          <span className="text-[12px] text-[#52525b]">{filteredNegocios.length} negócios</span>
+          <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-white">Pipeline negócios</h1>
+          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
           {totalVGV > 0 && (
-            <span className="text-[12px] font-bold text-[#10b981]">{formatVGV(totalVGV)}</span>
+            <span className="text-[12px] font-bold text-[#10b981] dark:text-[#34d399]">{formatVGV(totalVGV)}</span>
           )}
 
           <div className="flex-1" />
 
           {/* Search */}
           <div className="relative hidden sm:block">
-            <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#52525b]" />
+            <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
             <input
               placeholder="Buscar negócio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-[12px] pl-7 pr-3 h-[32px] w-[200px] bg-white/[0.06] border border-white/[0.1] rounded-[8px] text-white placeholder:text-[#52525b] focus:border-[#4F46E5] outline-none"
+              className="text-[12px] pl-7 pr-3 h-[32px] w-[200px] bg-white dark:bg-white/[0.06] border border-[#e8e8f0] dark:border-white/[0.1] rounded-[8px] text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-[#52525b] focus:border-[#4F46E5] outline-none"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
-                <X className="h-3.5 w-3.5 text-[#52525b] hover:text-white" />
+                <X className="h-3.5 w-3.5 text-[#a1a1aa] dark:text-[#52525b] hover:text-[#0a0a0a] dark:hover:text-white" />
               </button>
             )}
           </div>
@@ -853,7 +845,7 @@ export default function MeusNegocios() {
           {/* Filters */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="h-[32px] px-3 text-[12px] text-[#a1a1aa] border border-white/[0.1] rounded-[8px] hover:border-white/[0.2] flex items-center gap-1.5"
+            className="h-[32px] px-3 text-[12px] text-[#71717a] dark:text-[#a1a1aa] border border-[#e8e8f0] dark:border-white/[0.1] rounded-[8px] hover:border-[#4F46E5] dark:hover:border-white/[0.2] flex items-center gap-1.5 bg-white dark:bg-transparent"
           >
             <SlidersHorizontal size={12} strokeWidth={1.5} />
             <span className="hidden sm:inline">Filtros</span>
@@ -863,7 +855,7 @@ export default function MeusNegocios() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="w-[32px] h-[32px] flex items-center justify-center rounded-[8px] border border-white/[0.1] text-[#a1a1aa] hover:border-white/[0.2]"
+            className="w-[32px] h-[32px] flex items-center justify-center rounded-[8px] border border-[#e8e8f0] dark:border-white/[0.1] text-[#71717a] dark:text-[#a1a1aa] hover:border-[#4F46E5] dark:hover:border-white/[0.2] bg-white dark:bg-transparent"
           >
             <RefreshCw size={13} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
           </button>
@@ -878,9 +870,9 @@ export default function MeusNegocios() {
         </div>
 
         {showFilters && (
-          <div className="flex items-center gap-2 flex-wrap p-3 mt-2 rounded-xl border border-white/10 animate-fade-in" style={{ background: "rgba(255,255,255,0.04)" }}>
+          <div className="flex items-center gap-2 flex-wrap p-3 mt-2 rounded-xl border border-[#e8e8f0] dark:border-white/10 animate-fade-in bg-white dark:bg-[rgba(255,255,255,0.04)]">
             <Select value={filterCorretor} onValueChange={setFilterCorretor}>
-              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs border-white/10 text-white/70" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs border-[#e8e8f0] dark:border-white/10 text-[#0a0a0a] dark:text-white/70 bg-[#f7f7fb] dark:bg-[rgba(255,255,255,0.06)]">
                 <SelectValue placeholder="Corretor" />
               </SelectTrigger>
               <SelectContent>
@@ -895,10 +887,10 @@ export default function MeusNegocios() {
 
         {/* Line 2 — summary */}
         <div className="flex items-center gap-3 mt-2 pb-2">
-          <span className="text-[12px] text-[#52525b]">{filteredNegocios.length} negócios</span>
-          <span className="text-[12px] text-[#52525b]">·</span>
+          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">{filteredNegocios.length} negócios</span>
+          <span className="text-[12px] text-[#71717a] dark:text-[#52525b]">·</span>
           {totalVGV > 0 && (
-            <span className="text-[12px] text-[#10b981] font-semibold">{formatVGV(totalVGV)} VGV total</span>
+            <span className="text-[12px] text-[#10b981] dark:text-[#34d399] font-semibold">{formatVGV(totalVGV)} VGV total</span>
           )}
         </div>
       </div>
@@ -908,8 +900,7 @@ export default function MeusNegocios() {
         {canScrollLeft && (
           <button
             onClick={() => scrollTo("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full shadow-xl transition-all text-white/70 hover:text-white"
-            style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.12)" }}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full shadow-xl transition-all text-[#71717a] dark:text-white/70 hover:text-[#0a0a0a] dark:hover:text-white bg-white dark:bg-[rgba(255,255,255,0.08)] backdrop-blur-[8px] border border-[#e8e8f0] dark:border-white/[0.12]"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -917,8 +908,7 @@ export default function MeusNegocios() {
         {canScrollRight && (
           <button
             onClick={() => scrollTo("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full shadow-xl transition-all text-white/70 hover:text-white"
-            style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.12)" }}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full shadow-xl transition-all text-[#71717a] dark:text-white/70 hover:text-[#0a0a0a] dark:hover:text-white bg-white dark:bg-[rgba(255,255,255,0.08)] backdrop-blur-[8px] border border-[#e8e8f0] dark:border-white/[0.12]"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -944,12 +934,11 @@ export default function MeusNegocios() {
                 key={fase.key}
                 className={`flex flex-col shrink-0 h-full rounded-xl transition-all duration-200 ${
                   isDragOver ? "scale-[1.01]" : ""
-                }`}
+                } ${isDragOver ? "" : "bg-[#f7f7fb] dark:bg-[rgba(255,255,255,0.02)] border border-[#e8e8f0] dark:border-white/[0.06]"}`}
                 style={{
                   width: 300,
                   scrollSnapAlign: "start",
-                  background: isDragOver ? `${fase.cor}10` : "rgba(255,255,255,0.02)",
-                  border: isDragOver ? `2px solid ${fase.cor}50` : "1px solid rgba(255,255,255,0.06)",
+                  ...(isDragOver ? { background: `${fase.cor}10`, border: `2px solid ${fase.cor}50` } : {}),
                 }}
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverFase(fase.key); }}
                 onDragLeave={() => setDragOverFase(null)}
@@ -957,20 +946,16 @@ export default function MeusNegocios() {
               >
                 {/* Column header */}
                 <div
-                  className="shrink-0 px-3.5 py-3 rounded-t-xl"
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    backdropFilter: "blur(8px)",
-                  }}
+                  className="shrink-0 px-3.5 py-3 rounded-t-xl bg-white/50 dark:bg-[rgba(255,255,255,0.03)] dark:backdrop-blur-[8px]"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full" style={{ backgroundColor: fase.cor }} />
-                      <span className="text-[13px] font-bold text-white">{fase.label}</span>
-                      <span className="text-[13px] font-bold text-[#4F46E5]">{faseNegocios.length}</span>
+                      <span className="text-[13px] font-bold text-[#0a0a0a] dark:text-white">{fase.label}</span>
+                      <span className="text-[13px] font-bold text-[#4F46E5] dark:text-[#818cf8]">{faseNegocios.length}</span>
                     </div>
                     {totalFaseVGV > 0 && (
-                      <span className="text-[11px] text-[#52525b]">{formatVGV(totalFaseVGV)}</span>
+                      <span className="text-[11px] text-[#a1a1aa] dark:text-[#3f3f46]">{formatVGV(totalFaseVGV)}</span>
                     )}
                   </div>
                   {/* Progress bar */}
@@ -988,9 +973,9 @@ export default function MeusNegocios() {
                   {faseNegocios.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
                       <div className="h-10 w-10 rounded-full flex items-center justify-center mb-2" style={{ background: `${fase.cor}10`, border: `1px dashed ${fase.cor}30` }}>
-                        <span className="text-white/20 text-sm">+</span>
+                        <span className="text-[#a1a1aa] dark:text-white/20 text-sm">+</span>
                       </div>
-                      <span className="text-[11px] text-white/20">Arraste negócios aqui</span>
+                      <span className="text-[11px] text-[#a1a1aa] dark:text-white/20">Arraste negócios aqui</span>
                     </div>
                   )}
                   {faseNegocios.map(negocio => (
