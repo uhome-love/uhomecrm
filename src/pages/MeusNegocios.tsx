@@ -320,14 +320,14 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
 
         {/* Action bar - glass effect */}
         <div
-          className="flex items-center gap-0 border-t border-white/[0.06]"
+          className="flex items-center border-t border-white/[0.06]"
           style={{ background: "rgba(255,255,255,0.02)" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Ligar */}
           <button
             onClick={() => setLigarPopup(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-white hover:bg-white/5 transition-colors border-r border-white/[0.06]"
           >
             <Phone className="h-3.5 w-3.5" /> Ligar
           </button>
@@ -335,25 +335,25 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* WhatsApp */}
           {whatsappUrl ? (
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-green-400 hover:text-green-300 hover:bg-white/5 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#10b981] hover:bg-white/5 transition-colors border-r border-white/[0.06]"
             >
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </a>
           ) : (
-            <span className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-gray-600">
+            <span className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#52525b] border-r border-white/[0.06]">
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </span>
           )}
 
-          {/* ⚡ Ação */}
+          {/* Ação */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-amber-400 hover:text-amber-300 hover:bg-white/5 transition-colors">
+              <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#71717a] hover:text-[#4F46E5] hover:bg-white/5 transition-colors">
                 <Zap className="h-3.5 w-3.5" /> Ação
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-60">
-              <p className="px-2 py-1.5 text-xs font-bold text-muted-foreground">⚡ Ação do Negócio</p>
+              <p className="px-2 py-1.5 text-xs font-bold text-muted-foreground">Ação do Negócio</p>
               <DropdownMenuSeparator />
               {CARD_QUICK_ACTIONS.map(action => (
                 <DropdownMenuItem key={action.id} onClick={() => handleCardAction(action)} className="gap-2 cursor-pointer text-xs">

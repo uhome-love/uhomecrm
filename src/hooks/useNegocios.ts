@@ -33,13 +33,13 @@ export interface CorretorInfo {
 }
 
 export const NEGOCIOS_FASES = [
-  { key: "novo_negocio", label: "Novo Negócio", cor: "#0EA5E9", icon: "🆕" },
-  { key: "proposta", label: "Proposta", cor: "#3B82F6", icon: "📋" },
-  { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "🤝" },
-  { key: "documentacao", label: "Contrato Gerado", cor: "#8B5CF6", icon: "📄" },
-  { key: "assinado", label: "Assinado", cor: "#22C55E", icon: "✅" },
-  { key: "vendido", label: "Vendido", cor: "#16A34A", icon: "🏆", hidden: true },
-  { key: "distrato", label: "Caiu", cor: "#EF4444", icon: "❌" },
+  { key: "novo_negocio", label: "Novo Negócio", cor: "#0EA5E9", icon: "" },
+  { key: "proposta", label: "Proposta", cor: "#3B82F6", icon: "" },
+  { key: "negociacao", label: "Negociação", cor: "#F59E0B", icon: "" },
+  { key: "documentacao", label: "Contrato Gerado", cor: "#8B5CF6", icon: "" },
+  { key: "assinado", label: "Assinado", cor: "#22C55E", icon: "" },
+  { key: "vendido", label: "Vendido", cor: "#16A34A", icon: "", hidden: true },
+  { key: "distrato", label: "Caiu", cor: "#EF4444", icon: "" },
 ] as const;
 
 export function useNegocios() {
