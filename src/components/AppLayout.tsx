@@ -165,10 +165,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               className={cn(
                 "h-14 flex items-center justify-between sticky top-0 z-50 px-4",
                 theme === "dark"
-                  ? "border-b border-white/[0.06]"
+                  ? "bg-[#0f0f12] border-b border-white/[0.06]"
                   : "bg-white border-b border-[#e8e8f0]"
               )}
-              style={theme === "dark" ? { background: "hsl(var(--sidebar-background))" } : undefined}
+            >
             >
               <div className="flex items-center gap-3">
                 <SidebarTrigger className={theme === "dark" ? "text-gray-400 hover:text-white" : "text-[#52525b] hover:text-[#0a0a0a]"} />
