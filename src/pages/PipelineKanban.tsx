@@ -257,7 +257,7 @@ export default function PipelineKanban() {
       className="flex flex-col w-full max-w-full min-w-0 overflow-hidden"
       style={{
         height: "calc(100vh - 56px)",
-        background: "#ECF0F6",
+        background: "#f0f0f5",
         fontFamily: "'Plus Jakarta Sans', sans-serif",
       }}
     >
