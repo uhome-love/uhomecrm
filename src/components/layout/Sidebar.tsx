@@ -309,7 +309,7 @@ export default function Sidebar({
       <div className="px-5 pt-5 pb-4">
         <UhomeLogo size="md" showTagline />
       </div>
-      {showCampaigns && role === "admin" && (
+      {showCampaigns && (
         <div className="px-3 mb-2">
           <button
             onClick={() => setCampOpen(v => !v)}
