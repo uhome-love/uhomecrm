@@ -179,7 +179,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const empMap = new Map<string, { leads: number; avancou: number; parados: number }>();
       const now = new Date();
       // Filter: only marketing leads (not Oferta Ativa) for empreendimento chart
-      const mktLeads = (leads || []).filter(l => l.origem !== "Oferta Ativa");
+      const mktLeads = (leads || []).filter(l => !l.origem?.toLowerCase().includes("oferta ativa") && l.origem?.toLowerCase() !== "oferta_ativa");
       for (const l of mktLeads) {
         const emp = l.empreendimento || "Sem empreendimento";
         const curr = empMap.get(emp) || { leads: 0, avancou: 0, parados: 0 };
