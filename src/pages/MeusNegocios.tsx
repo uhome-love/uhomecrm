@@ -908,8 +908,7 @@ export default function MeusNegocios() {
         {canScrollRight && (
           <button
             onClick={() => scrollTo("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full shadow-xl transition-all text-white/70 hover:text-white"
-            style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.12)" }}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full shadow-xl transition-all text-[#71717a] dark:text-white/70 hover:text-[#0a0a0a] dark:hover:text-white bg-white dark:bg-[rgba(255,255,255,0.08)] backdrop-blur-[8px] border border-[#e8e8f0] dark:border-white/[0.12]"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
