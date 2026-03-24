@@ -58,38 +58,23 @@ export default function WhatsAppCampaignDispatcherPage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Send className="h-6 w-6 text-green-500" />
-            Disparador WhatsApp
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Dispare campanhas em lote via WhatsApp para leads da base
-          </p>
-        </div>
-      </div>
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-6">
+      <PageHeader
+        title="Disparo WhatsApp"
+        subtitle="Campanhas em lote via WhatsApp para leads da base"
+        icon={<MessageSquare size={18} strokeWidth={1.5} />}
+        tabs={[
+          { label: "Nova campanha", value: "nova" },
+          { label: "Campanhas", value: "campanhas" },
+          { label: "Métricas", value: "metricas" },
+        ]}
+        activeTab={tab}
+        onTabChange={setTab}
+      />
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="nova" className="gap-1"><Rocket className="h-3.5 w-3.5" /> Nova Campanha</TabsTrigger>
-          <TabsTrigger value="campanhas" className="gap-1"><List className="h-3.5 w-3.5" /> Campanhas</TabsTrigger>
-          <TabsTrigger value="metricas" className="gap-1"><BarChart3 className="h-3.5 w-3.5" /> Métricas</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="nova" className="mt-4">
-          <NovaCampanhaTab onCreated={(id) => { setSelectedBatchId(id); setTab("campanhas"); }} />
-        </TabsContent>
-
-        <TabsContent value="campanhas" className="mt-4">
-          <CampanhasTab selectedBatchId={selectedBatchId} onSelect={setSelectedBatchId} />
-        </TabsContent>
-
-        <TabsContent value="metricas" className="mt-4">
-          <MetricasTab />
-        </TabsContent>
-      </Tabs>
+      {tab === "nova" && <NovaCampanhaTab onCreated={(id) => { setSelectedBatchId(id); setTab("campanhas"); }} />}
+      {tab === "campanhas" && <CampanhasTab selectedBatchId={selectedBatchId} onSelect={setSelectedBatchId} />}
+      {tab === "metricas" && <MetricasTab />}
     </div>
   );
 }

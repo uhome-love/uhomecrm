@@ -493,22 +493,12 @@ export default function DisparadorLigacoesIA() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/ceo")}>
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
-            Disparador de Ligações IA
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Twilio + ElevenLabs · Discagem sequencial automática
-          </p>
-        </div>
-      </div>
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full max-w-5xl mx-auto space-y-6">
+      <PageHeader
+        title="Disparador de ligações IA"
+        subtitle="Twilio + ElevenLabs · Discagem sequencial automática"
+        icon={<Bot size={18} strokeWidth={1.5} />}
+      />
 
       {/* ─── PENDING SESSION BANNER ─── */}
       {pendingSession && step === "config" && (
