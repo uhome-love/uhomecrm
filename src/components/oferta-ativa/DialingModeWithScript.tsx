@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type { ProximaAcao } from "./CustomListAttemptModal";
 import { useOAServerQueue, useOACampaignQueue, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
 import { useOAPendingQueue } from "@/hooks/useOAPendingQueue";
