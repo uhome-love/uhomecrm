@@ -377,8 +377,8 @@ export default function CeoDashboard() {
 
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
-      {/* ─── GREETING ─── */}
-      <div className="flex items-center justify-between mb-2">
+      {/* ─── GREETING CARD ─── */}
+      <div className="bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] rounded-[14px] p-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Avatar className="h-12 w-12 ring-2 ring-[#4F46E5]">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
@@ -387,10 +387,10 @@ export default function CeoDashboard() {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h2 className="text-[22px] font-bold tracking-[-0.5px] text-[#0a0a0a] dark:text-white">
+            <h2 className="text-[20px] font-bold tracking-[-0.5px] text-[#0a0a0a] dark:text-white leading-none">
               {getGreeting()}, {profile?.nome?.split(" ")[0] || "CEO"}
             </h2>
-            <p className="text-[13px] text-[#a1a1aa] mt-0.5 italic">
+            <p className="text-[12px] text-[#a1a1aa] mt-1 italic">
               "{frase}"
             </p>
           </div>
@@ -401,7 +401,7 @@ export default function CeoDashboard() {
           </p>
           <button
             onClick={reload}
-            className="text-[12px] text-[#4F46E5] hover:underline mt-1 inline-flex items-center gap-1"
+            className="text-[12px] text-[#4F46E5] hover:underline mt-1 inline-flex items-center gap-1 ml-auto"
           >
             <RefreshCw className="h-3 w-3" /> Atualizar · {format(lastUpdate, "HH:mm")}
           </button>
@@ -409,9 +409,7 @@ export default function CeoDashboard() {
       </div>
 
       {/* ─── TABS DE PERÍODO ─── */}
-      <div>
-        <GlobalDateFilterBar variant="header" />
-      </div>
+      <GlobalDateFilterBar variant="header" />
 
 
       {/* ─── SEÇÃO 1: ROLETA PENDENTES ─── */}
