@@ -828,12 +828,12 @@ export default function MeusNegocios() {
 
           {/* Search */}
           <div className="relative hidden sm:block">
-            <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#52525b]" />
+            <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
             <input
               placeholder="Buscar negócio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-[12px] pl-7 pr-3 h-[32px] w-[200px] bg-white/[0.06] border border-white/[0.1] rounded-[8px] text-white placeholder:text-[#52525b] focus:border-[#4F46E5] outline-none"
+              className="text-[12px] pl-7 pr-3 h-[32px] w-[200px] bg-white dark:bg-white/[0.06] border border-[#e8e8f0] dark:border-white/[0.1] rounded-[8px] text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-[#52525b] focus:border-[#4F46E5] outline-none"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
