@@ -381,7 +381,7 @@ export default function CeoDashboard() {
       {/* ─── GREETING BAR ─── */}
       <GreetingBar
         name={profile?.nome || user?.email?.split("@")[0] || "CEO"}
-        avatarUrl={profile?.avatar_url}
+        avatarUrl={profile?.avatar_gamificado_url || profile?.avatar_url}
         subtitle={`"${frase}"`}
         filter={period === "hoje" ? "hoje" : period === "ontem" ? "ontem" : period === "semana" ? "semana" : period === "mes" || period === "ultimos_30d" ? "mes" : "personalizado"}
         dateRange={{ from: range.start?.split("T")[0] || "", to: range.end?.split("T")[0] || "" }}
