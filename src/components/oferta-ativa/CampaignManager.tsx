@@ -379,6 +379,16 @@ export default function CampaignManager() {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs h-7 text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
+                onClick={handleBulkClean}
+                disabled={bulkActioning}
+              >
+                {bulkActioning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                Limpar Contatados
+              </Button>
+              <Button
+                size="sm"
                 variant="destructive"
                 className="gap-1.5 text-xs h-7 ml-auto"
                 onClick={handleBulkDelete}
