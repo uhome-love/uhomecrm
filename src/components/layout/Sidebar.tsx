@@ -274,9 +274,10 @@ export default function Sidebar({
   const isDark    = theme === "dark";
   const groups    = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.admin;
   const isActive  = (path: string) => location.pathname === path;
+  const isMobile  = useIsMobile();
 
   // Integration with shadcn SidebarProvider for collapse
-  const { state: sidebarState } = useSidebar();
+  const { state: sidebarState, openMobile, setOpenMobile } = useSidebar();
   const collapsed = sidebarState === "collapsed";
 
   // ── tokens ──
@@ -298,11 +299,126 @@ export default function Sidebar({
   const iconDef   = isDark ? "text-[#818cf8]"  : "text-[#4F46E5]";
   const iconOn    = "text-white";
 
+  // Render full nav content (reused in both aside and mobile sheet)
+  const renderFullNav = () => (
+    <>
+      <div className="px-5 pt-5 pb-4">
+        <UhomeLogo size="md" showTagline />
+      </div>
+      {showCampaigns && role === "admin" && (
+        <div className="px-3 mb-2">
+          <button
+            onClick={() => setCampOpen(v => !v)}
+            className={cn("w-full flex items-center gap-2.5 px-3 py-[9px] rounded-[9px] transition-all text-left", camp)}
+          >
+            <div className="w-[7px] h-[7px] rounded-full bg-[#4F46E5] flex-shrink-0" />
+            <span className={cn("text-[12px] font-medium flex-1 tracking-[-0.1px]", tx)}>
+              Campanhas ativas
+            </span>
+            <span className="text-[10px] font-bold bg-[#4F46E5] text-white rounded-full px-[7px] py-px">
+              {CAMPAIGNS.length}
+            </span>
+            <ChevronRight
+              size={11} strokeWidth={2}
+              className={cn("flex-shrink-0 transition-transform duration-200", txd, campOpen && "rotate-90")}
+            />
+          </button>
+          {campOpen && (
+            <div className="mt-1">
+              {CAMPAIGNS.map(c => (
+                <button
+                  key={c.path}
+                  onClick={() => { navigate(c.path); if (isMobile) setOpenMobile(false); }}
+                  className={cn("w-full flex items-center gap-2.5 px-3 py-[7px] rounded-[8px] text-left transition-colors",
+                    isDark ? "hover:bg-white/[0.05]" : "hover:bg-[#f5f5f7]")}
+                >
+                  <div className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: c.color }} />
+                  <span className={cn("text-[12.5px] tracking-[-0.1px]", txm)}>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {groups.map((group, gi) => (
+        <div key={group.title}>
+          {gi > 0 && <div className={cn("h-px mx-3 my-[6px]", div)} />}
+          <div className="px-3 pt-3 pb-1">
+            <p className="text-[10px] font-[650] tracking-[0.07em] uppercase px-2 mb-[3px] text-[rgba(79,70,229,0.6)]">
+              {group.title}
+            </p>
+            {group.items.map(item => {
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => { navigate(item.path); if (isMobile) setOpenMobile(false); }}
+                  className={cn(
+                    "w-full flex items-center gap-[10px] px-2 py-[7px] rounded-[8px]",
+                    "text-[13.5px] tracking-[-0.15px] transition-all text-left",
+                    active ? itemOn : itemBase
+                  )}
+                >
+                  <span className={cn("w-[18px] flex items-center justify-center flex-shrink-0",
+                    active ? iconOn : iconDef)}>
+                    {item.icon}
+                  </span>
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {item.badge !== undefined && (
+                    <span className={cn("text-[10px] font-semibold rounded-full px-1.5 py-px",
+                      isDark ? "bg-white/10 text-[#71717a]" : "bg-[#f0f0f0] text-[#a1a1aa]")}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <div className={cn("mt-auto px-3 py-3 flex items-center gap-2.5", foot)}>
+        <div className="w-[28px] h-[28px] rounded-full bg-[#4F46E5] flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
+          {userInitials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className={cn("text-[12px] font-semibold tracking-[-0.2px] truncate", tx)}>{userName}</div>
+          <div className={cn("text-[10px] truncate", txd)}>{userRole}</div>
+        </div>
+        {onThemeToggle && (
+          <button
+            onClick={onThemeToggle}
+            className={cn("w-[26px] h-[26px] flex items-center justify-center rounded-[7px] transition-colors flex-shrink-0",
+              isDark ? "text-[#52525b] hover:bg-white/[0.07] hover:text-[#a1a1aa]"
+                     : "text-[#c4c4c7] hover:bg-[#f5f5f5] hover:text-[#71717a]")}
+          >
+            {isDark ? <Sun size={12} strokeWidth={1.5} /> : <Moon size={12} strokeWidth={1.5} />}
+          </button>
+        )}
+      </div>
+    </>
+  );
+
+  // Mobile: render as Sheet drawer
+  if (isMobile) {
+    return (
+      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+        <SheetContent
+          side="left"
+          className={cn("w-[260px] p-0 flex flex-col", isDark ? "bg-[#0c0c0e]" : "bg-[#e8e8f0]")}
+        >
+          <div className="flex flex-col h-full overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {renderFullNav()}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   // Collapsed mode: show only icons
   if (collapsed) {
     return (
       <aside
-        className={cn("flex flex-col h-screen w-[60px] min-w-[60px] overflow-hidden transition-all duration-200", sb)}
+        className={cn("hidden md:flex flex-col h-screen w-[60px] min-w-[60px] overflow-hidden transition-all duration-200", sb)}
       >
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
