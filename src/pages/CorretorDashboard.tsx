@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { GreetingBar } from "@/components/ui/GreetingBar";
 import { Phone, Lock, Kanban, CalendarDays, AlertCircle, Zap, LogOut, Loader2 } from "lucide-react";
 import { LoadingState } from "@/components/ui/screen-states";
 import { Card, CardContent } from "@/components/ui/card";

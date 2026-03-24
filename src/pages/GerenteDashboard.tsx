@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { GreetingBar } from "@/components/ui/GreetingBar";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useGerenteDashboard, Period, periodLabels, formatCurrency, getInitials, hashColor } from "@/hooks/useGerenteDashboard";

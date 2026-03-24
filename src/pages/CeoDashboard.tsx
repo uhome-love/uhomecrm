@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { GreetingBar } from "@/components/ui/GreetingBar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCeoDashboard, type DashPeriod } from "@/hooks/useCeoDashboard";
