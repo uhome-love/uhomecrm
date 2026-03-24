@@ -129,14 +129,14 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
   return (
     <div
       className={cn(
-        "overflow-hidden group hover:border-[#4F46E5]/30 transition-all duration-300 relative cursor-pointer bg-white dark:bg-[#18181b] border border-[#e8e8f0] dark:border-white/10 rounded-[14px]",
+        "overflow-hidden group hover:border-[#4F46E5]/30 transition-all duration-300 relative cursor-pointer bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/10 rounded-[14px]",
         isCampanha && "ring-1 ring-[#4F46E5]/20",
         selectMode && isSelected && "ring-2 ring-[#4F46E5]"
       )}
       onClick={() => onPreview?.(item)}
     >
       {selectMode && (
-        <button onClick={(e) => { e.stopPropagation(); onToggleSelect(imovelId); }} className="absolute top-3 left-3 z-20 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-sm rounded-md p-1 shadow-sm">
+        <button onClick={(e) => { e.stopPropagation(); onToggleSelect(imovelId); }} className="absolute top-3 left-3 z-20 bg-white/90 dark:bg-[#141e30]/90 backdrop-blur-sm rounded-md p-1 shadow-sm">
           {isSelected ? <CheckSquare className="h-5 w-5 text-[#4F46E5]" /> : <Square className="h-5 w-5 text-[#a1a1aa]" />}
         </button>
       )}
@@ -156,7 +156,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onFavorite(imovelId); }}
-          className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/90 dark:bg-[#18181b]/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
+          className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/90 dark:bg-[#141e30]/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
           style={entrega.emObras ? { top: 'auto', bottom: '12px' } : {}}
         >
           <Heart className={cn("h-3.5 w-3.5", isFavorite ? "fill-red-500 text-red-500" : "text-[#52525b]")} strokeWidth={1.5} />

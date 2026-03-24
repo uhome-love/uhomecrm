@@ -73,7 +73,7 @@ function DateGroupCard({
 }) {
   return (
     <div className={cn(
-      "rounded-[12px] border overflow-hidden bg-white dark:bg-[#18181b]",
+      "rounded-[12px] border overflow-hidden bg-white dark:bg-[#141e30]",
       g.isToday ? "border-[#4F46E5]/30" : "border-[#e8e8f0] dark:border-white/10"
     )}>
       {/* Day header */}
