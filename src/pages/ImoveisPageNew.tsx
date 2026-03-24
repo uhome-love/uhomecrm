@@ -311,12 +311,12 @@ export default function ImoveisPage() {
     ordem: filters.ordem,
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
-    bounds: listBounds,
-  }), [filters, bairrosSelecionados, page, listBounds]);
+    bounds: activeBounds,
+  }), [filters, bairrosSelecionados, page, activeBounds]);
 
   const debouncedQueryFilters = useDebounce(
     queryFilters,
-    page > 0 ? 0 : (!hasSearchFilters && !listBounds ? 0 : 300)
+    page > 0 ? 0 : (!hasSearchFilters && !activeBounds ? 0 : 300)
   );
 
   // ── Data query ──
@@ -379,8 +379,11 @@ export default function ImoveisPage() {
     precoMin: filters.precoMin || undefined,
     precoMax: filters.precoMax || undefined,
     quartos: filters.quartos || undefined,
-    bounds: filters.bounds,
-  }), [filters, bairrosSelecionados]);
+    vagas: filters.vagas || undefined,
+    q: filters.q || undefined,
+    ordem: filters.ordem,
+    bounds: activeBounds,
+  }), [filters, bairrosSelecionados, activeBounds]);
 
   const { data: mapPins = [] } = useQuery({
     queryKey: ["site-map-pins", mapPinFilters],
@@ -391,12 +394,12 @@ export default function ImoveisPage() {
   const effectiveMapPins = useMemo<MapPinType[]>(() => {
     if (mapPins.length > 0) return mapPins;
     return imoveis
-      .map((item) => siteImovelToMapPin(item, filters.bounds))
+      .map((item) => siteImovelToMapPin(item, activeBounds))
       .filter((pin): pin is MapPinType => Boolean(pin));
-  }, [mapPins, imoveis, filters.bounds]);
+  }, [mapPins, imoveis, activeBounds]);
 
   // ── Active filters count ──
-  const hasActiveFilters = hasSearchFilters || !!aiActiveQuery || !!listBounds;
+  const hasActiveFilters = hasSearchFilters || !!aiActiveQuery || !!activeBounds;
 
   // ── Preview drawer ──
   const openPreview = useCallback((item: SiteImovel) => {
@@ -440,11 +443,10 @@ export default function ImoveisPage() {
   useEffect(() => {
     setPage(0);
     setAllImoveis([]);
-  }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q]);
+  }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q, activeBounds]);
 
   // Clear bounds
   const clearBounds = useCallback(() => {
-    setListBounds(null);
     setFilter("bounds", null);
     setPage(0);
     setAllImoveis([]);
@@ -518,7 +520,7 @@ export default function ImoveisPage() {
     <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
       <SearchMapBox
         pins={effectiveMapPins}
-        onBoundsSearch={(bounds) => { setListBounds(bounds); setFilter("bounds", bounds); setPage(0); setAllImoveis([]); }}
+        onBoundsSearch={(bounds) => { setFilter("bounds", bounds); setPage(0); setAllImoveis([]); }}
         onBoundsChange={() => {}}
         onPinClick={async (pin) => {
           const found = imoveis.find(i => i.id === pin.id);
