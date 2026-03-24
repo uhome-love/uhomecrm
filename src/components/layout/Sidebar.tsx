@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
-import uhomeLogo from "@/assets/uhomesales-logo.png";
+import UhomeLogo from "@/components/UhomeLogo";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -304,11 +304,7 @@ export default function Sidebar({
       >
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
-          <img
-            src={uhomeLogo}
-            alt="UhomeSales"
-            className="h-[30px] w-auto object-contain"
-          />
+          <UhomeLogo size="sm" />
         </div>
 
         {/* Nav icons only */}
@@ -359,12 +355,8 @@ export default function Sidebar({
       style={{ scrollbarWidth: "none" }}
     >
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-5 pt-5 pb-4">
-        <img
-          src={uhomeLogo}
-          alt="UhomeSales"
-          className="h-8 w-auto object-contain"
-        />
+      <div className="px-5 pt-5 pb-4">
+        <UhomeLogo size="md" showTagline />
       </div>
 
       {/* ── Campanhas ativas (só admin) ───────────────────────────────────── */}
