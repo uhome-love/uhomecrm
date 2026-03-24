@@ -16,6 +16,7 @@ const PipelineFlowDashboard = lazy(() => import("@/components/pipeline/PipelineF
 const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRadar"));
 const MelnickCampaignAnalytics = lazy(() => import("@/components/pipeline/MelnickCampaignAnalytics"));
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
+const PipelineTeamVisitas = lazy(() => import("@/components/pipeline/PipelineTeamVisitas"));
 import { CheckSquare, Square, Send, X } from "lucide-react";
 import PipelineAdvancedFilters, {
   EMPTY_FILTERS,
@@ -925,6 +926,15 @@ export default function PipelineKanban() {
             leads={pipeline.leads}
             corretorNomes={pipeline.corretorNomes}
           />
+        </div>
+      )}
+
+      {/* Team visits for managers */}
+      {activeTab === "kanban" && (isGestor || isAdmin) && (
+        <div style={{ padding: "4px 28px 0" }}>
+          <Suspense fallback={null}>
+            <PipelineTeamVisitas />
+          </Suspense>
         </div>
       )}
 
