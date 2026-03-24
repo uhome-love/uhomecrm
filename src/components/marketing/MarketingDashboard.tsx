@@ -168,76 +168,41 @@ export default function MarketingDashboard() {
   if (loading) return <div className="text-center py-12 text-muted-foreground">Carregando dados de marketing...</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Inteligência de Marketing
-            <PeriodBadge className="ml-2" />
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1">Análise de campanhas, portais e canais de marketing</p>
-          <GlobalDateFilterBar className="mt-2" />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            onClick={async () => { await syncNow(); reload(); }}
-            disabled={syncing}
-            className="gap-2"
-          >
-            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {syncing ? "Sincronizando..." : "Sincronizar Meta Ads"}
-          </Button>
-          <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
-          <Button onClick={() => fileRef.current?.click()} disabled={importing} className="gap-2">
-            {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {importing ? "Importando..." : "Importar Relatório"}
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1" onClick={handleExportPdf}>
-            <FileDown className="h-3.5 w-3.5" /> PDF
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <PageHeader
+        title="Inteligência de marketing"
+        subtitle="Análise de campanhas, portais e canais"
+        icon={<Zap size={18} strokeWidth={1.5} />}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-[#4F46E5] text-[#4F46E5]"
+              onClick={async () => { await syncNow(); reload(); }}
+              disabled={syncing}
+            >
+              {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+              {syncing ? "Sincronizando..." : "Sincronizar Meta Ads"}
+            </Button>
+            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileUpload} />
+            <Button size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white" onClick={() => fileRef.current?.click()} disabled={importing}>
+              {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+              {importing ? "Importando..." : "Importar Relatório"}
+            </Button>
+          </>
+        }
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card className="border-border">
-          <CardContent className="p-3 text-center">
-            <DollarSign className="h-4 w-4 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{formatBRL(totals.investimento)}</p>
-            <p className="text-[10px] text-muted-foreground">Total Investido</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-3 text-center">
-            <Users className="h-4 w-4 mx-auto text-green-500 mb-1" />
-            <p className="text-lg font-bold">{formatNum(totals.leads)}</p>
-            <p className="text-[10px] text-muted-foreground">Leads Gerados</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-3 text-center">
-            <TrendingUp className="h-4 w-4 mx-auto text-yellow-500 mb-1" />
-            <p className="text-lg font-bold">{cplTotal > 0 ? formatBRL(cplTotal) : "—"}</p>
-            <p className="text-[10px] text-muted-foreground">CPL Médio</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-3 text-center">
-            <MousePointerClick className="h-4 w-4 mx-auto text-blue-500 mb-1" />
-            <p className="text-lg font-bold">{formatNum(totals.cliques)}</p>
-            <p className="text-[10px] text-muted-foreground">Cliques</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-3 text-center">
-            <Trophy className="h-4 w-4 mx-auto text-red-500 mb-1" />
-            <p className="text-lg font-bold">{formatNum(totals.vendas)}</p>
-            <p className="text-[10px] text-muted-foreground">Vendas</p>
-          </CardContent>
-        </Card>
+      <GlobalDateFilterBar className="mt-2" />
+
+      <KpiGrid cols={5}>
+        <KpiCard label="Total investido" value={formatBRL(totals.investimento)} icon={<DollarSign size={14} />} />
+        <KpiCard label="Leads gerados" value={formatNum(totals.leads)} icon={<Users size={14} />} />
+        <KpiCard label="CPL médio" value={cplTotal > 0 ? formatBRL(cplTotal) : "—"} icon={<Target size={14} />} />
+        <KpiCard label="Cliques" value={formatNum(totals.cliques)} icon={<MousePointerClick size={14} />} />
+        <KpiCard label="Vendas" value={formatNum(totals.vendas)} icon={<Trophy size={14} />} />
+      </KpiGrid>
       </div>
 
       {/* Tabs */}
