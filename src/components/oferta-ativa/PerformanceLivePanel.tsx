@@ -147,7 +147,7 @@ export default function PerformanceLivePanel({ teamOnly = false }: Props) {
       // 3. Fetch listas
       const listasQuery = supabase
         .from("oferta_ativa_listas")
-        .select("id, nome, empreendimento, total_leads, status")
+        .select("id, nome, empreendimento, campanha, total_leads, status")
         .eq("status", "liberada");
 
       // Run all in parallel
