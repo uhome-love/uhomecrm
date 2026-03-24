@@ -81,7 +81,7 @@ export default function CeoOverview() {
   const propPct = pct(t.real_propostas, t.meta_propostas);
 
   return (
-    <div className="space-y-4 bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full">
+    <div className="space-y-4 bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full">
       {/* PageHeader with tabs */}
       <PageHeader
         title="Dashboard CEO"
