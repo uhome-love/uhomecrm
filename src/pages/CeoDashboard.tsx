@@ -378,7 +378,7 @@ export default function CeoDashboard() {
   return (
     <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4 sm:space-y-6 max-w-[1440px] mx-auto">
       {/* ─── GREETING CARD ─── */}
-      <div className="bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] rounded-[14px] p-5 flex items-center justify-between">
+      <div className="bg-[#f7f7fb] dark:bg-[#1c1c20] border border-[#e8e8f0] dark:border-white/[0.07] rounded-[14px] p-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Avatar className="h-12 w-12 ring-2 ring-[#4F46E5]">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
