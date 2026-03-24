@@ -928,6 +928,15 @@ export default function PipelineKanban() {
         </div>
       )}
 
+      {/* Team visits for managers */}
+      {activeTab === "kanban" && (isGestor || isAdmin) && (
+        <div style={{ padding: "4px 28px 0" }}>
+          <Suspense fallback={null}>
+            <PipelineTeamVisitas />
+          </Suspense>
+        </div>
+      )}
+
       {/* Melnick Campaign Analytics */}
       {campaignTagFilter === "MELNICK_DAY" && (
         <div style={{ padding: "0 28px" }}>
