@@ -483,7 +483,7 @@ export default function CampaignManager() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-blue-500" />
-              Unificar {selected.size} lista(s) em uma só
+              Agrupar {selected.size} lista(s) em campanha
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
