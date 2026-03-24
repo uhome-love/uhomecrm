@@ -731,3 +731,11 @@ body.arena-mode main {
     padding: 10px 12px 8px !important;
   }
 }
+
+/* Hide scrollbars but keep scroll functionality */
+* {
+  scrollbar-width: none; /* Firefox */
+}
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
