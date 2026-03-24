@@ -223,12 +223,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       </div>
                     )}
                     <div className="text-left hidden sm:block">
-                      <p className="leading-tight" style={{ color: theme === "dark" ? "#FFFFFF" : "#0a0a0a", fontSize: 14, fontWeight: 600 }}>
+                      <p className="leading-tight" style={{ color: theme === "dark" ? "#fafafa" : "#0a0a0a", fontSize: 14, fontWeight: 600 }}>
                         {nome || user?.email?.split("@")[0]}
                       </p>
-                      <p className="leading-tight" style={{ color: theme === "dark" ? "#9CA3AF" : "#71717a", fontSize: 12 }}>{cargoLabel}</p>
+                      <p className="leading-tight" style={{ color: theme === "dark" ? "#52525b" : "#71717a", fontSize: 12 }}>{cargoLabel}</p>
                     </div>
-                    <ChevronDown className="h-3.5 w-3.5 hidden sm:block" style={{ color: theme === "dark" ? "#6B7280" : "#a1a1aa" }} />
+                    <ChevronDown className="h-3.5 w-3.5 hidden sm:block" style={{ color: theme === "dark" ? "#71717a" : "#a1a1aa" }} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">

@@ -62,7 +62,7 @@ export function KpiCard({
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-medium text-[#a1a1aa] tracking-[0.01em] truncate">
+        <span className="text-[11px] font-medium text-[#a1a1aa] dark:text-[#52525b] tracking-[0.01em] truncate">
           {label}
         </span>
         {icon && (

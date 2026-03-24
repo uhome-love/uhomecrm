@@ -396,7 +396,7 @@ export default function CeoDashboard() {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[12px] text-[#a1a1aa]">
+          <p className="text-[12px] text-[#a1a1aa] dark:text-[#52525b]">
             {format(now, "EEEE, d 'de' MMMM", { locale: ptBR })} · Semana {weekNum}
           </p>
           <button
