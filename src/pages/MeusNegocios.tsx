@@ -335,7 +335,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </a>
           ) : (
-            <span className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#52525b] border-r border-white/[0.06]">
+            <span className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#a1a1aa] dark:text-[#52525b] border-r border-[#e8e8f0] dark:border-white/[0.06]">
               <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
             </span>
           )}
