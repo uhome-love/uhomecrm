@@ -166,7 +166,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 "h-14 flex items-center justify-between sticky top-0 z-50 px-4",
                 theme === "dark"
                   ? "bg-[#0a0a0d] border-b border-white/[0.05]"
-                  : "bg-white border-b border-[#e8e8f0]"
+                  : "bg-[#f0f0f5] border-b border-[#e4e4e9]"
               )}
             >
               <div className="flex items-center gap-3">
