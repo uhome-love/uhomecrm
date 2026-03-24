@@ -327,7 +327,8 @@ export default function ImoveisPage() {
     placeholderData: (prev) => prev,
   });
 
-  const currentPageData = result?.data ?? [];
+  const EMPTY_ARR: SiteImovel[] = useMemo(() => [], []);
+  const currentPageData = result?.data ?? EMPTY_ARR;
   const total = result?.count ?? 0;
   const searchTimeMs = result?.search_time_ms;
 
