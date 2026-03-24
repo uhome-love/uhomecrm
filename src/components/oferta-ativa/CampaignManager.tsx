@@ -156,6 +156,47 @@ export default function CampaignManager() {
   const [assigningCampanha, setAssigningCampanha] = useState(false);
   const [collapsedCampanhas, setCollapsedCampanhas] = useState<Set<string>>(new Set());
 
+  const queryClient = useQueryClient();
+
+  const handleCleanLista = useCallback(async (listaId: string) => {
+    const { data: removed, error } = await supabase
+      .from("oferta_ativa_leads")
+      .delete()
+      .eq("lista_id", listaId)
+      .in("status", ["descartado", "aproveitado", "concluido"])
+      .select("id");
+    if (error) { toast.error("Erro ao limpar lista"); console.error(error); return; }
+    const count = removed?.length || 0;
+    if (count > 0) {
+      // Update total_leads count
+      const { data: currentLista } = await supabase
+        .from("oferta_ativa_listas")
+        .select("total_leads")
+        .eq("id", listaId)
+        .single();
+      const newTotal = Math.max(0, (currentLista?.total_leads || 0) - count);
+      await supabase.from("oferta_ativa_listas").update({ total_leads: newTotal } as any).eq("id", listaId);
+      queryClient.invalidateQueries({ queryKey: ["oa-listas"] });
+      queryClient.invalidateQueries({ queryKey: ["oa-lista-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["oa-leads"] });
+    }
+    toast.success(`${count} lead(s) removidos da lista!`);
+  }, [queryClient]);
+
+  const handleBulkClean = useCallback(async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Limpar leads já contatados de ${selected.size} lista(s)? Leads descartados e aproveitados serão removidos.`)) return;
+    setBulkActioning(true);
+    try {
+      for (const id of selected) await handleCleanLista(id);
+      toast.success(`${selected.size} lista(s) limpas!`);
+    } catch {
+      toast.error("Erro ao limpar listas.");
+    } finally {
+      setBulkActioning(false);
+    }
+  }, [selected, handleCleanLista]);
+
   const toggleSelect = (id: string) => {
     setSelected(prev => {
       const next = new Set(prev);
