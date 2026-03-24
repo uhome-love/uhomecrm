@@ -303,11 +303,11 @@ export default function Sidebar({
       >
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
-          <div className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center bg-[#4F46E5]">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2L14 6V14H10V10H6V14H2V6L8 2Z" fill="white"/>
-            </svg>
-          </div>
+          <img
+            src="/images/uhome-logo-36.png"
+            alt="UhomeSales"
+            className={cn("h-[30px] w-[30px] object-contain", isDark && "brightness-0 invert")}
+          />
         </div>
 
         {/* Nav icons only */}
@@ -359,17 +359,11 @@ export default function Sidebar({
     >
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-5 pt-5 pb-4">
-        <div className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center flex-shrink-0 bg-[#4F46E5]">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2L14 6V14H10V10H6V14H2V6L8 2Z" fill="white"/>
-          </svg>
-        </div>
-        <div>
-          <div className={cn("text-[14.5px] font-bold tracking-[-0.5px] leading-none", tx)}>
-            Uhome<span className="text-[#4F46E5]">Sales</span>
-          </div>
-          <div className={cn("text-[10px] mt-[3px]", txd)}>Uhome Imóveis · Porto Alegre</div>
-        </div>
+        <img
+          src="/images/uhome-logo-horizontal-azul.png"
+          alt="UhomeSales"
+          className={cn("h-8 w-auto object-contain", isDark && "brightness-0 invert")}
+        />
       </div>
 
       {/* ── Campanhas ativas (só admin) ───────────────────────────────────── */}
