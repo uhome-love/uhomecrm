@@ -265,9 +265,9 @@ export default function PipelineKanban() {
       <div
         className="shrink-0"
         style={{
-          background: "#fff",
-          borderBottom: "1px solid #E2E8F0",
-          boxShadow: "0 1px 0 #F1F5F9, 0 4px 16px rgba(0,0,0,0.05)",
+          background: "#f7f7fb",
+          borderBottom: "1px solid #e8e8f0",
+          boxShadow: "none",
           position: "sticky",
           top: 0,
           zIndex: 40,
