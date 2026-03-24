@@ -152,7 +152,8 @@ export default function PipelineKanban() {
 
   const canAdd = isGestor || isAdmin || isCorretor;
 
-  const filteredLeads = useMemo(() => {
+  // Pre-filter leads (everything except clientStatusFilter) for accurate status counts
+  const preFilteredLeads = useMemo(() => {
     let result = applyFilters(pipeline.leads, filters, pipeline.stages);
     if (filaCeoFilter) {
       result = result.filter(l => !l.corretor_id);
@@ -167,11 +168,15 @@ export default function PipelineKanban() {
     if (campaignTagFilter && campaignTagFilter !== "all") {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
-    if (clientStatusFilter !== "todos") {
-      result = result.filter(l => classifyLeadStatus(l, kanbanTarefasMap[l.id] || null) === clientStatusFilter);
-    }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, clientStatusFilter, kanbanTarefasMap]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter]);
+
+  const filteredLeads = useMemo(() => {
+    if (clientStatusFilter !== "todos") {
+      return preFilteredLeads.filter(l => classifyLeadStatus(l, kanbanTarefasMap[l.id] || null) === clientStatusFilter);
+    }
+    return preFilteredLeads;
+  }, [preFilteredLeads, clientStatusFilter, kanbanTarefasMap]);
 
   const corretorOptions = useMemo(() => {
     const entries = Object.entries(pipeline.corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
@@ -192,15 +197,15 @@ export default function PipelineKanban() {
     return counts;
   }, [pipeline.leads]);
 
-  // Client status counts
+  // Client status counts — based on pre-filtered leads (respects corretor/campaign filters)
   const clientStatusCounts = useMemo(() => {
     const counts = { em_dia: 0, desatualizado: 0, tarefa_atrasada: 0 };
-    for (const l of pipeline.leads) {
+    for (const l of preFilteredLeads) {
       const s = classifyLeadStatus(l, kanbanTarefasMap[l.id] || null);
       if (s !== "todos") counts[s]++;
     }
     return counts;
-  }, [pipeline.leads, kanbanTarefasMap]);
+  }, [preFilteredLeads, kanbanTarefasMap]);
 
   const activeFiltersCount = countActiveFilters(filters);
 
