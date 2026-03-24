@@ -216,7 +216,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       if (bestCamp && bestCamp[1].leads >= 3) alertas.push({ tipo: "green", mensagem: `Campanha ${bestCamp[0]} com melhor taxa de conversão`, link: "/pipeline-leads" });
 
       const origMap = new Map<string, number>();
-      for (const l of (leads || [])) {
+      for (const l of mktLeads) {
         const orig = l.origem || "Desconhecido";
         origMap.set(orig, (origMap.get(orig) || 0) + 1);
       }
