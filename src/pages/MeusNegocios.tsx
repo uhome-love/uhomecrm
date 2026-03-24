@@ -293,7 +293,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                 onChange={(e) => setTaskText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleSaveTask(); if (e.key === "Escape") setEditingTask(false); }}
                 placeholder="Definir próximo passo..."
-                className="flex-1 text-[11px] bg-white/5 border border-white/10 rounded px-2 py-1 text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
+                className="flex-1 text-[11px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded px-2 py-1 text-[#0a0a0a] dark:text-white placeholder:text-[#a1a1aa] dark:placeholder:text-white/30 focus:outline-none focus:border-[#4F46E5] dark:focus:border-white/20"
               />
               <button onClick={handleSaveTask} className="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium shrink-0">Salvar</button>
             </div>
