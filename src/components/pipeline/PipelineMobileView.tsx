@@ -124,12 +124,12 @@ const PipelineMobileView = memo(function PipelineMobileView({
         style={{
           display: "flex",
           background: "#fff",
-          borderBottom: "1px solid #F1F5F9",
+          borderBottom: "1px solid #e8e8f0",
           overflowX: "auto",
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
-          padding: "0 16px",
-          gap: 4,
+          padding: "0 12px",
+          gap: 2,
           position: "sticky",
           top: 0,
           zIndex: 35,
@@ -146,28 +146,28 @@ const PipelineMobileView = memo(function PipelineMobileView({
               data-stage-id={stage.id}
               onClick={() => setActiveStageId(stage.id)}
               style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "10px 14px",
+                display: "flex", alignItems: "center", gap: 4,
+                padding: "7px 10px",
                 whiteSpace: "nowrap",
-                borderBottom: isActive ? "2px solid #2563EB" : "2px solid transparent",
-                fontSize: 13, fontWeight: 600,
-                color: isActive ? "#0F172A" : "#64748B",
+                borderBottom: isActive ? "2px solid #4F46E5" : "2px solid transparent",
+                fontSize: 11, fontWeight: 600,
+                color: isActive ? "#0a0a0a" : "#71717a",
                 cursor: "pointer", flexShrink: 0,
                 transition: "all 0.15s",
                 background: "transparent", border: "none",
                 borderBottomStyle: "solid",
                 borderBottomWidth: 2,
-                borderBottomColor: isActive ? "#2563EB" : "transparent",
+                borderBottomColor: isActive ? "#4F46E5" : "transparent",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
-              <span style={{ fontSize: 14 }}>{emoji}</span>
+              <span style={{ fontSize: 12 }}>{emoji}</span>
               {stage.nome}
               <span style={{
-                fontSize: 11, fontWeight: 700,
-                padding: "1px 7px", borderRadius: 100,
-                background: isActive ? "#EFF6FF" : "#F1F5F9",
-                color: isActive ? "#1D4ED8" : "#64748B",
+                fontSize: 10, fontWeight: 700,
+                padding: "1px 6px", borderRadius: 100,
+                background: isActive ? "rgba(79,70,229,0.1)" : "#f0f0f5",
+                color: isActive ? "#4F46E5" : "#71717a",
               }}>
                 {count}
               </span>
