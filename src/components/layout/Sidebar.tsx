@@ -272,6 +272,13 @@ export default function Sidebar({
   const isActive  = (path: string) => location.pathname === path;
   const isMobile  = useIsMobile();
 
+  // Track which groups are collapsed (by title). "Principal" always open.
+  const NON_COLLAPSIBLE = ["Principal", "Ferramentas"];
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const toggleGroup = (title: string) => {
+    setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
+  };
+
   // Integration with shadcn SidebarProvider for collapse
   const { state: sidebarState, openMobile, setOpenMobile } = useSidebar();
   const collapsed = sidebarState === "collapsed";
