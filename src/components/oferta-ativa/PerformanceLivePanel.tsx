@@ -24,6 +24,18 @@ interface ListaProgress {
   lista_id: string;
   nome: string;
   empreendimento: string;
+  campanha: string | null;
+  total: number;
+  na_fila: number;
+  aproveitados: number;
+  descartados: number;
+  em_cooldown: number;
+  percent_complete: number;
+}
+
+interface CampanhaProgress {
+  campanha: string;
+  listas: ListaProgress[];
   total: number;
   na_fila: number;
   aproveitados: number;
