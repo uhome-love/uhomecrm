@@ -111,7 +111,10 @@ export function usePushSubscription() {
       const applicationServerKey = urlBase64ToUint8Array(key);
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey,
+        applicationServerKey: applicationServerKey.buffer.slice(
+          applicationServerKey.byteOffset,
+          applicationServerKey.byteOffset + applicationServerKey.byteLength
+        ),
       });
 
       const subJson = subscription.toJSON();
