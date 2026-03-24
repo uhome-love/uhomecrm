@@ -304,11 +304,7 @@ export default function Sidebar({
       >
         {/* Logo icon */}
         <div className="flex items-center justify-center pt-5 pb-4">
-          <img
-            src={uhomeLogo}
-            alt="UhomeSales"
-            className="h-[30px] w-auto object-contain"
-          />
+          <UhomeLogo size="sm" />
         </div>
 
         {/* Nav icons only */}
