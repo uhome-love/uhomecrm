@@ -248,7 +248,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </header>
             <PushPromptBanner />
             
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 min-w-0">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 min-w-0 bg-[#f0f0f5] dark:bg-[#0f0f12]">
               {children}
             </main>
           </div>
