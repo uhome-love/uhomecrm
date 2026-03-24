@@ -247,6 +247,92 @@ export function useOAServerQueue(listaId: string) {
   };
 }
 
+// ─── Hook: Campaign-level queue (multiple lists as one) ───
+export function useOACampaignQueue(listaIds: string[]) {
+  const { user } = useAuth();
+  const [currentLead, setCurrentLead] = useState<OALead | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [queueEmpty, setQueueEmpty] = useState(false);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const idsKey = listaIds.join(",");
+
+  const fetchNext = useCallback(async (): Promise<OALead | null> => {
+    if (!user || listaIds.length === 0) return null;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("fetch_next_lead_campaign", {
+        p_corretor_id: user.id,
+        p_lista_ids: listaIds,
+        p_lock_minutes: 5,
+      });
+      if (error) { console.error("fetch_next_lead_campaign error:", error); return null; }
+      const result = data as any;
+      if (!result?.found) {
+        setQueueEmpty(true);
+        setCurrentLead(null);
+        return null;
+      }
+      setQueueEmpty(false);
+      const lead = result.lead as OALead;
+      setCurrentLead(lead);
+      return lead;
+    } finally {
+      setIsLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, idsKey]);
+
+  const renewLock = useCallback(async (leadId: string) => {
+    if (!user) return;
+    const { data, error } = await supabase.rpc("renew_lead_lock", {
+      p_lead_id: leadId,
+      p_corretor_id: user.id,
+      p_lock_minutes: 5,
+    });
+    if (error || !(data as any)?.renewed) {
+      console.warn("Lock renewal failed for lead", leadId);
+    }
+  }, [user]);
+
+  const startHeartbeat = useCallback((leadId: string) => {
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    renewLock(leadId);
+    heartbeatRef.current = setInterval(() => renewLock(leadId), 60 * 1000);
+    const onFocus = () => renewLock(leadId);
+    window.addEventListener("focus", onFocus);
+    (heartbeatRef as any)._focusCleanup = () => window.removeEventListener("focus", onFocus);
+  }, [renewLock]);
+
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
+    if ((heartbeatRef as any)._focusCleanup) { (heartbeatRef as any)._focusCleanup(); (heartbeatRef as any)._focusCleanup = null; }
+  }, []);
+
+  const unlockLead = useCallback(async (leadId: string) => {
+    stopHeartbeat();
+    await supabase.from("oferta_ativa_leads").update({
+      em_atendimento_por: null,
+      em_atendimento_ate: null,
+    } as any).eq("id", leadId);
+  }, [stopHeartbeat]);
+
+  useEffect(() => {
+    return () => { stopHeartbeat(); };
+  }, [stopHeartbeat]);
+
+  return {
+    currentLead,
+    setCurrentLead,
+    isLoading,
+    queueEmpty,
+    fetchNext,
+    startHeartbeat,
+    stopHeartbeat,
+    unlockLead,
+  };
+}
+
 // Keep legacy useOAFila for backward compat (PerformanceLivePanel etc.)
 export function useOAFila(listaId: string) {
   const { user } = useAuth();

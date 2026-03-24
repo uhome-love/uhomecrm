@@ -8488,6 +8488,14 @@ export type Database = {
         }
         Returns: Json
       }
+      fetch_next_lead_campaign: {
+        Args: {
+          p_corretor_id: string
+          p_lista_ids: string[]
+          p_lock_minutes?: number
+        }
+        Returns: Json
+      }
       finalizar_tentativa_v2:
         | {
             Args: {

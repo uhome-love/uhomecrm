@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type { ProximaAcao } from "./CustomListAttemptModal";
-import { useOAServerQueue, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
+import { useOAServerQueue, useOACampaignQueue, useOARegistrarTentativa, useOATemplates, type OALista, type OALead } from "@/hooks/useOfertaAtiva";
 import { useOAPendingQueue } from "@/hooks/useOAPendingQueue";
 import { useOASessionGuard } from "@/hooks/useOASessionGuard";
 import { useCustomListQueue, useCustomListRegistrar, isCustomList } from "@/hooks/useCustomListQueue";
@@ -57,15 +57,26 @@ interface Props {
 
 export default function DialingModeWithScript({ lista, onBack }: Props) {
   const isCustom = isCustomList(lista);
+  const isCampaign = lista.id.startsWith("campaign_");
   
-  // Always call both hooks (React rules), but only use the active one
-  const serverQueue = useOAServerQueue(isCustom ? "__noop__" : lista.id);
+  // Get campaign lista IDs from sessionStorage if campaign mode
+  const campaignListaIds = useMemo(() => {
+    if (!isCampaign) return [];
+    try {
+      return JSON.parse(sessionStorage.getItem("campaign_lista_ids") || "[]") as string[];
+    } catch { return []; }
+  }, [isCampaign]);
+  
+  // Always call all hooks (React rules), but only use the active one
+  const serverQueue = useOAServerQueue((!isCustom && !isCampaign) ? lista.id : "__noop__");
+  const campaignQueue = useOACampaignQueue(isCampaign ? campaignListaIds : []);
   const customQueue = useCustomListQueue(lista);
   const { registrar: oaRegistrar } = useOARegistrarTentativa();
   const { registrar: customRegistrar } = useCustomListRegistrar();
   
   // Pick the active queue and registrar
-  const { currentLead: lead, isLoading, queueEmpty, fetchNext, startHeartbeat, stopHeartbeat, unlockLead } = isCustom ? customQueue : serverQueue;
+  const activeQueue = isCustom ? customQueue : isCampaign ? campaignQueue : serverQueue;
+  const { currentLead: lead, isLoading, queueEmpty, fetchNext, startHeartbeat, stopHeartbeat, unlockLead } = activeQueue;
   const registrar = isCustom ? customRegistrar : oaRegistrar;
   
   const { templates } = useOATemplates(lista.empreendimento);
@@ -143,8 +154,12 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
       setInlineObs("");
       setSelectedResult(null);
       setShowResultPopup(false);
+      // In campaign mode, auto-set empreendimento from the lead
+      if (isCampaign && lead.empreendimento) {
+        setSelectedEmp(lead.empreendimento);
+      }
     }
-  }, [lead?.id, sessionLeadsServed]);
+  }, [lead?.id, sessionLeadsServed, isCampaign]);
 
   const triggerConfetti = useCallback(() => {
     const emojis = ['🎉', '✨', '🌟', '⭐', '🔥', '💫', '🎊', '✅', '💎', '🏆',

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { FolderOpen } from "lucide-react";
 import { useOAListas, type OALista } from "@/hooks/useOfertaAtiva";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -248,6 +249,30 @@ export default function CorretorListSelection() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // Group filtered listas by campaign
+  const { campaignGroups, ungroupedListas } = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const matchedListas = q
+      ? liberadas.filter(l =>
+          l.empreendimento.toLowerCase().includes(q) ||
+          (l.campanha?.toLowerCase().includes(q)) ||
+          l.nome.toLowerCase().includes(q)
+        )
+      : liberadas;
+    
+    const groups: Record<string, typeof liberadas> = {};
+    const ungrouped: typeof liberadas = [];
+    for (const l of matchedListas) {
+      if (l.campanha) {
+        if (!groups[l.campanha]) groups[l.campanha] = [];
+        groups[l.campanha].push(l);
+      } else {
+        ungrouped.push(l);
+      }
+    }
+    return { campaignGroups: groups, ungroupedListas: ungrouped };
+  }, [liberadas, search]);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return liberadas;
     const q = search.toLowerCase();
@@ -258,8 +283,31 @@ export default function CorretorListSelection() {
     );
   }, [liberadas, search]);
 
-  const paginatedFiltered = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
-  const hasMore = visibleCount < filtered.length;
+  const paginatedFiltered = useMemo(() => ungroupedListas.slice(0, visibleCount), [ungroupedListas, visibleCount]);
+  const hasMore = visibleCount < ungroupedListas.length;
+
+  const startCampaign = useCallback((campanha: string, listas: OALista[]) => {
+    const listaIds = listas.map(l => l.id);
+    sessionStorage.setItem("campaign_lista_ids", JSON.stringify(listaIds));
+    sessionStorage.setItem("campaign_name", campanha);
+    
+    // Create a virtual OALista representing the campaign
+    const virtualLista: OALista = {
+      id: `campaign_${campanha}`,
+      nome: campanha,
+      empreendimento: campanha,
+      campanha: campanha,
+      origem: "campaign",
+      status: "liberada",
+      max_tentativas: listas[0]?.max_tentativas || 4,
+      cooldown_dias: listas[0]?.cooldown_dias || 1,
+      total_leads: listas.reduce((s, l) => s + (l.total_leads || 0), 0),
+      criado_por: user?.id || "",
+      created_at: listas[0]?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setSelectedLista(virtualLista);
+  }, [user]);
 
   // Reset pagination when search changes
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search]);
@@ -419,6 +467,100 @@ export default function CorretorListSelection() {
           )}
           {filtered.length === 0 && search && (
             <p className="text-sm text-neutral-500 text-center py-4">Nenhuma lista encontrada para "{search}"</p>
+          )}
+
+          {/* Campaign cards */}
+          {Object.entries(campaignGroups).length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                <FolderOpen className="h-3.5 w-3.5" /> Campanhas
+              </p>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(campaignGroups).map(([campanha, campanhaListas]) => {
+                  const totalNaFila = campanhaListas.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
+                  const totalAproveitados = campanhaListas.reduce((s, l) => s + (statsMap?.[l.id]?.aproveitados ?? 0), 0);
+                  const totalLeads = campanhaListas.reduce((s, l) => s + (statsMap?.[l.id]?.total ?? 0), 0);
+                  const pct = totalLeads > 0 ? Math.round(((totalLeads - totalNaFila) / totalLeads) * 100) : 0;
+                  const hasLeads = totalNaFila > 0;
+                  const empreendimentos = [...new Set(campanhaListas.map(l => l.empreendimento))];
+                  
+                  return (
+                    <div
+                      key={campanha}
+                      className={`arena-card rounded-xl p-5 space-y-3 cursor-pointer group ${hasLeads ? "" : "opacity-50"}`}
+                      onClick={hasLeads ? () => startCampaign(campanha, campanhaListas) : undefined}
+                      style={{ borderColor: "rgba(59,130,246,0.25)" }}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 style={{ fontSize: 20, fontWeight: 700, color: "white" }} className="group-hover:text-blue-400 transition-colors flex items-center gap-2">
+                            <FolderOpen className="h-5 w-5 text-blue-400" />
+                            {campanha}
+                          </h3>
+                          <p className="text-xs text-neutral-500 mt-1">
+                            {campanhaListas.length} lista{campanhaListas.length > 1 ? "s" : ""} · {empreendimentos.join(", ")}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{
+                          background: "rgba(59,130,246,0.15)",
+                          color: "#60A5FA",
+                          border: "1px solid rgba(59,130,246,0.3)",
+                        }}>
+                          📂 Campanha
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p style={{ fontSize: 32, fontWeight: 900, color: "#60A5FA" }}>{totalNaFila}</p>
+                          <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>na fila</p>
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 32, fontWeight: 900, color: "#4ADE80" }}>{totalAproveitados}</p>
+                          <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>aproveitados</p>
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 32, fontWeight: 900, color: "white" }}>{totalLeads}</p>
+                          <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>total</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between mb-1" style={{ fontSize: 12, color: "#6B7280" }}>
+                          <span>Progresso da campanha</span>
+                          <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 13, color: "#4ADE80" }}>{pct}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${pct}%`,
+                              background: "linear-gradient(90deg, #3B82F6, #22C55E)",
+                              boxShadow: "0 0 6px rgba(34,197,94,0.4)",
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        className={`w-full h-10 rounded-lg font-bold transition-colors ${hasLeads ? "arena-btn-call" : "text-neutral-500 cursor-not-allowed"}`}
+                        style={hasLeads ? { fontSize: 16 } : { background: "rgba(255,255,255,0.05)", fontSize: 16 }}
+                        disabled={!hasLeads}
+                      >
+                        <span className="flex items-center justify-center gap-1.5">
+                          <Phone className="h-4 w-4" /> {hasLeads ? "Iniciar Campanha" : "Campanha Esgotada"}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Ungrouped lists */}
+          {ungroupedListas.length > 0 && Object.keys(campaignGroups).length > 0 && (
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider pt-2">Listas individuais</p>
           )}
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {paginatedFiltered.map(lista => {
