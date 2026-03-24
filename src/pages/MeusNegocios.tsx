@@ -238,18 +238,18 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
                   <AvatarFallback className="text-[8px]" style={{ background: `${faseInfo?.cor || "#6B7280"}30`, color: faseInfo?.cor }}>{(corretorInfo.nome || "?")[0]}</AvatarFallback>
                 </Avatar>
                 {parceriaInfo?.isParceria ? (
-                  <span className="text-[12px] font-medium text-[#a1a1aa] truncate">{parceriaInfo.label}</span>
+                  <span className="text-[12px] font-medium text-[#71717a] dark:text-[#a1a1aa] truncate">{parceriaInfo.label}</span>
                 ) : (
-                  <span className="text-[12px] font-medium text-[#a1a1aa] truncate">{corretorInfo.nome?.split(" ")[0]}</span>
+                  <span className="text-[12px] font-medium text-[#71717a] dark:text-[#a1a1aa] truncate">{corretorInfo.nome?.split(" ")[0]}</span>
                 )}
                 {corretorInfo.equipe && !parceriaInfo?.isParceria && (
-                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-white/[0.1] text-[#52525b]">
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-[#e8e8f0] dark:border-white/[0.1] text-[#71717a] dark:text-[#52525b]">
                     {corretorInfo.equipe}
                   </Badge>
                 )}
               </div>
             ) : (
-              <p className="text-[11px] text-[#52525b] italic">Sem corretor</p>
+              <p className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] italic">Sem corretor</p>
             )
           )}
 
