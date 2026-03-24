@@ -18,6 +18,7 @@ import {
   Trash2, ArrowRightLeft, Lock, Unlock, ShieldAlert, Clock, History,
   AlertTriangle, Loader2, UserPlus,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -194,24 +195,19 @@ export default function BuscaLeads() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Search className="h-5 w-5 text-primary" />
-            {isAdmin ? "Busca de Leads" : "Higienização"}
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Busque, gerencie e higienize leads da Oferta Ativa
-          </p>
-        </div>
-        {totalResults > 0 && (
-          <Badge variant="secondary" className="text-xs">
-            {totalResults} resultado{totalResults !== 1 ? "s" : ""}
-          </Badge>
-        )}
-      </div>
+    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
+      <PageHeader
+        title="Busca de leads"
+        subtitle="Busque, gerencie e higienize leads da Oferta Ativa"
+        icon={<Search size={18} strokeWidth={1.5} />}
+        actions={
+          totalResults > 0 ? (
+            <Badge variant="secondary" className="text-xs">
+              {totalResults} resultado{totalResults !== 1 ? "s" : ""}
+            </Badge>
+          ) : undefined
+        }
+      />
 
       {/* Search Bar */}
       <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
@@ -240,7 +236,7 @@ export default function BuscaLeads() {
             <Button onClick={() => setShowFilters(!showFilters)} variant="outline" size="icon">
               <Filter className="h-4 w-4" />
             </Button>
-            <Button onClick={handleSearch} disabled={isSearching}>
+            <Button onClick={handleSearch} disabled={isSearching} className="bg-[#4F46E5] hover:bg-[#4338CA] text-white">
               {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 mr-1" />}
               Buscar
             </Button>

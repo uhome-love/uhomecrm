@@ -279,11 +279,15 @@ export default function PipelineKanban() {
           style={{ height: 52, padding: "0 14px", borderBottom: "1px solid #E2E8F0", gap: 10 }}
         >
           {/* LEFT: Title */}
-          <div className="flex items-center flex-shrink-0">
+          <div className="flex items-center flex-shrink-0 gap-2">
+            <div className="h-7 w-7 rounded-lg bg-[#4F46E5] flex items-center justify-center">
+              <LayoutGrid className="h-3.5 w-3.5 text-white" />
+            </div>
             <span className="whitespace-nowrap" style={{ fontSize: 18, fontWeight: 700, color: "#1E293B", letterSpacing: "-0.3px" }}>
               <span className="md:hidden">Pipeline</span>
               <span className="hidden md:inline">Pipeline de Leads</span>
             </span>
+            <span className="text-[13px] text-[#94a3b8] font-medium">{filteredLeads.length} leads</span>
           </div>
 
           {/* CENTER: Corretor + Campaign + Filters */}

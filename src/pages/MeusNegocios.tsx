@@ -824,14 +824,12 @@ export default function MeusNegocios() {
       <div className="shrink-0 space-y-3 pb-3 px-4 pt-4">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2 mr-auto">
-            <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}>
+            <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-[#4F46E5]">
               <Briefcase className="h-4 w-4 text-white" />
             </div>
             <h1 className="text-lg font-bold text-white">Pipeline Negócios</h1>
-            <PeriodBadge className="text-[10px]" />
-            <Button size="sm" className="gap-1 h-7 text-xs rounded-lg" onClick={() => setAddNegocioOpen(true)}
-              style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))", color: "#fff", border: "none" }}
-            >
+            <span className="text-[13px] text-white/50">{filteredNegocios.length} negócios · {formatVGV(totalVGV)}</span>
+            <Button size="sm" className="gap-1 h-7 text-xs rounded-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white border-none" onClick={() => setAddNegocioOpen(true)}>
               <Plus className="h-3.5 w-3.5" /> Novo
             </Button>
           </div>
@@ -855,8 +853,7 @@ export default function MeusNegocios() {
           <Button
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="gap-1.5 h-9 rounded-lg text-white border-none"
-            style={{ background: showFilters ? "linear-gradient(135deg, hsl(217 91% 50%), hsl(265 83% 47%))" : "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}
+            className="gap-1.5 h-9 rounded-lg text-white border-none bg-[#4F46E5] hover:bg-[#4338CA]"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Filtros</span>
@@ -864,8 +861,7 @@ export default function MeusNegocios() {
 
           <Button
             size="icon"
-            className="h-9 w-9 shrink-0 rounded-lg text-white border-none"
-            style={{ background: "linear-gradient(135deg, hsl(217 91% 60%), hsl(265 83% 57%))" }}
+            className="h-9 w-9 shrink-0 rounded-lg text-white border-none bg-[#4F46E5] hover:bg-[#4338CA]"
             onClick={handleRefresh}
             disabled={refreshing}
           >

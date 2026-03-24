@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Loader2, Clock, UserCheck, UserX, Users, Target, RotateCw, LogOut, Rocket, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Ban, UserPlus } from "lucide-react";
 import { formatDistanceToNow, differenceInMinutes, format, startOfDay, subHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import RoletagensTab from "@/components/roleta/RoletagensTab";
 import LeadsGeradosTab from "@/components/roleta/LeadsGeradosTab";
 import LeadIntelligenceTab from "@/components/roleta/LeadIntelligenceTab";
+import { PageHeader } from "@/components/ui/PageHeader";
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
   const [now, setNow] = useState(new Date());
@@ -55,64 +55,53 @@ function CeoView() {
 
   const pendentes = credenciamentos.filter(c => c.status === "pendente");
 
+  const [activeTab, setActiveTab] = useState("gestao");
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">🎯 Roleta de Leads</h1>
-          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-            <span>{windowInfo.emoji}</span>
-            <span>{windowInfo.descricao}</span>
-            <span className="text-muted-foreground">•</span>
-            <Clock className="h-3.5 w-3.5" />
-            <CountdownTimer target={windowInfo.proximaTransicao} />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowIncluirModal(true)}>
-            <UserPlus className="h-3.5 w-3.5 mr-1" /> Incluir na Roleta
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => reload()}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1" /> Atualizar
-          </Button>
-        </div>
-      </div>
+    <div className="bg-[#f7f7f8] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-4">
+      <PageHeader
+        title="Roleta de leads"
+        subtitle={`${windowInfo.descricao} · Próxima transição em breve`}
+        icon={<Target size={18} strokeWidth={1.5} />}
+        tabs={[
+          { label: "Gestão da roleta", value: "gestao" },
+          { label: "Leads gerados", value: "leads" },
+          { label: "Histórico", value: "roletagens" },
+          { label: "Leads perdidos", value: "perdidos" },
+          { label: "Inteligência", value: "inteligencia" },
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        actions={
+          <>
+            <Button variant="outline" size="sm" className="border-[#4F46E5] text-[#4F46E5]" onClick={() => setShowIncluirModal(true)}>
+              <UserPlus className="h-3.5 w-3.5 mr-1" /> Incluir na Roleta
+            </Button>
+            <Button variant="outline" size="sm" className="border-[#4F46E5] text-[#4F46E5]" onClick={() => reload()}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Atualizar
+            </Button>
+          </>
+        }
+      />
 
       {/* Leads acumulados (madrugada) */}
       {windowInfo.janela === "madrugada" && leadsAcumulados > 0 && (
-        <Card className="border-[hsl(var(--primary))]/30 bg-[hsl(var(--primary))]/5">
+        <Card className="border-[#4F46E5]/30 bg-[#4F46E5]/5">
           <CardContent className="flex items-center justify-between py-4">
             <div>
               <p className="font-semibold text-lg">{leadsAcumulados} leads acumulados</p>
               <p className="text-sm text-muted-foreground">Aguardando distribuição na roleta da manhã</p>
             </div>
-            <Button className="bg-[hsl(var(--primary))]">
+            <Button className="bg-[#4F46E5] hover:bg-[#4338CA] text-white">
               <Rocket className="h-4 w-4 mr-1" /> Disparar para roleta da manhã
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Tabs */}
-      <Tabs defaultValue="gestao" className="space-y-4">
-        <TabsList className="bg-muted/50">
-          <TabsTrigger value="gestao">Gestão da Roleta</TabsTrigger>
-          <TabsTrigger value="leads" className="gap-1.5">
-            📊 Leads Gerados
-          </TabsTrigger>
-          <TabsTrigger value="roletagens" className="gap-1.5">
-            Histórico Roletagens
-          </TabsTrigger>
-          <TabsTrigger value="perdidos" className="gap-1.5">
-            <AlertTriangle className="h-3.5 w-3.5" /> Leads Perdidos
-          </TabsTrigger>
-          <TabsTrigger value="inteligencia" className="gap-1.5">
-            🧠 Inteligência
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="gestao" className="space-y-6">
+      {/* Tab Content */}
+      {activeTab === "gestao" && (
+        <div className="space-y-6">
           {/* Credenciamentos Pendentes */}
           <Card>
             <CardHeader className="pb-3">
@@ -183,9 +172,9 @@ function CeoView() {
                 // Already sorted by leads_recebidos ascending from the hook
                 const segFila = fila.filter(f => f.segmento_id === seg.id);
                 return (
-                  <Card key={seg.id}>
+                  <Card key={seg.id} className="border-l-[3px] border-l-[#4F46E5]">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold">{seg.nome}</CardTitle>
+                      <CardTitle className="text-sm font-bold text-[#4F46E5]">{seg.nome}</CardTitle>
                       {seg.campanhas.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {seg.campanhas.map(c => (
@@ -234,22 +223,13 @@ function CeoView() {
               })}
             </div>
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="leads">
-          <LeadsGeradosTab />
-        </TabsContent>
-
-        <TabsContent value="roletagens">
-          <RoletagensTab view="roletagens" />
-        </TabsContent>
-        <TabsContent value="perdidos">
-          <RoletagensTab view="perdidos" />
-        </TabsContent>
-        <TabsContent value="inteligencia">
-          <LeadIntelligenceTab />
-        </TabsContent>
-      </Tabs>
+      {activeTab === "leads" && <LeadsGeradosTab />}
+      {activeTab === "roletagens" && <RoletagensTab view="roletagens" />}
+      {activeTab === "perdidos" && <RoletagensTab view="perdidos" />}
+      {activeTab === "inteligencia" && <LeadIntelligenceTab />}
 
       {/* Modal: Incluir manualmente na roleta */}
       <Dialog open={showIncluirModal} onOpenChange={setShowIncluirModal}>
