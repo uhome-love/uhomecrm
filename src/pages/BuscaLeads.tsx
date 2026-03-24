@@ -236,7 +236,7 @@ export default function BuscaLeads() {
             <Button onClick={() => setShowFilters(!showFilters)} variant="outline" size="icon">
               <Filter className="h-4 w-4" />
             </Button>
-            <Button onClick={handleSearch} disabled={isSearching}>
+            <Button onClick={handleSearch} disabled={isSearching} className="bg-[#4F46E5] hover:bg-[#4338CA] text-white">
               {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 mr-1" />}
               Buscar
             </Button>
