@@ -361,7 +361,7 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
           {/* ⋯ Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="px-2 py-1.5 text-gray-500 hover:text-white hover:bg-white/5 transition-colors">
+              <button className="px-2 py-1.5 text-gray-500 hover:text-[#0a0a0a] dark:hover:text-white hover:bg-[#f0f0f5] dark:hover:bg-white/5 transition-colors">
                 <MoreVertical className="h-3.5 w-3.5" />
               </button>
             </DropdownMenuTrigger>
