@@ -54,28 +54,19 @@ export default function PosVendas() {
   }
 
   return (
-    <div className="flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full flex flex-col w-full max-w-full min-w-0 overflow-hidden" style={{ height: "calc(100vh - 56px - 2rem)" }}>
       <Tabs defaultValue="pipeline" className="flex flex-col h-full">
         <div className="shrink-0 space-y-3 pb-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-primary" />
-              <h1 className="text-lg font-bold text-foreground">Pipeline Pós-Vendas</h1>
-              <Badge variant="secondary" className="text-[10px]">{pipeline.leads.length} clientes</Badge>
-            </div>
-            <div className="flex-1" />
-            <TabsList className="h-8">
-              <TabsTrigger value="pipeline" className="text-xs h-7">Pipeline</TabsTrigger>
-              <TabsTrigger value="indicacoes" className="text-xs h-7 gap-1">
-                <Gift className="h-3 w-3" /> Indicações
-              </TabsTrigger>
-              {isAdmin && (
-                <TabsTrigger value="config" className="text-xs h-7 gap-1">
-                  <Settings className="h-3 w-3" /> Config
-                </TabsTrigger>
-              )}
-            </TabsList>
-          </div>
+          <PageHeader
+            title="Pós-vendas"
+            subtitle="Acompanhamento após assinatura"
+            icon={<Heart size={18} strokeWidth={1.5} />}
+            actions={
+              <Button onClick={() => setAddOpen(true)} className="bg-[#4F46E5] hover:bg-[#4338CA] text-white gap-1.5 h-9">
+                <Plus className="h-4 w-4" /> Novo Cliente
+              </Button>
+            }
+          />
         </div>
 
         <TabsContent value="pipeline" className="flex-1 min-h-0 overflow-hidden mt-0 flex flex-col">

@@ -203,7 +203,7 @@ export default function RelatorioSemanal() {
         fontFamily: appleFont,
         padding: isMobile ? "16px" : "24px 32px",
         minHeight: "100vh",
-        background: "#f5f5f7",
+        background: "#f0f0f5",
       }}
     >
       {/* Inject keyframes */}

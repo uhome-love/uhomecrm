@@ -1272,7 +1272,7 @@ export default function AnunciosNoAr() {
   }, [overrides]);
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="bg-[#f0f0f5] dark:bg-[#0f0f12] p-6 -m-6 min-h-full space-y-6 pb-8">
       {/* Edit Override Modal */}
       {editingConfig && (
         <EditOverrideModal
