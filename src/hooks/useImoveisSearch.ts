@@ -433,9 +433,8 @@ export function useImoveisSearch({
       setSearch("");
     } else {
       setSearch(suggestion.value);
-      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
-      skipNextDebounce.current = true;
-      setTimeout(() => fetchRef.current(1), 0);
+      // Mark for immediate fetch on next filterKey change
+      immediateNextFetch.current = true;
     }
   }, [setBairro, setSearch]);
 
