@@ -63,7 +63,8 @@ Deno.serve(async (req) => {
     const { data: leads, error: fetchErr } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, telefone2, email, empreendimento, observacoes, corretor_id, motivo_descarte, campanha, telefone_normalizado")
-      .eq("stage_id", descarteStage.id);
+      .eq("stage_id", descarteStage.id)
+      .eq("arquivado", false);
 
     if (fetchErr) throw fetchErr;
     if (!leads || leads.length === 0) {
