@@ -53,6 +53,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
   imovel, index, highlighted, isFavorite, onToggleFavorite,
   selectMode, isSelected, onToggleSelect, onPreview, onHover, isViewed,
 }: Props) {
+  const slugRef = useBrokerSlug();
   const [hovering, setHovering] = useState(false);
   const [fotoAtiva, setFotoAtiva] = useState(0);
   const [lazyFotos, setLazyFotos] = useState<string[] | null>(null);
