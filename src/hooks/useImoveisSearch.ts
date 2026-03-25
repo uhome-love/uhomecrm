@@ -215,7 +215,7 @@ export function useImoveisSearch({
   // ── Race-condition protection ──
   const fetchSeqRef = useRef(0);
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const skipNextDebounce = useRef(false);
+  
 
   // ── Convert hook filters → PostgREST filters ──
   const buildQueryFilters = useCallback((pageNum: number): ImoveisFilters => {
@@ -386,20 +386,20 @@ export function useImoveisSearch({
 
   // ── Reactive debounced filter application ──
   const prevFilterKey = useRef(filterKey);
+  const immediateNextFetch = useRef(false);
   useEffect(() => {
     if (!mounted.current) return;
     if (prevFilterKey.current === filterKey) return;
     prevFilterKey.current = filterKey;
 
-    if (skipNextDebounce.current) {
-      skipNextDebounce.current = false;
-      return;
-    }
-
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+
+    const delay = immediateNextFetch.current ? 50 : 400;
+    immediateNextFetch.current = false;
+
     filterDebounceRef.current = setTimeout(() => {
       fetchRef.current(1);
-    }, 400);
+    }, delay);
     return () => { if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current); };
   }, [filterKey]);
 
@@ -408,22 +408,21 @@ export function useImoveisSearch({
     setShowSuggestions(false);
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    skipNextDebounce.current = true;
+    // Mark next filter change to fetch immediately (no 400ms debounce)
+    immediateNextFetch.current = true;
     setCampanhaAtiva(false);
     setUhomeOnly(false);
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        prevFilterKey.current = JSON.stringify({
-          search: filters.search, contrato: filters.contrato, tipo: filters.tipo,
-          bairro: filters.bairro, dormitorios: filters.dormitorios, suitesFilter: filters.suitesFilter,
-          vagas: filters.vagas, areaRange: filters.areaRange, valorRange: filters.valorRange,
-          somenteObras: filters.somenteObras, sortBy: filters.sortBy,
-          uhomeOnly: false, campanhaAtiva: false,
-        });
+    // Force filterKey change by toggling campanhaAtiva/uhomeOnly — this triggers the effect above.
+    // If search hasn't changed other filters, we still need to force a fetch:
+    // Use a microtask to check if effect already ran, if not force it
+    Promise.resolve().then(() => {
+      // If the effect didn't fire (filterKey unchanged), force fetch directly
+      if (immediateNextFetch.current) {
+        immediateNextFetch.current = false;
         fetchRef.current(1);
-      }, 0);
+      }
     });
-  }, [filters, setCampanhaAtiva, setUhomeOnly]);
+  }, [setCampanhaAtiva, setUhomeOnly]);
 
   // ── Suggestion click ──
   const handleSuggestionClick = useCallback((suggestion: Suggestion) => {
@@ -434,9 +433,8 @@ export function useImoveisSearch({
       setSearch("");
     } else {
       setSearch(suggestion.value);
-      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
-      skipNextDebounce.current = true;
-      setTimeout(() => fetchRef.current(1), 0);
+      // Mark for immediate fetch on next filterKey change
+      immediateNextFetch.current = true;
     }
   }, [setBairro, setSearch]);
 
