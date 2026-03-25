@@ -197,8 +197,8 @@ function mapDoc(doc: any): SiteImovel {
 
 /* ── API calls via PostgREST (properties table) ── */
 
-function applyPropertyFilters<TQuery extends ReturnType<typeof supabase.from<"properties", any>>>(
-  query: TQuery,
+function applyPropertyFilters(
+  query: any,
   filters: BuscaFilters = {},
 ) {
   let nextQuery = query.eq("ativo", true);
