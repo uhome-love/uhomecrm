@@ -37,6 +37,7 @@ function getPrecoFromItem(item: any): string {
 
 export default function ImovelPage() {
   const { codigo } = useParams<{ codigo: string }>();
+  const slugRef = useBrokerSlug();
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
