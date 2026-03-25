@@ -289,6 +289,8 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
                 titulo={titulo}
                 bairro={loc.bairro}
                 preco={getPreco(item)}
+                tipo={item.tipo || item.subtipo}
+                quartos={getNum(item, "dormitorios")}
               />
               {codigo && <ResponsavelButton codigo={codigo} />}
             </div>
