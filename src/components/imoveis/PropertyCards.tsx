@@ -198,6 +198,8 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
                 titulo={titulo}
                 bairro={loc.bairro}
                 preco={getPreco(item)}
+                tipo={item.tipo || item.subtipo}
+                quartos={getNum(item, "dormitorios")}
               />
               <ResponsavelButton codigo={codigo} />
             </div>
