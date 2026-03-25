@@ -8451,6 +8451,10 @@ export type Database = {
       cleanup_homi_conversations: { Args: never; Returns: undefined }
       cleanup_jetimob_processed: { Args: never; Returns: undefined }
       cleanup_ops_events: { Args: never; Returns: undefined }
+      count_imoveis: {
+        Args: { p_bairro?: string; p_cidade?: string; p_tipo?: string }
+        Returns: number
+      }
       criar_notificacao: {
         Args: {
           p_agrupamento_key?: string
@@ -8529,6 +8533,13 @@ export type Database = {
       finalizar_trabalho_corretor: {
         Args: { p_user_id: string }
         Returns: Json
+      }
+      get_bairros_disponiveis: {
+        Args: { p_cidade?: string; p_cidades?: string[] }
+        Returns: {
+          bairro: string
+          count: number
+        }[]
       }
       get_batch_lista_stats: {
         Args: { p_corretor_id?: string; p_lista_ids: string[] }
