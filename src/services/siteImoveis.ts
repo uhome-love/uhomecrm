@@ -442,7 +442,7 @@ export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]
 
   let query = supabase
     .from("properties")
-    .select("id,codigo,slug,tipo,bairro,cidade,valor_venda,valor_locacao,dormitorios,area_privativa,latitude,longitude,titulo,fotos")
+    .select("id,codigo,tipo,bairro,cidade,valor_venda,valor_locacao,dormitorios,area_privativa,latitude,longitude,titulo,fotos")
     .eq("ativo", true);
 
   // Apply same filters as fetchSiteImoveis
