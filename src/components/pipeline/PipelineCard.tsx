@@ -462,29 +462,13 @@ const PipelineCard = memo(function PipelineCard({
         </div>
       )}
 
-      {/* Convertido stage — "Voltar para Pipeline" */}
+      {/* Negócio Criado stage — show deal info + regression */}
       {stage?.tipo === "convertido" && (
-        <div data-actions-area style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 4 }}>
-          <div style={{ fontSize: 10, color: "#94A3B8", textAlign: "center" }}>🎯 Negócio em andamento</div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full h-7 text-[11px] gap-1.5 font-semibold"
-            style={{ borderColor: "#FDE68A", color: "#D97706", borderRadius: 8 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!onMoveLead) return;
-              const qualStage = stages.find(s => s.nome.toLowerCase().includes("qualifica"));
-              if (qualStage) {
-                onMoveLead(lead.id, qualStage.id);
-                supabase.from("pipeline_leads").update({ negocio_id: null } as any).eq("id", lead.id).then(() => {});
-                toast.success("🔄 Lead retornado ao Pipeline");
-              }
-            }}
-          >
-            <ArrowRightLeft className="h-3 w-3" /> Voltar para Pipeline
-          </Button>
-        </div>
+        <NegocioCriadoSection
+          lead={lead}
+          stages={stages}
+          onMoveLead={onMoveLead}
+        />
       )}
 
       {/* Footer separator */}
