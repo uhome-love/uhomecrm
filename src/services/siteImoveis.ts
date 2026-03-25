@@ -72,6 +72,7 @@ export interface BuscaFilters {
   banheiros?: number;
   vagas?: number;
   q?: string;
+  codigo?: string;
   ordem?: "recentes" | "preco_asc" | "preco_desc" | "area_desc";
   limit?: number;
   offset?: number;
@@ -287,6 +288,10 @@ function applyPropertyFilters(
 
   if (filters.q) {
     nextQuery = nextQuery.or(`titulo.ilike.%${filters.q}%,bairro.ilike.%${filters.q}%,codigo.ilike.%${filters.q}%,empreendimento.ilike.%${filters.q}%`);
+  }
+
+  if (filters.codigo) {
+    nextQuery = nextQuery.ilike("codigo", `%${filters.codigo}%`);
   }
 
   return { query: nextQuery, contrato, priceField };
