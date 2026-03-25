@@ -173,6 +173,7 @@ export const PIPELINE_STAGE_COLORS: Record<string, string> = {
   "Visita Realizada": "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500",
   "Descarte": "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500",
   "Convertido": "bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-500",
+  "Negócio Criado": "bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-500",
 };
 
 // Background colors for pipeline kanban columns (light theme friendly)
