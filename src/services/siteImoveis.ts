@@ -204,9 +204,10 @@ export async function fetchSiteImoveis(filters: BuscaFilters = {}): Promise<{ da
     .eq("ativo", true);
 
   // Cidade
-  const cidades = filters.cidades?.length ? filters.cidades : filters.cidade ? [filters.cidade] : CIDADES_PERMITIDAS;
+  const cidades = filters.cidades?.length ? filters.cidades : filters.cidade ? [filters.cidade] : [];
   if (cidades.length === 1) query = query.eq("cidade", cidades[0]);
   else if (cidades.length > 1) query = query.in("cidade", cidades);
+  // When no city filter, show all cities
 
   // Contrato / preço
   const contrato = filters.contrato || "venda";
