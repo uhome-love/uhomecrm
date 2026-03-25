@@ -129,7 +129,7 @@ function mapImovel(j: any) {
     is_exclusivo: j.exclusivo === true || j.exclusivo === 1,
     aceita_financiamento: j.financiavel ?? null,
     features: extractDiferenciais(j).length > 0 ? { diferenciais: extractDiferenciais(j) } : null,
-    tags: j.tags || [],
+    tags: Array.isArray(j.tags) ? j.tags : (typeof j.tags === "string" && j.tags ? j.tags.split(",").map((t: string) => t.trim()) : []),
     fotos: fotos,
     fotos_full: fotosFull,
     tour_virtual_url: j.tour_virtual_url || j.tour_360 || null,
