@@ -643,7 +643,7 @@ export default function ImoveisPage() {
       )}
 
       {/* ── Sticky filter bar ── */}
-      <div className="z-30 border-b border-border bg-background">
+      <div className="z-50 border-b border-border bg-background relative">
         <div className="flex items-center gap-2 overflow-x-auto px-4 sm:px-5 py-3 scrollbar-hide">
           {/* Search input with bairro chips */}
           <div className="relative shrink-0">
