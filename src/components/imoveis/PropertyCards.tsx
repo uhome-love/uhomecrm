@@ -289,7 +289,7 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
               )}
             </div>
             <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco, personalShareUrl)}>
                 <MessageCircle className="h-4 w-4" />
               </Button>
               <SharePropertyButton
