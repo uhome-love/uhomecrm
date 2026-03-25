@@ -540,6 +540,9 @@ export default function MeusNegocios() {
   const { onNegocioAssinado } = useLeadProgression();
   const { user } = useAuth();
   const { isGestor, isAdmin } = useUserRole();
+  const [focusModeOpen, setFocusModeOpen] = useState(false);
+  const { leads: focusLeadsNegocios, reload: reloadFocusNegocios } = useFocusLeads(user?.id ?? null, "negocios");
+  useEffect(() => { if (user?.id && !loading) reloadFocusNegocios(); }, [user?.id, loading]);
   const { paradoMap } = useLeadsParados(negocios.map(n => ({
     id: n.id,
     ultima_acao_at: n.fase_changed_at || n.updated_at,
