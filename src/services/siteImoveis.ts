@@ -193,8 +193,6 @@ function mapDoc(doc: any): SiteImovel {
 
 /* ── API calls via PostgREST (properties table) ── */
 
-/* ── API calls via PostgREST (properties table) ── */
-
 export async function fetchSiteImoveis(filters: BuscaFilters = {}): Promise<{ data: SiteImovel[]; count: number; search_time_ms?: number }> {
   const limit = filters.limit || 24;
   const offset = filters.offset || 0;
