@@ -49,6 +49,9 @@ function getTaskHour(task: ProximaTarefa | null | undefined) {
 }
 
 export function getLeadStatusFilter(lead: PipelineLead, proximaTarefa: ProximaTarefa | null): LeadClientStatus {
+  // Leads com negócio criado (negocio_id) são sempre considerados "em dia"
+  if ((lead as any).negocio_id) return "em_dia";
+
   const todayStart = startOfDay(new Date());
   const taskDate = getTaskDate(proximaTarefa, lead);
 
