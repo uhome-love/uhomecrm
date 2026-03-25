@@ -215,7 +215,7 @@ export function useImoveisSearch({
   // ── Race-condition protection ──
   const fetchSeqRef = useRef(0);
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const skipNextDebounce = useRef(false);
+  
 
   // ── Convert hook filters → PostgREST filters ──
   const buildQueryFilters = useCallback((pageNum: number): ImoveisFilters => {
