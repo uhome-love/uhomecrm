@@ -227,6 +227,24 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
+  // Sweep descartados state
+  const [isSweeping, setIsSweeping] = useState(false);
+  const handleSweepDescartados = useCallback(async () => {
+    if (isSweeping) return;
+    setIsSweeping(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sweep-descartados");
+      if (error) throw error;
+      toast.success(data?.message || "Sweep concluído!");
+      window.dispatchEvent(new CustomEvent("pipeline-reload"));
+    } catch (err) {
+      console.error("Sweep error:", err);
+      toast.error("Erro ao limpar descartados.");
+    } finally {
+      setIsSweeping(false);
+    }
+  }, [isSweeping]);
+
   // Stage transition popup state
   const [transitionPopup, setTransitionPopup] = useState<{ lead: PipelineLead; targetStage: PipelineStage } | null>(null);
 
