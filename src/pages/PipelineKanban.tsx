@@ -1116,6 +1116,12 @@ export default function PipelineKanban() {
           </button>
         </div>
       )}
+
+      <FocusModeModal
+        open={focusModeOpen}
+        onClose={() => { setFocusModeOpen(false); pipeline.reload(); }}
+        pipelineTipo="leads"
+      />
     </div>
     </ErrorBoundary>
   );
