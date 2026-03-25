@@ -1,6 +1,6 @@
-import { memo, useState, useMemo } from "react";
+import { memo, useState, useMemo, useEffect } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Phone, MessageCircle, Handshake, ArrowRightLeft, FileText, Flame, Snowflake, ThermometerSun } from "lucide-react";
+import { Phone, MessageCircle, Handshake, ArrowRightLeft, FileText, Flame, Snowflake, ThermometerSun, Undo2, ChevronDown } from "lucide-react";
 import { getScoreTooltip } from "@/lib/scoreTemperatureLabels";
 import { calculateLeadScore } from "@/lib/leadScoring";
 import { useUserRole } from "@/hooks/useUserRole";
