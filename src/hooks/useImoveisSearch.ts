@@ -2,22 +2,13 @@
  * useImoveisSearch — manages all search, fetch, pagination, and autocomplete
  * for the Imóveis page.
  *
- * Responsibilities:
- *  - Typesense search (primary) with Jetimob-proxy fallback
- *  - Request sequencing (fetchSeqRef) to prevent stale responses
- *  - AbortController for in-flight cancellation
- *  - Campanha overrides loading
- *  - Debounced reactive filter application
- *  - Immediate search (handleSearch)
- *  - Autocomplete with debounce
- *  - Client-side sorting + favorites filtering (sortedImoveis)
- *  - Pagination state
+ * Now uses PostgREST (Supabase) instead of Typesense.
+ * Keeps the same public API for backward compatibility with ImoveisPage.
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTypesenseSearch, buildFilterBy, buildSortBy } from "@/hooks/useTypesenseSearch";
-import { mapTypesenseDocs } from "@/lib/typesenseMapping";
+import { fetchImoveis, type ImoveisFilters } from "@/services/imoveis";
 import { extractEntrega, getNum, getNumIncZero } from "@/lib/imovelHelpers";
 import { toast } from "sonner";
 
@@ -56,7 +47,6 @@ export interface Suggestion {
 }
 
 interface UseImoveisSearchParams {
-  /** All filter values needed for queries */
   filters: {
     search: string;
     contrato: string;
@@ -76,16 +66,46 @@ interface UseImoveisSearchParams {
     situacao: string[];
     cidade: string[];
   };
-  /** Serialized filter key for change-detection */
   filterKey: string;
-  /** Setters the search hook needs to call back into filters */
   setSearch: (v: string) => void;
   setBairro: (fn: (prev: string[]) => string[]) => void;
   setCampanhaAtiva: (v: boolean) => void;
   setUhomeOnly: (v: boolean) => void;
-  /** For favorites filtering in sortedImoveis */
   showFavoritesOnly: boolean;
   favorites: Set<string>;
+}
+
+const PAGE_SIZE = 24;
+
+/**
+ * Map a PostgREST property row to the format expected by PropertyCards.
+ * Adds compatibility fields (titulo_anuncio, endereco_bairro, garagens, etc.)
+ */
+function mapPropertyRow(row: any): any {
+  const fotos = row.fotos || [];
+  const fotosFull = row.fotos_full || fotos;
+
+  return {
+    ...row,
+    // Compatibility aliases used by PropertyCards / imovelHelpers
+    titulo_anuncio: row.titulo,
+    empreendimento_nome: row.empreendimento,
+    endereco_bairro: row.bairro,
+    endereco_cidade: row.cidade,
+    endereco_logradouro: row.endereco,
+    garagens: row.vagas,
+    valor: row.valor_venda,
+    area_util: row.area_privativa,
+    // Normalized photo arrays
+    _fotos_normalized: fotos,
+    _fotos_full: fotosFull,
+    foto_principal: fotos[0] || null,
+    imagens: fotos.map((url: string, i: number) => ({
+      link_thumb: url,
+      link: fotosFull[i] || url,
+      link_large: fotosFull[i] || url,
+    })),
+  };
 }
 
 export function useImoveisSearch({
@@ -98,8 +118,6 @@ export function useImoveisSearch({
   showFavoritesOnly,
   favorites,
 }: UseImoveisSearchParams) {
-  const { search: typesenseSearch, autocomplete: typesenseAutocomplete } = useTypesenseSearch();
-
   // ── Result state ──
   const [imoveis, setImoveis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,168 +164,198 @@ export function useImoveisSearch({
     setSearch(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+
     debounceRef.current = setTimeout(async () => {
-      const results = await typesenseAutocomplete(value);
-      if (results.length) {
-        setSuggestions(results);
-        setShowSuggestions(true);
-      } else {
+      try {
+        // Search bairros via RPC
+        const { data: bairros } = await supabase.rpc("get_bairros_disponiveis", {
+          p_cidade: filters.cidade.length === 1 ? filters.cidade[0] : null,
+        });
+
+        const q = value.toLowerCase();
+        const matched: Suggestion[] = [];
+
+        // Filter bairros matching query
+        if (bairros) {
+          for (const b of bairros) {
+            if (b.bairro.toLowerCase().includes(q)) {
+              matched.push({ type: "bairro", value: b.bairro });
+              if (matched.length >= 5) break;
+            }
+          }
+        }
+
+        // Also search properties by codigo
+        const { data: codeMatches } = await supabase
+          .from("properties")
+          .select("codigo")
+          .eq("ativo", true)
+          .or(`codigo.ilike.%${value}%,titulo.ilike.%${value}%`)
+          .limit(3);
+
+        if (codeMatches) {
+          for (const cm of codeMatches) {
+            matched.push({ type: "codigo", value: cm.codigo });
+          }
+        }
+
+        if (matched.length > 0) {
+          setSuggestions(matched);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } catch {
         setSuggestions([]);
-        setShowSuggestions(false);
       }
-    }, 200);
-  }, [typesenseAutocomplete, setSearch]);
+    }, 250);
+  }, [setSearch, filters.cidade]);
 
   // ── Race-condition protection ──
-  const abortRef = useRef<AbortController | null>(null);
   const fetchSeqRef = useRef(0);
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextDebounce = useRef(false);
 
-  // ── Typesense fetch ──
-  const fetchViaTypesense = useCallback(async (pageNum: number, seq: number): Promise<"ok" | "aborted" | "error"> => {
-    try {
-      const filterBy = buildFilterBy({
-        contrato: filters.contrato,
-        tipo: filters.tipo,
-        bairro: filters.bairro,
-        dormitorios: filters.dormitorios,
-        suites: filters.suitesFilter,
-        vagas: filters.vagas,
-        valorRange: filters.valorRange,
-        areaRange: filters.areaRange,
-        somenteObras: filters.somenteObras,
-        uhomeOnly: filters.uhomeOnly,
-        construtora: filters.construtora,
-        empreendimento: filters.empreendimento,
-        situacao: filters.situacao,
-        cidade: filters.cidade,
-      });
-      const sortByStr = filters.search ? "" : buildSortBy(filters.sortBy, filters.contrato);
+  // ── Convert hook filters → PostgREST filters ──
+  const buildQueryFilters = useCallback((pageNum: number): ImoveisFilters => {
+    const f: ImoveisFilters = {
+      limit: PAGE_SIZE,
+      offset: (pageNum - 1) * PAGE_SIZE,
+    };
 
-      const result = await typesenseSearch({
-        q: filters.search || "*",
-        page: pageNum,
-        per_page: 24,
-        filter_by: filterBy || undefined,
-        sort_by: sortByStr || undefined,
-      });
+    // Cidade
+    if (filters.cidade.length === 1) {
+      f.cidade = filters.cidade[0];
+    } else if (filters.cidade.length > 1) {
+      f.cidades = filters.cidade;
+    }
+
+    // Tipo
+    if (filters.tipo.length > 0) {
+      f.tipos = filters.tipo;
+    }
+
+    // Bairro
+    if (filters.bairro.length > 0) {
+      f.bairros = filters.bairro;
+    }
+
+    // Preço
+    if (filters.valorRange[0] > 0) f.precoMin = filters.valorRange[0];
+    if (filters.valorRange[1] < 5_000_000) f.precoMax = filters.valorRange[1];
+
+    // Área
+    if (filters.areaRange[0] > 0) f.areaMin = filters.areaRange[0];
+    if (filters.areaRange[1] < 500) f.areaMax = filters.areaRange[1];
+
+    // Quartos
+    if (filters.dormitorios.length > 0) {
+      f.quartos = Math.min(...filters.dormitorios.map(Number));
+    }
+
+    // Vagas
+    if (filters.vagas && filters.vagas !== "all") {
+      f.vagas = Number(filters.vagas);
+    }
+
+    // Banheiros (suites as proxy for now)
+    if (filters.suitesFilter && filters.suitesFilter !== "all") {
+      f.banheiros = Number(filters.suitesFilter);
+    }
+
+    // Search
+    if (filters.search) {
+      f.q = filters.search;
+    }
+
+    // Sort
+    switch (filters.sortBy) {
+      case "menor_preco":
+        f.ordem = "preco_asc";
+        break;
+      case "maior_preco":
+        f.ordem = "preco_desc";
+        break;
+      case "maior_area":
+        f.ordem = "area_desc";
+        break;
+      default:
+        f.ordem = "recentes";
+    }
+
+    return f;
+  }, [filters]);
+
+  // ── PostgREST fetch ──
+  const fetchViaPostgREST = useCallback(async (pageNum: number, seq: number): Promise<"ok" | "aborted" | "error"> => {
+    try {
+      const startTime = Date.now();
+      const queryFilters = buildQueryFilters(pageNum);
+      const result = await fetchImoveis(queryFilters);
 
       if (seq !== fetchSeqRef.current) return "aborted";
-      if (!result) return "aborted";
 
-      const items = mapTypesenseDocs(result.data || []);
-      setImoveis(items);
-      setTotal(result.total || 0);
-      setTotalPages(result.totalPages || 1);
+      const elapsed = Date.now() - startTime;
+      const mapped = result.data.map(mapPropertyRow);
+      setImoveis(mapped);
+      setTotal(result.count);
+      setTotalPages(Math.max(1, Math.ceil(result.count / PAGE_SIZE)));
       setPage(pageNum);
-      setSearchTimeMs(result.search_time_ms || null);
+      setSearchTimeMs(elapsed);
       return "ok";
     } catch (err) {
       if (seq !== fetchSeqRef.current) return "aborted";
-      console.error("Typesense fetch error:", err);
+      console.error("PostgREST fetch error:", err);
       return "error";
     }
-  }, [filters.search, filters.contrato, filters.tipo, filters.bairro, filters.dormitorios, filters.suitesFilter, filters.vagas, filters.areaRange, filters.valorRange, filters.somenteObras, filters.uhomeOnly, filters.sortBy, filters.construtora, filters.empreendimento, filters.situacao, filters.cidade, typesenseSearch]);
+  }, [buildQueryFilters]);
 
-  // ── Jetimob fallback ──
-  const fetchViaJetimob = useCallback(async (pageNum: number, campanha = filters.campanhaAtiva, uhome = filters.uhomeOnly) => {
-    if (abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      if (campanha) {
-        const items = campanhaOverrides.map(ov => ({
-          codigo: ov.codigo,
-          titulo_anuncio: ov.nome || ov.codigo,
-          empreendimento_nome: ov.nome || ov.codigo,
-          endereco_bairro: ov.bairro || "",
-          valor_venda: ov.valor_min || 0,
-          valor_max: ov.valor_max || 0,
-          dormitorios: ov.dormitorios || 0,
-          descricao: ov.descricao || "",
-          status: ov.status_obra || "Lançamento",
-          previsao_entrega: ov.previsao_entrega || "",
-          foto_principal: ov.fotos?.[0] || "",
-          fotos: ov.fotos || [],
-          imagens: (ov.fotos || []).map(url => ({ link: url, link_thumb: url })),
-          _fotos_normalized: ov.fotos || [],
-          _is_campanha_override: true,
-        }));
-        setImoveis(items as any[]);
-        setTotal(items.length);
-        setTotalPages(1);
-        setPage(1);
-      } else {
-        const valorMin = filters.valorRange[0] > 0 ? String(filters.valorRange[0]) : undefined;
-        const valorMax = filters.valorRange[1] < 5_000_000 ? String(filters.valorRange[1]) : undefined;
-        const { data, error } = await supabase.functions.invoke("jetimob-proxy", {
-          body: {
-            action: "list_imoveis", page: pageNum, pageSize: 24,
-            search: filters.search || undefined,
-            contrato: filters.contrato || undefined,
-            tipo: filters.tipo.length ? filters.tipo.join(",") : undefined,
-            cidade: "Porto Alegre",
-            bairro: filters.bairro.length ? filters.bairro.join(",") : undefined,
-            search_uhome: uhome ? true : undefined,
-            dormitorios: filters.dormitorios.length ? filters.dormitorios[0] : undefined,
-            suites: filters.suitesFilter && filters.suitesFilter !== "all" ? filters.suitesFilter : undefined,
-            vagas: filters.vagas && filters.vagas !== "all" ? filters.vagas : undefined,
-            area_min: filters.areaRange[0] > 0 ? String(filters.areaRange[0]) : undefined,
-            area_max: filters.areaRange[1] < 500 ? String(filters.areaRange[1]) : undefined,
-            valor_min: valorMin, valor_max: valorMax,
-            somente_obras: filters.somenteObras || undefined,
-          },
-        });
-        if (controller.signal.aborted) return;
-        if (error) { toast.error("Erro ao buscar imóveis"); return; }
-        const items = Array.isArray(data?.data) ? data.data : [];
-        setImoveis(items);
-        setTotal(data?.total || items.length);
-        setTotalPages(data?.totalPages || Math.ceil((data?.total || items.length) / 24));
-        setPage(pageNum);
-      }
-    } catch (e: any) {
-      if (e?.name === "AbortError" || controller.signal.aborted) return;
-      toast.error("Erro de conexão");
-    }
-  }, [filters.search, filters.contrato, filters.tipo, filters.bairro, filters.dormitorios, filters.suitesFilter, filters.vagas, filters.areaRange, filters.valorRange, filters.somenteObras, filters.campanhaAtiva, filters.uhomeOnly, filters.cidade, campanhaOverrides]);
+  // ── Campanha fetch (unchanged) ──
+  const fetchCampanha = useCallback(() => {
+    const items = campanhaOverrides.map(ov => ({
+      codigo: ov.codigo,
+      titulo_anuncio: ov.nome || ov.codigo,
+      titulo: ov.nome || ov.codigo,
+      empreendimento_nome: ov.nome || ov.codigo,
+      empreendimento: ov.nome || ov.codigo,
+      endereco_bairro: ov.bairro || "",
+      bairro: ov.bairro || "",
+      valor_venda: ov.valor_min || 0,
+      valor_max: ov.valor_max || 0,
+      dormitorios: ov.dormitorios || 0,
+      descricao: ov.descricao || "",
+      situacao: ov.status_obra || "Lançamento",
+      previsao_entrega: ov.previsao_entrega || "",
+      foto_principal: ov.fotos?.[0] || "",
+      fotos: ov.fotos || [],
+      imagens: (ov.fotos || []).map(url => ({ link: url, link_thumb: url, link_large: url })),
+      _fotos_normalized: ov.fotos || [],
+      _is_campanha_override: true,
+    }));
+    setImoveis(items as any[]);
+    setTotal(items.length);
+    setTotalPages(1);
+    setPage(1);
+  }, [campanhaOverrides]);
 
   // ── Main fetch orchestrator ──
-  const fetchImoveis = useCallback(async (pageNum: number, campanha = filters.campanhaAtiva, uhome = filters.uhomeOnly) => {
+  const fetchImoveisMain = useCallback(async (pageNum: number, campanha = filters.campanhaAtiva) => {
     const seq = ++fetchSeqRef.current;
     setLoading(true);
     setSearchTimeMs(null);
     setFetchError(null);
 
-    // Timeout guard: 15s max for the whole fetch
-    const timeoutPromise = new Promise<"timeout">((resolve) =>
-      setTimeout(() => resolve("timeout"), 15_000)
-    );
-
     try {
-      const fetchPromise = (async () => {
-        if (campanha) {
-          await fetchViaJetimob(pageNum, campanha, uhome);
-          if (seq !== fetchSeqRef.current) return "aborted";
-          return "ok";
-        }
+      if (campanha) {
+        fetchCampanha();
+        return;
+      }
 
-        const tsResult = await fetchViaTypesense(pageNum, seq);
-        if (tsResult === "aborted") return "aborted";
-        if (tsResult === "ok") return "ok";
-
-        console.warn("Typesense error, falling back to jetimob-proxy");
-        await fetchViaJetimob(pageNum, campanha, uhome);
-        return "ok";
-      })();
-
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-
-      if (result === "timeout" && seq === fetchSeqRef.current) {
-        console.error("[useImoveisSearch] Fetch timeout after 15s");
-        setFetchError("O carregamento demorou demais. Verifique sua conexão e tente novamente.");
+      const result = await fetchViaPostgREST(pageNum, seq);
+      if (result === "aborted") return;
+      if (result === "error") {
+        setFetchError("Erro ao carregar imóveis. Tente novamente.");
         setImoveis([]);
         setTotal(0);
         setTotalPages(1);
@@ -322,13 +370,13 @@ export function useImoveisSearch({
     } finally {
       if (seq === fetchSeqRef.current) setLoading(false);
     }
-  }, [filters.campanhaAtiva, filters.uhomeOnly, fetchViaTypesense, fetchViaJetimob]);
+  }, [filters.campanhaAtiva, fetchViaPostgREST, fetchCampanha]);
 
   // Stable ref to latest fetch function
-  const fetchRef = useRef(fetchImoveis);
-  fetchRef.current = fetchImoveis;
+  const fetchRef = useRef(fetchImoveisMain);
+  fetchRef.current = fetchImoveisMain;
 
-  // ── Initial load (respects URL-restored filter state) ──
+  // ── Initial load ──
   const mounted = useRef(false);
   useEffect(() => {
     if (mounted.current) return;
@@ -399,6 +447,7 @@ export function useImoveisSearch({
       if (showFavoritesOnly) items = items.filter(item => favorites.has(String(item?.codigo || item?.id_imovel || item?.id)));
       if (filters.somenteObras) items = items.filter(item => extractEntrega(item).emObras);
 
+      // PostgREST already sorts server-side, but apply client sort for edge cases
       if (filters.sortBy === "menor_preco") items.sort((a, b) => (getNum(a, "valor_venda", "valor") || 999999999) - (getNum(b, "valor_venda", "valor") || 999999999));
       else if (filters.sortBy === "maior_preco") items.sort((a, b) => (getNum(b, "valor_venda", "valor") || 0) - (getNum(a, "valor_venda", "valor") || 0));
       else if (filters.sortBy === "maior_area") items.sort((a, b) => (getNumIncZero(b, "area_privativa", "area_util") || 0) - (getNumIncZero(a, "area_privativa", "area_util") || 0));
@@ -415,7 +464,6 @@ export function useImoveisSearch({
   }, []);
 
   return {
-    // Result state
     imoveis,
     loading,
     fetchError,
@@ -424,15 +472,12 @@ export function useImoveisSearch({
     total,
     searchTimeMs,
     sortedImoveis,
-    // Campanha
     campanhaOverrides,
-    // Autocomplete
     suggestions,
     showSuggestions,
     setShowSuggestions,
     handleSearchChange,
     handleSuggestionClick,
-    // Actions
     handleSearch,
     fetchPage,
     fetchRef,

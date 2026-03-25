@@ -28,7 +28,7 @@ import { PropertyCardGrid, PropertyCardList } from "@/components/imoveis/Propert
 import { getNum, fmtBRL, fmtCompact } from "@/lib/imovelHelpers";
 import { useImoveisFilters } from "@/hooks/useImoveisFilters";
 import { useImoveisSearch } from "@/hooks/useImoveisSearch";
-import { useTypesenseFacets } from "@/hooks/useTypesenseFacets";
+import { usePostgRESTFacets } from "@/hooks/usePostgRESTFacets";
 import { useLeadContext } from "@/hooks/useLeadContext";
 import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadMatch } from "@/hooks/useLeadMatch";
@@ -44,7 +44,7 @@ export default function ImoveisPage() {
   const { profile: leadProfile } = useLeadPropertyProfile(leadId);
 
   // ── Dynamic facets ──
-  const { bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets, statusImovelFacets, cidadeFacets, fetchBairrosByCidade } = useTypesenseFacets();
+  const { bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets, statusImovelFacets, cidadeFacets, fetchBairrosByCidade } = usePostgRESTFacets();
 
   // ── Filters ──
   const filters = useImoveisFilters(bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets, cidadeFacets, fetchBairrosByCidade);
