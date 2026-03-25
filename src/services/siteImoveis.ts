@@ -100,16 +100,18 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-/** Generate uhome.com.br-compatible slug: tipo-N-quartos-bairro-codigo-JD */
+/** Generate uhome.com.br-compatible slug.
+ * With quartos:    {tipo}-{N}-quartos-{bairro}-{codigo}
+ * Without quartos: {tipo}-para-venda-{bairro}-{codigo}
+ * The codigo already contains its suffix (e.g. -LU, -MT, -JD). */
 export function gerarSlugUhome(imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string }): string {
   const tipo = slugify(imovel.tipo || "imovel");
   const quartos = imovel.quartos ?? 0;
   const bairro = slugify(imovel.bairro || "");
   const codigo = imovel.codigo || "";
-  const suffix = `${codigo}-JD`;
-  if (quartos > 0 && bairro) return `${tipo}-${quartos}-quarto${quartos > 1 ? "s" : ""}-${bairro}-${suffix}`;
-  if (bairro) return `${tipo}-${bairro}-${suffix}`;
-  return `${tipo}-${suffix}`;
+  if (quartos > 0 && bairro) return `${tipo}-${quartos}-quarto${quartos > 1 ? "s" : ""}-${bairro}-${codigo}`;
+  if (bairro) return `${tipo}-para-venda-${bairro}-${codigo}`;
+  return `${tipo}-para-venda-${codigo}`;
 }
 
 /** Build the canonical uhome.com.br share URL for a property */

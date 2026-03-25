@@ -27,15 +27,13 @@ interface SharePropertyButtonProps {
 export default function SharePropertyButton({ codigo, titulo, bairro, preco, tipo, quartos, className }: SharePropertyButtonProps) {
   if (!codigo) return null;
 
-  // Generate uhome.com.br-compatible slug URL (must end with -JD)
-  const slugParts = [tipo || "imovel", quartos && quartos > 0 ? `${quartos}-quarto${quartos > 1 ? "s" : ""}` : "", bairro, `${codigo}-JD`]
-    .filter(Boolean)
-    .join("-")
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  const shareUrl = `https://uhome.com.br/imovel/${slugParts}`;
+  // Generate uhome.com.br-compatible slug URL
+  const slugType = (tipo || "imovel").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const slugBairro = (bairro || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const shareSlug = quartos && quartos > 0
+    ? `${slugType}-${quartos}-quarto${quartos > 1 ? "s" : ""}-${slugBairro}-${codigo}`
+    : `${slugType}-para-venda-${slugBairro}-${codigo}`;
+  const shareUrl = `https://uhome.com.br/imovel/${shareSlug}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl);
