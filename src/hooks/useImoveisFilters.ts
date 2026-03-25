@@ -101,6 +101,9 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
   const [search, setSearch] = useState(() => readStr(searchParams, "q", ""));
   const [sortBy, setSortBy] = useState(() => readStr(searchParams, "sort", DEFAULTS.sortBy));
 
+  // ── Código filter ──
+  const [codigoBusca, setCodigoBusca] = useState(() => readStr(searchParams, "codigo", ""));
+
   // ── Write state to URL (debounced, replaceState to avoid history spam) ──
   const urlWriteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,9 +130,10 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
     if (situacao.length) p.set("situacao", situacao.join(","));
     // Only write cidade to URL if not the default ["Porto Alegre"]
     if (cidade.length > 0 && !(cidade.length === 1 && cidade[0] === "Porto Alegre")) p.set("cidade", cidade.join(","));
+    if (codigoBusca) p.set("codigo", codigoBusca);
 
     setSearchParams(p, { replace: true });
-  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, cidade, setSearchParams]);
+  }, [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, cidade, codigoBusca, setSearchParams]);
 
   useEffect(() => {
     // Skip URL write on first render (we just read from URL)
@@ -205,6 +209,7 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
   if (construtora.length > 0) activeFilters.push({ key: "construtora", label: construtora.join(", "), onRemove: () => setConstrutora([]) });
   if (empreendimento.length > 0) activeFilters.push({ key: "empreendimento", label: empreendimento.length <= 2 ? empreendimento.join(", ") : `${empreendimento.length} empreend.`, onRemove: () => setEmpreendimento([]) });
   if (situacao.length > 0) activeFilters.push({ key: "situacao", label: situacao.join(", "), onRemove: () => setSituacao([]) });
+  if (codigoBusca) activeFilters.push({ key: "codigo", label: `Cód: ${codigoBusca}`, onRemove: () => setCodigoBusca("") });
   // Only show cidade tag if not the default
   if (cidade.length > 0 && !(cidade.length === 1 && cidade[0] === "Porto Alegre")) activeFilters.push({ key: "cidade", label: cidade.join(", "), onRemove: () => setCidade(["Porto Alegre"]) });
 
@@ -213,13 +218,14 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
     setAreaRange([0, 500]); setValorRange([0, 5_000_000]); setSomenteObras(false);
     setSearch(""); setUhomeOnly(false); setCampanhaAtiva(false);
     setConstrutora([]); setEmpreendimento([]); setSituacao([]);
+    setCodigoBusca("");
     setCidade(["Porto Alegre"]); // Reset to default
   };
 
   // ── Serialized key for change-detection by search hook ──
   const filterKey = useMemo(() =>
-    JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, cidade }),
-    [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, cidade]
+    JSON.stringify({ search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, cidade, codigoBusca }),
+    [search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas, areaRange, valorRange, somenteObras, sortBy, uhomeOnly, campanhaAtiva, construtora, empreendimento, situacao, cidade, codigoBusca]
   );
 
   return {
@@ -244,6 +250,7 @@ export function useImoveisFilters(bairroFacets?: Facet[], tipoFacets?: Facet[], 
     empreendimentoSearch, setEmpreendimentoSearch,
     situacao, setSituacao,
     cidade, setCidade,
+    codigoBusca, setCodigoBusca,
     // Derived
     filteredBairros,
     tipoOptions,
