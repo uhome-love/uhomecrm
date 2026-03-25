@@ -220,7 +220,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
           </div>
 
           {(tarefa.descricao || tarefa.titulo) && (
-            <p className={`text-sm ${isConcluida ? "line-through text-muted-foreground" : "text-foreground"}`}>
+            <p className={`text-sm ${isConcluida ? "text-muted-foreground" : "text-foreground"}`}>
               📝 {tarefa.descricao || tarefa.titulo}
             </p>
           )}
