@@ -1076,6 +1076,11 @@ export default function MeusNegocios() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <FocusModeModal
+        open={focusModeOpen}
+        onClose={() => { setFocusModeOpen(false); reload(); }}
+        pipelineTipo="negocios"
+      />
     </div>
   );
 }
