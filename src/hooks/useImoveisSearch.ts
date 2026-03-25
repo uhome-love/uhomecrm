@@ -65,6 +65,7 @@ interface UseImoveisSearchParams {
     empreendimento: string[];
     situacao: string[];
     cidade: string[];
+    codigoBusca: string;
   };
   filterKey: string;
   setSearch: (v: string) => void;
@@ -267,6 +268,11 @@ export function useImoveisSearch({
     // Search
     if (filters.search) {
       f.q = filters.search;
+    }
+
+    // Código
+    if (filters.codigoBusca) {
+      f.codigo = filters.codigoBusca;
     }
 
     // Sort

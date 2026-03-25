@@ -280,10 +280,10 @@ export default function ImoveisPage() {
   const hasSearchFilters = !!(
     filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
     filters.areaMin || filters.areaMax || filters.quartos || filters.vagas ||
-    filters.banheiros || filters.q || (filters.cidade && filters.cidade !== "Porto Alegre")
+    filters.banheiros || filters.q || filters.codigo || (filters.cidade && filters.cidade !== "Porto Alegre")
   );
 
-  const advancedFilterCount = [filters.banheiros > 0, filters.vagas > 0].filter(Boolean).length;
+  const advancedFilterCount = [filters.banheiros > 0, filters.vagas > 0, !!filters.codigo].filter(Boolean).length;
 
   const addBairro = useCallback((nome: string) => {
     const next = [...bairrosSelecionados, nome];
@@ -313,6 +313,7 @@ export default function ImoveisPage() {
     banheiros: filters.banheiros || undefined,
     vagas: filters.vagas || undefined,
     q: filters.q || undefined,
+    codigo: filters.codigo || undefined,
     ordem: filters.ordem,
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
@@ -774,6 +775,7 @@ export default function ImoveisPage() {
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all shrink-0",
                   (filters.banheiros || filters.vagas)
+                    || filters.codigo
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-card text-foreground hover:border-primary/50"
                 )}
@@ -829,14 +831,26 @@ export default function ImoveisPage() {
               </div>
 
               {/* Limpar avançados */}
-              {(filters.banheiros > 0 || filters.vagas > 0) && (
+              {(filters.banheiros > 0 || filters.vagas > 0 || !!filters.codigo) && (
                 <button
-                  onClick={() => { setFilter("banheiros", 0); setFilter("vagas", 0); setPage(0); setAllImoveis([]); }}
+                  onClick={() => { setFilter("banheiros", 0); setFilter("vagas", 0); setFilter("codigo", ""); setPage(0); setAllImoveis([]); }}
                   className="text-xs text-muted-foreground hover:text-foreground underline"
                 >
                   Limpar filtros avançados
                 </button>
               )}
+
+              {/* Código do imóvel */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Código do imóvel</p>
+                <input
+                  type="text"
+                  placeholder="Ex: 74726-UH"
+                  value={filters.codigo}
+                  onChange={(e) => { setFilter("codigo", e.target.value); setPage(0); setAllImoveis([]); }}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+                />
+              </div>
             </PopoverContent>
           </Popover>
 

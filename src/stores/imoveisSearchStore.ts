@@ -26,6 +26,7 @@ export interface ImoveisFilters {
   ordem: "recentes" | "preco_asc" | "preco_desc" | "area_desc";
   q: string;
   bounds: MapBounds | null;
+  codigo: string;
 }
 
 interface ImoveisSearchState {
@@ -49,6 +50,7 @@ const defaultFilters: ImoveisFilters = {
   ordem: "recentes",
   q: "",
   bounds: null,
+  codigo: "",
 };
 
 export const useImoveisSearchStore = create<ImoveisSearchState>((set) => ({
@@ -72,6 +74,7 @@ export function filtersFromParams(params: URLSearchParams): Partial<ImoveisFilte
   if (params.get("vagas")) f.vagas = Number(params.get("vagas"));
   if (params.get("ordem")) f.ordem = params.get("ordem") as ImoveisFilters["ordem"];
   if (params.get("q")) f.q = params.get("q")!;
+  if (params.get("codigo")) f.codigo = params.get("codigo")!;
   return f;
 }
 
@@ -89,5 +92,6 @@ export function filtersToParams(filters: ImoveisFilters): URLSearchParams {
   if (filters.vagas) p.set("vagas", String(filters.vagas));
   if (filters.ordem && filters.ordem !== "recentes") p.set("ordem", filters.ordem);
   if (filters.q) p.set("q", filters.q);
+  if (filters.codigo) p.set("codigo", filters.codigo);
   return p;
 }

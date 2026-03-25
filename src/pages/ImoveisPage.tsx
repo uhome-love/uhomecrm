@@ -61,6 +61,7 @@ export default function ImoveisPage() {
     filteredBairros, tipoOptions, filteredConstrutoras, filteredEmpreendimentos,
     activeFilters, clearAllFilters, filterKey,
   } = filters;
+  const { codigoBusca, setCodigoBusca } = filters;
 
   // ── UI state (local to page) ──
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
@@ -96,7 +97,7 @@ export default function ImoveisPage() {
     filters: {
       search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas,
       areaRange, valorRange, somenteObras, uhomeOnly, campanhaAtiva, sortBy,
-      construtora, empreendimento, situacao, cidade,
+      construtora, empreendimento, situacao, cidade, codigoBusca,
     },
     filterKey,
     setSearch,
@@ -620,7 +621,7 @@ export default function ImoveisPage() {
             {/* More filters */}
             <FilterChip
               label="Mais filtros"
-              active={!!(suitesFilter && suitesFilter !== "all") || !!(vagas && vagas !== "all") || (areaRange[0] > 0 || areaRange[1] < 500) || somenteObras}
+              active={!!(suitesFilter && suitesFilter !== "all") || !!(vagas && vagas !== "all") || (areaRange[0] > 0 || areaRange[1] < 500) || somenteObras || !!codigoBusca}
             >
               <div className="w-64 space-y-4">
                 <div className="space-y-2">
@@ -667,6 +668,17 @@ export default function ImoveisPage() {
                   <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-muted-foreground font-medium">Em obras / na planta</span>
                 </label>
+
+                <div className="space-y-2 pt-1 border-t border-border/50">
+                  <p className="text-xs font-semibold text-foreground">Código do imóvel</p>
+                  <input
+                    type="text"
+                    placeholder="Ex: 74726-UH"
+                    value={codigoBusca}
+                    onChange={(e) => setCodigoBusca(e.target.value)}
+                    className="w-full h-8 px-2.5 text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:border-primary outline-none"
+                  />
+                </div>
               </div>
             </FilterChip>
 
