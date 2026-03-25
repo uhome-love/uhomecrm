@@ -92,6 +92,30 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function slugify(text: string): string {
+  return text
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+/** Generate uhome.com.br-compatible slug: tipo-N-quartos-bairro-codigo */
+export function gerarSlugUhome(imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string }): string {
+  const tipo = slugify(imovel.tipo || "imovel");
+  const quartos = imovel.quartos ?? 0;
+  const bairro = slugify(imovel.bairro || "");
+  const codigo = imovel.codigo || "";
+  if (quartos > 0 && bairro) return `${tipo}-${quartos}-quarto${quartos > 1 ? "s" : ""}-${bairro}-${codigo}`;
+  if (bairro) return `${tipo}-${bairro}-${codigo}`;
+  return `${tipo}-${codigo}`;
+}
+
+/** Build the canonical uhome.com.br share URL for a property */
+export function shareUrlUhome(imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string }): string {
+  return `https://uhome.com.br/imovel/${gerarSlugUhome(imovel)}`;
+}
+
 function toFiniteNumber(value: unknown): number | null {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;

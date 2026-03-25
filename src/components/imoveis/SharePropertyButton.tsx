@@ -14,20 +14,28 @@ import {
 import { Share2, Link2, MessageCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 
-const PUBLIC_DOMAIN = "https://uhomesales.com";
-
 interface SharePropertyButtonProps {
   codigo: string;
   titulo: string;
   bairro: string;
   preco: string;
+  tipo?: string;
+  quartos?: number | null;
   className?: string;
 }
 
-export default function SharePropertyButton({ codigo, titulo, bairro, preco, className }: SharePropertyButtonProps) {
+export default function SharePropertyButton({ codigo, titulo, bairro, preco, tipo, quartos, className }: SharePropertyButtonProps) {
   if (!codigo) return null;
 
-  const shareUrl = `${PUBLIC_DOMAIN}/imovel/${codigo}`;
+  // Generate uhome.com.br-compatible slug URL
+  const slugParts = [tipo || "imovel", quartos && quartos > 0 ? `${quartos}-quarto${quartos > 1 ? "s" : ""}` : "", bairro, codigo]
+    .filter(Boolean)
+    .join("-")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  const shareUrl = `https://uhome.com.br/imovel/${slugParts}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl);

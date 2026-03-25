@@ -6,7 +6,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Heart, Share2, MessageCircle, Copy, Link2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { type SiteImovel, fotoPrincipal, formatPreco } from "@/services/siteImoveis";
+import { type SiteImovel, fotoPrincipal, formatPreco, shareUrlUhome } from "@/services/siteImoveis";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,7 +46,7 @@ const badgeClasses: Record<BadgeStyle, string> = {
   exclusivo: "bg-black/80 text-white font-semibold shadow-sm",
 };
 
-const PUBLIC_DOMAIN = "https://uhome.com.br";
+// slug-based URL is now generated via shareUrlUhome
 
 export const SitePropertyCard = React.memo(function SitePropertyCard({
   imovel, index, highlighted, isFavorite, onToggleFavorite,
@@ -95,7 +95,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
     onHover?.(null);
   }, [onHover]);
 
-  const shareUrl = `${PUBLIC_DOMAIN}/imovel/${imovel.slug}`;
+  const shareUrl = shareUrlUhome(imovel);
 
   const copyForWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();

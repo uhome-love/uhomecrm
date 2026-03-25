@@ -19,8 +19,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, Heart, Share2, Link2, Copy,
   Loader2, X, MapPin, RotateCcw, MessageCircle, Phone,
-  ArrowUpDown, Map as MapIcon, List, Bell, Sparkles, Send,
+  ArrowUpDown, Map as MapIcon, List, Bell, Sparkles, Send, SlidersHorizontal,
 } from "lucide-react";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import { FilterPill, PillOption } from "@/components/imoveis/SiteFilterPill";
 import { SitePropertyCard } from "@/components/imoveis/SitePropertyCard";
 import { SearchMapBox } from "@/components/imoveis/SearchMapBox";
@@ -277,8 +280,10 @@ export default function ImoveisPage() {
   const hasSearchFilters = !!(
     filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
     filters.areaMin || filters.areaMax || filters.quartos || filters.vagas ||
-    filters.q || (filters.cidade && filters.cidade !== "Porto Alegre")
+    filters.banheiros || filters.q || (filters.cidade && filters.cidade !== "Porto Alegre")
   );
+
+  const advancedFilterCount = [filters.banheiros > 0, filters.vagas > 0].filter(Boolean).length;
 
   const addBairro = useCallback((nome: string) => {
     const next = [...bairrosSelecionados, nome];
@@ -777,12 +782,78 @@ export default function ImoveisPage() {
             ))}
           </FilterPill>
 
-          {/* Vagas */}
-          <FilterPill label="Vagas" value={filters.vagas ? `${filters.vagas}+ vagas` : undefined} active={!!filters.vagas} onClear={() => { setFilter("vagas", 0); setPage(0); setAllImoveis([]); }}>
-            {[1, 2, 3].map(v => (
-              <PillOption key={v} selected={filters.vagas === v} onClick={() => { setFilter("vagas", filters.vagas === v ? 0 : v); setPage(0); setAllImoveis([]); }}>{v}+ vagas</PillOption>
-            ))}
-          </FilterPill>
+          {/* +Filtros */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all shrink-0",
+                  (filters.banheiros || filters.vagas)
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/50"
+                )}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                + Filtros
+                {advancedFilterCount > 0 && (
+                  <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {advancedFilterCount}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72 p-4 space-y-4">
+              <p className="text-sm font-semibold text-foreground">Filtros avançados</p>
+
+              {/* Banheiros */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Banheiros</p>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => { setFilter("banheiros", filters.banheiros === n ? 0 : n); setPage(0); setAllImoveis([]); }}
+                      className={cn(
+                        "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+                        filters.banheiros === n
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-foreground hover:border-primary/40"
+                      )}
+                    >{n}+</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vagas */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vagas</p>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => { setFilter("vagas", filters.vagas === n ? 0 : n); setPage(0); setAllImoveis([]); }}
+                      className={cn(
+                        "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+                        filters.vagas === n
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-foreground hover:border-primary/40"
+                      )}
+                    >{n}+</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Limpar avançados */}
+              {(filters.banheiros > 0 || filters.vagas > 0) && (
+                <button
+                  onClick={() => { setFilter("banheiros", 0); setFilter("vagas", 0); setPage(0); setAllImoveis([]); }}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Limpar filtros avançados
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
 
           {/* Divider + actions */}
           <div className="border-l border-border/50 pl-2 ml-1 flex items-center gap-1.5 shrink-0">
