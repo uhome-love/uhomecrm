@@ -92,21 +92,6 @@ const PipelineCard = memo(function PipelineCard({
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
   const [criandoNegocio, setCriandoNegocio] = useState(false);
   const [negocioCriado, setNegocioCriado] = useState(false);
-  const [hadPreviousNegocio, setHadPreviousNegocio] = useState(false);
-
-  // Check if lead had a previous cancelled negocio (regressed lead)
-  useEffect(() => {
-    if ((lead as any).negocio_id || negocioCriado) return;
-    supabase
-      .from("negocios")
-      .select("id")
-      .eq("pipeline_lead_id", lead.id)
-      .eq("status", "perdido")
-      .limit(1)
-      .then(({ data }) => {
-        if (data && data.length > 0) setHadPreviousNegocio(true);
-      });
-  }, [lead.id, (lead as any).negocio_id, negocioCriado]);
 
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
   const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]);
@@ -443,8 +428,8 @@ const PipelineCard = memo(function PipelineCard({
         <CardStatusLine status={status} stageChangedAt={lead.stage_changed_at} />
       </div>
 
-      {/* Create Negócio button — on Visita Realizada OR regressed leads (had previous cancelled deal) */}
-      {(stage?.nome?.toLowerCase().includes("visita realizada") || hadPreviousNegocio) && !lead.negocio_id && !negocioCriado && stage?.tipo !== "convertido" && stage?.tipo !== "descarte" && (
+      {/* Create Negócio button — only on Visita Realizada without linked deal */}
+      {stage?.nome?.toLowerCase().includes("visita realizada") && !lead.negocio_id && !negocioCriado && (
         <div data-actions-area style={{ padding: "0 14px 8px" }}>
           <Button
             size="sm"
