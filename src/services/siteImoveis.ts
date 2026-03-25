@@ -446,7 +446,7 @@ export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]
     .eq("ativo", true);
 
   // Apply same filters as fetchSiteImoveis
-  const cidades = filters.cidades?.length ? filters.cidades : filters.cidade ? [filters.cidade] : CIDADES_PERMITIDAS;
+  const cidades = filters.cidades?.length ? filters.cidades : filters.cidade ? [filters.cidade] : [];
   if (cidades.length === 1) query = query.eq("cidade", cidades[0]);
   else if (cidades.length > 1) query = query.in("cidade", cidades);
 
