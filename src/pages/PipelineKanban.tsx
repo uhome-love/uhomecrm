@@ -17,7 +17,7 @@ const OpportunityRadar = lazy(() => import("@/components/pipeline/OpportunityRad
 const MelnickCampaignAnalytics = lazy(() => import("@/components/pipeline/MelnickCampaignAnalytics"));
 const PipelineManagerActions = lazy(() => import("@/components/pipeline/PipelineManagerActions"));
 const PipelineTeamVisitas = lazy(() => import("@/components/pipeline/PipelineTeamVisitas"));
-import { CheckSquare, Square, Send, X } from "lucide-react";
+import { CheckSquare, Square, Send, X, Zap } from "lucide-react";
 import PipelineAdvancedFilters, {
   EMPTY_FILTERS,
   applyFilters,
