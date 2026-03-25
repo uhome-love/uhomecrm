@@ -19,8 +19,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, Heart, Share2, Link2, Copy,
   Loader2, X, MapPin, RotateCcw, MessageCircle, Phone,
-  ArrowUpDown, Map as MapIcon, List, Bell, Sparkles, Send,
+  ArrowUpDown, Map as MapIcon, List, Bell, Sparkles, Send, SlidersHorizontal,
 } from "lucide-react";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import { FilterPill, PillOption } from "@/components/imoveis/SiteFilterPill";
 import { SitePropertyCard } from "@/components/imoveis/SitePropertyCard";
 import { SearchMapBox } from "@/components/imoveis/SearchMapBox";
