@@ -386,20 +386,20 @@ export function useImoveisSearch({
 
   // ── Reactive debounced filter application ──
   const prevFilterKey = useRef(filterKey);
+  const immediateNextFetch = useRef(false);
   useEffect(() => {
     if (!mounted.current) return;
     if (prevFilterKey.current === filterKey) return;
     prevFilterKey.current = filterKey;
 
-    if (skipNextDebounce.current) {
-      skipNextDebounce.current = false;
-      return;
-    }
-
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+
+    const delay = immediateNextFetch.current ? 50 : 400;
+    immediateNextFetch.current = false;
+
     filterDebounceRef.current = setTimeout(() => {
       fetchRef.current(1);
-    }, 400);
+    }, delay);
     return () => { if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current); };
   }, [filterKey]);
 
@@ -408,20 +408,19 @@ export function useImoveisSearch({
     setShowSuggestions(false);
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    // Mark next filter change to fetch immediately (no 400ms debounce)
+    immediateNextFetch.current = true;
     setCampanhaAtiva(false);
     setUhomeOnly(false);
-    // Force immediate fetch after state settles on next render
-    skipNextDebounce.current = false;
-    // Use a microtask to let React process the state updates first,
-    // then invalidate prevFilterKey so the debounce effect fires immediately
+    // Force filterKey change by toggling campanhaAtiva/uhomeOnly — this triggers the effect above.
+    // If search hasn't changed other filters, we still need to force a fetch:
+    // Use a microtask to check if effect already ran, if not force it
     Promise.resolve().then(() => {
-      // Reset prevFilterKey so the effect sees a change and triggers fetch
-      prevFilterKey.current = "__force__";
-      // Also clear the debounce and fetch directly with latest filters
-      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
-      filterDebounceRef.current = setTimeout(() => {
+      // If the effect didn't fire (filterKey unchanged), force fetch directly
+      if (immediateNextFetch.current) {
+        immediateNextFetch.current = false;
         fetchRef.current(1);
-      }, 50);
+      }
     });
   }, [setCampanhaAtiva, setUhomeOnly]);
 
