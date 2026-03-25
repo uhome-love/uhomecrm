@@ -73,6 +73,8 @@ export default function PropertyPreviewDrawer({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  const slugRef = useBrokerSlug();
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
