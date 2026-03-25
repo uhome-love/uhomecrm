@@ -50,6 +50,8 @@ function _thumbImages(item: any): string[] {
   if (Array.isArray(arr) && arr.length > 0) {
     return arr.map((img: any) => img.link_thumb || img.link || img.url || "").filter(Boolean);
   }
+  // Raw fotos from PostgREST
+  if (Array.isArray(item.fotos) && item.fotos.length > 0) return item.fotos;
   return [];
 }
 
