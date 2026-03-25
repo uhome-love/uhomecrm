@@ -443,8 +443,8 @@ const PipelineCard = memo(function PipelineCard({
         <CardStatusLine status={status} stageChangedAt={lead.stage_changed_at} />
       </div>
 
-      {/* Create Negócio button — on Visita Realizada or any non-convertido/descarte stage without linked deal */}
-      {(stage?.nome?.toLowerCase().includes("visita realizada") || (stage?.tipo !== "convertido" && stage?.tipo !== "descarte" && !lead.negocio_id)) && !lead.negocio_id && !negocioCriado && (
+      {/* Create Negócio button — on Visita Realizada OR regressed leads (had previous cancelled deal) */}
+      {(stage?.nome?.toLowerCase().includes("visita realizada") || hadPreviousNegocio) && !lead.negocio_id && !negocioCriado && stage?.tipo !== "convertido" && stage?.tipo !== "descarte" && (
         <div data-actions-area style={{ padding: "0 14px 8px" }}>
           <Button
             size="sm"
