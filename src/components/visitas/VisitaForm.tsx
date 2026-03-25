@@ -169,17 +169,20 @@ export default function VisitaForm({ open, onClose, onSubmit, initialData, mode 
     load();
   }, [user, open, isManager, isAdmin]);
 
+  // Normalize accented characters for search
+  const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   // Filtered leads with search + stage + empreendimento filters
   const filteredLeads = useMemo(() => {
     let result = pipelineLeads;
     if (filterStage) result = result.filter(l => l.stage_id === filterStage);
     if (filterEmp) result = result.filter(l => l.empreendimento === filterEmp);
     if (searchPipeline.trim()) {
-      const term = searchPipeline.toLowerCase();
+      const term = normalize(searchPipeline);
       result = result.filter(l =>
-        l.nome.toLowerCase().includes(term) ||
-        l.empreendimento?.toLowerCase().includes(term) ||
-        l.telefone?.includes(term)
+        normalize(l.nome).includes(term) ||
+        (l.empreendimento && normalize(l.empreendimento).includes(term)) ||
+        l.telefone?.includes(searchPipeline.trim())
       );
     }
     return result.slice(0, 25);
