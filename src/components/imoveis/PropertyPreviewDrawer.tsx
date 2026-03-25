@@ -197,12 +197,25 @@ export default function PropertyPreviewDrawer({
   const suitesVal = getNum(item, "suites");
   const banhos = getNum(item, "banheiros");
   const area = getNumIncZero(item, "area_privativa", "area_util", "area_total");
+  const areaTotal = getNumIncZero(item, "area_total");
   const vagasVal = getNum(item, "garagens", "vagas");
   const cond = getNum(item, "valor_condominio");
+  const iptu = getNum(item, "valor_iptu");
   const entrega = extractEntrega(item);
   const imovelId = String(codigo || item.id_imovel || item.id);
   const descricao = item.descricao || item.descricao_interna || "";
   const tipo = item.tipo || item.subtipo || "";
+  const empreendimento = item.empreendimento_nome || item.empreendimento || "";
+  const construtora = item.construtora || "";
+  const andar = item.andar || "";
+  const posicaoSolar = item.posicao_solar || "";
+  const situacao = item.situacao || item.status || "";
+  const finalidade = item.finalidade || item.contrato || "";
+  const features = Array.isArray(item.features) ? item.features : [];
+  const tags = Array.isArray(item.tags) ? item.tags : [];
+  const tourVirtual = item.tour_virtual_url || "";
+  const videoUrl = item.video_url || "";
+  const aceitaFinanciamento = item.aceita_financiamento || item.is_mcmv || false;
 
   const prevImage = () => setImageIdx(i => (i > 0 ? i - 1 : previewImages.length - 1));
   const nextImage = () => setImageIdx(i => (i < previewImages.length - 1 ? i + 1 : 0));
@@ -346,25 +359,35 @@ export default function PropertyPreviewDrawer({
               <p className="text-[11px] font-semibold uppercase tracking-widest text-primary mb-1">{tipo}</p>
             )}
             <h2 className="text-lg font-bold text-foreground leading-tight">{titulo || "Imóvel"}</h2>
+            {empreendimento && empreendimento !== titulo && (
+              <p className="text-sm font-medium text-foreground/80 mt-0.5">{empreendimento}</p>
+            )}
             {(loc.bairro || loc.endereco || loc.cidade) && (
-              <div className="flex items-center gap-1.5 mt-1.5 text-sm text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                <span>{[loc.endereco, loc.bairro, loc.cidade].filter(Boolean).join(" · ")}</span>
+              <div className="flex items-center gap-1.5 mt-1.5 text-sm text-foreground/70">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="font-medium">{[loc.endereco, loc.bairro, loc.cidade].filter(Boolean).join(" · ")}</span>
               </div>
             )}
             {codigo && (
-              <p className="text-[10px] text-muted-foreground/50 font-mono mt-1">Cód. {codigo}</p>
+              <p className="text-[11px] text-foreground/50 font-mono mt-1">Cód. {codigo}</p>
             )}
           </div>
 
+          {/* Price block */}
           <div className="rounded-xl bg-primary/5 border border-primary/15 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-primary/70 mb-1">Valor</p>
             <p className="text-2xl font-extrabold text-foreground tracking-tight">{getPreco(item)}</p>
-            {cond != null && cond > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">Condomínio: <span className="font-semibold text-foreground/70">{fmtBRL(cond)}</span></p>
-            )}
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+              {cond != null && cond > 0 && (
+                <p className="text-xs text-foreground/60">Condomínio: <span className="font-semibold text-foreground/80">{fmtBRL(cond)}</span></p>
+              )}
+              {iptu != null && iptu > 0 && (
+                <p className="text-xs text-foreground/60">IPTU: <span className="font-semibold text-foreground/80">{fmtBRL(iptu)}</span></p>
+              )}
+            </div>
           </div>
 
+          {/* Specs grid */}
           {specs.length > 0 && (
             <div className={cn(
               "grid gap-2",
@@ -377,6 +400,86 @@ export default function PropertyPreviewDrawer({
                   <span className="text-[10px] text-muted-foreground mt-0.5">{s.label}</span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Extra details */}
+          {(areaTotal || andar || posicaoSolar || situacao || finalidade || construtora || aceitaFinanciamento || entrega.previsao) && (
+            <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-foreground/70 mb-2">Detalhes do imóvel</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                {areaTotal != null && areaTotal > 0 && area !== areaTotal && (
+                  <div><span className="text-foreground/50">Área total:</span> <span className="font-semibold text-foreground">{areaTotal} m²</span></div>
+                )}
+                {andar && (
+                  <div><span className="text-foreground/50">Andar:</span> <span className="font-semibold text-foreground">{andar}</span></div>
+                )}
+                {posicaoSolar && (
+                  <div><span className="text-foreground/50">Sol:</span> <span className="font-semibold text-foreground">{posicaoSolar}</span></div>
+                )}
+                {situacao && (
+                  <div><span className="text-foreground/50">Situação:</span> <span className="font-semibold text-foreground">{situacao}</span></div>
+                )}
+                {finalidade && (
+                  <div><span className="text-foreground/50">Finalidade:</span> <span className="font-semibold text-foreground">{finalidade}</span></div>
+                )}
+                {construtora && (
+                  <div><span className="text-foreground/50">Construtora:</span> <span className="font-semibold text-foreground">{construtora}</span></div>
+                )}
+                {aceitaFinanciamento && (
+                  <div><span className="font-semibold text-emerald-600">Aceita financiamento</span></div>
+                )}
+                {item.is_mcmv && (
+                  <div><span className="font-semibold text-emerald-600">Minha Casa Minha Vida</span></div>
+                )}
+                {entrega.previsao && (
+                  <div><span className="text-foreground/50">Entrega:</span> <span className="font-semibold text-foreground">{entrega.previsao}</span></div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Features / Comodidades */}
+          {features.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-foreground/70 mb-2">Comodidades</p>
+              <div className="flex flex-wrap gap-1.5">
+                {features.slice(0, 20).map((f: string, i: number) => (
+                  <span key={i} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-muted border border-border/50 text-foreground/70">{f}</span>
+                ))}
+                {features.length > 20 && (
+                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-muted border border-border/50 text-muted-foreground">+{features.length - 20}</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((t: string, i: number) => (
+                <span key={i} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/8 text-primary border border-primary/20">{t}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Tour virtual / Video */}
+          {(tourVirtual || videoUrl) && (
+            <div className="flex gap-2">
+              {tourVirtual && (
+                <a href={tourVirtual} target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full h-9 gap-1.5 text-xs font-semibold rounded-lg">
+                    🏠 Tour Virtual
+                  </Button>
+                </a>
+              )}
+              {videoUrl && (
+                <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full h-9 gap-1.5 text-xs font-semibold rounded-lg">
+                    🎥 Vídeo
+                  </Button>
+                </a>
+              )}
             </div>
           )}
 
@@ -458,8 +561,8 @@ export default function PropertyPreviewDrawer({
 
           {descricao && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Descrição</p>
-              <p className="text-sm text-muted-foreground leading-relaxed line-clamp-8">{descricao}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-foreground/70 mb-2">Descrição</p>
+              <p className="text-sm text-foreground/70 leading-relaxed">{descricao}</p>
             </div>
           )}
         </div>

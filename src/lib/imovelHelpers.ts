@@ -23,15 +23,22 @@ function _bestQualityImages(item: any): string[] {
   // 1. Explicit full-res array (from Typesense mapping or proxy)
   if (item._fotos_full?.length) return item._fotos_full;
 
-  // 2. Try imagens array for link_large (skip thumbs)
+  // 2. Raw fotos_full from PostgREST (properties table)
+  if (Array.isArray(item.fotos_full) && item.fotos_full.length > 0) return item.fotos_full;
+
+  // 3. Try imagens array for link_large (skip thumbs)
   const arr = item.imagens;
   if (Array.isArray(arr) && arr.length > 0) {
     const large = arr.map((img: any) => img.link_large || img.link || "").filter(Boolean);
     if (large.length > 0) return large;
   }
 
-  // 3. Fallback to normalized thumbs (graceful degradation)
+  // 4. Fallback to normalized thumbs (graceful degradation)
   if (item._fotos_normalized?.length) return item._fotos_normalized;
+
+  // 5. Raw fotos from PostgREST
+  if (Array.isArray(item.fotos) && item.fotos.length > 0) return item.fotos;
+
   return [];
 }
 
@@ -43,6 +50,8 @@ function _thumbImages(item: any): string[] {
   if (Array.isArray(arr) && arr.length > 0) {
     return arr.map((img: any) => img.link_thumb || img.link || img.url || "").filter(Boolean);
   }
+  // Raw fotos from PostgREST
+  if (Array.isArray(item.fotos) && item.fotos.length > 0) return item.fotos;
   return [];
 }
 
