@@ -165,7 +165,7 @@ const PipelineMobileView = memo(function PipelineMobileView({
               }}
             >
               <span style={{ fontSize: 12 }}>{emoji}</span>
-              {stage.nome}
+              {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
               <span style={{
                 fontSize: 10, fontWeight: 700,
                 padding: "1px 6px", borderRadius: 100,
