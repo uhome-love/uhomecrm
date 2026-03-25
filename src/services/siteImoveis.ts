@@ -621,11 +621,6 @@ export async function fetchImovelBySlug(slug: string): Promise<SiteImovel | null
   if (error || !data) return null;
   return mapDoc(data);
 }
-  });
-
-  if (error || !data?.data?.length) return null;
-  return mapDoc(data.data[0]);
-}
 
 export const CIDADES_PERMITIDAS = ["Porto Alegre", "Canoas", "Cachoeirinha", "Gravataí", "Guaíba"];
 
