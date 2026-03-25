@@ -223,7 +223,7 @@ const PipelineCard = memo(function PipelineCard({
       if (negocio) {
         await supabase.from("pipeline_leads").update({ negocio_id: negocio.id } as any).eq("id", lead.id);
         setNegocioCriado(true);
-        toast.success(`🎉 Negócio criado para ${lead.nome}!`, { description: "🎯 Lead será movido para Convertidos" });
+        toast.success(`🎉 Negócio criado para ${lead.nome}!`, { description: "🎯 Lead movido para Negócio Criado" });
         const convertidoStage = stages.find(s => s.tipo === "convertido");
         if (convertidoStage && onMoveLead) onMoveLead(lead.id, convertidoStage.id);
       }
