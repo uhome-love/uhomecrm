@@ -212,20 +212,20 @@ export async function resolveCustomListLeads(
     const leadIds = filtered.map(l => l.id);
     const { data: tarefas } = await supabase
       .from("pipeline_tarefas")
-      .select("lead_id, data_vencimento, status")
-      .in("lead_id", leadIds.slice(0, 500))
+      .select("pipeline_lead_id, vence_em, status")
+      .in("pipeline_lead_id", leadIds.slice(0, 500))
       .eq("status", "pendente");
 
     const tarefaMap = new Map<string, { hasTask: boolean; hasOverdue: boolean; hasFuture: boolean }>();
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
     for (const t of (tarefas || [])) {
-      if (!t.lead_id) continue;
-      const entry = tarefaMap.get(t.lead_id) || { hasTask: false, hasOverdue: false, hasFuture: false };
+      if (!t.pipeline_lead_id) continue;
+      const entry = tarefaMap.get(t.pipeline_lead_id) || { hasTask: false, hasOverdue: false, hasFuture: false };
       entry.hasTask = true;
-      if (t.data_vencimento && t.data_vencimento < todayStr) entry.hasOverdue = true;
-      if (t.data_vencimento && t.data_vencimento >= todayStr) entry.hasFuture = true;
-      tarefaMap.set(t.lead_id, entry);
+      if (t.vence_em && t.vence_em < todayStr) entry.hasOverdue = true;
+      if (t.vence_em && t.vence_em >= todayStr) entry.hasFuture = true;
+      tarefaMap.set(t.pipeline_lead_id, entry);
     }
 
     const wantDesatualizado = filtros.statusLead.includes("desatualizado");
