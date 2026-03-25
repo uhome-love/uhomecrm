@@ -294,35 +294,93 @@ function buildSortBy(ordem?: string, contrato?: string): string {
   }
 }
 
-/* ── API calls via typesense-search edge function ── */
+/* ── API calls via PostgREST (properties table) ── */
 
 export async function fetchSiteImoveis(filters: BuscaFilters = {}): Promise<{ data: SiteImovel[]; count: number; search_time_ms?: number }> {
   const limit = filters.limit || 24;
   const offset = filters.offset || 0;
-  const page = Math.floor(offset / limit) + 1;
+  const startTime = Date.now();
 
-  const payload = {
-    q: filters.q || "*",
-    per_page: limit,
-    page,
-    filter_by: buildFilterBy(filters),
-    sort_by: buildSortBy(filters.ordem, filters.contrato),
-  };
+  let query = supabase
+    .from("properties")
+    .select("*", { count: "exact" })
+    .eq("ativo", true);
 
-  const { data, error } = await supabase.functions.invoke("typesense-search", {
-    body: payload,
-  });
+  // Cidade
+  const cidades = filters.cidades?.length ? filters.cidades : filters.cidade ? [filters.cidade] : CIDADES_PERMITIDAS;
+  if (cidades.length === 1) query = query.eq("cidade", cidades[0]);
+  else if (cidades.length > 1) query = query.in("cidade", cidades);
 
-  
+  // Contrato / preço
+  const contrato = filters.contrato || "venda";
+  if (contrato === "locacao") {
+    query = query.gt("valor_locacao", 0);
+  } else {
+    query = query.gt("valor_venda", 0);
+  }
 
+  // Tipo
+  if (filters.tipo) {
+    const tipos = filters.tipo.split(",").map(s => s.trim()).filter(Boolean);
+    if (tipos.length === 1) query = query.eq("tipo", tipos[0]);
+    else if (tipos.length > 1) query = query.in("tipo", tipos);
+  }
+
+  // Bairros
+  const bairros = filters.bairros?.length ? filters.bairros : filters.bairro ? filters.bairro.split(",").map(s => s.trim()).filter(Boolean) : [];
+  if (bairros.length === 1) query = query.ilike("bairro", `%${bairros[0]}%`);
+  else if (bairros.length > 1) query = query.or(bairros.map(b => `bairro.ilike.%${b}%`).join(","));
+
+  // Quartos / vagas / banheiros
+  if (filters.quartos) query = query.gte("dormitorios", filters.quartos);
+  if (filters.vagas) query = query.gte("vagas", filters.vagas);
+  if (filters.banheiros) query = query.gte("banheiros", filters.banheiros);
+
+  // Preço range
+  const priceField = contrato === "locacao" ? "valor_locacao" : "valor_venda";
+  if (filters.precoMin) query = query.gte(priceField, filters.precoMin);
+  if (filters.precoMax) query = query.lte(priceField, filters.precoMax);
+
+  // Área range
+  if (filters.areaMin) query = query.gte("area_privativa", filters.areaMin);
+  if (filters.areaMax) query = query.lte("area_privativa", filters.areaMax);
+
+  // Construtora / empreendimento / situacao
+  if (filters.construtora?.length) query = query.in("construtora", filters.construtora);
+  if (filters.empreendimento?.length) query = query.in("empreendimento", filters.empreendimento);
+  if (filters.situacao?.length) query = query.in("situacao", filters.situacao);
+
+  // Bounds (map)
+  if (filters.bounds) {
+    query = query
+      .gte("latitude", filters.bounds.lat_min).lte("latitude", filters.bounds.lat_max)
+      .gte("longitude", filters.bounds.lng_min).lte("longitude", filters.bounds.lng_max);
+  }
+
+  // Text search
+  if (filters.q) {
+    query = query.or(`titulo.ilike.%${filters.q}%,bairro.ilike.%${filters.q}%,codigo.ilike.%${filters.q}%,empreendimento.ilike.%${filters.q}%`);
+  }
+
+  // Sort
+  switch (filters.ordem) {
+    case "preco_asc": query = query.order(priceField, { ascending: true, nullsFirst: false }); break;
+    case "preco_desc": query = query.order(priceField, { ascending: false, nullsFirst: false }); break;
+    case "area_desc": query = query.order("area_privativa", { ascending: false, nullsFirst: false }); break;
+    default: query = query.order("updated_at", { ascending: false }); break;
+  }
+
+  // Pagination
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
   if (error) throw new Error(error.message || "Search failed");
-  if (data?.error) throw new Error(data.error);
 
-  const docs = (data?.data || []).map(mapDoc);
+  const docs = (data || []).map(mapDoc);
   return {
     data: docs,
-    count: data?.total || 0,
-    search_time_ms: data?.search_time_ms,
+    count: count ?? 0,
+    search_time_ms: Date.now() - startTime,
   };
 }
 
