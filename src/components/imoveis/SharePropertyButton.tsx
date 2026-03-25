@@ -1,6 +1,6 @@
 /**
  * Share dropdown for property cards — Copy link, WhatsApp, Copy data.
- * Uses PUBLIC_DOMAIN for canonical share URLs.
+ * Uses the broker's personalized URL when slug_ref is available.
  */
 
 import React from "react";
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Share2, Link2, MessageCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { gerarSlugUhome } from "@/services/siteImoveis";
+import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 
 interface SharePropertyButtonProps {
   codigo: string;
@@ -25,15 +27,14 @@ interface SharePropertyButtonProps {
 }
 
 export default function SharePropertyButton({ codigo, titulo, bairro, preco, tipo, quartos, className }: SharePropertyButtonProps) {
+  const slugRef = useBrokerSlug();
+
   if (!codigo) return null;
 
-  // Generate uhome.com.br-compatible slug URL
-  const slugType = (tipo || "imovel").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  const slugBairro = (bairro || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  const shareSlug = quartos && quartos > 0
-    ? `${slugType}-${quartos}-quarto${quartos > 1 ? "s" : ""}-${slugBairro}-${codigo}`
-    : `${slugType}-para-venda-${slugBairro}-${codigo}`;
-  const shareUrl = `https://uhome.com.br/imovel/${shareSlug}`;
+  const slug = gerarSlugUhome({ tipo: tipo || "imovel", quartos: quartos ?? null, bairro, codigo });
+  const shareUrl = slugRef
+    ? `https://uhome.com.br/c/${slugRef}/imovel/${slug}`
+    : `https://uhome.com.br/imovel/${slug}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl);

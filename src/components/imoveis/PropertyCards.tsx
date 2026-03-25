@@ -26,6 +26,8 @@ import ImageSlider from "@/components/imoveis/ImageSlider";
 import SharePropertyButton from "@/components/imoveis/SharePropertyButton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useBrokerSlug } from "@/hooks/useBrokerSlug";
+import { shareUrlUhome } from "@/services/siteImoveis";
 import {
   getPropertyCardImages,
   extractOrigemExterna, extractEntrega, extractEndereco,
@@ -35,7 +37,7 @@ import {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ── WhatsApp copy helper ──
-function copyPropertyForWhatsApp(item: any, getPreco: (item: any) => string) {
+function copyPropertyForWhatsApp(item: any, getPreco: (item: any) => string, shareUrl?: string) {
   const loc = extractEndereco(item);
   const titulo = item.titulo_anuncio || item.empreendimento_nome || "Imóvel";
   const dorms = getNum(item, "dormitorios");
@@ -51,7 +53,9 @@ function copyPropertyForWhatsApp(item: any, getPreco: (item: any) => string) {
   if (vagas && vagas > 0) specs.push(`${vagas} vaga${vagas > 1 ? "s" : ""}`);
   if (specs.length > 0) msg += `${specs.join(" · ")}\n`;
   msg += `💰 ${preco}\n`;
-  if (item.codigo) {
+  if (shareUrl) {
+    msg += `🔗 ${shareUrl}`;
+  } else if (item.codigo) {
     const baseUrl = window.location.origin;
     msg += `🔗 ${baseUrl}/imovel/${item.codigo}`;
   }
@@ -115,6 +119,7 @@ function ResponsavelButton({ codigo }: { codigo: string }) {
 // ── Grid Card ──
 
 export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx, isCampanha, selectMode, isSelected, onToggleSelect, onFavorite, isFavorite, getPreco, onPreview }: any) {
+  const slugRef = useBrokerSlug();
   const images = getPropertyCardImages(item);
   const loc = extractEndereco(item);
   const codigo = item.codigo;
@@ -125,6 +130,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
   const vagas = getNum(item, "garagens", "vagas");
   const entrega = extractEntrega(item);
   const imovelId = String(codigo || item.id_imovel || item.id || idx);
+  const personalShareUrl = codigo ? shareUrlUhome({ tipo: item.tipo || "imovel", quartos: dorms, bairro: loc.bairro, codigo }, slugRef) : undefined;
 
   return (
     <div
@@ -190,7 +196,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
           <div className="flex items-center justify-between pt-1.5 border-t border-[#e8e8f0] dark:border-white/10 mt-1">
             <span className="text-[10px] text-[#a1a1aa]/60 font-mono">{codigo}</span>
             <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-[#a1a1aa] hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-[#a1a1aa] hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco, personalShareUrl)}>
                 <MessageCircle className="h-4 w-4" />
               </Button>
               <SharePropertyButton
@@ -213,6 +219,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
 // ── List Card ──
 
 export const PropertyCardList = React.memo(function PropertyCardList({ item, idx, isCampanha, selectMode, isSelected, onToggleSelect, onFavorite, isFavorite, getPreco, onPreview }: any) {
+  const slugRef = useBrokerSlug();
   const images = getPropertyCardImages(item);
   const loc = extractEndereco(item);
   const codigo = item.codigo;
@@ -225,6 +232,7 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
   const cond = getNum(item, "valor_condominio");
   const entrega = extractEntrega(item);
   const imovelId = String(codigo || item.id_imovel || item.id || idx);
+  const personalShareUrl = codigo ? shareUrlUhome({ tipo: item.tipo || "imovel", quartos: dorms, bairro: loc.bairro, codigo }, slugRef) : undefined;
 
   return (
     <Card
@@ -281,7 +289,7 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
               )}
             </div>
             <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-emerald-600" title="Copiar para WhatsApp" onClick={() => copyPropertyForWhatsApp(item, getPreco, personalShareUrl)}>
                 <MessageCircle className="h-4 w-4" />
               </Button>
               <SharePropertyButton

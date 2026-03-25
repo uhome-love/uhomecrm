@@ -114,9 +114,19 @@ export function gerarSlugUhome(imovel: { tipo: string; quartos: number | null; b
   return `${tipo}-para-venda-${codigo}`;
 }
 
-/** Build the canonical uhome.com.br share URL for a property */
-export function shareUrlUhome(imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string }): string {
-  return `https://uhome.com.br/imovel/${gerarSlugUhome(imovel)}`;
+/** Build the uhome.com.br share URL for a property.
+ * If slugRef is provided, generates a personalized broker link:
+ *   https://uhome.com.br/c/{slugRef}/imovel/{slug}
+ * Otherwise generates the standard link:
+ *   https://uhome.com.br/imovel/{slug}
+ */
+export function shareUrlUhome(
+  imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string },
+  slugRef?: string | null,
+): string {
+  const slug = gerarSlugUhome(imovel);
+  if (slugRef) return `https://uhome.com.br/c/${slugRef}/imovel/${slug}`;
+  return `https://uhome.com.br/imovel/${slug}`;
 }
 
 function toFiniteNumber(value: unknown): number | null {

@@ -7,6 +7,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { Heart, Share2, MessageCircle, Copy, Link2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { type SiteImovel, fotoPrincipal, formatPreco, shareUrlUhome } from "@/services/siteImoveis";
+import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
   imovel, index, highlighted, isFavorite, onToggleFavorite,
   selectMode, isSelected, onToggleSelect, onPreview, onHover, isViewed,
 }: Props) {
+  const slugRef = useBrokerSlug();
   const [hovering, setHovering] = useState(false);
   const [fotoAtiva, setFotoAtiva] = useState(0);
   const [lazyFotos, setLazyFotos] = useState<string[] | null>(null);
@@ -95,7 +97,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
     onHover?.(null);
   }, [onHover]);
 
-  const shareUrl = shareUrlUhome(imovel);
+  const shareUrl = shareUrlUhome(imovel, slugRef);
 
   const copyForWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();

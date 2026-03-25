@@ -16,6 +16,8 @@ import {
   MessageCircle, ArrowLeft, Link2, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { gerarSlugUhome } from "@/services/siteImoveis";
+import { useBrokerSlug } from "@/hooks/useBrokerSlug";
 import { cn } from "@/lib/utils";
 import {
   getPropertyPreviewImages, getPropertyThumbImages,
@@ -35,6 +37,7 @@ function getPrecoFromItem(item: any): string {
 
 export default function ImovelPage() {
   const { codigo } = useParams<{ codigo: string }>();
+  const slugRef = useBrokerSlug();
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -121,13 +124,11 @@ export default function ImovelPage() {
   const prevImage = () => setImageIdx(i => (i > 0 ? i - 1 : heroImages.length - 1));
   const nextImage = () => setImageIdx(i => (i < heroImages.length - 1 ? i + 1 : 0));
 
-  // Generate uhome.com.br-compatible slug URL (must end with -JD)
-  const slugType = (tipo || "imovel").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const slugBairro = (loc.bairro || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  const shareSlug = dorms && dorms > 0
-    ? `${slugType}-${dorms}-quarto${dorms > 1 ? "s" : ""}-${slugBairro}-${codigo}`
-    : `${slugType}-para-venda-${slugBairro}-${codigo}`;
-  const shareUrl = `https://uhome.com.br/imovel/${shareSlug}`;
+  // Generate uhome.com.br-compatible personalized share URL
+  const shareSlug = gerarSlugUhome({ tipo: tipo || "imovel", quartos: dorms ?? 0, bairro: loc.bairro, codigo });
+  const shareUrl = slugRef
+    ? `https://uhome.com.br/c/${slugRef}/imovel/${shareSlug}`
+    : `https://uhome.com.br/imovel/${shareSlug}`;
   const whatsappText = encodeURIComponent(
     [titulo, loc.bairro, preco, shareUrl].filter(Boolean).join(" - ")
   );
