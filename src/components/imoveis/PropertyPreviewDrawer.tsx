@@ -197,12 +197,25 @@ export default function PropertyPreviewDrawer({
   const suitesVal = getNum(item, "suites");
   const banhos = getNum(item, "banheiros");
   const area = getNumIncZero(item, "area_privativa", "area_util", "area_total");
+  const areaTotal = getNumIncZero(item, "area_total");
   const vagasVal = getNum(item, "garagens", "vagas");
   const cond = getNum(item, "valor_condominio");
+  const iptu = getNum(item, "valor_iptu");
   const entrega = extractEntrega(item);
   const imovelId = String(codigo || item.id_imovel || item.id);
   const descricao = item.descricao || item.descricao_interna || "";
   const tipo = item.tipo || item.subtipo || "";
+  const empreendimento = item.empreendimento_nome || item.empreendimento || "";
+  const construtora = item.construtora || "";
+  const andar = item.andar || "";
+  const posicaoSolar = item.posicao_solar || "";
+  const situacao = item.situacao || item.status || "";
+  const finalidade = item.finalidade || item.contrato || "";
+  const features = Array.isArray(item.features) ? item.features : [];
+  const tags = Array.isArray(item.tags) ? item.tags : [];
+  const tourVirtual = item.tour_virtual_url || "";
+  const videoUrl = item.video_url || "";
+  const aceitaFinanciamento = item.aceita_financiamento || item.is_mcmv || false;
 
   const prevImage = () => setImageIdx(i => (i > 0 ? i - 1 : previewImages.length - 1));
   const nextImage = () => setImageIdx(i => (i < previewImages.length - 1 ? i + 1 : 0));
