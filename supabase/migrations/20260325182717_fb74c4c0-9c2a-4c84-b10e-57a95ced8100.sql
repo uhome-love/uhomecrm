@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_pipeline_leads_arquivado ON pipeline_leads (arquivado) WHERE arquivado = false;
