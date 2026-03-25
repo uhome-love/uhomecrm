@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,16 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Zap, X, Phone, MessageCircle, Plus, ChevronLeft, ChevronRight,
-  Loader2, AlertTriangle, Clock, Send, SkipForward, CalendarIcon,
-  ExternalLink, Sparkles
+  Zap, X, Phone, MessageCircle, Plus, ChevronLeft,
+  Loader2, AlertTriangle, Clock, Send,
+  ExternalLink, Sparkles, Copy, Check, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFocusLeads, type FocusLead } from "@/hooks/useFocusLeads";
 import { format, addDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -34,6 +33,13 @@ const TASK_TYPES = [
   { value: "outro", label: "📌 Outro" },
 ];
 
+const QUICK_MESSAGES = [
+  { label: "Primeiro contato", text: (name: string, interest: string) => `Olá ${name}! Tudo bem? Aqui é da Uhome Imóveis. Vi que você se interessou pelo ${interest || "nosso empreendimento"}. Posso te ajudar com mais informações?` },
+  { label: "Retomar contato", text: (name: string, interest: string) => `Oi ${name}! Faz um tempinho que conversamos sobre o ${interest || "imóvel"}. Surgiu alguma novidade? Estou à disposição para te ajudar!` },
+  { label: "Agendar visita", text: (name: string, interest: string) => `${name}, que tal conhecer pessoalmente o ${interest || "empreendimento"}? Posso agendar uma visita no melhor horário pra você. Qual dia seria bom?` },
+  { label: "Condições especiais", text: (name: string, interest: string) => `Oi ${name}! Temos condições especiais para o ${interest || "empreendimento"} essa semana. Quer que eu te mande os detalhes? 😊` },
+];
+
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
@@ -47,15 +53,17 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [tab, setTab] = useState("followup");
   const [saving, setSaving] = useState(false);
   const [direction, setDirection] = useState(1);
+  const [activityRegistered, setActivityRegistered] = useState(false);
+  const [phoneCopied, setPhoneCopied] = useState(false);
 
   // Task creation state
   const [taskTitle, setTaskTitle] = useState("");
   const [taskType, setTaskType] = useState("ligar");
   const [taskDueDate, setTaskDueDate] = useState(format(addDays(new Date(), 1), "yyyy-MM-dd"));
+  const [taskCreated, setTaskCreated] = useState(false);
 
   const currentLead = leads[currentIndex] ?? null;
 
-  // Load focus leads when modal opens
   useEffect(() => {
     if (open && corretorId) {
       setCurrentIndex(0);
@@ -63,7 +71,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [open, corretorId]);
 
-  // Fetch HOMI suggestion when lead changes
   useEffect(() => {
     if (!currentLead || !open) return;
     fetchHomiSuggestion(currentLead);
@@ -75,7 +82,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setFollowUpText("");
 
     try {
-      // Fetch real history: last 10 activities + last 5 tasks
       const [{ data: atividades }, { data: tarefas }] = await Promise.all([
         supabase
           .from("pipeline_atividades")
@@ -91,7 +97,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
           .limit(5),
       ]);
 
-      const historico = (atividades || []).map(a => 
+      const historico = (atividades || []).map(a =>
         `[${new Date(a.created_at).toLocaleDateString("pt-BR")}] ${a.tipo}: ${a.titulo}${a.descricao ? ` - ${a.descricao.substring(0, 120)}` : ""}`
       );
 
@@ -134,6 +140,9 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setTaskTitle("");
     setTaskType("ligar");
     setTaskDueDate(format(addDays(new Date(), 1), "yyyy-MM-dd"));
+    setActivityRegistered(false);
+    setTaskCreated(false);
+    setPhoneCopied(false);
   }, []);
 
   const goToNext = useCallback(() => {
@@ -155,8 +164,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [currentIndex, resetActionState]);
 
-  // ── Actions ──
-
+  // Register activity WITHOUT auto-advancing
   const handleRegisterActivity = useCallback(async (type: "ligacao" | "mensagem" | "nota") => {
     if (!currentLead || !corretorId) return;
     const note = type === "mensagem" ? followUpText : activityNote;
@@ -177,22 +185,22 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         prioridade: "normal",
       });
 
-      // Update ultima_acao_at
       await supabase
         .from("pipeline_leads")
         .update({ ultima_acao_at: new Date().toISOString() })
         .eq("id", currentLead.id);
 
-      toast.success("Atividade registrada!");
-      goToNext();
+      toast.success("Atividade registrada! ✅");
+      setActivityRegistered(true);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao registrar atividade.");
     } finally {
       setSaving(false);
     }
-  }, [currentLead, corretorId, followUpText, activityNote, goToNext]);
+  }, [currentLead, corretorId, followUpText, activityNote]);
 
+  // Create task WITHOUT auto-advancing
   const handleCreateTask = useCallback(async () => {
     if (!currentLead || !corretorId) return;
     if (!taskTitle.trim()) {
@@ -212,27 +220,35 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         prioridade: "normal",
       });
 
-      toast.success("Tarefa criada!");
-      goToNext();
+      toast.success("Tarefa criada! ✅");
+      setTaskCreated(true);
+      setTaskTitle("");
     } catch (err) {
       console.error(err);
       toast.error("Erro ao criar tarefa.");
     } finally {
       setSaving(false);
     }
-  }, [currentLead, corretorId, taskTitle, taskType, taskDueDate, goToNext]);
+  }, [currentLead, corretorId, taskTitle, taskType, taskDueDate]);
 
   const handleOpenWhatsApp = useCallback(() => {
     if (!currentLead?.phone) return;
     const phone = currentLead.phone.replace(/\D/g, "");
-    const url = `https://wa.me/55${phone}?text=${encodeURIComponent(followUpText)}`;
+    const fullPhone = phone.length <= 11 ? `55${phone}` : phone;
+    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(followUpText)}`;
     window.open(url, "_blank");
   }, [currentLead, followUpText]);
 
-  const handleCall = useCallback(() => {
-    if (!currentLead?.phone) return;
-    window.open(`tel:${currentLead.phone}`, "_self");
-  }, [currentLead]);
+  const handleCopyPhone = useCallback(async (phone: string) => {
+    try {
+      await navigator.clipboard.writeText(phone);
+      setPhoneCopied(true);
+      toast.success("Telefone copiado!");
+      setTimeout(() => setPhoneCopied(false), 3000);
+    } catch {
+      toast.error("Erro ao copiar.");
+    }
+  }, []);
 
   const progressPercent = leads.length > 0 ? ((currentIndex + 1) / leads.length) * 100 : 0;
 
@@ -247,7 +263,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
           fontFamily: "'Plus Jakarta Sans', sans-serif",
         }}
       >
-        {/* ═══ HEADER ═══ */}
+        {/* HEADER */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}>
@@ -261,15 +277,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
             )}
           </div>
 
-          {/* Progress bar */}
           <div className="flex-1 mx-4 sm:mx-8 max-w-md">
             <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
               <div
                 className="h-1.5 rounded-full transition-all duration-500 ease-out"
-                style={{
-                  width: `${progressPercent}%`,
-                  background: "linear-gradient(90deg, #4F46E5, #7C3AED)",
-                }}
+                style={{ width: `${progressPercent}%`, background: "linear-gradient(90deg, #4F46E5, #7C3AED)" }}
               />
             </div>
           </div>
@@ -286,7 +298,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
           </div>
         </div>
 
-        {/* ═══ BODY ═══ */}
+        {/* BODY */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full gap-3">
@@ -317,9 +329,8 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                 transition={{ duration: 0.25, ease: "easeOut" }}
                 className="flex flex-col lg:flex-row items-start justify-center gap-4 sm:gap-6 p-4 sm:p-6 max-w-5xl mx-auto w-full"
               >
-                {/* ── LEFT: Lead Info Card ── */}
+                {/* LEFT: Lead Info */}
                 <div className="w-full lg:w-1/2 rounded-2xl p-5 sm:p-6 space-y-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  {/* Avatar + Name */}
                   <div className="flex items-center gap-3">
                     <div
                       className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0"
@@ -333,7 +344,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     </div>
                   </div>
 
-                  {/* Alert badges */}
                   <div className="flex flex-wrap gap-1.5">
                     {currentLead.alert_reasons.map((reason, i) => (
                       <Badge
@@ -350,7 +360,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     ))}
                   </div>
 
-                  {/* Tags */}
                   {currentLead.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {currentLead.tags.map((tag, i) => (
@@ -361,26 +370,19 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     </div>
                   )}
 
-                  {/* Lead info lines */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-1.5 text-gray-400">
                       <Clock className="w-3.5 h-3.5" />
                       <span>{currentLead.days_without_contact < 999 ? `${currentLead.days_without_contact}d sem contato` : "Sem contato"}</span>
                     </div>
                     {currentLead.origin && (
-                      <div className="text-gray-400 truncate">
-                        📍 {currentLead.origin}
-                      </div>
+                      <div className="text-gray-400 truncate">📍 {currentLead.origin}</div>
                     )}
                     {currentLead.interest && (
-                      <div className="text-gray-400 truncate">
-                        🏠 {currentLead.interest}
-                      </div>
+                      <div className="text-gray-400 truncate">🏠 {currentLead.interest}</div>
                     )}
                     {currentLead.phone && (
-                      <div className="text-gray-400 truncate">
-                        📱 {currentLead.phone}
-                      </div>
+                      <div className="text-gray-400 truncate">📱 {currentLead.phone}</div>
                     )}
                   </div>
 
@@ -393,7 +395,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     {homiLoading ? (
                       <div className="flex items-center gap-2">
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
-                        <span className="text-gray-400 text-xs">Analisando lead...</span>
+                        <span className="text-gray-400 text-xs">Analisando histórico do lead...</span>
                       </div>
                     ) : (
                       <p className="text-gray-300 text-xs leading-relaxed">{homiInsight || "Sem insight disponível."}</p>
@@ -401,7 +403,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                   </div>
                 </div>
 
-                {/* ── RIGHT: Action Panel ── */}
+                {/* RIGHT: Action Panel */}
                 <div className="w-full lg:w-1/2 rounded-2xl p-5 sm:p-6" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <Tabs value={tab} onValueChange={setTab} className="space-y-4">
                     <TabsList className="w-full bg-transparent border rounded-lg p-1" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
@@ -418,15 +420,30 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
                     {/* TAB: Follow Up */}
                     <TabsContent value="followup" className="space-y-3 mt-0">
+                      {/* Quick message templates */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {QUICK_MESSAGES.map((msg, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setFollowUpText(msg.text(currentLead.name.split(" ")[0], currentLead.interest || ""))}
+                            className="text-[10px] px-2.5 py-1 rounded-full transition-colors"
+                            style={{
+                              background: "rgba(79,70,229,0.15)",
+                              color: "#a5b4fc",
+                              border: "1px solid rgba(79,70,229,0.25)",
+                            }}
+                          >
+                            {msg.label}
+                          </button>
+                        ))}
+                      </div>
+
                       <Textarea
                         value={followUpText}
                         onChange={(e) => setFollowUpText(e.target.value)}
                         placeholder={homiLoading ? "Gerando sugestão..." : "Mensagem de follow-up..."}
-                        className="min-h-[120px] text-sm border-0 resize-none"
-                        style={{
-                          background: "rgba(255,255,255,0.05)",
-                          color: "#e2e8f0",
-                        }}
+                        className="min-h-[100px] text-sm border-0 resize-none"
+                        style={{ background: "rgba(255,255,255,0.05)", color: "#e2e8f0" }}
                         disabled={homiLoading}
                       />
                       <div className="flex gap-2">
@@ -441,12 +458,12 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         </Button>
                         <Button
                           onClick={() => handleRegisterActivity("mensagem")}
-                          disabled={saving || !followUpText.trim()}
+                          disabled={saving || !followUpText.trim() || activityRegistered}
                           className="flex-1 gap-2 text-xs h-9"
-                          style={{ background: "#4F46E5" }}
+                          style={{ background: activityRegistered ? "#22c55e" : "#4F46E5" }}
                         >
-                          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />}
-                          Registrar e avançar
+                          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : activityRegistered ? <Check className="w-3.5 h-3.5" /> : <MessageCircle className="w-3.5 h-3.5" />}
+                          {activityRegistered ? "Registrado ✓" : "Registrar"}
                         </Button>
                       </div>
                     </TabsContent>
@@ -454,19 +471,29 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     {/* TAB: Ligar */}
                     <TabsContent value="call" className="space-y-3 mt-0">
                       {currentLead.phone ? (
-                        <div className="rounded-xl p-4 text-center space-y-2" style={{ background: "rgba(255,255,255,0.05)" }}>
-                          <Phone className="w-8 h-8 mx-auto text-indigo-400" />
-                          <p className="text-white font-bold text-lg tracking-wide">{currentLead.phone}</p>
-                          {currentLead.phone2 && (
-                            <p className="text-gray-400 text-xs">{currentLead.phone2}</p>
-                          )}
-                          <Button
-                            onClick={handleCall}
-                            className="gap-2 text-xs"
-                            style={{ background: "#4F46E5" }}
+                        <div className="rounded-xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.05)" }}>
+                          <div className="text-center space-y-1">
+                            <Phone className="w-6 h-6 mx-auto text-indigo-400" />
+                            <p className="text-gray-400 text-[10px]">Ligue do seu celular</p>
+                          </div>
+                          <button
+                            onClick={() => handleCopyPhone(currentLead.phone!)}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors"
+                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
                           >
-                            <Phone className="w-3.5 h-3.5" /> Iniciar ligação
-                          </Button>
+                            <span className="text-white font-bold text-lg tracking-wider">{currentLead.phone}</span>
+                            {phoneCopied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-gray-400" />}
+                          </button>
+                          {currentLead.phone2 && (
+                            <button
+                              onClick={() => handleCopyPhone(currentLead.phone2!)}
+                              className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm"
+                              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >
+                              <span className="text-gray-400">{currentLead.phone2}</span>
+                              <Copy className="w-3 h-3 text-gray-500" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <p className="text-gray-400 text-sm text-center py-4">Telefone não cadastrado</p>
@@ -476,22 +503,27 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         value={activityNote}
                         onChange={(e) => setActivityNote(e.target.value)}
                         placeholder="Anotação da ligação..."
-                        className="min-h-[80px] text-sm border-0 resize-none"
+                        className="min-h-[70px] text-sm border-0 resize-none"
                         style={{ background: "rgba(255,255,255,0.05)", color: "#e2e8f0" }}
                       />
                       <Button
                         onClick={() => handleRegisterActivity("ligacao")}
-                        disabled={saving || !activityNote.trim()}
+                        disabled={saving || !activityNote.trim() || activityRegistered}
                         className="w-full gap-2 text-xs h-9"
-                        style={{ background: "#4F46E5" }}
+                        style={{ background: activityRegistered ? "#22c55e" : "#4F46E5" }}
                       >
-                        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Phone className="w-3.5 h-3.5" />}
-                        Registrar ligação e avançar
+                        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : activityRegistered ? <Check className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                        {activityRegistered ? "Ligação registrada ✓" : "Registrar ligação"}
                       </Button>
                     </TabsContent>
 
                     {/* TAB: Criar Tarefa */}
                     <TabsContent value="task" className="space-y-3 mt-0">
+                      {taskCreated && (
+                        <div className="flex items-center gap-2 text-xs rounded-lg py-2 px-3" style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80" }}>
+                          <Check className="w-3.5 h-3.5" /> Tarefa criada com sucesso! Pode criar outra ou avançar.
+                        </div>
+                      )}
                       <Input
                         value={taskTitle}
                         onChange={(e) => setTaskTitle(e.target.value)}
@@ -523,17 +555,26 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                         style={{ background: "#4F46E5" }}
                       >
                         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                        Criar tarefa e avançar
+                        Criar tarefa
                       </Button>
                     </TabsContent>
                   </Tabs>
 
-                  {/* Skip button */}
+                  {/* Advance button — always visible */}
                   <button
                     onClick={goToNext}
-                    className="w-full mt-4 text-center text-xs text-gray-500 hover:text-gray-300 transition-colors py-2"
+                    className="w-full mt-4 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors"
+                    style={{
+                      background: (activityRegistered || taskCreated) ? "linear-gradient(135deg, #4F46E5, #7C3AED)" : "transparent",
+                      color: (activityRegistered || taskCreated) ? "#fff" : "#6b7280",
+                      fontWeight: (activityRegistered || taskCreated) ? 600 : 400,
+                    }}
                   >
-                    Pular sem ação →
+                    {(activityRegistered || taskCreated) ? (
+                      <>Avançar para próximo lead <ChevronRight className="w-3.5 h-3.5" /></>
+                    ) : (
+                      "Pular sem ação →"
+                    )}
                   </button>
                 </div>
               </motion.div>
