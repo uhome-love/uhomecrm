@@ -121,10 +121,10 @@ export default function ImovelPage() {
   const prevImage = () => setImageIdx(i => (i > 0 ? i - 1 : heroImages.length - 1));
   const nextImage = () => setImageIdx(i => (i < heroImages.length - 1 ? i + 1 : 0));
 
-  // Generate uhome.com.br-compatible slug URL
+  // Generate uhome.com.br-compatible slug URL (must end with -JD)
   const slugType = (tipo || "imovel").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const slugBairro = (loc.bairro || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const slugParts = [slugType, dorms && dorms > 0 ? `${dorms}-quarto${dorms > 1 ? "s" : ""}` : "", slugBairro, codigo].filter(Boolean).join("-").replace(/(^-|-$)/g, "");
+  const slugParts = [slugType, dorms && dorms > 0 ? `${dorms}-quarto${dorms > 1 ? "s" : ""}` : "", slugBairro, `${codigo}-JD`].filter(Boolean).join("-").replace(/(^-|-$)/g, "");
   const shareUrl = `https://uhome.com.br/imovel/${slugParts}`;
   const whatsappText = encodeURIComponent(
     [titulo, loc.bairro, preco, shareUrl].filter(Boolean).join(" - ")

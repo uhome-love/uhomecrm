@@ -27,8 +27,8 @@ interface SharePropertyButtonProps {
 export default function SharePropertyButton({ codigo, titulo, bairro, preco, tipo, quartos, className }: SharePropertyButtonProps) {
   if (!codigo) return null;
 
-  // Generate uhome.com.br-compatible slug URL
-  const slugParts = [tipo || "imovel", quartos && quartos > 0 ? `${quartos}-quarto${quartos > 1 ? "s" : ""}` : "", bairro, codigo]
+  // Generate uhome.com.br-compatible slug URL (must end with -JD)
+  const slugParts = [tipo || "imovel", quartos && quartos > 0 ? `${quartos}-quarto${quartos > 1 ? "s" : ""}` : "", bairro, `${codigo}-JD`]
     .filter(Boolean)
     .join("-")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
