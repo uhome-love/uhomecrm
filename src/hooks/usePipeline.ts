@@ -180,6 +180,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
       let query = supabase
         .from("pipeline_leads")
         .select(selectFields)
+        .eq("arquivado", false)
         .order("updated_at", { ascending: false })
         .range(from, from + pageSize - 1);
 

@@ -565,7 +565,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
         });
 
         // DELETE lead from pipeline_leads (no longer keeps in descarte column)
-        await supabase.from("pipeline_leads").delete().eq("id", lead.id);
+        // Archive lead from pipeline (set arquivado = true instead of deleting)
+        await supabase.from("pipeline_leads").update({ arquivado: true } as any).eq("id", lead.id);
 
         toast.success("🗑️ Lead descartado e enviado para Oferta Ativa!");
       } catch (err) {

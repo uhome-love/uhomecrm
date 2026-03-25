@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
     const skipped = leads.length - inserted;
     return new Response(
       JSON.stringify({
-        message: `Sweep concluído: ${inserted} leads movidos para Oferta Ativa, ${skipped} duplicados ignorados, ${leads.length} removidos do pipeline.`,
+        message: `Sweep concluído: ${inserted} leads movidos para Oferta Ativa, ${skipped} duplicados ignorados, ${leads.length} arquivados do pipeline.`,
         moved: inserted,
         deleted: leads.length,
         skipped,
