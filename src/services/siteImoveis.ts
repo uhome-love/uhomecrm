@@ -601,35 +601,26 @@ export async function fetchMapPins(filters: BuscaFilters = {}): Promise<MapPin[]
 }
 
 export async function fetchBairros(): Promise<BairroCount[]> {
-  const { data, error } = await supabase.functions.invoke("typesense-search", {
-    body: {
-      q: "*",
-      per_page: 0,
-      facet_by: "bairro",
-      max_facet_values: 200,
-      filter_by: "valor_venda:>0",
-    },
-  });
-
-  if (error || !data?.facet_counts) return [];
-
-  const fc = data.facet_counts.find((f: { field_name: string }) => f.field_name === "bairro");
-  if (!fc?.counts) return [];
-
-  return fc.counts
-    .filter((c: { value: string }) => c.value?.trim())
-    .map((c: { value: string; count: number }) => ({ bairro: c.value, count: c.count || 0 }))
-    .sort((a: BairroCount, b: BairroCount) => a.bairro.localeCompare(b.bairro, "pt-BR"));
+  const { data, error } = await supabase.rpc("get_bairros_disponiveis");
+  if (error || !data?.length) return [];
+  return (data as { bairro: string; count: number }[])
+    .filter(b => b.bairro?.trim())
+    .map(b => ({ bairro: b.bairro, count: Number(b.count) || 0 }))
+    .sort((a, b) => a.bairro.localeCompare(b.bairro, "pt-BR"));
 }
 
 export async function fetchImovelBySlug(slug: string): Promise<SiteImovel | null> {
-  const { data, error } = await supabase.functions.invoke("typesense-search", {
-    body: {
-      q: slug,
-      query_by: "codigo,slug",
-      per_page: 1,
-      num_typos: 0,
-    },
+  const { data, error } = await supabase
+    .from("properties")
+    .select("*")
+    .eq("ativo", true)
+    .or(`codigo.eq.${slug},slug.eq.${slug}`)
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDoc(data);
+}
   });
 
   if (error || !data?.data?.length) return null;
