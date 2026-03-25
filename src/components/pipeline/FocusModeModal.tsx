@@ -75,6 +75,30 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setFollowUpText("");
 
     try {
+      // Fetch real history: last 10 activities + last 5 tasks
+      const [{ data: atividades }, { data: tarefas }] = await Promise.all([
+        supabase
+          .from("pipeline_atividades")
+          .select("tipo, titulo, descricao, created_at, status")
+          .eq("pipeline_lead_id", lead.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("pipeline_tarefas")
+          .select("titulo, tipo, vence_em, status, created_at")
+          .eq("pipeline_lead_id", lead.id)
+          .order("created_at", { ascending: false })
+          .limit(5),
+      ]);
+
+      const historico = (atividades || []).map(a => 
+        `[${new Date(a.created_at).toLocaleDateString("pt-BR")}] ${a.tipo}: ${a.titulo}${a.descricao ? ` - ${a.descricao.substring(0, 120)}` : ""}`
+      );
+
+      const tarefasResumo = (tarefas || []).map(t =>
+        `[${t.status}] ${t.titulo} (${t.tipo || "geral"}) - vence: ${t.vence_em || "sem data"}`
+      );
+
       const { data, error } = await supabase.functions.invoke("homi-focus-suggestion", {
         body: {
           lead: {
@@ -83,8 +107,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
             origin: lead.origin,
             interest: lead.interest,
             days_without_contact: lead.days_without_contact,
+            days_in_stage: lead.days_in_stage,
             alert_reasons: lead.alert_reasons,
             tags: lead.tags,
+            historico_atividades: historico,
+            tarefas: tarefasResumo,
           },
         },
       });
