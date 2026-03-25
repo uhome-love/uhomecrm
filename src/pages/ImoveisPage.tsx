@@ -28,7 +28,7 @@ import { PropertyCardGrid, PropertyCardList } from "@/components/imoveis/Propert
 import { getNum, fmtBRL, fmtCompact } from "@/lib/imovelHelpers";
 import { useImoveisFilters } from "@/hooks/useImoveisFilters";
 import { useImoveisSearch } from "@/hooks/useImoveisSearch";
-import { useTypesenseFacets } from "@/hooks/useTypesenseFacets";
+import { usePostgRESTFacets } from "@/hooks/usePostgRESTFacets";
 import { useLeadContext } from "@/hooks/useLeadContext";
 import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadMatch } from "@/hooks/useLeadMatch";
