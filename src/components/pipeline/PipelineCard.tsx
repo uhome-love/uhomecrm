@@ -517,3 +517,139 @@ const PipelineCard = memo(function PipelineCard({
 });
 
 export default PipelineCard;
+
+/* ── Negócio Criado sub-component ── */
+
+const FASE_LABELS: Record<string, string> = {
+  novo_negocio: "Novo Negócio",
+  proposta: "Proposta",
+  negociacao: "Negociação",
+  documentacao: "Documentação",
+  assinado: "Assinado",
+  perdido: "Perdido",
+};
+
+function NegocioCriadoSection({ lead, stages, onMoveLead }: {
+  lead: PipelineLead;
+  stages: PipelineStage[];
+  onMoveLead?: (leadId: string, stageId: string) => void;
+}) {
+  const [negocio, setNegocio] = useState<{ fase: string | null; vgv_estimado: number | null; status: string | null } | null>(null);
+  const [showStageSelector, setShowStageSelector] = useState(false);
+  const [regressing, setRegressing] = useState(false);
+
+  // Fetch deal info
+  useEffect(() => {
+    if (!(lead as any).negocio_id) return;
+    supabase
+      .from("negocios")
+      .select("fase, vgv_estimado, status")
+      .eq("id", (lead as any).negocio_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setNegocio(data);
+      });
+  }, [(lead as any).negocio_id]);
+
+  const fmtVGV = (v: number | null) => {
+    if (!v || v <= 0) return null;
+    if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".0", "")}M`;
+    if (v >= 1_000) return `R$ ${Math.round(v / 1_000)}k`;
+    return `R$ ${v}`;
+  };
+
+  const regressionStages = stages.filter(s => s.tipo !== "convertido" && s.tipo !== "descarte");
+
+  const handleRegress = async (targetStageId: string) => {
+    if (!onMoveLead || regressing) return;
+    setRegressing(true);
+    try {
+      // Cancel the deal
+      if ((lead as any).negocio_id) {
+        await supabase.from("negocios").update({ status: "perdido", fase: "perdido" }).eq("id", (lead as any).negocio_id);
+      }
+      // Clear negocio_id from lead
+      await supabase.from("pipeline_leads").update({ negocio_id: null } as any).eq("id", lead.id);
+      // Move lead to chosen stage
+      onMoveLead(lead.id, targetStageId);
+      toast.success("🔄 Lead retornado ao Pipeline — Negócio cancelado");
+      setShowStageSelector(false);
+    } catch {
+      toast.error("Erro ao regredir lead");
+    } finally {
+      setRegressing(false);
+    }
+  };
+
+  const faseLabel = negocio?.fase ? (FASE_LABELS[negocio.fase] || negocio.fase) : "—";
+  const vgvLabel = fmtVGV(negocio?.vgv_estimado ?? null);
+
+  return (
+    <div data-actions-area style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
+      {/* Deal info */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "#F5F3FF", borderRadius: 8, padding: "6px 10px",
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Negócio
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#0a0a0a" }}>
+            {faseLabel}
+          </span>
+        </div>
+        {vgvLabel && (
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#10b981" }}>
+            {vgvLabel}
+          </span>
+        )}
+      </div>
+
+      {/* Regression flow */}
+      {!showStageSelector ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full h-7 text-[11px] gap-1.5 font-semibold"
+          style={{ borderColor: "#FDE68A", color: "#D97706", borderRadius: 8 }}
+          onClick={(e) => { e.stopPropagation(); setShowStageSelector(true); }}
+        >
+          <Undo2 className="h-3 w-3" /> Regredir ao Pipeline
+        </Button>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#64748B", textAlign: "center" }}>
+            Escolha a etapa de retorno:
+          </span>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
+            {regressionStages.map(s => (
+              <button
+                key={s.id}
+                disabled={regressing}
+                onClick={(e) => { e.stopPropagation(); handleRegress(s.id); }}
+                style={{
+                  fontSize: 10, fontWeight: 500, padding: "3px 8px",
+                  borderRadius: 6, border: "1px solid #e8e8f0",
+                  background: "#fff", color: "#334155",
+                  cursor: regressing ? "wait" : "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { (e.target as HTMLElement).style.borderColor = "#4F46E5"; (e.target as HTMLElement).style.color = "#4F46E5"; }}
+                onMouseLeave={(e) => { (e.target as HTMLElement).style.borderColor = "#e8e8f0"; (e.target as HTMLElement).style.color = "#334155"; }}
+              >
+                {s.nome}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowStageSelector(false); }}
+            style={{ fontSize: 10, color: "#94A3B8", textDecoration: "underline", cursor: "pointer", textAlign: "center", marginTop: 2 }}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
