@@ -24,6 +24,7 @@ interface CorretorProd {
   assinados: number;
   vgv: number;
   pontos: number;
+  has_parceria: boolean;
 }
 
 interface Props {
@@ -77,13 +78,13 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
     const teamProfileIds = profilesList.map(p => p.id);
 
     // Step 2: Parallel queries using correct ID type per table
-    const [r1, r2, r3, r4, r5, r6, r7] = await Promise.all([
+    const [r1, r2, r3, r4, r5, r6, r7, r8] = await Promise.all([
       // Oferta ativa — corretor_id = user_id ✅
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, pontos").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs).limit(10000),
       // Visitas — corretor_id = user_id (confirmed from DB)
       supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).gte("data_visita", start).lte("data_visita", end),
-      // Negócios — corretor_id = profiles.id — fetch ALL active + period lost for counting
-      supabase.from("negocios").select("corretor_id, fase, vgv_estimado, vgv_final, data_assinatura, created_at, fase_changed_at").in("corretor_id", teamProfileIds),
+      // Negócios — corretor_id = profiles.id — include lead_id for partnership lookup
+      supabase.from("negocios").select("corretor_id, fase, vgv_estimado, vgv_final, data_assinatura, created_at, fase_changed_at, lead_id").in("corretor_id", teamProfileIds),
       // Follow-ups — responsavel_id = user_id ✅
       supabase.from("pipeline_tarefas").select("responsavel_id").in("responsavel_id", teamUserIds).gte("concluida_em", startTs).lte("concluida_em", endTs),
       // Roleta — corretor_id = user_id ✅
@@ -92,6 +93,8 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("arquivado", true).gte("updated_at", startTs).lte("updated_at", endTs),
       // Leads atualizados — corretor_id = user_id
       supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).gte("ultima_acao_at", startTs).lte("ultima_acao_at", endTs),
+      // Parcerias ativas onde alguém do time é parceiro ou principal
+      supabase.from("pipeline_parcerias").select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id, divisao_principal, divisao_parceiro").eq("status", "ativa"),
     ]);
 
     const tentativas = r1.data || [];
@@ -101,6 +104,53 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
     const roleta = r5.data || [];
     const descartados = r6.data || [];
     const atualizados = r7.data || [];
+    const parceriasArr = r8.data || [];
+
+    // Build partnership map: pipeline_lead_id → split info
+    const parceriaByLead: Record<string, { principal_id: string; parceiro_id: string; div_principal: number; div_parceiro: number }> = {};
+    parceriasArr.forEach((p: any) => {
+      parceriaByLead[p.pipeline_lead_id] = {
+        principal_id: p.corretor_principal_id,
+        parceiro_id: p.corretor_parceiro_id,
+        div_principal: p.divisao_principal || 50,
+        div_parceiro: p.divisao_parceiro || 50,
+      };
+    });
+
+    // Find external negócios where team members are PARTNERS
+    const teamUserIdSet = new Set(teamUserIds);
+    const parceriasDoTime = parceriasArr.filter((p: any) =>
+      teamUserIdSet.has(p.corretor_parceiro_id) || teamUserIdSet.has(p.corretor_principal_id)
+    );
+    const negociosLeadIds = new Set(negocios.map(n => n.lead_id).filter(Boolean));
+    const parcLeadIdsExtras = parceriasDoTime
+      .map((p: any) => p.pipeline_lead_id)
+      .filter((lid: string) => !negociosLeadIds.has(lid));
+
+    let negociosParceiros: any[] = [];
+    if (parcLeadIdsExtras.length > 0) {
+      const { data: negParc } = await supabase
+        .from("negocios")
+        .select("id, vgv_estimado, vgv_final, corretor_id, fase, created_at, data_assinatura, lead_id, fase_changed_at")
+        .in("lead_id", parcLeadIdsExtras);
+      negociosParceiros = negParc || [];
+    }
+
+    // Helper for proportional VGV
+    const getVgvProporcional = (n: any, userId: string): number => {
+      const vgvBruto = Number(n.vgv_final || n.vgv_estimado || 0);
+      if (!n.lead_id) return vgvBruto;
+      const parc = parceriaByLead[n.lead_id];
+      if (!parc) return vgvBruto;
+      if (userId === parc.principal_id) return vgvBruto * (parc.div_principal / 100);
+      if (userId === parc.parceiro_id) return vgvBruto * (parc.div_parceiro / 100);
+      return vgvBruto;
+    };
+    const getVgvByProfile = (n: any, pid: string): number => {
+      const uid = profileToUser[pid];
+      return uid ? getVgvProporcional(n, uid) : Number(n.vgv_final || n.vgv_estimado || 0);
+    };
+    const hasParceria = (n: any): boolean => !!n.lead_id && !!parceriaByLead[n.lead_id];
 
     const stats: Record<string, CorretorProd> = {};
     teamUserIds.forEach(uid => {
@@ -111,6 +161,7 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
         roleta: 0, descartados: 0, followups: 0, atualizados: 0,
         visitas_marcadas: 0, visitas_realizadas: 0,
         negocios: 0, propostas: 0, assinados: 0, vgv: 0, pontos: 0,
+        has_parceria: false,
       };
     });
 
@@ -128,24 +179,38 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       if (v.status === "realizada") stats[v.corretor_id].visitas_realizadas++;
     });
 
-    // Negócios — period-filtered metrics
+    // Negócios — own deals with proportional VGV
     negocios.forEach(n => {
       if (!n.corretor_id) return;
       const uid = profileToUser[n.corretor_id];
       if (!uid || !stats[uid]) return;
 
-      // Negóc. = created in period
       if (n.created_at && n.created_at >= startTs && n.created_at <= endTs) {
         stats[uid].negocios++;
       }
-      // Prop. = fase_changed_at in period AND currently proposta
       if (n.fase === "proposta" && n.fase_changed_at && n.fase_changed_at >= startTs && n.fase_changed_at <= endTs) {
         stats[uid].propostas++;
       }
-      // Assin. = data_assinatura in period AND fase assinado/vendido
       if ((n.fase === "assinado" || n.fase === "vendido") && n.data_assinatura && n.data_assinatura >= start && n.data_assinatura <= end) {
         stats[uid].assinados++;
-        stats[uid].vgv += Number(n.vgv_final || n.vgv_estimado || 0);
+        stats[uid].vgv += getVgvByProfile(n, n.corretor_id);
+        if (hasParceria(n)) stats[uid].has_parceria = true;
+      }
+    });
+
+    // Partner deals — negócios from outside the team where a team member is partner
+    negociosParceiros.forEach(n => {
+      if ((n.fase === "assinado" || n.fase === "vendido") && n.data_assinatura && n.data_assinatura >= start && n.data_assinatura <= end) {
+        const parc = parceriaByLead[n.lead_id];
+        if (!parc) return;
+        teamUserIds.forEach(uid => {
+          if (uid === parc.parceiro_id || uid === parc.principal_id) {
+            if (!stats[uid]) return;
+            stats[uid].assinados++;
+            stats[uid].vgv += getVgvProporcional(n, uid);
+            stats[uid].has_parceria = true;
+          }
+        });
       }
     });
 
@@ -297,7 +362,7 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
                     <td className={`${tdBase} bg-purple-50/20 ${media ? cellColor(r.negocios, media.negocios) : ""}`}>{r.negocios}</td>
                     <td className={`${tdBase} bg-purple-50/20 ${media ? cellColor(r.propostas, media.propostas) : ""}`}>{r.propostas}</td>
                     <td className={`${tdBase} bg-purple-50/20 ${media ? cellColor(r.assinados, media.assinados) : ""}`}>{r.assinados}</td>
-                    <td className={`${tdBase} bg-purple-50/20 border-r border-border/30 ${media ? cellColor(r.vgv, media.vgv) : ""}`}>{formatBRLCompact(r.vgv)}</td>
+                    <td className={`${tdBase} bg-purple-50/20 border-r border-border/30 ${media ? cellColor(r.vgv, media.vgv) : ""}`}>{formatBRLCompact(r.vgv)}{r.has_parceria && <span className="text-muted-foreground italic text-[9px] ml-0.5">(p)</span>}</td>
                     {/* Pontos */}
                     <td className={`${tdBase} font-black ${media ? cellColor(r.pontos, media.pontos) : ""}`}>{r.pontos}</td>
                   </tr>
