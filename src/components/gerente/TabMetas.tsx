@@ -23,9 +23,14 @@ interface MetasMes {
 interface CorretorContrib {
   user_id: string;
   nome: string;
+  presencas: number;
   ligacoes: number;
+  aproveitados: number;
+  roleta: number;
   visitas_marcadas: number;
   visitas_realizadas: number;
+  negocios: number;
+  assinados: number;
   vgv: number;
 }
 
