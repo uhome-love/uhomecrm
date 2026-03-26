@@ -122,13 +122,11 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       if (t.resultado === "com_interesse") stats[t.corretor_id].aproveitados++;
     });
 
-    // Visitas use profile_id → resolve to user_id
+    // Visitas — corretor_id = user_id (no mapping needed)
     visitas.forEach(v => {
-      if (!v.corretor_id) return;
-      const uid = profileToUser[v.corretor_id];
-      if (!uid || !stats[uid]) return;
-      if (v.status !== "cancelada") stats[uid].visitas_marcadas++;
-      if (v.status === "realizada") stats[uid].visitas_realizadas++;
+      if (!v.corretor_id || !stats[v.corretor_id]) return;
+      if (v.status !== "cancelada") stats[v.corretor_id].visitas_marcadas++;
+      if (v.status === "realizada") stats[v.corretor_id].visitas_realizadas++;
     });
 
     // Negócios use profile_id → resolve to user_id
