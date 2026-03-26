@@ -2,11 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { todayBRT } from "@/lib/utils";
-import { AlertTriangle, Phone, WifiOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 
 interface CorretorAgora {
@@ -27,8 +26,10 @@ interface CorretorAgora {
   leads_desatualizados: number;
   followups_hoje: number;
   leads_atualizados_hoje: number;
+  leads_recebidos_hoje: number;
   obs_gerente: string;
   activity_status: "produzindo" | "baixa" | "sem_atividade" | "offline";
+  pontos_atividade: number;
 }
 
 interface Props {
@@ -54,6 +55,17 @@ const ACTIVITY_CONFIG: Record<string, { label: string; borderColor: string; dot:
   offline: { label: "Offline", borderColor: "border-l-gray-300", dot: "bg-gray-400", bg: "bg-gray-500/10", text: "text-gray-500" },
 };
 
+function calcPontos(c: { ligacoes_hoje: number; leads_atualizados_hoje: number; followups_hoje: number; visitas_marcadas: number; visitas_realizadas: number }) {
+  return c.ligacoes_hoje * 1 + c.leads_atualizados_hoje * 1 + c.followups_hoje * 2 + c.visitas_marcadas * 3 + c.visitas_realizadas * 5;
+}
+
+function calcActivityStatus(isOnline: boolean, pontos: number): CorretorAgora["activity_status"] {
+  if (!isOnline) return "offline";
+  if (pontos >= 10) return "produzindo";
+  if (pontos >= 1) return "baixa";
+  return "sem_atividade";
+}
+
 export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
   const { user } = useAuth();
   const [corretores, setCorretores] = useState<CorretorAgora[]>([]);
@@ -71,7 +83,6 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
     const todayStart = `${today}T00:00:00-03:00`;
     const todayEnd = `${today}T23:59:59.999-03:00`;
 
-    // First get team_members to map user_id -> team_member.id for checkpoint_lines
     const { data: teamMembersData } = await supabase
       .from("team_members")
       .select("id, nome, user_id")
@@ -89,25 +100,23 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
     });
     const tmIds = members.map(m => m.id);
 
-    const [r2, r3, r5, r6, r7, r8, r9, r10, rCheckpoint] = await Promise.all([
+    const [r2, r3, r5, r6, r7, r8, r9, r10, rCheckpoint, rLeadsRecebidos] = await Promise.all([
       supabase.from("profiles").select("user_id, avatar_url").in("user_id", teamUserIds),
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", todayStart).lte("created_at", todayEnd),
       supabase.from("corretor_disponibilidade").select("user_id, status, na_roleta, updated_at").in("user_id", teamUserIds),
       supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).eq("data_visita", today),
       supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).lt("updated_at", new Date(Date.now() - 48 * 3600 * 1000).toISOString()),
       supabase.from("corretor_daily_goals").select("corretor_id, meta_ligacoes").in("corretor_id", teamUserIds).eq("data", today),
-      // Follow-ups hoje: pipeline_tarefas concluídas hoje (responsavel_id = auth user_id)
       supabase.from("pipeline_tarefas").select("responsavel_id").in("responsavel_id", teamUserIds).gte("concluida_em", todayStart).lte("concluida_em", todayEnd),
-      // Leads atualizados hoje
       supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).gte("ultima_acao_at", todayStart).lte("ultima_acao_at", todayEnd),
-      // Presença: checkpoint_lines via checkpoints do dia (corretor_id = team_member.id)
       tmIds.length > 0
         ? supabase.from("checkpoints").select("id").eq("gerente_id", user.id).eq("data", today).maybeSingle()
         : Promise.resolve({ data: null }),
+      // Leads recebidos hoje (distribuicao_historico, acao = aceito)
+      supabase.from("distribuicao_historico").select("corretor_id").in("corretor_id", teamUserIds).eq("acao", "aceito").gte("created_at", todayStart).lte("created_at", todayEnd),
     ]);
 
-    // Get checkpoint lines if checkpoint exists for today
-    let presencaMap: Record<string, string> = {}; // user_id -> presenca
+    let presencaMap: Record<string, string> = {};
     if (rCheckpoint.data?.id && tmIds.length > 0) {
       const { data: lines } = await supabase
         .from("checkpoint_lines")
@@ -117,7 +126,6 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
       (lines || []).forEach(l => {
         const uid = tmIdToUserId[l.corretor_id];
         if (uid) {
-          // real_presenca has priority, fallback to meta_presenca
           presencaMap[uid] = l.real_presenca || l.meta_presenca || "nao_informado";
         }
       });
@@ -155,6 +163,9 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
     const leadsAtualCount: Record<string, number> = {};
     (r10.data || []).forEach((l: any) => { if (l.corretor_id) leadsAtualCount[l.corretor_id] = (leadsAtualCount[l.corretor_id] || 0) + 1; });
 
+    const leadsRecebidosCount: Record<string, number> = {};
+    (rLeadsRecebidos.data || []).forEach((l: any) => { if (l.corretor_id) leadsRecebidosCount[l.corretor_id] = (leadsRecebidosCount[l.corretor_id] || 0) + 1; });
+
     const total48h = Object.values(desatCount).reduce((s, v) => s + v, 0);
     setLeadsSemContato48h(total48h);
 
@@ -166,16 +177,14 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
         const todayCalls = oaLig[uid] || 0;
         const todayAprov = oaAprov[uid] || 0;
         const isOnline = disp?.status === "online" || disp?.status === "disponivel" || disp?.status === "na_empresa" || disp?.status === "em_visita";
-        const hasVisit = (vrCount[uid] || 0) > 0;
-
-        let activity: CorretorAgora["activity_status"] = "offline";
-        if (isOnline) {
-          if (todayCalls >= 10 || hasVisit) activity = "produzindo";
-          else if (todayCalls >= 1) activity = "baixa";
-          else activity = "sem_atividade";
-        }
-
         const metaLig = goals[uid]?.meta_ligacoes ?? 30;
+        const vm = vmCount[uid] || 0;
+        const vr = vrCount[uid] || 0;
+        const fu = followupsCount[uid] || 0;
+        const la = leadsAtualCount[uid] || 0;
+
+        const pontos = calcPontos({ ligacoes_hoje: todayCalls, leads_atualizados_hoje: la, followups_hoje: fu, visitas_marcadas: vm, visitas_realizadas: vr });
+        const activity = calcActivityStatus(isOnline, pontos);
 
         return {
           user_id: uid,
@@ -190,13 +199,15 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
           taxa: todayCalls > 0 ? Math.round((todayAprov / todayCalls) * 100) : 0,
           oa_tentativas: todayCalls,
           usou_foco: false,
-          visitas_marcadas: vmCount[uid] || 0,
-          visitas_realizadas: vrCount[uid] || 0,
+          visitas_marcadas: vm,
+          visitas_realizadas: vr,
           leads_desatualizados: desatCount[uid] || 0,
-          followups_hoje: followupsCount[uid] || 0,
-          leads_atualizados_hoje: leadsAtualCount[uid] || 0,
+          followups_hoje: fu,
+          leads_atualizados_hoje: la,
+          leads_recebidos_hoje: leadsRecebidosCount[uid] || 0,
           obs_gerente: "",
           activity_status: activity,
+          pontos_atividade: pontos,
         };
       });
 
@@ -204,7 +215,7 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
       const aOn = a.activity_status !== "offline" ? 1 : 0;
       const bOn = b.activity_status !== "offline" ? 1 : 0;
       if (aOn !== bOn) return bOn - aOn;
-      return b.ligacoes_hoje - a.ligacoes_hoje;
+      return b.pontos_atividade - a.pontos_atividade;
     });
 
     setCorretores(cards);
@@ -231,7 +242,6 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
   }, [loadData]);
 
   const saveObsGerente = async (uid: string, obs: string) => {
-    // Save via checkpoint_diario for backward compatibility
     await supabase.from("checkpoint_diario").upsert({
       corretor_id: uid, data: today, obs_gerente: obs, presenca: "presente",
     }, { onConflict: "corretor_id,data" });
@@ -245,45 +255,49 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
   const hasAlerts = semLigacaoNomes.length > 0 || leadsSemContato48h > 0 || offlineNomes.length > 0;
 
   return (
-    <div className="space-y-3">
-      {/* Alertas Críticos */}
+    <div className="space-y-2">
+      {/* Alertas — barra fina inline */}
       {hasAlerts && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
           {semLigacaoNomes.length > 0 && (
-            <Card className="border-destructive/30 bg-destructive/5">
-              <CardContent className="p-2.5">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <Phone className="h-3.5 w-3.5 text-destructive" />
-                  <span className="text-[11px] font-bold text-destructive">Sem ligação hoje</span>
-                  <Badge variant="destructive" className="text-[9px] h-4 px-1">{semLigacaoNomes.length}</Badge>
-                </div>
-                <p className="text-[10px] text-muted-foreground">{semLigacaoNomes.join(", ")}</p>
-              </CardContent>
-            </Card>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="hover:text-destructive transition-colors cursor-pointer inline-flex items-center gap-1">
+                  <span className="text-destructive">●</span>
+                  <span className="font-medium text-destructive">{semLigacaoNomes.length}</span> sem ligação hoje
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto max-w-xs p-3">
+                <p className="text-xs font-semibold mb-1 text-foreground">Sem ligação hoje</p>
+                <p className="text-xs text-muted-foreground">{semLigacaoNomes.join(", ")}</p>
+              </PopoverContent>
+            </Popover>
           )}
           {leadsSemContato48h > 0 && (
-            <Card className="border-amber-500/30 bg-amber-500/5">
-              <CardContent className="p-2.5">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                  <span className="text-[11px] font-bold text-amber-700">Leads sem contato +48h</span>
-                  <Badge className="text-[9px] h-4 px-1 bg-amber-500">{leadsSemContato48h}</Badge>
-                </div>
-                <p className="text-[10px] text-muted-foreground">Leads não tocados há mais de 48h</p>
-              </CardContent>
-            </Card>
+            <>
+              {semLigacaoNomes.length > 0 && <span className="text-muted-foreground/40">·</span>}
+              <span className="inline-flex items-center gap-1">
+                <span className="text-amber-500">▲</span>
+                <span className="font-medium text-amber-600">{leadsSemContato48h}</span> leads sem contato +48h
+              </span>
+            </>
           )}
           {offlineNomes.length > 0 && (
-            <Card className="border-amber-500/30 bg-amber-500/5">
-              <CardContent className="p-2.5">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <WifiOff className="h-3.5 w-3.5 text-amber-600" />
-                  <span className="text-[11px] font-bold text-amber-700">Offline +2h</span>
-                  <Badge className="text-[9px] h-4 px-1 bg-amber-500">{offlineNomes.length}</Badge>
-                </div>
-                <p className="text-[10px] text-muted-foreground">{offlineNomes.join(", ")}</p>
-              </CardContent>
-            </Card>
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="hover:text-foreground transition-colors cursor-pointer inline-flex items-center gap-1">
+                    <span className="text-muted-foreground">●</span>
+                    <span className="font-medium">{offlineNomes.length}</span> offline +2h
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto max-w-xs p-3">
+                  <p className="text-xs font-semibold mb-1 text-foreground">Offline +2h</p>
+                  <p className="text-xs text-muted-foreground">{offlineNomes.join(", ")}</p>
+                </PopoverContent>
+              </Popover>
+            </>
           )}
         </div>
       )}
@@ -309,13 +323,13 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1 flex-wrap">
-                      <span className="text-[11px] font-bold text-foreground truncate">{c.nome.split(" ").slice(0, 2).join(" ")}</span>
+                      <span className="text-xs font-bold text-foreground truncate">{c.nome.split(" ").slice(0, 2).join(" ")}</span>
                       {c.na_roleta && <Badge variant="outline" className="text-[7px] h-3 px-0.5 border-primary/30 text-primary leading-none">Roleta</Badge>}
                     </div>
                     <div className="flex items-center gap-1 mt-0.5">
                       <span className={`inline-flex items-center gap-0.5 text-[8px] font-medium px-1 py-px rounded-full ${act.bg} ${act.text}`}>
                         <span className={`inline-block h-1 w-1 rounded-full ${act.dot}`} />
-                        {act.label}
+                        {act.label} · {c.pontos_atividade}pts
                       </span>
                       <span className="inline-flex items-center gap-0.5 text-[8px] px-1 py-px rounded-full bg-muted">
                         <span className={`inline-block h-1 w-1 rounded-full ${pres.color}`} />
@@ -326,10 +340,10 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
                 </div>
 
                 {/* Duas seções lado a lado */}
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
                   {/* Seção Esquerda: Oferta Ativa */}
                   <div className="space-y-1">
-                    <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">Oferta Ativa</p>
+                    <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Oferta Ativa</p>
                     <div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Ligações</span>
@@ -363,7 +377,11 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
 
                   {/* Seção Direita: Pipeline */}
                   <div className="space-y-1">
-                    <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider">Pipeline</p>
+                    <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Pipeline</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Recebidos</span>
+                      <span className="font-bold text-primary">{c.leads_recebidos_hoje}</span>
+                    </div>
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Follow-ups</span>
                       <span className="font-bold text-foreground">{c.followups_hoje}</span>
@@ -393,7 +411,7 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
                       setCorretores(prev => prev.map(x => x.user_id === c.user_id ? { ...x, obs_gerente: val } : x));
                     }}
                     onBlur={() => saveObsGerente(c.user_id, c.obs_gerente)}
-                    className="text-[10px] min-h-[24px] resize-none py-1 px-2"
+                    className="text-[11px] min-h-[24px] resize-none py-1 px-2"
                     rows={1}
                   />
                 </div>
@@ -402,6 +420,11 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
           );
         })}
       </div>
+
+      {/* Legenda de pontuação */}
+      <p className="text-xs text-muted-foreground text-center pt-1">
+        Índice de atividade: Ligação = 1pt · Lead atualizado = 1pt · Follow-up = 2pts · Visita marcada = 3pts · Visita realizada = 5pts · Produzindo ≥ 10pts
+      </p>
     </div>
   );
 }
