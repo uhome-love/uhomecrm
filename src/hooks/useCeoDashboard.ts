@@ -414,8 +414,7 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   const { data: extraKpis } = useQuery({
     queryKey: ["ceo-extra-kpis", rangeKey, hoje],
     queryFn: async () => {
-      const startTs = `${range.start}T00:00:00`;
-      const endTs = `${range.end}T23:59:59`;
+      const { startUtc: startTs, endUtc: endTs } = brtRangeToUTC(range);
 
       const [{ count: leadsCount }, { count: leadsOACount }, { count: visitasCriadasCount }, { count: novoInteresseCount }, { count: enviadosRoletaCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).not("origem", "ilike", "%oferta%ativa%"),
