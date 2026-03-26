@@ -127,7 +127,7 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       if (!v.corretor_id) return;
       const uid = profileToUser[v.corretor_id];
       if (!uid || !stats[uid]) return;
-      stats[uid].visitas_marcadas++;
+      if (v.status !== "cancelada") stats[uid].visitas_marcadas++;
       if (v.status === "realizada") stats[uid].visitas_realizadas++;
     });
 
