@@ -340,14 +340,14 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
                 </div>
 
                 {/* Duas seções lado a lado */}
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   {/* Seção Esquerda: Oferta Ativa */}
                   <div className="space-y-1">
-                    <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Oferta Ativa</p>
+                    <p className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Oferta Ativa</p>
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Ligações</span>
-                        <span className="font-bold text-foreground">{c.ligacoes_hoje}<span className="text-muted-foreground font-normal">/{c.meta_ligacoes}</span></span>
+                        <span className="text-foreground/60">Ligações</span>
+                        <span className="font-bold text-sm text-foreground">{c.ligacoes_hoje}<span className="text-foreground/60 font-normal">/{c.meta_ligacoes}</span></span>
                       </div>
                       <div className="w-full mt-0.5 h-[4px] rounded-full bg-muted overflow-hidden">
                         <div
@@ -360,16 +360,16 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Aproveitados</span>
-                      <span className="font-bold text-emerald-600">{c.aproveitados_hoje} <span className="text-muted-foreground font-normal">({c.taxa}%)</span></span>
+                      <span className="text-foreground/60">Aproveitados</span>
+                      <span className="font-bold text-sm text-emerald-600">{c.aproveitados_hoje} <span className="text-foreground/60 font-normal">({c.taxa}%)</span></span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">OA tent.</span>
-                      <span className="font-bold text-foreground">{c.oa_tentativas}</span>
+                      <span className="text-foreground/60">OA tent.</span>
+                      <span className="font-bold text-sm text-foreground">{c.oa_tentativas}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Modo foco</span>
-                      <span className={c.usou_foco ? "text-emerald-600 font-bold" : "text-muted-foreground"}>
+                      <span className="text-foreground/60">Modo foco</span>
+                      <span className={c.usou_foco ? "text-emerald-600 font-bold text-sm" : "text-foreground/60 text-sm"}>
                         {c.usou_foco ? "✓" : "—"}
                       </span>
                     </div>
@@ -377,26 +377,26 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
 
                   {/* Seção Direita: Pipeline */}
                   <div className="space-y-1">
-                    <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Pipeline</p>
+                    <p className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Pipeline</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Recebidos</span>
-                      <span className="font-bold text-primary">{c.leads_recebidos_hoje}</span>
+                      <span className="text-foreground/60">Leads Roleta</span>
+                      <span className="font-bold text-sm text-primary">{c.leads_recebidos_hoje}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Follow-ups</span>
-                      <span className="font-bold text-foreground">{c.followups_hoje}</span>
+                      <span className="text-foreground/60">Follow-ups</span>
+                      <span className="font-bold text-sm text-foreground">{c.followups_hoje}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Atualizados</span>
-                      <span className="font-bold text-foreground">{c.leads_atualizados_hoje}</span>
+                      <span className="text-foreground/60">Atualizados</span>
+                      <span className="font-bold text-sm text-foreground">{c.leads_atualizados_hoje}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Desatual.</span>
-                      <span className={`font-bold ${c.leads_desatualizados > 0 ? "text-destructive" : "text-muted-foreground"}`}>{c.leads_desatualizados}</span>
+                      <span className="text-foreground/60">Desatual.</span>
+                      <span className={`font-bold text-sm ${c.leads_desatualizados > 0 ? "text-destructive" : "text-foreground/60"}`}>{c.leads_desatualizados}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Visitas</span>
-                      <span className="font-bold text-foreground">{c.visitas_marcadas}<span className="text-muted-foreground font-normal">/{c.visitas_realizadas}</span></span>
+                      <span className="text-foreground/60">Visitas</span>
+                      <span className="font-bold text-sm text-foreground">{c.visitas_marcadas}<span className="text-foreground/60 font-normal">/{c.visitas_realizadas}</span></span>
                     </div>
                   </div>
                 </div>
