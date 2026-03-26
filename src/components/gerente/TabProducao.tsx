@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDateFilter } from "@/contexts/DateFilterContext";
 import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { todayBRT, formatBRLCompact } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -33,11 +33,15 @@ interface Props {
   profileId: string | null;
 }
 
-type Period = "dia" | "semana" | "mes";
+type Period = "dia" | "ontem" | "semana" | "mes";
 
 function getPeriodRange(period: Period) {
   const now = new Date();
   const todayStr = format(now, "yyyy-MM-dd");
+  if (period === "ontem") {
+    const yesterday = format(subDays(now, 1), "yyyy-MM-dd");
+    return { start: yesterday, end: yesterday, startTs: `${yesterday}T00:00:00-03:00`, endTs: `${yesterday}T23:59:59.999-03:00` };
+  }
   if (period === "dia") return { start: todayStr, end: todayStr, startTs: `${todayStr}T00:00:00-03:00`, endTs: `${todayStr}T23:59:59.999-03:00` };
   if (period === "semana") {
     const s = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -52,7 +56,7 @@ function getPeriodRange(period: Period) {
 export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Props) {
   const { user } = useAuth();
   const { period: globalPeriod } = useDateFilter();
-  const period: Period = globalPeriod === "semana" ? "semana" : globalPeriod === "mes" || globalPeriod === "ultimos_30d" ? "mes" : "dia";
+  const period: Period = globalPeriod === "ontem" ? "ontem" : globalPeriod === "semana" ? "semana" : globalPeriod === "mes" || globalPeriod === "ultimos_30d" ? "mes" : "dia";
   const [rows, setRows] = useState<CorretorProd[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,7 +127,7 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       if (!v.corretor_id) return;
       const uid = profileToUser[v.corretor_id];
       if (!uid || !stats[uid]) return;
-      stats[uid].visitas_marcadas++;
+      if (v.status !== "cancelada") stats[uid].visitas_marcadas++;
       if (v.status === "realizada") stats[uid].visitas_realizadas++;
     });
 
@@ -301,6 +305,13 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
                   </tr>
                 )}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={16} className="py-2 px-3 text-xs text-muted-foreground text-center">
+                    ℹ️ Pontuação: Ligação = 1pt · Lead atualizado = 1pt · Follow-up = 2pts · Visita marcada = 3pts · Visita realizada = 5pts · Produzindo ≥ 10pts
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </CardContent>
