@@ -33,11 +33,15 @@ interface Props {
   profileId: string | null;
 }
 
-type Period = "dia" | "semana" | "mes";
+type Period = "dia" | "ontem" | "semana" | "mes";
 
 function getPeriodRange(period: Period) {
   const now = new Date();
   const todayStr = format(now, "yyyy-MM-dd");
+  if (period === "ontem") {
+    const yesterday = format(subDays(now, 1), "yyyy-MM-dd");
+    return { start: yesterday, end: yesterday, startTs: `${yesterday}T00:00:00-03:00`, endTs: `${yesterday}T23:59:59.999-03:00` };
+  }
   if (period === "dia") return { start: todayStr, end: todayStr, startTs: `${todayStr}T00:00:00-03:00`, endTs: `${todayStr}T23:59:59.999-03:00` };
   if (period === "semana") {
     const s = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -52,7 +56,7 @@ function getPeriodRange(period: Period) {
 export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Props) {
   const { user } = useAuth();
   const { period: globalPeriod } = useDateFilter();
-  const period: Period = globalPeriod === "semana" ? "semana" : globalPeriod === "mes" || globalPeriod === "ultimos_30d" ? "mes" : "dia";
+  const period: Period = globalPeriod === "ontem" ? "ontem" : globalPeriod === "semana" ? "semana" : globalPeriod === "mes" || globalPeriod === "ultimos_30d" ? "mes" : "dia";
   const [rows, setRows] = useState<CorretorProd[]>([]);
   const [loading, setLoading] = useState(true);
 
