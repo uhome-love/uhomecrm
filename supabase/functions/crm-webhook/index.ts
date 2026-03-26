@@ -103,10 +103,40 @@ Deno.serve(async (req) => {
     const leadNome = record.nome || 'Lead do site'
     const leadTelefone = record.telefone || ''
     const leadEmail = record.email || null
-    const imovelTitulo = record.imovel_titulo || record.imovel_interesse || null
     const origemComponente = record.origem_componente || null
     const imovelCodigo = record.imovel_codigo || null
-    const imovelUrl = record.imovel_url || (imovelCodigo ? `https://uhome.com.br/imovel/${imovelCodigo}` : null)
+
+    // ── Resolve real property data from DB if code exists ──
+    let imovelTitulo = record.imovel_titulo || record.imovel_interesse || null
+    let imovelUrl: string | null = record.imovel_url || null
+
+    if (imovelCodigo && !imovelUrl) {
+      // Look up the real property in imoveis table to get the correct slug/URL
+      const { data: imovelData } = await supabase
+        .from('imoveis')
+        .select('slug, titulo, tipo, dormitorios, endereco_bairro, codigo')
+        .eq('codigo', imovelCodigo)
+        .limit(1)
+        .maybeSingle()
+
+      if (imovelData) {
+        // Use the slug from the database for the correct URL
+        const slug = imovelData.slug || imovelCodigo
+        imovelUrl = `https://uhome.com.br/imovel/${slug}`
+        // Also enrich title if not provided
+        if (!imovelTitulo && imovelData.titulo) {
+          imovelTitulo = imovelData.titulo
+        }
+        console.log(`[crm-webhook] Resolved imovel: ${imovelCodigo} → ${imovelUrl}`)
+      } else {
+        console.warn(`[crm-webhook] Imóvel código ${imovelCodigo} not found in DB, no URL generated`)
+      }
+    }
+
+    // If no property info at all, mark as general lead
+    if (!imovelTitulo && !imovelCodigo) {
+      imovelTitulo = 'Lead Geral (sem imóvel específico)'
+    }
 
     if (tipo === 'lead' || tipo === 'agendamento' || tipo === 'captacao') {
       // ── Dedup by phone ──
