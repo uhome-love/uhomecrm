@@ -110,7 +110,7 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
       supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("arquivado", false),
       // Descartados no mês (arquivado = true com updated_at no mês)
       supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("arquivado", true).gte("updated_at", startTs).lte("updated_at", endTs),
-      // Parcerias ativas do time
+      // Parcerias ativas onde alguém do time é parceiro ou principal
       supabase.from("pipeline_parcerias").select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id, divisao_principal, divisao_parceiro").eq("status", "ativa"),
     ]);
 
@@ -135,15 +135,42 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
       };
     });
 
-    // Helper to compute proportional VGV for a negocio
-    const getVgvProporcional = (n: any, profileId: string): number => {
+    // Find negócios where team members are PARTNERS but the negócio belongs to someone outside the team
+    const teamUserIdSet = new Set(teamUserIds);
+    const teamProfileIdSet = new Set(teamProfileIds);
+    const parceriasDoTime = (parceriasArr || []).filter((p: any) =>
+      (teamUserIdSet.has(p.corretor_parceiro_id) || teamUserIdSet.has(p.corretor_principal_id))
+    );
+    // Get lead_ids from partnerships that are NOT already covered by negociosAll
+    const negociosLeadIds = new Set(negociosAll.map(n => n.lead_id).filter(Boolean));
+    const parcLeadIdsExtras = parceriasDoTime
+      .map(p => p.pipeline_lead_id)
+      .filter(lid => !negociosLeadIds.has(lid));
+
+    let negociosParceiros: any[] = [];
+    if (parcLeadIdsExtras.length > 0) {
+      const { data: negParc } = await supabase
+        .from("negocios")
+        .select("id, vgv_estimado, vgv_final, corretor_id, fase, created_at, data_assinatura, lead_id")
+        .in("lead_id", parcLeadIdsExtras);
+      negociosParceiros = negParc || [];
+    }
+
+    // Helper to compute proportional VGV for a negocio given a user_id
+    const getVgvProporcional = (n: any, userId: string): number => {
       const vgvBruto = Number(n.vgv_final || n.vgv_estimado || 0);
       if (!n.lead_id) return vgvBruto;
       const parc = parceriaByLead[n.lead_id];
       if (!parc) return vgvBruto;
-      if (profileId === parc.principal_id) return vgvBruto * (parc.div_principal / 100);
-      if (profileId === parc.parceiro_id) return vgvBruto * (parc.div_parceiro / 100);
+      if (userId === parc.principal_id) return vgvBruto * (parc.div_principal / 100);
+      if (userId === parc.parceiro_id) return vgvBruto * (parc.div_parceiro / 100);
       return vgvBruto;
+    };
+
+    // Overload for profile_id based lookup (negocios.corretor_id = profile_id)
+    const getVgvProporcionalByProfile = (n: any, profileId: string): number => {
+      const uid = profileToUser[profileId];
+      return uid ? getVgvProporcional(n, uid) : Number(n.vgv_final || n.vgv_estimado || 0);
     };
 
     // Helper to check if negocio has partnership
@@ -155,11 +182,26 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
     const vmR = visitas.filter(v => v.status !== "cancelada").length;
     const vrR = visitas.filter(v => v.status === "realizada").length;
 
-    // VGV total for metas = assinados no mês (with partnership splits)
+    // VGV total for metas = assinados no mês (own deals + partner deals)
     const negociosAssinMes = negociosAll.filter(n =>
       ["assinado", "vendido"].includes(n.fase) && n.data_assinatura && n.data_assinatura >= mesInicio && n.data_assinatura <= mesFim
     );
-    const vgvReal = negociosAssinMes.reduce((s, n) => s + getVgvProporcional(n, n.corretor_id), 0);
+    let vgvReal = negociosAssinMes.reduce((s, n) => s + getVgvProporcionalByProfile(n, n.corretor_id), 0);
+
+    // Add VGV from partner deals (negócios outside the team where a team member is partner)
+    const negociosParceirosMes = negociosParceiros.filter(n =>
+      ["assinado", "vendido"].includes(n.fase) && n.data_assinatura && n.data_assinatura >= mesInicio && n.data_assinatura <= mesFim
+    );
+    negociosParceirosMes.forEach(n => {
+      const parc = parceriaByLead[n.lead_id];
+      if (!parc) return;
+      // Add VGV for each team member involved in this partnership
+      teamUserIds.forEach(uid => {
+        if (uid === parc.parceiro_id || uid === parc.principal_id) {
+          vgvReal += getVgvProporcional(n, uid);
+        }
+      });
+    });
 
     setMetas({
       ligacoes_meta: metasSalvas?.meta_ligacoes || 680,
@@ -223,9 +265,23 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
       // Assinados + VGV
       if (["assinado", "vendido"].includes(n.fase) && n.data_assinatura && n.data_assinatura >= mesInicio && n.data_assinatura <= mesFim) {
         contribMap[uid].assinados++;
-        contribMap[uid].vgv += getVgvProporcional(n, n.corretor_id);
+        contribMap[uid].vgv += getVgvProporcionalByProfile(n, n.corretor_id);
         if (hasParceria(n)) contribMap[uid].has_parceria = true;
       }
+    });
+
+    // Add VGV from partner deals to per-corretor contribution
+    negociosParceirosMes.forEach(n => {
+      const parc = parceriaByLead[n.lead_id];
+      if (!parc) return;
+      teamUserIds.forEach(uid => {
+        if (!contribMap[uid]) return;
+        if (uid === parc.parceiro_id || uid === parc.principal_id) {
+          contribMap[uid].assinados++;
+          contribMap[uid].vgv += getVgvProporcional(n, uid);
+          contribMap[uid].has_parceria = true;
+        }
+      });
     });
 
     setContrib(Object.values(contribMap).sort((a, b) => b.ligacoes - a.ligacoes));
