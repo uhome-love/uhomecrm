@@ -26,7 +26,9 @@ interface CorretorContrib {
   presencas: number;
   ligacoes: number;
   aproveitados: number;
-  roleta: number;
+  leads_novos: number;
+  pipeline_ativo: number;
+  descartados: number;
   visitas_marcadas: number;
   visitas_realizadas: number;
   negocios: number;
@@ -90,7 +92,7 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
     const startTs = `${mesInicio}T00:00:00-03:00`;
     const endTs = `${mesFim}T23:59:59.999-03:00`;
 
-    const [r1, r2, r3, r4, r5, r6, r7] = await Promise.all([
+    const [r1, r2, r3, r4, r5, r6, r7, r8] = await Promise.all([
       // Ligações + resultado
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
       // Visitas
@@ -101,10 +103,12 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
       supabase.from("ceo_metas_mensais").select("*").eq("gerente_id", user.id).eq("mes", mesAtual).maybeSingle(),
       // Presenças
       supabase.from("checkpoint_diario").select("corretor_id, presenca").in("corretor_id", teamProfileIds).gte("data", mesInicio).lte("data", mesFim).in("presenca", ["presente", "meio_periodo"]),
-      // Leads Roleta
+      // Leads Novos (roleta aceitos no mês)
       supabase.from("distribuicao_historico").select("corretor_id").in("corretor_id", teamUserIds).eq("acao", "aceito").gte("created_at", startTs).lte("created_at", endTs),
-      // Negócios for created_at filter (already in r3, we'll filter in JS)
-      Promise.resolve(null),
+      // Pipeline Ativo (snapshot atual, sem filtro de data)
+      supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).not("status", "in", '("descartado","perdido")'),
+      // Descartados no mês
+      supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("status", "descartado").gte("updated_at", startTs).lte("updated_at", endTs),
     ]);
 
     const tentativas = r1.data || [];
@@ -112,7 +116,9 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
     const negociosAll = r3.data || [];
     const metasSalvas = r4.data as any;
     const presencasArr = r5.data || [];
-    const roletaArr = r6.data || [];
+    const leadsNovosArr = r6.data || [];
+    const pipelineAtivoArr = r7.data || [];
+    const descartadosArr = r8.data || [];
 
     const ligR = tentativas.length;
     const vmR = visitas.filter(v => v.status !== "cancelada").length;
@@ -138,7 +144,7 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
     // Per-corretor contribution
     const contribMap: Record<string, CorretorContrib> = {};
     teamUserIds.forEach(uid => {
-      contribMap[uid] = { user_id: uid, nome: teamNameMap[uid] || "Corretor", presencas: 0, ligacoes: 0, aproveitados: 0, roleta: 0, visitas_marcadas: 0, visitas_realizadas: 0, negocios: 0, assinados: 0, vgv: 0 };
+      contribMap[uid] = { user_id: uid, nome: teamNameMap[uid] || "Corretor", presencas: 0, ligacoes: 0, aproveitados: 0, leads_novos: 0, pipeline_ativo: 0, descartados: 0, visitas_marcadas: 0, visitas_realizadas: 0, negocios: 0, assinados: 0, vgv: 0 };
     });
 
     // Ligações + Aproveitados
@@ -161,9 +167,19 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
       if (uid && contribMap[uid]) contribMap[uid].presencas++;
     });
 
-    // Leads Roleta (corretor_id = user_id)
-    roletaArr.forEach(r => {
-      if (contribMap[r.corretor_id]) contribMap[r.corretor_id].roleta++;
+    // Leads Novos (corretor_id = user_id)
+    leadsNovosArr.forEach(r => {
+      if (contribMap[r.corretor_id]) contribMap[r.corretor_id].leads_novos++;
+    });
+
+    // Pipeline Ativo (corretor_id = user_id)
+    pipelineAtivoArr.forEach(r => {
+      if (contribMap[r.corretor_id]) contribMap[r.corretor_id].pipeline_ativo++;
+    });
+
+    // Descartados no mês (corretor_id = user_id)
+    descartadosArr.forEach(r => {
+      if (contribMap[r.corretor_id]) contribMap[r.corretor_id].descartados++;
     });
 
     // Negócios (corretor_id = profile_id)
@@ -296,21 +312,28 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
                 <tr className="border-b border-border/30">
                   <th className="py-1 px-2" />
                   <th className="py-1 px-2" />
-                  <th colSpan={4} className="py-1 px-2 text-center text-[10px] font-bold text-blue-600 bg-blue-50/60 dark:bg-blue-950/30">Oferta Ativa</th>
+                  <th colSpan={3} className="py-1 px-2 text-center text-[10px] font-bold text-blue-600 bg-blue-50/60 dark:bg-blue-950/30">Oferta Ativa</th>
+                  <th colSpan={3} className="py-1 px-2 text-center text-[10px] font-bold text-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/30">Gestão de Leads</th>
                   <th colSpan={4} className="py-1 px-2 text-center text-[10px] font-bold text-amber-600 bg-amber-50/60 dark:bg-amber-950/30">Visitas</th>
                   <th colSpan={4} className="py-1 px-2 text-center text-[10px] font-bold text-purple-600 bg-purple-50/60 dark:bg-purple-950/30">Negócios</th>
                 </tr>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold w-6">#</th>
                   <th className="text-left py-2 px-2 text-[10px] text-muted-foreground font-semibold">Corretor</th>
+                  {/* Oferta Ativa */}
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-blue-50/30 dark:bg-blue-950/20">Pres</th>
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-blue-50/30 dark:bg-blue-950/20">Lig</th>
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-blue-50/30 dark:bg-blue-950/20">Aprov</th>
-                  <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-blue-50/30 dark:bg-blue-950/20">Roleta</th>
+                  {/* Gestão de Leads */}
+                  <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-emerald-50/30 dark:bg-emerald-950/20">Novos</th>
+                  <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-emerald-50/30 dark:bg-emerald-950/20">Ativo</th>
+                  <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-emerald-50/30 dark:bg-emerald-950/20">Desc.</th>
+                  {/* Visitas */}
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-amber-50/30 dark:bg-amber-950/20">V.Marc</th>
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-amber-50/30 dark:bg-amber-950/20">%</th>
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-amber-50/30 dark:bg-amber-950/20">V.Real</th>
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-amber-50/30 dark:bg-amber-950/20">%</th>
+                  {/* Negócios */}
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-purple-50/30 dark:bg-purple-950/20">Negóc</th>
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-purple-50/30 dark:bg-purple-950/20">Assin</th>
                   <th className="text-center py-2 px-2 text-[10px] text-muted-foreground font-semibold bg-purple-50/30 dark:bg-purple-950/20">VGV</th>
@@ -322,7 +345,9 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
                   const n = contrib.length || 1;
                   const avgLig = contrib.reduce((s, c) => s + c.ligacoes, 0) / n;
                   const avgAprov = contrib.reduce((s, c) => s + c.aproveitados, 0) / n;
-                  const avgRoleta = contrib.reduce((s, c) => s + c.roleta, 0) / n;
+                  const avgNovos = contrib.reduce((s, c) => s + c.leads_novos, 0) / n;
+                  const avgAtivo = contrib.reduce((s, c) => s + c.pipeline_ativo, 0) / n;
+                  const avgDesc = contrib.reduce((s, c) => s + c.descartados, 0) / n;
                   const avgVm = contrib.reduce((s, c) => s + c.visitas_marcadas, 0) / n;
                   const avgVr = contrib.reduce((s, c) => s + c.visitas_realizadas, 0) / n;
                   const avgNeg = contrib.reduce((s, c) => s + c.negocios, 0) / n;
@@ -346,7 +371,9 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
                           <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.presencas, avgPres)}`}>{c.presencas}</td>
                           <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.ligacoes, avgLig)}`}>{c.ligacoes}</td>
                           <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.aproveitados, avgAprov)}`}>{c.aproveitados}</td>
-                          <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.roleta, avgRoleta)}`}>{c.roleta}</td>
+                          <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.leads_novos, avgNovos)}`}>{c.leads_novos}</td>
+                          <td className="py-1.5 px-2 text-center text-xs font-medium text-foreground">{c.pipeline_ativo}</td>
+                          <td className={`py-1.5 px-2 text-center text-xs ${c.descartados > 0 ? "text-destructive" : "text-muted-foreground"}`}>{c.descartados}</td>
                           <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.visitas_marcadas, avgVm)}`}>{c.visitas_marcadas}</td>
                           <td className="py-1.5 px-2 text-center text-[10px] text-muted-foreground">{pct(c.visitas_marcadas, totalVm)}%</td>
                           <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.visitas_realizadas, avgVr)}`}>{c.visitas_realizadas}</td>
@@ -364,7 +391,9 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
                         <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.presencas, 0)}</td>
                         <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.ligacoes, 0)}</td>
                         <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.aproveitados, 0)}</td>
-                        <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.roleta, 0)}</td>
+                        <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.leads_novos, 0)}</td>
+                        <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.pipeline_ativo, 0)}</td>
+                        <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.descartados, 0)}</td>
                         <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.visitas_marcadas, 0)}</td>
                         <td className="py-2 px-2 text-center text-[10px] text-muted-foreground">—</td>
                         <td className="py-2 px-2 text-center text-xs">{contrib.reduce((s, c) => s + c.visitas_realizadas, 0)}</td>
