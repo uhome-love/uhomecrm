@@ -79,7 +79,7 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
     // Step 2: Parallel queries using correct ID type per table
     const [r1, r2, r3, r4, r5, r6, r7] = await Promise.all([
       // Oferta ativa — corretor_id = user_id ✅
-      supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, pontos").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
+      supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, pontos").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs).limit(10000),
       // Visitas — corretor_id = user_id (confirmed from DB)
       supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).gte("data_visita", start).lte("data_visita", end),
       // Negócios — corretor_id = profiles.id — fetch ALL active + period lost for counting

@@ -95,7 +95,7 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
 
     const [r1, r2, r3, r4, r5, r6, r7, r8, r9] = await Promise.all([
       // Ligações + resultado
-      supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
+      supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs).limit(10000),
       // Visitas
       supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim),
       // Negócios (all for created_at + assinatura) — include lead_id for partnership lookup
