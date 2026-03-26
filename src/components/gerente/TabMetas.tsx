@@ -72,29 +72,34 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
     if (!user || teamUserIds.length === 0) return;
     setLoading(true);
 
-    // Get profile IDs for negocios
+    // Build user_id ↔ profile_id maps
     const { data: teamProfiles } = await supabase.from("profiles").select("id, user_id").in("user_id", teamUserIds);
+    const profileToUser: Record<string, string> = {};
+    const userToProfile: Record<string, string> = {};
+    (teamProfiles || []).forEach(p => {
+      profileToUser[p.id] = p.user_id;
+      userToProfile[p.user_id] = p.id;
+    });
     const teamProfileIds = (teamProfiles || []).map(p => p.id).filter(Boolean);
-    const allCorretorIds = [...new Set([...teamUserIds, ...teamProfileIds])];
 
-    const [r1, r2, r3, r4, r5] = await Promise.all([
-      supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${mesInicio}T00:00:00`).lte("created_at", `${mesFim}T23:59:59`),
+    const [r1, r2, r3, r4] = await Promise.all([
+      // Ligações — corretor_id = user_id
+      supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${mesInicio}T00:00:00-03:00`).lte("created_at", `${mesFim}T23:59:59.999-03:00`),
+      // Visitas — corretor_id = user_id
       supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).gte("data_visita", mesInicio).lte("data_visita", mesFim),
-      supabase.from("negocios").select("id, vgv_estimado, vgv_final, fase, data_assinatura, corretor_id").in("fase", ["assinado", "vendido"]).gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim).or(`corretor_id.in.(${allCorretorIds.join(",")}),gerente_id.eq.${user.id}`),
+      // Negócios — corretor_id = profiles.id, filter by data_assinatura in month
+      supabase.from("negocios").select("id, vgv_estimado, vgv_final, corretor_id").in("corretor_id", teamProfileIds).in("fase", ["assinado", "vendido"]).gte("data_assinatura", mesInicio).lte("data_assinatura", mesFim),
+      // Saved metas
       supabase.from("ceo_metas_mensais").select("*").eq("gerente_id", user.id).eq("mes", mesAtual).maybeSingle(),
-      // Per-corretor breakdown
-      supabase.from("oferta_ativa_tentativas").select("corretor_id").in("corretor_id", teamUserIds).gte("created_at", `${mesInicio}T00:00:00`).lte("created_at", `${mesFim}T23:59:59`),
     ]);
 
     const tentativas = r1.data || [];
     const visitas = r2.data || [];
-    const uniqueNegocios = new Map<string, any>();
-    (r3.data || []).forEach((n: any) => uniqueNegocios.set(n.id, n));
-    const negociosArr = [...uniqueNegocios.values()];
+    const negociosArr = r3.data || [];
     const metasSalvas = r4.data as any;
 
     const ligR = tentativas.length;
-    const vmR = visitas.length;
+    const vmR = visitas.filter(v => v.status !== "cancelada").length;
     const vrR = visitas.filter(v => v.status === "realizada").length;
     const vgvReal = negociosArr.reduce((s, n) => s + Number(n.vgv_final || n.vgv_estimado || 0), 0);
 
@@ -117,13 +122,16 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
     tentativas.forEach(t => { if (contribMap[t.corretor_id]) contribMap[t.corretor_id].ligacoes++; });
     visitas.forEach(v => {
       if (v.corretor_id && contribMap[v.corretor_id]) {
-        contribMap[v.corretor_id].visitas_marcadas++;
+        if (v.status !== "cancelada") contribMap[v.corretor_id].visitas_marcadas++;
         if (v.status === "realizada") contribMap[v.corretor_id].visitas_realizadas++;
       }
     });
+    // Negócios use profile_id → resolve to user_id
     negociosArr.forEach(n => {
-      if (n.corretor_id && contribMap[n.corretor_id]) {
-        contribMap[n.corretor_id].vgv += Number(n.vgv_final || n.vgv_estimado || 0);
+      if (!n.corretor_id) return;
+      const uid = profileToUser[n.corretor_id];
+      if (uid && contribMap[uid]) {
+        contribMap[uid].vgv += Number(n.vgv_final || n.vgv_estimado || 0);
       }
     });
     setContrib(Object.values(contribMap).sort((a, b) => b.ligacoes - a.ligacoes));
