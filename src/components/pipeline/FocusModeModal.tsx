@@ -104,16 +104,16 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
   const handleToggleCriteria = (value: CriteriaType) => {
     if (value === "all") {
-      setSelectedCriteria(["all"]);
+      setSelectedCriteria(["all"] as CriteriaType[]);
       return;
     }
-    let next = selectedCriteria.filter(c => c !== "all");
+    let next: CriteriaType[] = selectedCriteria.filter(c => c !== "all");
     if (next.includes(value)) {
       next = next.filter(c => c !== value);
     } else {
       next.push(value);
     }
-    if (next.length === 0) next = ["all"];
+    if (next.length === 0) next = ["all"] as CriteriaType[];
     setSelectedCriteria(next);
   };
 
