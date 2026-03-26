@@ -33,9 +33,11 @@ export interface FocusLead {
   pipeline_tipo: string;
 }
 
+export type FocusCriteria = "overdue_tasks" | "no_tasks" | "stagnant" | "all";
+
 export interface FocusFilters {
   stageIds?: string[];
-  criteria?: ("overdue_tasks" | "no_tasks" | "stagnant" | "all")[];
+  criteria?: FocusCriteria[];
 }
 
 interface UseFocusLeadsReturn {
