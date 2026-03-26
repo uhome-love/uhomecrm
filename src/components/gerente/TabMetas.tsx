@@ -412,7 +412,7 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
                           <td className="py-1.5 px-2 text-center text-[10px] text-muted-foreground">{pct(c.visitas_realizadas, totalVr)}%</td>
                           <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.negocios, avgNeg)}`}>{c.negocios}</td>
                           <td className={`py-1.5 px-2 text-center text-xs ${cellColor(c.assinados, avgAssin)}`}>{c.assinados}</td>
-                          <td className={`py-1.5 px-2 text-center text-xs font-bold ${cellColor(c.vgv, avgVgv)}`}>{fmtR(c.vgv)}</td>
+                          <td className={`py-1.5 px-2 text-center text-xs font-bold ${cellColor(c.vgv, avgVgv)}`}>{fmtR(c.vgv)}{c.has_parceria && <span className="text-[9px] italic text-muted-foreground ml-0.5">(parceria)</span>}</td>
                           <td className="py-1.5 px-2 text-center text-[10px] text-muted-foreground">{pct(c.vgv, totalVgv)}%</td>
                         </tr>
                       ))}
