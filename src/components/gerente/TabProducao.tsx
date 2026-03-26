@@ -24,6 +24,7 @@ interface CorretorProd {
   assinados: number;
   vgv: number;
   pontos: number;
+  has_parceria: boolean;
 }
 
 interface Props {
