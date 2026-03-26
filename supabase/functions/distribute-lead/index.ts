@@ -283,10 +283,13 @@ Deno.serve(async (req) => {
           const authId = profileToAuth.get(profileId);
           if (!authId) continue;
           if (excludeAuthIds.has(authId)) continue;
+          // Use per-segment count for balancing; fallback to global if no segment
+          const segKey = segmentoId ? `${authId}::${segmentoId}` : null;
+          const leadsHojeSegmento = segKey ? (leadsCountBySegment.get(segKey) || 0) : (leadsCountGlobal.get(authId) || 0);
           eligible.push({
             corretorId: profileId,
             authUserId: authId,
-            leadsHoje: leadsCount.get(authId) || 0,
+            leadsHoje: leadsHojeSegmento,
             totalAtivos: totalAtivosCount.get(authId) || 0,
             lastReceivedAt: lastReceived.get(authId) || null,
           });
@@ -299,15 +302,18 @@ Deno.serve(async (req) => {
         }
 
         eligible.sort((a, b) => {
+          // Primary: fewer leads in THIS segment today
           if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
+          // Secondary: fewer total active leads
           if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
+          // Tertiary: who received a lead least recently
           if (!a.lastReceivedAt && b.lastReceivedAt) return -1;
           if (a.lastReceivedAt && !b.lastReceivedAt) return 1;
           if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
           return 0;
         });
 
-        L.info("Lead routing", { leadNome: lead.nome, eligible: eligible.length, top: eligible.slice(0, 3).map(e => ({ id: e.authUserId.slice(0,8), hoje: e.leadsHoje, total: e.totalAtivos })) });
+        L.info("Lead routing", { leadNome: lead.nome, segmentoId, eligible: eligible.length, top: eligible.slice(0, 3).map(e => ({ id: e.authUserId.slice(0,8), hojeSegmento: e.leadsHoje, total: e.totalAtivos })) });
         const chosen = eligible[0];
         const now = new Date();
         const expireAt = new Date(now.getTime() + 10 * 60 * 1000);
