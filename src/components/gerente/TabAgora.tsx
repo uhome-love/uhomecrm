@@ -380,7 +380,7 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
                     <p className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Pipeline</p>
                     <div className="flex items-center justify-between">
                       <span className="text-foreground/60">Leads Roleta</span>
-                      <span className="font-bold text-sm text-primary">{c.leads_recebidos_hoje}</span>
+                      <span className={`font-bold text-sm ${c.leads_recebidos_hoje > 0 ? "text-blue-600" : "text-muted-foreground"}`}>{c.leads_recebidos_hoje}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-foreground/60">Follow-ups</span>
@@ -396,25 +396,18 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-foreground/60">Visitas</span>
-                      <span className="font-bold text-sm text-foreground">{c.visitas_marcadas}<span className="text-foreground/60 font-normal">/{c.visitas_realizadas}</span></span>
+                      <span className="font-bold text-sm">
+                        <span className="text-blue-600">{c.visitas_marcadas}</span>
+                        <span className="text-foreground/40 font-normal">M</span>
+                        <span className="text-foreground/30 mx-0.5">·</span>
+                        {c.visitas_realizadas > 0 && <span className="text-emerald-600">✓</span>}
+                        <span className="text-emerald-600">{c.visitas_realizadas}</span>
+                        <span className="text-foreground/40 font-normal">R</span>
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Rodapé: Feedback */}
-                <div className="mt-2">
-                  <Textarea
-                    placeholder="Feedback do gerente..."
-                    value={c.obs_gerente}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setCorretores(prev => prev.map(x => x.user_id === c.user_id ? { ...x, obs_gerente: val } : x));
-                    }}
-                    onBlur={() => saveObsGerente(c.user_id, c.obs_gerente)}
-                    className="text-[11px] min-h-[24px] resize-none py-1 px-2"
-                    rows={1}
-                  />
-                </div>
               </CardContent>
             </Card>
           );
