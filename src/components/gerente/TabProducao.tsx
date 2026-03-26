@@ -275,24 +275,24 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
                     <td className="py-2 px-2 text-xs font-bold text-muted-foreground">{i + 1}</td>
                     <td className="py-2 px-2 text-xs font-semibold text-foreground whitespace-nowrap">{r.nome.split(" ").slice(0, 2).join(" ")}</td>
                     {/* Oferta Ativa */}
-                    <td className={`${tdBase} bg-blue-50/20 ${totais ? cellColor(r.ligacoes, totais.ligacoes) : ""}`}>{r.ligacoes}</td>
-                    <td className={`${tdBase} bg-blue-50/20 ${totais ? cellColor(r.aproveitados, totais.aproveitados) : ""}`}>{r.aproveitados}</td>
-                    <td className={`${tdBase} bg-blue-50/20 border-r border-border/30 ${totais ? cellColor(r.taxa, totais.taxa) : ""}`}>{r.taxa}%</td>
+                    <td className={`${tdBase} bg-blue-50/20 ${media ? cellColor(r.ligacoes, media.ligacoes) : ""}`}>{r.ligacoes}</td>
+                    <td className={`${tdBase} bg-blue-50/20 ${media ? cellColor(r.aproveitados, media.aproveitados) : ""}`}>{r.aproveitados}</td>
+                    <td className={`${tdBase} bg-blue-50/20 border-r border-border/30 ${media ? cellColor(r.taxa, media.taxa) : ""}`}>{r.taxa}%</td>
                     {/* Pipeline Leads */}
-                    <td className={`${tdBase} bg-emerald-50/20 ${totais ? cellColor(r.roleta, totais.roleta) : ""}`}>{r.roleta}</td>
-                    <td className={`${tdBase} bg-emerald-50/20 ${totais ? cellColor(r.descartados, totais.descartados) : ""}`}>{r.descartados}</td>
-                    <td className={`${tdBase} bg-emerald-50/20 ${totais ? cellColor(r.followups, totais.followups) : ""}`}>{r.followups}</td>
-                    <td className={`${tdBase} bg-emerald-50/20 border-r border-border/30 ${totais ? cellColor(r.atualizados, totais.atualizados) : ""}`}>{r.atualizados}</td>
+                    <td className={`${tdBase} bg-emerald-50/20 ${media ? cellColor(r.roleta, media.roleta) : ""}`}>{r.roleta}</td>
+                    <td className={`${tdBase} bg-emerald-50/20 ${media ? cellColor(r.descartados, media.descartados) : ""}`}>{r.descartados}</td>
+                    <td className={`${tdBase} bg-emerald-50/20 ${media ? cellColor(r.followups, media.followups) : ""}`}>{r.followups}</td>
+                    <td className={`${tdBase} bg-emerald-50/20 border-r border-border/30 ${media ? cellColor(r.atualizados, media.atualizados) : ""}`}>{r.atualizados}</td>
                     {/* Visitas */}
-                    <td className={`${tdBase} bg-amber-50/20 ${totais ? cellColor(r.visitas_marcadas, totais.visitas_marcadas) : ""}`}>{r.visitas_marcadas}</td>
-                    <td className={`${tdBase} bg-amber-50/20 border-r border-border/30 ${totais ? cellColor(r.visitas_realizadas, totais.visitas_realizadas) : ""}`}>{r.visitas_realizadas}</td>
+                    <td className={`${tdBase} bg-amber-50/20 ${media ? cellColor(r.visitas_marcadas, media.visitas_marcadas) : ""}`}>{r.visitas_marcadas}</td>
+                    <td className={`${tdBase} bg-amber-50/20 border-r border-border/30 ${media ? cellColor(r.visitas_realizadas, media.visitas_realizadas) : ""}`}>{r.visitas_realizadas}</td>
                     {/* Pipeline Negócios */}
-                    <td className={`${tdBase} bg-purple-50/20 ${totais ? cellColor(r.negocios, totais.negocios) : ""}`}>{r.negocios}</td>
-                    <td className={`${tdBase} bg-purple-50/20 ${totais ? cellColor(r.propostas, totais.propostas) : ""}`}>{r.propostas}</td>
-                    <td className={`${tdBase} bg-purple-50/20 ${totais ? cellColor(r.assinados, totais.assinados) : ""}`}>{r.assinados}</td>
-                    <td className={`${tdBase} bg-purple-50/20 border-r border-border/30 ${totais ? cellColor(r.vgv, totais.vgv) : ""}`}>{formatBRLCompact(r.vgv)}</td>
+                    <td className={`${tdBase} bg-purple-50/20 ${media ? cellColor(r.negocios, media.negocios) : ""}`}>{r.negocios}</td>
+                    <td className={`${tdBase} bg-purple-50/20 ${media ? cellColor(r.propostas, media.propostas) : ""}`}>{r.propostas}</td>
+                    <td className={`${tdBase} bg-purple-50/20 ${media ? cellColor(r.assinados, media.assinados) : ""}`}>{r.assinados}</td>
+                    <td className={`${tdBase} bg-purple-50/20 border-r border-border/30 ${media ? cellColor(r.vgv, media.vgv) : ""}`}>{formatBRLCompact(r.vgv)}</td>
                     {/* Pontos */}
-                    <td className={`${tdBase} font-black ${totais ? cellColor(r.pontos, totais.pontos) : ""}`}>{r.pontos}</td>
+                    <td className={`${tdBase} font-black ${media ? cellColor(r.pontos, media.pontos) : ""}`}>{r.pontos}</td>
                   </tr>
                 ))}
                 {totais && (
