@@ -5360,7 +5360,9 @@ export type Database = {
           gerente_id: string | null
           hora_proxima_acao: string | null
           id: string
+          imovel_codigo: string | null
           imovel_troca: boolean | null
+          imovel_url: string | null
           jetimob_lead_id: string | null
           last_escalation_at: string | null
           modo_conducao: string
@@ -5427,7 +5429,9 @@ export type Database = {
           gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
+          imovel_codigo?: string | null
           imovel_troca?: boolean | null
+          imovel_url?: string | null
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
           modo_conducao?: string
@@ -5494,7 +5498,9 @@ export type Database = {
           gerente_id?: string | null
           hora_proxima_acao?: string | null
           id?: string
+          imovel_codigo?: string | null
           imovel_troca?: boolean | null
+          imovel_url?: string | null
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
           modo_conducao?: string

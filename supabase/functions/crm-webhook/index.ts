@@ -103,8 +103,10 @@ Deno.serve(async (req) => {
     const leadNome = record.nome || 'Lead do site'
     const leadTelefone = record.telefone || ''
     const leadEmail = record.email || null
-    const imovelTitulo = record.imovel_titulo || null
+    const imovelTitulo = record.imovel_titulo || record.imovel_interesse || null
     const origemComponente = record.origem_componente || null
+    const imovelCodigo = record.imovel_codigo || null
+    const imovelUrl = record.imovel_url || (imovelCodigo ? `https://uhome.com.br/imovel/${imovelCodigo}` : null)
 
     if (tipo === 'lead' || tipo === 'agendamento' || tipo === 'captacao') {
       // ── Dedup by phone ──
@@ -123,19 +125,29 @@ Deno.serve(async (req) => {
       if (existingLead) {
         pipelineLeadId = existingLead.id
         // Update with new site data
+        const updateObsParts = [`[Site uhome.com.br] ${tipo} - ${imovelTitulo || 'sem imóvel'} (${new Date().toLocaleDateString('pt-BR')})`]
+        if (imovelCodigo) updateObsParts.push(`Cód. Imóvel: ${imovelCodigo}`)
+        if (imovelUrl) updateObsParts.push(`Link: ${imovelUrl}`)
+
         await supabase
           .from('pipeline_leads')
           .update({
             dados_site: record,
             tipo_acao: tipo,
             origem_ref: origemRef,
-            observacoes: `[Site uhome.com.br] ${tipo} - ${imovelTitulo || 'sem imóvel'} (${new Date().toLocaleDateString('pt-BR')})`,
+            imovel_codigo: imovelCodigo || undefined,
+            imovel_url: imovelUrl || undefined,
+            observacoes: updateObsParts.join(' | '),
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingLead.id)
       } else {
         // Create new pipeline lead
         const telefoneNorm = leadTelefone.replace(/\D/g, '').slice(-11)
+        const obsParts = [`[Site uhome.com.br] ${tipo}${imovelTitulo ? ` - ${imovelTitulo}` : ''}`]
+        if (imovelCodigo) obsParts.push(`Cód. Imóvel: ${imovelCodigo}`)
+        if (imovelUrl) obsParts.push(`Link: ${imovelUrl}`)
+
         const insertData: Record<string, unknown> = {
           nome: leadNome,
           telefone: leadTelefone,
@@ -149,7 +161,9 @@ Deno.serve(async (req) => {
           stage_id: stageId,
           stage_changed_at: new Date().toISOString(),
           empreendimento: imovelTitulo,
-          observacoes: `[Site uhome.com.br] ${tipo}${imovelTitulo ? ` - ${imovelTitulo}` : ''}`,
+          imovel_codigo: imovelCodigo,
+          imovel_url: imovelUrl,
+          observacoes: obsParts.join(' | '),
         }
 
         if (corretorId) {

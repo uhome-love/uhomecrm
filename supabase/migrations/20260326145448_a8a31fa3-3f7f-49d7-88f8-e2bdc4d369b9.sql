@@ -1,0 +1,1 @@
+ALTER TABLE public.pipeline_leads ADD COLUMN imovel_codigo TEXT, ADD COLUMN imovel_url TEXT;
