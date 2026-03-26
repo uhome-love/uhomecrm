@@ -645,8 +645,15 @@ export default function MeusNegocios() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
+  // Build gerente list from negocios gerente_id + corretorNomes
+  const gerenteList = useMemo(() => {
+    const ids = [...new Set(negocios.map(n => n.gerente_id).filter(Boolean))] as string[];
+    return ids.map(id => ({ id, nome: corretorNomes[id] || id })).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [negocios, corretorNomes]);
+
   const filteredNegocios = useMemo(() => {
     let result = negocios;
+    if (filterGerente !== "all") result = result.filter(n => n.gerente_id === filterGerente);
     if (filterCorretor !== "all") result = result.filter(n => n.corretor_id === filterCorretor);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -657,11 +664,14 @@ export default function MeusNegocios() {
       );
     }
     return result;
-  }, [negocios, filterCorretor, searchQuery]);
+  }, [negocios, filterGerente, filterCorretor, searchQuery]);
 
   const corretorList = useMemo(() => {
-    return Object.entries(corretorNomes).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [corretorNomes]);
+    // If filtering by gerente, only show corretores from that gerente's negocios
+    const sourceNegocios = filterGerente !== "all" ? negocios.filter(n => n.gerente_id === filterGerente) : negocios;
+    const ids = [...new Set(sourceNegocios.map(n => n.corretor_id).filter(Boolean))] as string[];
+    return ids.map(id => [id, corretorNomes[id] || id] as [string, string]).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [negocios, corretorNomes, filterGerente]);
 
   const totalVGV = useMemo(() =>
     filteredNegocios.reduce((sum, n) => {
