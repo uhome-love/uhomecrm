@@ -62,20 +62,32 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
     if (!user || teamUserIds.length === 0 || !profileId) return;
     setLoading(true);
 
+    // Step 1: Build user_id → profile_id map (needed for tables that use profiles.id)
+    const profilesRes = await supabase.from("profiles").select("id, user_id").in("user_id", teamUserIds);
+    const profilesList = profilesRes.data || [];
+    const userToProfile: Record<string, string> = {};
+    const profileToUser: Record<string, string> = {};
+    profilesList.forEach(p => {
+      userToProfile[p.user_id] = p.id;
+      profileToUser[p.id] = p.user_id;
+    });
+    const teamProfileIds = profilesList.map(p => p.id);
+
+    // Step 2: Parallel queries using correct ID type per table
     const [r1, r2, r3, r4, r5, r6, r7] = await Promise.all([
-      // Oferta ativa
+      // Oferta ativa — corretor_id = user_id ✅
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, pontos").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
-      // Visitas
-      supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).gte("data_visita", start).lte("data_visita", end),
-      // Negócios
-      supabase.from("negocios").select("corretor_id, fase, vgv_estimado, vgv_final").eq("gerente_id", profileId).not("fase", "in", '("perdido","cancelado","distrato")'),
-      // Follow-ups (tarefas concluídas)
+      // Visitas — corretor_id = profiles.id
+      supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamProfileIds).gte("data_visita", start).lte("data_visita", end),
+      // Negócios — corretor_id = profiles.id
+      supabase.from("negocios").select("corretor_id, fase, vgv_estimado, vgv_final").in("corretor_id", teamProfileIds).not("fase", "in", '("perdido","cancelado","distrato")'),
+      // Follow-ups — responsavel_id = user_id ✅
       supabase.from("pipeline_tarefas").select("responsavel_id").in("responsavel_id", teamUserIds).gte("concluida_em", startTs).lte("concluida_em", endTs),
-      // Roleta (leads recebidos)
+      // Roleta — corretor_id = user_id ✅
       supabase.from("distribuicao_historico").select("corretor_id").in("corretor_id", teamUserIds).eq("acao", "aceito").gte("created_at", startTs).lte("created_at", endTs),
-      // Descartados
-      supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("status", "descartado").gte("updated_at", startTs).lte("updated_at", endTs),
-      // Leads atualizados hoje
+      // Descartados — corretor_id = user_id, use arquivado = true (no status column)
+      supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("arquivado", true).gte("updated_at", startTs).lte("updated_at", endTs),
+      // Leads atualizados — corretor_id = user_id
       supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).gte("ultima_acao_at", startTs).lte("ultima_acao_at", endTs),
     ]);
 
@@ -106,19 +118,25 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       if (t.resultado === "com_interesse") stats[t.corretor_id].aproveitados++;
     });
 
+    // Visitas use profile_id → resolve to user_id
     visitas.forEach(v => {
-      if (!v.corretor_id || !stats[v.corretor_id]) return;
-      stats[v.corretor_id].visitas_marcadas++;
-      if (v.status === "realizada") stats[v.corretor_id].visitas_realizadas++;
+      if (!v.corretor_id) return;
+      const uid = profileToUser[v.corretor_id];
+      if (!uid || !stats[uid]) return;
+      stats[uid].visitas_marcadas++;
+      if (v.status === "realizada") stats[uid].visitas_realizadas++;
     });
 
+    // Negócios use profile_id → resolve to user_id
     negocios.forEach(n => {
-      if (!n.corretor_id || !stats[n.corretor_id]) return;
-      stats[n.corretor_id].negocios++;
-      if (n.fase === "proposta") stats[n.corretor_id].propostas++;
+      if (!n.corretor_id) return;
+      const uid = profileToUser[n.corretor_id];
+      if (!uid || !stats[uid]) return;
+      stats[uid].negocios++;
+      if (n.fase === "proposta") stats[uid].propostas++;
       if (n.fase === "assinado" || n.fase === "vendido") {
-        stats[n.corretor_id].assinados++;
-        stats[n.corretor_id].vgv += Number(n.vgv_final || n.vgv_estimado || 0);
+        stats[uid].assinados++;
+        stats[uid].vgv += Number(n.vgv_final || n.vgv_estimado || 0);
       }
     });
 
