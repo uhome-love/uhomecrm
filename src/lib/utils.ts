@@ -64,6 +64,27 @@ export function dateToBRT(date: Date): string {
 }
 
 /**
+ * Converts a BRT date range (YYYY-MM-DD) to UTC ISO timestamps.
+ * BRT = UTC-3, so start of day in BRT = 03:00 UTC, end of day = next day 02:59:59 UTC.
+ */
+export function brtRangeToUTC(range: { start: string; end: string }): { startUtc: string; endUtc: string } {
+  return {
+    startUtc: `${range.start}T03:00:00Z`,
+    endUtc: `${range.end}T03:00:00Z`,
+  };
+}
+
+/**
+ * Returns the UTC end-of-day timestamp for a BRT date.
+ * End of "2026-03-25" in BRT = "2026-03-26T02:59:59Z"
+ */
+export function brtEndOfDayUTC(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const nextDay = new Date(Date.UTC(y, m - 1, d + 1, 2, 59, 59));
+  return nextDay.toISOString();
+}
+
+/**
  * Safely parses a "YYYY-MM-DD" date string as noon local time,
  * avoiding the UTC midnight pitfall where isToday/isTomorrow would be off by 1 day in BRT.
  * For full ISO strings (with T), returns normal Date parse.

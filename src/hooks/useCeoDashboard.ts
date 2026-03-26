@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths } from "date-fns";
-import { todayBRT, dateToBRT, formatBRLCompact } from "@/lib/utils";
+import { todayBRT, dateToBRT, formatBRLCompact, brtRangeToUTC } from "@/lib/utils";
 import { fetchKPIs as fetchOfficialKPIs } from "@/lib/metricsService";
 
 export type DashPeriod = "hoje" | "ontem" | "semana" | "mes" | "ultimos_30d" | "custom";
@@ -166,8 +166,8 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
       const [{ data: stages }, { data: leads }] = await Promise.all([
         supabase.from("pipeline_stages").select("id, nome, tipo, ordem").eq("ativo", true).eq("pipeline_tipo", "leads").order("ordem"),
         supabase.from("pipeline_leads").select("id, stage_id, empreendimento, updated_at, created_at, origem, corretor_id")
-          .gte("created_at", range.start)
-          .lte("created_at", range.end + "T23:59:59")
+          .gte("created_at", brtRangeToUTC(range).startUtc)
+          .lt("created_at", brtRangeToUTC(range).endUtc)
           .limit(2000),
       ]);
 
@@ -414,15 +414,14 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
   const { data: extraKpis } = useQuery({
     queryKey: ["ceo-extra-kpis", rangeKey, hoje],
     queryFn: async () => {
-      const startTs = `${range.start}T00:00:00`;
-      const endTs = `${range.end}T23:59:59`;
+      const { startUtc: startTs, endUtc: endTs } = brtRangeToUTC(range);
 
       const [{ count: leadsCount }, { count: leadsOACount }, { count: visitasCriadasCount }, { count: novoInteresseCount }, { count: enviadosRoletaCount }, { data: roletaRows }, { data: goals }] = await Promise.all([
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).not("origem", "ilike", "%oferta%ativa%"),
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).ilike("origem", "%oferta%ativa%"),
-        supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).neq("status", "cancelada"),
-        supabase.from("campaign_clicks").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).eq("lead_action", "updated"),
-        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lte("created_at", endTs).not("corretor_id", "is", null).not("origem", "ilike", "%oferta%ativa%"),
+        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).not("origem", "ilike", "%oferta%ativa%"),
+        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).ilike("origem", "%oferta%ativa%"),
+        supabase.from("visitas").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).neq("status", "cancelada"),
+        supabase.from("campaign_clicks").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).eq("lead_action", "updated"),
+        supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).gte("created_at", startTs).lt("created_at", endTs).not("corretor_id", "is", null).not("origem", "ilike", "%oferta%ativa%"),
         supabase.from("roleta_credenciamentos").select("corretor_id").eq("data", hoje).in("status", ["aprovado", "saiu"]),
         supabase.from("corretor_daily_goals").select("meta_ligacoes, meta_aproveitados, meta_visitas_marcadas").eq("data", hoje),
       ]);
