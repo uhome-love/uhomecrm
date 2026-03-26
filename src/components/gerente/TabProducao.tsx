@@ -63,8 +63,8 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, pontos").in("corretor_id", teamUserIds).gte("created_at", startTs).lte("created_at", endTs),
       supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).gte("data_visita", start).lte("data_visita", end),
       supabase.from("negocios").select("corretor_id, fase, vgv_estimado, vgv_final").eq("gerente_id", profileId).not("fase", "in", '("perdido","cancelado","distrato")'),
-      // Follow-ups: count tasks completed in the period
-      supabase.from("lead_tasks").select("user_id").in("user_id", teamUserIds).eq("status", "concluida").gte("concluida_em", startTs).lte("concluida_em", endTs),
+      // Follow-ups: count pipeline_tarefas completed in the period (responsavel_id = auth user_id)
+      supabase.from("pipeline_tarefas").select("responsavel_id").in("responsavel_id", teamUserIds).gte("concluida_em", startTs).lte("concluida_em", endTs),
       supabase.from("profiles").select("user_id, nome").in("user_id", teamUserIds),
     ]);
 
@@ -108,8 +108,9 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
     });
 
     followups.forEach(f => {
-      if (!f.user_id || !stats[f.user_id]) return;
-      stats[f.user_id].followups++;
+      const uid = (f as any).responsavel_id;
+      if (!uid || !stats[uid]) return;
+      stats[uid].followups++;
     });
 
     Object.values(stats).forEach(s => {
@@ -149,10 +150,10 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
   }, [rows]);
 
   const cellColor = (val: number, avg: number) => {
-    if (avg === 0) return "";
+    if (avg === 0 && val === 0) return "text-muted-foreground";
     if (val > avg) return "text-emerald-600 font-bold";
     if (val < avg) return "text-destructive font-bold";
-    return "";
+    return "font-medium";
   };
 
   if (loading) {
