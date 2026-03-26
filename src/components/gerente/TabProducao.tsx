@@ -318,7 +318,7 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
               <tfoot>
                 <tr>
                   <td colSpan={16} className="py-2 px-3 text-xs text-muted-foreground text-center">
-                    ℹ️ Pontuação: Ligação = 1pt · Lead atualizado = 1pt · Follow-up = 2pts · Visita marcada = 3pts · Visita realizada = 5pts · Produzindo ≥ 10pts
+                    ℹ️ Pontuação: Ligação = 1pt · Lead atualizado = 1pt · Follow-up = 2pts · Visita marcada = 3pts · Visita realizada = 5pts · Produzindo ≥ 10pts &nbsp;&nbsp;&nbsp; 🟢 Verde = acima da média do time · 🔴 Vermelho = abaixo da média ou zero
                   </td>
                 </tr>
               </tfoot>
