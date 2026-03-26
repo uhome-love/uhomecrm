@@ -618,6 +618,7 @@ export default function MeusNegocios() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCorretor, setFilterCorretor] = useState("all");
+  const [filterGerente, setFilterGerente] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
   const [addNegocioOpen, setAddNegocioOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
