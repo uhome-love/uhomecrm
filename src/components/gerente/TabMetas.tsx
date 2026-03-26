@@ -34,6 +34,7 @@ interface CorretorContrib {
   negocios: number;
   assinados: number;
   vgv: number;
+  has_parceria: boolean;
 }
 
 interface Props {
