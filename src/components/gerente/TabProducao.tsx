@@ -129,14 +129,22 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
       if (v.status === "realizada") stats[v.corretor_id].visitas_realizadas++;
     });
 
-    // Negócios use profile_id → resolve to user_id
+    // Negócios — period-filtered metrics
     negocios.forEach(n => {
       if (!n.corretor_id) return;
       const uid = profileToUser[n.corretor_id];
       if (!uid || !stats[uid]) return;
-      stats[uid].negocios++;
-      if (n.fase === "proposta") stats[uid].propostas++;
-      if (n.fase === "assinado" || n.fase === "vendido") {
+
+      // Negóc. = created in period
+      if (n.created_at && n.created_at >= startTs && n.created_at <= endTs) {
+        stats[uid].negocios++;
+      }
+      // Prop. = fase_changed_at in period AND currently proposta
+      if (n.fase === "proposta" && n.fase_changed_at && n.fase_changed_at >= startTs && n.fase_changed_at <= endTs) {
+        stats[uid].propostas++;
+      }
+      // Assin. = data_assinatura in period AND fase assinado/vendido
+      if ((n.fase === "assinado" || n.fase === "vendido") && n.data_assinatura && n.data_assinatura >= start && n.data_assinatura <= end) {
         stats[uid].assinados++;
         stats[uid].vgv += Number(n.vgv_final || n.vgv_estimado || 0);
       }
