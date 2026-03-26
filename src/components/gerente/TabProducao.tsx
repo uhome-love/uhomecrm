@@ -108,8 +108,8 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
     });
 
     followups.forEach(f => {
-      if (!f.corretor_id || !stats[f.corretor_id]) return;
-      stats[f.corretor_id].followups++;
+      if (!f.user_id || !stats[f.user_id]) return;
+      stats[f.user_id].followups++;
     });
 
     Object.values(stats).forEach(s => {
