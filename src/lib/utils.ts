@@ -65,12 +65,17 @@ export function dateToBRT(date: Date): string {
 
 /**
  * Converts a BRT date range (YYYY-MM-DD) to UTC ISO timestamps.
- * BRT = UTC-3, so start of day in BRT = 03:00 UTC, end of day = next day 02:59:59 UTC.
+ * BRT = UTC-3, so start of day in BRT = 03:00 UTC same day,
+ * end of day in BRT = 03:00 UTC NEXT day after range.end.
  */
 export function brtRangeToUTC(range: { start: string; end: string }): { startUtc: string; endUtc: string } {
+  // End date: add 1 day to get the start of the next BRT day in UTC
+  const [y, m, d] = range.end.split("-").map(Number);
+  const nextDay = new Date(Date.UTC(y, m - 1, d + 1, 3, 0, 0));
+  const endUtc = nextDay.toISOString().replace(".000Z", "Z");
   return {
     startUtc: `${range.start}T03:00:00Z`,
-    endUtc: `${range.end}T03:00:00Z`,
+    endUtc,
   };
 }
 
