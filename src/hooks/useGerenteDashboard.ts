@@ -175,8 +175,8 @@ export function useGerenteDashboard(period: Period) {
 
       // Visitas hoje (operational, keep direct query)
       const [{ count: visitasHoje }, { count: visitasSemana }, { count: totalLeads }] = await Promise.all([
-        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today),
-        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).gte("data_visita", format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).lte("data_visita", format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")),
+        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).eq("data_visita", today).neq("status", "cancelada"),
+        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("gerente_id", user!.id).gte("data_visita", format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).lte("data_visita", format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")).neq("status", "cancelada"),
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).in("corretor_id", teamUserIds),
       ]);
 
