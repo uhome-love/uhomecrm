@@ -111,19 +111,24 @@ Deno.serve(async (req) => {
     let imovelUrl: string | null = record.imovel_url || null
 
     if (imovelCodigo && !imovelUrl) {
-      // Look up the real property in imoveis table to get the correct slug/URL
       const { data: imovelData } = await supabase
-        .from('imoveis')
-        .select('slug, titulo, tipo, dormitorios, endereco_bairro, codigo')
+        .from('properties')
+        .select('codigo, titulo, tipo, dormitorios, bairro')
         .eq('codigo', imovelCodigo)
         .limit(1)
         .maybeSingle()
 
       if (imovelData) {
-        // Use the slug from the database for the correct URL
-        const slug = imovelData.slug || imovelCodigo
+        // Build slug: {tipo}-{n}-quartos-{bairro}-{codigo}
+        const slugify = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        const tipoSlug = slugify(imovelData.tipo || 'imovel')
+        const quartos = imovelData.dormitorios ?? 0
+        const bairroSlug = slugify(imovelData.bairro || 'porto-alegre')
+        const codigoSlug = slugify(imovelData.codigo)
+        const slug = quartos > 0
+          ? `${tipoSlug}-${quartos}-quartos-${bairroSlug}-${codigoSlug}`
+          : `${tipoSlug}-para-venda-${bairroSlug}-${codigoSlug}`
         imovelUrl = `https://uhome.com.br/imovel/${slug}`
-        // Also enrich title if not provided
         if (!imovelTitulo && imovelData.titulo) {
           imovelTitulo = imovelData.titulo
         }
