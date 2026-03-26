@@ -265,9 +265,23 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
       // Assinados + VGV
       if (["assinado", "vendido"].includes(n.fase) && n.data_assinatura && n.data_assinatura >= mesInicio && n.data_assinatura <= mesFim) {
         contribMap[uid].assinados++;
-        contribMap[uid].vgv += getVgvProporcional(n, n.corretor_id);
+        contribMap[uid].vgv += getVgvProporcionalByProfile(n, n.corretor_id);
         if (hasParceria(n)) contribMap[uid].has_parceria = true;
       }
+    });
+
+    // Add VGV from partner deals to per-corretor contribution
+    negociosParceirosMes.forEach(n => {
+      const parc = parceriaByLead[n.lead_id];
+      if (!parc) return;
+      teamUserIds.forEach(uid => {
+        if (!contribMap[uid]) return;
+        if (uid === parc.parceiro_id || uid === parc.principal_id) {
+          contribMap[uid].assinados++;
+          contribMap[uid].vgv += getVgvProporcional(n, uid);
+          contribMap[uid].has_parceria = true;
+        }
+      });
     });
 
     setContrib(Object.values(contribMap).sort((a, b) => b.ligacoes - a.ligacoes));
