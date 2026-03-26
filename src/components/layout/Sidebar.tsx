@@ -117,7 +117,6 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       title: "Principal",
       items: [
         { label: "Dashboard",          path: "/gerente/dashboard", icon: <LayoutGrid   size={15} strokeWidth={1.5} /> },
-        { label: "Checkpoint",         path: "/central-do-gerente",icon: <CheckCircle  size={15} strokeWidth={1.5} /> },
         { label: "Meu time",           path: "/meu-time",          icon: <Users        size={15} strokeWidth={1.5} /> },
       ],
     },

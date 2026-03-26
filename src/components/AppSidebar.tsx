@@ -405,12 +405,6 @@ export function AppSidebar() {
         topItem: { title: "Dashboard", url: "/gerente/dashboard", icon: Home },
         groups: [
           {
-            label: "Principal",
-            items: [
-              { title: "Checkpoint", url: "/central-do-gerente", icon: ClipboardCheck },
-            ],
-          },
-          {
             label: "Gestão de Leads",
             items: [
               { title: "Anúncios no Ar", url: "/anuncios", icon: Radio },
