@@ -150,10 +150,10 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
   }, [rows]);
 
   const cellColor = (val: number, avg: number) => {
-    if (avg === 0) return "";
+    if (avg === 0 && val === 0) return "text-muted-foreground";
     if (val > avg) return "text-emerald-600 font-bold";
     if (val < avg) return "text-destructive font-bold";
-    return "";
+    return "font-medium";
   };
 
   if (loading) {
