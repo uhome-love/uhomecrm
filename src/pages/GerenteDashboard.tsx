@@ -238,7 +238,7 @@ export default function GerenteDashboard() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
+    <div className="px-4 md:px-6 pt-1 pb-4 space-y-4 max-w-7xl mx-auto">
       <GreetingBar
         name={profile?.nome || "Gerente"}
         avatarUrl={avatarSrc}
