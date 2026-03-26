@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDateFilter } from "@/contexts/DateFilterContext";
 import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { todayBRT, formatBRLCompact } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
