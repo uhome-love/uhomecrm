@@ -125,13 +125,19 @@ Deno.serve(async (req) => {
       if (existingLead) {
         pipelineLeadId = existingLead.id
         // Update with new site data
+        const updateObsParts = [`[Site uhome.com.br] ${tipo} - ${imovelTitulo || 'sem imóvel'} (${new Date().toLocaleDateString('pt-BR')})`]
+        if (imovelCodigo) updateObsParts.push(`Cód. Imóvel: ${imovelCodigo}`)
+        if (imovelUrl) updateObsParts.push(`Link: ${imovelUrl}`)
+
         await supabase
           .from('pipeline_leads')
           .update({
             dados_site: record,
             tipo_acao: tipo,
             origem_ref: origemRef,
-            observacoes: `[Site uhome.com.br] ${tipo} - ${imovelTitulo || 'sem imóvel'} (${new Date().toLocaleDateString('pt-BR')})`,
+            imovel_codigo: imovelCodigo || undefined,
+            imovel_url: imovelUrl || undefined,
+            observacoes: updateObsParts.join(' | '),
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingLead.id)
