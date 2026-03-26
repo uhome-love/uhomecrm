@@ -179,16 +179,18 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const media = useMemo(() => {
+  const totais = useMemo(() => {
     if (rows.length === 0) return null;
-    const n = rows.length;
-    const avg = (key: keyof CorretorProd) => Math.round(rows.reduce((s, r) => s + (r[key] as number), 0) / n);
+    const sum = (key: keyof CorretorProd) => rows.reduce((s, r) => s + (r[key] as number), 0);
+    const totalLig = sum("ligacoes");
+    const totalAprov = sum("aproveitados");
     return {
-      ligacoes: avg("ligacoes"), aproveitados: avg("aproveitados"), taxa: avg("taxa"),
-      roleta: avg("roleta"), descartados: avg("descartados"), followups: avg("followups"), atualizados: avg("atualizados"),
-      visitas_marcadas: avg("visitas_marcadas"), visitas_realizadas: avg("visitas_realizadas"),
-      negocios: avg("negocios"), propostas: avg("propostas"), assinados: avg("assinados"),
-      vgv: avg("vgv"), pontos: avg("pontos"),
+      ligacoes: totalLig, aproveitados: totalAprov,
+      taxa: totalLig > 0 ? Math.round((totalAprov / totalLig) * 100) : 0,
+      roleta: sum("roleta"), descartados: sum("descartados"), followups: sum("followups"), atualizados: sum("atualizados"),
+      visitas_marcadas: sum("visitas_marcadas"), visitas_realizadas: sum("visitas_realizadas"),
+      negocios: sum("negocios"), propostas: sum("propostas"), assinados: sum("assinados"),
+      vgv: sum("vgv"), pontos: sum("pontos"),
     };
   }, [rows]);
 
