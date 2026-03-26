@@ -8,12 +8,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Zap, X, Phone, MessageCircle, Plus, ChevronLeft,
   Loader2, AlertTriangle, Clock, Send,
-  ExternalLink, Sparkles, Copy, Check, ChevronRight
+  ExternalLink, Sparkles, Copy, Check, ChevronRight,
+  Filter, ListChecks, CalendarClock, Inbox, Target
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useFocusLeads, type FocusLead } from "@/hooks/useFocusLeads";
+import { useFocusLeads, type FocusLead, type FocusFilters } from "@/hooks/useFocusLeads";
 import { format, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,10 +41,26 @@ const QUICK_MESSAGES = [
   { label: "Condições especiais", text: (name: string, interest: string) => `Oi ${name}! Temos condições especiais para o ${interest || "empreendimento"} essa semana. Quer que eu te mande os detalhes? 😊` },
 ];
 
+type CriteriaType = "overdue_tasks" | "no_tasks" | "stagnant" | "all";
+
+const CRITERIA_OPTIONS: { value: CriteriaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
+  { value: "all", label: "Todos", description: "Todos os leads que precisam de atenção", icon: <Target className="w-5 h-5" />, color: "#4F46E5" },
+  { value: "overdue_tasks", label: "Tarefas atrasadas", description: "Leads com tarefas vencidas", icon: <CalendarClock className="w-5 h-5" />, color: "#EF4444" },
+  { value: "no_tasks", label: "Sem tarefas", description: "Leads sem nenhuma tarefa agendada", icon: <Inbox className="w-5 h-5" />, color: "#F59E0B" },
+  { value: "stagnant", label: "Desatualizados", description: "Leads parados na mesma etapa há 5+ dias", icon: <Clock className="w-5 h-5" />, color: "#F97316" },
+];
+
 export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }: FocusModeModalProps) {
   const { user } = useAuth();
   const corretorId = user?.id ?? null;
   const { leads, loading, reload } = useFocusLeads(corretorId, pipelineTipo);
+
+  // Config screen state
+  const [configPhase, setConfigPhase] = useState(true);
+  const [selectedCriteria, setSelectedCriteria] = useState<CriteriaType[]>(["all"]);
+  const [selectedStageId, setSelectedStageId] = useState<string>("all");
+  const [stages, setStages] = useState<{ id: string; nome: string }[]>([]);
+  const [stagesLoading, setStagesLoading] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [homiInsight, setHomiInsight] = useState("");
@@ -64,17 +81,61 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
   const currentLead = leads[currentIndex] ?? null;
 
+  // Load stages for the config screen
   useEffect(() => {
-    if (open && corretorId) {
-      setCurrentIndex(0);
-      reload();
+    if (!open) return;
+    setConfigPhase(true);
+    setSelectedCriteria(["all"]);
+    setSelectedStageId("all");
+    setCurrentIndex(0);
+
+    const loadStages = async () => {
+      setStagesLoading(true);
+      const { data } = await supabase
+        .from("pipeline_stages")
+        .select("id, nome")
+        .eq("pipeline_tipo", pipelineTipo)
+        .order("ordem", { ascending: true });
+      setStages(data || []);
+      setStagesLoading(false);
+    };
+    loadStages();
+  }, [open, pipelineTipo]);
+
+  const handleToggleCriteria = (value: CriteriaType) => {
+    if (value === "all") {
+      setSelectedCriteria(["all"]);
+      return;
     }
-  }, [open, corretorId]);
+    let next = selectedCriteria.filter(c => c !== "all");
+    if (next.includes(value)) {
+      next = next.filter(c => c !== value);
+    } else {
+      next.push(value);
+    }
+    if (next.length === 0) next = ["all"];
+    setSelectedCriteria(next);
+  };
+
+  const handleStartFocus = async () => {
+    setConfigPhase(false);
+    setCurrentIndex(0);
+    resetActionState();
+
+    const filters: FocusFilters = {};
+    if (selectedStageId !== "all") {
+      filters.stageIds = [selectedStageId];
+    }
+    if (!selectedCriteria.includes("all")) {
+      filters.criteria = selectedCriteria;
+    }
+    await reload(filters);
+  };
 
   useEffect(() => {
-    if (!currentLead || !open) return;
+    if (!currentLead || !open || configPhase) return;
     fetchHomiSuggestion(currentLead);
-  }, [currentIndex, leads.length, open]);
+  }, [currentIndex, leads.length, open, configPhase]);
 
   const fetchHomiSuggestion = useCallback(async (lead: FocusLead) => {
     setHomiLoading(true);
@@ -164,7 +225,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [currentIndex, resetActionState]);
 
-  // Register activity WITHOUT auto-advancing
   const handleRegisterActivity = useCallback(async (type: "ligacao" | "mensagem" | "nota") => {
     if (!currentLead || !corretorId) return;
     const note = type === "mensagem" ? followUpText : activityNote;
@@ -200,7 +260,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, [currentLead, corretorId, followUpText, activityNote]);
 
-  // Create task WITHOUT auto-advancing
   const handleCreateTask = useCallback(async () => {
     if (!currentLead || !corretorId) return;
     if (!taskTitle.trim()) {
@@ -270,26 +329,38 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="text-white font-bold text-sm sm:text-base">Modo Foco</span>
-            {leads.length > 0 && (
+            {!configPhase && leads.length > 0 && (
               <span className="text-gray-400 text-xs sm:text-sm font-medium">
                 {currentIndex + 1} / {leads.length}
               </span>
             )}
           </div>
 
-          <div className="flex-1 mx-4 sm:mx-8 max-w-md">
-            <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-              <div
-                className="h-1.5 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${progressPercent}%`, background: "linear-gradient(90deg, #4F46E5, #7C3AED)" }}
-              />
+          {!configPhase && (
+            <div className="flex-1 mx-4 sm:mx-8 max-w-md">
+              <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <div
+                  className="h-1.5 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${progressPercent}%`, background: "linear-gradient(90deg, #4F46E5, #7C3AED)" }}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex items-center gap-2">
-            {currentIndex > 0 && (
+            {!configPhase && currentIndex > 0 && (
               <Button variant="ghost" size="icon" onClick={goToPrev} className="text-gray-400 hover:text-white hover:bg-white/5 h-8 w-8">
                 <ChevronLeft className="w-4 h-4" />
+              </Button>
+            )}
+            {!configPhase && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfigPhase(true)}
+                className="text-gray-400 hover:text-white hover:bg-white/5 h-8 px-2 text-xs gap-1"
+              >
+                <Filter className="w-3.5 h-3.5" /> Filtros
               </Button>
             )}
             <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white hover:bg-white/5 h-8 w-8">
@@ -300,7 +371,106 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+          {configPhase ? (
+            /* ═══ CONFIG SCREEN ═══ */
+            <div className="flex flex-col items-center justify-center h-full px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-full max-w-lg space-y-6"
+              >
+                {/* Title */}
+                <div className="text-center space-y-2">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto" style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}>
+                    <Zap className="w-7 h-7 text-white" />
+                  </div>
+                  <h2 className="text-white font-bold text-xl">Configurar Modo Foco</h2>
+                  <p className="text-gray-400 text-sm">Personalize o que você quer trabalhar agora</p>
+                </div>
+
+                {/* Criteria selection */}
+                <div className="space-y-2">
+                  <label className="text-gray-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                    <ListChecks className="w-3.5 h-3.5" /> O que quer focar?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {CRITERIA_OPTIONS.map((opt) => {
+                      const isSelected = selectedCriteria.includes(opt.value);
+                      return (
+                        <button
+                          key={opt.value}
+                          onClick={() => handleToggleCriteria(opt.value)}
+                          className="flex items-start gap-3 p-3 rounded-xl text-left transition-all"
+                          style={{
+                            background: isSelected ? `${opt.color}15` : "rgba(255,255,255,0.03)",
+                            border: `1.5px solid ${isSelected ? `${opt.color}50` : "rgba(255,255,255,0.06)"}`,
+                          }}
+                        >
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                            style={{ background: isSelected ? `${opt.color}20` : "rgba(255,255,255,0.05)", color: isSelected ? opt.color : "#6b7280" }}
+                          >
+                            {opt.icon}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-sm font-semibold block" style={{ color: isSelected ? "#fff" : "#9ca3af" }}>
+                              {opt.label}
+                            </span>
+                            <span className="text-[10px] leading-tight block mt-0.5" style={{ color: isSelected ? "#94a3b8" : "#6b7280" }}>
+                              {opt.description}
+                            </span>
+                          </div>
+                          {isSelected && (
+                            <div className="ml-auto shrink-0">
+                              <Check className="w-4 h-4" style={{ color: opt.color }} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Stage filter */}
+                <div className="space-y-2">
+                  <label className="text-gray-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                    <Filter className="w-3.5 h-3.5" /> Filtrar por etapa
+                  </label>
+                  <Select value={selectedStageId} onValueChange={setSelectedStageId}>
+                    <SelectTrigger
+                      className="h-10 text-sm border-0 rounded-xl"
+                      style={{ background: "rgba(255,255,255,0.06)", color: "#e2e8f0", borderColor: "rgba(255,255,255,0.1)" }}
+                    >
+                      <SelectValue placeholder="Todas as etapas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as etapas</SelectItem>
+                      {stages.map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Start button */}
+                <Button
+                  onClick={handleStartFocus}
+                  disabled={stagesLoading}
+                  className="w-full h-12 text-sm font-bold gap-2 rounded-xl"
+                  style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff" }}
+                >
+                  {stagesLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4" /> Iniciar Modo Foco
+                    </>
+                  )}
+                </Button>
+              </motion.div>
+            </div>
+          ) : loading ? (
             <div className="flex flex-col items-center justify-center h-full gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
               <span className="text-gray-400 text-sm">Buscando leads que precisam de atenção...</span>
@@ -312,11 +482,16 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
               </div>
               <span className="text-white font-semibold text-lg">Tudo em dia! 🎉</span>
               <span className="text-gray-400 text-sm text-center max-w-xs">
-                Nenhum lead precisa de atenção agora. Continue com o bom trabalho!
+                Nenhum lead encontrado com esses filtros. Tente outros critérios ou continue com o bom trabalho!
               </span>
-              <Button onClick={onClose} className="mt-4" style={{ background: "#4F46E5" }}>
-                Fechar
-              </Button>
+              <div className="flex gap-2 mt-4">
+                <Button onClick={() => setConfigPhase(true)} variant="outline" className="text-gray-300 border-gray-600 hover:bg-white/5">
+                  <Filter className="w-4 h-4 mr-1" /> Mudar filtros
+                </Button>
+                <Button onClick={onClose} style={{ background: "#4F46E5" }}>
+                  Fechar
+                </Button>
+              </div>
             </div>
           ) : currentLead ? (
             <AnimatePresence mode="wait" custom={direction}>
@@ -420,7 +595,6 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
 
                     {/* TAB: Follow Up */}
                     <TabsContent value="followup" className="space-y-3 mt-0">
-                      {/* Quick message templates */}
                       <div className="flex flex-wrap gap-1.5">
                         {QUICK_MESSAGES.map((msg, i) => (
                           <button
@@ -560,7 +734,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     </TabsContent>
                   </Tabs>
 
-                  {/* Advance button — always visible */}
+                  {/* Advance button */}
                   <button
                     onClick={goToNext}
                     className="w-full mt-4 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors"

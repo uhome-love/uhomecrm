@@ -1,13 +1,12 @@
 /**
  * useFocusLeads — Fetches leads needing attention for Focus Mode.
  *
- * Criteria:
+ * Criteria (filterable):
  *  1. No pending tasks at all (desatualizado)
  *  2. Overdue pending tasks (vence_em < today)
  *  3. Stage stalled > 5 days (stage_changed_at < now - 5d)
  *
- * Uses pipeline_leads + pipeline_tarefas + pipeline_stages.
- * Supports both "leads" and "negocios" pipelines.
+ * Supports filtering by stage and criteria type.
  */
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,11 +33,16 @@ export interface FocusLead {
   pipeline_tipo: string;
 }
 
+export interface FocusFilters {
+  stageIds?: string[];
+  criteria?: ("overdue_tasks" | "no_tasks" | "stagnant" | "all")[];
+}
+
 interface UseFocusLeadsReturn {
   leads: FocusLead[];
   loading: boolean;
   error: string | null;
-  reload: () => Promise<void>;
+  reload: (filters?: FocusFilters) => Promise<void>;
 }
 
 export function useFocusLeads(
@@ -49,7 +53,7 @@ export function useFocusLeads(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (filters?: FocusFilters) => {
     if (!corretorAuthId) return;
     setLoading(true);
     setError(null);
@@ -65,10 +69,15 @@ export function useFocusLeads(
         .eq("pipeline_tipo", pipelineTipo);
 
       const stageMap: Record<string, string> = {};
-      const stageIds: string[] = [];
+      let stageIds: string[] = [];
       for (const s of stagesData || []) {
         stageMap[s.id] = s.nome;
         stageIds.push(s.id);
+      }
+
+      // Apply stage filter
+      if (filters?.stageIds && filters.stageIds.length > 0) {
+        stageIds = stageIds.filter(id => filters.stageIds!.includes(id));
       }
 
       if (stageIds.length === 0) {
@@ -77,7 +86,7 @@ export function useFocusLeads(
         return;
       }
 
-      // 2. Get leads in active stages (not descarte/negocio criado for leads pipeline)
+      // 2. Get leads in active stages
       let query = supabase
         .from("pipeline_leads")
         .select("id, nome, telefone, telefone2, email, stage_id, stage_changed_at, origem, empreendimento, ultima_acao_at, tags, negocio_id, corretor_id, updated_at")
@@ -85,7 +94,6 @@ export function useFocusLeads(
         .eq("arquivado", false)
         .in("stage_id", stageIds);
 
-      // For leads pipeline, exclude "Negócio Criado" leads
       if (pipelineTipo === "leads") {
         query = query.is("negocio_id", null);
       }
@@ -127,6 +135,9 @@ export function useFocusLeads(
       fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
       const fiveDaysAgoStr = fiveDaysAgo.toISOString();
 
+      const criteriaFilter = filters?.criteria || ["all"];
+      const filterAll = criteriaFilter.includes("all");
+
       const focusLeads: FocusLead[] = [];
 
       for (const lead of leadsData) {
@@ -135,8 +146,12 @@ export function useFocusLeads(
         const hasNoTasks = !taskInfo;
         const stageStalled = lead.stage_changed_at < fiveDaysAgoStr;
 
-        // Must match at least one criterion
-        if (!hasOverdue && !hasNoTasks && !stageStalled) continue;
+        // Apply criteria filter
+        const matchesOverdue = hasOverdue && (filterAll || criteriaFilter.includes("overdue_tasks"));
+        const matchesNoTasks = hasNoTasks && (filterAll || criteriaFilter.includes("no_tasks"));
+        const matchesStagnant = stageStalled && (filterAll || criteriaFilter.includes("stagnant"));
+
+        if (!matchesOverdue && !matchesNoTasks && !matchesStagnant) continue;
 
         const lastContact = lead.ultima_acao_at || lead.updated_at;
         const daysSinceContact = lastContact
@@ -176,7 +191,7 @@ export function useFocusLeads(
         });
       }
 
-      // Sort by urgency: more alert_reasons first, then by days_without_contact
+      // Sort by urgency
       focusLeads.sort((a, b) => {
         if (b.alert_reasons.length !== a.alert_reasons.length) {
           return b.alert_reasons.length - a.alert_reasons.length;
