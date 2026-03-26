@@ -105,10 +105,10 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
       supabase.from("checkpoint_diario").select("corretor_id, presenca").in("corretor_id", teamProfileIds).gte("data", mesInicio).lte("data", mesFim).in("presenca", ["presente", "meio_periodo"]),
       // Leads Novos (roleta aceitos no mês)
       supabase.from("distribuicao_historico").select("corretor_id").in("corretor_id", teamUserIds).eq("acao", "aceito").gte("created_at", startTs).lte("created_at", endTs),
-      // Pipeline Ativo (snapshot atual, sem filtro de data)
-      supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).not("status", "in", '("descartado","perdido")'),
-      // Descartados no mês
-      supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("status", "descartado").gte("updated_at", startTs).lte("updated_at", endTs),
+      // Pipeline Ativo (snapshot atual — não arquivados)
+      supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("arquivado", false),
+      // Descartados no mês (arquivado = true com updated_at no mês)
+      supabase.from("pipeline_leads").select("corretor_id").in("corretor_id", teamUserIds).eq("arquivado", true).gte("updated_at", startTs).lte("updated_at", endTs),
     ]);
 
     const tentativas = r1.data || [];
