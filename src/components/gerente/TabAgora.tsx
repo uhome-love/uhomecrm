@@ -408,20 +408,6 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
                   </div>
                 </div>
 
-                {/* Rodapé: Feedback */}
-                <div className="mt-2">
-                  <Textarea
-                    placeholder="Feedback do gerente..."
-                    value={c.obs_gerente}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setCorretores(prev => prev.map(x => x.user_id === c.user_id ? { ...x, obs_gerente: val } : x));
-                    }}
-                    onBlur={() => saveObsGerente(c.user_id, c.obs_gerente)}
-                    className="text-[11px] min-h-[24px] resize-none py-1 px-2"
-                    rows={1}
-                  />
-                </div>
               </CardContent>
             </Card>
           );
