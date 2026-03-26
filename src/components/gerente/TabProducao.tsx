@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDateFilter } from "@/contexts/DateFilterContext";
-import GlobalDateFilterBar from "@/components/GlobalDateFilterBar";
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { todayBRT, formatBRLCompact } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
