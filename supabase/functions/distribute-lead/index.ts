@@ -481,72 +481,80 @@ async function distributeSingleLead(
 
   const authIds = [...profileToAuth.values()];
 
-  const { data: todayLeads } = await supabase
-    .from("pipeline_leads")
-    .select("corretor_id, distribuido_em")
-    .in("corretor_id", authIds)
-    .gte("distribuido_em", todayStart)
-    .in("aceite_status", ["aceito", "pendente"]);
+      const { data: todayLeads } = await supabase
+        .from("pipeline_leads")
+        .select("corretor_id, distribuido_em, empreendimento")
+        .in("corretor_id", authIds)
+        .gte("distribuido_em", todayStart)
+        .in("aceite_status", ["aceito", "pendente"]);
 
-  const { data: activeLeadsData } = await supabase
-    .from("pipeline_leads")
-    .select("corretor_id")
-    .in("corretor_id", authIds)
-    .in("aceite_status", ["aceito", "pendente"]);
+      const { data: activeLeadsData } = await supabase
+        .from("pipeline_leads")
+        .select("corretor_id")
+        .in("corretor_id", authIds)
+        .in("aceite_status", ["aceito", "pendente"]);
 
-  const totalAtivosCount = new Map<string, number>();
-  for (const uid of authIds) totalAtivosCount.set(uid, 0);
-  for (const l of activeLeadsData || []) {
-    totalAtivosCount.set(l.corretor_id, (totalAtivosCount.get(l.corretor_id) || 0) + 1);
-  }
+      const totalAtivosCount = new Map<string, number>();
+      for (const uid of authIds) totalAtivosCount.set(uid, 0);
+      for (const l of activeLeadsData || []) {
+        totalAtivosCount.set(l.corretor_id, (totalAtivosCount.get(l.corretor_id) || 0) + 1);
+      }
 
-  const leadsCount = new Map<string, number>();
-  const lastReceived = new Map<string, string>();
-  for (const uid of authIds) leadsCount.set(uid, 0);
-  for (const l of todayLeads || []) {
-    leadsCount.set(l.corretor_id, (leadsCount.get(l.corretor_id) || 0) + 1);
-    const prev = lastReceived.get(l.corretor_id);
-    if (!prev || l.distribuido_em > prev) lastReceived.set(l.corretor_id, l.distribuido_em);
-  }
+      // Per-segment lead count for balancing
+      const leadsCountBySegment = new Map<string, number>();
+      const leadsCountGlobal = new Map<string, number>();
+      const lastReceived = new Map<string, string>();
+      for (const uid of authIds) leadsCountGlobal.set(uid, 0);
+      for (const l of todayLeads || []) {
+        leadsCountGlobal.set(l.corretor_id, (leadsCountGlobal.get(l.corretor_id) || 0) + 1);
+        const seg = await resolveSegmento(supabase, l.empreendimento);
+        if (seg) {
+          const key = `${l.corretor_id}::${seg}`;
+          leadsCountBySegment.set(key, (leadsCountBySegment.get(key) || 0) + 1);
+        }
+        const prev = lastReceived.get(l.corretor_id);
+        if (!prev || l.distribuido_em > prev) lastReceived.set(l.corretor_id, l.distribuido_em);
+      }
 
-  // ── Exclude corretors who already timed out on this lead ──
-  const excludeAuthIds = new Set<string>();
-  if (excludeAuthUserId) excludeAuthIds.add(excludeAuthUserId);
+      // ── Exclude corretors who already timed out on this lead ──
+      const excludeAuthIds = new Set<string>();
+      if (excludeAuthUserId) excludeAuthIds.add(excludeAuthUserId);
 
-  const { data: prevTimeouts } = await supabase
-    .from("distribuicao_historico")
-    .select("corretor_id")
-    .eq("pipeline_lead_id", leadId)
-    .eq("acao", "timeout");
+      const { data: prevTimeouts } = await supabase
+        .from("distribuicao_historico")
+        .select("corretor_id")
+        .eq("pipeline_lead_id", leadId)
+        .eq("acao", "timeout");
 
-  if (prevTimeouts && prevTimeouts.length > 0) {
-    // corretor_id in distribuicao_historico is auth user_id
-    for (const t of prevTimeouts) {
-      if (t.corretor_id) excludeAuthIds.add(t.corretor_id);
-    }
-    console.info(JSON.stringify({ fn: "distribute-lead", level: "info", msg: "Excluding timed-out corretors", ctx: { leadId, excluded: excludeAuthIds.size }, ts: new Date().toISOString() }));
-  }
+      if (prevTimeouts && prevTimeouts.length > 0) {
+        for (const t of prevTimeouts) {
+          if (t.corretor_id) excludeAuthIds.add(t.corretor_id);
+        }
+        console.info(JSON.stringify({ fn: "distribute-lead", level: "info", msg: "Excluding timed-out corretors", ctx: { leadId, excluded: excludeAuthIds.size }, ts: new Date().toISOString() }));
+      }
 
-  const candidates: CorretorCandidate[] = [];
-  for (const [profileId, authId] of profileToAuth.entries()) {
-    if (excludeAuthIds.has(authId)) continue;
-    candidates.push({
-      corretorId: profileId,
-      authUserId: authId,
-      leadsHoje: leadsCount.get(authId) || 0,
-      totalAtivos: totalAtivosCount.get(authId) || 0,
-      lastReceivedAt: lastReceived.get(authId) || null,
-    });
-  }
+      const candidates: CorretorCandidate[] = [];
+      for (const [profileId, authId] of profileToAuth.entries()) {
+        if (excludeAuthIds.has(authId)) continue;
+        const segKey = segmentoId ? `${authId}::${segmentoId}` : null;
+        const leadsHojeSegmento = segKey ? (leadsCountBySegment.get(segKey) || 0) : (leadsCountGlobal.get(authId) || 0);
+        candidates.push({
+          corretorId: profileId,
+          authUserId: authId,
+          leadsHoje: leadsHojeSegmento,
+          totalAtivos: totalAtivosCount.get(authId) || 0,
+          lastReceivedAt: lastReceived.get(authId) || null,
+        });
+      }
 
-  candidates.sort((a, b) => {
-    if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
-    if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
-    if (!a.lastReceivedAt && b.lastReceivedAt) return -1;
-    if (a.lastReceivedAt && !b.lastReceivedAt) return 1;
-    if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
-    return 0;
-  });
+      candidates.sort((a, b) => {
+        if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
+        if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
+        if (!a.lastReceivedAt && b.lastReceivedAt) return -1;
+        if (a.lastReceivedAt && !b.lastReceivedAt) return 1;
+        if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
+        return 0;
+      });
 
   if (candidates.length === 0) {
     return { success: false, reason: "no_corretor_available", segmento_id: segmentoId };
