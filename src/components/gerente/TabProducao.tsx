@@ -305,6 +305,13 @@ export default function TabProducao({ teamUserIds, teamNameMap, profileId }: Pro
                   </tr>
                 )}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={16} className="py-2 px-3 text-xs text-muted-foreground text-center">
+                    ℹ️ Pontuação: Ligação = 1pt · Lead atualizado = 1pt · Follow-up = 2pts · Visita marcada = 3pts · Visita realizada = 5pts · Produzindo ≥ 10pts
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </CardContent>
