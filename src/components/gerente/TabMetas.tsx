@@ -175,7 +175,7 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
     // Per-corretor contribution
     const contribMap: Record<string, CorretorContrib> = {};
     teamUserIds.forEach(uid => {
-      contribMap[uid] = { user_id: uid, nome: teamNameMap[uid] || "Corretor", presencas: 0, ligacoes: 0, aproveitados: 0, leads_novos: 0, pipeline_ativo: 0, descartados: 0, visitas_marcadas: 0, visitas_realizadas: 0, negocios: 0, assinados: 0, vgv: 0 };
+      contribMap[uid] = { user_id: uid, nome: teamNameMap[uid] || "Corretor", presencas: 0, ligacoes: 0, aproveitados: 0, leads_novos: 0, pipeline_ativo: 0, descartados: 0, visitas_marcadas: 0, visitas_realizadas: 0, negocios: 0, assinados: 0, vgv: 0, has_parceria: false };
     });
 
     // Ligações + Aproveitados
