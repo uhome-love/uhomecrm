@@ -335,7 +335,12 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        leadsCount.set(chosen.authUserId, (leadsCount.get(chosen.authUserId) || 0) + 1);
+        // Update per-segment count
+        if (segmentoId) {
+          const segKey = `${chosen.authUserId}::${segmentoId}`;
+          leadsCountBySegment.set(segKey, (leadsCountBySegment.get(segKey) || 0) + 1);
+        }
+        leadsCountGlobal.set(chosen.authUserId, (leadsCountGlobal.get(chosen.authUserId) || 0) + 1);
         totalAtivosCount.set(chosen.authUserId, (totalAtivosCount.get(chosen.authUserId) || 0) + 1);
         lastReceived.set(chosen.authUserId, now.toISOString());
 
