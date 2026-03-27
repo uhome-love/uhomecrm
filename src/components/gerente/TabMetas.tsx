@@ -117,6 +117,9 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
     ]);
 
     const tentativas = r1.data || [];
+    console.log("[TabMetas] tentativas retornadas:", tentativas.length);
+    console.log("[TabMetas] sample:", tentativas.slice(0, 3));
+    console.log("[TabMetas] teamUserIds usados no filtro:", teamUserIds);
     const visitas = r2.data || [];
     const negociosAll = r3.data || [];
     const metasSalvas = r4.data as any;
