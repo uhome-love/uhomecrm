@@ -130,7 +130,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
   const vagas = getNum(item, "garagens", "vagas");
   const entrega = extractEntrega(item);
   const imovelId = String(codigo || item.id_imovel || item.id || idx);
-  const personalShareUrl = codigo ? shareUrlUhome({ tipo: item.tipo || "imovel", quartos: dorms, bairro: loc.bairro, codigo }, slugRef) : undefined;
+  const personalShareUrl = codigo ? shareUrlUhome({ tipo: item.tipo || "imovel", quartos: dorms, bairro: loc.bairro, codigo, slug: item.slug }, slugRef) : undefined;
 
   return (
     <div
