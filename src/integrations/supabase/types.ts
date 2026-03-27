@@ -6165,6 +6165,7 @@ export type Database = {
           cidade: string | null
           codigo: string
           comissao_percentual: number | null
+          comodidades: string[] | null
           condominio_nome: string | null
           construtora: string | null
           contrato: string | null
@@ -6227,6 +6228,7 @@ export type Database = {
           cidade?: string | null
           codigo: string
           comissao_percentual?: number | null
+          comodidades?: string[] | null
           condominio_nome?: string | null
           construtora?: string | null
           contrato?: string | null
@@ -6289,6 +6291,7 @@ export type Database = {
           cidade?: string | null
           codigo?: string
           comissao_percentual?: number | null
+          comodidades?: string[] | null
           condominio_nome?: string | null
           construtora?: string | null
           contrato?: string | null
