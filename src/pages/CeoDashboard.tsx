@@ -303,7 +303,7 @@ export default function CeoDashboard() {
   if (loading && !profile) return <CeoDashboardSkeleton />;
 
   return (
-    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-6 -m-6 min-h-full space-y-5 max-w-[1440px] mx-auto">
+    <div className="bg-[#f0f0f5] dark:bg-[#0e1525] p-4 -m-4 sm:p-6 sm:-m-6 min-h-full space-y-5 max-w-[1440px] mx-auto">
       {/* ═══ GREETING ═══ */}
       <GreetingBar
         name={profile?.nome || user?.email?.split("@")[0] || "CEO"}
