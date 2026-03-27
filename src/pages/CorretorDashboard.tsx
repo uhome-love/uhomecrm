@@ -185,7 +185,7 @@ export default function CorretorDashboard() {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-56px-2rem)] px-4 md:px-6 lg:px-8 py-4 overflow-auto">
+    <div className="flex flex-col h-[calc(100vh-56px-2rem)] px-0 sm:px-4 md:px-6 lg:px-8 py-4 overflow-auto">
       <ConfettiBurst trigger={confettiTrigger} intensity="moderate" />
       <MetaCelebration show={showMetaCelebration} nome={nome || "Corretor"} onDismiss={() => setShowMetaCelebration(false)} />
 

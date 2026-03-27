@@ -592,7 +592,7 @@ export default function CeoDashboard() {
             <CardTitle className="text-xs font-semibold">Funil de Negócios</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-7 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
               {negFunnelOrder.map((fase, idx) => {
                 const data = negocioFases.find((f: any) => f.fase === fase);
                 const count = data?.count || 0;

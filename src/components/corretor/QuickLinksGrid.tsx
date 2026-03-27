@@ -15,7 +15,7 @@ export default function QuickLinksGrid() {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
       {links.map((link, i) => (
         <motion.button
           key={link.path}
