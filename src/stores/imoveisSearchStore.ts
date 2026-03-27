@@ -83,6 +83,10 @@ export function filtersFromParams(params: URLSearchParams): Partial<ImoveisFilte
   if (params.get("ordem")) f.ordem = params.get("ordem") as ImoveisFilters["ordem"];
   if (params.get("q")) f.q = params.get("q")!;
   if (params.get("codigo")) f.codigo = params.get("codigo")!;
+  if (params.get("status_imovel")) f.statusImovel = params.get("status_imovel")!;
+  if (params.get("condominio")) f.condominioNome = params.get("condominio")!;
+  if (params.get("financiavel") === "1") f.financiavel = true;
+  if (params.get("mobiliado") === "1") f.mobiliado = true;
   return f;
 }
 
