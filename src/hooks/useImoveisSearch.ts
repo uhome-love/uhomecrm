@@ -9,6 +9,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchImoveis, type ImoveisFilters } from "@/services/imoveis";
+import { gerarSlugUhome } from "@/services/siteImoveis";
 import { extractEntrega, getNum, getNumIncZero } from "@/lib/imovelHelpers";
 import { toast } from "sonner";
 
