@@ -53,6 +53,8 @@ function semaphoreColor(p: number): { bg: string; text: string; label: string } 
 }
 
 export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
+  console.log("[TabMetas] teamUserIds recebidos:", teamUserIds);
+  console.log("[TabMetas] quantidade:", teamUserIds.length);
   const { user } = useAuth();
   const [metas, setMetas] = useState<MetasMes>({
     vgv_meta: 3_000_000, vgv_realizado: 0,
