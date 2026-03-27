@@ -55,6 +55,10 @@ const defaultFilters: ImoveisFilters = {
   q: "",
   bounds: null,
   codigo: "",
+  statusImovel: "",
+  condominioNome: "",
+  financiavel: false,
+  mobiliado: false,
 };
 
 export const useImoveisSearchStore = create<ImoveisSearchState>((set) => ({
