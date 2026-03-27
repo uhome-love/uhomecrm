@@ -163,10 +163,10 @@ export default function FechamentoDay() {
         }
         const { data: visitas, error: vErr } = await supabase
           .from("visitas")
-          .select("id,corretor_id,data_visita,status")
+          .select("id,corretor_id,created_at,status")
           .in("corretor_id", userIds)
-          .gte("data_visita", inicioHoje)
-          .lte("data_visita", fimHoje);
+          .gte("created_at", inicioHoje)
+          .lte("created_at", fimHoje);
         if (vErr) throw vErr;
         novosDados[key] = visitas || [];
       }
