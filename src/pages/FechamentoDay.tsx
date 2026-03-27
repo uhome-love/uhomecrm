@@ -128,7 +128,7 @@ export default function FechamentoDay() {
   const [relogio, setRelogio] = useState(new Date());
   const [ultimaVisita, setUltimaVisita] = useState({});
   const [ultimasVisitas, setUltimasVisitas] = useState([]);
-  const [debugData, setDebugData] = useState(null);
+  
 
   // Bug 4 fix: single AudioContext via ref
   const audioCtxRef = useRef(null);
@@ -253,22 +253,8 @@ export default function FechamentoDay() {
         });
       setUltimasVisitas(feedVisitas);
 
-      setDebugData({
-        hoje,
-        totalVisitas: todasVisitas.length,
-        porEquipe: {
-          gabrielle: novosDados.gabrielle.length,
-          bruno: novosDados.bruno.length,
-          gabriel: novosDados.gabriel.length,
-        },
-        primeiraVisita: todasVisitas[0] ?? null,
-        ultimaVisitaArr: todasVisitas[todasVisitas.length - 1] ?? null,
-        membrosCarregados: {
-          gabrielle: equipeIds.gabrielle.length,
-          bruno: equipeIds.bruno.length,
-          gabriel: equipeIds.gabriel.length,
-        },
-      });
+
+
 
       setRanking(sorted);
       setDados(novosDados);
@@ -442,22 +428,8 @@ export default function FechamentoDay() {
           )}
         </div>
 
-        {/* DEBUG TEMPORÁRIO */}
-        {debugData && (
-          <pre style={{
-            background: "#000",
-            color: "#0f0",
-            fontSize: 11,
-            padding: 12,
-            borderRadius: 8,
-            overflowX: "auto",
-            maxHeight: 200,
-            margin: "0 24px",
-            flexShrink: 0,
-          }}>
-            {JSON.stringify(debugData, null, 2)}
-          </pre>
-        )}
+
+
 
         {/* Main content: Cards + Feed lateral */}
         <div style={{ display: "flex", gap: 14, padding: "14px 24px", flex: 1, minHeight: 0, overflow: "hidden" }}>
