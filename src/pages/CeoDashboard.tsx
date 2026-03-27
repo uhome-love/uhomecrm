@@ -348,6 +348,19 @@ export default function CeoDashboard() {
         </div>
       </div>
 
+      {/* ═══ TABS ═══ */}
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList className="h-auto bg-muted/50">
+          <TabsTrigger value="dashboard" className="gap-1.5 text-xs py-1.5">
+            <BarChart3 className="h-3.5 w-3.5" /> Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="empresa" className="gap-1.5 text-xs py-1.5">
+            <Building2Tab className="h-3.5 w-3.5" /> Empresa
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-5 mt-0">
+
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {localPendentes.length > 0 && (
         <Card className="border-[#4F46E5]/40 bg-[#f7f7fb] dark:bg-[#141e30]">
