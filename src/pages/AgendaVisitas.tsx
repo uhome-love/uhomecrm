@@ -625,7 +625,43 @@ export default function AgendaVisitas() {
         </span>
       </div>
 
-      {/* ═══════ MINI WEEK CALENDAR ═══════ */}
+      {/* ═══════ CUSTOM DATE RANGE ═══════ */}
+      {period === "personalizado" && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-[12px] font-medium text-[#71717a]">De:</label>
+          <input
+            type="date"
+            value={customFrom}
+            onChange={e => setCustomFrom(e.target.value)}
+            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4F46E5] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+          />
+          <label className="text-[12px] font-medium text-[#71717a]">Até:</label>
+          <input
+            type="date"
+            value={customTo}
+            onChange={e => setCustomTo(e.target.value)}
+            className="text-[12px] h-[32px] px-2 bg-white dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[8px] outline-none focus:border-[#4F46E5] text-[#0a0a0a] dark:text-[#fafafa] transition-all"
+          />
+          <button
+            disabled={!customFrom || !customTo}
+            onClick={() => {
+              if (customFrom && customTo) {
+                // Force re-computation by toggling period
+                setPeriod("hoje");
+                setTimeout(() => setPeriod("personalizado"), 0);
+              }
+            }}
+            className={cn(
+              "h-[32px] px-4 text-[12px] font-semibold rounded-[8px] transition-all",
+              customFrom && customTo
+                ? "bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+                : "bg-[#e8e8f0] text-[#a1a1aa] cursor-not-allowed"
+            )}
+          >
+            Aplicar
+          </button>
+        </div>
+      )}
       {showWeekCalendar && (
         <div className="bg-white dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/8 rounded-[12px] p-3">
           <MiniWeekCalendar
