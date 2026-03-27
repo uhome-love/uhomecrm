@@ -319,6 +319,10 @@ export default function ImoveisPage() {
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
     bounds: activeBounds,
+    statusImovel: filters.statusImovel || undefined,
+    condominioNome: filters.condominioNome || undefined,
+    financiavel: filters.financiavel || undefined,
+    mobiliado: filters.mobiliado || undefined,
   }), [filters, bairrosSelecionados, page, activeBounds]);
 
   const debouncedQueryFilters = useDebounce(
