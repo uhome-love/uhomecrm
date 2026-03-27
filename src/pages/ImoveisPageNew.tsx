@@ -865,7 +865,7 @@ export default function ImoveisPage() {
                 )}
               </button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-72 p-4 space-y-4">
+            <PopoverContent align="start" className="w-80 max-h-[70vh] overflow-y-auto p-4 space-y-4">
               <p className="text-sm font-semibold text-foreground">Filtros avançados</p>
 
               {/* Banheiros */}
@@ -903,6 +903,32 @@ export default function ImoveisPage() {
                       )}
                     >{n}+</button>
                   ))}
+                </div>
+              </div>
+
+              {/* Comodidades */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Comodidades</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {["Piscina", "Churrasqueira", "Sacada", "Elevador", "Pet friendly", "Móveis planejados", "Ar condicionado", "Vista panorâmica", "Espaço gourmet", "Dep. empregada", "Lareira", "Terraço"].map(c => {
+                    const selected = filters.comodidades?.includes(c);
+                    return (
+                      <label key={c} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!selected}
+                          onChange={() => {
+                            const current = filters.comodidades || [];
+                            const next = selected ? current.filter(v => v !== c) : [...current, c];
+                            setFilter("comodidades", next);
+                            setPage(0); setAllImoveis([]);
+                          }}
+                          className="h-3.5 w-3.5 rounded border-border text-primary accent-primary"
+                        />
+                        <span className="text-[12px] text-foreground">{c}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -953,9 +979,9 @@ export default function ImoveisPage() {
               </div>
 
               {/* Limpar avançados */}
-              {(filters.banheiros > 0 || filters.vagas > 0 || !!filters.codigo || !!filters.condominioNome || filters.financiavel || filters.mobiliado) && (
+              {(filters.banheiros > 0 || filters.vagas > 0 || !!filters.codigo || !!filters.condominioNome || filters.financiavel || filters.mobiliado || (filters.comodidades?.length || 0) > 0) && (
                 <button
-                  onClick={() => { setFilter("banheiros", 0); setFilter("vagas", 0); setFilter("codigo", ""); setFilter("condominioNome", ""); setFilter("financiavel", false); setFilter("mobiliado", false); setPage(0); setAllImoveis([]); }}
+                  onClick={() => { setFilter("banheiros", 0); setFilter("vagas", 0); setFilter("codigo", ""); setFilter("condominioNome", ""); setFilter("financiavel", false); setFilter("mobiliado", false); setFilter("comodidades", []); setPage(0); setAllImoveis([]); }}
                   className="text-xs text-muted-foreground hover:text-foreground underline"
                 >
                   Limpar filtros avançados
