@@ -351,14 +351,16 @@ export default function GerenteDashboard() {
 
       {/* 4 Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-2">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           <TabsList className="flex-1 grid grid-cols-4 h-10">
             <TabsTrigger value="agora" className="text-xs font-semibold">Agora</TabsTrigger>
             <TabsTrigger value="producao" className="text-xs font-semibold">Produção</TabsTrigger>
             <TabsTrigger value="pipeline" className="text-xs font-semibold">Pipeline</TabsTrigger>
             <TabsTrigger value="metas" className="text-xs font-semibold">Metas</TabsTrigger>
           </TabsList>
-          <GlobalDateFilterBar />
+          <div className="shrink-0">
+            <GlobalDateFilterBar />
+          </div>
         </div>
 
         <TabsContent value="agora">
