@@ -131,43 +131,28 @@ export default function FechamentoDay() {
   const [floatEquipe, setFloatEquipe] = useState(null);
   const hoje = getHoje();
 
+  const GERENTES = [
+    { user_id: "7882d73e-ff5c-4b23-9b08-2adeadcd1800", equipe: "gabrielle" },
+    { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", equipe: "bruno" },
+    { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", equipe: "gabriel" },
+  ];
+
   async function carregar() {
     try {
-      const { data: gestoresData, error: gErr } = await supabase
-        .from("profiles")
-        .select("id,nome,user_id")
-        .eq("cargo", "gestor");
-      if (gErr) throw gErr;
-
+      // Buscar membros ativos de cada equipe pelo gerente_id fixo
       const { data: membros, error: mErr } = await supabase
         .from("team_members")
         .select("user_id,gerente_id,nome")
         .eq("status", "ativo");
       if (mErr) throw mErr;
 
-      const gestorNomes = {};
-      const gestorMap = {};
-      (gestoresData || []).forEach((g) => {
-        gestorNomes[g.id] = g.nome;
-        gestorMap[g.id] = [];
-      });
+      const equipeIds = { gabrielle: [], bruno: [], gabriel: [] };
       (membros || []).forEach((m) => {
-        if (m.gerente_id && gestorMap[m.gerente_id] !== undefined && m.user_id) {
-          gestorMap[m.gerente_id].push(m.user_id);
+        const gerente = GERENTES.find(g => g.user_id === m.gerente_id);
+        if (gerente && m.user_id) {
+          equipeIds[gerente.equipe].push(m.user_id);
         }
       });
-      setGestores(gestorNomes);
-
-      const equipeIds = { gabrielle: [], bruno: [], gabriel: [] };
-      Object.entries(gestorNomes).forEach(([gid, gnome]) => {
-        const n = (gnome || "").toLowerCase();
-        if (n.includes("gabrielle")) equipeIds.gabrielle = gestorMap[gid] || [];
-        else if (n.includes("bruno")) equipeIds.bruno = gestorMap[gid] || [];
-        else if (n.includes("gabriel") && !n.includes("gabrielle")) equipeIds.gabriel = gestorMap[gid] || [];
-      });
-
-      const inicioHoje = `${hoje}T00:00:00`;
-      const fimHoje = `${hoje}T23:59:59`;
 
       const novosDados = {};
       for (const [key, userIds] of Object.entries(equipeIds)) {
@@ -177,10 +162,9 @@ export default function FechamentoDay() {
         }
         const { data: visitas, error: vErr } = await supabase
           .from("visitas")
-          .select("id,corretor_id,created_at,status")
+          .select("id,corretor_id,data_visita,status")
           .in("corretor_id", userIds)
-          .gte("created_at", inicioHoje)
-          .lte("created_at", fimHoje);
+          .eq("data_visita", hoje);
         if (vErr) throw vErr;
         novosDados[key] = visitas || [];
       }
@@ -228,13 +212,10 @@ export default function FechamentoDay() {
   useEffect(() => {
     async function buscarRanking() {
       try {
-        const inicioHoje = `${hoje}T00:00:00`;
-        const fimHoje = `${hoje}T23:59:59`;
         const { data: visitas, error: vErr } = await supabase
           .from("visitas")
           .select("corretor_id")
-          .gte("created_at", inicioHoje)
-          .lte("created_at", fimHoje);
+          .eq("data_visita", hoje);
         if (vErr || !visitas) return;
 
         const contagemPorUser = {};
