@@ -328,6 +328,7 @@ export default function FechamentoDay() {
         @keyframes cardPulse { 0%{transform:scale(1)} 25%{transform:scale(1.03)} 50%{transform:scale(1)} 75%{transform:scale(1.02)} 100%{transform:scale(1)} }
         @keyframes floatUp { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.3)} }
         @keyframes metaPulse { 0%,100%{opacity:1;text-shadow:0 0 10px currentColor} 50%{opacity:.7;text-shadow:0 0 30px currentColor} }
+        @keyframes slideDown { 0%{opacity:0;transform:translateY(-20px)} 100%{opacity:1;transform:translateY(0)} }
         @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes glowPulse {
           0%,100% { box-shadow: 0 0 20px var(--glow-color, #9333EA66); }
