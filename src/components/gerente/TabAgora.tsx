@@ -100,25 +100,24 @@ export default function TabAgora({ teamUserIds, teamNameMap }: Props) {
     });
     const tmIds = members.map(m => m.id);
 
-    const [r2, r3, r5, r6, r8, rLeadsAll, rFollowupLeads, rCheckpoint, rLeadsRecebidos, rTarefasAtrasadas, rTarefasExistentes] = await Promise.all([
+    const [r2, r3, r5, r6, r8, rLeadsAll, rFollowupLeads, rCheckpoint, rLeadsRecebidos, rTarefasAtrasadas, rTarefasExistentes, rTarefasConcluidas] = await Promise.all([
       supabase.from("profiles").select("user_id, avatar_url").in("user_id", teamUserIds),
       supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", todayStart).lte("created_at", todayEnd),
       supabase.from("corretor_disponibilidade").select("user_id, status, na_roleta, updated_at").in("user_id", teamUserIds),
-      // Visitas do dia — buscar todas para separar marcadas vs realizadas
       supabase.from("visitas").select("corretor_id, status").in("corretor_id", teamUserIds).eq("data_visita", today),
       supabase.from("corretor_daily_goals").select("corretor_id, meta_ligacoes").in("corretor_id", teamUserIds).eq("data", today),
-      // Todos os leads ativos do time (para desatualizados)
       supabase.from("pipeline_leads").select("id, corretor_id").in("corretor_id", teamUserIds).eq("arquivado", false),
-      // Follow-ups = leads únicos tocados hoje (ultima_acao_at = hoje)
+      // Leads atualizados hoje (ultima_acao_at)
       supabase.from("pipeline_leads").select("id, corretor_id").in("corretor_id", teamUserIds).gte("ultima_acao_at", todayStart).lte("ultima_acao_at", todayEnd),
       tmIds.length > 0
         ? supabase.from("checkpoints").select("id").eq("gerente_id", user.id).eq("data", today).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from("distribuicao_historico").select("corretor_id").in("corretor_id", teamUserIds).eq("acao", "aceito").gte("created_at", todayStart).lte("created_at", todayEnd),
-      // Tarefas atrasadas (pendente + data_vencimento < hoje)
       supabase.from("pipeline_tarefas").select("pipeline_lead_id").in("responsavel_id", teamUserIds).eq("status", "pendente").lt("data_vencimento", today),
-      // Todas as tarefas existentes (para identificar leads sem tarefa)
       supabase.from("pipeline_tarefas").select("pipeline_lead_id").in("responsavel_id", teamUserIds),
+      // Follow-ups = tarefas concluídas hoje
+      supabase.from("pipeline_tarefas").select("responsavel_id").in("responsavel_id", teamUserIds).gte("concluida_em", todayStart).lte("concluida_em", todayEnd),
+    ]);
     ]);
 
     let presencaMap: Record<string, string> = {};
