@@ -125,6 +125,7 @@ const PrivacidadePage = lazyRetry(() => import("./pages/PrivacidadePage"));
 const WhatsAppCampaignDispatcher = lazyRetry(() => import("./pages/WhatsAppCampaignDispatcherPage"));
 const EmailMarketingPage = lazyRetry(() => import("./pages/EmailMarketingPage"));
 const DisparadorLigacoesIA = lazyRetry(() => import("./pages/DisparadorLigacoesIA"));
+const FechamentoDay = lazyRetry(() => import("./pages/FechamentoDay"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
