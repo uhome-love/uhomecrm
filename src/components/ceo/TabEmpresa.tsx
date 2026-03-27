@@ -105,18 +105,19 @@ export default function TabEmpresa() {
       const kpiMap: Record<string, any> = {};
       (kpisData || []).forEach((k: any) => { kpiMap[k.auth_user_id] = k; });
 
-      // 4. Get active negocios
+      // 4. Get active negocios from 'negocios' table
       const { data: negocios } = await supabase
-        .from("pipeline_negocios")
-        .select("corretor_id, valor_total, status")
-        .in("status", ["ativo", "novo_negocio", "proposta", "negociacao", "documentacao"])
-        .in("corretor_id", allUserIds);
+        .from("negocios")
+        .select("auth_user_id, vgv_estimado, vgv_final, fase")
+        .in("fase", ["novo_negocio", "proposta", "negociacao", "documentacao"])
+        .in("auth_user_id", allUserIds);
 
       const negMap: Record<string, { count: number; vgv: number }> = {};
       (negocios || []).forEach((n: any) => {
-        if (!negMap[n.corretor_id]) negMap[n.corretor_id] = { count: 0, vgv: 0 };
-        negMap[n.corretor_id].count++;
-        negMap[n.corretor_id].vgv += Number(n.valor_total || 0);
+        const uid = n.auth_user_id;
+        if (!negMap[uid]) negMap[uid] = { count: 0, vgv: 0 };
+        negMap[uid].count++;
+        negMap[uid].vgv += Number(n.vgv_estimado || n.vgv_final || 0);
       });
 
       // 5. Build team data
