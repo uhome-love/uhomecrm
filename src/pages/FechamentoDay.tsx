@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const META_VISITAS = 50;
@@ -10,34 +10,19 @@ const EQUIPES = [
   { nome: "Gabriel", cor: "#16A34A", corClara: "#F0FDF4", corBorda: "#15803D", emoji: "💚", id: "gabriel" },
 ];
 
-function formatTime(d) {
+const GERENTES = [
+  { user_id: "7882d73e-ff5c-4b23-9b08-2adeadcd1800", equipe: "gabrielle" },
+  { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", equipe: "bruno" },
+  { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", equipe: "gabriel" },
+];
+
+function formatTime(d: Date) {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 function getHoje() {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function tocarSom() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const gainNode = ctx.createGain();
-    gainNode.connect(ctx.destination);
-    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-    const notas = [523, 659, 784, 1047];
-    notas.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      osc.connect(gainNode);
-      osc.frequency.value = freq;
-      osc.type = "sine";
-      osc.start(ctx.currentTime + i * 0.12);
-      osc.stop(ctx.currentTime + i * 0.12 + 0.15);
-    });
-  } catch (_) {}
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 function ProgressBar({ valor, meta, cor }) {
@@ -73,10 +58,16 @@ function ProgressBar({ valor, meta, cor }) {
   );
 }
 
+// Bug 2+3 fix: Confetti recycles particles
 function Confetti({ active }) {
   const canvasRef = useRef(null);
+  const animRef = useRef(null);
+
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      return;
+    }
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -84,7 +75,7 @@ function Confetti({ active }) {
     canvas.height = canvas.offsetHeight;
     const particles = Array.from({ length: 80 }, () => ({
       x: Math.random() * canvas.width,
-      y: -10,
+      y: Math.random() * canvas.height * -1,
       vy: 2 + Math.random() * 3,
       vx: (Math.random() - 0.5) * 2,
       size: 6 + Math.random() * 8,
@@ -92,13 +83,17 @@ function Confetti({ active }) {
       rot: Math.random() * 360,
       rotV: (Math.random() - 0.5) * 6,
     }));
-    let frame;
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach((p) => {
         p.y += p.vy;
         p.x += p.vx;
         p.rot += p.rotV;
+        // Recycle: when particle exits bottom, reset to top
+        if (p.y > canvas.height) {
+          p.y = -10;
+          p.x = Math.random() * canvas.width;
+        }
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate((p.rot * Math.PI) / 180);
@@ -106,11 +101,12 @@ function Confetti({ active }) {
         ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
         ctx.restore();
       });
-      frame = requestAnimationFrame(draw);
+      animRef.current = requestAnimationFrame(draw);
     };
     draw();
-    return () => cancelAnimationFrame(frame);
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
   }, [active]);
+
   if (!active) return null;
   return (
     <canvas
@@ -122,24 +118,51 @@ function Confetti({ active }) {
 
 export default function FechamentoDay() {
   const [dados, setDados] = useState({ gabrielle: [], bruno: [], gabriel: [] });
-  const [gestores, setGestores] = useState({});
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const prevTotais = useRef({});
   const [flashEquipe, setFlashEquipe] = useState(null);
   const [floatEquipe, setFloatEquipe] = useState(null);
-  const hoje = getHoje();
+  const [ranking, setRanking] = useState([]);
+  const [relogio, setRelogio] = useState(new Date());
+  const [ultimaVisita, setUltimaVisita] = useState({});
 
-  const GERENTES = [
-    { user_id: "7882d73e-ff5c-4b23-9b08-2adeadcd1800", equipe: "gabrielle" },
-    { user_id: "fb61ecda-5c4b-49d7-bda7-ccf9b589da07", equipe: "bruno" },
-    { user_id: "b3a1c3a4-f109-40ae-b5d4-15eff3a541ab", equipe: "gabriel" },
-  ];
-
-  async function carregar() {
+  // Bug 4 fix: single AudioContext via ref
+  const audioCtxRef = useRef(null);
+  function tocarSom() {
     try {
-      // Buscar membros ativos de cada equipe pelo gerente_id fixo
+      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = audioCtxRef.current;
+      const gainNode = ctx.createGain();
+      gainNode.connect(ctx.destination);
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+      const notas = [523, 659, 784, 1047];
+      notas.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.connect(gainNode);
+        osc.frequency.value = freq;
+        osc.type = "sine";
+        osc.start(ctx.currentTime + i * 0.12);
+        osc.stop(ctx.currentTime + i * 0.12 + 0.15);
+      });
+    } catch (_) {}
+  }
+
+  // Melhoria 1: relógio ao vivo
+  useEffect(() => {
+    const iv = setInterval(() => setRelogio(new Date()), 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Bug 6+7 fix: hoje recalculado a cada chamada, lógica unificada
+  const atualizarTudo = useCallback(async () => {
+    try {
+      const hoje = getHoje();
+      const inicioHoje = `${hoje}T00:00:00`;
+      const fimHoje = `${hoje}T23:59:59`;
+
+      // Buscar membros ativos
       const { data: membros, error: mErr } = await supabase
         .from("team_members")
         .select("user_id,gerente_id,nome")
@@ -147,30 +170,47 @@ export default function FechamentoDay() {
       if (mErr) throw mErr;
 
       const equipeIds = { gabrielle: [], bruno: [], gabriel: [] };
+      const nomeMap = {};
       (membros || []).forEach((m) => {
         const gerente = GERENTES.find(g => g.user_id === m.gerente_id);
         if (gerente && m.user_id) {
           equipeIds[gerente.equipe].push(m.user_id);
         }
+        if (m.user_id) nomeMap[m.user_id] = m.nome;
       });
 
-      const inicioHoje = `${hoje}T00:00:00`;
-      const fimHoje = `${hoje}T23:59:59`;
-
-      const novosDados = {};
-      for (const [key, userIds] of Object.entries(equipeIds)) {
-        if (userIds.length === 0) {
-          novosDados[key] = [];
-          continue;
-        }
+      // Buscar todas as visitas de hoje (para equipes + ranking)
+      const allUserIds = Object.values(equipeIds).flat();
+      let todasVisitas = [];
+      if (allUserIds.length > 0) {
         const { data: visitas, error: vErr } = await supabase
           .from("visitas")
           .select("id,corretor_id,created_at,status")
-          .in("corretor_id", userIds)
+          .in("corretor_id", allUserIds)
           .gte("created_at", inicioHoje)
           .lte("created_at", fimHoje);
         if (vErr) throw vErr;
-        novosDados[key] = visitas || [];
+        todasVisitas = visitas || [];
+      }
+
+      // Separar por equipe
+      const novosDados = { gabrielle: [], bruno: [], gabriel: [] };
+      const ultimaPorEquipe = {};
+      for (const [key, userIds] of Object.entries(equipeIds)) {
+        const visitasEquipe = todasVisitas.filter(v => userIds.includes(v.corretor_id));
+        novosDados[key] = visitasEquipe;
+
+        // Melhoria 5: última visita por equipe
+        if (visitasEquipe.length > 0) {
+          const maisRecente = visitasEquipe.reduce((a, b) =>
+            new Date(a.created_at) > new Date(b.created_at) ? a : b
+          );
+          const hora = new Date(maisRecente.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+          ultimaPorEquipe[key] = {
+            nome: nomeMap[maisRecente.corretor_id] || "—",
+            hora,
+          };
+        }
       }
 
       // Detecta nova visita (flash + som)
@@ -186,7 +226,20 @@ export default function FechamentoDay() {
         prevTotais.current[key] = novoTotal;
       }
 
+      // Ranking individual
+      const contagemPorUser = {};
+      todasVisitas.forEach((v) => {
+        contagemPorUser[v.corretor_id] = (contagemPorUser[v.corretor_id] || 0) + 1;
+      });
+      const sorted = Object.entries(contagemPorUser)
+        .map(([uid, count]) => ({ nome: nomeMap[uid] || uid.slice(0, 8), count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3)
+        .map((item, i) => ({ ...item, pos: i + 1 }));
+
+      setRanking(sorted);
       setDados(novosDados);
+      setUltimaVisita(ultimaPorEquipe);
       setUltimaAtualizacao(new Date());
       setLoading(false);
       setErro(null);
@@ -194,13 +247,28 @@ export default function FechamentoDay() {
       setErro(e.message);
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    carregar();
-    const interval = setInterval(carregar, 30000);
-    return () => clearInterval(interval);
   }, []);
+
+  // Melhoria 7: Realtime + fallback polling
+  useEffect(() => {
+    atualizarTudo();
+
+    // Fallback polling 30s
+    const interval = setInterval(atualizarTudo, 30000);
+
+    // Realtime subscription
+    const channel = supabase
+      .channel("visitas-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "visitas" }, () => {
+        atualizarTudo();
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [atualizarTudo]);
 
   const totais = {
     gabrielle: dados.gabrielle.length,
@@ -211,51 +279,9 @@ export default function FechamentoDay() {
   const totalGeral = totais.gabrielle + totais.bruno + totais.gabriel;
   const metaGeralAtingida = totalGeral >= META_VISITAS;
 
-  // Ranking individual
-  const [ranking, setRanking] = useState([]);
-  useEffect(() => {
-    async function buscarRanking() {
-      try {
-        const inicioHoje = `${hoje}T00:00:00`;
-        const fimHoje = `${hoje}T23:59:59`;
-        const { data: visitas, error: vErr } = await supabase
-          .from("visitas")
-          .select("corretor_id")
-          .gte("created_at", inicioHoje)
-          .lte("created_at", fimHoje);
-        if (vErr || !visitas) return;
-
-        const contagemPorUser = {};
-        visitas.forEach((v) => {
-          contagemPorUser[v.corretor_id] = (contagemPorUser[v.corretor_id] || 0) + 1;
-        });
-
-        const userIds = Object.keys(contagemPorUser);
-        if (userIds.length === 0) { setRanking([]); return; }
-
-        const { data: members } = await supabase
-          .from("team_members")
-          .select("user_id,nome")
-          .in("user_id", userIds);
-
-        const nomeMap = {};
-        (members || []).forEach((m) => { if (m.user_id) nomeMap[m.user_id] = m.nome; });
-
-        const sorted = Object.entries(contagemPorUser)
-          .map(([uid, count]) => ({ nome: nomeMap[uid] || uid.slice(0, 8), count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 3)
-          .map((item, i) => ({ ...item, pos: i + 1 }));
-        setRanking(sorted);
-      } catch (_) {}
-    }
-    buscarRanking();
-    const iv = setInterval(buscarRanking, 30000);
-    return () => clearInterval(iv);
-  }, [hoje]);
-
   const medalhas = ["🥇", "🥈", "🥉"];
   const ordemEquipes = [...EQUIPES].sort((a, b) => totais[b.id] - totais[a.id]);
+  const liderEquipe = ordemEquipes[0]?.id;
 
   if (loading) {
     return (
@@ -288,10 +314,20 @@ export default function FechamentoDay() {
         @keyframes floatUp { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.3)} }
         @keyframes metaPulse { 0%,100%{opacity:1;text-shadow:0 0 10px currentColor} 50%{opacity:.7;text-shadow:0 0 30px currentColor} }
         @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes glowPulse {
+          0%,100% { box-shadow: 0 0 20px var(--glow-color, #9333EA66); }
+          50% { box-shadow: 0 0 50px var(--glow-color-strong, #9333EAcc); }
+        }
+        @keyframes festaBg {
+          0%,100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
         * { box-sizing: border-box; }
         body { margin: 0; }
         .card-pulse { animation: cardPulse 0.6s ease-out; }
         .float-up { animation: floatUp 1.5s ease-out forwards; pointer-events: none; }
+        .glow-leader { animation: glowPulse 2s ease-in-out infinite; }
+        .festa-card { background-size: 200% 200% !important; animation: festaBg 3s ease infinite !important; }
       `}</style>
       <div style={{
         height: "100vh",
@@ -305,7 +341,7 @@ export default function FechamentoDay() {
         margin: 0,
         position: "relative",
       }}>
-        <Confetti active={totalGeral >= META_VISITAS} />
+        <Confetti active={metaGeralAtingida} />
 
         {/* Header */}
         <div style={{ textAlign: "center", padding: "10px 24px 6px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
@@ -329,8 +365,15 @@ export default function FechamentoDay() {
             textTransform: "uppercase",
             fontFamily: "monospace",
             fontWeight: 400,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 16,
           }}>
-            {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+            <span>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</span>
+            <span style={{ color: "#F59E0B", fontSize: "clamp(12px, 1.5vw, 18px)", fontWeight: 700, letterSpacing: 2 }}>
+              {formatTime(relogio)}
+            </span>
           </p>
         </div>
 
@@ -351,14 +394,14 @@ export default function FechamentoDay() {
             <span style={{
               fontSize: "clamp(20px, 3vw, 36px)",
               fontWeight: 900,
-              color: totalGeral >= META_VISITAS ? "#22c55e" : "#F59E0B",
+              color: metaGeralAtingida ? "#22c55e" : "#F59E0B",
               lineHeight: 1,
               letterSpacing: 2,
               fontFamily: "'Bebas Neue', 'Impact', sans-serif",
             }}>{totalGeral} / {META_VISITAS}</span>
           </div>
-          <ProgressBar valor={totalGeral} meta={META_VISITAS} cor={totalGeral >= META_VISITAS ? "#22c55e" : "#F59E0B"} />
-          {totalGeral >= META_VISITAS && (
+          <ProgressBar valor={totalGeral} meta={META_VISITAS} cor={metaGeralAtingida ? "#22c55e" : "#F59E0B"} />
+          {metaGeralAtingida && (
             <div style={{ textAlign: "center", marginTop: 4, fontSize: "clamp(14px, 2vw, 20px)", letterSpacing: 4, color: "#22c55e", animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
               🎉 CHURRASCO GARANTIDO! 🎉
             </div>
@@ -379,12 +422,25 @@ export default function FechamentoDay() {
             const metaBatida = total >= META_VISITAS;
             const isFlash = flashEquipe === equipe.id;
             const isFloat = floatEquipe === equipe.id;
+            const isLider = equipe.id === liderEquipe && total > 0;
+            const ultima = ultimaVisita[equipe.id];
+
             return (
               <div
                 key={equipe.id}
-                className={isFlash ? "card-pulse" : ""}
+                className={[
+                  isFlash ? "card-pulse" : "",
+                  isLider ? "glow-leader" : "",
+                  metaBatida ? "festa-card" : "",
+                ].filter(Boolean).join(" ")}
                 style={{
-                  background: isFlash ? `${equipe.cor}22` : "#0d0d20",
+                  "--glow-color": `${equipe.cor}66`,
+                  "--glow-color-strong": `${equipe.cor}cc`,
+                  background: metaBatida
+                    ? `linear-gradient(135deg, ${equipe.cor}33, #0d0d20, ${equipe.cor}22)`
+                    : isFlash
+                    ? `${equipe.cor}22`
+                    : "#0d0d20",
                   border: `2px solid ${isFlash ? equipe.cor : metaBatida ? equipe.cor + "88" : equipe.corBorda + "44"}`,
                   borderRadius: 16,
                   padding: "16px 20px",
@@ -446,14 +502,18 @@ export default function FechamentoDay() {
                   margin: "4px 0",
                 }}>{total}</div>
 
+                {/* Melhoria 5: última visita */}
                 <div style={{
                   fontSize: 10,
-                  letterSpacing: 3,
+                  letterSpacing: 2,
                   color: "#ffffff55",
                   textTransform: "uppercase",
                   fontFamily: "monospace",
-                  marginBottom: 8,
-                }}>visitas marcadas hoje</div>
+                  marginBottom: 6,
+                  minHeight: 14,
+                }}>
+                  {ultima ? `Última: ${ultima.nome} às ${ultima.hora}` : "visitas marcadas hoje"}
+                </div>
 
                 {/* Progress bar per team */}
                 <ProgressBar valor={total} meta={META_VISITAS} cor={equipe.cor} />
@@ -463,7 +523,7 @@ export default function FechamentoDay() {
                   <span>{metaBatida ? "✅ CONCLUÍDA" : `FALTAM: ${META_VISITAS - total}`}</span>
                 </div>
 
-                {/* Meta batida indicator */}
+                {/* Melhoria 8: Meta batida festa */}
                 {metaBatida && (
                   <div style={{
                     textAlign: "center",
@@ -542,7 +602,7 @@ export default function FechamentoDay() {
             marginRight: 6,
             animation: "pulse 1.5s infinite",
           }} />
-          AO VIVO · ATUALIZA A CADA 30S
+          AO VIVO · REALTIME + POLLING 30S
           {ultimaAtualizacao && ` · ${formatTime(ultimaAtualizacao)}`}
         </div>
       </div>
