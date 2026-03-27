@@ -127,6 +127,7 @@ export default function FechamentoDay() {
   const [ranking, setRanking] = useState([]);
   const [relogio, setRelogio] = useState(new Date());
   const [ultimaVisita, setUltimaVisita] = useState({});
+  const [ultimasVisitas, setUltimasVisitas] = useState([]);
 
   // Bug 4 fix: single AudioContext via ref
   const audioCtxRef = useRef(null);
