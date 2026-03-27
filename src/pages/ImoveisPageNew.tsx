@@ -792,7 +792,7 @@ export default function ImoveisPage() {
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all shrink-0",
                   (filters.banheiros || filters.vagas)
-                    || filters.codigo
+                    || filters.codigo || filters.condominioNome || filters.financiavel || filters.mobiliado
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-card text-foreground hover:border-primary/50"
                 )}
