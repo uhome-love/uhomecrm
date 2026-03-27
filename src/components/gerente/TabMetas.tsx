@@ -136,7 +136,7 @@ export default function TabMetas({ teamUserIds, teamNameMap }: Props) {
       supabase.from("pipeline_parcerias").select("pipeline_lead_id, corretor_principal_id, corretor_parceiro_id, divisao_principal, divisao_parceiro").eq("status", "ativa"),
     ]);
 
-    console.log("[TabMetas] tentativas retornadas:", tentativas.length);
+    
     const visitas = r2.data || [];
     const negociosAll = r3.data || [];
     const metasSalvas = r4.data as any;
