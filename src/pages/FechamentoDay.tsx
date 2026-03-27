@@ -428,22 +428,8 @@ export default function FechamentoDay() {
           )}
         </div>
 
-        {/* DEBUG TEMPORÁRIO */}
-        {debugData && (
-          <pre style={{
-            background: "#000",
-            color: "#0f0",
-            fontSize: 11,
-            padding: 12,
-            borderRadius: 8,
-            overflowX: "auto",
-            maxHeight: 200,
-            margin: "0 24px",
-            flexShrink: 0,
-          }}>
-            {JSON.stringify(debugData, null, 2)}
-          </pre>
-        )}
+
+
 
         {/* Main content: Cards + Feed lateral */}
         <div style={{ display: "flex", gap: 14, padding: "14px 24px", flex: 1, minHeight: 0, overflow: "hidden" }}>
