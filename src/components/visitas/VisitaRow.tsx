@@ -119,6 +119,8 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
   const local = LOCAL_LABELS[v.local_visita || ""] || v.local_visita || "";
   const produto = [v.empreendimento, local].filter(Boolean).join(" · ");
   const responsavelInfo = (v as any).responsavel_visita ? RESPONSAVEL_LABELS[(v as any).responsavel_visita] : null;
+  const isCompartilhada = (v as any)._compartilhada === true;
+  const parceiros: string[] = (v as any)._parceiros || [];
 
   return (
     <div

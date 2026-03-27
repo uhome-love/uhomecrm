@@ -28,11 +28,44 @@ interface DateGroup {
   total: number;
 }
 
-function buildGroups(visitas: Visita[]): DateGroup[] {
-  const today = startOfDay(new Date());
-  const map = new Map<string, Visita[]>();
+/** Merge visits that share nome_cliente + data_visita + hora_visita into one entry */
+function mergeSharedVisits(visitas: Visita[]): Visita[] {
+  const keyMap = new Map<string, Visita[]>();
 
   for (const v of visitas) {
+    const key = `${v.nome_cliente?.toLowerCase().trim()}|${v.data_visita}|${v.hora_visita || ""}`;
+    if (!keyMap.has(key)) keyMap.set(key, []);
+    keyMap.get(key)!.push(v);
+  }
+
+  const merged: Visita[] = [];
+  for (const group of keyMap.values()) {
+    if (group.length === 1) {
+      merged.push(group[0]);
+    } else {
+      // Use the first as primary, attach partner names
+      const primary = { ...group[0] };
+      const parceiros = group
+        .filter((_, i) => i > 0)
+        .map(v => v.corretor_nome || "Corretor")
+        .filter(Boolean);
+      const allNames = [primary.corretor_nome || "Corretor", ...parceiros];
+      (primary as any)._compartilhada = true;
+      (primary as any)._parceiros = allNames;
+      (primary as any)._allIds = group.map(v => v.id);
+      merged.push(primary);
+    }
+  }
+
+  return merged;
+}
+
+function buildGroups(visitas: Visita[]): DateGroup[] {
+  const today = startOfDay(new Date());
+  const deduped = mergeSharedVisits(visitas);
+  const map = new Map<string, Visita[]>();
+
+  for (const v of deduped) {
     const key = v.data_visita;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(v);
