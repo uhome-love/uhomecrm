@@ -238,6 +238,20 @@ export default function FechamentoDay() {
         .slice(0, 3)
         .map((item, i) => ({ ...item, pos: i + 1 }));
 
+      // Feed últimas visitas
+      const feedVisitas = [...todasVisitas]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 10)
+        .map(v => {
+          const equipe = Object.entries(equipeIds).find(([, ids]) => ids.includes(v.corretor_id))?.[0];
+          return {
+            nome: nomeMap[v.corretor_id] || "—",
+            hora: new Date(v.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+            equipe,
+          };
+        });
+      setUltimasVisitas(feedVisitas);
+
       setRanking(sorted);
       setDados(novosDados);
       setUltimaVisita(ultimaPorEquipe);
