@@ -656,7 +656,9 @@ export default function AgendaVisitas() {
         )}
       </div>
 
-      {/* ═══════ LINE 2: Status pills (left) + Period tabs (right) ═══════ */}
+    </div>
+  );
+}
       <div className="flex items-center justify-between gap-3">
         {/* Status pills */}
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
