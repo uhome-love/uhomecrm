@@ -850,6 +850,13 @@ export default function CeoDashboard() {
         </div>
       </section>
 
+        </TabsContent>
+
+        <TabsContent value="empresa" className="mt-0">
+          <TabEmpresa />
+        </TabsContent>
+      </Tabs>
+
       {/* ═══ MODALS ═══ */}
       <FilaCeoDispatchModal open={dispatchOpen} onOpenChange={setDispatchOpen} onDispatched={() => { reload(); loadFilaCeo(); }} />
       <BulkEmpreendimentoAssign open={bulkEmpOpen} onOpenChange={setBulkEmpOpen} onComplete={reload} />
