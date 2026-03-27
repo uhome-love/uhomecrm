@@ -732,16 +732,54 @@ export default function ImoveisPage() {
             ))}
           </FilterPill>
 
-          {/* Status do Imóvel */}
+          {/* Status do Imóvel — multi-select */}
           <FilterPill
             label="Status"
-            value={filters.statusImovel || undefined}
-            active={!!filters.statusImovel}
-            onClear={() => { setFilter("statusImovel", ""); setPage(0); setAllImoveis([]); }}
+            value={filters.statusImovelList?.length ? (filters.statusImovelList.length === 1 ? filters.statusImovelList[0] : `${filters.statusImovelList.length} status`) : undefined}
+            active={!!(filters.statusImovelList?.length)}
+            onClear={() => { setFilter("statusImovelList", []); setFilter("entregaAnoMin", 0); setFilter("entregaAnoMax", 0); setPage(0); setAllImoveis([]); }}
           >
-            {["Usado", "Novo", "Em construção", "Na planta"].map(s => (
-              <PillOption key={s} selected={filters.statusImovel === s} onClick={() => { setFilter("statusImovel", filters.statusImovel === s ? "" : s); setPage(0); setAllImoveis([]); }}>{s}</PillOption>
-            ))}
+            {["Usado", "Novo", "Em construção", "Na planta"].map(s => {
+              const selected = filters.statusImovelList?.includes(s);
+              return (
+                <PillOption key={s} selected={!!selected} onClick={() => {
+                  const current = filters.statusImovelList || [];
+                  const next = selected ? current.filter(v => v !== s) : [...current, s];
+                  setFilter("statusImovelList", next);
+                  // Clear entrega if no construction statuses
+                  if (!next.includes("Em construção") && !next.includes("Na planta")) {
+                    setFilter("entregaAnoMin", 0);
+                    setFilter("entregaAnoMax", 0);
+                  }
+                  setPage(0); setAllImoveis([]);
+                }}>{s}</PillOption>
+              );
+            })}
+            {/* Entrega range — only when Em construção or Na planta is selected */}
+            {(filters.statusImovelList?.includes("Em construção") || filters.statusImovelList?.includes("Na planta")) && (
+              <div className="mt-2 border-t border-border pt-3 px-1">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Previsão de entrega</p>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={filters.entregaAnoMin || ""}
+                    onChange={(e) => { setFilter("entregaAnoMin", Number(e.target.value) || 0); setPage(0); setAllImoveis([]); }}
+                    className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="">A partir de</option>
+                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <span className="text-xs text-muted-foreground">–</span>
+                  <select
+                    value={filters.entregaAnoMax || ""}
+                    onChange={(e) => { setFilter("entregaAnoMax", Number(e.target.value) || 0); setPage(0); setAllImoveis([]); }}
+                    className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="">Até</option>
+                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
           </FilterPill>
 
 
