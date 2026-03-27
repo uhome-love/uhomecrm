@@ -148,8 +148,24 @@ Deno.serve(async (req) => {
       case "detail": {
         const { slug } = params;
         if (!slug) return errorResponse("slug required", 400);
+        // Try exact slug match first
         const { data, error } = await site.from("imoveis").select("*").eq("slug", slug).maybeSingle();
         if (error) return errorResponse(error.message, 400);
+        // If not found, try fallback: extract codigo from end of slug and search by it
+        if (!data) {
+          const parts = slug.split("-");
+          // Codigo is the last 2 parts joined (e.g. "14267-LI")
+          if (parts.length >= 2) {
+            const codigoCandidate = parts.slice(-2).join("-");
+            const { data: fallbackData, error: fbErr } = await site.from("imoveis")
+              .select("*")
+              .ilike("slug", `%-${codigoCandidate}`)
+              .eq("status", "disponivel")
+              .maybeSingle();
+            if (fbErr) return errorResponse(fbErr.message, 400);
+            return jsonResponse({ data: fallbackData });
+          }
+        }
         return jsonResponse({ data });
       }
 
