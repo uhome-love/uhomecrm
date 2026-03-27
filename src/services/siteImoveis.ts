@@ -348,7 +348,13 @@ export async function fetchSiteImoveis(filters: BuscaFilters = {}): Promise<{ da
   query = query.range(offset, offset + limit - 1);
 
   const { data, error, count } = await query;
-  if (error) throw new Error(error.message || "Search failed");
+  // 416 = Range Not Satisfiable (offset beyond total rows) — return empty gracefully
+  if (error) {
+    if (error.code === "PGRST103" || error.message?.includes("Requested range not satisfiable")) {
+      return { data: [], count: count ?? 0, search_time_ms: Date.now() - startTime };
+    }
+    throw new Error(error.message || "Search failed");
+  }
 
   const docs = (data || []).map(mapDoc);
   return {
