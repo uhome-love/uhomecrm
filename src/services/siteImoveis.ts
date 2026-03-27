@@ -81,6 +81,10 @@ export interface BuscaFilters {
   situacao?: string[];
   construtora?: string[];
   empreendimento?: string[];
+  statusImovel?: string;
+  condominioNome?: string;
+  financiavel?: boolean;
+  mobiliado?: boolean;
 }
 
 const PROPERTY_MAP_SELECT = "id,codigo,tipo,bairro,cidade,valor_venda,valor_locacao,dormitorios,banheiros,vagas,area_privativa,latitude,longitude,titulo,fotos,empreendimento,construtora,situacao";
@@ -277,6 +281,12 @@ function applyPropertyFilters(
   if (filters.construtora?.length) nextQuery = nextQuery.in("construtora", filters.construtora);
   if (filters.empreendimento?.length) nextQuery = nextQuery.in("empreendimento", filters.empreendimento);
   if (filters.situacao?.length) nextQuery = nextQuery.in("situacao", filters.situacao);
+
+  // New indexed filters
+  if (filters.statusImovel) nextQuery = nextQuery.eq("status_imovel", filters.statusImovel);
+  if (filters.condominioNome) nextQuery = nextQuery.ilike("condominio_nome", `%${filters.condominioNome}%`);
+  if (filters.financiavel) nextQuery = nextQuery.eq("financiavel", true);
+  if (filters.mobiliado) nextQuery = nextQuery.eq("mobiliado", true);
 
   if (filters.bounds) {
     nextQuery = nextQuery

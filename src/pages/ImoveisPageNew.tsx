@@ -280,10 +280,11 @@ export default function ImoveisPage() {
   const hasSearchFilters = !!(
     filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
     filters.areaMin || filters.areaMax || filters.quartos || filters.vagas ||
-    filters.banheiros || filters.q || filters.codigo || (filters.cidade && filters.cidade !== "Porto Alegre")
+    filters.banheiros || filters.q || filters.codigo || (filters.cidade && filters.cidade !== "Porto Alegre") ||
+    filters.statusImovel || filters.condominioNome || filters.financiavel || filters.mobiliado
   );
 
-  const advancedFilterCount = [filters.banheiros > 0, filters.vagas > 0, !!filters.codigo].filter(Boolean).length;
+  const advancedFilterCount = [filters.banheiros > 0, filters.vagas > 0, !!filters.codigo, !!filters.condominioNome, filters.financiavel, filters.mobiliado].filter(Boolean).length;
 
   const addBairro = useCallback((nome: string) => {
     const next = [...bairrosSelecionados, nome];
@@ -318,6 +319,10 @@ export default function ImoveisPage() {
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
     bounds: activeBounds,
+    statusImovel: filters.statusImovel || undefined,
+    condominioNome: filters.condominioNome || undefined,
+    financiavel: filters.financiavel || undefined,
+    mobiliado: filters.mobiliado || undefined,
   }), [filters, bairrosSelecionados, page, activeBounds]);
 
   const debouncedQueryFilters = useDebounce(
@@ -450,7 +455,7 @@ export default function ImoveisPage() {
   useEffect(() => {
     setPage(0);
     setAllImoveis([]);
-  }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q, activeBounds]);
+  }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q, filters.statusImovel, filters.condominioNome, filters.financiavel, filters.mobiliado, activeBounds]);
 
   // Clear bounds
   const clearBounds = useCallback(() => {
@@ -706,7 +711,19 @@ export default function ImoveisPage() {
             ))}
           </FilterPill>
 
-          {/* Preço */}
+          {/* Status do Imóvel */}
+          <FilterPill
+            label="Status"
+            value={filters.statusImovel || undefined}
+            active={!!filters.statusImovel}
+            onClear={() => { setFilter("statusImovel", ""); setPage(0); setAllImoveis([]); }}
+          >
+            {["Usado", "Novo", "Em construção", "Na planta"].map(s => (
+              <PillOption key={s} selected={filters.statusImovel === s} onClick={() => { setFilter("statusImovel", filters.statusImovel === s ? "" : s); setPage(0); setAllImoveis([]); }}>{s}</PillOption>
+            ))}
+          </FilterPill>
+
+
           <FilterPill
             label="Preço"
             value={precoLabel || (filters.precoMin || filters.precoMax ? fmtPrecoLabel(filters.precoMin, filters.precoMax) : undefined)}
@@ -775,7 +792,7 @@ export default function ImoveisPage() {
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all shrink-0",
                   (filters.banheiros || filters.vagas)
-                    || filters.codigo
+                    || filters.codigo || filters.condominioNome || filters.financiavel || filters.mobiliado
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-card text-foreground hover:border-primary/50"
                 )}
@@ -830,15 +847,39 @@ export default function ImoveisPage() {
                 </div>
               </div>
 
-              {/* Limpar avançados */}
-              {(filters.banheiros > 0 || filters.vagas > 0 || !!filters.codigo) && (
-                <button
-                  onClick={() => { setFilter("banheiros", 0); setFilter("vagas", 0); setFilter("codigo", ""); setPage(0); setAllImoveis([]); }}
-                  className="text-xs text-muted-foreground hover:text-foreground underline"
-                >
-                  Limpar filtros avançados
-                </button>
-              )}
+              {/* Empreendimento/Condomínio */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Empreendimento</p>
+                <input
+                  type="text"
+                  placeholder="Buscar empreendimento…"
+                  value={filters.condominioNome}
+                  onChange={(e) => { setFilter("condominioNome", e.target.value); }}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+                />
+              </div>
+
+              {/* Toggles */}
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.financiavel}
+                    onChange={(e) => { setFilter("financiavel", e.target.checked); setPage(0); setAllImoveis([]); }}
+                    className="h-4 w-4 rounded border-border text-primary accent-primary"
+                  />
+                  <span className="text-[13px] text-foreground">Aceita financiamento</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.mobiliado}
+                    onChange={(e) => { setFilter("mobiliado", e.target.checked); setPage(0); setAllImoveis([]); }}
+                    className="h-4 w-4 rounded border-border text-primary accent-primary"
+                  />
+                  <span className="text-[13px] text-foreground">Mobiliado</span>
+                </label>
+              </div>
 
               {/* Código do imóvel */}
               <div>
@@ -851,6 +892,16 @@ export default function ImoveisPage() {
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
                 />
               </div>
+
+              {/* Limpar avançados */}
+              {(filters.banheiros > 0 || filters.vagas > 0 || !!filters.codigo || !!filters.condominioNome || filters.financiavel || filters.mobiliado) && (
+                <button
+                  onClick={() => { setFilter("banheiros", 0); setFilter("vagas", 0); setFilter("codigo", ""); setFilter("condominioNome", ""); setFilter("financiavel", false); setFilter("mobiliado", false); setPage(0); setAllImoveis([]); }}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Limpar filtros avançados
+                </button>
+              )}
             </PopoverContent>
           </Popover>
 
