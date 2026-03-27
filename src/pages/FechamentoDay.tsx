@@ -317,15 +317,15 @@ export default function FechamentoDay() {
         margin: 0,
         position: "relative",
       }}>
-        <Confetti active={algumaBateu} />
+        <Confetti active={totalGeral >= META_VISITAS} />
 
         {/* Header */}
-        <div style={{ textAlign: "center", padding: "12px 24px 8px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
-          <div style={{ fontSize: 11, letterSpacing: 4, color: "#ffffff44", fontFamily: "monospace", marginBottom: 4 }}>
+        <div style={{ textAlign: "center", padding: "10px 24px 6px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
+          <div style={{ fontSize: 10, letterSpacing: 4, color: "#ffffff44", fontFamily: "monospace", marginBottom: 2 }}>
             UHOME NEGÓCIOS IMOBILIÁRIOS
           </div>
           <h1 style={{
-            fontSize: "clamp(28px, 5vw, 56px)",
+            fontSize: "clamp(24px, 4vw, 48px)",
             letterSpacing: 4,
             margin: 0,
             background: "linear-gradient(90deg, #F59E0B, #EF4444, #9333EA)",
@@ -334,7 +334,7 @@ export default function FechamentoDay() {
             textTransform: "uppercase",
           }}>⚡ Fechamento Day ⚡</h1>
           <p style={{
-            fontSize: "clamp(10px, 1.3vw, 14px)",
+            fontSize: "clamp(9px, 1.2vw, 13px)",
             letterSpacing: 6,
             color: "#ffffff55",
             margin: "2px 0 0",
@@ -343,8 +343,38 @@ export default function FechamentoDay() {
             fontWeight: 400,
           }}>
             {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
-            {" · "}TOTAL GERAL: {totalGeral} VISITAS
           </p>
+        </div>
+
+        {/* Meta geral da empresa */}
+        <div style={{ padding: "6px 32px 8px", background: "#ffffff06", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 4,
+            fontSize: 11,
+            letterSpacing: 2,
+            color: "#ffffff77",
+            textTransform: "uppercase",
+            fontFamily: "monospace",
+          }}>
+            <span>🎯 META DA EMPRESA — VISITAS MARCADAS HOJE</span>
+            <span style={{
+              fontSize: "clamp(20px, 3vw, 36px)",
+              fontWeight: 900,
+              color: totalGeral >= META_VISITAS ? "#22c55e" : "#F59E0B",
+              lineHeight: 1,
+              letterSpacing: 2,
+              fontFamily: "'Bebas Neue', 'Impact', sans-serif",
+            }}>{totalGeral} / {META_VISITAS}</span>
+          </div>
+          <ProgressBar valor={totalGeral} meta={META_VISITAS} cor={totalGeral >= META_VISITAS ? "#22c55e" : "#F59E0B"} />
+          {totalGeral >= META_VISITAS && (
+            <div style={{ textAlign: "center", marginTop: 4, fontSize: "clamp(14px, 2vw, 20px)", letterSpacing: 4, color: "#22c55e", animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
+              🎉 CHURRASCO GARANTIDO! 🎉
+            </div>
+          )}
         </div>
 
         {/* Cards das equipes */}
