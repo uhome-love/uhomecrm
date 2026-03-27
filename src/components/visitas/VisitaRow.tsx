@@ -142,7 +142,14 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
 
         {/* Client info */}
         <div className="min-w-0 flex-1 space-y-0.5">
-          <p className="text-[13px] font-semibold text-[#0a0a0a] dark:text-white truncate leading-tight">{v.nome_cliente}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-[13px] font-semibold text-[#0a0a0a] dark:text-white truncate leading-tight">{v.nome_cliente}</p>
+            {isCompartilhada && (
+              <span className="shrink-0 text-[9px] font-bold bg-[#6366f1]/10 text-[#6366f1] px-1.5 py-0.5 rounded-full border border-[#6366f1]/20" title={`Compartilhada: ${parceiros.join(" + ")}`}>
+                🤝 Compartilhada
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             {v.telefone && (
               <span className="text-[11px] text-[#a1a1aa]">{v.telefone}</span>
@@ -152,6 +159,11 @@ export default function VisitaRow({ visita: v, onUpdateStatus, onEdit, onDelete,
               <span className="text-[11px] text-[#52525b] dark:text-[#a1a1aa]">{produto}</span>
             )}
           </div>
+          {isCompartilhada && parceiros.length > 0 && (
+            <p className="text-[10px] text-[#6366f1] font-medium truncate">
+              👥 {parceiros.join(" + ")}
+            </p>
+          )}
           {isNegocio && negocioMeta.objetivo && (
             <p className="text-[10px] text-amber-600 font-semibold truncate">🎯 {negocioMeta.objetivo}</p>
           )}
