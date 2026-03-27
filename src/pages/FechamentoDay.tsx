@@ -1,8 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const SUPABASE_URL = "https://hunbxqzhvuemgntklyzb.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1bmJ4cXpodnVlbWdudGtseXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk3NTMxMTcsImV4cCI6MjAyNTMyOTExN30.p5zs7_3Uq9UvCJpHgWb5Z1jyBbvJMBjOTRwBM9Rg_Kc";
 const META_VISITAS = 50;
 
 const EQUIPES = [
@@ -10,17 +9,6 @@ const EQUIPES = [
   { nome: "Bruno Schuler", cor: "#2563EB", corClara: "#EFF6FF", corBorda: "#1D4ED8", emoji: "💙", id: "bruno" },
   { nome: "Gabriel", cor: "#16A34A", corClara: "#F0FDF4", corBorda: "#15803D", emoji: "💚", id: "gabriel" },
 ];
-
-async function supabaseFetch(query) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
 
 function formatTime(d) {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -127,20 +115,23 @@ export default function FechamentoDay() {
   async function carregar() {
     try {
       // Busca gestores para mapear corretores por equipe
-      const gestoresData = await supabaseFetch(
-        `profiles?select=id,nome,cargo,gestor_id,user_id&cargo=in.(corretor,gestor)&order=nome`
-      );
+      const { data: gestoresData, error: gErr } = await supabase
+        .from("profiles")
+        .select("id,nome,cargo,gestor_id,user_id")
+        .in("cargo", ["corretor", "gestor"])
+        .order("nome");
+      if (gErr) throw gErr;
 
       // Monta mapa: gestor nome -> [user_ids dos corretores]
       const gestorMap = {};
       const gestorNomes = {};
-      gestoresData.forEach((p) => {
+      (gestoresData || []).forEach((p) => {
         if (p.cargo === "gestor") {
           gestorNomes[p.id] = p.nome;
           gestorMap[p.id] = [];
         }
       });
-      gestoresData.forEach((p) => {
+      (gestoresData || []).forEach((p) => {
         if (p.cargo === "corretor" && p.gestor_id && gestorMap[p.gestor_id] !== undefined) {
           gestorMap[p.gestor_id].push(p.user_id);
         }
@@ -166,11 +157,14 @@ export default function FechamentoDay() {
           novosDados[key] = [];
           continue;
         }
-        const idsStr = userIds.map((id) => `"${id}"`).join(",");
-        const visitas = await supabaseFetch(
-          `visitas?select=id,corretor_id,data_visita,status&corretor_id=in.(${idsStr})&data_visita=gte.${inicioHoje}&data_visita=lte.${fimHoje}`
-        );
-        novosDados[key] = visitas;
+        const { data: visitas, error: vErr } = await supabase
+          .from("visitas")
+          .select("id,corretor_id,data_visita,status")
+          .in("corretor_id", userIds)
+          .gte("data_visita", inicioHoje)
+          .lte("data_visita", fimHoje);
+        if (vErr) throw vErr;
+        novosDados[key] = visitas || [];
       }
 
       // Detecta nova visita (flash)
