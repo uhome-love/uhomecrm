@@ -20,9 +20,12 @@ import VisitasCobrancaDialog from "@/components/visitas/VisitasCobrancaDialog";
 import { toast } from "sonner";
 
 /* ═══════ Period helpers ═══════ */
-type Period = "hoje" | "semana" | "proxima-semana" | "mes";
+type Period = "hoje" | "semana" | "proxima-semana" | "mes" | "personalizado";
 
-function getDateRange(period: Period): { from: string; to: string } {
+function getDateRange(period: Period, customFrom?: string, customTo?: string): { from: string; to: string } {
+  if (period === "personalizado" && customFrom && customTo) {
+    return { from: customFrom, to: customTo };
+  }
   const today = startOfDay(new Date());
   switch (period) {
     case "hoje":
@@ -44,6 +47,8 @@ function getDateRange(period: Period): { from: string; to: string } {
         from: format(startOfMonth(today), "yyyy-MM-dd"),
         to: format(endOfMonth(today), "yyyy-MM-dd"),
       };
+    default:
+      return { from: format(today, "yyyy-MM-dd"), to: format(today, "yyyy-MM-dd") };
   }
 }
 
