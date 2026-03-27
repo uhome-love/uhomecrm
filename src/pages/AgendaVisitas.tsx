@@ -659,7 +659,6 @@ export default function AgendaVisitas() {
     </div>
   );
 }
-      <div className="flex items-center justify-between gap-3">
         {/* Status pills */}
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
           <button
