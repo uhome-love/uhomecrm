@@ -340,8 +340,19 @@ export default function ImoveisPage() {
 
   const EMPTY_ARR: SiteImovel[] = useMemo(() => [], []);
   const currentPageData = result?.data ?? EMPTY_ARR;
-  const total = result?.count ?? 0;
+  const rawTotal = result?.count ?? 0;
   const searchTimeMs = result?.search_time_ms;
+
+  // Track the last known good total (from page 0 queries with actual count)
+  const lastKnownTotal = useRef(0);
+  useEffect(() => {
+    if (page === 0 && rawTotal > 0) {
+      lastKnownTotal.current = rawTotal;
+    }
+  }, [rawTotal, page]);
+
+  // Use last known total when current page returns 0 count (416 fallback)
+  const total = rawTotal > 0 ? rawTotal : (page > 0 ? lastKnownTotal.current : 0);
 
   // Accumulate items for load-more
   useEffect(() => {
@@ -363,7 +374,10 @@ export default function ImoveisPage() {
   const imoveis = page === 0
     ? (allImoveis.length > 0 ? allImoveis : currentPageData)
     : allImoveis;
-  const hasMore = imoveis.length < total;
+  // Stop loading more when current page returned no new data OR we have all items
+  const hasMore = currentPageData.length > 0 && imoveis.length < total;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const isInitialListPending = page === 0 && imoveis.length === 0 && (isLoading || isFetching);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const isInitialListPending = page === 0 && imoveis.length === 0 && (isLoading || isFetching);
 
