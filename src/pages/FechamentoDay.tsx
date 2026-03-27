@@ -253,22 +253,8 @@ export default function FechamentoDay() {
         });
       setUltimasVisitas(feedVisitas);
 
-      setDebugData({
-        hoje,
-        totalVisitas: todasVisitas.length,
-        porEquipe: {
-          gabrielle: novosDados.gabrielle.length,
-          bruno: novosDados.bruno.length,
-          gabriel: novosDados.gabriel.length,
-        },
-        primeiraVisita: todasVisitas[0] ?? null,
-        ultimaVisitaArr: todasVisitas[todasVisitas.length - 1] ?? null,
-        membrosCarregados: {
-          gabrielle: equipeIds.gabrielle.length,
-          bruno: equipeIds.bruno.length,
-          gabriel: equipeIds.gabriel.length,
-        },
-      });
+
+
 
       setRanking(sorted);
       setDados(novosDados);
