@@ -455,7 +455,7 @@ export default function ImoveisPage() {
   useEffect(() => {
     setPage(0);
     setAllImoveis([]);
-  }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q, activeBounds]);
+  }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q, filters.statusImovel, filters.condominioNome, filters.financiavel, filters.mobiliado, activeBounds]);
 
   // Clear bounds
   const clearBounds = useCallback(() => {
