@@ -114,40 +114,44 @@ export default function FechamentoDay() {
 
   async function carregar() {
     try {
-      // Busca gestores para mapear corretores por equipe
+      // 1. Buscar gestores em profiles
       const { data: gestoresData, error: gErr } = await supabase
         .from("profiles")
-        .select("id,nome,cargo,gestor_id,user_id")
-        .in("cargo", ["corretor", "gestor"])
-        .order("nome");
+        .select("id,nome,user_id")
+        .eq("cargo", "gestor");
       if (gErr) throw gErr;
 
-      // Monta mapa: gestor nome -> [user_ids dos corretores]
-      const gestorMap = {};
+      // 2. Buscar corretores ativos em team_members
+      const { data: membros, error: mErr } = await supabase
+        .from("team_members")
+        .select("user_id,gerente_id,nome")
+        .eq("status", "ativo");
+      if (mErr) throw mErr;
+
+      // 3. Monta mapa: gestor profile_id -> nome e user_ids dos corretores
       const gestorNomes = {};
-      (gestoresData || []).forEach((p) => {
-        if (p.cargo === "gestor") {
-          gestorNomes[p.id] = p.nome;
-          gestorMap[p.id] = [];
-        }
+      const gestorMap = {};
+      (gestoresData || []).forEach((g) => {
+        gestorNomes[g.id] = g.nome;
+        gestorMap[g.id] = [];
       });
-      (gestoresData || []).forEach((p) => {
-        if (p.cargo === "corretor" && p.gestor_id && gestorMap[p.gestor_id] !== undefined) {
-          gestorMap[p.gestor_id].push(p.user_id);
+      (membros || []).forEach((m) => {
+        if (m.gerente_id && gestorMap[m.gerente_id] !== undefined && m.user_id) {
+          gestorMap[m.gerente_id].push(m.user_id);
         }
       });
       setGestores(gestorNomes);
 
-      // Identifica IDs dos três gestores por nome aproximado
+      // 4. Identifica equipes pelo nome do gestor
       const equipeIds = { gabrielle: [], bruno: [], gabriel: [] };
       Object.entries(gestorNomes).forEach(([gid, gnome]) => {
-        const n = gnome.toLowerCase();
+        const n = (gnome || "").toLowerCase();
         if (n.includes("gabrielle")) equipeIds.gabrielle = gestorMap[gid] || [];
         else if (n.includes("bruno")) equipeIds.bruno = gestorMap[gid] || [];
         else if (n.includes("gabriel") && !n.includes("gabrielle")) equipeIds.gabriel = gestorMap[gid] || [];
       });
 
-      // Busca visitas do dia para cada equipe
+      // 5. Buscar visitas do dia para cada equipe
       const inicioHoje = `${hoje}T00:00:00`;
       const fimHoje = `${hoje}T23:59:59`;
 
@@ -180,6 +184,7 @@ export default function FechamentoDay() {
       setDados(novosDados);
       setUltimaAtualizacao(new Date());
       setLoading(false);
+      setErro(null);
     } catch (e) {
       setErro(e.message);
       setLoading(false);
@@ -206,20 +211,40 @@ export default function FechamentoDay() {
   useEffect(() => {
     async function buscarRanking() {
       try {
-        const hoje_inicio = `${hoje}T00:00:00`;
-        const hoje_fim = `${hoje}T23:59:59`;
-        const visitas = await supabaseFetch(
-          `visitas?select=corretor_id,profiles!inner(nome)&data_visita=gte.${hoje_inicio}&data_visita=lte.${hoje_fim}`
-        );
-        const contagem = {};
+        const inicioHoje = `${hoje}T00:00:00`;
+        const fimHoje = `${hoje}T23:59:59`;
+
+        // Buscar todas as visitas do dia
+        const { data: visitas, error: vErr } = await supabase
+          .from("visitas")
+          .select("corretor_id")
+          .gte("data_visita", inicioHoje)
+          .lte("data_visita", fimHoje);
+        if (vErr || !visitas) return;
+
+        // Contar por corretor_id (user_id)
+        const contagemPorUser = {};
         visitas.forEach((v) => {
-          const nome = v.profiles?.nome || v.corretor_id;
-          contagem[nome] = (contagem[nome] || 0) + 1;
+          contagemPorUser[v.corretor_id] = (contagemPorUser[v.corretor_id] || 0) + 1;
         });
-        const sorted = Object.entries(contagem)
-          .sort((a, b) => b[1] - a[1])
+
+        // Buscar nomes dos corretores via team_members
+        const userIds = Object.keys(contagemPorUser);
+        if (userIds.length === 0) { setRanking([]); return; }
+
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("user_id,nome")
+          .in("user_id", userIds);
+
+        const nomeMap = {};
+        (members || []).forEach((m) => { if (m.user_id) nomeMap[m.user_id] = m.nome; });
+
+        const sorted = Object.entries(contagemPorUser)
+          .map(([uid, count]) => ({ nome: nomeMap[uid] || uid.slice(0, 8), count }))
+          .sort((a, b) => b.count - a.count)
           .slice(0, 3)
-          .map(([nome, count], i) => ({ nome, count, pos: i + 1 }));
+          .map((item, i) => ({ ...item, pos: i + 1 }));
         setRanking(sorted);
       } catch (_) {}
     }
