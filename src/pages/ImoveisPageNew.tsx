@@ -711,7 +711,19 @@ export default function ImoveisPage() {
             ))}
           </FilterPill>
 
-          {/* Preço */}
+          {/* Status do Imóvel */}
+          <FilterPill
+            label="Status"
+            value={filters.statusImovel || undefined}
+            active={!!filters.statusImovel}
+            onClear={() => { setFilter("statusImovel", ""); setPage(0); setAllImoveis([]); }}
+          >
+            {["Usado", "Novo", "Em construção", "Na planta"].map(s => (
+              <PillOption key={s} selected={filters.statusImovel === s} onClick={() => { setFilter("statusImovel", filters.statusImovel === s ? "" : s); setPage(0); setAllImoveis([]); }}>{s}</PillOption>
+            ))}
+          </FilterPill>
+
+
           <FilterPill
             label="Preço"
             value={precoLabel || (filters.precoMin || filters.precoMax ? fmtPrecoLabel(filters.precoMin, filters.precoMax) : undefined)}
