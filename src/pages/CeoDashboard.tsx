@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Building2 as Building2Tab } from "lucide-react";
+import TabEmpresa from "@/components/ceo/TabEmpresa";
 import { GreetingBar } from "@/components/ui/GreetingBar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -344,6 +347,19 @@ export default function CeoDashboard() {
           </Button>
         </div>
       </div>
+
+      {/* ═══ TABS ═══ */}
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList className="h-auto bg-muted/50">
+          <TabsTrigger value="dashboard" className="gap-1.5 text-xs py-1.5">
+            <BarChart3 className="h-3.5 w-3.5" /> Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="empresa" className="gap-1.5 text-xs py-1.5">
+            <Building2Tab className="h-3.5 w-3.5" /> Empresa
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-5 mt-0">
 
       {/* ═══ APROVAÇÕES PENDENTES ═══ */}
       {localPendentes.length > 0 && (
@@ -833,6 +849,13 @@ export default function CeoDashboard() {
           </Card>
         </div>
       </section>
+
+        </TabsContent>
+
+        <TabsContent value="empresa" className="mt-0">
+          <TabEmpresa />
+        </TabsContent>
+      </Tabs>
 
       {/* ═══ MODALS ═══ */}
       <FilaCeoDispatchModal open={dispatchOpen} onOpenChange={setDispatchOpen} onDispatched={() => { reload(); loadFilaCeo(); }} />
