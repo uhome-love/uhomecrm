@@ -232,7 +232,7 @@ export default function PropertyPreviewDrawer({
 
   const propertyUrl = codigo
     ? (() => {
-        const slug = gerarSlugUhome({ tipo, quartos: dorms ?? 0, bairro: loc.bairro, codigo });
+        const slug = gerarSlugUhome({ tipo, quartos: dorms ?? 0, bairro: loc.bairro, codigo, slug: item?.slug });
         return slugRef
           ? `https://uhome.com.br/c/${slugRef}/imovel/${slug}`
           : `https://uhome.com.br/imovel/${slug}`;

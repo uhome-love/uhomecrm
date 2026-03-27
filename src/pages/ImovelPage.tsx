@@ -125,7 +125,7 @@ export default function ImovelPage() {
   const nextImage = () => setImageIdx(i => (i < heroImages.length - 1 ? i + 1 : 0));
 
   // Generate uhome.com.br-compatible personalized share URL
-  const shareSlug = gerarSlugUhome({ tipo: tipo || "imovel", quartos: dorms ?? 0, bairro: loc.bairro, codigo });
+  const shareSlug = gerarSlugUhome({ tipo: tipo || "imovel", quartos: dorms ?? 0, bairro: loc.bairro, codigo, slug: item?.slug });
   const shareUrl = slugRef
     ? `https://uhome.com.br/c/${slugRef}/imovel/${shareSlug}`
     : `https://uhome.com.br/imovel/${shareSlug}`;

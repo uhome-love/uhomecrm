@@ -23,15 +23,16 @@ interface SharePropertyButtonProps {
   preco: string;
   tipo?: string;
   quartos?: number | null;
+  slug?: string | null;
   className?: string;
 }
 
-export default function SharePropertyButton({ codigo, titulo, bairro, preco, tipo, quartos, className }: SharePropertyButtonProps) {
+export default function SharePropertyButton({ codigo, titulo, bairro, preco, tipo, quartos, slug: dbSlug, className }: SharePropertyButtonProps) {
   const slugRef = useBrokerSlug();
 
   if (!codigo) return null;
 
-  const slug = gerarSlugUhome({ tipo: tipo || "imovel", quartos: quartos ?? null, bairro, codigo });
+  const slug = gerarSlugUhome({ tipo: tipo || "imovel", quartos: quartos ?? null, bairro, codigo, slug: dbSlug });
   const shareUrl = slugRef
     ? `https://uhome.com.br/c/${slugRef}/imovel/${slug}`
     : `https://uhome.com.br/imovel/${slug}`;

@@ -112,8 +112,14 @@ function slugify(text: string): string {
 /** Generate uhome.com.br-compatible slug.
  * With quartos:    {tipo}-{N}-quartos-{bairro}-{codigo}
  * Without quartos: {tipo}-para-venda-{bairro}-{codigo}
- * The codigo already contains its suffix (e.g. -LU, -MT, -JD). */
-export function gerarSlugUhome(imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string }): string {
+ * The codigo already contains its suffix (e.g. -LU, -MT, -JD).
+ *
+ * IMPORTANT: When a pre-built slug from the site DB is available,
+ * prefer passing it directly instead of regenerating. */
+export function gerarSlugUhome(imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string; slug?: string | null }): string {
+  // If the site DB slug is available, use it directly — it's the canonical source of truth
+  if (imovel.slug) return imovel.slug;
+
   const tipo = slugify(imovel.tipo || "imovel");
   const quartos = imovel.quartos ?? 0;
   const bairro = slugify(imovel.bairro || "");
@@ -128,9 +134,11 @@ export function gerarSlugUhome(imovel: { tipo: string; quartos: number | null; b
  *   https://uhome.com.br/c/{slugRef}/imovel/{slug}
  * Otherwise generates the standard link:
  *   https://uhome.com.br/imovel/{slug}
+ *
+ * When imovel.slug is available from the DB, it takes priority over generation.
  */
 export function shareUrlUhome(
-  imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string },
+  imovel: { tipo: string; quartos: number | null; bairro: string; codigo: string; slug?: string | null },
   slugRef?: string | null,
 ): string {
   const slug = gerarSlugUhome(imovel);

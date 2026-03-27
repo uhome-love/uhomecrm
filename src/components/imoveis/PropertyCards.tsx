@@ -130,7 +130,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
   const vagas = getNum(item, "garagens", "vagas");
   const entrega = extractEntrega(item);
   const imovelId = String(codigo || item.id_imovel || item.id || idx);
-  const personalShareUrl = codigo ? shareUrlUhome({ tipo: item.tipo || "imovel", quartos: dorms, bairro: loc.bairro, codigo }, slugRef) : undefined;
+  const personalShareUrl = codigo ? shareUrlUhome({ tipo: item.tipo || "imovel", quartos: dorms, bairro: loc.bairro, codigo, slug: item.slug }, slugRef) : undefined;
 
   return (
     <div
@@ -206,6 +206,7 @@ export const PropertyCardGrid = React.memo(function PropertyCardGrid({ item, idx
                 preco={getPreco(item)}
                 tipo={item.tipo || item.subtipo}
                 quartos={getNum(item, "dormitorios")}
+                slug={item.slug}
               />
               <ResponsavelButton codigo={codigo} />
             </div>
@@ -232,7 +233,7 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
   const cond = getNum(item, "valor_condominio");
   const entrega = extractEntrega(item);
   const imovelId = String(codigo || item.id_imovel || item.id || idx);
-  const personalShareUrl = codigo ? shareUrlUhome({ tipo: item.tipo || "imovel", quartos: dorms, bairro: loc.bairro, codigo }, slugRef) : undefined;
+  const personalShareUrl = codigo ? shareUrlUhome({ tipo: item.tipo || "imovel", quartos: dorms, bairro: loc.bairro, codigo, slug: item.slug }, slugRef) : undefined;
 
   return (
     <Card
@@ -299,6 +300,7 @@ export const PropertyCardList = React.memo(function PropertyCardList({ item, idx
                 preco={getPreco(item)}
                 tipo={item.tipo || item.subtipo}
                 quartos={getNum(item, "dormitorios")}
+                slug={item.slug}
               />
               {codigo && <ResponsavelButton codigo={codigo} />}
             </div>
