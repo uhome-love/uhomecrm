@@ -378,8 +378,6 @@ export default function ImoveisPage() {
   const hasMore = currentPageData.length > 0 && imoveis.length < total;
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const isInitialListPending = page === 0 && imoveis.length === 0 && (isLoading || isFetching);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  const isInitialListPending = page === 0 && imoveis.length === 0 && (isLoading || isFetching);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
