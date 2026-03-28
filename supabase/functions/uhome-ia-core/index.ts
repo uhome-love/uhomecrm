@@ -89,7 +89,7 @@ Quando o lead vem de um empreendimento listado abaixo, SEMPRE preencher o bairro
 - "Ora" → bairro: "Centro Histórico", tipo: "apartamento", bairros_proximos: ["Cidade Baixa", "Bom Fim", "Praia de Belas"]
 - "Monjardin" → bairro: "Três Figueiras", tipo: "apartamento", bairros_proximos: ["Chácara das Pedras", "Boa Vista"]
 - "Boa Vista Country Club" → bairro: "Boa Vista", tipo: "casa", bairros_proximos: ["Três Figueiras", "Chácara das Pedras"]
-- "Casa Bastian" → bairro: "Teresópolis", tipo: "casa", bairros_proximos: ["Cristal", "Medianeira", "Santa Fé"]
+- "Casa Bastian" → bairro: "Menino Deus", tipo: "casa", bairros_proximos: ["Praia de Belas", "Azenha", "Santa Tereza"]
 - "Melnick Day 2026" / "Meday" / "MeDay" → tipo: "casa", bairro: variado (empreendimento Melnick)
 - "Avulso - ImovelWeb" → sem mapeamento fixo, inferir do imóvel específico
 - "Village" / "Villa" → tipo: "casa"
