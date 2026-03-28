@@ -369,7 +369,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
         valor_min: savedProfile.valor_min ? String(savedProfile.valor_min) : "",
         valor_max: savedProfile.valor_max ? String(savedProfile.valor_max) : "",
         bairros: savedProfile.bairros || [],
-        tipos: savedProfile.tipos || ["apartamento"],
+        tipos: savedProfile.tipos || [],
         dormitorios_min: savedProfile.dormitorios_min ? String(savedProfile.dormitorios_min) : "",
         suites_min: savedProfile.suites_min ? String(savedProfile.suites_min) : "",
         vagas_min: savedProfile.vagas_min ? String(savedProfile.vagas_min) : "",
