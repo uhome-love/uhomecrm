@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Shield, Trash2, Loader2, UserPlus, MessageSquare, CheckCircle, XCircle, Settings, UserX, Pencil } from "lucide-react";
+import { Shield, Trash2, Loader2, UserPlus, MessageSquare, CheckCircle, XCircle, Settings, UserX, Pencil, Database, RefreshCw, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,6 +53,9 @@ export default function AdminPanel() {
   const [dialogConnected, setDialogConnected] = useState<boolean | null>(null);
   const [savingKey, setSavingKey] = useState(false);
 
+  // Typesense reindex
+  const [reindexing, setReindexing] = useState(false);
+  const [reindexResult, setReindexResult] = useState<any>(null);
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     const { data: profiles } = await supabase.from("profiles").select("user_id, nome, email, jetimob_user_id");
@@ -338,6 +341,69 @@ export default function AdminPanel() {
             A chave será usada para enviar mensagens via WhatsApp Business API.
           </p>
         </div>
+      </motion.div>
+
+      {/* Ferramentas do Sistema */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 shadow-card space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <Wrench className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-foreground">Ferramentas do Sistema</h3>
+            <p className="text-xs text-muted-foreground">Ações administrativas e manutenção</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
+          <Database className="h-5 w-5 text-muted-foreground shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">Reindexar Typesense</p>
+            <p className="text-xs text-muted-foreground">Sincroniza todos os imóveis do Jetimob com o índice de busca. Pode levar alguns minutos.</p>
+          </div>
+          <Button
+            onClick={async () => {
+              setReindexing(true);
+              setReindexResult(null);
+              try {
+                const { data, error } = await supabase.functions.invoke("typesense-admin", {
+                  body: { action: "reindex" },
+                });
+                if (error) throw error;
+                if (data?.error) throw new Error(data.error);
+                setReindexResult(data);
+                toast.success(`Reindex concluído! ${data?.indexed ?? "?"} documentos indexados.`);
+              } catch (err: any) {
+                toast.error(err?.message || "Erro ao reindexar.");
+                setReindexResult({ error: err?.message });
+              } finally {
+                setReindexing(false);
+              }
+            }}
+            disabled={reindexing}
+            variant="outline"
+            className="gap-1.5 shrink-0"
+          >
+            {reindexing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {reindexing ? "Reindexando..." : "Reindexar"}
+          </Button>
+        </div>
+
+        {reindexResult && !reindexResult.error && (
+          <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-sm space-y-1">
+            <p className="font-medium text-success">✅ Reindex concluído</p>
+            {reindexResult.indexed != null && <p className="text-muted-foreground">Documentos indexados: <span className="font-mono font-bold text-foreground">{reindexResult.indexed}</span></p>}
+            {reindexResult.duration && <p className="text-muted-foreground">Duração: {reindexResult.duration}</p>}
+            {reindexResult.errors > 0 && <p className="text-destructive">Erros: {reindexResult.errors}</p>}
+          </div>
+        )}
+
+        {reindexResult?.error && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+            <p className="font-medium text-destructive">❌ Erro no reindex</p>
+            <p className="text-muted-foreground font-mono text-xs mt-1">{reindexResult.error}</p>
+          </div>
+        )}
       </motion.div>
 
       {/* Users Section */}
