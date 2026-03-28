@@ -252,28 +252,46 @@ function CeoView() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Segmento</label>
-              <Select value={selectedSegmento} onValueChange={setSelectedSegmento}>
-                <SelectTrigger><SelectValue placeholder="Selecione o segmento" /></SelectTrigger>
-                <SelectContent>
-                  {segmentos.map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium mb-1 block">Segmentos</label>
+              <div className="space-y-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                {segmentos.map(s => {
+                  const checked = selectedSegmentos.includes(s.id);
+                  return (
+                    <label key={s.id} className="flex items-center gap-2 cursor-pointer text-sm hover:bg-muted/50 rounded px-1 py-0.5">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedSegmentos(prev =>
+                            checked ? prev.filter(id => id !== s.id) : [...prev, s.id]
+                          );
+                        }}
+                        className="accent-primary h-4 w-4"
+                      />
+                      {s.nome}
+                    </label>
+                  );
+                })}
+              </div>
+              {selectedSegmentos.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">{selectedSegmentos.length} segmento(s) selecionado(s)</p>
+              )}
             </div>
             <Button
               className="w-full"
-              disabled={!selectedCorretor || !selectedSegmento || submitting}
+              disabled={!selectedCorretor || selectedSegmentos.length === 0 || submitting}
               onClick={async () => {
-                await incluirManualNaFila(selectedCorretor, selectedSegmento, windowInfo.janela === "madrugada" ? "manha" : windowInfo.janela);
+                const janela = windowInfo.janela === "madrugada" ? "manha" : windowInfo.janela;
+                for (const segId of selectedSegmentos) {
+                  await incluirManualNaFila(selectedCorretor, segId, janela);
+                }
                 setSelectedCorretor("");
-                setSelectedSegmento("");
+                setSelectedSegmentos([]);
                 setShowIncluirModal(false);
               }}
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
-              Incluir na Fila
+              Incluir na Fila ({selectedSegmentos.length || 0})
             </Button>
           </div>
         </DialogContent>
