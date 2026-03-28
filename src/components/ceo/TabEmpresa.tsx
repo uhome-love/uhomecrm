@@ -36,7 +36,7 @@ function getDateRange(p: EmpPeriod): { from: string; to: string } {
   // 30dias
   const d30 = new Date(brt);
   d30.setDate(d30.getDate() - 29);
-  return { from: d30.toISOString().slice(0, 10), to: today };
+  return { from: d30.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), to: today };
 }
 
 interface TeamData {
