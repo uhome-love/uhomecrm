@@ -1201,95 +1201,105 @@ Responda SOMENTE com o JSON, sem markdown.`;
             </CardContent>
           </Card>
 
-          {/* ── Filtros rápidos (collapsible) ── */}
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 w-full justify-start" onClick={() => setShowFilters(!showFilters)}>
-            {showFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            {showFilters ? "Ocultar filtros" : "Ajustar filtros rápidos"}
-          </Button>
+          {/* ── Filtros inline — sempre visíveis ── */}
+          <Card className="border-border/50">
+            <CardContent className="p-3 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-muted-foreground">Filtros de Busca</span>
+                <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 text-primary" onClick={handleSaveProfile} disabled={isSavingProfile}>
+                  {isSavingProfile ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  Salvar Perfil
+                </Button>
+              </div>
 
-          {showFilters && (
-            <Card className="border-primary/20">
-              <CardContent className="p-4 space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label className="text-[11px] text-muted-foreground">Quartos</Label>
-                    <Select value={profileForm.dormitorios_min} onValueChange={(v) => setProfileForm(p => ({ ...p, dormitorios_min: v }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Qtd" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 dorm</SelectItem>
-                        <SelectItem value="2">2 dorms</SelectItem>
-                        <SelectItem value="3">3 dorms</SelectItem>
-                        <SelectItem value="4">4+ dorms</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-[11px] text-muted-foreground">Valor Mín</Label>
-                    <Input type="number" className="h-9 text-sm" placeholder="200000" value={profileForm.valor_min} onChange={(e) => setProfileForm(p => ({ ...p, valor_min: e.target.value }))} />
-                  </div>
-                  <div>
-                    <Label className="text-[11px] text-muted-foreground">Valor Máx</Label>
-                    <Input type="number" className="h-9 text-sm" placeholder="500000" value={profileForm.valor_max} onChange={(e) => setProfileForm(p => ({ ...p, valor_max: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-[11px] text-muted-foreground">Área (m²)</Label>
-                    <div className="flex gap-1">
-                      <Input type="number" className="h-9 text-sm" placeholder="Mín" value={profileForm.area_min} onChange={(e) => setProfileForm(p => ({ ...p, area_min: e.target.value }))} />
-                      <Input type="number" className="h-9 text-sm" placeholder="Máx" value={profileForm.area_max} onChange={(e) => setProfileForm(p => ({ ...p, area_max: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-[11px] text-muted-foreground">Status</Label>
-                    <Select value={profileForm.status_imovel} onValueChange={(v) => setProfileForm(p => ({ ...p, status_imovel: v }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="qualquer">Qualquer</SelectItem>
-                        <SelectItem value="pronto">Pronto</SelectItem>
-                        <SelectItem value="obras">Em obras</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-[11px] text-muted-foreground">Tipologia</Label>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {[{ value: "apartamento", label: "Apto" }, { value: "casa", label: "Casa" }, { value: "terreno", label: "Terreno" }].map(t => (
-                      <button key={t.value} onClick={() => toggleTipologia(t.value)} className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${profileForm.tipos.includes(t.value) ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"}`}>
+              {/* Row 1: Tipo + Dorms */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Label className="text-[10px] text-muted-foreground">Tipo</Label>
+                  <div className="flex flex-wrap gap-1 mt-0.5">
+                    {[{ value: "apartamento", label: "Apto" }, { value: "casa", label: "Casa" }, { value: "terreno", label: "Terreno" }, { value: "comercial", label: "Comercial" }].map(t => (
+                      <button key={t.value} onClick={() => toggleTipologia(t.value)} className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors ${profileForm.tipos.includes(t.value) ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"}`}>
                         {t.label}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div>
-                  <Label className="text-[11px] text-muted-foreground">Bairros</Label>
-                  <Input className="h-8 text-xs mt-1 mb-1.5" placeholder="Buscar bairro..." value={bairroSearch} onChange={(e) => setBairroSearch(e.target.value)} />
-                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                    {filteredBairros.map(b => (
-                      <button key={b} onClick={() => toggleBairro(b)} className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${profileForm.bairros.includes(b) ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"}`}>
-                        {b}
+                <div className="w-28">
+                  <Label className="text-[10px] text-muted-foreground">Dorms</Label>
+                  <div className="flex gap-0.5 mt-0.5">
+                    {["1", "2", "3", "4"].map(d => (
+                      <button key={d} onClick={() => setProfileForm(p => ({ ...p, dormitorios_min: p.dormitorios_min === d ? "" : d }))}
+                        className={`text-[10px] w-7 h-6 rounded border transition-colors ${profileForm.dormitorios_min === d ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"}`}>
+                        {d}{d === "4" ? "+" : ""}
                       </button>
                     ))}
                   </div>
-                  {profileForm.bairros.length > 0 && <p className="text-[10px] text-primary mt-1">{profileForm.bairros.length} bairro(s)</p>}
                 </div>
-                <div className="flex items-center gap-4 pt-1 border-t border-border/30">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={useTypesense} onCheckedChange={setUseTypesense} />
-                    <Label className="text-[11px]">Catálogo Geral</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={useMeDay} onCheckedChange={setUseMeDay} />
-                    <Label className="text-[11px] flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /> Melnick Day</Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
 
-          {/* ── Search button ── */}
-          <div className="flex gap-2">
+              {/* Row 2: Bairros com autocomplete */}
+              <div className="relative">
+                <Label className="text-[10px] text-muted-foreground">Bairros</Label>
+                {profileForm.bairros.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-0.5 mb-1">
+                    {profileForm.bairros.map(b => (
+                      <span key={b} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                        {b}
+                        <button onClick={() => toggleBairro(b)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <Input
+                  ref={bairroInputRef}
+                  className="h-7 text-xs"
+                  placeholder="Digitar bairro..."
+                  value={bairroSearch}
+                  onChange={(e) => setBairroSearch(e.target.value)}
+                  onFocus={() => bairroSuggestions.length > 0 && setShowBairroDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowBairroDropdown(false), 200)}
+                />
+                {showBairroDropdown && (
+                  <div className="absolute z-50 w-full mt-0.5 bg-popover border border-border rounded-md shadow-md max-h-36 overflow-y-auto">
+                    {bairroSuggestions.map(b => (
+                      <button key={b} className="w-full text-left text-xs px-3 py-1.5 hover:bg-accent transition-colors" onMouseDown={() => { toggleBairro(b); setBairroSearch(""); setShowBairroDropdown(false); }}>
+                        <MapPin className="h-3 w-3 inline mr-1.5 text-muted-foreground" />{b}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Row 3: Preço + Área */}
+              <div className="grid grid-cols-5 gap-1.5">
+                <div className="col-span-2">
+                  <Label className="text-[10px] text-muted-foreground">R$ Mín</Label>
+                  <Input type="number" className="h-7 text-xs" placeholder="200000" value={profileForm.valor_min} onChange={(e) => setProfileForm(p => ({ ...p, valor_min: e.target.value }))} />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-[10px] text-muted-foreground">R$ Máx</Label>
+                  <Input type="number" className="h-7 text-xs" placeholder="500000" value={profileForm.valor_max} onChange={(e) => setProfileForm(p => ({ ...p, valor_max: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Área m²</Label>
+                  <Input type="number" className="h-7 text-xs" placeholder="50" value={profileForm.area_min} onChange={(e) => setProfileForm(p => ({ ...p, area_min: e.target.value }))} />
+                </div>
+              </div>
+
+              {/* Row 4: Switches */}
+              <div className="flex items-center gap-4 pt-1 border-t border-border/30">
+                <div className="flex items-center gap-2">
+                  <Switch checked={useTypesense} onCheckedChange={setUseTypesense} />
+                  <Label className="text-[10px]">Catálogo Geral</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={useMeDay} onCheckedChange={setUseMeDay} />
+                  <Label className="text-[10px] flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /> Melnick Day</Label>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
             <Button className="flex-1 gap-2" onClick={() => { hasSearchedOnce.current = true; handleSearch(false); }} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {searched ? "Atualizar Match" : "Buscar Match"}
