@@ -98,7 +98,7 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
         { label: "Escala diária",      path: "/escala-diaria",     icon: <Clock        size={15} strokeWidth={1.5} /> },
         { label: "Integração Jetimob", path: "/integracao",        icon: <Layers       size={15} strokeWidth={1.5} /> },
         { label: "Central de dados",   path: "/central-dados",     icon: <Database     size={15} strokeWidth={1.5} /> },
-        { label: "Usuários",           path: "/admin",             icon: <Users        size={15} strokeWidth={1.5} /> },
+        { label: "Admin",              path: "/admin",             icon: <Users        size={15} strokeWidth={1.5} /> },
       ],
     },
     {
