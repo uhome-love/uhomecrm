@@ -25,7 +25,7 @@ function getDateRange(p: EmpPeriod): { from: string; to: string } {
 
   if (p === "hoje") return { from: today, to: today };
   if (p === "semana") {
-    const d = new Date(brt);
+    const d = new Date(now);
     const dow = d.getDay();
     d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
     return { from: d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), to: today };
