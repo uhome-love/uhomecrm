@@ -7787,15 +7787,19 @@ export type Database = {
       vitrines: {
         Row: {
           cliques_whatsapp: number | null
+          corretor_id: string | null
+          corretor_slug: string | null
           created_at: string | null
           created_by: string
           dados_custom: Json | null
           expires_at: string | null
           hero_url: string | null
           id: string
+          imovel_codigos: string[] | null
           imovel_ids: Json
           lead_nome: string | null
           lead_telefone: string | null
+          mensagem: string | null
           mensagem_corretor: string | null
           slug: string | null
           subtitulo: string | null
@@ -7807,15 +7811,19 @@ export type Database = {
         }
         Insert: {
           cliques_whatsapp?: number | null
+          corretor_id?: string | null
+          corretor_slug?: string | null
           created_at?: string | null
           created_by: string
           dados_custom?: Json | null
           expires_at?: string | null
           hero_url?: string | null
           id?: string
+          imovel_codigos?: string[] | null
           imovel_ids?: Json
           lead_nome?: string | null
           lead_telefone?: string | null
+          mensagem?: string | null
           mensagem_corretor?: string | null
           slug?: string | null
           subtitulo?: string | null
@@ -7827,15 +7835,19 @@ export type Database = {
         }
         Update: {
           cliques_whatsapp?: number | null
+          corretor_id?: string | null
+          corretor_slug?: string | null
           created_at?: string | null
           created_by?: string
           dados_custom?: Json | null
           expires_at?: string | null
           hero_url?: string | null
           id?: string
+          imovel_codigos?: string[] | null
           imovel_ids?: Json
           lead_nome?: string | null
           lead_telefone?: string | null
+          mensagem?: string | null
           mensagem_corretor?: string | null
           slug?: string | null
           subtitulo?: string | null
