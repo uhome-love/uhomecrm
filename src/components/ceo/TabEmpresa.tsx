@@ -34,7 +34,7 @@ function getDateRange(p: EmpPeriod): { from: string; to: string } {
     return { from: `${today.slice(0, 7)}-01`, to: today };
   }
   // 30dias
-  const d30 = new Date(brt);
+  const d30 = new Date(now);
   d30.setDate(d30.getDate() - 29);
   return { from: d30.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), to: today };
 }
