@@ -1001,11 +1001,11 @@ Responda SOMENTE com o JSON, sem markdown.`;
           <div className="flex gap-2">
             <Button className="flex-1 gap-2" onClick={() => { handleSearch(false); setShowFilters(false); }} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              {searched ? "Atualizar Radar" : "Buscar Imóveis"}
+              {searched ? "Atualizar Match" : "🎯 Buscar Match"}
             </Button>
             <Button variant="outline" className="gap-1.5 border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-950" onClick={handleAIExpand} disabled={aiExpanding || loading}>
               {aiExpanding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-              IA
+              IA+
             </Button>
           </div>
 
