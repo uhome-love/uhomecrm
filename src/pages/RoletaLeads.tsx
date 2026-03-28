@@ -41,7 +41,7 @@ function CeoView() {
   const [showIncluirModal, setShowIncluirModal] = useState(false);
   const [allCorretores, setAllCorretores] = useState<{id: string; nome: string}[]>([]);
   const [selectedCorretor, setSelectedCorretor] = useState("");
-  const [selectedSegmento, setSelectedSegmento] = useState("");
+  const [selectedSegmentos, setSelectedSegmentos] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("gestao");
 
   // Load all corretores for manual inclusion
