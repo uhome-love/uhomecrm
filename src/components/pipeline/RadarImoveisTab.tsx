@@ -452,6 +452,153 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     }
   }, [leadId, profileForm, upsertProfile, onUpdate]);
 
+  // ── Compute site behavior insights ──
+  const siteInsights = useMemo(() => {
+    if (!siteEvents || siteEvents.length === 0) return null;
+    const viewedCodes = new Set<string>();
+    const favCodes = new Set<string>();
+    const searchQueries: string[] = [];
+    const viewedBairros: Record<string, number> = {};
+    const viewedPrecos: number[] = [];
+
+    for (const ev of siteEvents) {
+      if (ev.event_type === "site_view" && ev.imovel_codigo) {
+        viewedCodes.add(ev.imovel_codigo);
+        const payload = ev.payload || {};
+        if (payload.bairro) viewedBairros[payload.bairro] = (viewedBairros[payload.bairro] || 0) + 1;
+        if (payload.preco && Number(payload.preco) > 0) viewedPrecos.push(Number(payload.preco));
+      }
+      if (ev.event_type === "favoritou" && ev.imovel_codigo) favCodes.add(ev.imovel_codigo);
+      if (ev.event_type === "buscou_ia" && ev.search_query) searchQueries.push(ev.search_query);
+    }
+
+    const topBairros = Object.entries(viewedBairros).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([b]) => b);
+    const avgPreco = viewedPrecos.length > 0 ? viewedPrecos.reduce((a, b) => a + b, 0) / viewedPrecos.length : null;
+
+    return { viewedCodes, favCodes, searchQueries, topBairros, avgPreco, totalViews: viewedCodes.size };
+  }, [siteEvents]);
+
+  // ── AI Auto-Fill Profile ──
+  const handleAIAnalyze = useCallback(async () => {
+    setAiAnalyzing(true);
+    try {
+      const contextParts: string[] = [];
+      if (leadData?.observacoes) contextParts.push(`Observações do lead: ${leadData.observacoes}`);
+      if (leadData?.empreendimento) contextParts.push(`Empreendimento de interesse: ${leadData.empreendimento}`);
+      if (leadData?.valor_estimado) contextParts.push(`Valor estimado: R$ ${leadData.valor_estimado.toLocaleString("pt-BR")}`);
+      if (leadData?.campanha) contextParts.push(`Campanha: ${leadData.campanha}`);
+      if (leadData?.origem) contextParts.push(`Origem: ${leadData.origem}`);
+      if (siteInsights) {
+        if (siteInsights.topBairros.length > 0) contextParts.push(`Bairros mais visualizados no site: ${siteInsights.topBairros.join(", ")}`);
+        if (siteInsights.avgPreco) contextParts.push(`Faixa de preço média dos imóveis visualizados: R$ ${Math.round(siteInsights.avgPreco).toLocaleString("pt-BR")}`);
+        if (siteInsights.searchQueries.length > 0) contextParts.push(`Buscas realizadas no site: ${siteInsights.searchQueries.slice(0, 5).join("; ")}`);
+        contextParts.push(`Total de imóveis visualizados no site: ${siteInsights.totalViews}`);
+      }
+
+      if (contextParts.length === 0) {
+        toast.error("Sem dados suficientes para análise. Adicione observações ao lead.");
+        return;
+      }
+
+      const prompt = `Analise os seguintes dados de um lead imobiliário e extraia o perfil de interesse do cliente para busca de imóveis. Retorne APENAS um JSON válido com os campos:
+{
+  "valor_min": number ou null,
+  "valor_max": number ou null,
+  "bairros": ["lista de bairros"],
+  "tipos": ["apartamento", "casa", "terreno"],
+  "dormitorios_min": number ou null,
+  "suites_min": number ou null,
+  "vagas_min": number ou null,
+  "area_min": number ou null,
+  "area_max": number ou null,
+  "status_imovel": "qualquer" | "pronto" | "obras",
+  "objetivo": ["Moradia", "Investimento", "Troca", "Locação"],
+  "momento_compra": "imediato" | "30_dias" | "90_dias" | "6_meses" | "indefinido" | "",
+  "urgencia": "alta" | "media" | "baixa" | "",
+  "observacoes_ia": "resumo curto das preferências extraídas"
+}
+
+Dados do lead "${leadNome}":
+${contextParts.join("\n")}
+
+Responda SOMENTE com o JSON, sem markdown.`;
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uhome-ia-core`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          role: "corretor",
+          module: "match_imoveis",
+        }),
+      });
+
+      if (!resp.ok) throw new Error("AI request failed");
+
+      // Parse SSE stream
+      const reader = resp.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let result = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) result += content;
+          } catch {}
+        }
+      }
+
+      // Parse the JSON from AI response
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("Invalid AI response");
+      const aiProfile = JSON.parse(jsonMatch[0]);
+
+      // Apply AI-extracted profile to form
+      setProfileForm(prev => ({
+        ...prev,
+        valor_min: aiProfile.valor_min ? String(aiProfile.valor_min) : prev.valor_min,
+        valor_max: aiProfile.valor_max ? String(aiProfile.valor_max) : prev.valor_max,
+        bairros: aiProfile.bairros?.length > 0 ? aiProfile.bairros : prev.bairros,
+        tipos: aiProfile.tipos?.length > 0 ? aiProfile.tipos : prev.tipos,
+        dormitorios_min: aiProfile.dormitorios_min ? String(aiProfile.dormitorios_min) : prev.dormitorios_min,
+        suites_min: aiProfile.suites_min ? String(aiProfile.suites_min) : prev.suites_min,
+        vagas_min: aiProfile.vagas_min ? String(aiProfile.vagas_min) : prev.vagas_min,
+        area_min: aiProfile.area_min ? String(aiProfile.area_min) : prev.area_min,
+        area_max: aiProfile.area_max ? String(aiProfile.area_max) : prev.area_max,
+        status_imovel: aiProfile.status_imovel || prev.status_imovel,
+        objetivo: aiProfile.objetivo?.length > 0 ? aiProfile.objetivo : prev.objetivo,
+        momento_compra: aiProfile.momento_compra || prev.momento_compra,
+        urgencia: aiProfile.urgencia || prev.urgencia,
+        observacoes: aiProfile.observacoes_ia
+          ? (prev.observacoes ? `${prev.observacoes}\n\n🤖 IA: ${aiProfile.observacoes_ia}` : `🤖 IA: ${aiProfile.observacoes_ia}`)
+          : prev.observacoes,
+      }));
+
+      toast.success("🧠 Perfil preenchido pela IA! Revise e busque.");
+    } catch (err) {
+      console.error("AI analyze error:", err);
+      toast.error("Erro ao analisar com IA");
+    } finally {
+      setAiAnalyzing(false);
+    }
+  }, [leadNome, leadData, siteInsights]);
+
   // ── Typesense search ──
   const searchTypesense = useCallback(async (): Promise<ImovelResult[]> => {
     try {
