@@ -395,7 +395,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
         tipos: (() => {
           const raw = currentProfile.radar_tipologia;
           if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } catch {} return [raw]; }
-          return ["apartamento"];
+          return [];
         })(),
         status_imovel: currentProfile.radar_status_imovel || "qualquer",
       }));
