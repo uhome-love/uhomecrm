@@ -344,7 +344,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     valor_min: "",
     valor_max: "",
     bairros: [] as string[],
-    tipos: ["apartamento"] as string[],
+    tipos: [] as string[],
     dormitorios_min: "",
     suites_min: "",
     vagas_min: "",
