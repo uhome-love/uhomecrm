@@ -693,10 +693,10 @@ Responda SOMENTE com o JSON, sem markdown.`;
       console.log("[Match] Typesense vazio — usando fallback Supabase direto");
       let query = supabase
         .from("properties")
-        .select("id, codigo, titulo, tipo, bairro, valor_venda, dormitorios, suites, vagas, area_privativa, empreendimento, condominio_nome, status_imovel, fotos, slug")
+        .select("id, codigo, titulo, tipo, bairro, valor_venda, dormitorios, suites, vagas, area_privativa, empreendimento, condominio_nome, status_imovel, fotos")
         .eq("ativo", true)
         .gt("valor_venda", 0)
-        .order("data_atualizacao", { ascending: false })
+        .order("updated_at", { ascending: false })
         .limit(50);
 
       const validTipos = profileForm.tipos.filter(t => t && t !== "qualquer");
