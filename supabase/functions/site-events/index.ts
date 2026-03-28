@@ -237,10 +237,20 @@ Deno.serve(async (req) => {
 
       if (!lead_id && telefone) {
         const telNorm = telefone.replace(/\D/g, '')
+        // Gerar variantes com/sem DDI (+55) para cobrir formatos diferentes
+        const variants = new Set<string>([telefone, telNorm])
+        if (telNorm.startsWith('55') && telNorm.length >= 12) {
+          variants.add(telNorm.slice(2))           // remove DDI: 5551999... → 51999...
+          variants.add(`+${telNorm}`)               // adiciona +: +5551999...
+        } else if (telNorm.length >= 10 && telNorm.length <= 11) {
+          variants.add(`55${telNorm}`)              // adiciona DDI: 51999... → 5551999...
+          variants.add(`+55${telNorm}`)             // adiciona +DDI: +5551999...
+        }
+        const orConditions = [...variants].map(v => `telefone.eq.${v}`).join(',')
         const { data } = await supabase
           .from('leads')
           .select('id, pipeline_lead_id')
-          .or(`telefone.eq.${telefone},telefone.eq.${telNorm}`)
+          .or(orConditions)
           .order('created_at', { ascending: false })
           .limit(1)
           .single()
@@ -255,8 +265,23 @@ Deno.serve(async (req) => {
         const telNorm = telefone?.replace(/\D/g, '') || ''
         const conditions: string[] = []
         if (email) conditions.push(`email.eq.${email}`)
-        if (telefone) conditions.push(`telefone.eq.${telefone}`)
-        if (telNorm && telNorm !== telefone) conditions.push(`telefone.eq.${telNorm}`)
+        if (telefone) {
+          // Mesma lógica de variantes com/sem DDI
+          const telVariants = new Set<string>([telefone])
+          if (telNorm) {
+            telVariants.add(telNorm)
+            if (telNorm.startsWith('55') && telNorm.length >= 12) {
+              telVariants.add(telNorm.slice(2))
+              telVariants.add(`+${telNorm}`)
+            } else if (telNorm.length >= 10 && telNorm.length <= 11) {
+              telVariants.add(`55${telNorm}`)
+              telVariants.add(`+55${telNorm}`)
+            }
+          }
+          for (const v of telVariants) {
+            conditions.push(`telefone.eq.${v}`)
+          }
+        }
 
         if (conditions.length > 0) {
           const { data } = await supabase
