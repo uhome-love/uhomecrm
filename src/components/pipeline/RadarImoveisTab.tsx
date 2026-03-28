@@ -344,7 +344,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     valor_min: "",
     valor_max: "",
     bairros: [] as string[],
-    tipos: ["apartamento"] as string[],
+    tipos: [] as string[],
     dormitorios_min: "",
     suites_min: "",
     vagas_min: "",
@@ -395,7 +395,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
         tipos: (() => {
           const raw = currentProfile.radar_tipologia;
           if (raw) { try { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } catch {} return [raw]; }
-          return ["apartamento"];
+          return [];
         })(),
         status_imovel: currentProfile.radar_status_imovel || "qualquer",
       }));
@@ -409,7 +409,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const [selectedResults, setSelectedResults] = useState<Set<number>>(new Set());
   const [showAllResults, setShowAllResults] = useState(false);
   const [aiExpanding, setAiExpanding] = useState(false);
-  const [useMeDay, setUseMeDay] = useState(true);
+  const [useMeDay, setUseMeDay] = useState(false);
   const [useTypesense, setUseTypesense] = useState(true);
   const [activeObjecoes, setActiveObjecoes] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -625,50 +625,83 @@ Responda SOMENTE com o JSON, sem markdown.`;
     }
   }, [leadNome, leadData, siteInsights]);
 
-  // ── Typesense search ──
-  const searchTypesense = useCallback(async (): Promise<ImovelResult[]> => {
-    try {
-      const filterParts: string[] = ["valor_venda:>0"];
-      if (profileForm.bairros.length === 1) filterParts.push(`bairro:=${profileForm.bairros[0]}`);
-      else if (profileForm.bairros.length > 1) filterParts.push(`bairro:[${profileForm.bairros.join(",")}]`);
-      if (profileForm.valor_min) filterParts.push(`valor_venda:>=${parseFloat(profileForm.valor_min) * 0.85}`);
-      if (profileForm.valor_max) filterParts.push(`valor_venda:<=${parseFloat(profileForm.valor_max) * 1.2}`);
-      if (profileForm.dormitorios_min) {
-        const q = parseInt(profileForm.dormitorios_min);
-        if (q >= 4) filterParts.push(`dormitorios:>=${q}`);
-        else filterParts.push(`dormitorios:[${Math.max(1, q - 1)},${q},${q + 1}]`);
-      }
-      const validTipos = profileForm.tipos.filter(t => t && t !== "qualquer");
+  // ── Typesense search with broadening fallback ──
+  const buildTypesenseFilters = useCallback((broaden = false): string => {
+    const filterParts: string[] = ["valor_venda:>0"];
+    if (profileForm.bairros.length === 1) filterParts.push(`bairro:=${profileForm.bairros[0]}`);
+    else if (profileForm.bairros.length > 1) filterParts.push(`bairro:[${profileForm.bairros.join(",")}]`);
+    if (profileForm.valor_min) filterParts.push(`valor_venda:>=${parseFloat(profileForm.valor_min) * (broaden ? 0.7 : 0.85)}`);
+    if (profileForm.valor_max) filterParts.push(`valor_venda:<=${parseFloat(profileForm.valor_max) * (broaden ? 1.4 : 1.2)}`);
+    if (!broaden && profileForm.dormitorios_min) {
+      const q = parseInt(profileForm.dormitorios_min);
+      if (q >= 4) filterParts.push(`dormitorios:>=${q}`);
+      else filterParts.push(`dormitorios:[${Math.max(1, q - 1)},${q},${q + 1}]`);
+    }
+    const validTipos = profileForm.tipos.filter(t => t && t !== "qualquer");
+    if (validTipos.length > 0) {
       if (validTipos.length === 1) filterParts.push(`tipo:=${validTipos[0]}`);
-      else if (validTipos.length > 1) filterParts.push(`tipo:[${validTipos.join(",")}]`);
+      else filterParts.push(`tipo:[${validTipos.join(",")}]`);
+    }
+    if (!broaden) {
       if (profileForm.status_imovel === "pronto") filterParts.push(`em_obras:=false`);
       else if (profileForm.status_imovel === "obras") filterParts.push(`em_obras:=true`);
+    }
+    if (profileForm.area_min && !broaden) filterParts.push(`area_privativa:>=${parseInt(profileForm.area_min) * 0.8}`);
+    if (profileForm.area_max && !broaden) filterParts.push(`area_privativa:<=${parseInt(profileForm.area_max) * 1.2}`);
+    return filterParts.join(" && ");
+  }, [profileForm]);
 
-      const result = await typesenseSearch({ q: "*", page: 1, per_page: 48, filter_by: filterParts.join(" && "), sort_by: "data_atualizacao:desc" });
-      if (!result) return [];
-      return result.data.map((doc: any) => ({
-        id: doc.codigo || doc.id,
-        codigo: doc.codigo || String(doc.id),
-        nome: doc.titulo || doc.empreendimento || "Imóvel",
-        empreendimento: doc.empreendimento,
-        bairro: doc.bairro || "",
-        metragem: Number(doc.area_privativa || 0),
-        dorms: Number(doc.dormitorios || 0),
-        vagas: Number(doc.vagas || 0),
-        suites: Number(doc.suites || 0),
-        preco: Number(doc.valor_venda || 0),
-        status: doc.situacao || "",
-        imagem: doc.fotos?.[0] || doc.foto_principal || "",
-        tipo: doc.tipo || "",
-        score: 0,
-        source: "typesense" as const,
-        justificativas: [],
-      }));
+  const parseTypesenseResults = (data: any[]): ImovelResult[] =>
+    data.map((doc: any) => ({
+      id: doc.codigo || doc.id,
+      codigo: doc.codigo || String(doc.id),
+      nome: doc.titulo || doc.empreendimento || "Imóvel",
+      empreendimento: doc.empreendimento,
+      bairro: doc.bairro || "",
+      metragem: Number(doc.area_privativa || 0),
+      dorms: Number(doc.dormitorios || 0),
+      vagas: Number(doc.vagas || 0),
+      suites: Number(doc.suites || 0),
+      preco: Number(doc.valor_venda || 0),
+      status: doc.situacao || "",
+      imagem: doc.fotos?.[0] || doc.foto_principal || "",
+      tipo: doc.tipo || "",
+      score: 0,
+      source: "typesense" as const,
+      justificativas: [],
+    }));
+
+  const searchTypesense = useCallback(async (): Promise<ImovelResult[]> => {
+    try {
+      // 1. Strict search
+      const strictFilter = buildTypesenseFilters(false);
+      const result = await typesenseSearch({ q: "*", page: 1, per_page: 48, filter_by: strictFilter, sort_by: "data_atualizacao:desc" });
+      if (result && result.data.length >= 3) return parseTypesenseResults(result.data);
+
+      // 2. Broadened search (relax price, remove dorms/status/area)
+      const broadFilter = buildTypesenseFilters(true);
+      const broadResult = await typesenseSearch({ q: "*", page: 1, per_page: 48, filter_by: broadFilter, sort_by: "data_atualizacao:desc" });
+      const items = parseTypesenseResults(broadResult?.data || []);
+
+      // 3. If still empty AND we have bairro, search just by bairro + price
+      if (items.length === 0 && profileForm.bairros.length > 0) {
+        const minimalParts = ["valor_venda:>0"];
+        if (profileForm.bairros.length === 1) minimalParts.push(`bairro:=${profileForm.bairros[0]}`);
+        else minimalParts.push(`bairro:[${profileForm.bairros.join(",")}]`);
+        const minResult = await typesenseSearch({ q: "*", page: 1, per_page: 48, filter_by: minimalParts.join(" && "), sort_by: "data_atualizacao:desc" });
+        return parseTypesenseResults(minResult?.data || []);
+      }
+
+      // Merge strict + broad (strict first)
+      const strictItems = result?.data?.length ? parseTypesenseResults(result.data) : [];
+      const allCodes = new Set(strictItems.map(i => i.codigo));
+      const broadNew = items.filter(i => !allCodes.has(i.codigo));
+      return [...strictItems, ...broadNew];
     } catch (err) {
       console.error("Typesense radar search error:", err);
       return [];
     }
-  }, [typesenseSearch, profileForm]);
+  }, [typesenseSearch, buildTypesenseFilters, profileForm.bairros]);
 
   // ── Main search ──
   const handleSearch = useCallback(async (silent = false) => {
@@ -697,10 +730,11 @@ Responda SOMENTE com o JSON, sem markdown.`;
     });
     scored.sort((a, b) => b.score - a.score);
 
-    // Deduplicate
+    // Deduplicate by codigo
     const seen = new Set<string>();
     const deduped = scored.filter(item => {
-      const key = normalize(item.nome || `${item.id}`);
+      if (item.score <= 0) return false; // Hide 0% matches
+      const key = item.codigo || normalize(item.nome || `${item.id}`);
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
