@@ -1290,7 +1290,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
 
           {/* ── Search button ── */}
           <div className="flex gap-2">
-            <Button className="flex-1 gap-2" onClick={() => { handleSearch(false); setShowFilters(false); }} disabled={loading}>
+            <Button className="flex-1 gap-2" onClick={() => { hasSearchedOnce.current = true; handleSearch(false); }} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {searched ? "Atualizar Match" : "Buscar Match"}
             </Button>
