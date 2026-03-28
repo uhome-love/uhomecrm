@@ -18,6 +18,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useBrokerSlug } from "@/hooks/useBrokerSlug";
+import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import { useTypesenseSearch } from "@/hooks/useTypesenseSearch";
 import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadPropertySearch } from "@/hooks/useLeadPropertySearch";
@@ -299,7 +302,10 @@ function scoreProperty(
 
 export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadData, currentProfile, onUpdate }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const slugRef = useBrokerSlug();
   const { search: typesenseSearch } = useTypesenseSearch();
+  const [creatingVitrine, setCreatingVitrine] = useState(false);
 
   // ── New hooks ──
   const { profile: savedProfile, upsertProfile, isSaving: isSavingProfile } = useLeadPropertyProfile(leadId);
@@ -814,6 +820,78 @@ Responda SOMENTE com o JSON, sem markdown.`;
     toast.success("Mensagem copiada!");
   };
 
+  // ── Criar Vitrine ──
+  const handleCreateVitrine = useCallback(async () => {
+    if (!user?.id) { toast.error("Você precisa estar logado"); return; }
+    const items = selectedItems.length > 0 ? selectedItems : results.filter(r => r.score >= 60).slice(0, 5);
+    if (items.length === 0) { toast.error("Selecione ao menos 1 imóvel"); return; }
+
+    setCreatingVitrine(true);
+    try {
+      const imovelCodigos = items.map(item => getPropertyCode(item));
+
+      // Build dados_custom with property details for the vitrine page
+      const dadosCustom = items.map(item => ({
+        nome: item.nome || item.empreendimento || "Imóvel",
+        empreendimento: item.empreendimento || item.nome || "",
+        bairro: item.bairro,
+        preco: item.preco,
+        dorms: item.dorms,
+        vagas: item.vagas || 0,
+        suites: item.suites || 0,
+        metragens: item.metragens || (item.metragem ? `${item.metragem}m²` : ""),
+        imagem: item.imagem || "",
+        imagens: item.imagem ? [item.imagem] : [],
+        codigo: getPropertyCode(item),
+        score: item.score,
+        justificativas: item.justificativas,
+        source: item.source,
+      }));
+
+      const titulo = `Seleção para ${leadNome}`;
+      const mensagem = `Olá ${leadNome}! Selecionei ${items.length} imóveis especialmente para você. Confira!`;
+
+      const { data: vitrine, error } = await (supabase as any)
+        .from("vitrines")
+        .insert({
+          created_by: user.id,
+          titulo,
+          mensagem_corretor: mensagem,
+          imovel_ids: imovelCodigos,
+          lead_nome: leadNome,
+          lead_telefone: leadTelefone || null,
+          tipo: "property_selection",
+          dados_custom: dadosCustom,
+          slug: slugRef || null,
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      const vitrineUrl = getVitrinePublicUrl(vitrine.id);
+
+      // Mark items as sent
+      handleMarkSent(items);
+
+      // Copy link + open WhatsApp
+      await navigator.clipboard.writeText(vitrineUrl);
+
+      if (leadTelefone) {
+        const phone = leadTelefone.replace(/\D/g, "");
+        const msg = `Olá ${leadNome}! 😊\n\nPreparei uma seleção especial de ${items.length} imóveis para você:\n\n🔗 ${vitrineUrl}\n\nDá uma olhada e me conta o que achou! 🏠`;
+        window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+      }
+
+      toast.success("Vitrine criada! Link copiado ✨", { description: vitrineUrl, duration: 6000 });
+    } catch (err: any) {
+      console.error("Erro ao criar vitrine:", err);
+      toast.error("Erro ao criar vitrine");
+    } finally {
+      setCreatingVitrine(false);
+    }
+  }, [user?.id, selectedItems, results, leadNome, leadTelefone, slugRef, handleMarkSent]);
+
   return (
     <div className="px-6 pb-8 space-y-3">
       {/* ── SUB-TABS ── */}
@@ -1105,14 +1183,27 @@ Responda SOMENTE com o JSON, sem markdown.`;
 
               {/* Actions */}
               {results.length > 0 && (
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" className="flex-1 gap-1.5" onClick={sendWhatsApp}>
-                    <Send className="h-3.5 w-3.5" />
-                    Enviar WhatsApp
+                <div className="space-y-2 pt-2">
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1 gap-1.5" onClick={sendWhatsApp}>
+                      <Send className="h-3.5 w-3.5" />
+                      Enviar WhatsApp
+                      {selectedResults.size > 0 && ` (${selectedResults.size})`}
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={copyMessage}>
+                      <Copy className="h-3.5 w-3.5" /> Copiar
+                    </Button>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="w-full gap-1.5 bg-gradient-to-r from-violet-500/10 to-primary/10 hover:from-violet-500/20 hover:to-primary/20 border border-violet-500/20 text-violet-700 dark:text-violet-300"
+                    onClick={handleCreateVitrine}
+                    disabled={creatingVitrine}
+                  >
+                    {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
+                    Criar Vitrine Personalizada
                     {selectedResults.size > 0 && ` (${selectedResults.size})`}
-                  </Button>
-                  <Button size="sm" variant="outline" className="gap-1.5" onClick={copyMessage}>
-                    <Copy className="h-3.5 w-3.5" /> Copiar
                   </Button>
                 </div>
               )}
