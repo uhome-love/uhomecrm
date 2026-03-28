@@ -16,6 +16,7 @@ import {
   Heart, HeartOff, X, Clock, History, Save, ThumbsDown, Wand2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseSite } from "@/lib/supabaseSite";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
