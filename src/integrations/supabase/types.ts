@@ -5365,6 +5365,9 @@ export type Database = {
           imovel_url: string | null
           jetimob_lead_id: string | null
           last_escalation_at: string | null
+          lead_score: number | null
+          lead_score_at: string | null
+          lead_temperatura: string | null
           modo_conducao: string
           modulo_atual: string
           motivo_descarte: string | null
@@ -5434,6 +5437,9 @@ export type Database = {
           imovel_url?: string | null
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
+          lead_score?: number | null
+          lead_score_at?: string | null
+          lead_temperatura?: string | null
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
@@ -5503,6 +5509,9 @@ export type Database = {
           imovel_url?: string | null
           jetimob_lead_id?: string | null
           last_escalation_at?: string | null
+          lead_score?: number | null
+          lead_score_at?: string | null
+          lead_temperatura?: string | null
           modo_conducao?: string
           modulo_atual?: string
           motivo_descarte?: string | null
@@ -8185,6 +8194,16 @@ export type Database = {
           },
         ]
       }
+      v_corretor_roleta_status: {
+        Row: {
+          corretor_id: string | null
+          leads_quentes: number | null
+          nome: string | null
+          pode_entrar_roleta: boolean | null
+          tarefas_atrasadas: number | null
+        }
+        Relationships: []
+      }
       v_kpi_disponibilidade: {
         Row: {
           auth_user_id: string | null
@@ -8493,6 +8512,10 @@ export type Database = {
       cleanup_homi_conversations: { Args: never; Returns: undefined }
       cleanup_jetimob_processed: { Args: never; Returns: undefined }
       cleanup_ops_events: { Args: never; Returns: undefined }
+      corretor_pode_entrar_roleta: {
+        Args: { p_corretor_id: string }
+        Returns: boolean
+      }
       count_imoveis: {
         Args: { p_bairro?: string; p_cidade?: string; p_tipo?: string }
         Returns: number
@@ -8682,6 +8705,21 @@ export type Database = {
           visitas_realizadas: number
         }[]
       }
+      get_leads_atrasados: {
+        Args: { p_corretor_id: string }
+        Returns: {
+          horas_atrasado: number
+          lead_id: string
+          lead_nome: string
+          lead_score: number
+          lead_telefone: string
+          lead_temperatura: string
+          stage_nome: string
+          tarefa_descricao: string
+          tarefa_id: string
+          tarefa_vencimento: string
+        }[]
+      }
       get_map_pins: {
         Args: {
           lat_max?: number
@@ -8712,6 +8750,21 @@ export type Database = {
           longitude: number
           preco: number
           quartos: number
+          tipo: string
+        }[]
+      }
+      get_oportunidades_do_dia: {
+        Args: { p_corretor_id: string }
+        Returns: {
+          acao_sugerida: string
+          created_at: string
+          descricao: string
+          lead_id: string
+          lead_nome: string
+          lead_score: number
+          lead_telefone: string
+          lead_temperatura: string
+          prioridade: number
           tipo: string
         }[]
       }
