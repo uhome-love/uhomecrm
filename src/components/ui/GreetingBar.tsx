@@ -64,9 +64,10 @@ function getEmoji(): string {
 
 function getDefaultSubtitle(): string {
   const now = new Date();
-  const weekday = now.toLocaleDateString("pt-BR", { weekday: "long" });
-  const day = now.toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
-  const week = getWeekNumber(now);
+  const weekday = now.toLocaleDateString("pt-BR", { weekday: "long", timeZone: "America/Sao_Paulo" });
+  const day = now.toLocaleDateString("pt-BR", { day: "numeric", month: "long", timeZone: "America/Sao_Paulo" });
+  const brtDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const week = getWeekNumber(brtDate);
   return `${weekday}, ${day} · Semana ${week}`;
 }
 
