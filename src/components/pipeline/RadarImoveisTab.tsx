@@ -660,7 +660,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
       <Tabs value={subTab} onValueChange={(v) => setSubTab(v as any)}>
         <TabsList className="h-8 bg-muted/50 w-full">
           <TabsTrigger value="radar" className="text-xs h-6 flex-1 gap-1">
-            <Radar className="h-3 w-3" /> Radar
+            <Radar className="h-3 w-3" /> Match
           </TabsTrigger>
           <TabsTrigger value="matches" className="text-xs h-6 flex-1 gap-1">
             <Sparkles className="h-3 w-3" /> Matches
