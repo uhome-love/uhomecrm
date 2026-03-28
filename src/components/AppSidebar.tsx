@@ -359,6 +359,7 @@ export function AppSidebar() {
             items: [
               { title: "Rankings", url: "/ranking", icon: Trophy },
               { title: "Relatórios 1:1", url: "/relatorios", icon: FileBarChart },
+              { title: "Placar do Dia", url: "/placar-do-dia", icon: Trophy },
             ],
           },
           {
