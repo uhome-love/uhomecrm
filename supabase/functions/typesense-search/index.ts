@@ -76,6 +76,7 @@ serve(async (req) => {
     }
 
     const url = `https://${TYPESENSE_HOST}${searchPath}`;
+    console.log("[typesense-search] Request:", { host: TYPESENSE_HOST, collection: COLLECTION_NAME, filter_by, q, page, per_page });
     const resp = await fetch(url, {
       headers: {
         "X-TYPESENSE-API-KEY": TYPESENSE_SEARCH_API_KEY,
@@ -83,6 +84,7 @@ serve(async (req) => {
     });
 
     const data = await resp.json();
+    console.log("[typesense-search] Response:", { ok: resp.ok, status: resp.status, found: data.found, hits: data.hits?.length ?? 0 });
 
     if (!resp.ok) {
       return new Response(JSON.stringify({ error: "Typesense search failed", details: data }), {
