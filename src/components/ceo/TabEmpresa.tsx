@@ -21,8 +21,7 @@ const PERIOD_PILLS: { label: string; value: EmpPeriod }[] = [
 
 function getDateRange(p: EmpPeriod): { from: string; to: string } {
   const now = new Date();
-  const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const today = brt.toISOString().slice(0, 10);
+  const today = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   if (p === "hoje") return { from: today, to: today };
   if (p === "semana") {
