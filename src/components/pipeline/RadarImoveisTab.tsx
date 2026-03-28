@@ -307,9 +307,11 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     searchHistory, favoriteCodes, sentCodes, discardedCodes,
     saveSearch, trackInteraction, isLoadingHistory,
   } = useLeadPropertySearch(leadId);
+  const { data: siteEvents } = useLeadImoveisEvents(leadId);
 
   // ── Tab state ──
   const [subTab, setSubTab] = useState<"radar" | "matches" | "perfil" | "historico">("radar");
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
 
   // ── Profile form state (initialized from savedProfile or legacy fields) ──
   const [profileForm, setProfileForm] = useState({
