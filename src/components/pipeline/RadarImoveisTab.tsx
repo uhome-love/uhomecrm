@@ -13,7 +13,7 @@ import {
   Copy, ExternalLink, Loader2, Sparkles, Home, Send, Check,
   Brain, AlertTriangle, Star, Eye, ChevronDown, ChevronUp,
   MessageSquare, Bed, Car, Maximize2, RefreshCw,
-  Heart, HeartOff, X, Clock, History, Save, ThumbsDown
+  Heart, HeartOff, X, Clock, History, Save, ThumbsDown, Wand2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { useTypesenseSearch } from "@/hooks/useTypesenseSearch";
 import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadPropertySearch } from "@/hooks/useLeadPropertySearch";
+import { useLeadImoveisEvents } from "@/hooks/useLeadImoveisEvents";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import LeadMatchesWidget from "./LeadMatchesWidget";
