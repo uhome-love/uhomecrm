@@ -237,10 +237,20 @@ Deno.serve(async (req) => {
 
       if (!lead_id && telefone) {
         const telNorm = telefone.replace(/\D/g, '')
+        // Gerar variantes com/sem DDI (+55) para cobrir formatos diferentes
+        const variants = new Set<string>([telefone, telNorm])
+        if (telNorm.startsWith('55') && telNorm.length >= 12) {
+          variants.add(telNorm.slice(2))           // remove DDI: 5551999... → 51999...
+          variants.add(`+${telNorm}`)               // adiciona +: +5551999...
+        } else if (telNorm.length >= 10 && telNorm.length <= 11) {
+          variants.add(`55${telNorm}`)              // adiciona DDI: 51999... → 5551999...
+          variants.add(`+55${telNorm}`)             // adiciona +DDI: +5551999...
+        }
+        const orConditions = [...variants].map(v => `telefone.eq.${v}`).join(',')
         const { data } = await supabase
           .from('leads')
           .select('id, pipeline_lead_id')
-          .or(`telefone.eq.${telefone},telefone.eq.${telNorm}`)
+          .or(orConditions)
           .order('created_at', { ascending: false })
           .limit(1)
           .single()
