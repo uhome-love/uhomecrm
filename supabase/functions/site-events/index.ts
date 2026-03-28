@@ -167,6 +167,7 @@ async function criarAlertaCorretor(
     titulo,
     mensagem: corpo,
     tipo: 'radar_intencao',
+    categoria: 'radar',
     lida: false,
   }).then(({ error }) => {
     if (error) console.warn('[radar] notifications warn:', error.message)
