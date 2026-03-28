@@ -69,6 +69,28 @@ E) Plano de alinhamento com gerentes (pauta curta)
 
 Linguagem: executiva, com síntese e prioridade. Foco em visão macro, comparativos, ranking, decisões estratégicas.`;
 
+const EMPREENDIMENTO_MAP = `
+=== MAPEAMENTO DE EMPREENDIMENTOS → BAIRRO (Porto Alegre) ===
+Quando o lead vem de um empreendimento listado abaixo, SEMPRE preencher o bairro correto e bairros próximos:
+
+- "Connect JW" / "Connect João Wallig" → bairro: "Passo da Areia", tipo: "apartamento", bairros_proximos: ["Boa Vista", "Jardim Lindóia", "Cristo Redentor"], ticket: R$350k-560k, dorms: 1-2
+- "Orygem" → bairro: "Teresópolis", tipo: "casa", bairros_proximos: ["Cristal", "Medianeira", "Glória"], ticket: R$800k-1M, dorms: 3-4
+- "Open Bosque" → bairro: "Jardim Carvalho", tipo: "apartamento", bairros_proximos: ["Passo da Areia", "Jardim Lindóia"]
+- "Casa Tua" / "Las Casas" → bairro: "Teresópolis", tipo: "casa", bairros_proximos: ["Cristal", "Medianeira"]
+- "Alto Lindóia" → bairro: "Lindóia", tipo: "apartamento", bairros_proximos: ["Jardim Lindóia", "São João"]
+- "Shift" / "Vanguard" → bairro: "Petrópolis", tipo: "apartamento", bairros_proximos: ["Bela Vista", "Bom Fim"]
+- "Flight" → bairro: "Três Figueiras", tipo: "apartamento", bairros_proximos: ["Chácara das Pedras", "Boa Vista"]
+- "Duetto Morana" → bairro: "Morada de Santa Fé", tipo: "apartamento", bairros_proximos: ["Agronomia", "Lomba do Pinheiro"]
+- "Meday" / "MeDay" → tipo: "casa", bairro: variado (empreendimento Melnick)
+- "Village" / "Villa" → tipo: "casa"
+- "Tower" / "Torres" → tipo: "apartamento"
+
+REGRAS:
+1. Se o empreendimento de origem está na lista acima, OBRIGATORIAMENTE preencher bairros com [bairro_principal, ...bairros_proximos]
+2. Se o empreendimento tem ticket conhecido, usar como valor_min/valor_max
+3. Se o empreendimento não está na lista, inferir tipo pelo nome (Village/Casa → casa, Tower/Alto → apartamento)
+4. NUNCA deixar bairros vazio se o empreendimento está mapeado acima`;
+
 const MODULE_CONTEXTS: Record<string, string> = {
   recovery: `MÓDULO ATIVO: Recuperação de Leads
 - São leads NÃO aproveitados que precisam ser reativados

@@ -701,7 +701,22 @@ Responda SOMENTE com o JSON, sem markdown.`;
 
       const validTipos = profileForm.tipos.filter(t => t && t !== "qualquer");
       if (validTipos.length > 0) query = query.in("tipo", validTipos);
-      if (profileForm.bairros.length > 0) query = query.in("bairro", profileForm.bairros);
+      
+      // Se tem bairros no perfil, filtrar por eles
+      if (profileForm.bairros.length > 0) {
+        query = query.in("bairro", profileForm.bairros);
+      } else if (lead?.empreendimento) {
+        // Se sem bairro mas tem empreendimento, buscar pelo empreendimento
+        const empNome = lead.empreendimento
+          .replace(/\s+JW$/i, '')
+          .replace(/\s+João\s+Wallig$/i, '')
+          .trim();
+        if (empNome.length >= 3) {
+          console.log("[Match] Sem bairro — buscando por empreendimento:", empNome);
+          query = query.or(`condominio_nome.ilike.%${empNome}%,empreendimento.ilike.%${empNome}%,titulo.ilike.%${empNome}%`);
+        }
+      }
+      
       if (profileForm.valor_min) query = query.gte("valor_venda", parseFloat(profileForm.valor_min) * 0.85);
       if (profileForm.valor_max) query = query.lte("valor_venda", parseFloat(profileForm.valor_max) * 1.15);
       if (profileForm.dormitorios_min) query = query.gte("dormitorios", Math.max(1, parseInt(profileForm.dormitorios_min) - 1));
