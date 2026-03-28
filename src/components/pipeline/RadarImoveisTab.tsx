@@ -720,7 +720,9 @@ Responda SOMENTE com o JSON, sem markdown.`;
     setSelectedResults(new Set());
 
     let allResults: ImovelResult[] = [];
-    if (useMeDay) allResults.push(...MEDAY_CATALOG.map(item => ({ ...item, justificativas: [] })));
+    // Only include MeDay catalog if profile doesn't exclusively want "casa" or "terreno"
+    const incluirMeDay = useMeDay && (!profileForm.tipos.length || profileForm.tipos.includes("apartamento"));
+    if (incluirMeDay) allResults.push(...MEDAY_CATALOG.map(item => ({ ...item, justificativas: [] })));
     if (useTypesense) allResults.push(...(await searchTypesense()));
 
     const leadEmp = leadData?.empreendimento || "";
