@@ -380,55 +380,79 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
-          <Database className="h-5 w-5 text-muted-foreground shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">Reindexar Typesense</p>
-            <p className="text-xs text-muted-foreground">Sincroniza todos os imóveis do Jetimob com o índice de busca. Pode levar alguns minutos.</p>
+        <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
+          <div className="flex items-center gap-3">
+            <Database className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">Reindexar Typesense</p>
+              <p className="text-xs text-muted-foreground">Sincroniza todos os imóveis do Jetimob com o índice de busca em lotes de 500.</p>
+            </div>
+            <Button
+              onClick={async () => {
+                setReindexing(true);
+                setReindexResult(null);
+                try {
+                  const { data, error } = await supabase.functions.invoke("typesense-admin", {
+                    body: { action: "start_reindex" },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast.success(`Reindex iniciado! ${data?.total_pages ?? "?"} páginas para processar.`);
+                  setSyncProgress({ status: "running", next_page: 1, total_pages: data?.total_pages, total_indexed: 0, total_errors: 0, started_at: new Date().toISOString(), finished_at: null });
+                } catch (err: any) {
+                  toast.error(err?.message || "Erro ao iniciar reindex.");
+                  setReindexResult({ error: err?.message });
+                } finally {
+                  setReindexing(false);
+                }
+              }}
+              disabled={reindexing || syncProgress?.status === "running"}
+              variant="outline"
+              className="gap-1.5 shrink-0"
+            >
+              {reindexing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {syncProgress?.status === "running" ? "Em andamento..." : reindexing ? "Iniciando..." : "Reindexar"}
+            </Button>
           </div>
-          <Button
-            onClick={async () => {
-              setReindexing(true);
-              setReindexResult(null);
-              try {
-                const { data, error } = await supabase.functions.invoke("typesense-admin", {
-                  body: { action: "reindex" },
-                });
-                if (error) throw error;
-                if (data?.error) throw new Error(data.error);
-                setReindexResult(data);
-                toast.success(`Reindex concluído! ${data?.indexed ?? "?"} documentos indexados.`);
-              } catch (err: any) {
-                toast.error(err?.message || "Erro ao reindexar.");
-                setReindexResult({ error: err?.message });
-              } finally {
-                setReindexing(false);
-              }
-            }}
-            disabled={reindexing}
-            variant="outline"
-            className="gap-1.5 shrink-0"
-          >
-            {reindexing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {reindexing ? "Reindexando..." : "Reindexar"}
-          </Button>
+
+          {/* Progress bar */}
+          {syncProgress?.status === "running" && syncProgress.total_pages && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Página {syncProgress.next_page} de {syncProgress.total_pages}</span>
+                <span>{syncProgress.total_indexed} docs indexados</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, ((syncProgress.next_page - 1) / syncProgress.total_pages) * 100)}%` }}
+                />
+              </div>
+              {syncProgress.total_errors > 0 && (
+                <p className="text-xs text-destructive">{syncProgress.total_errors} erros</p>
+              )}
+            </div>
+          )}
+
+          {/* Completed state */}
+          {syncProgress?.status === "complete" && (
+            <div className="p-2 rounded-lg bg-success/10 border border-success/20 text-sm space-y-1">
+              <p className="font-medium text-success">✅ Reindex concluído</p>
+              <p className="text-muted-foreground text-xs">
+                {syncProgress.total_indexed} documentos indexados
+                {syncProgress.total_errors > 0 && <span className="text-destructive"> · {syncProgress.total_errors} erros</span>}
+                {syncProgress.finished_at && <span> · Finalizado em {new Date(syncProgress.finished_at).toLocaleString("pt-BR")}</span>}
+              </p>
+            </div>
+          )}
+
+          {reindexResult?.error && (
+            <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+              <p className="font-medium text-destructive">❌ Erro no reindex</p>
+              <p className="text-muted-foreground font-mono text-xs mt-1">{reindexResult.error}</p>
+            </div>
+          )}
         </div>
-
-        {reindexResult && !reindexResult.error && (
-          <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-sm space-y-1">
-            <p className="font-medium text-success">✅ Reindex concluído</p>
-            {reindexResult.indexed != null && <p className="text-muted-foreground">Documentos indexados: <span className="font-mono font-bold text-foreground">{reindexResult.indexed}</span></p>}
-            {reindexResult.duration && <p className="text-muted-foreground">Duração: {reindexResult.duration}</p>}
-            {reindexResult.errors > 0 && <p className="text-destructive">Erros: {reindexResult.errors}</p>}
-          </div>
-        )}
-
-        {reindexResult?.error && (
-          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
-            <p className="font-medium text-destructive">❌ Erro no reindex</p>
-            <p className="text-muted-foreground font-mono text-xs mt-1">{reindexResult.error}</p>
-          </div>
-        )}
       </motion.div>
 
       {/* Users Section */}
