@@ -173,3 +173,6 @@ verify_jwt = false
 
 [functions.site-proxy]
 verify_jwt = false
+
+[functions.cron-smart-nurturing]
+verify_jwt = false
