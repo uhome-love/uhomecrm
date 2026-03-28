@@ -302,7 +302,10 @@ function scoreProperty(
 
 export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadData, currentProfile, onUpdate }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const slugRef = useBrokerSlug();
   const { search: typesenseSearch } = useTypesenseSearch();
+  const [creatingVitrine, setCreatingVitrine] = useState(false);
 
   // ── New hooks ──
   const { profile: savedProfile, upsertProfile, isSaving: isSavingProfile } = useLeadPropertyProfile(leadId);
