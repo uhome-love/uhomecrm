@@ -446,10 +446,10 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
         .ilike("bairro", `%${bairroSearch}%`)
         .eq("ativo", true)
         .limit(20);
-      const unique = [...new Set((data || []).map((d: any) => d.bairro).filter(Boolean))]
+      const unique = [...new Set((data || []).map((d: any) => d.bairro as string).filter((b): b is string => !!b))]
         .filter(b => !profileForm.bairros.includes(b))
         .slice(0, 10);
-      setBairroSuggestions(unique);
+      setBairroSuggestions(unique as string[]);
       setShowBairroDropdown(unique.length > 0);
     }, 300);
     return () => clearTimeout(timer);
