@@ -21,23 +21,22 @@ const PERIOD_PILLS: { label: string; value: EmpPeriod }[] = [
 
 function getDateRange(p: EmpPeriod): { from: string; to: string } {
   const now = new Date();
-  const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const today = brt.toISOString().slice(0, 10);
+  const today = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   if (p === "hoje") return { from: today, to: today };
   if (p === "semana") {
-    const d = new Date(brt);
+    const d = new Date(now);
     const dow = d.getDay();
     d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-    return { from: d.toISOString().slice(0, 10), to: today };
+    return { from: d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), to: today };
   }
   if (p === "mes") {
     return { from: `${today.slice(0, 7)}-01`, to: today };
   }
   // 30dias
-  const d30 = new Date(brt);
+  const d30 = new Date(now);
   d30.setDate(d30.getDate() - 29);
-  return { from: d30.toISOString().slice(0, 10), to: today };
+  return { from: d30.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }), to: today };
 }
 
 interface TeamData {

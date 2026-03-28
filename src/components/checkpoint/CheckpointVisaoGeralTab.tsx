@@ -131,7 +131,7 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
     const newAlerts: Alert[] = [];
 
     const semLigacao = teamUserIds.filter(uid => (oa[uid]?.ligacoes || 0) === 0);
-    if (semLigacao.length > 0 && dateStr === format(new Date(), "yyyy-MM-dd")) {
+    if (semLigacao.length > 0 && dateStr === new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" })) {
       newAlerts.push({ id: "sem-ligacao", type: "warning", icon: "📵", message: `${semLigacao.map(uid => teamNameMap[uid]).join(", ")} ainda não fizeram ligações hoje`, action: { label: "Ver OA", route: "/oferta-ativa" } });
     }
     if (leadsSemContatoList.length > 0) {
@@ -169,7 +169,7 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
   const totalVGV = totalNegByFase.reduce((a, b) => a + b.vgv, 0);
   const taxa = totalOA.ligacoes > 0 ? ((totalOA.aproveitados / totalOA.ligacoes) * 100).toFixed(0) : "0";
   const sortedTeam = [...teamUserIds].sort((a, b) => (oaData[b]?.ligacoes || 0) - (oaData[a]?.ligacoes || 0));
-  const isToday = dateStr === format(new Date(), "yyyy-MM-dd");
+  const isToday = dateStr === new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
   const totalVisitasHoje = visitasHoje.length;
   const visitasRealizadas = visitasHoje.filter(v => v.status === "realizada").length;
 

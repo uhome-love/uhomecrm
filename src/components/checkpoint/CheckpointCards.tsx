@@ -94,7 +94,7 @@ export default function CheckpointCards({ teamUserIds, teamNameMap }: Props) {
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
   const dateFmt = format(selectedDate, "dd/MM/yyyy");
-  const isToday = dateStr === format(new Date(), "yyyy-MM-dd");
+  const isToday = dateStr === new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
   const loadData = useCallback(async () => {
     if (!user || teamUserIds.length === 0) return;
