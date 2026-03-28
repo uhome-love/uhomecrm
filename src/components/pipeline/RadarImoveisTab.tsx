@@ -13,7 +13,7 @@ import {
   Copy, ExternalLink, Loader2, Sparkles, Home, Send, Check,
   Brain, AlertTriangle, Star, Eye, ChevronDown, ChevronUp,
   MessageSquare, Bed, Car, Maximize2, RefreshCw,
-  Heart, HeartOff, X, Clock, History, Save, ThumbsDown
+  Heart, HeartOff, X, Clock, History, Save, ThumbsDown, Wand2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { useTypesenseSearch } from "@/hooks/useTypesenseSearch";
 import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
 import { useLeadPropertySearch } from "@/hooks/useLeadPropertySearch";
+import { useLeadImoveisEvents } from "@/hooks/useLeadImoveisEvents";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import LeadMatchesWidget from "./LeadMatchesWidget";
@@ -306,9 +307,11 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     searchHistory, favoriteCodes, sentCodes, discardedCodes,
     saveSearch, trackInteraction, isLoadingHistory,
   } = useLeadPropertySearch(leadId);
+  const { data: siteEvents } = useLeadImoveisEvents(leadId);
 
   // ── Tab state ──
   const [subTab, setSubTab] = useState<"radar" | "matches" | "perfil" | "historico">("radar");
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
 
   // ── Profile form state (initialized from savedProfile or legacy fields) ──
   const [profileForm, setProfileForm] = useState({
@@ -449,6 +452,153 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     }
   }, [leadId, profileForm, upsertProfile, onUpdate]);
 
+  // ── Compute site behavior insights ──
+  const siteInsights = useMemo(() => {
+    if (!siteEvents || siteEvents.length === 0) return null;
+    const viewedCodes = new Set<string>();
+    const favCodes = new Set<string>();
+    const searchQueries: string[] = [];
+    const viewedBairros: Record<string, number> = {};
+    const viewedPrecos: number[] = [];
+
+    for (const ev of siteEvents) {
+      if (ev.event_type === "site_view" && ev.imovel_codigo) {
+        viewedCodes.add(ev.imovel_codigo);
+        const payload = ev.payload || {};
+        if (payload.bairro) viewedBairros[payload.bairro] = (viewedBairros[payload.bairro] || 0) + 1;
+        if (payload.preco && Number(payload.preco) > 0) viewedPrecos.push(Number(payload.preco));
+      }
+      if (ev.event_type === "favoritou" && ev.imovel_codigo) favCodes.add(ev.imovel_codigo);
+      if (ev.event_type === "buscou_ia" && ev.search_query) searchQueries.push(ev.search_query);
+    }
+
+    const topBairros = Object.entries(viewedBairros).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([b]) => b);
+    const avgPreco = viewedPrecos.length > 0 ? viewedPrecos.reduce((a, b) => a + b, 0) / viewedPrecos.length : null;
+
+    return { viewedCodes, favCodes, searchQueries, topBairros, avgPreco, totalViews: viewedCodes.size };
+  }, [siteEvents]);
+
+  // ── AI Auto-Fill Profile ──
+  const handleAIAnalyze = useCallback(async () => {
+    setAiAnalyzing(true);
+    try {
+      const contextParts: string[] = [];
+      if (leadData?.observacoes) contextParts.push(`Observações do lead: ${leadData.observacoes}`);
+      if (leadData?.empreendimento) contextParts.push(`Empreendimento de interesse: ${leadData.empreendimento}`);
+      if (leadData?.valor_estimado) contextParts.push(`Valor estimado: R$ ${leadData.valor_estimado.toLocaleString("pt-BR")}`);
+      if (leadData?.campanha) contextParts.push(`Campanha: ${leadData.campanha}`);
+      if (leadData?.origem) contextParts.push(`Origem: ${leadData.origem}`);
+      if (siteInsights) {
+        if (siteInsights.topBairros.length > 0) contextParts.push(`Bairros mais visualizados no site: ${siteInsights.topBairros.join(", ")}`);
+        if (siteInsights.avgPreco) contextParts.push(`Faixa de preço média dos imóveis visualizados: R$ ${Math.round(siteInsights.avgPreco).toLocaleString("pt-BR")}`);
+        if (siteInsights.searchQueries.length > 0) contextParts.push(`Buscas realizadas no site: ${siteInsights.searchQueries.slice(0, 5).join("; ")}`);
+        contextParts.push(`Total de imóveis visualizados no site: ${siteInsights.totalViews}`);
+      }
+
+      if (contextParts.length === 0) {
+        toast.error("Sem dados suficientes para análise. Adicione observações ao lead.");
+        return;
+      }
+
+      const prompt = `Analise os seguintes dados de um lead imobiliário e extraia o perfil de interesse do cliente para busca de imóveis. Retorne APENAS um JSON válido com os campos:
+{
+  "valor_min": number ou null,
+  "valor_max": number ou null,
+  "bairros": ["lista de bairros"],
+  "tipos": ["apartamento", "casa", "terreno"],
+  "dormitorios_min": number ou null,
+  "suites_min": number ou null,
+  "vagas_min": number ou null,
+  "area_min": number ou null,
+  "area_max": number ou null,
+  "status_imovel": "qualquer" | "pronto" | "obras",
+  "objetivo": ["Moradia", "Investimento", "Troca", "Locação"],
+  "momento_compra": "imediato" | "30_dias" | "90_dias" | "6_meses" | "indefinido" | "",
+  "urgencia": "alta" | "media" | "baixa" | "",
+  "observacoes_ia": "resumo curto das preferências extraídas"
+}
+
+Dados do lead "${leadNome}":
+${contextParts.join("\n")}
+
+Responda SOMENTE com o JSON, sem markdown.`;
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/uhome-ia-core`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          role: "corretor",
+          module: "match_imoveis",
+        }),
+      });
+
+      if (!resp.ok) throw new Error("AI request failed");
+
+      // Parse SSE stream
+      const reader = resp.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let result = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) result += content;
+          } catch {}
+        }
+      }
+
+      // Parse the JSON from AI response
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("Invalid AI response");
+      const aiProfile = JSON.parse(jsonMatch[0]);
+
+      // Apply AI-extracted profile to form
+      setProfileForm(prev => ({
+        ...prev,
+        valor_min: aiProfile.valor_min ? String(aiProfile.valor_min) : prev.valor_min,
+        valor_max: aiProfile.valor_max ? String(aiProfile.valor_max) : prev.valor_max,
+        bairros: aiProfile.bairros?.length > 0 ? aiProfile.bairros : prev.bairros,
+        tipos: aiProfile.tipos?.length > 0 ? aiProfile.tipos : prev.tipos,
+        dormitorios_min: aiProfile.dormitorios_min ? String(aiProfile.dormitorios_min) : prev.dormitorios_min,
+        suites_min: aiProfile.suites_min ? String(aiProfile.suites_min) : prev.suites_min,
+        vagas_min: aiProfile.vagas_min ? String(aiProfile.vagas_min) : prev.vagas_min,
+        area_min: aiProfile.area_min ? String(aiProfile.area_min) : prev.area_min,
+        area_max: aiProfile.area_max ? String(aiProfile.area_max) : prev.area_max,
+        status_imovel: aiProfile.status_imovel || prev.status_imovel,
+        objetivo: aiProfile.objetivo?.length > 0 ? aiProfile.objetivo : prev.objetivo,
+        momento_compra: aiProfile.momento_compra || prev.momento_compra,
+        urgencia: aiProfile.urgencia || prev.urgencia,
+        observacoes: aiProfile.observacoes_ia
+          ? (prev.observacoes ? `${prev.observacoes}\n\n🤖 IA: ${aiProfile.observacoes_ia}` : `🤖 IA: ${aiProfile.observacoes_ia}`)
+          : prev.observacoes,
+      }));
+
+      toast.success("🧠 Perfil preenchido pela IA! Revise e busque.");
+    } catch (err) {
+      console.error("AI analyze error:", err);
+      toast.error("Erro ao analisar com IA");
+    } finally {
+      setAiAnalyzing(false);
+    }
+  }, [leadNome, leadData, siteInsights]);
+
   // ── Typesense search ──
   const searchTypesense = useCallback(async (): Promise<ImovelResult[]> => {
     try {
@@ -506,7 +656,17 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
 
     const leadEmp = leadData?.empreendimento || "";
     const scored = allResults.map(item => {
-      const { score, justificativas } = scoreProperty(scoringProfile, item, activeObjecoes, leadEmp, discardedCodes as Set<string>);
+      let { score, justificativas } = scoreProperty(scoringProfile, item, activeObjecoes, leadEmp, discardedCodes as Set<string>);
+      // Boost from site browsing history
+      const code = getPropertyCode(item);
+      if (siteInsights?.viewedCodes.has(code)) {
+        score = Math.min(99, score + 8);
+        justificativas = [...justificativas, "👁️ Visualizado no site"];
+      }
+      if (siteInsights?.favCodes.has(code)) {
+        score = Math.min(99, score + 12);
+        justificativas = [...justificativas, "❤️ Favoritado no site"];
+      }
       return { ...item, score, justificativas };
     });
     scored.sort((a, b) => b.score - a.score);
@@ -535,7 +695,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
       } catch {}
       toast.success(`${deduped.length} imóveis analisados!`);
     }
-  }, [useMeDay, useTypesense, scoringProfile, activeObjecoes, searchTypesense, handleSaveProfile, leadData?.empreendimento, discardedCodes, saveSearch]);
+  }, [useMeDay, useTypesense, scoringProfile, activeObjecoes, searchTypesense, handleSaveProfile, leadData?.empreendimento, discardedCodes, saveSearch, siteInsights]);
 
   // AI expand
   const handleAIExpand = useCallback(async () => {
@@ -660,7 +820,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
       <Tabs value={subTab} onValueChange={(v) => setSubTab(v as any)}>
         <TabsList className="h-8 bg-muted/50 w-full">
           <TabsTrigger value="radar" className="text-xs h-6 flex-1 gap-1">
-            <Radar className="h-3 w-3" /> Radar
+            <Radar className="h-3 w-3" /> Match
           </TabsTrigger>
           <TabsTrigger value="matches" className="text-xs h-6 flex-1 gap-1">
             <Sparkles className="h-3 w-3" /> Matches
@@ -682,6 +842,50 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
 
         {/* ════════ TAB: RADAR ════════ */}
         <TabsContent value="radar" className="mt-3 space-y-3">
+          {/* AI Auto-Fill + Site Insights */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wand2 className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold text-foreground">Match Inteligente</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[10px] gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={handleAIAnalyze}
+                  disabled={aiAnalyzing}
+                >
+                  {aiAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
+                  🧠 IA Analisar Perfil
+                </Button>
+              </div>
+              {siteInsights && siteInsights.totalViews > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1 border-t border-primary/10">
+                  <Badge variant="outline" className="text-[9px] gap-1 border-primary/20">
+                    <Eye className="h-2.5 w-2.5" /> {siteInsights.totalViews} visualizados no site
+                  </Badge>
+                  {siteInsights.favCodes.size > 0 && (
+                    <Badge variant="outline" className="text-[9px] gap-1 border-red-200 text-red-600">
+                      <Heart className="h-2.5 w-2.5" /> {siteInsights.favCodes.size} favoritados
+                    </Badge>
+                  )}
+                  {siteInsights.topBairros.length > 0 && (
+                    <Badge variant="outline" className="text-[9px] gap-1 border-primary/20">
+                      <MapPin className="h-2.5 w-2.5" /> {siteInsights.topBairros.join(", ")}
+                    </Badge>
+                  )}
+                  {siteInsights.avgPreco && (
+                    <Badge variant="outline" className="text-[9px] gap-1 border-primary/20">
+                      <DollarSign className="h-2.5 w-2.5" /> Média: {fmtPrice(siteInsights.avgPreco)}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Context badges */}
           {(leadData?.empreendimento || leadData?.valor_estimado) && (
             <div className="flex flex-wrap gap-1.5">
@@ -797,11 +1001,11 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
           <div className="flex gap-2">
             <Button className="flex-1 gap-2" onClick={() => { handleSearch(false); setShowFilters(false); }} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              {searched ? "Atualizar Radar" : "Buscar Imóveis"}
+              {searched ? "Atualizar Match" : "🎯 Buscar Match"}
             </Button>
             <Button variant="outline" className="gap-1.5 border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-950" onClick={handleAIExpand} disabled={aiExpanding || loading}>
               {aiExpanding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-              IA
+              IA+
             </Button>
           </div>
 
