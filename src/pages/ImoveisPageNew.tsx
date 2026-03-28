@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState, EmptyState } from "@/components/ui/screen-states";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseSite } from "@/lib/supabaseSite";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -454,11 +455,12 @@ export default function ImoveisPage() {
     if (!user) return;
     setCreatingVitrine(true);
     try {
-      const { data, error } = await supabase.from("vitrines").insert({
+      const { data, error } = await supabaseSite.from("vitrines").insert({
         created_by: user.id,
         titulo: "Seleção de Imóveis",
         tipo: "property_selection",
         imovel_ids: [...selectedIds] as any,
+        imovel_codigos: [...selectedIds],
       }).select("id").single();
       if (error) throw error;
       const link = getVitrinePublicUrl(data.id);
