@@ -1104,237 +1104,195 @@ Responda SOMENTE com o JSON, sem markdown.`;
           <LeadMatchesWidget leadId={leadId} leadNome={leadNome} leadTelefone={leadTelefone} />
         </TabsContent>
 
-        {/* ════════ TAB: RADAR (Match) ════════ */}
-        <TabsContent value="radar" className="mt-3 space-y-3">
-          {/* ── Empty profile warning ── */}
-          {!profileForm.tipos.length && !profileForm.bairros.length && !profileForm.valor_max && (
-            <div className="flex items-center gap-2 rounded-lg border border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/30 px-3 py-2 text-xs text-yellow-800 dark:text-yellow-200">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              Perfil incompleto — clique em <strong>"IA Analisar Perfil"</strong> para gerar automaticamente ou preencha os filtros manualmente.
+        <TabsContent value="radar" className="mt-2 space-y-2">
+          {/* ── Perfil em 1 linha — pills clicáveis ── */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Pills de perfil */}
+            {profileForm.tipos.length > 0 && (
+              <button onClick={() => setShowFilters(f => !f)} className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors flex items-center gap-1">
+                <Home className="h-2.5 w-2.5" /> {profileForm.tipos.join(", ")}
+              </button>
+            )}
+            {profileForm.bairros.length > 0 && (
+              <button onClick={() => setShowFilters(f => !f)} className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors flex items-center gap-1">
+                <MapPin className="h-2.5 w-2.5" /> {profileForm.bairros.join(", ")}
+              </button>
+            )}
+            {(profileForm.valor_min || profileForm.valor_max) && (
+              <button onClick={() => setShowFilters(f => !f)} className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors flex items-center gap-1">
+                <DollarSign className="h-2.5 w-2.5" />
+                {profileForm.valor_min ? fmtPrice(parseFloat(profileForm.valor_min)) : "0"} – {profileForm.valor_max ? fmtPrice(parseFloat(profileForm.valor_max)) : "∞"}
+              </button>
+            )}
+            {profileForm.dormitorios_min && (
+              <button onClick={() => setShowFilters(f => !f)} className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors flex items-center gap-1">
+                <Bed className="h-2.5 w-2.5" /> {profileForm.dormitorios_min}+
+              </button>
+            )}
+            {leadData?.empreendimento && (
+              <Badge variant="secondary" className="text-[9px] gap-1"><Building2 className="h-2.5 w-2.5" /> {leadData.empreendimento}</Badge>
+            )}
+
+            {/* Spacer + actions */}
+            <div className="ml-auto flex items-center gap-1">
+              <button onClick={() => setShowFilters(f => !f)} className="text-[10px] px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                {showFilters ? <ChevronUp className="h-3 w-3 inline" /> : <span className="flex items-center gap-0.5"><Wand2 className="h-3 w-3" /> Editar</span>}
+              </button>
+              <Button
+                size="sm" variant="ghost"
+                className="h-6 text-[10px] gap-1 text-primary hover:bg-primary/10"
+                onClick={handleAIAnalyze}
+                disabled={aiAnalyzing}
+              >
+                {aiAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
+                IA Perfil
+              </Button>
             </div>
-          )}
-          {/* ── Perfil inline + IA ── */}
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-3 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Wand2 className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-bold text-foreground">Perfil de Busca</span>
+          </div>
+
+          {/* ── Filtros expandíveis ── */}
+          {showFilters && (
+            <Card className="border-border/50">
+              <CardContent className="p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-muted-foreground">Filtros</span>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" className="h-5 text-[9px] gap-1 text-primary" onClick={handleSaveProfile} disabled={isSavingProfile}>
+                      {isSavingProfile ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Save className="h-2.5 w-2.5" />}
+                      Salvar
+                    </Button>
+                    <button onClick={() => setShowFilters(false)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+                  </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-[10px] gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                  onClick={handleAIAnalyze}
-                  disabled={aiAnalyzing}
-                >
-                  {aiAnalyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
-                  IA Analisar Perfil
-                </Button>
-              </div>
 
-              {/* Profile chips — always visible */}
-              <div className="flex flex-wrap gap-1.5">
-                {leadData?.empreendimento && (
-                  <Badge variant="secondary" className="text-[10px] gap-1"><Building2 className="h-2.5 w-2.5" /> {leadData.empreendimento}</Badge>
-                )}
-                {profileForm.tipos.length > 0 && profileForm.tipos[0] !== "apartamento" && (
-                  <Badge variant="secondary" className="text-[10px] gap-1"><Home className="h-2.5 w-2.5" /> {profileForm.tipos.join(", ")}</Badge>
-                )}
-                {profileForm.tipos.includes("apartamento") && profileForm.tipos.length === 1 && (
-                  <Badge variant="secondary" className="text-[10px] gap-1"><Building2 className="h-2.5 w-2.5" /> Apartamento</Badge>
-                )}
-                {profileForm.bairros.length > 0 && (
-                  <Badge variant="outline" className="text-[10px] gap-1 border-primary/20"><MapPin className="h-2.5 w-2.5" /> {profileForm.bairros.join(", ")}</Badge>
-                )}
-                {(profileForm.valor_min || profileForm.valor_max) && (
-                  <Badge variant="outline" className="text-[10px] gap-1 border-primary/20">
-                    <DollarSign className="h-2.5 w-2.5" />
-                    {profileForm.valor_min ? fmtPrice(parseFloat(profileForm.valor_min)) : "R$ 0"} — {profileForm.valor_max ? fmtPrice(parseFloat(profileForm.valor_max)) : "∞"}
-                  </Badge>
-                )}
-                {profileForm.dormitorios_min && (
-                  <Badge variant="outline" className="text-[10px] gap-1 border-primary/20"><Bed className="h-2.5 w-2.5" /> {profileForm.dormitorios_min}+ dorms</Badge>
-                )}
-                {(profileForm.area_min || profileForm.area_max) && (
-                  <Badge variant="outline" className="text-[10px] gap-1 border-primary/20">
-                    <Maximize2 className="h-2.5 w-2.5" />
-                    {profileForm.area_min || "0"}–{profileForm.area_max || "∞"}m²
-                  </Badge>
-                )}
-                {savedProfile && <Badge className="text-[10px] gap-1 bg-emerald-100 text-emerald-700 border-emerald-200"><Check className="h-2.5 w-2.5" /> Salvo</Badge>}
-              </div>
+                {/* Tipo + Dorms */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-[10px] text-muted-foreground">Tipo</Label>
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {[{ value: "apartamento", label: "Apto" }, { value: "casa", label: "Casa" }, { value: "terreno", label: "Terreno" }, { value: "comercial", label: "Comercial" }].map(t => (
+                        <button key={t.value} onClick={() => toggleTipologia(t.value)} className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors ${profileForm.tipos.includes(t.value) ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"}`}>
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-28">
+                    <Label className="text-[10px] text-muted-foreground">Dorms</Label>
+                    <div className="flex gap-0.5 mt-0.5">
+                      {["1", "2", "3", "4"].map(d => (
+                        <button key={d} onClick={() => setProfileForm(p => ({ ...p, dormitorios_min: p.dormitorios_min === d ? "" : d }))}
+                          className={`text-[10px] w-7 h-6 rounded border transition-colors ${profileForm.dormitorios_min === d ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"}`}>
+                          {d}{d === "4" ? "+" : ""}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-              {/* Site insights */}
-              {siteInsights && siteInsights.totalViews > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-primary/10">
-                  <Badge variant="outline" className="text-[9px] gap-1 border-primary/20">
-                    <Eye className="h-2.5 w-2.5" /> {siteInsights.totalViews} no site
-                  </Badge>
-                  {siteInsights.favCodes.size > 0 && (
-                    <Badge variant="outline" className="text-[9px] gap-1 border-destructive/20 text-destructive">
-                      <Heart className="h-2.5 w-2.5" /> {siteInsights.favCodes.size} favoritados
-                    </Badge>
+                {/* Bairros autocomplete */}
+                <div className="relative">
+                  <Label className="text-[10px] text-muted-foreground">Bairros</Label>
+                  {profileForm.bairros.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-0.5 mb-1">
+                      {profileForm.bairros.map(b => (
+                        <span key={b} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                          {b}
+                          <button onClick={() => toggleBairro(b)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <Input ref={bairroInputRef} className="h-7 text-xs" placeholder="Digitar bairro..." value={bairroSearch}
+                    onChange={(e) => setBairroSearch(e.target.value)}
+                    onFocus={() => bairroSuggestions.length > 0 && setShowBairroDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowBairroDropdown(false), 200)}
+                  />
+                  {showBairroDropdown && (
+                    <div className="absolute z-50 w-full mt-0.5 bg-popover border border-border rounded-md shadow-md max-h-36 overflow-y-auto">
+                      {bairroSuggestions.map(b => (
+                        <button key={b} className="w-full text-left text-xs px-3 py-1.5 hover:bg-accent transition-colors" onMouseDown={() => { toggleBairro(b); setBairroSearch(""); setShowBairroDropdown(false); }}>
+                          <MapPin className="h-3 w-3 inline mr-1.5 text-muted-foreground" />{b}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* ── Objeções (collapsible) ── */}
-          <Card className="border-amber-200/50 bg-amber-50/30 dark:bg-amber-950/10">
-            <CardContent className="p-3">
-              <button className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 w-full" onClick={() => setShowObjecoes(!showObjecoes)}>
-                <AlertTriangle className="h-3.5 w-3.5" /> Objeções do Lead
-                {activeObjecoes.length > 0 && <Badge className="ml-1 text-[9px] bg-amber-100 text-amber-700 border-amber-200">{activeObjecoes.length}</Badge>}
-                {showObjecoes ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
-              </button>
-              {showObjecoes && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {OBJECOES.map(obj => (
-                    <button key={obj.key} onClick={() => toggleObjecao(obj.key)} className={`text-[10px] px-2.5 py-1 rounded-full border transition-colors ${activeObjecoes.includes(obj.key) ? "bg-amber-500 text-white border-amber-500" : "bg-background text-muted-foreground border-border hover:border-amber-300"}`}>
-                      {obj.icon} {obj.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ── Filtros inline — sempre visíveis ── */}
-          <Card className="border-border/50">
-            <CardContent className="p-3 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-muted-foreground">Filtros de Busca</span>
-                <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 text-primary" onClick={handleSaveProfile} disabled={isSavingProfile}>
-                  {isSavingProfile ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                  Salvar Perfil
-                </Button>
-              </div>
-
-              {/* Row 1: Tipo + Dorms */}
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Label className="text-[10px] text-muted-foreground">Tipo</Label>
-                  <div className="flex flex-wrap gap-1 mt-0.5">
-                    {[{ value: "apartamento", label: "Apto" }, { value: "casa", label: "Casa" }, { value: "terreno", label: "Terreno" }, { value: "comercial", label: "Comercial" }].map(t => (
-                      <button key={t.value} onClick={() => toggleTipologia(t.value)} className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors ${profileForm.tipos.includes(t.value) ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"}`}>
-                        {t.label}
-                      </button>
-                    ))}
+                {/* Preço + Área */}
+                <div className="grid grid-cols-5 gap-1.5">
+                  <div className="col-span-2">
+                    <Label className="text-[10px] text-muted-foreground">R$ Mín</Label>
+                    <Input type="number" className="h-7 text-xs" placeholder="200000" value={profileForm.valor_min} onChange={(e) => setProfileForm(p => ({ ...p, valor_min: e.target.value }))} />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-[10px] text-muted-foreground">R$ Máx</Label>
+                    <Input type="number" className="h-7 text-xs" placeholder="500000" value={profileForm.valor_max} onChange={(e) => setProfileForm(p => ({ ...p, valor_max: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Área m²</Label>
+                    <Input type="number" className="h-7 text-xs" placeholder="50" value={profileForm.area_min} onChange={(e) => setProfileForm(p => ({ ...p, area_min: e.target.value }))} />
                   </div>
                 </div>
-                <div className="w-28">
-                  <Label className="text-[10px] text-muted-foreground">Dorms</Label>
-                  <div className="flex gap-0.5 mt-0.5">
-                    {["1", "2", "3", "4"].map(d => (
-                      <button key={d} onClick={() => setProfileForm(p => ({ ...p, dormitorios_min: p.dormitorios_min === d ? "" : d }))}
-                        className={`text-[10px] w-7 h-6 rounded border transition-colors ${profileForm.dormitorios_min === d ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 text-muted-foreground border-border hover:border-primary/30"}`}>
-                        {d}{d === "4" ? "+" : ""}
-                      </button>
-                    ))}
+
+                {/* Switches */}
+                <div className="flex items-center gap-4 pt-1 border-t border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={useTypesense} onCheckedChange={setUseTypesense} />
+                    <Label className="text-[10px]">Catálogo</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch checked={useMeDay} onCheckedChange={setUseMeDay} />
+                    <Label className="text-[10px] flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /> MeDay</Label>
                   </div>
                 </div>
-              </div>
-
-              {/* Row 2: Bairros com autocomplete */}
-              <div className="relative">
-                <Label className="text-[10px] text-muted-foreground">Bairros</Label>
-                {profileForm.bairros.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-0.5 mb-1">
-                    {profileForm.bairros.map(b => (
-                      <span key={b} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
-                        {b}
-                        <button onClick={() => toggleBairro(b)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <Input
-                  ref={bairroInputRef}
-                  className="h-7 text-xs"
-                  placeholder="Digitar bairro..."
-                  value={bairroSearch}
-                  onChange={(e) => setBairroSearch(e.target.value)}
-                  onFocus={() => bairroSuggestions.length > 0 && setShowBairroDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowBairroDropdown(false), 200)}
-                />
-                {showBairroDropdown && (
-                  <div className="absolute z-50 w-full mt-0.5 bg-popover border border-border rounded-md shadow-md max-h-36 overflow-y-auto">
-                    {bairroSuggestions.map(b => (
-                      <button key={b} className="w-full text-left text-xs px-3 py-1.5 hover:bg-accent transition-colors" onMouseDown={() => { toggleBairro(b); setBairroSearch(""); setShowBairroDropdown(false); }}>
-                        <MapPin className="h-3 w-3 inline mr-1.5 text-muted-foreground" />{b}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Row 3: Preço + Área */}
-              <div className="grid grid-cols-5 gap-1.5">
-                <div className="col-span-2">
-                  <Label className="text-[10px] text-muted-foreground">R$ Mín</Label>
-                  <Input type="number" className="h-7 text-xs" placeholder="200000" value={profileForm.valor_min} onChange={(e) => setProfileForm(p => ({ ...p, valor_min: e.target.value }))} />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-[10px] text-muted-foreground">R$ Máx</Label>
-                  <Input type="number" className="h-7 text-xs" placeholder="500000" value={profileForm.valor_max} onChange={(e) => setProfileForm(p => ({ ...p, valor_max: e.target.value }))} />
-                </div>
-                <div>
-                  <Label className="text-[10px] text-muted-foreground">Área m²</Label>
-                  <Input type="number" className="h-7 text-xs" placeholder="50" value={profileForm.area_min} onChange={(e) => setProfileForm(p => ({ ...p, area_min: e.target.value }))} />
-                </div>
-              </div>
-
-              {/* Row 4: Switches */}
-              <div className="flex items-center gap-4 pt-1 border-t border-border/30">
-                <div className="flex items-center gap-2">
-                  <Switch checked={useTypesense} onCheckedChange={setUseTypesense} />
-                  <Label className="text-[10px]">Catálogo Geral</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={useMeDay} onCheckedChange={setUseMeDay} />
-                  <Label className="text-[10px] flex items-center gap-1"><Sparkles className="h-3 w-3 text-amber-500" /> Melnick Day</Label>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── Search button ── */}
           <div className="flex gap-2">
-            <Button className="flex-1 gap-2" onClick={() => { hasSearchedOnce.current = true; handleSearch(false); }} disabled={loading}>
+            <Button className="flex-1 gap-2 h-9" onClick={() => { hasSearchedOnce.current = true; handleSearch(false); }} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               {searched ? "Atualizar Match" : "Buscar Match"}
             </Button>
-            <Button variant="outline" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10" onClick={handleAIExpand} disabled={aiExpanding || loading}>
+            <Button variant="outline" className="gap-1.5 h-9 border-primary/30 text-primary hover:bg-primary/10" onClick={handleAIExpand} disabled={aiExpanding || loading}>
               {aiExpanding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
               IA+
             </Button>
           </div>
 
-          {/* ── Loading state ── */}
+          {/* ── Loading ── */}
           {loading && (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm">Analisando perfil e buscando imóveis...</p>
+              <p className="text-sm">Buscando imóveis...</p>
+            </div>
+          )}
+
+          {/* ── Empty profile warning — only when no results ── */}
+          {searched && !loading && results.filter(r => r.score > 0).length === 0 && !profileForm.tipos.length && !profileForm.bairros.length && !profileForm.valor_max && (
+            <div className="flex items-center gap-2 rounded-lg border border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/30 px-3 py-2 text-xs text-yellow-800 dark:text-yellow-200">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Perfil incompleto — clique em <strong>"IA Perfil"</strong> para gerar ou edite os filtros.
             </div>
           )}
 
           {/* ── Results ── */}
           {searched && !loading && (() => {
             const relevantResults = results.filter(r => r.score > 0);
-            const top5 = relevantResults.slice(0, 5);
-            const rest = relevantResults.slice(5, 20);
+            const top4 = relevantResults.slice(0, 4);
+            const rest = relevantResults.slice(4, 20);
             const noResults = relevantResults.length === 0;
 
             return (
-              <div className="space-y-3">
-                {/* Vitrine CTA — top of results */}
-                {top5.length > 0 && (
+              <div className="space-y-2">
+                {/* Header */}
+                {top4.length > 0 && (
                   <div className="flex items-center justify-between">
                     <h5 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                       <Star className="h-3.5 w-3.5 text-primary" />
-                      TOP {Math.min(5, relevantResults.length)} para {leadNome.split(" ")[0]}
+                      Top {Math.min(4, relevantResults.length)} para {leadNome.split(" ")[0]}
                     </h5>
                     <div className="flex items-center gap-1.5">
                       {selectedResults.size > 0 && <Badge variant="secondary" className="text-[10px]">{selectedResults.size} selecionado(s)</Badge>}
@@ -1346,87 +1304,101 @@ Responda SOMENTE com o JSON, sem markdown.`;
                 {noResults && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Building2 className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm font-medium">Nenhum imóvel compatível encontrado</p>
-                    <p className="text-xs mt-1">Ajuste os filtros do perfil ou use IA+ para expandir a busca.</p>
+                    <p className="text-sm font-medium">Nenhum imóvel compatível</p>
+                    <p className="text-xs mt-1">Ajuste filtros ou use IA+ para expandir.</p>
                   </div>
                 )}
 
-                {/* TOP 5 cards — bigger, more visual */}
-                <div className="space-y-2">
-                  {top5.map((item, idx) => {
+                {/* ── Property cards — visual grid ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {top4.map((item, idx) => {
                     const code = getPropertyCode(item);
                     const isFav = favoriteCodes.has(code);
                     const isSent = sentCodes.has(code);
                     const isDiscarded = discardedCodes.has(code);
                     return (
-                      <Card key={idx} className={`overflow-hidden transition-all duration-150 ${selectedResults.has(idx) ? "ring-2 ring-primary border-primary shadow-sm" : isDiscarded ? "opacity-40" : "border-border/50 hover:border-primary/30"}`}>
-                        <div className="flex">
-                          {item.imagem && (
-                            <div className="w-24 h-24 shrink-0 overflow-hidden bg-muted cursor-pointer" onClick={() => toggleSelect(idx)}>
-                              <img src={item.imagem} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      <Card key={idx} className={`overflow-hidden transition-all duration-150 cursor-pointer ${selectedResults.has(idx) ? "ring-2 ring-primary border-primary shadow-md" : isDiscarded ? "opacity-40" : "border-border/50 hover:border-primary/30 hover:shadow-sm"}`}
+                        onClick={() => toggleSelect(idx)}>
+                        {/* Photo — full width, 120px */}
+                        <div className="relative w-full h-[120px] bg-muted overflow-hidden">
+                          {item.imagem ? (
+                            <img src={item.imagem} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Building2 className="h-8 w-8 text-muted-foreground/30" />
                             </div>
                           )}
-                          <CardContent className="p-2.5 flex-1 min-w-0 cursor-pointer" onClick={() => toggleSelect(idx)}>
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <p className="text-xs font-bold text-foreground truncate">{item.nome || "Imóvel"}</p>
-                                  {item.source === "meday" && <Badge className="text-[8px] py-0 px-1 bg-amber-100 text-amber-700 border-amber-200">MeDay</Badge>}
-                                  {isSent && <Badge className="text-[8px] py-0 px-1 bg-blue-100 text-blue-700 border-blue-200">Enviado</Badge>}
-                                </div>
-                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                                  <span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{item.bairro}</span>
-                                  {item.dorms > 0 && <span><Bed className="h-2.5 w-2.5 inline" /> {item.dorms}</span>}
-                                  {item.vagas && item.vagas > 0 && <span><Car className="h-2.5 w-2.5 inline" /> {item.vagas}</span>}
-                                  {item.metragens && <span>{item.metragens}</span>}
-                                  {!item.metragens && item.metragem && item.metragem > 0 && <span>{item.metragem}m²</span>}
-                                </div>
-                              </div>
-                              <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${item.score >= 80 ? "bg-emerald-100 text-emerald-700" : item.score >= 60 ? "bg-amber-100 text-amber-700" : item.score >= 40 ? "bg-orange-100 text-orange-600" : "bg-muted text-muted-foreground"}`}>
-                                {item.score}%
-                              </div>
-                            </div>
-                            {item.preco > 0 && <p className="text-xs font-bold text-emerald-600 mt-0.5">R$ {item.preco.toLocaleString("pt-BR")}</p>}
-                            {item.justificativas.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {item.justificativas.slice(0, 3).map((j, i) => (
-                                  <span key={i} className="text-[9px] text-primary/80 bg-primary/5 px-1.5 py-0.5 rounded">{j}</span>
-                                ))}
-                              </div>
-                            )}
-                          </CardContent>
-                          <div className="flex flex-col items-center justify-center gap-1 pr-2">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button onClick={(e) => handleFavorite(item, e)} className={`p-1 rounded-md transition-colors ${isFav ? "text-red-500 bg-red-50" : "text-muted-foreground hover:text-red-500 hover:bg-red-50"}`}>
-                                  <Heart className={`h-3.5 w-3.5 ${isFav ? "fill-current" : ""}`} />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="left" className="text-xs">{isFav ? "Remover favorito" : "Favoritar"}</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button onClick={(e) => handleDiscard(item, e)} className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                                  <ThumbsDown className="h-3.5 w-3.5" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="left" className="text-xs">Descartar</TooltipContent>
-                            </Tooltip>
+                          {/* Score badge on photo */}
+                          <div className={`absolute top-2 right-2 text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm ${item.score >= 80 ? "bg-emerald-500 text-white" : item.score >= 60 ? "bg-amber-500 text-white" : "bg-red-500 text-white"}`}>
+                            {item.score}%
+                          </div>
+                          {/* Select checkbox */}
+                          <div className="absolute top-2 left-2">
                             {selectedResults.has(idx) ? (
-                              <Check className="h-3.5 w-3.5 text-primary" />
+                              <div className="h-5 w-5 rounded bg-primary flex items-center justify-center"><Check className="h-3 w-3 text-primary-foreground" /></div>
                             ) : (
-                              <div className="h-3.5 w-3.5 rounded border border-border" />
+                              <div className="h-5 w-5 rounded border-2 border-white/80 bg-black/20" />
                             )}
                           </div>
+                          {/* Badges on photo */}
+                          <div className="absolute bottom-2 left-2 flex gap-1">
+                            {item.source === "meday" && <Badge className="text-[8px] py-0 px-1.5 bg-amber-500 text-white border-0 shadow-sm">MeDay</Badge>}
+                            {isSent && <Badge className="text-[8px] py-0 px-1.5 bg-blue-500 text-white border-0 shadow-sm">Enviado</Badge>}
+                          </div>
                         </div>
+
+                        {/* Content */}
+                        <CardContent className="p-2.5 space-y-1">
+                          <div className="flex items-start justify-between gap-1">
+                            <p className="text-xs font-bold text-foreground truncate">{item.nome || "Imóvel"}</p>
+                            {item.preco > 0 && <p className="text-xs font-bold text-emerald-600 shrink-0">R$ {item.preco.toLocaleString("pt-BR")}</p>}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{item.bairro}</span>
+                            {item.dorms > 0 && <span className="flex items-center gap-0.5"><Bed className="h-2.5 w-2.5" />{item.dorms}</span>}
+                            {item.suites && item.suites > 0 && <span>{item.suites}s</span>}
+                            {item.vagas && item.vagas > 0 && <span className="flex items-center gap-0.5"><Car className="h-2.5 w-2.5" />{item.vagas}</span>}
+                            {item.metragens && <span>{item.metragens}</span>}
+                            {!item.metragens && item.metragem && item.metragem > 0 && <span>{item.metragem}m²</span>}
+                          </div>
+
+                          {/* Justificativas as colored pills */}
+                          {item.justificativas.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {item.justificativas.slice(0, 3).map((j, i) => (
+                                <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{j}</span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-1 pt-1 border-t border-border/30">
+                            {leadTelefone && (
+                              <button onClick={(e) => { e.stopPropagation(); sendWhatsApp(); }} className="text-[10px] px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors flex items-center gap-1 dark:bg-emerald-950/30 dark:text-emerald-400">
+                                <Send className="h-2.5 w-2.5" /> WhatsApp
+                              </button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); if (item.codigo) window.open(`/imoveis/${item.codigo}`, "_blank"); }} className="text-[10px] px-2 py-1 rounded-md bg-muted text-muted-foreground hover:bg-accent transition-colors flex items-center gap-1">
+                              <ExternalLink className="h-2.5 w-2.5" /> Ver
+                            </button>
+                            <div className="ml-auto flex items-center gap-0.5">
+                              <button onClick={(e) => { e.stopPropagation(); handleFavorite(item, e); }} className={`p-1 rounded-md transition-colors ${isFav ? "text-red-500 bg-red-50 dark:bg-red-950/30" : "text-muted-foreground hover:text-red-500 hover:bg-red-50"}`}>
+                                <Heart className={`h-3.5 w-3.5 ${isFav ? "fill-current" : ""}`} />
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDiscard(item, e); }} className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                                <ThumbsDown className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </CardContent>
                       </Card>
                     );
                   })}
                 </div>
 
-                {/* ── CTAs — Vitrine + WhatsApp ── */}
-                {top5.length > 0 && (
-                  <div className="space-y-2 pt-1">
+                {/* ── CTAs — Vitrine ── */}
+                {top4.length > 0 && (
+                  <div className="space-y-2">
                     <Button
                       size="sm"
                       className="w-full gap-1.5 bg-gradient-to-r from-violet-600 to-primary hover:from-violet-700 hover:to-primary/90 text-white"
@@ -1434,70 +1406,67 @@ Responda SOMENTE com o JSON, sem markdown.`;
                       disabled={creatingVitrine}
                     >
                       {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
-                      Criar Vitrine Personalizada
-                      {selectedResults.size > 0 ? ` (${selectedResults.size})` : ` (Top ${top5.length})`}
+                      Criar Vitrine
+                      {selectedResults.size > 0 ? ` (${selectedResults.size})` : ` (Top ${top4.length})`}
                     </Button>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={sendWhatsApp}>
-                        <Send className="h-3.5 w-3.5" /> WhatsApp
-                      </Button>
-                      <Button size="sm" variant="ghost" className="gap-1.5" onClick={copyMessage}>
-                        <Copy className="h-3.5 w-3.5" /> Copiar
-                      </Button>
-                    </div>
                   </div>
                 )}
 
-                {/* ── Ver mais (expandable) ── */}
+                {/* ── Ver mais ── */}
                 {rest.length > 0 && (
-                  <div className="pt-1">
+                  <div>
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant="ghost" size="sm"
                       className="w-full h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
                       onClick={() => setShowAllResults(!showAllResults)}
                     >
                       {showAllResults ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                      {showAllResults ? "Ocultar" : `Ver mais ${rest.length} resultado(s)`}
+                      {showAllResults ? "Ocultar" : `Ver mais ${rest.length} imóveis`}
                     </Button>
 
                     {showAllResults && (
-                      <div className="space-y-1.5 mt-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
                         {rest.map((item, restIdx) => {
-                          const idx = restIdx + 5;
+                          const idx = restIdx + 4;
                           const code = getPropertyCode(item);
                           const isFav = favoriteCodes.has(code);
-                          const isSent = sentCodes.has(code);
                           const isDiscarded = discardedCodes.has(code);
                           return (
-                            <Card key={idx} className={`overflow-hidden transition-all duration-150 ${selectedResults.has(idx) ? "ring-2 ring-primary border-primary" : isDiscarded ? "opacity-40" : "border-border/30 hover:border-primary/20"}`}>
-                              <div className="flex">
-                                {item.imagem && (
-                                  <div className="w-16 h-16 shrink-0 overflow-hidden bg-muted cursor-pointer" onClick={() => toggleSelect(idx)}>
-                                    <img src={item.imagem} alt="" className="w-full h-full object-cover" loading="lazy" />
-                                  </div>
+                            <Card key={idx} className={`overflow-hidden transition-all duration-150 cursor-pointer ${selectedResults.has(idx) ? "ring-2 ring-primary border-primary" : isDiscarded ? "opacity-40" : "border-border/30 hover:border-primary/20"}`}
+                              onClick={() => toggleSelect(idx)}>
+                              <div className="relative w-full h-[80px] bg-muted overflow-hidden">
+                                {item.imagem ? (
+                                  <img src={item.imagem} alt="" className="w-full h-full object-cover" loading="lazy" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center"><Building2 className="h-6 w-6 text-muted-foreground/30" /></div>
                                 )}
-                                <CardContent className="p-2 flex-1 min-w-0 cursor-pointer" onClick={() => toggleSelect(idx)}>
-                                  <div className="flex items-center justify-between gap-1">
-                                    <p className="text-[11px] font-semibold text-foreground truncate">{item.nome || "Imóvel"}</p>
-                                    <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${item.score >= 60 ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"}`}>
-                                      {item.score}%
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-                                    <span>{item.bairro}</span>
-                                    {item.dorms > 0 && <span>{item.dorms}d</span>}
-                                    {item.metragem && item.metragem > 0 && <span>{item.metragem}m²</span>}
-                                    {item.preco > 0 && <span className="text-emerald-600 font-semibold">{fmtPrice(item.preco)}</span>}
-                                  </div>
-                                </CardContent>
-                                <div className="flex items-center gap-1 pr-2">
-                                  <button onClick={(e) => handleFavorite(item, e)} className={`p-1 rounded-md transition-colors ${isFav ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}>
-                                    <Heart className={`h-3 w-3 ${isFav ? "fill-current" : ""}`} />
-                                  </button>
-                                  {selectedResults.has(idx) ? <Check className="h-3 w-3 text-primary" /> : <div className="h-3 w-3 rounded border border-border" />}
+                                <div className={`absolute top-1.5 right-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.score >= 80 ? "bg-emerald-500 text-white" : item.score >= 60 ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                                  {item.score}%
+                                </div>
+                                <div className="absolute top-1.5 left-1.5">
+                                  {selectedResults.has(idx) ? (
+                                    <div className="h-4 w-4 rounded bg-primary flex items-center justify-center"><Check className="h-2.5 w-2.5 text-primary-foreground" /></div>
+                                  ) : (
+                                    <div className="h-4 w-4 rounded border-2 border-white/80 bg-black/20" />
+                                  )}
                                 </div>
                               </div>
+                              <CardContent className="p-2">
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className="text-[11px] font-semibold text-foreground truncate">{item.nome || "Imóvel"}</p>
+                                  {item.preco > 0 && <span className="text-[10px] font-bold text-emerald-600 shrink-0">{fmtPrice(item.preco)}</span>}
+                                </div>
+                                <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+                                  <span>{item.bairro}</span>
+                                  {item.dorms > 0 && <span>{item.dorms}d</span>}
+                                  {item.metragem && item.metragem > 0 && <span>{item.metragem}m²</span>}
+                                </div>
+                                <div className="flex items-center gap-0.5 mt-1">
+                                  <button onClick={(e) => { e.stopPropagation(); handleFavorite(item, e); }} className={`p-0.5 rounded transition-colors ${isFav ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}>
+                                    <Heart className={`h-3 w-3 ${isFav ? "fill-current" : ""}`} />
+                                  </button>
+                                </div>
+                              </CardContent>
                             </Card>
                           );
                         })}
