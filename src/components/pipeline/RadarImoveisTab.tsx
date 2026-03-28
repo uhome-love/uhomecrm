@@ -1034,7 +1034,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
       const titulo = `Seleção para ${leadNome}`;
       const mensagem = `Olá ${leadNome}! Selecionei ${items.length} imóveis especialmente para você. Confira!`;
 
-      const { data: vitrine, error } = await (supabase as any)
+      const { data: vitrine, error } = await supabaseSite
         .from("vitrines")
         .insert({
           created_by: user.id,
