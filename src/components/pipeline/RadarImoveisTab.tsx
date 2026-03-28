@@ -705,9 +705,10 @@ Responda SOMENTE com o JSON, sem markdown.`;
       // Se tem bairros no perfil, filtrar por eles
       if (profileForm.bairros.length > 0) {
         query = query.in("bairro", profileForm.bairros);
-      } else if (lead?.empreendimento) {
+      } else if (leadData?.empreendimento) {
         // Se sem bairro mas tem empreendimento, buscar pelo empreendimento
-        const empNome = lead.empreendimento
+        const empNome = leadData.empreendimento
+
           .replace(/\s+JW$/i, '')
           .replace(/\s+João\s+Wallig$/i, '')
           .trim();
