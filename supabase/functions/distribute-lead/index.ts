@@ -363,15 +363,10 @@ Deno.serve(async (req) => {
 
         // FIX Bug 2: Sync roleta_fila so UI shows correct numbers
         if (segmentoId) {
-          const todayStr = getTodayDateStr();
-          supabase.from("roleta_fila")
-            .update({ leads_recebidos: supabase.rpc ? undefined : undefined })
-            .then(() => {});
-          // Increment all janela rows for this corretor+segmento (matches SQL RPC behavior)
           supabase.rpc("increment_roleta_fila", {
             p_corretor_profile_id: chosen.corretorId,
             p_segmento_id: segmentoId,
-            p_data: todayStr,
+            p_data: getTodayDateStr(),
           }).then((r: any) => { if (r?.error) console.warn("roleta_fila sync:", r.error.message); });
         }
 
