@@ -884,7 +884,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
       console.error("Typesense radar search error:", err);
       return [];
     }
-  }, [typesenseSearch, buildTypesenseFilters, profileForm.bairros]);
+  }, [typesenseSearch, buildTypesenseFilters, profileForm.bairros, profileForm.valor_max, leadData?.empreendimento]);
 
   // ── Main search ──
   const handleSearch = useCallback(async (silent = false) => {
