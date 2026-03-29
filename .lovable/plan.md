@@ -1,58 +1,58 @@
 
 
-## Diagnóstico: Timeout na Edge Function ao disparar 24 leads
+## Restauração Completa da Home do Corretor
 
-### Causa raiz
+### Resumo
 
-A Edge Function `distribute-lead` processa cada lead **sequencialmente**, fazendo ~4-5 queries por lead (timeout history, update, insert distribuição, insert notification, etc.). Com 24 leads, são ~100+ queries sequenciais, excedendo o limite de tempo de execução (~25s para Edge Functions).
+Reescrever `CorretorDashboard.tsx` com o layout completo e criar `OportunidadesLista.tsx` extraindo apenas a lista de oportunidades (sem saudação/status duplicados).
 
-Os logs confirmam: a função iniciou às 17:16:03, processou apenas 2 leads (John Moura e Julissa Mello), e nunca logou "Dispatch complete".
+### Arquivos a criar/modificar
 
-### Solução: Processar leads em paralelo com batches
+| Arquivo | Ação |
+|---|---|
+| `src/pages/CorretorDashboard.tsx` | **Reescrever** — layout completo com todas as seções |
+| `src/components/corretor/OportunidadesLista.tsx` | **Criar** — extrai só a lista de oportunidades do `OportunidadesDoDia.tsx` |
 
-**Arquivo**: `supabase/functions/distribute-lead/index.ts`
+### Layout final (ordem exata)
 
-1. **Agrupar leads em mini-batches de 5** e processar cada batch em paralelo com `Promise.all`
-2. **Remover `await` desnecessários** nas inserções secundárias (notifications, roleta_distribuicoes, audit_log) — usar fire-and-forget
-3. **Otimizar a query de timeouts**: em vez de fazer 1 query por lead para buscar timeouts anteriores, fazer uma única query para todos os lead IDs de uma vez
+1. **Banner gradiente** — `linear-gradient(135deg, #4F46E5, #7C3AED, #2563EB)`, avatar, nome, frase motivacional, data/hora
+2. **Linha de status compacta** — inline: ponto verde "Na Empresa" + switch, bullet, ícone Target "Na Roleta" + switch (sem cards gigantes)
+3. **StatusElegibilidadeRoleta** — componente existente, inalterado
+4. **4 KPI cards** — grid 2x2 mobile / 4 cols desktop: Total Leads, Ligações Hoje, WhatsApps, Taxa Aprov.
+5. **2 botões de ação** — "CALL / Oferta Ativa" (verde) + "Pipeline" (primary), grid 2 cols
+6. **OportunidadesLista** — novo componente que usa `useHomeCorretor` internamente para chamar `get_oportunidades_do_dia` e renderizar a lista agrupada por temperatura
+7. **Visitas do Dia** + **Minha Agenda**
+8. **Missões de Hoje**
+9. **Mini Funil + Evolução** (side by side)
+10. **Radar de Leads**
+11. **Daily Goals**
+12. **Performance Cards** (5 cols)
+13. **Ranking**
+14. **Gamificação** (Level + Conquistas)
+15. **Quick Access** (3 botões)
 
-### Mudanças técnicas
+### OportunidadesLista.tsx
 
-```text
-ANTES (sequencial):
-  for (lead of 24 leads) {
-    await queryTimeouts(lead)     // ~200ms
-    await updateLead(lead)        // ~200ms  
-    await insertDistribuicao()    // ~200ms
-    await insertNotification()    // ~200ms
-    await sendWhatsApp()          // ~300ms
-  }
-  Total: ~24 × 1100ms = ~26s (TIMEOUT!)
+Componente novo que encapsula **apenas** a lógica de fetch e renderização da lista de oportunidades:
+- Usa internamente a RPC `get_oportunidades_do_dia` (mesma chamada, sem alteração)
+- Agrupa por temperatura: urgentes, quentes, restantes
+- Inclui o `CardOportunidade` e o empty state
+- **NÃO** inclui saudação, status online, cards de toggle (esses ficam no dashboard)
 
-DEPOIS (otimizado):
-  // 1 query para todos os timeouts de uma vez
-  allTimeouts = await queryTimeoutsForAllLeads(leadIds)
-  
-  // Processar em batches de 5 em paralelo
-  for (batch of chunks(leads, 5)) {
-    await Promise.all(batch.map(lead => {
-      await updateLead(lead)        // essencial - await
-      // fire-and-forget para o resto
-      insertDistribuicao()
-      insertNotification()
-      sendWhatsApp()
-    }))
-  }
-  Total: ~5 batches × 400ms = ~2s
-```
+### Guardrails preservados
 
-### Alterações específicas no arquivo
+- `useHomeCorretor` interno do `OportunidadesDoDia.tsx` — **não alterado**
+- `useElegibilidadeRoleta` — **não alterado**, usado como single source of truth
+- RPC `get_oportunidades_do_dia` — chamada idêntica
+- **Nenhuma migration SQL**
+- **Dark mode e cores** — inalterados
+- `CorretorHome.tsx` — **não alterado** (referência apenas)
+- `OportunidadesDoDia.tsx` — **não alterado** (o novo componente é separado)
 
-1. **Linha ~288-295**: Mover a query de `distribuicao_historico` (timeouts) para FORA do loop — buscar todos os timeouts de todos os `leadIds` de uma vez e indexar por `pipeline_lead_id`
+### Lógica de status no dashboard
 
-2. **Linha ~283-403** (loop principal): Substituir o `for` sequencial por processamento em chunks de 5 com `Promise.all`, mantendo `await` apenas no `update` do pipeline_leads
-
-3. **Linhas 373-399**: Remover `await` dos inserts de `roleta_distribuicoes`, `notifications`, e chamadas de WhatsApp/Push (já são fire-and-forget mas têm `await` desnecessário em alguns)
-
-Nenhuma migration SQL necessária — apenas otimização da Edge Function.
+A lógica de toggle online/roleta é extraída do `OportunidadesDoDia` e replicada inline no dashboard como um hook local `useCorretorStatus()`:
+- Upsert envia `"na_empresa"` (não `"online"`)
+- Bloqueio da roleta usa `podeFazerRoleta` do `useElegibilidadeRoleta`
+- Toast de erro em caso de falha no upsert
 
