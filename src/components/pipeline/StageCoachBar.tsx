@@ -214,7 +214,7 @@ export default function StageCoachBar({
           diagnostic: "🛡️ Anti No-show: Confirme D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa)",
           color: "border-green-500/30 bg-green-50/50 dark:bg-green-950/20",
           actions: [
-            { label: "Sequência anti no-show", icon: CheckCircle2, homiPrompt: "Gere a sequência completa anti no-show: D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa). Formato: 3 mensagens WhatsApp prontas para copiar." },
+            { label: "Sequência anti no-show", icon: CheckCircle2, homiPrompt: "Gere a sequência completa anti no-show: D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa). Formato: apenas 3 mensagens WhatsApp prontas para copiar. IMPORTANTE: Retorne SOMENTE as 3 mensagens de WhatsApp. Nada mais. Sem análise, sem script, sem recomendações." },
             { label: "Confirmar visita", icon: Phone, onClick: () => createQuickTask(`Confirmar visita ${nome}`, "ligacao") },
           ],
           messages: [
