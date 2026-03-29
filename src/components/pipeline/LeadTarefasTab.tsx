@@ -154,6 +154,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     setCompletingId(null);
     setCompletionNote("");
     onReload();
+    onNextAction?.();
   };
 
   const handleAdiarRapido = async (id: string, horas: number) => {
