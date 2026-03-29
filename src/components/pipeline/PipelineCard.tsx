@@ -13,6 +13,7 @@ import PipelineTransferDialog from "./PipelineTransferDialog";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import { CallFocusOverlay } from "./CallFocusOverlay";
+import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
 
 // Extracted sub-components
 import CardStatusLine, { getCardStatus } from "./CardStatusLine";
