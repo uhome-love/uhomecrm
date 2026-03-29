@@ -255,6 +255,17 @@ O cliente deve perceber: "Posso sair do aluguel sem me apertar"
 
 🔥 FRASE DE CONVERSÃO: "Esse aqui é porta de entrada"
 
+🔷 MELNICK DAY (EVENTO):
+• Perfil: Urgência, condições exclusivas
+• Abordagem: Escassez, evento especial
+• Mensagem: "Evento com condições que não se repetem"
+
+🧠 LÓGICA DE DIRECIONAMENTO POR PERFIL:
+• Cliente fala "morar melhor" / "espaço" / "família" → Orygem ou Las Casas
+• Cliente fala "investir" / "renda" / "valorização" → Shift ou Connect JW
+• Cliente fala "parcela" / "aluguel" / "primeiro imóvel" → Open Bosque
+• REGRA FINAL: Cada produto DEVE ser vendido de forma DIFERENTE. Erro = tratar todos iguais.
+
 ═══════════════════════════════════════
 PLAYBOOKS POR ORIGEM DO LEAD
 ═══════════════════════════════════════
