@@ -62,7 +62,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   const [motivoDescarte, setMotivoDescarte] = useState("");
   const [obsDescarte, setObsDescarte] = useState("");
 
-  const availableStages = stages.filter(s => s.id !== currentStageId && s.tipo !== "descarte" && s.ativo);
+  const availableStages = stages.filter(s => s.id !== currentStageId && s.tipo !== "descarte");
   const descarteStage = stages.find(s => s.tipo === "descarte");
 
   const resetForm = () => {
