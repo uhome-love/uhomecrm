@@ -335,39 +335,35 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 5. AGENDA + VISITAS (lado a lado)                                  */}
+      {/* 5. META DO DIA + TAREFAS (lado a lado)                             */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <DailyProgressCard
+            progress={progress}
+            goals={goals}
+            saveGoals={saveGoals}
+            variant="full"
+          />
           <MinhaAgendaWidget />
-          {visitasHoje.length > 0 ? (
-            <VisitasHojeCard visitas={visitasHoje} loading={visitasLoading} />
-          ) : (
-            <div />
-          )}
         </div>
       </motion.div>
 
+      {/* Visitas de Hoje (condicional) */}
+      {visitasHoje.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }}>
+          <VisitasHojeCard visitas={visitasHoje} loading={visitasLoading} />
+        </motion.div>
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 6. MINI FUNIL + EVOLUÇÃO                                          */}
+      {/* 6. MEU FUNIL + ÚLTIMOS 7 DIAS                                      */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <MiniFunilPessoal funil={funil} totalLeads={totalLeads} loading={funilLoading} />
           <EvolucaoSemanal evolucao={evolucao} loading={evolucaoLoading} />
         </div>
-      </motion.div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 7. META DO DIA                                                     */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}>
-        <DailyProgressCard
-          progress={progress}
-          goals={goals}
-          saveGoals={saveGoals}
-          variant="full"
-        />
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
