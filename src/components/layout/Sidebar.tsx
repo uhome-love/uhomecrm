@@ -88,8 +88,8 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
       items: [
         { label: "Central",            path: "/marketing",         icon: <Zap          size={15} strokeWidth={1.5} /> },
         { label: "Email marketing",    path: "/email-marketing",   icon: <Mail         size={15} strokeWidth={1.5} /> },
-        { label: "Disparo WhatsApp",   path: "/disparo-whatsapp",  icon: <MessageSquare size={15} strokeWidth={1.5} /> },
-        { label: "Ligações IA",        path: "/disparador-ligacao-ia", icon: <Sparkles size={15} strokeWidth={1.5} /> },
+        { label: "Disparo WhatsApp",   path: "/disparador-whatsapp",  icon: <MessageSquare size={15} strokeWidth={1.5} /> },
+        { label: "Ligações IA",        path: "/disparador-ligacoes-ia", icon: <Sparkles size={15} strokeWidth={1.5} /> },
       ],
     },
     {
