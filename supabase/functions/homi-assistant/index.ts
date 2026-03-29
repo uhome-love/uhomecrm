@@ -231,6 +231,13 @@ O cliente deve perceber: "Esse já é outro nível de produto"
 • Condução visita: "Esse tipo de produto só faz sentido quando tu vê pessoalmente"
 • Fechamento: "Esse aqui é o tipo de imóvel que quando a pessoa visita, começa a comparar diferente"
 
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Total de leads: 170
+• Taxa lead→visita: 7.1%
+• Conversão pós-visita: 56%
+• No-show: 29%
+• INSIGHT: Funil saudável. Foco é QUALIFICAÇÃO antes da visita — lead que chega qualificado converte bem. Investir em pré-visita consultiva.
+
 🔥 FRASE DE CONVERSÃO: "Esse já é outro nível de produto"
 
 🔷 OPEN BOSQUE (ECONÔMICO FORTE - VOLUME + FACILIDADE):
