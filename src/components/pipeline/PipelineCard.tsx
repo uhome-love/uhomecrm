@@ -12,6 +12,7 @@ import PartnershipDialog from "./PartnershipDialog";
 import PipelineTransferDialog from "./PipelineTransferDialog";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
+import { CallFocusOverlay } from "./CallFocusOverlay";
 
 // Extracted sub-components
 import CardStatusLine, { getCardStatus } from "./CardStatusLine";
@@ -92,6 +93,7 @@ const PipelineCard = memo(function PipelineCard({
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
   const [criandoNegocio, setCriandoNegocio] = useState(false);
   const [negocioCriado, setNegocioCriado] = useState(false);
+  const [isCallOpen, setIsCallOpen] = useState(false);
 
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
   const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]);
@@ -138,20 +140,7 @@ const PipelineCard = memo(function PipelineCard({
   const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!lead.telefone) return;
-    window.open(`tel:${lead.telefone}`, "_self");
-    if (user) {
-      supabase.from("pipeline_atividades").insert({
-        pipeline_lead_id: lead.id, tipo: "ligacao", titulo: "Ligação realizada", created_by: user.id,
-      }).then(() => {});
-      supabase.from("pipeline_leads").update({
-        ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-      } as any).eq("id", lead.id).then(() => {});
-      if (stage?.tipo === "novo_lead" && onMoveLead) {
-        const contatoStage = stages.find(s => s.tipo === "atendimento" || s.nome.toLowerCase().includes("contato"));
-        if (contatoStage) onMoveLead(lead.id, contatoStage.id);
-      }
-    }
-    toast.success("📞 Ligação registrada");
+    setIsCallOpen(true);
   };
 
   const handleWhatsApp = (e: React.MouseEvent) => {
@@ -512,6 +501,16 @@ const PipelineCard = memo(function PipelineCard({
           <CentralComunicacao open={comunicacaoOpen} onOpenChange={setComunicacaoOpen} leadId={lead.id} leadNome={lead.nome} leadTelefone={lead.telefone} leadEmpreendimento={lead.empreendimento} />
         )}
         <WhatsAppTemplatesDialog open={whatsappTemplatesOpen} onOpenChange={setWhatsappTemplatesOpen} leadNome={lead.nome} leadTelefone={lead.telefone} leadEmpreendimento={lead.empreendimento} leadId={lead.id} corretorNome={corretorNome} />
+        <CallFocusOverlay
+          isOpen={isCallOpen}
+          onClose={() => setIsCallOpen(false)}
+          lead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_id: lead.stage_id }}
+          stageTipo={stage?.tipo}
+          leadOrigem={lead.origem}
+          tarefas={[]}
+          availableStages={stages.map(s => ({ id: s.id, tipo: s.tipo, nome: s.nome }))}
+          onRefresh={() => {}}
+        />
       </div>
     </div>
   );
