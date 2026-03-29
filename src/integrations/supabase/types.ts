@@ -8794,6 +8794,7 @@ export type Database = {
           acao_sugerida: string
           created_at: string
           descricao: string
+          lead_etapa: string
           lead_id: string
           lead_nome: string
           lead_score: number
