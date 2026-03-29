@@ -407,6 +407,44 @@ serve(async (req) => {
       });
     }
 
+    // ═══ TEST IMPORT: send 1 doc and return raw Typesense response ═══
+    if (action === "test_import") {
+      const { data: rows } = await db
+        .from("properties")
+        .select("codigo, titulo, descricao, tipo, contrato, situacao, status_imovel, endereco, numero, bairro, cidade, latitude, longitude, dormitorios, suites, banheiros, vagas, area_privativa, area_total, valor_venda, valor_locacao, valor_condominio, empreendimento, condominio_nome, construtora, is_uhome, is_destaque, fotos, fotos_full, entrega_ano, entrega_mes")
+        .eq("ativo", true)
+        .order("id", { ascending: true })
+        .limit(3);
+
+      const items = rows || [];
+      if (items.length === 0) {
+        return new Response(JSON.stringify({ error: "No active properties found" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const docs = items.map(mapPropertyToDocument);
+      const jsonl = docs.map(d => JSON.stringify(d)).join("\n");
+      
+      const resp = await fetch(`https://${TYPESENSE_HOST}/collections/${COLLECTION_NAME}/documents/import?action=upsert`, {
+        method: "POST",
+        headers: { "X-TYPESENSE-API-KEY": TYPESENSE_ADMIN_API_KEY, "Content-Type": "text/plain" },
+        body: jsonl,
+      });
+      
+      const resultText = await resp.text();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        http_status: resp.status,
+        docs_sent: docs.length,
+        first_doc_sample: { id: docs[0].id, codigo: docs[0].codigo, tipo: docs[0].tipo, dormitorios: docs[0].dormitorios, data_atualizacao: docs[0].data_atualizacao },
+        typesense_raw_response: resultText.slice(0, 2000),
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ═══ LEGACY: index_batch (kept for backward compat) ═══
     if (action === "index_batch") {
       const JETIMOB_API_KEY = Deno.env.get("JETIMOB_API_KEY");

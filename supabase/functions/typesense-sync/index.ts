@@ -155,9 +155,21 @@ serve(async (req) => {
       body: jsonl,
     });
     const resultText = await resp.text();
-    const results = resultText.split("\n").filter(Boolean).map(l => JSON.parse(l));
+    console.log(`Typesense response status: ${resp.status}, body length: ${resultText.length}, first 500 chars: ${resultText.slice(0, 500)}`);
+    
+    let results: any[];
+    try {
+      results = resultText.split("\n").filter(Boolean).map(l => JSON.parse(l));
+    } catch (parseErr) {
+      console.error(`Failed to parse Typesense response. Full body: ${resultText.slice(0, 2000)}`);
+      results = [{ success: false, error: resultText.slice(0, 500) }];
+    }
     const indexed = results.filter(r => r.success).length;
     const errors = results.filter(r => !r.success).length;
+    if (errors > 0) {
+      const firstErrors = results.filter(r => !r.success).slice(0, 3);
+      console.error(`First error details: ${JSON.stringify(firstErrors)}`);
+    }
     const hasMore = items.length >= pageSize;
 
     // Update sync state
