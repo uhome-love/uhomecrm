@@ -170,10 +170,11 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Leads & Visitas",
       items: [
+        { label: "Notificações",       path: "/notificacoes",      icon: <BellRing     size={15} strokeWidth={1.5} /> },
         { label: "Central de tarefas", path: "/minhas-tarefas",    icon: <ListTodo     size={15} strokeWidth={1.5} /> },
         { label: "Pipeline de leads",  path: "/pipeline-leads",    icon: <AlignLeft    size={15} strokeWidth={1.5} /> },
         { label: "Agenda de visitas",  path: "/agenda-visitas",    icon: <CalendarDays size={15} strokeWidth={1.5} /> },
-        { label: "Oferta ativa",       path: "/oferta-ativa",      icon: <Phone        size={15} strokeWidth={1.5} /> },
+        { label: "Oferta ativa",       path: "/corretor/call",     icon: <Phone        size={15} strokeWidth={1.5} /> },
         { label: "Imóveis",            path: "/imoveis",           icon: <Home         size={15} strokeWidth={1.5} /> },
       ],
     },
@@ -188,8 +189,8 @@ const NAV_BY_ROLE: Record<UserRole, NavGroup[]> = {
     {
       title: "Crescimento",
       items: [
+        { label: "Progresso",          path: "/progresso",         icon: <Target       size={15} strokeWidth={1.5} /> },
         { label: "Rankings",           path: "/ranking",           icon: <Star         size={15} strokeWidth={1.5} /> },
-        { label: "Conquistas",         path: "/conquistas",        icon: <Trophy       size={15} strokeWidth={1.5} /> },
         { label: "Academia",           path: "/academia",          icon: <GraduationCap size={15} strokeWidth={1.5} /> },
         { label: "Scripts",            path: "/scripts",           icon: <Lightbulb    size={15} strokeWidth={1.5} /> },
       ],
