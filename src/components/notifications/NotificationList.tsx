@@ -79,6 +79,13 @@ function getNotificationRoute(n: Notification): string | null {
   const tipo = n.tipo;
   const categoria = n.categoria;
 
+  // Radar de Intenção → deep-link to lead profile
+  if (tipo === "radar_intencao" || categoria === "radar") {
+    const leadId = d.pipeline_lead_id || d.lead_id;
+    if (leadId) return `/pipeline-leads?lead=${leadId}`;
+    return "/pipeline-leads";
+  }
+
   // Lead notifications → pipeline with lead context
   if (["leads", "lead", "lead_roleta", "lead_urgente", "lead_ultimo_alerta", "lead_sem_contato", "lead_parado", "lead_alto_valor"].includes(tipo)) {
     const leadId = d.pipeline_lead_id || d.lead_id;
