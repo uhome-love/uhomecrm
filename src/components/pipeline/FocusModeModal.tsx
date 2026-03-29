@@ -397,7 +397,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         }}
       >
         {/* HEADER */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}>
               <Zap className="w-4 h-4 text-white" />
