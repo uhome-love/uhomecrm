@@ -211,6 +211,251 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
   ];
 
   return createPortal(
+
+  return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
       <div style={{ background: 'var(--background)', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
       {/* HEADER */}
+      <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-border/50">
+        <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: "#EEEDFE", color: "#534AB7" }}>
+          {getInitials(lead.nome)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm truncate">{lead.nome}</p>
+          <p className="text-xs text-muted-foreground">{lead.telefone || "Sem telefone"}</p>
+        </div>
+        <span className="text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0" style={{ background: "#FCEBEB", color: "#A32D2D" }}>
+          {STAGE_LABELS[stageTipo || ""] || stageTipo || "—"}
+        </span>
+        <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted transition-colors shrink-0">
+          <X className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
+
+      {/* PROGRESS STEPS */}
+      <div className="flex items-center justify-center gap-0 px-5 py-3 border-b border-border/30">
+        {steps.map((step, i) => {
+          const isDone = fase > step.num;
+          const isCurrent = fase === step.num;
+          return (
+            <div key={step.num} className="flex items-center">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                  style={{
+                    background: isDone ? "#EAF3DE" : isCurrent ? "#4F46E5" : "hsl(var(--muted))",
+                    color: isDone ? "#3B6D11" : isCurrent ? "#fff" : "hsl(var(--muted-foreground))",
+                  }}
+                >
+                  {isDone ? "✓" : step.num}
+                </span>
+                <span className="text-[11px] font-medium" style={{ color: isDone ? "#3B6D11" : isCurrent ? "#4F46E5" : "hsl(var(--muted-foreground))" }}>
+                  {step.label}
+                </span>
+              </div>
+              {i < steps.length - 1 && (
+                <div className="w-6 h-px mx-1.5" style={{ background: isDone ? "#3B6D11" : "hsl(var(--border))" }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* BODY */}
+      <div className="flex-1 overflow-y-auto">
+        {/* FASE 1 — SCRIPT */}
+        {fase === 1 && (
+          <div className="px-5 py-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">Script de ligação</span>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: "#EEEDFE", color: "#534AB7" }}>
+                {STAGE_LABELS[stageTipo || ""] || "—"} · {leadOrigem || "direto"}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {scriptLines.map((line, i) => {
+                if (line.role === "dica") {
+                  return (
+                    <p key={i} className="text-[11px] text-muted-foreground italic pl-3 py-1">
+                      💡 {line.texto}
+                    </p>
+                  );
+                }
+                const isCorretor = line.role === "corretor";
+                return (
+                  <div key={i} className="rounded-lg px-3.5 py-2.5" style={{ background: isCorretor ? "hsl(var(--muted))" : "#FAEEDA" }}>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: isCorretor ? "#185FA5" : "#854F0B" }}>
+                      {isCorretor ? "Corretor" : "Cliente"}
+                    </span>
+                    <p className="text-[13px] mt-0.5 leading-relaxed">{line.texto}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* FASE 2 — REGISTRAR */}
+        {fase === 2 && (
+          <div className="px-5 py-4 space-y-4">
+            {/* Chip resultado */}
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
+              style={{
+                background: resultado === "atendeu" ? "#EAF3DE" : "#FCEBEB",
+                color: resultado === "atendeu" ? "#27500A" : "#A32D2D",
+              }}
+            >
+              {resultado === "atendeu" ? <Check className="h-4 w-4" /> : <PhoneOff className="h-4 w-4" />}
+              {resultado === "atendeu" ? "Atendeu" : "Não atendeu — próxima tarefa obrigatória"}
+            </div>
+
+            {/* Observação */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">Observação</label>
+              <Textarea
+                value={observacao}
+                onChange={e => setObservacao(e.target.value)}
+                rows={3}
+                placeholder="O que aconteceu? Ex: demonstrou interesse no Fase 3, pede para ligar à tarde..."
+                className="resize-none text-sm"
+              />
+            </div>
+
+            {/* Próxima tarefa */}
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs font-medium text-foreground">Próxima tarefa</label>
+                <p className="text-[10px] text-muted-foreground">(obrigatório para atualizar o lead)</p>
+              </div>
+              <div className="flex gap-1.5">
+                {["Ligar", "WhatsApp", "Follow-up"].map(tipo => (
+                  <button
+                    key={tipo}
+                    onClick={() => setTarefaTipo(tipo)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                    style={{
+                      background: tarefaTipo === tipo ? "#4F46E5" : "hsl(var(--muted))",
+                      color: tarefaTipo === tipo ? "#fff" : "hsl(var(--foreground))",
+                    }}
+                  >
+                    {tipo === "Ligar" && <Phone className="h-3 w-3 inline mr-1" />}
+                    {tipo === "WhatsApp" && <MessageSquare className="h-3 w-3 inline mr-1" />}
+                    {tipo === "Follow-up" && <CalendarClock className="h-3 w-3 inline mr-1" />}
+                    {tipo}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input type="date" value={tarefaData} onChange={e => setTarefaData(e.target.value)} className="flex-1 text-sm h-9" />
+                <Input type="time" value={tarefaHora} onChange={e => setTarefaHora(e.target.value)} className="w-24 text-sm h-9" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FASE 3 — MOVER ETAPA */}
+        {fase === 3 && (
+          <div className="px-5 py-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold">A conversa avançou?</p>
+              <p className="text-xs text-muted-foreground">Mova o lead se a etapa mudou. Se não avançou, mantenha.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              {proximasEtapas.map(etapa => (
+                <button
+                  key={etapa.tipo}
+                  onClick={() => setNovaEtapaSelecionada(etapa.tipo)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors"
+                  style={{
+                    background: novaEtapaSelecionada === etapa.tipo ? "#EEF2FF" : "transparent",
+                    border: novaEtapaSelecionada === etapa.tipo ? "1px solid #4F46E5" : "1px solid hsl(var(--border))",
+                  }}
+                >
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ background: novaEtapaSelecionada === etapa.tipo ? "#4F46E5" : "#ccc" }} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{etapa.nome}</p>
+                    <p className="text-[10px] text-muted-foreground">{STAGE_LABELS[etapa.tipo] || ""}</p>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              ))}
+
+              {/* Manter na etapa atual */}
+              <button
+                onClick={() => setNovaEtapaSelecionada(null)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors"
+                style={{
+                  background: novaEtapaSelecionada === null ? "#F5F5F5" : "transparent",
+                  border: novaEtapaSelecionada === null ? "1px solid hsl(var(--border))" : "1px solid hsl(var(--border))",
+                }}
+              >
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: novaEtapaSelecionada === null ? "#666" : "#ccc" }} />
+                <p className="text-sm font-medium text-muted-foreground">Manter na etapa atual</p>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* FOOTER */}
+      <div className="border-t border-border/50 px-5 py-3 space-y-2 shrink-0">
+        {fase === 1 && (
+          <>
+            <p className="text-[11px] text-muted-foreground text-center">Como foi a ligação?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setResultado("atendeu"); setFase(2); }}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                style={{ background: "#EAF3DE", color: "#27500A" }}
+              >
+                <Phone className="h-4 w-4" /> Atendeu
+              </button>
+              <button
+                onClick={() => { setResultado("nao_atendeu"); setFase(2); }}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                style={{ background: "#FCEBEB", color: "#A32D2D" }}
+              >
+                <PhoneOff className="h-4 w-4" /> Não atendeu
+              </button>
+            </div>
+          </>
+        )}
+
+        {fase === 2 && (
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors">
+              Fechar sem salvar
+            </button>
+            <div className="flex-1" />
+            {resultado === "atendeu" ? (
+              <Button onClick={() => setFase(3)} className="rounded-lg text-sm gap-1">
+                Continuar <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            ) : (
+              <Button onClick={handleSalvar} disabled={salvando} className="rounded-lg text-sm">
+                {salvando ? "Salvando..." : "Salvar e fechar"}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {fase === 3 && (
+          <div className="flex gap-2">
+            <button onClick={() => setFase(2)} className="px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors">
+              ← Voltar
+            </button>
+            <div className="flex-1" />
+            <Button onClick={handleSalvar} disabled={salvando} className="rounded-lg text-sm">
+              {salvando ? "Salvando..." : "Salvar tudo e fechar"}
+            </Button>
+          </div>
+        )}
+      </div>
+      </div>
+    </div>
+    , document.body
+  );
+}
