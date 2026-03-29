@@ -275,6 +275,22 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             )}
           </div>
 
+          {/* Alert badge for missing data */}
+          {(!negocio.empreendimento || !negocio.vgv_estimado) && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {!negocio.empreendimento && (
+                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" /> Falta Imóvel
+                </span>
+              )}
+              {!negocio.vgv_estimado && (
+                <span className="text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-500/15 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" /> Falta VGV
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Partnership badge */}
           {parceriaInfo && (
             <div className="flex items-center gap-1">
