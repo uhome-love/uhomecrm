@@ -9,7 +9,8 @@ import {
   Zap, X, Phone, MessageCircle, Plus, ChevronLeft,
   Loader2, AlertTriangle, Clock, Send,
   ExternalLink, Sparkles, Copy, Check, ChevronRight,
-  Filter, ListChecks, CalendarClock, Inbox, Target
+  Filter, ListChecks, CalendarClock, Inbox, Target,
+  ArrowRightCircle, Trash2, Ban
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,8 +60,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [configPhase, setConfigPhase] = useState(true);
   const [selectedCriteria, setSelectedCriteria] = useState<CriteriaType[]>(["all"]);
   const [selectedStageId, setSelectedStageId] = useState<string>("all");
-  const [stages, setStages] = useState<{ id: string; nome: string }[]>([]);
+  const [stages, setStages] = useState<{ id: string; nome: string; tipo: string }[]>([]);
   const [stagesLoading, setStagesLoading] = useState(false);
+
+  // Stage advance / discard state
+  const [showAdvanceStage, setShowAdvanceStage] = useState(false);
+  const [advanceStageId, setAdvanceStageId] = useState("");
+  const [showDiscard, setShowDiscard] = useState(false);
+  const [discardReason, setDiscardReason] = useState("");
+  const [discardObs, setDiscardObs] = useState("");
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [homiInsight, setHomiInsight] = useState("");
@@ -93,7 +101,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
       setStagesLoading(true);
       const { data } = await supabase
         .from("pipeline_stages")
-        .select("id, nome")
+        .select("id, nome, tipo")
         .eq("pipeline_tipo", pipelineTipo)
         .order("ordem", { ascending: true });
       setStages(data || []);
@@ -204,6 +212,11 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     setActivityRegistered(false);
     setTaskCreated(false);
     setPhoneCopied(false);
+    setShowAdvanceStage(false);
+    setAdvanceStageId("");
+    setShowDiscard(false);
+    setDiscardReason("");
+    setDiscardObs("");
   }, []);
 
   const goToNext = useCallback(() => {
@@ -309,6 +322,67 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, []);
 
+  const DISCARD_REASONS = [
+    "Sem interesse", "Não atende / não responde", "Comprou com concorrente",
+    "Sem condição financeira", "Perfil incompatível", "Lead duplicado", "Número inválido", "Outro",
+  ];
+
+  const handleAdvanceStage = useCallback(async () => {
+    if (!currentLead || !corretorId || !advanceStageId) return;
+    setSaving(true);
+    try {
+      await supabase.from("pipeline_leads").update({
+        stage_id: advanceStageId,
+        stage_changed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", currentLead.id);
+      await supabase.from("pipeline_historico").insert({
+        pipeline_lead_id: currentLead.id,
+        stage_novo_id: advanceStageId,
+        movido_por: corretorId,
+        observacao: "Avançado via Modo Foco",
+      });
+      toast.success("Etapa avançada ✅");
+      goToNext();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao avançar etapa.");
+    } finally {
+      setSaving(false);
+    }
+  }, [currentLead, corretorId, advanceStageId, goToNext]);
+
+  const handleDiscardLead = useCallback(async () => {
+    if (!currentLead || !corretorId || !discardReason) return;
+    const descarteStage = stages.find(s => s.tipo === "descarte");
+    if (!descarteStage) { toast.error("Estágio de descarte não encontrado."); return; }
+    const motivoTexto = discardReason === "Outro"
+      ? `Descarte: ${discardObs.trim() || "Outro motivo"}`
+      : `Descarte: ${discardReason}`;
+    setSaving(true);
+    try {
+      await supabase.from("pipeline_leads").update({
+        stage_id: descarteStage.id,
+        stage_changed_at: new Date().toISOString(),
+        motivo_descarte: motivoTexto,
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", currentLead.id);
+      await supabase.from("pipeline_historico").insert({
+        pipeline_lead_id: currentLead.id,
+        stage_novo_id: descarteStage.id,
+        movido_por: corretorId,
+        observacao: motivoTexto,
+      });
+      toast.success("Lead descartado");
+      goToNext();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao descartar lead.");
+    } finally {
+      setSaving(false);
+    }
+  }, [currentLead, corretorId, discardReason, discardObs, stages, goToNext]);
+
   const progressPercent = leads.length > 0 ? ((currentIndex + 1) / leads.length) * 100 : 0;
 
   if (!open) return null;
@@ -373,7 +447,7 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
         <div className="flex-1 overflow-y-auto">
           {configPhase ? (
             /* ═══ CONFIG SCREEN ═══ */
-            <div className="flex flex-col items-center justify-center h-full px-4">
+            <div className="flex flex-col items-center justify-center min-h-full px-4 py-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -734,10 +808,89 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
                     </TabsContent>
                   </Tabs>
 
-                  {/* Advance button */}
+                  {/* Stage advance inline */}
+                  {showAdvanceStage && (
+                    <div className="mt-3 rounded-xl p-3 space-y-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                      <p className="text-xs font-semibold text-emerald-400">Avançar para qual etapa?</p>
+                      <Select value={advanceStageId} onValueChange={setAdvanceStageId}>
+                        <SelectTrigger className="h-8 text-xs border-0" style={{ background: "rgba(255,255,255,0.06)", color: "#e2e8f0" }}>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stages.filter(s => s.id !== currentLead?.stage_id && s.tipo !== "descarte").map(s => (
+                            <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="flex-1 h-8 text-xs gap-1" style={{ background: "#10b981" }} disabled={!advanceStageId || saving} onClick={handleAdvanceStage}>
+                          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRightCircle className="w-3 h-3" />} Confirmar
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs text-gray-400 hover:text-white hover:bg-white/5" onClick={() => setShowAdvanceStage(false)}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Discard inline */}
+                  {showDiscard && (
+                    <div className="mt-3 rounded-xl p-3 space-y-2" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                      <p className="text-xs font-semibold text-red-400">Motivo do descarte</p>
+                      <Select value={discardReason} onValueChange={setDiscardReason}>
+                        <SelectTrigger className="h-8 text-xs border-0" style={{ background: "rgba(255,255,255,0.06)", color: "#e2e8f0" }}>
+                          <SelectValue placeholder="Selecione o motivo..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DISCARD_REASONS.map(r => (
+                            <SelectItem key={r} value={r}>{r}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {discardReason === "Outro" && (
+                        <Input
+                          value={discardObs}
+                          onChange={(e) => setDiscardObs(e.target.value)}
+                          placeholder="Descreva..."
+                          className="h-8 text-xs border-0"
+                          style={{ background: "rgba(255,255,255,0.05)", color: "#e2e8f0" }}
+                        />
+                      )}
+                      <div className="flex gap-2">
+                        <Button size="sm" className="flex-1 h-8 text-xs gap-1 bg-destructive hover:bg-destructive/90" disabled={!discardReason || saving} onClick={handleDiscardLead}>
+                          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Ban className="w-3 h-3" />} Descartar
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs text-gray-400 hover:text-white hover:bg-white/5" onClick={() => setShowDiscard(false)}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons row */}
+                  {!showAdvanceStage && !showDiscard && (
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => { setShowAdvanceStage(true); setShowDiscard(false); }}
+                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] py-2 rounded-lg transition-colors"
+                        style={{ background: "rgba(16,185,129,0.1)", color: "#34d399", border: "1px solid rgba(16,185,129,0.2)" }}
+                      >
+                        <ArrowRightCircle className="w-3.5 h-3.5" /> Avançar Etapa
+                      </button>
+                      <button
+                        onClick={() => { setShowDiscard(true); setShowAdvanceStage(false); }}
+                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] py-2 rounded-lg transition-colors"
+                        style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Descartar Lead
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Advance to next lead button */}
                   <button
                     onClick={goToNext}
-                    className="w-full mt-4 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors"
+                    className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs py-2.5 rounded-lg transition-colors"
                     style={{
                       background: (activityRegistered || taskCreated) ? "linear-gradient(135deg, #4F46E5, #7C3AED)" : "transparent",
                       color: (activityRegistered || taskCreated) ? "#fff" : "#6b7280",
