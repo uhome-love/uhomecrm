@@ -359,6 +359,21 @@ ${histCtx}
     return sections;
   }, [result]);
 
+  // In direct mode, filter out non-actionable sections (analysis, briefing, alerts, etc.)
+  const EXCLUDED_DIRECT_MODE_PATTERNS = /análise|briefing|alerta|próxima ação|recomendação|próximos passos|observação/i;
+  const INCLUDED_DIRECT_MODE_PATTERNS = /whatsapp|script|mensagem|ligação|versão|proposta|follow|objeção|anti.?no.?show|💬|📞|🔄/i;
+
+  const displaySections = useMemo(() => {
+    if (!isDirectMode) return parsedSections;
+    // In direct mode, only show actionable sections
+    return parsedSections.filter(sec => {
+      if (EXCLUDED_DIRECT_MODE_PATTERNS.test(sec.title)) return false;
+      if (INCLUDED_DIRECT_MODE_PATTERNS.test(sec.title)) return true;
+      // If no match, include by default (could be a custom format)
+      return true;
+    });
+  }, [parsedSections, isDirectMode]);
+
   const isActionableSection = (title: string) => /💬|🔄|📞|whatsapp|mensagem|script|ligação/i.test(title);
 
   // ═══════════════════════════════════════════════
