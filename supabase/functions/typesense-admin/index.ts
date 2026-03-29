@@ -91,6 +91,63 @@ function normalizeImages(imovel: any): { thumbs: string[]; full: string[] } {
   return { thumbs, full };
 }
 
+// ── Map a row from 'properties' table directly to Typesense document ──
+function mapPropertyToDocument(row: any): Record<string, any> {
+  const codigo = String(row.codigo || "");
+  const situacao = String(row.situacao || row.status_imovel || "").toLowerCase();
+  const emObras = situacao.includes("obra") || situacao.includes("constru") || situacao.includes("planta") || situacao.includes("lancamento");
+
+  const thumbs: string[] = Array.isArray(row.fotos) ? row.fotos : [];
+  const fullPhotos: string[] = Array.isArray(row.fotos_full) ? row.fotos_full : thumbs;
+
+  const lat = Number(row.latitude || 0);
+  const lng = Number(row.longitude || 0);
+  const hasCoords = lat !== 0 && lng !== 0 && !isNaN(lat) && !isNaN(lng) && lat >= -35 && lat <= 5 && lng >= -75 && lng <= -30;
+
+  const doc: Record<string, any> = {
+    id: codigo || `auto_${Math.random().toString(36).slice(2)}`,
+    codigo,
+    titulo: row.titulo || "",
+    descricao_resumida: (row.descricao || "").slice(0, 500),
+    bairro: row.bairro || "",
+    cidade: row.cidade || "Porto Alegre",
+    endereco: [row.endereco || "", row.numero || ""].filter(Boolean).join(", "),
+    empreendimento: row.empreendimento || row.condominio_nome || "",
+    construtora: row.construtora || "",
+    tipo: (row.tipo || "").toLowerCase(),
+    categoria: "",
+    contrato: row.contrato || "venda",
+    valor_venda: Number(row.valor_venda || 0) || 0,
+    valor_locacao: Number(row.valor_locacao || 0) || 0,
+    area_privativa: Number(row.area_privativa || 0) || 0,
+    area_total: Number(row.area_total || 0) || 0,
+    dormitorios: Number(row.dormitorios || 0) || 0,
+    suites: Number(row.suites || 0) || 0,
+    banheiros: Number(row.banheiros || 0) || 0,
+    vagas: Number(row.vagas || 0) || 0,
+    status: row.status_imovel || "",
+    situacao: situacao,
+    foto_principal: thumbs[0] || "",
+    fotos: thumbs.slice(0, 15),
+    fotos_full: fullPhotos.slice(0, 15),
+    destaque: !!row.is_destaque,
+    em_obras: emObras,
+    previsao_entrega: row.entrega_ano ? `${row.entrega_ano}${row.entrega_mes ? '-' + String(row.entrega_mes).padStart(2, '0') : ''}` : "",
+    valor_condominio: Number(row.valor_condominio || 0) || 0,
+    is_uhome: !!row.is_uhome || String(codigo).toLowerCase().includes("-uh"),
+    data_atualizacao: Date.now(),
+  };
+
+  if (hasCoords) {
+    doc.latitude = lat;
+    doc.longitude = lng;
+    doc.location = [lat, lng];
+  }
+
+  return doc;
+}
+
+// ── Legacy: Map Jetimob API item to Typesense document (kept for index_batch) ──
 function mapImovelToDocument(item: any): Record<string, any> {
   const codigo = String(item.codigo || item.referencia || item.id_imovel || item.id || "");
   const { thumbs, full } = normalizeImages(item);
@@ -191,9 +248,9 @@ serve(async (req) => {
       });
     }
 
-    // ═══ START REINDEX (non-blocking — resets state, cron does the work) ═══
+    // ═══ START REINDEX (from properties table — no Jetimob dependency) ═══
     if (action === "start_reindex") {
-      // First, ensure the collection exists (create if not)
+      // Ensure the collection exists
       const collCheck = await typesenseFetch(TYPESENSE_HOST, TYPESENSE_ADMIN_API_KEY, `/collections/${COLLECTION_NAME}`);
       if (collCheck.status === 404) {
         await typesenseFetch(TYPESENSE_HOST, TYPESENSE_ADMIN_API_KEY, "/collections", {
@@ -202,14 +259,13 @@ serve(async (req) => {
         });
       }
 
-      // Estimate total pages from Jetimob
-      const JETIMOB_API_KEY = Deno.env.get("JETIMOB_API_KEY");
-      if (!JETIMOB_API_KEY) throw new Error("JETIMOB_API_KEY not configured");
+      // Count active properties in the database
+      const { count, error: countErr } = await db
+        .from("properties")
+        .select("id", { count: "exact", head: true })
+        .eq("ativo", true);
 
-      const probeUrl = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/todos?v=6&page=1&pageSize=1`;
-      const probeResp = await fetch(probeUrl, { headers: { Accept: "application/json" } });
-      const probeData = await probeResp.json();
-      const totalItems = probeData?.total || probeData?.totalResults || 25000;
+      const totalItems = count || 0;
       const pageSize = 500;
       const totalPages = Math.ceil(totalItems / pageSize);
 
@@ -226,11 +282,11 @@ serve(async (req) => {
         last_indexed_at: null,
       }).eq("id", "default");
 
-      console.log(`[typesense-admin] Reindex started: ${totalItems} items, ${totalPages} pages`);
+      console.log(`[typesense-admin] Reindex started from DB: ${totalItems} properties, ${totalPages} pages`);
 
       return new Response(JSON.stringify({
         success: true,
-        message: "Reindex iniciado em background",
+        message: "Reindex iniciado em background (fonte: banco de dados)",
         total_items: totalItems,
         total_pages: totalPages,
       }), {
@@ -238,9 +294,8 @@ serve(async (req) => {
       });
     }
 
-    // ═══ PROCESS NEXT BATCH (called by pg_cron) ═══
+    // ═══ PROCESS NEXT BATCH (called by pg_cron — reads from properties table) ═══
     if (action === "process_next_batch") {
-      // Read current state
       const { data: state, error: stateErr } = await db
         .from("typesense_sync_state")
         .select("*")
@@ -261,22 +316,24 @@ serve(async (req) => {
 
       const currentPage = state.next_page || 1;
       const pageSize = 500;
+      const offset = (currentPage - 1) * pageSize;
 
-      // Fetch from Jetimob
-      const JETIMOB_API_KEY = Deno.env.get("JETIMOB_API_KEY");
-      if (!JETIMOB_API_KEY) throw new Error("JETIMOB_API_KEY not configured");
+      // Fetch from properties table (ordered by id for stable pagination)
+      const { data: rows, error: fetchErr } = await db
+        .from("properties")
+        .select("codigo, titulo, descricao, tipo, contrato, situacao, status_imovel, endereco, numero, bairro, cidade, latitude, longitude, dormitorios, suites, banheiros, vagas, area_privativa, area_total, valor_venda, valor_locacao, valor_condominio, empreendimento, condominio_nome, construtora, is_uhome, is_destaque, fotos, fotos_full, entrega_ano, entrega_mes")
+        .eq("ativo", true)
+        .order("id", { ascending: true })
+        .range(offset, offset + pageSize - 1);
 
-      const url = `https://api.jetimob.com/webservice/${JETIMOB_API_KEY}/imoveis/todos?v=6&page=${currentPage}&pageSize=${pageSize}`;
-      const response = await fetch(url, { headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error(`Jetimob fetch failed: ${response.status}`);
-      const raw = await response.json();
-      const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw?.result) ? raw.result : Array.isArray(raw) ? raw : [];
+      if (fetchErr) throw new Error(`DB fetch failed: ${fetchErr.message}`);
 
+      const items = rows || [];
       let indexed = 0;
       let errors = 0;
 
       if (items.length > 0) {
-        const docs = items.map(mapImovelToDocument);
+        const docs = items.map(mapPropertyToDocument);
         const jsonl = docs.map(d => JSON.stringify(d)).join("\n");
         const resp = await fetch(`https://${TYPESENSE_HOST}/collections/${COLLECTION_NAME}/documents/import?action=upsert`, {
           method: "POST",
@@ -314,7 +371,7 @@ serve(async (req) => {
         }).eq("id", "default");
       }
 
-      console.log(`[typesense-admin] Batch page=${currentPage}: ${indexed} indexed, ${errors} errors, hasMore=${hasMore}`);
+      console.log(`[typesense-admin] Batch page=${currentPage}: ${indexed} indexed, ${errors} errors, hasMore=${hasMore} (source: DB)`);
 
       return new Response(JSON.stringify({
         success: true,
