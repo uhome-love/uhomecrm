@@ -2924,6 +2924,59 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_nurturing_sequences: {
+        Row: {
+          canal: string
+          created_at: string
+          error_message: string | null
+          id: string
+          mensagem: string | null
+          pipeline_lead_id: string
+          scheduled_at: string
+          sent_at: string | null
+          stage_tipo: string
+          status: string
+          step_key: string
+          template_name: string | null
+        }
+        Insert: {
+          canal?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          mensagem?: string | null
+          pipeline_lead_id: string
+          scheduled_at: string
+          sent_at?: string | null
+          stage_tipo: string
+          status?: string
+          step_key: string
+          template_name?: string | null
+        }
+        Update: {
+          canal?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          mensagem?: string | null
+          pipeline_lead_id?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          stage_tipo?: string
+          status?: string
+          step_key?: string
+          template_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_nurturing_sequences_pipeline_lead_id_fkey"
+            columns: ["pipeline_lead_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_progressao: {
         Row: {
           auth_user_id: string | null

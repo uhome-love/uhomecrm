@@ -41,6 +41,7 @@ import NextActionModal from "./NextActionModal";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
+import StageCoachBar from "./StageCoachBar";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -502,6 +503,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </p>
           )}
         </div>
+
+        {/* ════════════ STAGE COACH ════════════ */}
+        <StageCoachBar
+          stageTipo={(currentStage as any)?.tipo}
+          leadNome={lead.nome}
+          empreendimento={lead.empreendimento}
+          diasSemContato={daysSinceCreation}
+          tentativasLigacao={callAttempts}
+          telefone={lead.telefone}
+          onAddTarefa={leadData.addTarefa}
+          onOpenHomi={() => setHomiOpen(true)}
+        />
 
         {/* ════════════ ABAS ════════════ */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">

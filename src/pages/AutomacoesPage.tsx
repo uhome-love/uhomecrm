@@ -12,6 +12,7 @@ import { ptBR } from "date-fns/locale";
 import AutomationWizard from "@/components/automations/AutomationWizard";
 import AutomationLogsDialog from "@/components/automations/AutomationLogsDialog";
 import SequenceTemplates from "@/components/automations/SequenceTemplates";
+import NurturingDashboard from "@/components/automations/NurturingDashboard";
 
 interface Automation {
   id: string;
@@ -128,6 +129,9 @@ export default function AutomacoesPage() {
 
       {/* Sequence Templates */}
       <SequenceTemplates onCreated={loadAutomations} />
+
+      {/* Nurturing Dashboard — CEO control */}
+      <NurturingDashboard />
 
       {automations.length === 0 ? (
         <Card className="p-12 text-center">
