@@ -1,7 +1,7 @@
 import UhomeLogo from "@/components/UhomeLogo";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Navigate } from "react-router-dom";
-import { Mail, Lock, User, Loader2, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -179,6 +179,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) {
@@ -258,7 +259,10 @@ export default function Auth() {
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
-                  <Input type="password" placeholder="Sua senha" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} style={inputStyle} minLength={6} required />
+                  <Input type={showPassword ? "text" : "password"} placeholder="Sua senha" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} style={inputStyle} minLength={6} required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "rgba(255,255,255,0.4)" }}>
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-3 pt-1">
