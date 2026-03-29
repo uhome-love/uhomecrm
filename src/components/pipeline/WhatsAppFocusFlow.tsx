@@ -415,6 +415,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
