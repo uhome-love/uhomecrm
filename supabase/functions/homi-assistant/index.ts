@@ -803,6 +803,21 @@ Objetivo: ${objetivo}${contextoCliente}
 Ajude o corretor com a melhor estratégia para esta situação.`;
     }
 
+    // Add format hint based on action type
+    const whatsappActions = ["responder_whatsapp", "primeiro_contato", "whatsapp_intro", "whatsapp_reengajamento", "responder_cliente", "whatsapp_pos_visita", "mensagem", "followup", "reengajamento", "followup_proposta", "criar_followup"];
+    const ligacaoActions = ["script_ligacao", "script_reativacao", "ligacao_proposta"];
+    const objecaoActions = ["quebrar_objecao"];
+    
+    if (whatsappActions.includes(acao)) {
+      userPrompt += "\n\n⚠️ FORMATO OBRIGATÓRIO: Use FORMATO WHATSAPP (apenas 2 mensagens curtas + qual usar). NÃO inclua script de ligação, alerta ou próxima ação.";
+    } else if (ligacaoActions.includes(acao)) {
+      userPrompt += "\n\n⚠️ FORMATO OBRIGATÓRIO: Use FORMATO LIGAÇÃO (apenas script Corretor/Cliente + dicas). NÃO inclua mensagens WhatsApp.";
+    } else if (objecaoActions.includes(acao)) {
+      userPrompt += "\n\n⚠️ FORMATO OBRIGATÓRIO: Use FORMATO OBJEÇÃO (análise + resposta sugerida + alternativa). NÃO inclua script de ligação.";
+    } else {
+      userPrompt += "\n\n⚠️ FORMATO OBRIGATÓRIO: Use FORMATO COMPLETO.";
+    }
+
     // Append full lead context to prompt for v2 contextual responses
     userPrompt += leadCtx;
 
