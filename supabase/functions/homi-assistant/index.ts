@@ -262,6 +262,13 @@ O cliente deve perceber: "Posso sair do aluguel sem me apertar"
 • Condução visita: "Vale ver porque o custo-benefício dele é bem forte"
 • Fechamento: "A maioria das pessoas se surpreende quando vê o que consegue por essa parcela"
 
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Total de leads: 492 (maior volume)
+• Taxa lead→visita: 9.3%
+• Conversão pós-visita: 80% (MELHOR taxa de todos os produtos!)
+• No-show: 20%
+• INSIGHT: Produto de VOLUME. O foco é GERAR VISITA — quem visita, compra. Fazer conta aluguel vs parcela. Não perder tempo qualificando demais, levar pra conhecer.
+
 🔥 FRASE DE CONVERSÃO: "Esse aqui é porta de entrada"
 
 🔷 MELNICK DAY (EVENTO):
