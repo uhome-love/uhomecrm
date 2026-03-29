@@ -1,83 +1,50 @@
 
 
-## Relatório E2E Completo + Plano de Correções
+## Redesign do HOMI Assistente — UX Focada em Ação Rápida
 
-### Problemas Encontrados (Teste End-to-End)
+### Problema
 
-**PROBLEMA 1: Botões do StageCoachBar abrem HOMI sem passar o prompt**
-- `onOpenHomi={() => setHomiOpen(true)}` na linha 516 de `PipelineLeadDetail.tsx` IGNORA o prompt passado por `triggerHomi(prompt)`
-- Resultado: botões como "Script de ligação", "WhatsApp apresentação", "Perguntas de qualificação" abrem o HOMI vazio, sem contexto
-- O corretor clica no botão esperando algo pronto e recebe tela genérica
+O painel HOMI ocupa 45% da tela lateral e mostra tudo empilhado: briefing + recomendação + 4 botões + campo "o que o cliente disse" + resultado com múltiplas seções. Quando o corretor clica "Script de ligação" ou "WhatsApp apresentação", precisa esperar carregar e depois scrollar por um painel denso para encontrar o que quer copiar. Não é funcional nem visual para ação rápida.
 
-**PROBLEMA 2: "Script de ligação" em sem_contato cria tarefa E abre HOMI ao mesmo tempo**
-- Linha 81: tem `onClick: () => createQuickTask(...)` E `homiPrompt` no mesmo botão
-- O `onClick` tem prioridade (linha 325: `action.onClick || (action.homiPrompt ? ...)`), então cria tarefa em vez de gerar script
-- Corretor espera script, recebe toast de tarefa criada
+### Solução: Dois modos de exibição
 
-**PROBLEMA 3: Respostas gigantescas da IA — formato obrigatório de 6 seções para TUDO**
-- Linhas 642-679 do `homi-assistant/index.ts`: TODA resposta DEVE ter Análise + WhatsApp + Alternativa + Script Ligação + Alerta + Próxima Ação
-- Quando corretor quer só uma msg de WhatsApp, recebe 6 seções com script de ligação, alerta, etc.
-- Não existe diferenciação por tipo de ação
+**Modo 1: Ação Direta (quando vem do StageCoachBar com prompt)**
+- Não mostra briefing, recomendação nem botões de ação
+- Mostra apenas: loading → resultado em cards limpos com botões grandes de Copiar/WhatsApp
+- Cada card de resultado ocupa largura total com botões proeminentes (não minúsculos)
+- Botão "Nova consulta" para voltar ao modo completo
 
-**PROBLEMA 4: Mensagem "Lead Portal (ImovelWeb)" aparece para lead Meta Ads**
-- Linha 90-92: mensagem hardcoded "Lead Portal (ImovelWeb)" aparece para TODOS os leads em sem_contato
-- Lead da Patty Natel é `meta_ads` mas vê sugestão de portal
+**Modo 2: Exploratório (quando abre pelo botão HOMI sem prompt)**
+- Briefing colapsável (começa fechado)
+- Recomendação + botões de ação visíveis
+- Campo "o que o cliente disse" disponível
+- Resultado aparece no mesmo formato limpo
 
-**PROBLEMA 5: Resultado da IA é um bloco markdown único sem botões por seção**
-- Linhas 492-520 do `HomiLeadAssistant.tsx`: resultado é `<ReactMarkdown>{result}</ReactMarkdown>` em bloco único
-- Só tem botão "Copiar" que copia TUDO — corretor quer copiar SÓ a mensagem WhatsApp
-- Não tem como copiar seções individuais
+### Mudanças visuais nos cards de resultado
 
-**PROBLEMA 6: "Copiar + WhatsApp" não envia a mensagem — abre wa.me sem texto**
-- Linha 510: `window.open(\`https://wa.me/${fullPhone}\`, "_blank")` — sem `?text=`
-- Copia para clipboard mas não passa no link do WhatsApp
+- Cards maiores com padding generoso
+- Título da seção com emoji à esquerda
+- Botões "Copiar" e "WhatsApp" como botões reais (não ghost minúsculos) — alinhados à direita com cores distintas (verde para WhatsApp, outline para copiar)
+- Texto da mensagem em font-size legível (12px, não 11px)
+- Seções informativas (Análise, Alerta, Próxima Ação) colapsadas por default — só expandem se o corretor quiser
+- Seções acionáveis (Mensagem WhatsApp, Script) abertas e destacadas
 
----
+### Mudanças no painel
 
-### Plano de Correções (5 mudanças)
-
-#### 1. Passar prompt do StageCoachBar para o HOMI (`PipelineLeadDetail.tsx`)
-- Mudar `onOpenHomi={() => setHomiOpen(true)}` para `onOpenHomi={(prompt) => { setHomiOpen(true); setHomiInitialPrompt(prompt); }}`
-- Criar state `homiInitialPrompt` e passar como prop para `HomiLeadAssistant`
-- Quando HOMI recebe prompt inicial, auto-executar a ação correspondente
-
-#### 2. Corrigir botão "Script de ligação" — remover createQuickTask (`StageCoachBar.tsx`)
-- Linha 81: remover `onClick: () => createQuickTask(...)` do botão "Script de ligação" em sem_contato
-- Manter apenas `homiPrompt` para que gere o script via IA
-- Botões que criam tarefas: "Agendar follow-up", "Confirmar visita", "Agendar visita" (ações operacionais reais)
-
-#### 3. Formato condicional por tipo de ação (`homi-assistant/index.ts`)
-- Quando `acao` for WhatsApp (`primeiro_contato`, `whatsapp_intro`, `whatsapp_reengajamento`, `responder_cliente`, `responder_whatsapp`): formato curto — só 2 mensagens (3 linhas cada) + qual usar e por quê
-- Quando `acao` for ligação (`script_ligacao`): formato médio — só script Corretor/Cliente + dicas
-- Quando `acao` for objeção (`quebrar_objecao`): formato médio — resposta + alternativa
-- Quando `acao` for consultivo (`custom`, `preparar_visita`, etc.): formato completo atual
-- Implementar injetando o formato correto antes do prompt do usuário
-
-#### 4. Filtrar mensagens por origem do lead (`StageCoachBar.tsx`)
-- Adicionar prop `origem` ao componente
-- No caso `sem_contato`: filtrar "Lead Portal (ImovelWeb)" — só mostrar quando `origem` contém "portal" ou "imovelweb"
-- Para `meta_ads`: mostrar "Versão direta", "Apresentação consultiva", "Reativação criativa"
-
-#### 5. Resultado com seções copiáveis individualmente (`HomiLeadAssistant.tsx`)
-- Parsear resultado por `## ` headers em seções separadas
-- Cada seção renderiza como card com botão "Copiar" individual
-- Seções de WhatsApp (💬 e 🔄) ganham botão "Copiar + WhatsApp" com `wa.me/?text=`
-- Corrigir link WhatsApp atual para incluir `?text=${encodeURIComponent(result)}`
-
----
+- Quando em "modo ação direta", o painel pode ser mais estreito (35%) e focar 100% no resultado
+- Header simplificado sem repetir "Homi AI v2 / Assistente contextual" — só "HOMI" + botão fechar
+- Remover o campo "O que o cliente disse" do modo ação direta (não faz sentido quando o corretor pediu algo específico)
 
 ### Arquivos alterados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/pipeline/PipelineLeadDetail.tsx` | State `homiInitialPrompt`, passar para HOMI, prop `origem` no StageCoachBar |
-| `src/components/pipeline/StageCoachBar.tsx` | Adicionar prop `origem`, filtrar mensagens, corrigir botão script |
-| `src/components/pipeline/HomiLeadAssistant.tsx` | Receber `initialPrompt`, auto-executar, parsear resultado em cards copiáveis, fix WhatsApp link |
-| `supabase/functions/homi-assistant/index.ts` | Formato condicional por tipo de ação |
+| `src/components/pipeline/HomiLeadAssistant.tsx` | Dois modos (ação direta vs exploratório), cards de resultado maiores com botões proeminentes, seções informativas colapsadas |
+| `src/components/pipeline/PipelineLeadDetail.tsx` | Painel mais estreito no modo ação direta |
 
-### O que NAO muda
-- Playbooks e knowledge do system prompt
-- Briefing e recommendation logic
-- Lógica de histórico e contexto
-- Nenhuma outra edge function ou componente
+### O que NÃO muda
+- Edge function / system prompt
+- StageCoachBar
+- Lógica de briefing e recomendação (apenas visibilidade condicional)
+- Playbooks e conhecimento
 
