@@ -501,6 +501,16 @@ const PipelineCard = memo(function PipelineCard({
           <CentralComunicacao open={comunicacaoOpen} onOpenChange={setComunicacaoOpen} leadId={lead.id} leadNome={lead.nome} leadTelefone={lead.telefone} leadEmpreendimento={lead.empreendimento} />
         )}
         <WhatsAppTemplatesDialog open={whatsappTemplatesOpen} onOpenChange={setWhatsappTemplatesOpen} leadNome={lead.nome} leadTelefone={lead.telefone} leadEmpreendimento={lead.empreendimento} leadId={lead.id} corretorNome={corretorNome} />
+        <CallFocusOverlay
+          isOpen={isCallOpen}
+          onClose={() => setIsCallOpen(false)}
+          lead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_id: lead.stage_id }}
+          stageTipo={stage?.tipo}
+          leadOrigem={lead.origem}
+          tarefas={[]}
+          availableStages={stages.map(s => ({ id: s.id, tipo: s.tipo, nome: s.nome }))}
+          onRefresh={() => {}}
+        />
       </div>
     </div>
   );
