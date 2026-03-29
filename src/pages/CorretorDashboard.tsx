@@ -272,12 +272,7 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 3. STATUS ELEGIBILIDADE ROLETA (Guardião do Pipeline)             */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <StatusElegibilidadeRoleta />
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 4. KPI CARDS — 4 em linha                                         */}
+      {/* 3. KPI CARDS — 4 em linha                                         */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <KpiGrid cols={4}>
