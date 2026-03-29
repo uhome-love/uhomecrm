@@ -62,7 +62,7 @@ export default function CardActionBar({
 
         {/* Tarefa */}
         <div style={{ flex: 1, minWidth: 0, display: "flex" }}>
-          <CardQuickTaskPopover leadId={leadId} leadNome={leadNome} buttonStyle={btnBase} />
+          <CardQuickTaskPopover leadId={leadId} leadNome={leadNome} />
         </div>
 
         <div style={divider} />
