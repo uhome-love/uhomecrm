@@ -136,7 +136,7 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
-        className="sm:max-w-md"
+        className="sm:max-w-md [&>button[data-radix-dialog-close]]:hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
