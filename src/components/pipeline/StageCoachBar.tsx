@@ -98,6 +98,10 @@ export default function StageCoachBar({
               body: `{{nome}}, queria entender melhor teu momento pra te mostrar algo que realmente faça sentido. Tu tá buscando pra morar ou investir?`,
             },
             {
+              title: "🏠 Lead Avulso (Usado)",
+              body: `{{nome}}, esse imóvel é interessante dentro da proposta dele… mas depende muito do que tu busca. Dependendo do teu objetivo, consigo te mostrar opções melhores 😊`,
+            },
+            {
               title: "Perguntas estratégicas",
               body: `{{nome}}, que bom que conseguimos conversar! 😊 Me conta: o imóvel seria pra moradia ou investimento? E qual região tu prefere? Com essas infos consigo filtrar as melhores opções!`,
             },
