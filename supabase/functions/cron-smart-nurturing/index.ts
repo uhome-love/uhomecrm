@@ -13,7 +13,7 @@ const TYPESENSE_HOST = Deno.env.get("TYPESENSE_HOST")!;
 const TYPESENSE_SEARCH_API_KEY = Deno.env.get("TYPESENSE_SEARCH_API_KEY")!;
 const WHATSAPP_ACCESS_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN")!;
 const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID")!;
-const UHOMESITE_URL = Deno.env.get("UHOMESITE_URL")!;
+const UHOMESITE_URL = Deno.env.get("UHOMESITE_URL") || "https://uhome.com.br";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -26,7 +26,6 @@ interface LeadComPerfil {
   telefone: string;
   corretor_id: string;
   corretor_nome: string;
-  corretor_telefone: string;
   stage_tipo: string;
   updated_at: string;
   perfil: {
@@ -57,14 +56,15 @@ interface Imovel {
 
 // ---------------------------------------------------------------------------
 // 1. Buscar leads parados há mais de 7 dias (Limite: 200/dia)
+// CORREÇÃO: corretor_id não tem FK — busca o nome do corretor separadamente
 // ---------------------------------------------------------------------------
 async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
   const seteDiasAtras = new Date(
     Date.now() - 7 * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  // Busca leads antigos, sem contato recente e com score baixo
-  const { data, error } = await supabase
+  // Busca leads elegíveis sem tentar join via FK inexistente
+  const { data: leads, error } = await supabase
     .from("pipeline_leads")
     .select(`
       id,
@@ -72,11 +72,8 @@ async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
       telefone,
       updated_at,
       corretor_id,
-      profiles!pipeline_leads_corretor_id_fkey (
-        full_name,
-        phone
-      ),
-      pipeline_stages!inner (
+      lead_score,
+      pipeline_stages!pipeline_leads_stage_id_fkey (
         tipo
       ),
       lead_property_profiles (
@@ -106,9 +103,23 @@ async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
     return [];
   }
 
+  if (!leads || leads.length === 0) return [];
+
+  // Busca nomes dos corretores em lote (sem FK, faz query separada)
+  const corretorIds = [...new Set(leads.map((l) => l.corretor_id).filter(Boolean))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", corretorIds);
+
+  const mapaCorretores: Record<string, string> = {};
+  for (const p of profiles || []) {
+    mapaCorretores[p.id] = p.full_name || "Corretor uHome";
+  }
+
   // Filtra leads que já receberam nurturing automático nos últimos 15 dias
   const leadsElegiveis: LeadComPerfil[] = [];
-  for (const lead of data || []) {
+  for (const lead of leads) {
     const jaRecebeuRecente = await verificarNurturingRecente(lead.id);
     if (!jaRecebeuRecente) {
       leadsElegiveis.push({
@@ -116,8 +127,7 @@ async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
         nome: lead.nome || "Cliente",
         telefone: lead.telefone,
         corretor_id: lead.corretor_id,
-        corretor_nome: (lead.profiles as any)?.full_name || "Corretor uHome",
-        corretor_telefone: (lead.profiles as any)?.phone || "",
+        corretor_nome: mapaCorretores[lead.corretor_id] || "Corretor uHome",
         stage_tipo: (lead.pipeline_stages as any)?.tipo || "qualificacao",
         updated_at: lead.updated_at,
         perfil: (lead.lead_property_profiles as any)?.[0] || null,
@@ -130,7 +140,7 @@ async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Verificar se o lead já recebeu nurturing automático recentemente (15 dias)
+// 2. Verificar se o lead já recebeu nurturing automático nos últimos 15 dias
 // ---------------------------------------------------------------------------
 async function verificarNurturingRecente(leadId: string): Promise<boolean> {
   const quinzeDiasAtras = new Date(
@@ -140,7 +150,7 @@ async function verificarNurturingRecente(leadId: string): Promise<boolean> {
   const { count } = await supabase
     .from("pipeline_atividades")
     .select("id", { count: "exact", head: true })
-    .eq("lead_id", leadId)
+    .eq("pipeline_lead_id", leadId)           // CORRIGIDO: pipeline_lead_id
     .eq("tipo", "nurturing_automatico")
     .gte("created_at", quinzeDiasAtras);
 
@@ -156,7 +166,6 @@ async function buscarImoveisTypesense(
   if (!perfil) return [];
 
   const filtros: string[] = [];
-
   if (perfil.valor_max) filtros.push(`preco:<=${perfil.valor_max}`);
   if (perfil.valor_min) filtros.push(`preco:>=${perfil.valor_min}`);
   if (perfil.dormitorios_min) filtros.push(`dormitorios:>=${perfil.dormitorios_min}`);
@@ -182,11 +191,7 @@ async function buscarImoveisTypesense(
   try {
     const response = await fetch(
       `https://${TYPESENSE_HOST}/collections/properties/documents/search?${params}`,
-      {
-        headers: {
-          "X-TYPESENSE-API-KEY": TYPESENSE_SEARCH_API_KEY,
-        },
-      }
+      { headers: { "X-TYPESENSE-API-KEY": TYPESENSE_SEARCH_API_KEY } }
     );
 
     if (!response.ok) {
@@ -203,26 +208,32 @@ async function buscarImoveisTypesense(
 }
 
 // ---------------------------------------------------------------------------
-// 4. Criar vitrine no banco do site e obter URL pública
+// 4. Criar vitrine no banco com o schema real da tabela vitrines
+// Campos obrigatórios: created_by, titulo, imovel_ids, tipo
 // ---------------------------------------------------------------------------
 async function criarVitrine(
-  leadId: string,
-  corretorId: string,
+  lead: LeadComPerfil,
   imoveis: Imovel[]
 ): Promise<string | null> {
-  const codigos = imoveis.map((i) => i.codigo);
+  // imovel_ids é jsonb (array de IDs), imovel_codigos é ARRAY (opcional)
+  const imovelIds = imoveis.map((i) => i.id);
+  const imovelCodigos = imoveis.map((i) => i.codigo);
 
   const { data, error } = await supabase
     .from("vitrines")
     .insert({
-      lead_id: leadId,
-      corretor_id: corretorId,
-      imovel_codigos: codigos,
-      origem: "nurturing_automatico",
-      titulo: "Seleção especial para você",
-      ativo: true,
+      created_by: lead.corretor_id,           // obrigatório
+      titulo: `Seleção especial para ${lead.nome.split(" ")[0]}`, // obrigatório
+      subtitulo: "Imóveis selecionados especialmente para você",
+      imovel_ids: imovelIds,                  // obrigatório (jsonb)
+      imovel_codigos: imovelCodigos,          // array opcional
+      tipo: "nurturing",                      // obrigatório
+      lead_nome: lead.nome,
+      lead_telefone: lead.telefone,
+      corretor_id: lead.corretor_id,
+      mensagem: `Olá ${lead.nome.split(" ")[0]}! Separei esses imóveis especialmente para você.`,
     })
-    .select("id")
+    .select("id, slug")
     .single();
 
   if (error || !data) {
@@ -230,11 +241,13 @@ async function criarVitrine(
     return null;
   }
 
-  return `${UHOMESITE_URL}/vitrine/${data.id}`;
+  // Usa slug se disponível, senão usa id
+  const identificador = data.slug || data.id;
+  return `${UHOMESITE_URL}/vitrine/${identificador}`;
 }
 
 // ---------------------------------------------------------------------------
-// 5. Enviar mensagem via WhatsApp (Meta Cloud API) usando Template
+// 5. Enviar template WhatsApp via Meta Cloud API
 // ---------------------------------------------------------------------------
 async function enviarWhatsAppTemplate(
   telefone: string,
@@ -248,11 +261,11 @@ async function enviarWhatsAppTemplate(
     : `55${telefoneLimpo}`;
 
   const primeiroNome = leadNome.split(" ")[0] || "Cliente";
-  
-  const precoFormatado = new Intl.NumberFormat('pt-BR', { 
-    style: 'currency', 
-    currency: 'BRL',
-    maximumFractionDigits: 0 
+
+  const precoFormatado = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
   }).format(imovelPrincipal.preco || 0);
 
   const payload = {
@@ -261,9 +274,7 @@ async function enviarWhatsAppTemplate(
     type: "template",
     template: {
       name: "vitrine_imoveis_personalizada",
-      language: {
-        code: "pt_BR"
-      },
+      language: { code: "pt_BR" },
       components: [
         {
           type: "body",
@@ -273,11 +284,11 @@ async function enviarWhatsAppTemplate(
             { type: "text", text: imovelPrincipal.bairro || "Sua região" },
             { type: "text", text: imovelPrincipal.tipo || "Imóvel" },
             { type: "text", text: precoFormatado },
-            { type: "text", text: urlVitrine }
-          ]
-        }
-      ]
-    }
+            { type: "text", text: urlVitrine },
+          ],
+        },
+      ],
+    },
   };
 
   try {
@@ -308,26 +319,30 @@ async function enviarWhatsAppTemplate(
 
 // ---------------------------------------------------------------------------
 // 6. Registrar atividade no histórico do lead
+// Schema real: pipeline_lead_id, tipo, titulo, data, prioridade, status, created_by
 // ---------------------------------------------------------------------------
 async function registrarAtividade(
-  leadId: string,
-  corretorId: string,
+  lead: LeadComPerfil,
   urlVitrine: string,
   imoveisEnviados: number
 ): Promise<void> {
   await supabase.from("pipeline_atividades").insert({
-    lead_id: leadId,
-    corretor_id: corretorId,
+    pipeline_lead_id: lead.id,               // CORRIGIDO
     tipo: "nurturing_automatico",
-    descricao: `🤖 IA enviou vitrine automática com ${imoveisEnviados} imóvel(is). Link: ${urlVitrine}`,
-    automatico: true,
+    titulo: `🤖 Vitrine automática enviada (${imoveisEnviados} imóvel${imoveisEnviados > 1 ? "is" : ""})`,
+    descricao: `IA enviou vitrine com ${imoveisEnviados} imóvel(is). Link: ${urlVitrine}`,
+    data: new Date().toISOString().split("T")[0],  // CORRIGIDO: campo date obrigatório
+    prioridade: "baixa",                     // CORRIGIDO: obrigatório
+    status: "concluida",                     // CORRIGIDO: obrigatório
+    created_by: lead.corretor_id,            // CORRIGIDO: created_by, não corretor_id
+    responsavel_id: lead.corretor_id,
   });
 
-  // Atualiza updated_at do lead para ele ir pro final da fila
+  // Atualiza updated_at do lead para ir pro final da fila
   await supabase
     .from("pipeline_leads")
     .update({ updated_at: new Date().toISOString() })
-    .eq("id", leadId);
+    .eq("id", lead.id);
 }
 
 // ---------------------------------------------------------------------------
@@ -378,33 +393,35 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Leads sem perfil recebem busca genérica por "apartamento"
+      if (!lead.perfil) semPerfil++;
+
       const imoveis = await buscarImoveisTypesense(lead.perfil);
 
       if (imoveis.length === 0) {
         semImoveis++;
-        console.log(`[nurturing] Lead ${lead.id} (${lead.nome}): sem imóveis compatíveis`);
+        console.log(`[nurturing] Lead ${lead.nome}: sem imóveis compatíveis`);
         continue;
       }
 
-      const urlVitrine = await criarVitrine(lead.id, lead.corretor_id, imoveis);
+      const urlVitrine = await criarVitrine(lead, imoveis);
       if (!urlVitrine) {
         erros++;
         continue;
       }
 
-      // Envia usando o template aprovado da Meta
       const enviou = await enviarWhatsAppTemplate(
         lead.telefone,
         lead.nome,
-        imoveis[0], // Passa o imóvel principal para preencher as variáveis
+        imoveis[0],
         urlVitrine
       );
 
       if (enviou) {
-        await registrarAtividade(lead.id, lead.corretor_id, urlVitrine, imoveis.length);
+        await registrarAtividade(lead, urlVitrine, imoveis.length);
         await notificarCorretor(lead.corretor_id, lead.nome);
         enviados++;
-        console.log(`[nurturing] ✅ Lead ${lead.nome}: vitrine enviada com ${imoveis.length} imóveis`);
+        console.log(`[nurturing] ✅ ${lead.nome}: vitrine enviada (${imoveis.length} imóveis)`);
       } else {
         erros++;
       }
