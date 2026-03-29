@@ -15,6 +15,13 @@ interface StageCoachBarProps {
   onAddTarefa: (data: any) => void;
   onOpenHomi?: (prompt?: string) => void;
   sequenceInfo?: { total: number; enviados: number } | null;
+  origem?: string | null;
+}
+
+interface StageMessage {
+  title: string;
+  body: string;
+  origens?: string[]; // if set, only show for these origins
 }
 
 interface StageConfig {
@@ -22,7 +29,7 @@ interface StageConfig {
   color: string;
   alert?: { text: string; severity: "warning" | "danger" };
   actions: { label: string; icon: any; onClick?: () => void; homiPrompt?: string }[];
-  messages: { title: string; body: string }[];
+  messages: StageMessage[];
 }
 
 export default function StageCoachBar({
@@ -35,6 +42,7 @@ export default function StageCoachBar({
   onAddTarefa,
   onOpenHomi,
   sequenceInfo,
+  origem,
 }: StageCoachBarProps) {
   const [expanded, setExpanded] = useState(false);
   const nome = leadNome?.split(" ")[0] || "cliente";
@@ -68,6 +76,14 @@ export default function StageCoachBar({
   // Follow-up day badge
   const followUpDay = sequenceInfo ? sequenceInfo.enviados + 1 : null;
 
+  // Check if origin matches filter
+  const matchesOrigem = (origens?: string[]) => {
+    if (!origens) return true; // no filter = show always
+    if (!origem) return origens.includes("default");
+    const o = origem.toLowerCase();
+    return origens.some(f => o.includes(f));
+  };
+
   const config = useMemo((): StageConfig | null => {
     switch (stageTipo) {
       case "novo":
@@ -78,8 +94,8 @@ export default function StageCoachBar({
             : `Novo lead aguardando primeiro contato · ${tentativasLigacao} tentativa${tentativasLigacao !== 1 ? "s" : ""}`,
           color: "border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20",
           actions: [
-            { label: "Script de ligação", icon: Phone, onClick: () => createQuickTask(`Ligar para ${nome}`, "ligacao"), homiPrompt: "Gere um script de ligação para primeiro contato com este lead na etapa sem_contato." },
-            { label: "WhatsApp apresentação", icon: MessageSquare, homiPrompt: "Gere uma mensagem de WhatsApp de primeiro contato para este lead." },
+            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação para primeiro contato com este lead na etapa sem_contato. Formato: apenas script Corretor/Cliente com no máximo 5 trocas." },
+            { label: "WhatsApp apresentação", icon: MessageSquare, homiPrompt: "Gere uma mensagem de WhatsApp de primeiro contato para este lead. Formato: apenas 2 mensagens curtas (3 linhas cada) com tons diferentes." },
           ],
           messages: [
             {
@@ -89,6 +105,7 @@ export default function StageCoachBar({
             {
               title: "📱 Lead Portal (ImovelWeb)",
               body: `Fala {{nome}}! Vi teu interesse nesse imóvel — ele ainda tá disponível sim 👀 Mas me diz, tu tá procurando algo nesse estilo ou foi mais pelo valor?`,
+              origens: ["portal", "imovelweb", "zap", "olx", "vivareal"],
             },
             {
               title: "Apresentação consultiva",
@@ -115,9 +132,9 @@ export default function StageCoachBar({
               ? { text: `Lead parado há ${diasSemContato} dias em Atendimento — empurre a etapa!`, severity: "warning" }
               : undefined,
           actions: [
-            { label: "Perguntas de qualificação", icon: MessageSquare, homiPrompt: "Gere perguntas de qualificação UHOME para este lead em atendimento: 1) Morar ou investir? 2) Região preferida? 3) Faixa de valor? 4) Prazo?" },
+            { label: "Perguntas de qualificação", icon: MessageSquare, homiPrompt: "Gere perguntas de qualificação UHOME para este lead em atendimento. Formato: apenas 2 mensagens WhatsApp curtas com perguntas estratégicas." },
             { label: "Agendar follow-up", icon: Calendar, onClick: () => createQuickTask(`Follow-up com ${nome}`, "follow_up") },
-            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação consultiva para este lead em atendimento. Use o framework: Abertura (15s) → Contexto → Proposta → Avanço para visita." },
+            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação consultiva para este lead em atendimento. Formato: apenas script Corretor/Cliente." },
           ],
           messages: [
             {
@@ -131,6 +148,7 @@ export default function StageCoachBar({
             {
               title: "🏠 Lead Avulso (Usado)",
               body: `{{nome}}, esse imóvel é interessante dentro da proposta dele… mas depende muito do que tu busca. Dependendo do teu objetivo, consigo te mostrar opções melhores 😊`,
+              origens: ["portal", "imovelweb", "zap", "olx", "vivareal", "usado"],
             },
             {
               title: "Follow-up conexão [Curiosidade]",
@@ -144,8 +162,8 @@ export default function StageCoachBar({
           diagnostic: "Lead em qualificação — entenda o perfil e apresente opções",
           color: "border-purple-500/30 bg-purple-50/50 dark:bg-purple-950/20",
           actions: [
-            { label: "Enviar vitrine IA", icon: Sparkles, homiPrompt: "Gere uma vitrine personalizada com até 3 imóveis que fazem sentido para o perfil deste lead." },
-            { label: "Completar perfil", icon: CheckCircle2, homiPrompt: "Quais informações faltam para qualificar este lead? Gere perguntas para completar o perfil." },
+            { label: "Enviar vitrine IA", icon: Sparkles, homiPrompt: "Gere uma vitrine personalizada com até 3 imóveis que fazem sentido para o perfil deste lead. Formato: 2 mensagens WhatsApp curtas." },
+            { label: "Completar perfil", icon: CheckCircle2, homiPrompt: "Quais informações faltam para qualificar este lead? Gere perguntas curtas para completar o perfil via WhatsApp." },
           ],
           messages: [
             {
@@ -173,7 +191,7 @@ export default function StageCoachBar({
           color: "border-orange-500/30 bg-orange-50/50 dark:bg-orange-950/20",
           actions: [
             { label: "Agendar visita", icon: Calendar, onClick: () => createQuickTask(`Agendar visita com ${nome}`, "visita") },
-            { label: "Destaques do imóvel", icon: MessageSquare, homiPrompt: "Gere os destaques e diferenciais do empreendimento para convencer este lead a visitar." },
+            { label: "Destaques do imóvel", icon: MessageSquare, homiPrompt: "Gere os destaques e diferenciais do empreendimento para convencer este lead a visitar. Formato: 2 mensagens WhatsApp curtas." },
           ],
           messages: [
             {
@@ -196,7 +214,7 @@ export default function StageCoachBar({
           diagnostic: "🛡️ Anti No-show: Confirme D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa)",
           color: "border-green-500/30 bg-green-50/50 dark:bg-green-950/20",
           actions: [
-            { label: "Sequência anti no-show", icon: CheckCircle2, homiPrompt: "Gere a sequência completa anti no-show para este lead com visita agendada: D-2 (vídeo curto do empreendimento), D-1 (mensagem com autoridade), Dia (lembrete + localização)." },
+            { label: "Sequência anti no-show", icon: CheckCircle2, homiPrompt: "Gere a sequência completa anti no-show: D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa). Formato: 3 mensagens WhatsApp prontas para copiar." },
             { label: "Confirmar visita", icon: Phone, onClick: () => createQuickTask(`Confirmar visita ${nome}`, "ligacao") },
           ],
           messages: [
@@ -212,10 +230,6 @@ export default function StageCoachBar({
               title: "📍 Dia: Lembrete + Mapa",
               body: `Bom dia, {{nome}}! Tudo pronto pra nossa visita hoje em {{empreendimento}}! 📍 Te espero lá. Se precisar reagendar, me avise! 😊`,
             },
-            {
-              title: "🔥 Reforço de importância [Escassez]",
-              body: `{{nome}}, separei as melhores unidades pra te mostrar amanhã. Algumas delas têm poucas disponíveis — vai ser ótimo ver ao vivo! 😊`,
-            },
           ],
         };
 
@@ -227,7 +241,7 @@ export default function StageCoachBar({
             ? { text: `${diasSemContato} dia${diasSemContato > 1 ? "s" : ""} sem follow-up pós-visita — envie AGORA!`, severity: diasSemContato >= 3 ? "danger" : "warning" }
             : undefined,
           actions: [
-            { label: "Follow-up pós-visita", icon: MessageSquare, homiPrompt: "Gere follow-up pós-visita para este lead. Regra: deve ser no MESMO DIA. Pergunte o que mais impressionou e prepare terreno para proposta." },
+            { label: "Follow-up pós-visita", icon: MessageSquare, homiPrompt: "Gere follow-up pós-visita para este lead. Formato: 2 mensagens WhatsApp curtas. Pergunte o que mais impressionou e prepare terreno para proposta." },
             { label: "Criar proposta", icon: Calendar, onClick: () => createQuickTask(`Preparar proposta para ${nome}`, "follow_up") },
           ],
           messages: [
@@ -252,8 +266,8 @@ export default function StageCoachBar({
           diagnostic: "Lead em negociação — foco em fechar o negócio!",
           color: "border-red-500/30 bg-red-50/50 dark:bg-red-950/20",
           actions: [
-            { label: "Follow-up proposta", icon: Phone, onClick: () => createQuickTask(`Follow-up proposta ${nome}`, "follow_up") },
-            { label: "Quebrar objeção", icon: MessageSquare, homiPrompt: "O lead recebeu proposta mas não fechou. Gere estratégias para quebrar objeções e fechar o negócio." },
+            { label: "Follow-up proposta", icon: Phone, homiPrompt: "Gere script de follow-up da proposta para este lead em negociação. Formato: script Corretor/Cliente curto." },
+            { label: "Quebrar objeção", icon: MessageSquare, homiPrompt: "O lead recebeu proposta mas não fechou. Gere 2 mensagens WhatsApp curtas para quebrar objeções e fechar o negócio." },
           ],
           messages: [
             {
@@ -277,6 +291,9 @@ export default function StageCoachBar({
   }, [stageTipo, diasSemContato, tentativasLigacao, nome, emp]);
 
   if (!config) return null;
+
+  // Filter messages by origin
+  const filteredMessages = config.messages.filter(msg => matchesOrigem(msg.origens));
 
   return (
     <div className={`mx-5 mb-2 rounded-lg border ${config.color} p-3`}>
@@ -345,11 +362,11 @@ export default function StageCoachBar({
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-1.5 mt-1.5 text-muted-foreground hover:text-foreground">
                 <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
-                {expanded ? "Ocultar mensagens" : `${config.messages.length} mensagens prontas`}
+                {expanded ? "Ocultar mensagens" : `${filteredMessages.length} mensagens prontas`}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 space-y-2">
-              {config.messages.map((msg, i) => (
+              {filteredMessages.map((msg, i) => (
                 <div key={i} className="bg-background/80 rounded-md border border-border/50 p-2.5">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[11px] font-medium">{msg.title}</span>

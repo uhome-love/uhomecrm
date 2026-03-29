@@ -672,6 +672,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   proximaAcao={lead.proxima_acao}
                   valorEstimado={lead.valor_estimado}
                   oportunidadeScore={lead.oportunidade_score}
+                  initialPrompt={homiInitialPrompt}
+                  onClearInitialPrompt={() => setHomiInitialPrompt(undefined)}
                 />
               </div>
             </ScrollArea>
