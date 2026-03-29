@@ -151,8 +151,12 @@ function getContextDetails(n: Notification): { leadName?: string; detail?: strin
 
   // Try to extract lead name from dados or mensagem
   let leadName = d.lead_nome || d.nome;
+  if (!leadName && n.titulo) {
+    // Extract from title patterns like "Novo lead: João Silva" or "Lead recebido: Maria"
+    const matchTitulo = n.titulo.match(/:\s*(.+)/);
+    if (matchTitulo?.[1] && matchTitulo[1].length < 50) leadName = matchTitulo[1].trim();
+  }
   if (!leadName && n.mensagem) {
-    // Try to extract name from patterns like "Você recebeu o lead João" or "João - Empreendimento"
     const matchRecebeu = n.mensagem.match(/lead\s+([^(.\n]+?)(?:\s*\(|\.|\s*-|\s*$)/i);
     const matchDash = n.mensagem.match(/^([^-–]+?)\s*[-–]\s/);
     if (matchRecebeu?.[1]) leadName = matchRecebeu[1].trim();
