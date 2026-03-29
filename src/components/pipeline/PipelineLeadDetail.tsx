@@ -547,6 +547,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onToggleTarefa={leadData.toggleTarefa}
                 onDeleteTarefa={leadData.deleteTarefa}
                 onReload={leadData.reload}
+                onNextAction={() => setNextActionOpen(true)}
               />
               {currentStage && (
                 <Collapsible className="px-6 pb-6">
