@@ -127,6 +127,47 @@ const MEDAY_CATALOG: ImovelResult[] = [
 ];
 
 /* ═══════════════════════════════════════════
+   EMPREENDIMENTO INFERENCE MAP
+   ═══════════════════════════════════════════ */
+
+const EMPREENDIMENTO_INFER: Record<string, { bairros: string[]; tipos: string[]; valor_min: number; valor_max: number }> = {
+  "orygem": { bairros: ["Teresópolis"], tipos: ["casa"], valor_min: 800000, valor_max: 1200000 },
+  "connect": { bairros: ["Passo d'Areia"], tipos: ["apartamento"], valor_min: 300000, valor_max: 600000 },
+  "connect jw": { bairros: ["Passo d'Areia"], tipos: ["apartamento"], valor_min: 300000, valor_max: 600000 },
+  "high garden": { bairros: ["Rio Branco", "Boa Vista"], tipos: ["apartamento"], valor_min: 1200000, valor_max: 2500000 },
+  "high garden rio branco": { bairros: ["Rio Branco"], tipos: ["apartamento"], valor_min: 1400000, valor_max: 2000000 },
+  "high garden iguatemi": { bairros: ["Boa Vista"], tipos: ["apartamento"], valor_min: 1000000, valor_max: 1500000 },
+  "seen": { bairros: ["Três Figueiras", "Menino Deus"], tipos: ["apartamento"], valor_min: 1200000, valor_max: 2000000 },
+  "seen tres figueiras": { bairros: ["Três Figueiras"], tipos: ["apartamento"], valor_min: 1400000, valor_max: 2000000 },
+  "seen menino deus": { bairros: ["Menino Deus"], tipos: ["apartamento"], valor_min: 1100000, valor_max: 1600000 },
+  "casa bastian": { bairros: ["Três Figueiras"], tipos: ["casa"], valor_min: 3000000, valor_max: 6000000 },
+  "casa moinhos": { bairros: ["Moinhos de Vento"], tipos: ["apartamento"], valor_min: 4000000, valor_max: 8000000 },
+  "monjardin": { bairros: ["Petrópolis"], tipos: ["apartamento"], valor_min: 800000, valor_max: 1500000 },
+  "lake eyre": { bairros: ["Cristal"], tipos: ["apartamento"], valor_min: 600000, valor_max: 1200000 },
+  "open major": { bairros: ["Marechal Rondon"], tipos: ["apartamento"], valor_min: 200000, valor_max: 350000 },
+  "open alto ipiranga": { bairros: ["Jardim Carvalho"], tipos: ["apartamento"], valor_min: 200000, valor_max: 350000 },
+  "open bosque": { bairros: ["Passo d'Areia"], tipos: ["apartamento"], valor_min: 200000, valor_max: 350000 },
+  "go cidade baixa": { bairros: ["Cidade Baixa"], tipos: ["apartamento"], valor_min: 250000, valor_max: 450000 },
+  "go rio branco": { bairros: ["Rio Branco"], tipos: ["apartamento"], valor_min: 350000, valor_max: 550000 },
+  "nilo square": { bairros: ["Boa Vista"], tipos: ["apartamento"], valor_min: 2000000, valor_max: 3500000 },
+  "arte country": { bairros: ["Bela Vista"], tipos: ["apartamento"], valor_min: 3000000, valor_max: 5000000 },
+  "supreme": { bairros: ["Jardim do Salso"], tipos: ["apartamento"], valor_min: 400000, valor_max: 600000 },
+  "grand park": { bairros: ["São Sebastião"], tipos: ["apartamento"], valor_min: 400000, valor_max: 600000 },
+};
+
+/**
+ * Try to infer profile from lead's empreendimento name
+ */
+function inferFromEmpreendimento(emp: string): { bairros: string[]; tipos: string[]; valor_min: number; valor_max: number } | null {
+  const nEmp = normalize(emp);
+  // Try exact match first, then partial
+  for (const [key, val] of Object.entries(EMPREENDIMENTO_INFER)) {
+    if (nEmp.includes(normalize(key)) || normalize(key).includes(nEmp)) return val;
+  }
+  return null;
+}
+
+/* ═══════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════ */
 
