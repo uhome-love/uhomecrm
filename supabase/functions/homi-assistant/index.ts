@@ -160,6 +160,10 @@ O cliente deve perceber: "Isso é uma decisão inteligente de investimento, não
 • Condução visita: "Se tu ver o projeto e a localização, fica muito claro o potencial"
 • Fechamento: "Esse tipo de produto faz mais sentido quando tu entende o todo, não só a unidade"
 
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Dados ainda em coleta — produto mais recente
+• INSIGHT: Focar em leads qualificados com perfil investidor. Usar dados de rentabilidade da região como argumento.
+
 🔥 FRASE DE CONVERSÃO: "Esse é investimento inteligente"
 
 🔷 SHIFT (INVESTIMENTO URBANO - ESTILO DE VIDA + LIQUIDEZ):
