@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Bot, MessageSquare, ShieldQuestion, Send, FileText, Sparkles, Phone, CalendarCheck, RefreshCw, Clock, Target, Flame, Snowflake, Sun, ThermometerSun, Lightbulb, ClipboardList } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Loader2, Bot, MessageSquare, ShieldQuestion, Send, FileText, Sparkles, Phone, CalendarCheck, RefreshCw, Clock, Target, Flame, Snowflake, Sun, ThermometerSun, Lightbulb, ClipboardList, ChevronDown, Copy, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { formatDistanceToNowSafe, differenceInDaysSafe, differenceInHoursSafe } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
@@ -29,6 +30,7 @@ interface Props {
   oportunidadeScore?: number;
   initialPrompt?: string;
   onClearInitialPrompt?: () => void;
+  isDirectMode?: boolean;
 }
 
 interface LeadHistory {
@@ -50,10 +52,94 @@ type SmartAction = {
   highlight?: boolean;
 };
 
+// ═══════════════════════════════════════════════════
+// RESULT SECTION CARD — individual copyable section
+// ═══════════════════════════════════════════════════
+function ResultSectionCard({ title, body, leadTelefone, isActionable, defaultOpen }: {
+  title: string;
+  body: string;
+  leadTelefone?: string | null;
+  isActionable: boolean;
+  defaultOpen: boolean;
+}) {
+  const isWhatsApp = /💬|🔄|whatsapp|mensagem/i.test(title);
+  const isScript = /📞|script|ligação/i.test(title);
+  const [open, setOpen] = useState(defaultOpen);
+
+  const handleCopySection = () => {
+    navigator.clipboard.writeText(body);
+    toast.success("Copiado!");
+  };
+
+  const handleWhatsApp = () => {
+    const phone = (leadTelefone || "").replace(/\D/g, "");
+    const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
+    navigator.clipboard.writeText(body);
+    window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(body)}`, "_blank");
+  };
+
+  if (!isActionable) {
+    // Informational sections — collapsible, subtle
+    return (
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-border/40 bg-muted/30 hover:bg-muted/50 transition-colors">
+          <span className="text-[11px] font-medium text-muted-foreground">{title}</span>
+          <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-3 py-2 text-[11px] text-muted-foreground prose prose-sm max-w-none dark:prose-invert leading-relaxed">
+          <ReactMarkdown>{body}</ReactMarkdown>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  }
+
+  // Actionable sections — WhatsApp / Script — prominent
+  return (
+    <div className={`rounded-xl border-2 p-3 space-y-2.5 ${
+      isWhatsApp ? "border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20" :
+      isScript ? "border-primary/30 bg-primary/5" :
+      "border-border bg-background"
+    }`}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold">{title}</span>
+        {isWhatsApp && <Badge variant="outline" className="text-[9px] h-4 border-emerald-500/30 text-emerald-600">WhatsApp</Badge>}
+        {isScript && <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary">Ligação</Badge>}
+      </div>
+      <div className="text-xs prose prose-sm max-w-none dark:prose-invert leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+        <ReactMarkdown>{body}</ReactMarkdown>
+      </div>
+      <div className="flex gap-2 pt-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs gap-1.5 flex-1"
+          onClick={handleCopySection}
+        >
+          <Copy className="h-3.5 w-3.5" />
+          Copiar
+        </Button>
+        {isWhatsApp && leadTelefone && (
+          <Button
+            size="sm"
+            className="h-8 text-xs gap-1.5 flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={handleWhatsApp}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Enviar WhatsApp
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════
 export default function HomiLeadAssistant({
   leadId, leadNome, leadTelefone, leadEmail, empreendimento, etapa, temperatura,
   observacoes, origem, origemDetalhe, createdAt, updatedAt, proximaAcao, valorEstimado, oportunidadeScore,
-  initialPrompt, onClearInitialPrompt
+  initialPrompt, onClearInitialPrompt, isDirectMode
 }: Props) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -64,6 +150,7 @@ export default function HomiLeadAssistant({
   const [objecao, setObjecao] = useState("");
   const [clientSaid, setClientSaid] = useState("");
   const [history, setHistory] = useState<LeadHistory | null>(null);
+  const [showExploreMode, setShowExploreMode] = useState(false);
 
   // Fetch lead history on mount
   useEffect(() => {
@@ -106,7 +193,6 @@ export default function HomiLeadAssistant({
     }
   }, [initialPrompt, loadingHistory]);
 
-
   // Briefing
   const briefing = useMemo(() => {
     if (!history) return null;
@@ -116,15 +202,7 @@ export default function HomiLeadAssistant({
       ? formatDistanceToNowSafe(history.ultimaAtividade, { locale: ptBR, addSuffix: true, fallback: "nunca" })
       : "nunca";
 
-    return {
-      diasComo,
-      horasUltima,
-      tempoUltima,
-      tentativasLigacao: history.tentativasLigacao,
-      tentativasWhatsapp: history.tentativasWhatsapp,
-      visitaMarcada: history.visitaMarcada,
-      propostaEnviada: history.propostaEnviada,
-    };
+    return { diasComo, horasUltima, tempoUltima, tentativasLigacao: history.tentativasLigacao, tentativasWhatsapp: history.tentativasWhatsapp, visitaMarcada: history.visitaMarcada, propostaEnviada: history.propostaEnviada };
   }, [history, createdAt]);
 
   // Smart recommendation
@@ -132,70 +210,46 @@ export default function HomiLeadAssistant({
     if (!history || !briefing) return null;
     const h = history;
     const b = briefing;
-
-    // Never contacted
-    if (h.atividades.length === 0) {
-      return { text: "Lead novo sem contato. Priorize o primeiro contato agora — ligação é o canal mais efetivo para leads frescos.", action: "primeiro_contato" };
-    }
-    // Doesn't answer calls, try WhatsApp
-    if (b.tentativasLigacao >= 2 && b.tentativasWhatsapp === 0) {
-      return { text: `${b.tentativasLigacao} tentativas de ligação sem sucesso. Tente WhatsApp — melhor horário para este perfil: 14h-17h. Use template de reengajamento.`, action: "whatsapp" };
-    }
-    // Has visit but no proposal
-    if (b.visitaMarcada && !b.propostaEnviada) {
-      return { text: "Lead visitou o empreendimento mas ainda não recebeu proposta. Momento ideal para preparar e enviar uma proposta personalizada.", action: "proposta" };
-    }
-    // Has proposal 3+ days ago
-    if (b.propostaEnviada && b.horasUltima && b.horasUltima > 72) {
-      return { text: `Proposta enviada há mais de 3 dias sem retorno. Faça follow-up mencionando condições ou prazo para criar urgência.`, action: "followup_proposta" };
-    }
-    // Cold 7+ days
-    if (b.horasUltima && b.horasUltima > 168) {
-      return { text: `Lead sem interação há ${Math.floor(b.horasUltima / 24)} dias. Reengajamento urgente — traga uma novidade ou condição especial.`, action: "reengajamento" };
-    }
-    // Cold 3+ days
-    if (b.horasUltima && b.horasUltima > 72) {
-      return { text: `Sem contato há ${Math.floor(b.horasUltima / 24)} dias. Hora de retomar com uma abordagem leve e relevante.`, action: "followup" };
-    }
-    // Default
-    return { text: "Lead em andamento. Continue o acompanhamento mantendo o ritmo de contato.", action: "mensagem" };
+    if (h.atividades.length === 0) return { text: "Lead novo sem contato. Priorize o primeiro contato agora.", action: "primeiro_contato" };
+    if (b.tentativasLigacao >= 2 && b.tentativasWhatsapp === 0) return { text: `${b.tentativasLigacao} ligações sem sucesso. Tente WhatsApp.`, action: "whatsapp" };
+    if (b.visitaMarcada && !b.propostaEnviada) return { text: "Lead visitou. Hora da proposta.", action: "proposta" };
+    if (b.propostaEnviada && b.horasUltima && b.horasUltima > 72) return { text: "Proposta enviada há 3+ dias. Faça follow-up.", action: "followup_proposta" };
+    if (b.horasUltima && b.horasUltima > 168) return { text: `Sem contato há ${Math.floor(b.horasUltima / 24)} dias. Reengaje.`, action: "reengajamento" };
+    if (b.horasUltima && b.horasUltima > 72) return { text: `Sem contato há ${Math.floor(b.horasUltima / 24)} dias. Retome.`, action: "followup" };
+    return { text: "Continue o acompanhamento.", action: "mensagem" };
   }, [history, briefing]);
 
-  // Contextual actions based on history
+  // Contextual actions
   const smartActions = useMemo((): SmartAction[] => {
     if (!recommendation) return [];
     const actions: SmartAction[] = [];
-
     switch (recommendation.action) {
       case "primeiro_contato":
-        actions.push({ id: "primeiro_contato", label: "Script Primeiro Contato", icon: Phone, prompt: "Gere um script de primeiro contato para este lead. É o primeiro contato, nunca foi abordado.", highlight: true });
-        actions.push({ id: "whatsapp_intro", label: "WhatsApp Apresentação", icon: MessageSquare, prompt: "Gere uma mensagem de WhatsApp de primeiro contato, apresentando-se como corretor." });
+        actions.push({ id: "primeiro_contato", label: "Script Primeiro Contato", icon: Phone, prompt: "Gere um script de primeiro contato para este lead.", highlight: true });
+        actions.push({ id: "whatsapp_intro", label: "WhatsApp Apresentação", icon: MessageSquare, prompt: "Gere uma mensagem de WhatsApp de primeiro contato." });
         break;
       case "whatsapp":
         actions.push({ id: "whatsapp_reengajamento", label: "WhatsApp Reengajamento", icon: MessageSquare, prompt: "Lead não atende ligações. Gere mensagem de WhatsApp para reengajar.", highlight: true });
         actions.push({ id: "script_ligacao", label: "Tentar Ligação", icon: Phone, prompt: "Script para mais uma tentativa de ligação." });
         break;
       case "proposta":
-        actions.push({ id: "preparar_proposta", label: "Preparar Proposta", icon: FileText, prompt: "Lead visitou o empreendimento. Gere texto de proposta comercial personalizada.", highlight: true });
-        actions.push({ id: "whatsapp_pos_visita", label: "WhatsApp Pós-Visita", icon: MessageSquare, prompt: "Mensagem pós-visita pedindo feedback e preparando terreno para proposta." });
+        actions.push({ id: "preparar_proposta", label: "Preparar Proposta", icon: FileText, prompt: "Lead visitou. Gere proposta personalizada.", highlight: true });
+        actions.push({ id: "whatsapp_pos_visita", label: "WhatsApp Pós-Visita", icon: MessageSquare, prompt: "Mensagem pós-visita pedindo feedback." });
         break;
       case "followup_proposta":
-        actions.push({ id: "followup_proposta", label: "Follow-up Proposta", icon: Send, prompt: "Proposta enviada há dias sem retorno. Follow-up com urgência leve.", highlight: true });
-        actions.push({ id: "ligacao_proposta", label: "Ligar sobre Proposta", icon: Phone, prompt: "Script para ligar perguntando sobre a proposta enviada." });
+        actions.push({ id: "followup_proposta", label: "Follow-up Proposta", icon: Send, prompt: "Follow-up com urgência leve sobre proposta.", highlight: true });
+        actions.push({ id: "ligacao_proposta", label: "Ligar sobre Proposta", icon: Phone, prompt: "Script para ligar sobre proposta." });
         break;
       case "reengajamento":
-        actions.push({ id: "reengajamento", label: "Reengajamento", icon: RefreshCw, prompt: "Lead frio há muitos dias. Mensagem de reengajamento com novidade.", highlight: true });
-        actions.push({ id: "script_reativacao", label: "Ligação Reativação", icon: Phone, prompt: "Script de ligação para reativar lead frio." });
+        actions.push({ id: "reengajamento", label: "Reengajamento", icon: RefreshCw, prompt: "Mensagem de reengajamento com novidade.", highlight: true });
+        actions.push({ id: "script_reativacao", label: "Ligação Reativação", icon: Phone, prompt: "Script para reativar lead frio." });
         break;
       default:
-        actions.push({ id: "mensagem", label: "Gerar Mensagem", icon: MessageSquare, prompt: "Gere mensagem de WhatsApp personalizada para este lead.", highlight: true });
+        actions.push({ id: "mensagem", label: "Gerar Mensagem", icon: MessageSquare, prompt: "Gere mensagem de WhatsApp personalizada.", highlight: true });
         actions.push({ id: "followup", label: "Follow-up", icon: Send, prompt: "Gere follow-up para retomar contato." });
     }
-
-    // Always add these
     actions.push({ id: "objecao", label: "Quebrar Objeção", icon: ShieldQuestion, prompt: "" });
     actions.push({ id: "custom", label: "Perguntar à IA", icon: Sparkles, prompt: "" });
-
     return actions;
   }, [recommendation]);
 
@@ -295,281 +349,220 @@ ${histCtx}
     toast.success("Texto copiado!");
   };
 
-  const tempColor = temperatura === "quente" ? "text-destructive" : temperatura === "frio" ? "text-primary" : "text-warning";
+  // Parse result into sections
+  const parsedSections = useMemo(() => {
+    if (!result) return [];
+    const sections = result.split(/^## /m).filter(Boolean).map(s => {
+      const nl = s.indexOf("\n");
+      return { title: s.slice(0, nl).trim(), body: s.slice(nl + 1).trim() };
+    });
+    return sections;
+  }, [result]);
 
-  return (
-    <Card className="p-3 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Bot className="h-4 w-4 text-primary" />
-        </div>
-        <div>
-          <h4 className="text-[11px] font-bold text-primary">Homi AI v2</h4>
-          <p className="text-[9px] text-muted-foreground">Assistente contextual inteligente</p>
-        </div>
-      </div>
+  const isActionableSection = (title: string) => /💬|🔄|📞|whatsapp|mensagem|script|ligação/i.test(title);
 
-      {/* ═══ BRIEFING CARD ═══ */}
-      {loadingHistory ? (
-        <div className="flex items-center gap-2 py-3 justify-center">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-          <span className="text-[10px] text-muted-foreground">Analisando histórico...</span>
-        </div>
-      ) : briefing && (
-        <div className="rounded-lg border border-primary/15 bg-primary/5 p-2.5 mb-3 space-y-1.5">
-          <div className="flex items-center gap-1.5 mb-1">
-            <ClipboardList className="h-3 w-3 text-primary" />
-            <span className="text-[10px] font-bold text-primary">Briefing de {leadNome.split(" ")[0]}</span>
+  // ═══════════════════════════════════════════════
+  // DIRECT MODE — Clean, focused on results only
+  // ═══════════════════════════════════════════════
+  if (isDirectMode) {
+    return (
+      <div className="space-y-3">
+        {/* Loading */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">Gerando para {leadNome.split(" ")[0]}...</span>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Clock className="h-2.5 w-2.5" />
-              Lead há {briefing.diasComo} dia{briefing.diasComo !== 1 ? "s" : ""}
-            </div>
-            <div className="flex items-center gap-1">
-              <Target className="h-2.5 w-2.5" />
-              Origem: {origem || "N/A"}
-            </div>
-            <div className="flex items-center gap-1">
-              <Phone className="h-2.5 w-2.5" />
-              {briefing.tentativasLigacao} ligaç{briefing.tentativasLigacao !== 1 ? "ões" : "ão"}
-            </div>
-            <div className="flex items-center gap-1">
-              <MessageSquare className="h-2.5 w-2.5" />
-              {briefing.tentativasWhatsapp} WhatsApp{briefing.tentativasWhatsapp !== 1 ? "s" : ""}
-            </div>
-            {empreendimento && (
-              <div className="col-span-2 flex items-center gap-1">
-                🏠 {empreendimento}
+        )}
+
+        {/* Results */}
+        {result && !loading && (
+          <div className="space-y-2.5">
+            {parsedSections.length > 1 ? (
+              parsedSections.map((sec, i) => (
+                <ResultSectionCard
+                  key={i}
+                  title={sec.title}
+                  body={sec.body}
+                  leadTelefone={leadTelefone}
+                  isActionable={isActionableSection(sec.title)}
+                  defaultOpen={isActionableSection(sec.title)}
+                />
+              ))
+            ) : (
+              <div className="rounded-xl border border-border p-4 text-xs prose prose-sm max-w-none dark:prose-invert leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                <ReactMarkdown>{result}</ReactMarkdown>
               </div>
             )}
-            <div className="col-span-2 flex items-center gap-1">
-              <Clock className="h-2.5 w-2.5" />
-              Última ação: {briefing.tempoUltima}
+
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={handleCopy}>
+                <Copy className="h-3.5 w-3.5" />
+                Copiar tudo
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={() => { setResult(""); setShowExploreMode(true); }}>
+                <Sparkles className="h-3.5 w-3.5" />
+                Nova consulta
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-1">
-            <Badge variant="outline" className={`text-[9px] h-4 ${tempColor}`}>
-              {temperatura || "morno"}
-            </Badge>
-            {oportunidadeScore !== undefined && (
-              <Badge variant="outline" className="text-[9px] h-4">
-                Score: {oportunidadeScore}
-              </Badge>
-            )}
-            {briefing.visitaMarcada && (
-              <Badge variant="outline" className="text-[9px] h-4 text-success border-success/30">
-                <CalendarCheck className="h-2.5 w-2.5 mr-0.5" /> Visita
-              </Badge>
-            )}
-            {briefing.propostaEnviada && (
-              <Badge variant="outline" className="text-[9px] h-4 text-primary border-primary/30">
-                <FileText className="h-2.5 w-2.5 mr-0.5" /> Proposta
-              </Badge>
-            )}
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* ═══ SMART RECOMMENDATION ═══ */}
-      {recommendation && !result && (
-        <div className="rounded-lg border border-accent/30 bg-accent/10 p-2.5 mb-3">
-          <div className="flex items-start gap-1.5">
-            <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-            <p className="text-[10px] text-accent-foreground leading-relaxed">
-              <span className="font-bold">Recomendação:</span> {recommendation.text}
-            </p>
-          </div>
-        </div>
-      )}
+        {/* After clicking "Nova consulta" in direct mode, show explore */}
+        {showExploreMode && !loading && !result && <ExploreView />}
+      </div>
+    );
+  }
 
-      {/* ═══ CONTEXTUAL ACTIONS ═══ */}
-      {!result && !loading && (
-        <div className="grid grid-cols-2 gap-1.5 mb-3">
-          {smartActions.map(action => {
-            const Icon = action.icon;
-            if (action.id === "objecao") {
+  // ═══════════════════════════════════════════════
+  // EXPLORE MODE — Full panel with briefing + actions
+  // ═══════════════════════════════════════════════
+  function ExploreView() {
+    return (
+      <>
+        {/* Briefing — collapsible */}
+        {loadingHistory ? (
+          <div className="flex items-center gap-2 py-3 justify-center">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            <span className="text-[10px] text-muted-foreground">Analisando...</span>
+          </div>
+        ) : briefing && (
+          <Collapsible defaultOpen={false}>
+            <CollapsibleTrigger className="w-full flex items-center justify-between rounded-lg border border-primary/15 bg-primary/5 p-2.5 hover:bg-primary/10 transition-colors">
+              <span className="text-[10px] font-bold text-primary flex items-center gap-1.5">
+                <ClipboardList className="h-3 w-3" /> Briefing de {leadNome.split(" ")[0]}
+              </span>
+              <ChevronDown className="h-3 w-3 text-primary" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-2.5 space-y-1.5">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> Lead há {briefing.diasComo}d</div>
+                <div className="flex items-center gap-1"><Target className="h-2.5 w-2.5" /> {origem || "N/A"}</div>
+                <div className="flex items-center gap-1"><Phone className="h-2.5 w-2.5" /> {briefing.tentativasLigacao} lig.</div>
+                <div className="flex items-center gap-1"><MessageSquare className="h-2.5 w-2.5" /> {briefing.tentativasWhatsapp} WA</div>
+                <div className="col-span-2 flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> Última: {briefing.tempoUltima}</div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Recommendation */}
+        {recommendation && !result && (
+          <div className="rounded-lg border border-accent/30 bg-accent/10 p-2.5">
+            <div className="flex items-start gap-1.5">
+              <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <p className="text-[10px] text-accent-foreground leading-relaxed">
+                <span className="font-bold">Recomendação:</span> {recommendation.text}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Actions grid */}
+        {!result && !loading && (
+          <div className="grid grid-cols-2 gap-1.5">
+            {smartActions.map(action => {
+              const Icon = action.icon;
+              if (action.id === "objecao") {
+                return (
+                  <Button key={action.id} variant="outline" size="sm" className="h-8 text-[10px] gap-1 justify-start" onClick={() => setActiveAction("objecao_input")} disabled={loading}>
+                    <Icon className="h-3 w-3 shrink-0" /><span className="truncate">{action.label}</span>
+                  </Button>
+                );
+              }
+              if (action.id === "custom") {
+                return (
+                  <Button key={action.id} variant="outline" size="sm" className="h-8 text-[10px] gap-1 justify-start" onClick={() => setActiveAction("custom_input")} disabled={loading}>
+                    <Icon className="h-3 w-3 shrink-0" /><span className="truncate">{action.label}</span>
+                  </Button>
+                );
+              }
               return (
-                <Button
-                  key={action.id}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-[10px] gap-1 justify-start overflow-hidden"
-                  onClick={() => setActiveAction("objecao_input")}
-                  disabled={loading}
-                >
-                  <Icon className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{action.label}</span>
+                <Button key={action.id} variant={action.highlight ? "default" : "outline"} size="sm" className={`h-8 text-[10px] gap-1 justify-start ${action.highlight ? "ring-1 ring-primary/30" : ""}`} onClick={() => handleAction(action.id)} disabled={loading}>
+                  <Icon className="h-3 w-3 shrink-0" /><span className="truncate">{action.label}</span>
                 </Button>
               );
-            }
-            if (action.id === "custom") {
-              return (
-                <Button
-                  key={action.id}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-[10px] gap-1 justify-start overflow-hidden"
-                  onClick={() => setActiveAction("custom_input")}
-                  disabled={loading}
-                >
-                  <Icon className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{action.label}</span>
-                </Button>
-              );
-            }
-            return (
-              <Button
-                key={action.id}
-                variant={action.highlight ? "default" : "outline"}
-                size="sm"
-                className={`h-8 text-[10px] gap-1 justify-start overflow-hidden ${action.highlight ? "ring-1 ring-primary/30" : ""}`}
-                onClick={() => handleAction(action.id)}
-                disabled={loading}
-              >
-                <Icon className="h-3 w-3 shrink-0" />
-                <span className="truncate">{action.label}</span>
-              </Button>
-            );
-          })}
-        </div>
-      )}
+            })}
+          </div>
+        )}
 
-      {/* Objection input */}
-      {activeAction === "objecao_input" && (
-        <div className="space-y-1.5 mb-3">
-          <Textarea
-            className="text-xs min-h-[40px]"
-            placeholder="Qual objeção o cliente apresentou? Ex: Acho caro, preciso pensar..."
-            value={objecao}
-            onChange={e => setObjecao(e.target.value)}
-          />
-          <Button size="sm" className="w-full h-7 text-[10px]" onClick={() => handleAction("quebrar_objecao", objecao)} disabled={!objecao || loading}>
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            Gerar Resposta
-          </Button>
-        </div>
-      )}
-
-      {/* Custom prompt input */}
-      {activeAction === "custom_input" && (
-        <div className="flex gap-1.5 mb-3">
-          <Textarea
-            className="text-xs min-h-[36px] flex-1"
-            placeholder="Pergunte algo à IA sobre este lead..."
-            value={customPrompt}
-            onChange={e => setCustomPrompt(e.target.value)}
-            rows={1}
-          />
-          <Button size="sm" className="h-auto px-2" onClick={() => handleAction("custom", customPrompt)} disabled={!customPrompt || loading}>
-            <Send className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      )}
-
-      {/* Loading */}
-      {loading && !result && (
-        <div className="flex items-center justify-center py-4 gap-2">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          <span className="text-xs text-muted-foreground">Analisando e gerando...</span>
-        </div>
-      )}
-
-      {/* Client said input */}
-      {!result && !loading && (
-        <div className="mb-3 space-y-1">
-          <label className="text-[10px] font-medium text-muted-foreground">💬 O que o cliente disse/respondeu?</label>
-          <Textarea
-            className="text-xs min-h-[36px]"
-            placeholder="Cole aqui a mensagem do cliente para a IA gerar uma resposta personalizada..."
-            value={clientSaid}
-            onChange={e => setClientSaid(e.target.value)}
-            rows={2}
-          />
-          {clientSaid && (
-            <Button
-              size="sm"
-              className="w-full h-7 text-[10px] gap-1"
-              onClick={() => handleAction("responder_cliente", `O CLIENTE DISSE: "${clientSaid}". Gere uma resposta personalizada para o que o cliente disse.`)}
-              disabled={loading}
-            >
-              <Sparkles className="h-3 w-3" />
-              Gerar resposta para o que o cliente disse
+        {/* Objection input */}
+        {activeAction === "objecao_input" && (
+          <div className="space-y-1.5">
+            <Textarea className="text-xs min-h-[40px]" placeholder="Qual objeção? Ex: Acho caro..." value={objecao} onChange={e => setObjecao(e.target.value)} />
+            <Button size="sm" className="w-full h-7 text-[10px]" onClick={() => handleAction("quebrar_objecao", objecao)} disabled={!objecao || loading}>
+              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Gerar Resposta
             </Button>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Result */}
-      {result && (
-        <div className="space-y-2">
-          {/* Parse result into sections by ## headers */}
-          {(() => {
-            const sections = result.split(/^## /m).filter(Boolean).map(s => {
-              const nl = s.indexOf("\n");
-              return { title: s.slice(0, nl).trim(), body: s.slice(nl + 1).trim() };
-            });
-            if (sections.length <= 1) {
-              // Single block - show as before
-              return (
-                <div className="bg-background rounded-lg border border-border p-3 text-xs prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown>{result}</ReactMarkdown>
-                </div>
-              );
-            }
-            return sections.map((sec, i) => {
-              const isWhatsApp = /💬|🔄|whatsapp|mensagem/i.test(sec.title);
-              const isScript = /📞|script|ligação/i.test(sec.title);
-              return (
-                <div key={i} className="bg-background rounded-lg border border-border/60 p-2.5">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-bold">{sec.title}</span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 text-[10px] gap-1 px-1.5"
-                        onClick={() => {
-                          navigator.clipboard.writeText(sec.body);
-                          toast.success("Seção copiada!");
-                        }}
-                      >
-                        📋 Copiar
-                      </Button>
-                      {isWhatsApp && leadTelefone && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 text-[10px] gap-1 px-1.5 text-emerald-600"
-                          onClick={() => {
-                            navigator.clipboard.writeText(sec.body);
-                            const phone = (leadTelefone || "").replace(/\D/g, "");
-                            const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
-                            window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(sec.body)}`, "_blank");
-                          }}
-                        >
-                          📱 WhatsApp
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground prose prose-sm max-w-none dark:prose-invert leading-relaxed">
-                    <ReactMarkdown>{sec.body}</ReactMarkdown>
-                  </div>
-                </div>
-              );
-            });
-          })()}
+        {/* Custom prompt */}
+        {activeAction === "custom_input" && (
           <div className="flex gap-1.5">
-            <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1" onClick={handleCopy}>
-              📋 Copiar tudo
-            </Button>
-            <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1" onClick={() => { setResult(""); setActiveAction(null); setCustomPrompt(""); setObjecao(""); setClientSaid(""); }}>
-              Nova consulta
+            <Textarea className="text-xs min-h-[36px] flex-1" placeholder="Pergunte algo à IA..." value={customPrompt} onChange={e => setCustomPrompt(e.target.value)} rows={1} />
+            <Button size="sm" className="h-auto px-2" onClick={() => handleAction("custom", customPrompt)} disabled={!customPrompt || loading}>
+              <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
-        </div>
-      )}
-    </Card>
+        )}
+
+        {/* Client said */}
+        {!result && !loading && (
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground">💬 O que o cliente disse?</label>
+            <Textarea className="text-xs min-h-[36px]" placeholder="Cole a mensagem do cliente..." value={clientSaid} onChange={e => setClientSaid(e.target.value)} rows={2} />
+            {clientSaid && (
+              <Button size="sm" className="w-full h-7 text-[10px] gap-1" onClick={() => handleAction("responder_cliente", `O CLIENTE DISSE: "${clientSaid}". Gere uma resposta personalizada.`)} disabled={loading}>
+                <Sparkles className="h-3 w-3" /> Gerar resposta
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && !result && (
+          <div className="flex items-center justify-center py-4 gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">Analisando...</span>
+          </div>
+        )}
+
+        {/* Results */}
+        {result && (
+          <div className="space-y-2.5">
+            {parsedSections.length > 1 ? (
+              parsedSections.map((sec, i) => (
+                <ResultSectionCard
+                  key={i}
+                  title={sec.title}
+                  body={sec.body}
+                  leadTelefone={leadTelefone}
+                  isActionable={isActionableSection(sec.title)}
+                  defaultOpen={isActionableSection(sec.title)}
+                />
+              ))
+            ) : (
+              <div className="rounded-xl border border-border p-4 text-xs prose prose-sm max-w-none dark:prose-invert leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                <ReactMarkdown>{result}</ReactMarkdown>
+              </div>
+            )}
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={handleCopy}>
+                <Copy className="h-3.5 w-3.5" /> Copiar tudo
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs flex-1 gap-1.5" onClick={() => { setResult(""); setActiveAction(null); setCustomPrompt(""); setObjecao(""); setClientSaid(""); }}>
+                <Sparkles className="h-3.5 w-3.5" /> Nova consulta
+              </Button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <ExploreView />
+    </div>
   );
 }
