@@ -647,12 +647,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
         {/* ════════════ HOMI SIDE PANEL ════════════ */}
         {homiOpen && (
-          <div className="absolute inset-y-0 right-0 w-full sm:w-[45%] z-40 bg-card border-l border-border shadow-xl flex flex-col">
+          <div className={`absolute inset-y-0 right-0 z-40 bg-card border-l border-border shadow-xl flex flex-col ${homiInitialPrompt ? "w-full sm:w-[35%]" : "w-full sm:w-[45%]"} transition-all duration-200`}>
             <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-primary/5">
               <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-                <Bot className="h-3.5 w-3.5" /> HOMI Assistente
+                <Bot className="h-3.5 w-3.5" /> HOMI
               </span>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setHomiOpen(false)}>✕</Button>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => { setHomiOpen(false); setHomiInitialPrompt(undefined); }}>✕</Button>
             </div>
             <ScrollArea className="flex-1">
               <div className="p-3">
@@ -674,6 +674,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   oportunidadeScore={lead.oportunidade_score}
                   initialPrompt={homiInitialPrompt}
                   onClearInitialPrompt={() => setHomiInitialPrompt(undefined)}
+                  isDirectMode={!!homiInitialPrompt}
                 />
               </div>
             </ScrollArea>
