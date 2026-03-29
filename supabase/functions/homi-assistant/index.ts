@@ -111,12 +111,12 @@ O cliente deve perceber: "Não estou comprando terreno — estou comprando um je
 • Condução visita: "Esse tipo de projeto só faz sentido quando tu vê o bairro funcionando"
 • Fechamento visita: "Esse aqui costuma virar chave quando a pessoa pisa lá dentro"
 
-🔥 FRASES DE ALTO IMPACTO (variar nas respostas):
-• "Aqui tu não compra só um lote, compra o entorno pronto"
-• "É um dos poucos projetos que realmente muda rotina"
-• "Esse tipo de produto não é comum na região"
-• "Quem entra aqui geralmente já começa a se imaginar morando"
-• "Esse produto não é pra quem quer só preço — é pra quem quer qualidade de vida"
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Total de leads: 131
+• Taxa lead→visita: 10.7%
+• Conversão pós-visita: 29%
+• No-show: 54% (CRÍTICO — maior taxa de todos os produtos)
+• INSIGHT: SEMPRE confirmar visita na véspera E no dia. Criar urgência pré-visita. Enviar conteúdo emocional antes da visita pra manter engajamento.
 
 🧠 GATILHOS MENTAIS PRIORITÁRIOS:
 • Segurança (família) → "Monitoramento 24h, controle de acesso"
