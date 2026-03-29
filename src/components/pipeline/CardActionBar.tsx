@@ -98,7 +98,7 @@ export default function CardActionBar({
               <Calendar className="h-3.5 w-3.5 mr-2" /> Agendar visita
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onOpenComunicacao(); }}>
-              <Send className="h-3.5 w-3.5 mr-2" /> Central de comunicação
+              <Send className="h-3.5 w-3.5 mr-2" /> Scripts
             </DropdownMenuItem>
             {canTransfer && (
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onOpenTransfer(); }}>
