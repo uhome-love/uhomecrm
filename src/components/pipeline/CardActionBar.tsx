@@ -74,8 +74,7 @@ export default function CardActionBar({
           onMouseEnter={(e) => { e.currentTarget.style.background = "#EAF3DE"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <MessageCircle style={{ width: 12, height: 12 }} />
-          <span>Mensagem</span>
+          <span>💬 Mensagem</span>
         </button>
 
         <div style={divider} />
