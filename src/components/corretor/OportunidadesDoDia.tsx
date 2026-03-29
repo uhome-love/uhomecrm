@@ -390,6 +390,20 @@ export function OportunidadesDoDia() {
                 }
               />
             </div>
+            {/* Explicação + botão quando bloqueado */}
+            {!podeFazerRoleta && !naRoleta && (
+              <div className="mt-3 pt-3 border-t border-red-200 space-y-2">
+                <p className="text-xs text-red-700 leading-relaxed">
+                  Você tem <strong>{tarefasAtrasadas} lead(s)</strong> no pipeline sem nenhuma tarefa pendente. O máximo permitido é 10. Crie tarefas para seus leads se desbloquearem.
+                </p>
+                <button
+                  onClick={() => window.location.href = "/pipeline?filtro=sem_tarefa"}
+                  className="w-full text-xs font-medium py-2 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center justify-center gap-1.5"
+                >
+                  📋 Ver leads sem tarefa →
+                </button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
