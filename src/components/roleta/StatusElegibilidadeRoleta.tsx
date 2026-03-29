@@ -1,38 +1,12 @@
 // =============================================================================
 // Componente: StatusElegibilidadeRoleta
 // Exibe o card de status de elegibilidade do corretor para as roletas do dia.
-// Deve ser exibido na home do corretor antes dos horários de credenciamento.
-//
-// Roleta Manhã:  credenciamento até 09:30
-// Roleta Tarde:  credenciamento até 13:30
-// Roleta Noturna: 18:30–23:00 (exige visita no dia + pipeline em dia)
+// Agora usa o hook unificado useElegibilidadeRoleta (single source of truth).
 // =============================================================================
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { AlertTriangle, CheckCircle, XCircle, Moon, Clock, ChevronDown, ChevronUp } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// Tipos
-// ---------------------------------------------------------------------------
-interface LeadDesatualizado {
-  id: string;
-  nome: string;
-  stage: string;
-  dias_sem_tarefa: number;
-}
-
-interface ElegibilidadeRoleta {
-  pode_roleta_manha: boolean;
-  pode_roleta_tarde: boolean;
-  pode_roleta_noturna: boolean;
-  leads_desatualizados: number;
-  limite_bloqueio: number;
-  faltam_para_bloquear: number;
-  tem_visita_hoje: boolean;
-  leads_para_atualizar: LeadDesatualizado[];
-}
+import { useState } from "react";
+import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
+import { CheckCircle, XCircle, Moon, Clock, ChevronDown, ChevronUp, ListTodo, ChevronRight } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,39 +35,15 @@ function getCorBarra(desatualizados: number, limite: number): string {
 // Componente principal
 // ---------------------------------------------------------------------------
 export function StatusElegibilidadeRoleta() {
-  const { user } = useAuth();
-  const [elegibilidade, setElegibilidade] = useState<ElegibilidadeRoleta | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const { elegibilidade, carregando } = useElegibilidadeRoleta();
   const [expandido, setExpandido] = useState(false);
-
   const proximaRoleta = getProximaRoleta();
-
-  useEffect(() => {
-    if (!user?.id) return;
-    carregarElegibilidade();
-  }, [user?.id]);
-
-  async function carregarElegibilidade() {
-    setCarregando(true);
-    try {
-      const { data, error } = await supabase.rpc("get_elegibilidade_roleta", {
-        p_corretor_id: user!.id,
-      });
-
-      if (error) throw error;
-      setElegibilidade(data as ElegibilidadeRoleta);
-    } catch (err) {
-      console.error("[StatusElegibilidade] Erro:", err);
-    } finally {
-      setCarregando(false);
-    }
-  }
 
   if (carregando) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 animate-pulse">
-        <div className="h-4 w-48 bg-gray-200 rounded mb-2" />
-        <div className="h-3 w-32 bg-gray-100 rounded" />
+      <div className="rounded-xl border border-border bg-card p-4 animate-pulse">
+        <div className="h-4 w-48 bg-muted rounded mb-2" />
+        <div className="h-3 w-32 bg-muted rounded" />
       </div>
     );
   }
@@ -110,98 +60,106 @@ export function StatusElegibilidadeRoleta() {
 
   return (
     <div
-      className={`rounded-xl border-2 bg-white shadow-sm transition-all ${
-        elegívelProxima ? "border-green-200" : "border-red-200"
+      className={`rounded-xl border-2 bg-card shadow-sm transition-all ${
+        elegívelProxima ? "border-green-500/30" : "border-destructive/30"
       }`}
     >
       {/* Cabeçalho */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            {/* Ícone de status */}
             {elegívelProxima ? (
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
             ) : (
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                <XCircle className="w-5 h-5 text-red-600" />
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-destructive" />
               </div>
             )}
 
             <div>
               <div className="flex items-center gap-2">
                 {proximaRoleta.tipo === "noturna" && (
-                  <Moon className="w-4 h-4 text-indigo-500" />
+                  <Moon className="w-4 h-4 text-primary" />
                 )}
-                <span className="font-semibold text-gray-900 text-sm">
+                <span className="font-semibold text-foreground text-sm">
                   {proximaRoleta.nome}
                 </span>
-                <span className="text-xs text-gray-400 flex items-center gap-1">
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   até {proximaRoleta.horario}
                 </span>
               </div>
 
               {elegívelProxima ? (
-                <p className="text-sm text-green-700 mt-0.5">
+                <p className="text-sm text-green-700 dark:text-green-400 mt-0.5">
                   ✅ Você está elegível para se credenciar
                 </p>
               ) : (
-                <p className="text-sm text-red-700 mt-0.5">
+                <p className="text-sm text-destructive mt-0.5">
                   🔒 Você está bloqueado — veja o que fazer abaixo
                 </p>
               )}
             </div>
           </div>
 
-          {/* Botão expandir */}
           <button
             onClick={() => setExpandido(!expandido)}
-            className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 mt-1"
+            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 mt-1"
           >
             {expandido ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Barra de progresso de leads desatualizados */}
+        {/* Barra de progresso */}
         <div className="mt-3">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-gray-500">Leads desatualizados</span>
+            <span className="text-xs text-muted-foreground">Leads desatualizados</span>
             <span
               className={`text-xs font-semibold ${
-                elegibilidade.leads_desatualizados > 10 ? "text-red-600" : "text-gray-700"
+                elegibilidade.leads_desatualizados > 10 ? "text-destructive" : "text-foreground"
               }`}
             >
               {elegibilidade.leads_desatualizados} / {elegibilidade.limite_bloqueio}
             </span>
           </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${corBarra}`}
               style={{ width: `${pctBarra}%` }}
             />
           </div>
           {!elegívelProxima && (
-            <p className="text-xs text-red-600 mt-1">
-              Você precisa atualizar pelo menos{" "}
-              <strong>{elegibilidade.leads_desatualizados - 10} lead(s)</strong> para se desbloquear.
-            </p>
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-destructive">
+                Você precisa atualizar pelo menos{" "}
+                <strong>{elegibilidade.leads_desatualizados - 10} lead(s)</strong> para se desbloquear.
+              </p>
+              <button
+                onClick={() => (window.location.href = "/pipeline?filtro=sem_tarefa")}
+                className="w-full text-xs font-medium py-2 px-3 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors flex items-center justify-center gap-1.5"
+              >
+                <ListTodo className="w-3.5 h-3.5" />
+                Ver leads sem tarefa
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
           )}
           {elegívelProxima && elegibilidade.faltam_para_bloquear <= 3 && (
-            <p className="text-xs text-yellow-600 mt-1">
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
               ⚠️ Atenção: faltam apenas {elegibilidade.faltam_para_bloquear} lead(s) para você ser bloqueado.
             </p>
           )}
         </div>
 
-        {/* Regra extra da roleta noturna */}
+        {/* Regra noturna */}
         {proximaRoleta.tipo === "noturna" && (
           <div
             className={`mt-3 rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${
               elegibilidade.tem_visita_hoje
-                ? "bg-indigo-50 text-indigo-700"
-                : "bg-orange-50 text-orange-700"
+                ? "bg-primary/10 text-primary"
+                : "bg-orange-500/10 text-orange-700 dark:text-orange-400"
             }`}
           >
             <Moon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -216,30 +174,30 @@ export function StatusElegibilidadeRoleta() {
         )}
       </div>
 
-      {/* Seção expandida: lista de leads desatualizados */}
+      {/* Expandido: lista de leads */}
       {expandido && elegibilidade.leads_para_atualizar.length > 0 && (
-        <div className="border-t border-gray-100 px-4 pb-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-3 mb-2">
+        <div className="border-t border-border px-4 pb-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-3 mb-2">
             Leads que precisam de atenção
           </p>
           <div className="space-y-2">
             {elegibilidade.leads_para_atualizar.map((lead) => (
               <div
                 key={lead.id}
-                className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"
+                className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-800">{lead.nome}</p>
-                  <p className="text-xs text-gray-500">{lead.stage}</p>
+                  <p className="text-sm font-medium text-foreground">{lead.nome}</p>
+                  <p className="text-xs text-muted-foreground">{lead.stage}</p>
                 </div>
                 <div className="text-right">
                   <span
                     className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                       lead.dias_sem_tarefa > 14
-                        ? "bg-red-100 text-red-700"
+                        ? "bg-destructive/10 text-destructive"
                         : lead.dias_sem_tarefa > 7
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-gray-100 text-gray-600"
+                        ? "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {lead.dias_sem_tarefa}d sem tarefa
@@ -250,17 +208,14 @@ export function StatusElegibilidadeRoleta() {
           </div>
 
           {elegibilidade.leads_desatualizados > 10 && (
-            <p className="text-xs text-gray-400 mt-2 text-center">
+            <p className="text-xs text-muted-foreground mt-2 text-center">
               Mostrando 10 de {elegibilidade.leads_desatualizados} leads desatualizados
             </p>
           )}
 
           <button
-            onClick={() => {
-              // Navega para o pipeline filtrado por leads sem tarefa
-              window.location.href = "/pipeline?filtro=sem_tarefa";
-            }}
-            className="mt-3 w-full rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 transition-colors"
+            onClick={() => (window.location.href = "/pipeline?filtro=sem_tarefa")}
+            className="mt-3 w-full rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-2 transition-colors"
           >
             Ir para o pipeline e atualizar leads →
           </button>
@@ -268,8 +223,8 @@ export function StatusElegibilidadeRoleta() {
       )}
 
       {expandido && elegibilidade.leads_para_atualizar.length === 0 && (
-        <div className="border-t border-gray-100 px-4 py-3">
-          <p className="text-sm text-green-600 text-center">
+        <div className="border-t border-border px-4 py-3">
+          <p className="text-sm text-green-600 dark:text-green-400 text-center">
             🎉 Todos os seus leads estão com tarefas em dia!
           </p>
         </div>

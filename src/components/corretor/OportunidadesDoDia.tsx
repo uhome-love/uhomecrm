@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -97,12 +98,11 @@ const TIPO_CONFIG = {
 // ---------------------------------------------------------------------------
 function useHomeCorretor() {
   const { user } = useAuth();
+  const { podeFazerRoleta, leadsDesatualizados, recarregar: recarregarElegibilidade } = useElegibilidadeRoleta();
   const [nomeCorretor, setNomeCorretor] = useState("");
   const [statusOnline, setStatusOnline] = useState(false);
   const [naRoleta, setNaRoleta] = useState(false);
   const [oportunidades, setOportunidades] = useState<Oportunidade[]>([]);
-  const [podeFazerRoleta, setPodeFazerRoleta] = useState(true);
-  const [leadsDesatualizados, setLeadsDesatualizados] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [roletaUpdating, setRoletaUpdating] = useState(false);
@@ -117,19 +117,21 @@ function useHomeCorretor() {
         .from("profiles")
         .select("nome")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (perfil) setNomeCorretor(perfil.nome || "Corretor");
 
-      // Disponibilidade
-      const { data: disponibilidade } = await supabase
+      // Disponibilidade — usar maybeSingle para evitar erro quando não existe registro
+      const { data: disponibilidade, error: dispError } = await supabase
         .from("corretor_disponibilidade")
         .select("status, na_roleta")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (disponibilidade) {
-        setStatusOnline(disponibilidade.status === "online");
+      if (dispError) {
+        console.error("[HomeCorretor] Erro ao buscar disponibilidade:", dispError);
+      } else if (disponibilidade) {
+        setStatusOnline(disponibilidade.status === "na_empresa");
         setNaRoleta(disponibilidade.na_roleta ?? false);
       }
 
@@ -137,17 +139,14 @@ function useHomeCorretor() {
       const { data: ops, error: opsError } = await supabase.rpc("get_oportunidades_do_dia", {
         p_corretor_id: user.id,
       });
-      if (!opsError && ops) {
+      if (opsError) {
+        console.error("[HomeCorretor] Erro ao buscar oportunidades:", opsError);
+      } else if (ops) {
         setOportunidades(ops as Oportunidade[]);
       }
 
-      // Leads desatualizados (contagem direta via RPC)
-      const { data: countData } = await supabase.rpc("contar_leads_desatualizados", {
-        p_corretor_id: user.id,
-      });
-      const count = typeof countData === "number" ? countData : 0;
-      setLeadsDesatualizados(count);
-      setPodeFazerRoleta(count <= 10);
+      // Recarregar elegibilidade (hook unificado)
+      recarregarElegibilidade();
     } catch (err) {
       console.error("Erro ao carregar home do corretor:", err);
     }
@@ -191,12 +190,14 @@ async function alternarStatusOnline(
 
   const payload: Record<string, unknown> = {
     user_id: userId,
-    status: novoStatus ? "online" : "offline",
+    status: novoStatus ? "na_empresa" : "offline",
+    updated_at: agora,
   };
   if (novoStatus) {
     payload.entrada_em = agora;
   } else {
     payload.saida_em = agora;
+    payload.na_roleta = false;
   }
 
   const { error } = await supabase
@@ -205,6 +206,7 @@ async function alternarStatusOnline(
 
   setUpdating(false);
   if (error) {
+    console.error("[alternarStatusOnline] Erro no upsert:", error);
     setStatusOnline(!novoStatus);
     toast.error("Erro ao atualizar status. Tente novamente.");
   } else {
@@ -232,23 +234,29 @@ async function alternarRoleta(
   }
 
   setUpdating(true);
-  const novoStatus = !naRoleta;
-  setNaRoleta(novoStatus);
+  const novoEstado = !naRoleta;
+  setNaRoleta(novoEstado);
 
   const { error } = await supabase
     .from("corretor_disponibilidade")
     .upsert(
-      { user_id: userId, na_roleta: novoStatus } as any,
+      {
+        user_id: userId,
+        na_roleta: novoEstado,
+        status: "na_empresa",
+        updated_at: new Date().toISOString(),
+      } as any,
       { onConflict: "user_id" }
     );
 
   setUpdating(false);
   if (error) {
-    setNaRoleta(!novoStatus);
+    console.error("[alternarRoleta] Erro no upsert:", error);
+    setNaRoleta(!novoEstado);
     toast.error("Erro ao atualizar roleta. Tente novamente.");
   } else {
     toast.success(
-      novoStatus
+      novoEstado
         ? "Você está na roleta! Aguarde novos leads."
         : "Você saiu da roleta."
     );
