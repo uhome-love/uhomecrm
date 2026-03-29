@@ -280,126 +280,143 @@ Deno.serve(async (req) => {
       let failed = 0;
       const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string; leadsHoje?: number; totalAtivos?: number }> = [];
 
+      // ── Pre-fetch ALL timeouts for all leads in a single query ──
+      const allLeadIds = leads.map((l: any) => l.id);
+      const { data: allTimeouts } = await supabase
+        .from("distribuicao_historico")
+        .select("corretor_id, pipeline_lead_id")
+        .in("pipeline_lead_id", allLeadIds)
+        .eq("acao", "timeout");
+      
+      const timeoutsByLead = new Map<string, Set<string>>();
+      for (const t of allTimeouts || []) {
+        if (!timeoutsByLead.has(t.pipeline_lead_id)) timeoutsByLead.set(t.pipeline_lead_id, new Set());
+        timeoutsByLead.get(t.pipeline_lead_id)!.add(t.corretor_id);
+      }
+
+      // ── Pre-resolve all segments ──
+      const segmentoByLead = new Map<string, string | null>();
       for (const lead of leads) {
-        const segmentoId = await resolveSegmento(supabase, lead.empreendimento);
+        segmentoByLead.set(lead.id, await resolveSegmento(supabase, lead.empreendimento));
+      }
 
-        // ── Exclude corretors who already timed out on this lead ──
-        const excludeAuthIds = new Set<string>();
-        const { data: prevTimeouts } = await supabase
-          .from("distribuicao_historico")
-          .select("corretor_id")
-          .eq("pipeline_lead_id", lead.id)
-          .eq("acao", "timeout");
-        for (const t of prevTimeouts || []) {
-          if (t.corretor_id) excludeAuthIds.add(t.corretor_id);
-        }
+      // ── Process leads in parallel chunks of 5 ──
+      const CHUNK_SIZE = 5;
+      for (let i = 0; i < leads.length; i += CHUNK_SIZE) {
+        const chunk = leads.slice(i, i + CHUNK_SIZE);
+        const results = await Promise.all(chunk.map(async (lead: any) => {
+          const segmentoId = segmentoByLead.get(lead.id) || null;
+          const excludeAuthIds = timeoutsByLead.get(lead.id) || new Set<string>();
 
-        const eligible: CorretorCandidate[] = [];
-        for (const [profileId, segs] of corretorSegments.entries()) {
-          if (segmentoId && !segs.has(segmentoId)) continue;
-          const authId = profileToAuth.get(profileId);
-          if (!authId) continue;
-          if (excludeAuthIds.has(authId)) continue;
-          // Use per-segment count for balancing; fallback to global if no segment
-          const segKey = segmentoId ? `${authId}::${segmentoId}` : null;
-          const leadsHojeSegmento = segKey ? (leadsCountBySegment.get(segKey) || 0) : (leadsCountGlobal.get(authId) || 0);
-          eligible.push({
-            corretorId: profileId,
-            authUserId: authId,
-            leadsHoje: leadsHojeSegmento,
-            totalAtivos: totalAtivosCount.get(authId) || 0,
-            lastReceivedAt: lastReceived.get(authId) || null,
+          const eligible: CorretorCandidate[] = [];
+          for (const [profileId, segs] of corretorSegments.entries()) {
+            if (segmentoId && !segs.has(segmentoId)) continue;
+            const authId = profileToAuth.get(profileId);
+            if (!authId) continue;
+            if (excludeAuthIds.has(authId)) continue;
+            const segKey = segmentoId ? `${authId}::${segmentoId}` : null;
+            const leadsHojeSegmento = segKey ? (leadsCountBySegment.get(segKey) || 0) : (leadsCountGlobal.get(authId) || 0);
+            eligible.push({
+              corretorId: profileId,
+              authUserId: authId,
+              leadsHoje: leadsHojeSegmento,
+              totalAtivos: totalAtivosCount.get(authId) || 0,
+              lastReceivedAt: lastReceived.get(authId) || null,
+            });
+          }
+
+          if (eligible.length === 0) {
+            L.warn("No eligible corretor", { leadId: lead.id, empreendimento: lead.empreendimento, segmentoId });
+            return { success: false };
+          }
+
+          eligible.sort((a, b) => {
+            if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
+            if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
+            if (!a.lastReceivedAt && b.lastReceivedAt) return -1;
+            if (a.lastReceivedAt && !b.lastReceivedAt) return 1;
+            if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
+            return 0;
           });
+
+          L.info("Lead routing", { leadNome: lead.nome, segmentoId, eligible: eligible.length, top: eligible.slice(0, 3).map(e => ({ id: e.authUserId.slice(0,8), hojeSegmento: e.leadsHoje, total: e.totalAtivos })) });
+          const chosen = eligible[0];
+          const now = new Date();
+          const expireAt = new Date(now.getTime() + 10 * 60 * 1000);
+
+          const { error: updateErr } = await supabase
+            .from("pipeline_leads")
+            .update({
+              corretor_id: chosen.authUserId,
+              aceite_status: "pendente",
+              distribuido_em: now.toISOString(),
+              aceite_expira_em: expireAt.toISOString(),
+              updated_at: now.toISOString(),
+            })
+            .eq("id", lead.id);
+
+          if (updateErr) {
+            L.error("Failed to assign lead", { leadId: lead.id }, updateErr);
+            return { success: false };
+          }
+
+          // Update counters (synchronous map updates for correct balancing within chunk)
+          if (segmentoId) {
+            const segKey = `${chosen.authUserId}::${segmentoId}`;
+            leadsCountBySegment.set(segKey, (leadsCountBySegment.get(segKey) || 0) + 1);
+          }
+          leadsCountGlobal.set(chosen.authUserId, (leadsCountGlobal.get(chosen.authUserId) || 0) + 1);
+          totalAtivosCount.set(chosen.authUserId, (totalAtivosCount.get(chosen.authUserId) || 0) + 1);
+          lastReceived.set(chosen.authUserId, now.toISOString());
+
+          // Fire-and-forget: secondary inserts (no await)
+          if (segmentoId) {
+            supabase.rpc("increment_roleta_fila", {
+              p_corretor_profile_id: chosen.corretorId,
+              p_segmento_id: segmentoId,
+              p_data: getTodayDateStr(),
+            }).then((r: any) => { if (r?.error) console.warn("roleta_fila sync:", r.error.message); });
+          }
+
+          supabase.from("roleta_distribuicoes").insert({
+            lead_id: lead.id,
+            corretor_id: chosen.corretorId,
+            segmento_id: segmentoId,
+            janela: targetJanela,
+            status: "aguardando",
+            enviado_em: now.toISOString(),
+            expira_em: expireAt.toISOString(),
+            avisos_enviados: 0,
+          }).then(r => { if (r.error) console.warn("roleta_distribuicoes insert:", r.error.message); });
+
+          supabase.from("notifications").insert({
+            user_id: chosen.authUserId,
+            tipo: "lead",
+            categoria: "lead_novo",
+            titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
+            mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}${lead.origem ? ` (${lead.origem})` : ""}. Aceite em 10 minutos!`,
+            dados: { pipeline_lead_id: lead.id, lead_nome: lead.nome, empreendimento: lead.empreendimento, telefone: lead.telefone, origem: lead.origem },
+            agrupamento_key: `lead_novo_${lead.id}`,
+          }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
+
+          sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
+            console.warn("WhatsApp notify error:", e)
+          );
+          sendPush(supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
+            console.warn("Push notify error:", e)
+          );
+
+          return { success: true, leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown", leadsHoje: chosen.leadsHoje, totalAtivos: chosen.totalAtivos };
+        }));
+
+        for (const r of results) {
+          if (r.success) {
+            distributionLog.push({ leadId: r.leadId!, corretorId: r.corretorId!, segmento: r.segmento!, leadsHoje: r.leadsHoje, totalAtivos: r.totalAtivos });
+            dispatched++;
+          } else {
+            failed++;
+          }
         }
-
-        if (eligible.length === 0) {
-          L.warn("No eligible corretor", { leadId: lead.id, empreendimento: lead.empreendimento, segmentoId });
-          failed++;
-          continue;
-        }
-
-        eligible.sort((a, b) => {
-          // Primary: fewer leads in THIS segment today
-          if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
-          // Secondary: fewer total active leads
-          if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
-          // Tertiary: who received a lead least recently
-          if (!a.lastReceivedAt && b.lastReceivedAt) return -1;
-          if (a.lastReceivedAt && !b.lastReceivedAt) return 1;
-          if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
-          return 0;
-        });
-
-        L.info("Lead routing", { leadNome: lead.nome, segmentoId, eligible: eligible.length, top: eligible.slice(0, 3).map(e => ({ id: e.authUserId.slice(0,8), hojeSegmento: e.leadsHoje, total: e.totalAtivos })) });
-        const chosen = eligible[0];
-        const now = new Date();
-        const expireAt = new Date(now.getTime() + 10 * 60 * 1000);
-
-        const { error: updateErr } = await supabase
-          .from("pipeline_leads")
-          .update({
-            corretor_id: chosen.authUserId,
-            aceite_status: "pendente",
-            distribuido_em: now.toISOString(),
-            aceite_expira_em: expireAt.toISOString(),
-            updated_at: now.toISOString(),
-          })
-          .eq("id", lead.id);
-
-        if (updateErr) {
-          L.error("Failed to assign lead", { leadId: lead.id }, updateErr);
-          failed++;
-          continue;
-        }
-
-        // Update per-segment count
-        if (segmentoId) {
-          const segKey = `${chosen.authUserId}::${segmentoId}`;
-          leadsCountBySegment.set(segKey, (leadsCountBySegment.get(segKey) || 0) + 1);
-        }
-        leadsCountGlobal.set(chosen.authUserId, (leadsCountGlobal.get(chosen.authUserId) || 0) + 1);
-        totalAtivosCount.set(chosen.authUserId, (totalAtivosCount.get(chosen.authUserId) || 0) + 1);
-        lastReceived.set(chosen.authUserId, now.toISOString());
-
-        // FIX Bug 2: Sync roleta_fila so UI shows correct numbers
-        if (segmentoId) {
-          supabase.rpc("increment_roleta_fila", {
-            p_corretor_profile_id: chosen.corretorId,
-            p_segmento_id: segmentoId,
-            p_data: getTodayDateStr(),
-          }).then((r: any) => { if (r?.error) console.warn("roleta_fila sync:", r.error.message); });
-        }
-
-        await supabase.from("roleta_distribuicoes").insert({
-          lead_id: lead.id,
-          corretor_id: chosen.corretorId,
-          segmento_id: segmentoId,
-          janela: targetJanela,
-          status: "aguardando",
-          enviado_em: now.toISOString(),
-          expira_em: expireAt.toISOString(),
-          avisos_enviados: 0,
-        }).then(r => { if (r.error) console.warn("roleta_distribuicoes insert:", r.error.message); });
-
-        await supabase.from("notifications").insert({
-          user_id: chosen.authUserId,
-          tipo: "lead",
-          categoria: "lead_novo",
-          titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
-          mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}${lead.origem ? ` (${lead.origem})` : ""}. Aceite em 10 minutos!`,
-          dados: { pipeline_lead_id: lead.id, lead_nome: lead.nome, empreendimento: lead.empreendimento, telefone: lead.telefone, origem: lead.origem },
-          agrupamento_key: `lead_novo_${lead.id}`,
-        }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
-
-        sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
-          console.warn("WhatsApp notify error:", e)
-        );
-        sendPush(supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
-          console.warn("Push notify error:", e)
-        );
-
-        distributionLog.push({ leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown", leadsHoje: chosen.leadsHoje, totalAtivos: chosen.totalAtivos });
-        dispatched++;
       }
 
       if (userId) {
