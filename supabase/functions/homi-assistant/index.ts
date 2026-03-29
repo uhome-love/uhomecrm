@@ -711,6 +711,22 @@ Use APENAS este formato:
 
 REGRA: Escolha o formato baseado na ação. NUNCA use formato completo quando o corretor quer apenas uma mensagem WhatsApp.`;
 
+    // ── Inject format-only prefix when prompt contains explicit format instructions ──
+    const promptText = objetivo || "";
+    if (/formato:|apenas/i.test(promptText)) {
+      const formatPrefix = `\n\n═══════════════════════════════════════
+INSTRUÇÃO PRIORITÁRIA (OBEDEÇA ACIMA DE TUDO)
+═══════════════════════════════════════
+
+O usuário pediu um formato específico. Responda SOMENTE com o que foi solicitado no prompt.
+NÃO inclua análises, briefings, recomendações, próximas ações, alertas de abordagem ou qualquer seção além do que foi explicitamente pedido.
+Se pediu script de ligação, retorne APENAS o script no formato Corretor/Cliente. NADA MAIS.
+Se pediu mensagem WhatsApp, retorne APENAS as mensagens prontas para copiar. NADA MAIS.
+Obedeça o formato descrito no prompt à risca. Qualquer conteúdo extra será descartado pelo sistema.
+═══════════════════════════════════════\n`;
+      systemPrompt = formatPrefix + systemPrompt;
+    }
+
     // Inject lead_context (v2 full history) into all prompts
     const leadCtx = lead_context ? `\n\n═══ CONTEXTO COMPLETO DO LEAD ═══\n${lead_context}\n═══════════════════════════════` : "";
 

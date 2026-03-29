@@ -94,8 +94,8 @@ export default function StageCoachBar({
             : `Novo lead aguardando primeiro contato · ${tentativasLigacao} tentativa${tentativasLigacao !== 1 ? "s" : ""}`,
           color: "border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20",
           actions: [
-            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação para primeiro contato com este lead na etapa sem_contato. Formato: apenas script Corretor/Cliente com no máximo 5 trocas." },
-            { label: "WhatsApp apresentação", icon: MessageSquare, homiPrompt: "Gere uma mensagem de WhatsApp de primeiro contato para este lead. Formato: apenas 2 mensagens curtas (3 linhas cada) com tons diferentes." },
+            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação para primeiro contato com este lead na etapa sem_contato. Formato: apenas script Corretor/Cliente com no máximo 5 trocas. IMPORTANTE: Retorne SOMENTE o script de ligação no formato Corretor/Cliente. Nada mais. Sem análise, sem WhatsApp, sem recomendações." },
+            { label: "WhatsApp apresentação", icon: MessageSquare, homiPrompt: "Gere uma mensagem de WhatsApp de primeiro contato para este lead. Formato: apenas 2 mensagens curtas (3 linhas cada) com tons diferentes. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais. Sem análise, sem script de ligação, sem recomendações." },
           ],
           messages: [
             {
@@ -132,9 +132,9 @@ export default function StageCoachBar({
               ? { text: `Lead parado há ${diasSemContato} dias em Atendimento — empurre a etapa!`, severity: "warning" }
               : undefined,
           actions: [
-            { label: "Perguntas de qualificação", icon: MessageSquare, homiPrompt: "Gere perguntas de qualificação UHOME para este lead em atendimento. Formato: apenas 2 mensagens WhatsApp curtas com perguntas estratégicas." },
+            { label: "Perguntas de qualificação", icon: MessageSquare, homiPrompt: "Gere perguntas de qualificação UHOME para este lead em atendimento. Formato: apenas 2 mensagens WhatsApp curtas com perguntas estratégicas. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais. Sem análise, sem script, sem recomendações." },
             { label: "Agendar follow-up", icon: Calendar, onClick: () => createQuickTask(`Follow-up com ${nome}`, "follow_up") },
-            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação consultiva para este lead em atendimento. Formato: apenas script Corretor/Cliente." },
+            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação consultiva para este lead em atendimento. Formato: apenas script Corretor/Cliente. IMPORTANTE: Retorne SOMENTE o script de ligação no formato Corretor/Cliente. Nada mais. Sem análise, sem WhatsApp, sem recomendações." },
           ],
           messages: [
             {
@@ -162,8 +162,8 @@ export default function StageCoachBar({
           diagnostic: "Lead em qualificação — entenda o perfil e apresente opções",
           color: "border-purple-500/30 bg-purple-50/50 dark:bg-purple-950/20",
           actions: [
-            { label: "Enviar vitrine IA", icon: Sparkles, homiPrompt: "Gere uma vitrine personalizada com até 3 imóveis que fazem sentido para o perfil deste lead. Formato: 2 mensagens WhatsApp curtas." },
-            { label: "Completar perfil", icon: CheckCircle2, homiPrompt: "Quais informações faltam para qualificar este lead? Gere perguntas curtas para completar o perfil via WhatsApp." },
+            { label: "Enviar vitrine IA", icon: Sparkles, homiPrompt: "Gere uma vitrine personalizada com até 3 imóveis que fazem sentido para o perfil deste lead. Formato: apenas 2 mensagens WhatsApp curtas. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais. Sem análise, sem script, sem recomendações." },
+            { label: "Completar perfil", icon: CheckCircle2, homiPrompt: "Quais informações faltam para qualificar este lead? Gere perguntas curtas para completar o perfil via WhatsApp. Formato: apenas mensagens WhatsApp. IMPORTANTE: Retorne SOMENTE as mensagens prontas para copiar. Nada mais." },
           ],
           messages: [
             {
@@ -191,7 +191,7 @@ export default function StageCoachBar({
           color: "border-orange-500/30 bg-orange-50/50 dark:bg-orange-950/20",
           actions: [
             { label: "Agendar visita", icon: Calendar, onClick: () => createQuickTask(`Agendar visita com ${nome}`, "visita") },
-            { label: "Destaques do imóvel", icon: MessageSquare, homiPrompt: "Gere os destaques e diferenciais do empreendimento para convencer este lead a visitar. Formato: 2 mensagens WhatsApp curtas." },
+            { label: "Destaques do imóvel", icon: MessageSquare, homiPrompt: "Gere os destaques e diferenciais do empreendimento para convencer este lead a visitar. Formato: apenas 2 mensagens WhatsApp curtas. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais. Sem análise, sem script, sem recomendações." },
           ],
           messages: [
             {
@@ -214,7 +214,7 @@ export default function StageCoachBar({
           diagnostic: "🛡️ Anti No-show: Confirme D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa)",
           color: "border-green-500/30 bg-green-50/50 dark:bg-green-950/20",
           actions: [
-            { label: "Sequência anti no-show", icon: CheckCircle2, homiPrompt: "Gere a sequência completa anti no-show: D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa). Formato: 3 mensagens WhatsApp prontas para copiar." },
+            { label: "Sequência anti no-show", icon: CheckCircle2, homiPrompt: "Gere a sequência completa anti no-show: D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa). Formato: apenas 3 mensagens WhatsApp prontas para copiar. IMPORTANTE: Retorne SOMENTE as 3 mensagens de WhatsApp. Nada mais. Sem análise, sem script, sem recomendações." },
             { label: "Confirmar visita", icon: Phone, onClick: () => createQuickTask(`Confirmar visita ${nome}`, "ligacao") },
           ],
           messages: [
@@ -241,7 +241,7 @@ export default function StageCoachBar({
             ? { text: `${diasSemContato} dia${diasSemContato > 1 ? "s" : ""} sem follow-up pós-visita — envie AGORA!`, severity: diasSemContato >= 3 ? "danger" : "warning" }
             : undefined,
           actions: [
-            { label: "Follow-up pós-visita", icon: MessageSquare, homiPrompt: "Gere follow-up pós-visita para este lead. Formato: 2 mensagens WhatsApp curtas. Pergunte o que mais impressionou e prepare terreno para proposta." },
+            { label: "Follow-up pós-visita", icon: MessageSquare, homiPrompt: "Gere follow-up pós-visita para este lead. Formato: apenas 2 mensagens WhatsApp curtas. Pergunte o que mais impressionou e prepare terreno para proposta. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais. Sem análise, sem script, sem recomendações." },
             { label: "Criar proposta", icon: Calendar, onClick: () => createQuickTask(`Preparar proposta para ${nome}`, "follow_up") },
           ],
           messages: [
@@ -266,8 +266,8 @@ export default function StageCoachBar({
           diagnostic: "Lead em negociação — foco em fechar o negócio!",
           color: "border-red-500/30 bg-red-50/50 dark:bg-red-950/20",
           actions: [
-            { label: "Follow-up proposta", icon: Phone, homiPrompt: "Gere script de follow-up da proposta para este lead em negociação. Formato: script Corretor/Cliente curto." },
-            { label: "Quebrar objeção", icon: MessageSquare, homiPrompt: "O lead recebeu proposta mas não fechou. Gere 2 mensagens WhatsApp curtas para quebrar objeções e fechar o negócio." },
+            { label: "Follow-up proposta", icon: Phone, homiPrompt: "Gere script de follow-up da proposta para este lead em negociação. Formato: apenas script Corretor/Cliente curto. IMPORTANTE: Retorne SOMENTE o script de ligação no formato Corretor/Cliente. Nada mais. Sem análise, sem WhatsApp, sem recomendações." },
+            { label: "Quebrar objeção", icon: MessageSquare, homiPrompt: "O lead recebeu proposta mas não fechou. Formato: apenas 2 mensagens WhatsApp curtas para quebrar objeções e fechar o negócio. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais. Sem análise, sem script, sem recomendações." },
           ],
           messages: [
             {
