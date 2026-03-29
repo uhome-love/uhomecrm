@@ -60,11 +60,7 @@ interface Props {
   onDelete?: (leadId: string) => Promise<void>;
 }
 
-const TEMPERATURA_MAP: Record<string, { label: string; color: string; icon: any }> = {
-  quente: { label: "Quente", color: "text-red-500", icon: Flame },
-  morno: { label: "Morno", color: "text-amber-500", icon: Sun },
-  frio: { label: "Frio", color: "text-blue-500", icon: Snowflake },
-};
+// TEMPERATURA_MAP removido — substituído por chip de status Atualizado/Desatualizado
 
 export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNomes = {}, open, onOpenChange, onUpdate, onMove, onDelete }: Props) {
   const { user } = useAuth();
