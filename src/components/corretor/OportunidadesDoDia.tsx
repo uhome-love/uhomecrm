@@ -223,7 +223,7 @@ async function alternarRoleta(
   // Bloqueia se há tarefas atrasadas e está tentando se credenciar
   if (!naRoleta && !podeFazerRoleta) {
     toast.error(
-      `🔒 Você tem ${tarefasAtrasadas} tarefa(s) atrasada(s). Resolva-as para entrar na roleta.`,
+      `🔒 Você tem ${tarefasAtrasadas} lead(s) sem tarefa pendente (máx: 10). Crie tarefas no pipeline para se desbloquear.`,
       { duration: 5000 }
     );
     return;
