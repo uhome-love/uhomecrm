@@ -74,7 +74,7 @@ export default function CardActionBar({
           onMouseEnter={(e) => { e.currentTarget.style.background = "#EAF3DE"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <span>💬 Mensagem</span>
+          <span>💬 WhatsApp</span>
         </button>
 
         <div style={divider} />
