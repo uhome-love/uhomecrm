@@ -111,12 +111,12 @@ O cliente deve perceber: "Não estou comprando terreno — estou comprando um je
 • Condução visita: "Esse tipo de projeto só faz sentido quando tu vê o bairro funcionando"
 • Fechamento visita: "Esse aqui costuma virar chave quando a pessoa pisa lá dentro"
 
-🔥 FRASES DE ALTO IMPACTO (variar nas respostas):
-• "Aqui tu não compra só um lote, compra o entorno pronto"
-• "É um dos poucos projetos que realmente muda rotina"
-• "Esse tipo de produto não é comum na região"
-• "Quem entra aqui geralmente já começa a se imaginar morando"
-• "Esse produto não é pra quem quer só preço — é pra quem quer qualidade de vida"
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Total de leads: 131
+• Taxa lead→visita: 10.7%
+• Conversão pós-visita: 29%
+• No-show: 54% (CRÍTICO — maior taxa de todos os produtos)
+• INSIGHT: SEMPRE confirmar visita na véspera E no dia. Criar urgência pré-visita. Enviar conteúdo emocional antes da visita pra manter engajamento.
 
 🧠 GATILHOS MENTAIS PRIORITÁRIOS:
 • Segurança (família) → "Monitoramento 24h, controle de acesso"
@@ -160,6 +160,10 @@ O cliente deve perceber: "Isso é uma decisão inteligente de investimento, não
 • Condução visita: "Se tu ver o projeto e a localização, fica muito claro o potencial"
 • Fechamento: "Esse tipo de produto faz mais sentido quando tu entende o todo, não só a unidade"
 
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Dados ainda em coleta — produto mais recente
+• INSIGHT: Focar em leads qualificados com perfil investidor. Usar dados de rentabilidade da região como argumento.
+
 🔥 FRASE DE CONVERSÃO: "Esse é investimento inteligente"
 
 🔷 SHIFT (INVESTIMENTO URBANO - ESTILO DE VIDA + LIQUIDEZ):
@@ -192,6 +196,11 @@ NÃO é apartamento comum. É produto híbrido de estilo de vida urbano.
 • Condução visita: "Vale ver porque a proposta dele muda bastante a percepção"
 • Fechamento: "Esse aqui é muito usado por quem quer começar a investir sem dar um passo muito grande"
 
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Total de leads: 81
+• No-show: 0% (leads mais qualificados de todos os produtos)
+• INSIGHT: Leads do Shift são altamente qualificados. Foco é conduzir direto para proposta após visita. Não perder tempo com qualificação excessiva.
+
 🔥 FRASE DE CONVERSÃO: "Esse aqui é muito mais estilo de vida urbano"
 
 🔷 ORYGEM (MÉDIO PADRÃO - VIDA + STATUS + LOCALIZAÇÃO):
@@ -221,6 +230,13 @@ O cliente deve perceber: "Esse já é outro nível de produto"
 • Argumentos: Padrão construtivo superior, diferenciação real, valorização consistente
 • Condução visita: "Esse tipo de produto só faz sentido quando tu vê pessoalmente"
 • Fechamento: "Esse aqui é o tipo de imóvel que quando a pessoa visita, começa a comparar diferente"
+
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Total de leads: 170
+• Taxa lead→visita: 7.1%
+• Conversão pós-visita: 56%
+• No-show: 29%
+• INSIGHT: Funil saudável. Foco é QUALIFICAÇÃO antes da visita — lead que chega qualificado converte bem. Investir em pré-visita consultiva.
 
 🔥 FRASE DE CONVERSÃO: "Esse já é outro nível de produto"
 
@@ -253,6 +269,13 @@ O cliente deve perceber: "Posso sair do aluguel sem me apertar"
 • Condução visita: "Vale ver porque o custo-benefício dele é bem forte"
 • Fechamento: "A maioria das pessoas se surpreende quando vê o que consegue por essa parcela"
 
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Total de leads: 492 (maior volume)
+• Taxa lead→visita: 9.3%
+• Conversão pós-visita: 80% (MELHOR taxa de todos os produtos!)
+• No-show: 20%
+• INSIGHT: Produto de VOLUME. O foco é GERAR VISITA — quem visita, compra. Fazer conta aluguel vs parcela. Não perder tempo qualificando demais, levar pra conhecer.
+
 🔥 FRASE DE CONVERSÃO: "Esse aqui é porta de entrada"
 
 🔷 MELNICK DAY (EVENTO):
@@ -265,6 +288,21 @@ O cliente deve perceber: "Posso sair do aluguel sem me apertar"
 • Cliente fala "investir" / "renda" / "valorização" → Shift ou Connect JW
 • Cliente fala "parcela" / "aluguel" / "primeiro imóvel" → Open Bosque
 • REGRA FINAL: Cada produto DEVE ser vendido de forma DIFERENTE. Erro = tratar todos iguais.
+
+📊 COMPARATIVO DE PERFORMANCE (DADOS REAIS DO CRM):
+| Produto       | Leads | Lead→Visita | Visita→Conversão | No-show |
+| Open Bosque   | 492   | 9.3%        | 80%              | 20%     |
+| Las Casas     | 131   | 10.7%       | 29%              | 54%     |
+| Orygem        | 170   | 7.1%        | 56%              | 29%     |
+| Shift         | 81    | -           | -                | 0%      |
+| Connect JW    | -     | -           | -                | -       |
+
+🧠 REGRAS DE DECISÃO BASEADAS EM DADOS:
+• Open Bosque converte 80% das visitas → produto de VOLUME, foco total em GERAR VISITA
+• Las Casas tem 54% de no-show → investir PESADO em confirmação e urgência pré-visita
+• Orygem tem funil saudável (56% conversão) → foco é QUALIFICAÇÃO antes da visita
+• Shift tem 0% no-show → leads mais qualificados, foco é CONDUZIR PARA PROPOSTA
+• PRIORIZAR produtos com melhor taxa de conversão quando lead não tem preferência clara
 
 ═══════════════════════════════════════
 PLAYBOOKS POR ORIGEM DO LEAD
