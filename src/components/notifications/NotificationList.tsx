@@ -151,8 +151,12 @@ function getContextDetails(n: Notification): { leadName?: string; detail?: strin
 
   // Try to extract lead name from dados or mensagem
   let leadName = d.lead_nome || d.nome;
+  if (!leadName && n.titulo) {
+    // Extract from title patterns like "Novo lead: João Silva" or "Lead recebido: Maria"
+    const matchTitulo = n.titulo.match(/:\s*(.+)/);
+    if (matchTitulo?.[1] && matchTitulo[1].length < 50) leadName = matchTitulo[1].trim();
+  }
   if (!leadName && n.mensagem) {
-    // Try to extract name from patterns like "Você recebeu o lead João" or "João - Empreendimento"
     const matchRecebeu = n.mensagem.match(/lead\s+([^(.\n]+?)(?:\s*\(|\.|\s*-|\s*$)/i);
     const matchDash = n.mensagem.match(/^([^-–]+?)\s*[-–]\s/);
     if (matchRecebeu?.[1]) leadName = matchRecebeu[1].trim();
@@ -211,6 +215,18 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
         const isClickable = !!route;
         const { leadName, detail } = getContextDetails(n);
         const isRadar = n.tipo === "radar_intencao";
+        const d = n.dados || {};
+        const etapa = d.etapa || d.stage_nome || d.status || null;
+
+        // Determine action label based on notification type
+        let actionLabel = "Ver →";
+        if (["visitas", "visita_agendada", "visita_confirmada", "visita_noshow"].includes(n.tipo) || n.categoria?.startsWith("visita")) {
+          actionLabel = "Ver visita →";
+        } else if (["leads", "lead", "lead_roleta", "lead_sem_contato", "lead_parado", "lead_alto_valor", "lead_urgente", "lead_ultimo_alerta", "radar_intencao", "automacao", "sequencias"].includes(n.tipo)) {
+          actionLabel = "Ver lead →";
+        } else if (["propostas", "proposta_assinada", "vendas", "negocio_fechado"].includes(n.tipo)) {
+          actionLabel = "Ver negócio →";
+        }
 
         return (
           <div
@@ -282,31 +298,27 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
                 </div>
               )}
 
-              {/* Message preview (non-compact only, and only if no context already shown) */}
-              {!compact && !leadName && !detail && n.mensagem && (
-                <p className="text-gray-500 mt-1 line-clamp-2" style={{ fontSize: 12 }}>{n.mensagem}</p>
-              )}
-              {!compact && (leadName || detail) && n.mensagem && (
-                <p className="text-gray-400 mt-0.5 line-clamp-1" style={{ fontSize: 11 }}>{n.mensagem}</p>
+              {/* Message preview — always show */}
+              {!compact && n.mensagem && (
+                <p className="text-muted-foreground mt-1 line-clamp-2" style={{ fontSize: 12 }}>{n.mensagem}</p>
               )}
 
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-gray-400" style={{ fontSize: 11 }}>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="text-muted-foreground" style={{ fontSize: 11 }}>
                   {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
                 </span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    background: "#F3F4F6",
-                    padding: "1px 6px",
-                    borderRadius: 4,
-                    color: "#6B7280",
-                  }}
-                >
+                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
                   {TIPO_LABELS[n.tipo] || TIPO_LABELS[n.categoria] || n.tipo}
                 </span>
+                {etapa && (
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                    {etapa}
+                  </span>
+                )}
                 {isClickable && (
-                  <ChevronRight className="h-3 w-3 text-gray-300 ml-auto shrink-0" />
+                  <span className="text-[11px] text-primary font-medium ml-auto flex items-center gap-0.5">
+                    {actionLabel} <ChevronRight className="h-3 w-3" />
+                  </span>
                 )}
               </div>
             </div>
