@@ -23,7 +23,7 @@ export default function LevelProgressBar({ points, compact = false }: Props) {
     );
   }
 
-  const isImmersive = !compact;
+  
 
   return (
     <div className="space-y-2">
