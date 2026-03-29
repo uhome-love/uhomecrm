@@ -322,7 +322,67 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
     }
   }, []);
 
-  const progressPercent = leads.length > 0 ? ((currentIndex + 1) / leads.length) * 100 : 0;
+  const DISCARD_REASONS = [
+    "Sem interesse", "Não atende / não responde", "Comprou com concorrente",
+    "Sem condição financeira", "Perfil incompatível", "Lead duplicado", "Número inválido", "Outro",
+  ];
+
+  const handleAdvanceStage = useCallback(async () => {
+    if (!currentLead || !corretorId || !advanceStageId) return;
+    setSaving(true);
+    try {
+      await supabase.from("pipeline_leads").update({
+        stage_id: advanceStageId,
+        stage_changed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", currentLead.id);
+      await supabase.from("pipeline_historico").insert({
+        pipeline_lead_id: currentLead.id,
+        stage_novo_id: advanceStageId,
+        movido_por: corretorId,
+        observacao: "Avançado via Modo Foco",
+      });
+      toast.success("Etapa avançada ✅");
+      goToNext();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao avançar etapa.");
+    } finally {
+      setSaving(false);
+    }
+  }, [currentLead, corretorId, advanceStageId, goToNext]);
+
+  const handleDiscardLead = useCallback(async () => {
+    if (!currentLead || !corretorId || !discardReason) return;
+    const descarteStage = stages.find(s => s.tipo === "descarte");
+    if (!descarteStage) { toast.error("Estágio de descarte não encontrado."); return; }
+    const motivoTexto = discardReason === "Outro"
+      ? `Descarte: ${discardObs.trim() || "Outro motivo"}`
+      : `Descarte: ${discardReason}`;
+    setSaving(true);
+    try {
+      await supabase.from("pipeline_leads").update({
+        stage_id: descarteStage.id,
+        stage_changed_at: new Date().toISOString(),
+        motivo_descarte: motivoTexto,
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", currentLead.id);
+      await supabase.from("pipeline_historico").insert({
+        pipeline_lead_id: currentLead.id,
+        stage_novo_id: descarteStage.id,
+        movido_por: corretorId,
+        observacao: motivoTexto,
+      });
+      toast.success("Lead descartado");
+      goToNext();
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao descartar lead.");
+    } finally {
+      setSaving(false);
+    }
+  }, [currentLead, corretorId, discardReason, discardObs, stages, goToNext]);
+
 
   if (!open) return null;
 
