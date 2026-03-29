@@ -211,8 +211,8 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
   ];
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-      <div style={{ background: 'var(--background)', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
+    <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}>
       {/* HEADER */}
       <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-border/50">
         <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: "#EEEDFE", color: "#534AB7" }}>
