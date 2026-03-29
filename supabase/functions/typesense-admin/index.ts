@@ -91,6 +91,63 @@ function normalizeImages(imovel: any): { thumbs: string[]; full: string[] } {
   return { thumbs, full };
 }
 
+// ── Map a row from 'properties' table directly to Typesense document ──
+function mapPropertyToDocument(row: any): Record<string, any> {
+  const codigo = String(row.codigo || "");
+  const situacao = String(row.situacao || row.status_imovel || "").toLowerCase();
+  const emObras = situacao.includes("obra") || situacao.includes("constru") || situacao.includes("planta") || situacao.includes("lancamento");
+
+  const thumbs: string[] = Array.isArray(row.fotos) ? row.fotos : [];
+  const fullPhotos: string[] = Array.isArray(row.fotos_full) ? row.fotos_full : thumbs;
+
+  const lat = Number(row.latitude || 0);
+  const lng = Number(row.longitude || 0);
+  const hasCoords = lat !== 0 && lng !== 0 && !isNaN(lat) && !isNaN(lng) && lat >= -35 && lat <= 5 && lng >= -75 && lng <= -30;
+
+  const doc: Record<string, any> = {
+    id: codigo || `auto_${Math.random().toString(36).slice(2)}`,
+    codigo,
+    titulo: row.titulo || "",
+    descricao_resumida: (row.descricao || "").slice(0, 500),
+    bairro: row.bairro || "",
+    cidade: row.cidade || "Porto Alegre",
+    endereco: [row.endereco || "", row.numero || ""].filter(Boolean).join(", "),
+    empreendimento: row.empreendimento || row.condominio_nome || "",
+    construtora: row.construtora || "",
+    tipo: (row.tipo || "").toLowerCase(),
+    categoria: "",
+    contrato: row.contrato || "venda",
+    valor_venda: Number(row.valor_venda || 0) || 0,
+    valor_locacao: Number(row.valor_locacao || 0) || 0,
+    area_privativa: Number(row.area_privativa || 0) || 0,
+    area_total: Number(row.area_total || 0) || 0,
+    dormitorios: Number(row.dormitorios || 0) || 0,
+    suites: Number(row.suites || 0) || 0,
+    banheiros: Number(row.banheiros || 0) || 0,
+    vagas: Number(row.vagas || 0) || 0,
+    status: row.status_imovel || "",
+    situacao: situacao,
+    foto_principal: thumbs[0] || "",
+    fotos: thumbs.slice(0, 15),
+    fotos_full: fullPhotos.slice(0, 15),
+    destaque: !!row.is_destaque,
+    em_obras: emObras,
+    previsao_entrega: row.entrega_ano ? `${row.entrega_ano}${row.entrega_mes ? '-' + String(row.entrega_mes).padStart(2, '0') : ''}` : "",
+    valor_condominio: Number(row.valor_condominio || 0) || 0,
+    is_uhome: !!row.is_uhome || String(codigo).toLowerCase().includes("-uh"),
+    data_atualizacao: Date.now(),
+  };
+
+  if (hasCoords) {
+    doc.latitude = lat;
+    doc.longitude = lng;
+    doc.location = [lat, lng];
+  }
+
+  return doc;
+}
+
+// ── Legacy: Map Jetimob API item to Typesense document (kept for index_batch) ──
 function mapImovelToDocument(item: any): Record<string, any> {
   const codigo = String(item.codigo || item.referencia || item.id_imovel || item.id || "");
   const { thumbs, full } = normalizeImages(item);
