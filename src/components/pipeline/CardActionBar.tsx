@@ -28,68 +28,60 @@ export default function CardActionBar({
 }: CardActionBarProps) {
   const btnBase: React.CSSProperties = {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-    padding: "6px 4px", cursor: "pointer",
-    background: "transparent", border: "none",
+    padding: "8px 4px", cursor: "pointer",
+    background: "transparent", border: "none", outline: "none",
     fontSize: 11, fontWeight: 600,
     fontFamily: "'Plus Jakarta Sans', sans-serif",
-    transition: "background 0.15s ease, opacity 0.15s ease",
-    flex: 1, minWidth: 0, minHeight: 36,
-  };
-
-  const divider: React.CSSProperties = {
-    width: 0.5, alignSelf: "stretch", background: "var(--border)", flexShrink: 0,
+    transition: "background 0.15s ease",
+    flex: 1, minWidth: 0,
   };
 
   return (
     <div data-actions-area>
       <div style={{
-        display: "flex", alignItems: "stretch",
-        borderTop: "1px solid var(--border)",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        display: "flex", alignItems: "center",
+        borderTop: "0.5px solid var(--border)",
       }}>
         {/* Ligar */}
         <button
           onClick={onCall}
-          style={{ ...btnBase, background: "#ffffff", color: "#4F46E5", border: "1.5px solid #4F46E5", borderRadius: "8px", margin: "4px 2px 4px 4px" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#EEEDFE"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
+          style={{ ...btnBase, background: "#EEEDFE", color: "#4F46E5", borderRadius: "8px", margin: "4px" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#CECBF6"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#EEEDFE"; }}
         >
           <Phone style={{ width: 12, height: 12 }} />
           <span>Ligar</span>
         </button>
 
-        <div style={divider} />
+        <div style={{ width: 0.5, alignSelf: "stretch", background: "var(--border)" }} />
 
         {/* Tarefa */}
         <div style={{ flex: 1, minWidth: 0, display: "flex" }}>
           <CardQuickTaskPopover leadId={leadId} leadNome={leadNome} />
         </div>
 
-        <div style={divider} />
+        <div style={{ width: 0.5, alignSelf: "stretch", background: "var(--border)" }} />
 
-        {/* Mensagem */}
+        {/* WhatsApp */}
         <button
           onClick={onWhatsApp}
-          style={{ ...btnBase, color: "#16a34a" }}
+          style={{ ...btnBase, color: "#16a34a", flexDirection: "row" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "#EAF3DE"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <span>💬 WhatsApp</span>
+          <span style={{ fontSize: 13, lineHeight: 1 }}>💬</span>
+          <span>WhatsApp</span>
         </button>
 
-        <div style={divider} />
+        <div style={{ width: 0.5, alignSelf: "stretch", background: "var(--border)" }} />
 
         {/* ··· Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              style={{
-                ...btnBase,
-                flex: "none", width: 40, color: "#888780",
-                borderRadius: "0 0 13px 0",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#f5f5f5"; }}
+              style={{ ...btnBase, flex: "none", width: 36, color: "#888780", outline: "none" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
               <MoreHorizontal style={{ width: 14, height: 14 }} />
