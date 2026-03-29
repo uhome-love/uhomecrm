@@ -9,7 +9,8 @@ import {
   Zap, X, Phone, MessageCircle, Plus, ChevronLeft,
   Loader2, AlertTriangle, Clock, Send,
   ExternalLink, Sparkles, Copy, Check, ChevronRight,
-  Filter, ListChecks, CalendarClock, Inbox, Target
+  Filter, ListChecks, CalendarClock, Inbox, Target,
+  ArrowRightCircle, Trash2, Ban
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
