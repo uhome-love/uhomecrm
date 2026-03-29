@@ -1,53 +1,33 @@
 
 
-## Fix Marketplace — Categorias Não Batem
+## Converter CallFocusOverlay para Modal Compacto
 
-### Diagnóstico
+### Mudança única — linha 213
 
-O Marketplace usa a tabela `marketplace_items` (não `comunicacao_templates`). Já existem **24 itens aprovados** no banco. Porém o filtro não funciona porque:
+Trocar o wrapper externo (linha 213) e o fechamento (linha 453) para usar backdrop + modal centralizado. O conteúdo interno (header, progress, body, footer) permanece idêntico.
 
-- **No banco**: `categoria = "Scripts de Ligação"`, `"Mensagens WhatsApp"`, `"Quebra de Objeções"`, etc.
-- **No código**: o filtro envia `.eq("categoria", "script_ligacao")`, `"whatsapp"`, etc.
-- **Resultado**: nenhum filtro bate → categorias aparecem vazias
-
-### Solução — 2 passos
-
-**Passo 1 — Corrigir dados no banco** (UPDATE via insert tool)
-
-Padronizar as categorias no banco para os enum values que o código espera:
-
-```sql
-UPDATE marketplace_items SET categoria = 'script_ligacao' WHERE categoria = 'Scripts de Ligação';
-UPDATE marketplace_items SET categoria = 'whatsapp' WHERE categoria = 'Mensagens WhatsApp';
-UPDATE marketplace_items SET categoria = 'argumento_empreendimento' WHERE categoria = 'Argumentos por Empreendimento';
-UPDATE marketplace_items SET categoria = 'quebra_objecao' WHERE categoria = 'Quebra de Objeções';
-UPDATE marketplace_items SET categoria = 'template_proposta' WHERE categoria = 'Templates de Proposta';
+**Linha 213** — substituir:
+```tsx
+<div className="absolute inset-0 z-[9999] bg-background flex flex-col h-full">
+```
+por dois divs aninhados:
+```tsx
+<div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+  <div style={{ background: 'var(--background)', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
 ```
 
-**Passo 2 — Inserir os 25 templates na tabela correta** (`marketplace_items`)
+**Linha 261** — body div: manter `flex-1 overflow-y-auto` (já está correto)
 
-Os 25 scripts que estão em `comunicacao_templates` precisam ser copiados para `marketplace_items` com as categorias corretas:
+**Linha 399** — footer div: adicionar `shrink-0` → `border-t border-border/50 px-5 py-3 space-y-2 shrink-0`
 
-- Ligação → `script_ligacao`
-- WhatsApp → `whatsapp`
-- Argumentos → `argumento_empreendimento`
-- Objeções → `quebra_objecao`
+**Linha 453** — fechar os dois divs:
+```tsx
+    </div>
+  </div>
+```
 
-Campos: `titulo`, `conteudo`, `categoria`, `tags`, `status = 'aprovado'`, `origem = 'sistema'`.
-
-### Resultado esperado
-
-- Filtro "Ligação" mostra ~10 scripts
-- Filtro "WhatsApp" mostra ~10 scripts
-- Filtro "Argumentos" mostra ~5 scripts
-- Filtro "Objeções" mostra ~5 scripts
-- "Todos" mostra todos os ~49 itens
-
-### Arquivos alterados
-Nenhum arquivo de código — apenas dados no banco.
-
-### O que NÃO muda
-- `useMarketplace.ts` — lógica de filtro já está correta
-- `CentralComunicacao.tsx` — UI já está correta
-- Nenhum componente ou hook
+### Resumo
+- 3 pontos de edição no arquivo (linhas 213, 399, 453)
+- Zero mudanças de lógica, fases, scripts ou banco
+- Nenhum outro arquivo alterado
 
