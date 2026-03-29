@@ -96,19 +96,19 @@ export default function CardQuickTaskPopover({ leadId, leadNome }: CardQuickTask
           title="Criar tarefa rápida"
           onClick={(e) => { e.stopPropagation(); setOpen(true); }}
           style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center", gap: 2,
-            padding: "10px 6px", minHeight: 54,
-            cursor: "pointer", background: "transparent", border: "none",
-            borderRadius: "0 0 0 13px",
-            transition: "background 0.15s ease",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+            padding: "6px 4px", cursor: "pointer",
+            background: "transparent", border: "none",
+            fontSize: 10, fontWeight: 500, color: "#64748B",
             fontFamily: "'Plus Jakarta Sans', sans-serif",
+            transition: "background 0.15s ease",
+            flex: 1, minWidth: 0, width: "100%",
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "#F8FAFC"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <span style={{ fontSize: 15 }}>📋</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#64748B", lineHeight: 1, whiteSpace: "nowrap" }}>Tarefa</span>
+          <ClipboardList style={{ width: 12, height: 12 }} />
+          <span>Tarefa</span>
         </button>
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-72 p-2.5 space-y-2" onClick={(e) => e.stopPropagation()}>

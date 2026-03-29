@@ -482,6 +482,7 @@ const PipelineCard = memo(function PipelineCard({
         stageId={lead.stage_id}
         stages={stages}
         canTransfer={isAdmin || isGestor || lead.corretor_id === user?.id}
+        onCall={handleCall}
         onWhatsApp={handleWhatsApp}
         onOpenDetail={onClick}
         onScheduleVisit={() => setScheduleOpen(true)}

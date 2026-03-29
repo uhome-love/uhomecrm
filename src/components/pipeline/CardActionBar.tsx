@@ -1,9 +1,7 @@
-import { MessageCircle, Zap, Calendar, Send, ArrowRightLeft, Handshake, ArrowRight, Trash2, MoreVertical } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Phone, ClipboardList, MessageCircle, MoreHorizontal, Calendar, Send, ArrowRightLeft, Handshake, ArrowRight, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import type { PipelineStage } from "@/hooks/usePipeline";
 import CardQuickTaskPopover from "./CardQuickTaskPopover";
-import QuickActionMenu from "./QuickActionMenu";
 
 interface CardActionBarProps {
   leadId: string;
@@ -12,6 +10,7 @@ interface CardActionBarProps {
   stageId: string;
   stages: PipelineStage[];
   canTransfer: boolean;
+  onCall: (e: React.MouseEvent) => void;
   onWhatsApp: (e: React.MouseEvent) => void;
   onOpenDetail: () => void;
   onScheduleVisit: () => void;
@@ -24,76 +23,77 @@ interface CardActionBarProps {
 
 export default function CardActionBar({
   leadId, leadNome, leadTelefone, stageId, stages, canTransfer,
-  onWhatsApp, onOpenDetail, onScheduleVisit, onOpenComunicacao,
+  onCall, onWhatsApp, onOpenDetail, onScheduleVisit, onOpenComunicacao,
   onOpenTransfer, onOpenPartner, onMarkLost, onMoveStage,
 }: CardActionBarProps) {
+  const btnBase: React.CSSProperties = {
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+    padding: "6px 4px", cursor: "pointer",
+    background: "transparent", border: "none",
+    fontSize: 10, fontWeight: 500,
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    transition: "background 0.15s ease",
+    flex: 1, minWidth: 0,
+  };
+
+  const divider: React.CSSProperties = {
+    width: 0.5, alignSelf: "stretch", background: "var(--border)", flexShrink: 0,
+  };
+
   return (
     <div data-actions-area>
-      {/* 3-column footer grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          position: "relative",
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-        }}
-      >
-        {/* Dividers */}
-        <div style={{
-          position: "absolute", left: "33.33%", top: "20%", bottom: "20%",
-          width: 1, background: "#e8e8f0",
-        }} />
-        <div style={{
-          position: "absolute", left: "66.66%", top: "20%", bottom: "20%",
-          width: 1, background: "#e8e8f0",
-        }} />
-
-        {/* Button 1: Tarefa */}
-        <div
-          style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "0 0 0 13px",
-          }}
+      <div style={{
+        display: "flex", alignItems: "stretch",
+        borderTop: "0.5px solid var(--border)",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+      }}>
+        {/* Ligar */}
+        <button
+          onClick={onCall}
+          style={{ ...btnBase, background: "#EAF3DE", color: "#27500A", borderRadius: "0 0 0 13px" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#DCE9CC"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#EAF3DE"; }}
         >
+          <Phone style={{ width: 12, height: 12 }} />
+          <span>Ligar</span>
+        </button>
+
+        <div style={divider} />
+
+        {/* Tarefa */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex" }}>
           <CardQuickTaskPopover leadId={leadId} leadNome={leadNome} />
         </div>
 
-        {/* Button 2: Mensagem */}
+        <div style={divider} />
+
+        {/* Mensagem */}
         <button
           onClick={onWhatsApp}
-          style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            padding: "9px 6px", cursor: "pointer",
-            background: "transparent", border: "none",
-            transition: "background 0.15s ease",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#EFF6FF"; }}
+          style={{ ...btnBase, color: "#4F46E5" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#EEF2FF"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <span style={{ fontSize: 15 }}>💬</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#2563EB", marginTop: 2 }}>Mensagem</span>
+          <MessageCircle style={{ width: 12, height: 12 }} />
+          <span>Mensagem</span>
         </button>
 
-        {/* Button 3: Ação (dropdown) */}
+        <div style={divider} />
+
+        {/* ··· Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
               style={{
-                display: "flex", flexDirection: "column", alignItems: "center",
-                padding: "9px 6px", cursor: "pointer",
-                background: "transparent", border: "none",
+                ...btnBase,
+                flex: "none", width: 40, color: "#64748B",
                 borderRadius: "0 0 13px 0",
-                transition: "background 0.15s ease",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#ECFDF5"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#f5f5f5"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
-              <span style={{ fontSize: 15 }}>⚡</span>
-              <span style={{ fontSize: 10, fontWeight: 600, color: "#059669", marginTop: 2 }}>Ação</span>
+              <MoreHorizontal style={{ width: 14, height: 14 }} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
