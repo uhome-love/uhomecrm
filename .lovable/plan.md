@@ -1,50 +1,38 @@
 
 
-## Redesign do HOMI Assistente — UX Focada em Ação Rápida
+## Mudanças Cirúrgicas em PipelineLeadDetail.tsx
 
-### Problema
+### Resumo
 
-O painel HOMI ocupa 45% da tela lateral e mostra tudo empilhado: briefing + recomendação + 4 botões + campo "o que o cliente disse" + resultado com múltiplas seções. Quando o corretor clica "Script de ligação" ou "WhatsApp apresentação", precisa esperar carregar e depois scrollar por um painel denso para encontrar o que quer copiar. Não é funcional nem visual para ação rápida.
+Remover badges de temperatura e score do header, substituir por chip de status "Atualizado/Desatualizado" baseado nas variáveis já existentes.
 
-### Solução: Dois modos de exibição
+### Mudanças
 
-**Modo 1: Ação Direta (quando vem do StageCoachBar com prompt)**
-- Não mostra briefing, recomendação nem botões de ação
-- Mostra apenas: loading → resultado em cards limpos com botões grandes de Copiar/WhatsApp
-- Cada card de resultado ocupa largura total com botões proeminentes (não minúsculos)
-- Botão "Nova consulta" para voltar ao modo completo
+**1. Remover TEMPERATURA_MAP (linhas 63-67)**
+Deletar o objeto `const TEMPERATURA_MAP = {...}`.
 
-**Modo 2: Exploratório (quando abre pelo botão HOMI sem prompt)**
-- Briefing colapsável (começa fechado)
-- Recomendação + botões de ação visíveis
-- Campo "o que o cliente disse" disponível
-- Resultado aparece no mesmo formato limpo
+**2. Remover badge de temperatura (linhas 273-276)**
+Deletar o `<span>` que renderiza `TempIcon` e `temperatureInfo.label`.
 
-### Mudanças visuais nos cards de resultado
+**3. Remover badge de score (linhas 278-294)**
+Deletar o bloco IIFE que renderiza emoji + score + tooltip.
 
-- Cards maiores com padding generoso
-- Título da seção com emoji à esquerda
-- Botões "Copiar" e "WhatsApp" como botões reais (não ghost minúsculos) — alinhados à direita com cores distintas (verde para WhatsApp, outline para copiar)
-- Texto da mensagem em font-size legível (12px, não 11px)
-- Seções informativas (Análise, Alerta, Próxima Ação) colapsadas por default — só expandem se o corretor quiser
-- Seções acionáveis (Mensagem WhatsApp, Script) abertas e destacadas
+**4. Adicionar chip de status no lugar (após o stage pill, onde estava o badge de temperatura)**
 
-### Mudanças no painel
+Lógica computada inline no JSX:
+- `isAtualizado = nextTask !== null`
+- `diasSemContato` calculado via `differenceInHoursSafe` (já importado)
+- Array `motivosDesat` montado condicionalmente
+- Chip verde "✓ Atualizado" ou chip vermelho/amarelo "⚠ Desatualizado" com motivos abaixo
 
-- Quando em "modo ação direta", o painel pode ser mais estreito (35%) e focar 100% no resultado
-- Header simplificado sem repetir "Homi AI v2 / Assistente contextual" — só "HOMI" + botão fechar
-- Remover o campo "O que o cliente disse" do modo ação direta (não faz sentido quando o corretor pediu algo específico)
+Todas as variáveis necessárias (`nextTask`, `noContactAlert`, `lead.ultima_acao_at`, `differenceInHoursSafe`, `CheckCircle2`, `AlertTriangle`) já estão disponíveis no escopo.
 
-### Arquivos alterados
-
-| Arquivo | Mudança |
-|---|---|
-| `src/components/pipeline/HomiLeadAssistant.tsx` | Dois modos (ação direta vs exploratório), cards de resultado maiores com botões proeminentes, seções informativas colapsadas |
-| `src/components/pipeline/PipelineLeadDetail.tsx` | Painel mais estreito no modo ação direta |
+### Arquivo único alterado
+`src/components/pipeline/PipelineLeadDetail.tsx`
 
 ### O que NÃO muda
-- Edge function / system prompt
-- StageCoachBar
-- Lógica de briefing e recomendação (apenas visibilidade condicional)
-- Playbooks e conhecimento
+- Hooks, queries, useEffects
+- Alerta inline `noContactAlert` nas linhas 458-481
+- Banco de dados (sem migrations)
+- Nenhum outro arquivo
 
