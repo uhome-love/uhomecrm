@@ -537,7 +537,7 @@ export function AppSidebar() {
           items: [
             { title: "Meu Desempenho", url: "/corretor/resumo", icon: BarChart3 },
             { title: "Rankings", url: "/corretor/ranking-equipes", icon: Trophy },
-            { title: "Conquistas", url: "/conquistas", icon: Award },
+            { title: "Progresso", url: "/progresso", icon: Award },
           ],
         },
         {
