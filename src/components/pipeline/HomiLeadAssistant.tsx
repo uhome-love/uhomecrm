@@ -27,6 +27,8 @@ interface Props {
   proximaAcao?: string | null;
   valorEstimado?: number | null;
   oportunidadeScore?: number;
+  initialPrompt?: string;
+  onClearInitialPrompt?: () => void;
 }
 
 interface LeadHistory {
