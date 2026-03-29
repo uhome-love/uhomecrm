@@ -495,7 +495,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
       // ─── Descarte: insert into "Leads Descartados" OA list and DELETE from pipeline ───
       try {
         const empreendimento = extra.empreendimento || lead.empreendimento || "";
-        const LISTA_NOME = "Leads Descartados";
+        const mesesPt = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+        const now = new Date();
+        const LISTA_NOME = `Leads não aproveitados - ${mesesPt[now.getMonth()]} ${now.getFullYear()}`;
 
         // Find or create the central "Leads Descartados" list
         let { data: lista } = await supabase

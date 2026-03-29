@@ -31,7 +31,9 @@ Deno.serve(async (req) => {
     }
 
     // 2. Find or create "Leads Descartados" list
-    const LISTA_NOME = "Leads Descartados";
+    const mesesPt = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    const now = new Date();
+    const LISTA_NOME = `Leads não aproveitados - ${mesesPt[now.getMonth()]} ${now.getFullYear()}`;
     let { data: lista } = await supabase
       .from("oferta_ativa_listas")
       .select("id, total_leads")
