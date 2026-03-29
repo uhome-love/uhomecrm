@@ -1,7 +1,7 @@
 import UhomeLogo from "@/components/UhomeLogo";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Navigate } from "react-router-dom";
-import { Mail, Lock, User, Loader2, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
