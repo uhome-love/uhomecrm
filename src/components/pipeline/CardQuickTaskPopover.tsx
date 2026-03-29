@@ -99,7 +99,7 @@ export default function CardQuickTaskPopover({ leadId, leadNome }: CardQuickTask
             display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
             padding: "6px 4px", cursor: "pointer",
             background: "transparent", border: "none",
-            fontSize: 11, fontWeight: 600, color: "#1a1a1a",
+            fontSize: 11, fontWeight: 600, color: "#64748b",
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             transition: "background 0.15s ease",
             flex: 1, minWidth: 0, width: "100%", minHeight: 36,

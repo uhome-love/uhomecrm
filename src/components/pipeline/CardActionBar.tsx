@@ -45,9 +45,9 @@ export default function CardActionBar({
         {/* Ligar */}
         <button
           onClick={onCall}
-          style={{ ...btnBase, background: "#EEEDFE", color: "#4F46E5", borderRadius: "8px", margin: "4px" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#CECBF6"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "#EEEDFE"; }}
+          style={{ ...btnBase, color: "#4F46E5" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#EEEDFE"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
           <Phone style={{ width: 12, height: 12 }} />
           <span>Ligar</span>
