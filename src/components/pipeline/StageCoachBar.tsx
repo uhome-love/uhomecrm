@@ -241,7 +241,7 @@ export default function StageCoachBar({
             ? { text: `${diasSemContato} dia${diasSemContato > 1 ? "s" : ""} sem follow-up pós-visita — envie AGORA!`, severity: diasSemContato >= 3 ? "danger" : "warning" }
             : undefined,
           actions: [
-            { label: "Follow-up pós-visita", icon: MessageSquare, homiPrompt: "Gere follow-up pós-visita para este lead. Formato: 2 mensagens WhatsApp curtas. Pergunte o que mais impressionou e prepare terreno para proposta." },
+            { label: "Follow-up pós-visita", icon: MessageSquare, homiPrompt: "Gere follow-up pós-visita para este lead. Formato: apenas 2 mensagens WhatsApp curtas. Pergunte o que mais impressionou e prepare terreno para proposta. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais. Sem análise, sem script, sem recomendações." },
             { label: "Criar proposta", icon: Calendar, onClick: () => createQuickTask(`Preparar proposta para ${nome}`, "follow_up") },
           ],
           messages: [
