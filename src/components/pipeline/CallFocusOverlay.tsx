@@ -451,6 +451,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 }
