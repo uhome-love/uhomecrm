@@ -615,7 +615,7 @@ export default function RoletaLeads() {
   const { isAdmin } = useUserRole();
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto overflow-x-hidden">
       {isAdmin ? <CeoView /> : <CorretorView />}
     </div>
   );
