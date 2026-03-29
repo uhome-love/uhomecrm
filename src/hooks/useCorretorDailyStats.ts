@@ -178,7 +178,7 @@ export function useCorretorDailyGoals() {
       meta_aproveitados: metaAproveitados,
       meta_visitas_marcadas: metaVisitasMarcadas,
       observacao: observacao || null,
-      status: "pendente",
+      status: "aprovado",
     };
 
     let error;
