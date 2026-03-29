@@ -8852,6 +8852,14 @@ export type Database = {
         Args: { p_referral_id: string }
         Returns: undefined
       }
+      increment_roleta_fila: {
+        Args: {
+          p_corretor_profile_id: string
+          p_data: string
+          p_segmento_id: string
+        }
+        Returns: undefined
+      }
       is_corretor_in_my_team: {
         Args: { p_corretor_id: string }
         Returns: boolean
