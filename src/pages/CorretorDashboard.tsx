@@ -6,7 +6,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
-  Phone, MessageCircle, Mail, Trophy, CheckCircle, Zap, Bot,
+  Phone, MessageCircle, Trophy, CheckCircle, Zap, Bot,
   CalendarCheck, Wifi, WifiOff, Target, AlertTriangle, ListTodo,
   ChevronRight,
 } from "lucide-react";
