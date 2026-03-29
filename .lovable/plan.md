@@ -1,52 +1,62 @@
 
 
-## Integrar Sistema Operacional de Atendimento e Conversão no HOMI (Revisado)
+## Implementar 5 Melhorias Prioritarias do Teste E2E
 
-### O que é
+Baseado na auditoria completa, estas sao as melhorias ordenadas por impacto para o corretor.
 
-A base de conhecimento completa do método UHOME de vendas — filosofia, frameworks de atendimento, motor de follow-up, sistema de ligações, anti no-show, pós-visita e contorno de objeções. Complementa as seções atuais com o método operacional real.
+---
 
-### Mudança
+### 1. StageCoachBar: Adicionar caso "Atendimento" + Follow-up 5 dias + Anti No-show
 
-**Arquivo: `supabase/functions/homi-assistant/index.ts`**
+**Arquivo:** `src/components/pipeline/StageCoachBar.tsx`
 
-Adicionar 5 blocos no system prompt (entre "PLAYBOOKS POR ORIGEM" e "COMO VOCÊ AJUDA", ~linha 335):
+O `StageCoachBar` nao tem casos especificos para a etapa mais critica (atendimento/contato_iniciado com lead parado). Melhorias:
 
-#### 1. SISTEMA OPERACIONAL DE ATENDIMENTO
-- Filosofia: "Objetivo NÃO é responder leads, é CONDUZIR até VISITA"
-- Framework UHOME 4 passos: Relacionamento → Diagnóstico → Oferta (máx 3) → Follow-up inteligente
-- Perguntas obrigatórias de diagnóstico
+- **Caso `contato_iniciado`**: Enriquecer com o framework UHOME (Relacionamento > Diagnostico > Oferta) e perguntas obrigatorias
+- **Caso `visita_marcada`**: Adicionar sequencia Anti No-show (D-2: video, D-1: autoridade, Dia: lembrete+mapa) com mensagens prontas
+- **Caso `visita_realizada`**: Reforcar regra "follow-up MESMO DIA"
+- Mostrar badge `Dia X/5` quando `sequenceInfo` estiver disponivel (motor de follow-up 5 dias)
+- Adicionar indicador visual de urgencia quando `diasSemContato >= 3` no contato_iniciado
 
-#### 2. MOTOR DE FOLLOW-UP 5 DIAS (substituir seção genérica ~linha 413)
-- Dia 1: Mensagem simples → Dia 2: Imagem/áudio → Dia 3: Vídeo → Dia 4: Urgência → Dia 5: Encerramento elegante
-- 3 tipos: Atualização, Personalização, Prova social
+### 2. HomiLeadAssistant: Campo "O que o cliente disse" + Link WhatsApp direto
 
-#### 3. SISTEMA DE LIGAÇÕES COMPLETO (enriquecer ~linha 381)
-- 2 tipos: Ligação Oferta (urgência) + Ligação Consultiva
-- Estrutura: Abertura (15s) → Contexto → Proposta → Avanço
-- Regra: SEMPRE sair com visita marcada OU próximo passo claro
+**Arquivo:** `src/components/pipeline/HomiLeadAssistant.tsx`
 
-#### 4. ANTI NO-SHOW + PÓS-VISITA
-- Fluxo D0→D-2→D-1→Dia com ações específicas
-- Pós-visita: follow-up no MESMO DIA
-- Scripts para quem visitou vs quem não foi
+- Adicionar campo de input "O que o cliente disse/respondeu?" nas acoes de WhatsApp para que a IA gere respostas baseadas na mensagem real do cliente (nao generico)
+- Adicionar botao "Abrir WhatsApp" com link direto `wa.me/55{telefone}` ao lado dos botoes de copiar
+- Apos gerar mensagem, mostrar botao que copia + abre WhatsApp em sequencia
 
-#### 5. ORIENTAÇÃO DE ETAPAS CRM (adaptado ao fluxo existente)
-- **NÃO define um novo fluxo** — se adapta às etapas já configuradas no pipeline do sistema
-- Referência ao fluxo existente: Novos → Sem Contato → Atendimento → Possibilidade de Visita → Visita Agendada → Realizada → Proposta
-- Orientação: "Sempre empurrar etapa — lead parado em Atendimento é o erro mais comum"
-- A IA lê a etapa atual do lead e sugere ações para avançar dentro do fluxo que já existe
+### 3. StageCoachBar: Botoes conectados ao HOMI
 
-### Arquivo alterado
+**Arquivo:** `src/components/pipeline/StageCoachBar.tsx`
 
-| Arquivo | Mudança |
+- Botoes como "Script de ligacao", "Perguntas de qualificacao" e "Enviar vitrine IA" atualmente nao fazem nada (`onClick` undefined)
+- Conectar cada botao ao `onOpenHomi` passando um prompt contextual (ex: "Gere um script de ligacao para este lead na etapa sem_contato")
+- Quando o botao tiver `onClick` definido (ex: criar tarefa), manter; caso contrario, redirecionar para HOMI com prompt pre-preenchido
+
+### 4. Alerta visual para leads parados em Atendimento
+
+**Arquivo:** `src/components/pipeline/StageCoachBar.tsx`
+
+- Quando `stageTipo === "contato_iniciado"` e `diasSemContato >= 3`, exibir banner de alerta vermelho: "Lead parado ha X dias em Atendimento - etapa mais critica do funil"
+- Usar a regra do Sistema Operacional: "Lead parado em Atendimento e o erro mais comum"
+
+### 5. Meta do Dia na visao do corretor (sem aprovacao)
+
+**Arquivo:** `src/pages/CorretorDashboard.tsx`
+
+- O `DailyProgressCard` ja existe e mostra metas. O pedido e garantir que a meta apareca automaticamente, sem exigir aprovacao/setup
+- Se `goals === null`, definir metas default automaticamente (30 ligacoes, 5 aproveitados, 3 visitas) ao inves de abrir editor
+- Corretor ve a meta do dia imediatamente ao entrar, sem friccao
+
+---
+
+### Resumo de arquivos
+
+| Arquivo | Mudancas |
 |---|---|
-| `supabase/functions/homi-assistant/index.ts` | 5 blocos no system prompt: Sistema Operacional, Motor Follow-up 5 dias, Sistema Ligações, Anti No-show/Pós-visita, Orientação de etapas (adaptada ao CRM existente) |
-
-### O que NÃO muda
-- Playbooks por empreendimento e por origem
-- Formato de resposta obrigatório
-- Regras absolutas e avançadas
-- Fluxo de etapas do CRM (apenas orientação sobre como usar o que já existe)
-- Nenhuma outra edge function ou componente
+| `src/components/pipeline/StageCoachBar.tsx` | Anti no-show, follow-up 5 dias badge, alerta atendimento parado, botoes conectados ao HOMI |
+| `src/components/pipeline/HomiLeadAssistant.tsx` | Campo "o que cliente disse", botao WhatsApp direto |
+| `src/pages/CorretorDashboard.tsx` | Meta auto-default sem friccao |
+| `src/components/corretor/DailyProgressCard.tsx` | Auto-save metas default quando goals === null |
 
