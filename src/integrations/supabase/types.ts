@@ -8540,6 +8540,16 @@ export type Database = {
         Args: { p_bairro?: string; p_cidade?: string; p_tipo?: string }
         Returns: number
       }
+      credenciar_na_roleta: {
+        Args: {
+          p_auth_user_id: string
+          p_corretor_id: string
+          p_janela: string
+          p_segmento_1_id: string
+          p_segmento_2_id?: string
+        }
+        Returns: Json
+      }
       criar_notificacao: {
         Args: {
           p_agrupamento_key?: string

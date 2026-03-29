@@ -278,23 +278,26 @@ export default function RoletaStatusBar() {
   const saveCredenciamento = async (janela: JanelaKey) => {
     if (!user || !profileId || selectedIds.length === 0) return;
     setSaving(true);
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
     const janelaDb = toDbJanela(janela);
 
-    const { error } = await supabase.from("roleta_credenciamentos").upsert({
-      corretor_id: profileId,
-      data: today,
-      janela: janelaDb,
-      segmento_1_id: selectedIds[0] || null,
-      segmento_2_id: selectedIds[1] || null,
-      status: "pendente",
-    } as any, {
-      onConflict: "corretor_id,data,janela",
+    const { data: result, error } = await supabase.rpc("credenciar_na_roleta", {
+      p_corretor_id: profileId,
+      p_auth_user_id: user.id,
+      p_janela: janelaDb,
+      p_segmento_1_id: selectedIds[0],
+      p_segmento_2_id: selectedIds[1] || null,
     });
 
     if (error) {
-      console.error("Credenciamento error:", error);
-      toast.error(`Erro ao salvar credenciamento: ${error.message}`);
+      console.error("Credenciamento RPC error:", error);
+      toast.error(`Erro ao credenciar: ${error.message}`);
+      setSaving(false);
+      return;
+    }
+
+    const res = result as any;
+    if (res && !res.success) {
+      toast.error(res.error || "Erro ao credenciar na roleta.");
       setSaving(false);
       return;
     }
@@ -304,7 +307,7 @@ export default function RoletaStatusBar() {
     setCredModalOpen(false);
     setSaving(false);
     const jCfg = JANELAS_CONFIG.find(j => j.key === janela)!;
-    toast.success(`Credenciamento enviado para ${jCfg.emoji} ${jCfg.label}! Aguardando aprovação ⏳`);
+    toast.success(`✅ ${jCfg.emoji} ${jCfg.label} — Você está na roleta!`);
   };
 
   const currentOpt = STATUS_OPTIONS.find(o => o.value === status) || STATUS_OPTIONS[3];
