@@ -13,6 +13,9 @@ const TIPO_LABELS: Record<string, string> = {
   lead_parado: "Lead Parado",
   lead_alto_valor: "Alto Valor",
   fila_ceo: "Fila CEO",
+  lead_urgente: "Urgente",
+  lead_ultimo_alerta: "Último Alerta",
+  automacao: "Automação",
   visitas: "Visitas",
   visita_agendada: "Visita",
   visita_confirmada: "Visita",
@@ -30,9 +33,7 @@ const TIPO_LABELS: Record<string, string> = {
   corretor_ajuda: "Ajuda",
   zero_ligacoes: "Alerta",
   alertas: "Alertas",
-  lead_urgente: "Urgente",
-  lead_ultimo_alerta: "Último Alerta",
-  automacao: "Automação",
+  radar_intencao: "Radar de Intenção",
 };
 
 const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread: string }> = {
