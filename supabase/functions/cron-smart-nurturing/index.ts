@@ -3,6 +3,7 @@
 // Propósito: Motor de Match Noturno — roda diariamente às 07:00 BRT
 // Varre leads parados há mais de 7 dias, busca os melhores imóveis no Typesense
 // e dispara vitrine via WhatsApp usando Template Oficial da Meta.
+// Última revisão: 2026-03-29 — fix vitrine → projeto externo
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -15,7 +16,13 @@ const WHATSAPP_ACCESS_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN")!;
 const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID")!;
 const UHOMESITE_URL = Deno.env.get("UHOMESITE_URL") || "https://uhome.com.br";
 
+// Cliente principal (CRM — leads, atividades, notificações)
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+// Cliente do projeto externo (Site uhome.com.br — vitrines públicas)
+const UHOMESITE_SUPABASE_URL = "https://huigglwvvzuwwyqvpmec.supabase.co";
+const UHOMESITE_SERVICE_KEY = Deno.env.get("UHOMESITE_SERVICE_KEY")!;
+const supabaseSite = createClient(UHOMESITE_SUPABASE_URL, UHOMESITE_SERVICE_KEY);
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -254,7 +261,7 @@ async function criarVitrine(
   const imovelIds = imoveis.map((i) => i.id);
   const imovelCodigos = imoveis.map((i) => i.codigo);
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseSite
     .from("vitrines")
     .insert({
       created_by: lead.corretor_id,           // obrigatório
