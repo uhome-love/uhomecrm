@@ -1,7 +1,3 @@
-// =============================================================================
-// OportunidadesLista — Lista de oportunidades do dia (sem saudação/status)
-// Extrai apenas a lógica de fetch + renderização de oportunidades.
-// =============================================================================
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +16,7 @@ import {
   ChevronRight,
   RefreshCw,
   ListTodo,
+  Plus,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -36,6 +33,7 @@ interface Oportunidade {
   descricao: string;
   acao_sugerida: string;
   created_at: string;
+  lead_etapa: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,19 +66,6 @@ function abrirWhatsApp(telefone: string, nomeLead: string) {
     `Oi ${nomeLead.split(" ")[0]}! Tudo bem? Aqui é da uHome. Passando para ver se você ainda está buscando imóvel em Porto Alegre. Posso te ajudar? 😊`
   );
   window.open(`https://wa.me/55${limpo}?text=${mensagem}`, "_blank");
-}
-
-async function followUpMagico(leadId: string, nomeLead: string) {
-  toast.loading(`Gerando vitrine para ${nomeLead.split(" ")[0]}...`);
-  const { error } = await supabase.functions.invoke("cron-smart-nurturing", {
-    body: { lead_id: leadId, modo: "manual" },
-  });
-  toast.dismiss();
-  if (error) {
-    toast.error("Erro ao gerar vitrine. Tente novamente.");
-  } else {
-    toast.success(`Vitrine enviada para ${nomeLead.split(" ")[0]}! Aguarde a resposta.`);
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -121,6 +106,32 @@ export default function OportunidadesLista() {
     (o) => o.lead_temperatura !== "urgente" && o.lead_temperatura !== "quente"
   );
 
+  const criarFollowUp = async (op: Oportunidade) => {
+    if (!user) return;
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+    const venceEm = amanha.toISOString().split("T")[0];
+
+    const { error } = await supabase.from("pipeline_tarefas").insert({
+      pipeline_lead_id: op.lead_id,
+      titulo: `Follow-up: ${op.lead_nome}`,
+      tipo: "follow_up",
+      vence_em: venceEm,
+      responsavel_id: user.id,
+      created_by: user.id,
+      status: "pendente",
+      prioridade: "media",
+    });
+
+    if (error) {
+      console.error("[OportunidadesLista] Erro ao criar tarefa:", error);
+      toast.error("Erro ao criar tarefa. Tente novamente.");
+    } else {
+      toast.success(`Tarefa criada para ${op.lead_nome.split(" ")[0]}!`);
+      carregar();
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -150,7 +161,7 @@ export default function OportunidadesLista() {
                 🚨 Urgente — Aja agora
               </p>
               {urgentes.map((op) => (
-                <CardOportunidade key={op.lead_id + op.tipo} op={op} />
+                <CardOportunidade key={op.lead_id + op.tipo} op={op} onCriarFollowUp={criarFollowUp} />
               ))}
             </div>
           )}
@@ -161,7 +172,7 @@ export default function OportunidadesLista() {
                 🔥 Leads Quentes
               </p>
               {quentes.map((op) => (
-                <CardOportunidade key={op.lead_id + op.tipo} op={op} />
+                <CardOportunidade key={op.lead_id + op.tipo} op={op} onCriarFollowUp={criarFollowUp} />
               ))}
             </div>
           )}
@@ -172,7 +183,7 @@ export default function OportunidadesLista() {
                 Outras Ações
               </p>
               {restantes.map((op) => (
-                <CardOportunidade key={op.lead_id + op.tipo} op={op} />
+                <CardOportunidade key={op.lead_id + op.tipo} op={op} onCriarFollowUp={criarFollowUp} />
               ))}
             </div>
           )}
@@ -219,9 +230,23 @@ export default function OportunidadesLista() {
 // ---------------------------------------------------------------------------
 // Sub-componente: Card de oportunidade
 // ---------------------------------------------------------------------------
-function CardOportunidade({ op }: { op: Oportunidade }) {
+function CardOportunidade({
+  op,
+  onCriarFollowUp,
+}: {
+  op: Oportunidade;
+  onCriarFollowUp: (op: Oportunidade) => Promise<void>;
+}) {
+  const [criando, setCriando] = useState(false);
   const temp = TEMPERATURA_CONFIG[op.lead_temperatura] ?? TEMPERATURA_CONFIG.frio;
   const tipo = TIPO_CONFIG[op.tipo];
+  const isSemTarefa = op.prioridade === 4 && op.acao_sugerida === "Criar tarefa de follow-up";
+
+  const handleCriarFollowUp = async () => {
+    setCriando(true);
+    await onCriarFollowUp(op);
+    setCriando(false);
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -237,6 +262,13 @@ function CardOportunidade({ op }: { op: Oportunidade }) {
                 {temp.icone} {temp.texto}
               </Badge>
             </div>
+            {op.lead_etapa && (
+              <div className="flex items-center gap-1">
+                <Badge variant="outline" className="text-xs font-normal text-muted-foreground border-muted">
+                  📍 {op.lead_etapa}
+                </Badge>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground leading-snug">{op.descricao}</p>
             <p className="text-xs font-medium text-primary">💡 {op.acao_sugerida}</p>
           </div>
@@ -262,15 +294,26 @@ function CardOportunidade({ op }: { op: Oportunidade }) {
                 WhatsApp
               </Button>
             )}
-            {op.tipo === "tarefa_atrasada" && (
+            {op.tipo === "tarefa_atrasada" && isSemTarefa && (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground h-8 text-xs"
+                onClick={handleCriarFollowUp}
+                disabled={criando}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                {criando ? "Criando..." : "Follow-up"}
+              </Button>
+            )}
+            {op.tipo === "tarefa_atrasada" && !isSemTarefa && (
               <Button
                 size="sm"
                 variant="outline"
                 className="h-8 text-xs"
-                onClick={() => followUpMagico(op.lead_id, op.lead_nome)}
+                onClick={() => (window.location.href = `/pipeline-leads?lead=${op.lead_id}`)}
               >
-                <Zap className="w-3 h-3 mr-1" />
-                Follow-up IA
+                <Clock className="w-3 h-3 mr-1" />
+                Resolver
               </Button>
             )}
             <Button size="sm" variant="ghost" className="h-8 px-2" asChild>
