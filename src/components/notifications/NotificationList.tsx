@@ -37,6 +37,7 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 const TIPO_CONFIG: Record<string, { emoji: string; borderColor: string; bgUnread: string }> = {
+  radar_intencao: { emoji: "🚨", borderColor: "#EA580C", bgUnread: "#FFF3E6" },
   leads: { emoji: "⚡", borderColor: "#3B82F6", bgUnread: "#EFF6FF" },
   lead_roleta: { emoji: "⚡", borderColor: "#3B82F6", bgUnread: "#EFF6FF" },
   lead_timeout: { emoji: "⚠️", borderColor: "#EF4444", bgUnread: "#FEF2F2" },
