@@ -1317,7 +1317,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
             </Card>
           )}
 
-          {/* ── Search button ── */}
+          {/* ── Search button + Vitrine ── */}
           <div className="flex gap-2">
             <Button className="flex-1 gap-2 h-9" onClick={() => { hasSearchedOnce.current = true; handleSearch(false); }} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
@@ -1327,6 +1327,17 @@ Responda SOMENTE com o JSON, sem markdown.`;
               {aiExpanding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
               IA+
             </Button>
+            {searched && results.length > 0 && (
+              <Button
+                size="sm"
+                className="gap-1.5 h-9 bg-gradient-to-r from-violet-600 to-primary hover:from-violet-700 hover:to-primary/90 text-white"
+                onClick={handleCreateVitrine}
+                disabled={creatingVitrine}
+              >
+                {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
+                Vitrine{selectedResults.size > 0 ? ` (${selectedResults.size})` : ""}
+              </Button>
+            )}
           </div>
 
           {/* ── Loading ── */}
