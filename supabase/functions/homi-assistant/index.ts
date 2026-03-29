@@ -77,16 +77,57 @@ PLAYBOOKS ELITE POR EMPREENDIMENTO (FALLBACK)
 
 Use estes playbooks quando não houver dados específicos do DB:
 
-🔷 LAS CASAS / CASA TUA (MÉDIO PADRÃO - VIDA REAL / FAMÍLIA):
-• Posicionamento: Upgrade de vida, casa, sensação de espaço, segurança + privacidade
-• Perfil: Casal/família, cansado de apto pequeno, busca estabilidade
-• Psicologia: Emoção > razão, quer se ver morando, compra pela sensação
-• Abordagem: NUNCA começar com preço ou metragem. Sempre começar com vida, rotina, sensação
-• Abertura: "Esse aqui é bem diferente do padrão de apartamento… é mais pra quem quer viver com mais espaço e conforto no dia a dia"
-• Exploração: "Normalmente quem olha esse já tá meio cansado de espaço pequeno, faz sentido contigo?"
-• Condução: "Esse tipo de imóvel só faz sentido mesmo quando tu entra e sente o espaço"
-• Fechamento visita: "Esse aqui costuma virar chave quando a pessoa visita"
-• ERRO CRÍTICO: Tratar como "mais um imóvel", focar em ficha técnica
+🔷 LAS CASAS / CASA TUA (BAIRRO PLANEJADO - LIFESTYLE / FAMÍLIA):
+
+📌 POSICIONAMENTO REAL:
+O Las Casas NÃO é só um loteamento. É um BAIRRO PLANEJADO com lifestyle.
+O cliente deve perceber: "Não estou comprando terreno — estou comprando um jeito de viver"
+
+📍 DIFERENCIAIS REAIS DO PRODUTO:
+• Localização: Região Ecoville / Zona Norte, forte histórico de valorização, próximo a vias importantes e aeroporto
+• Conceito: Bairro planejado completo, vias arborizadas, mobilidade pensada, fachadas vivas
+• Segurança: Monitoramento 24h, segurança presencial, controle de acessos
+• Lazer: Praça central (Edu Las Casas), quadra, academia ao ar livre, espaços para família
+• Produto: Terrenos em condomínio fechado, possibilidade comercial, projetos de casas modernas (alto padrão de construção)
+
+👤 PERFIL DO LEAD:
+• Quer sair do "apertado", já amadureceu compra
+• Busca estabilidade, valoriza segurança e espaço
+• Psicologia: Compra emocional (família), justifica com razão (valorização), quer se imaginar vivendo
+
+❌ ERROS CRÍTICOS DOS CORRETORES:
+• Vender como lote comum
+• Falar de metragem e preço logo de cara
+• Não criar imagem mental do estilo de vida
+• Mandar tabela de preços direto
+
+✅ SCRIPTS DE ABORDAGEM (PADRÃO OURO):
+• Abertura: "Esse aqui não é só terreno… é um bairro planejado pra quem quer viver diferente"
+• Conexão: "Normalmente quem olha ele já tá buscando mais espaço e qualidade de vida, faz sentido contigo?"
+• Construção de valor: "Tu não depende só da tua casa… o entorno inteiro já entrega isso"
+• Visualização: "Imagina chegar em casa e ter praça, segurança e espaço pra família tudo no mesmo lugar"
+• Script ligação: "Fala [nome], tudo bem? Vi teu interesse no Las Casas e te liguei porque ele não é um loteamento comum… tem um conceito bem diferente que vale te explicar rápido"
+• Qualificação: "Tu tá mais buscando casa ou ainda avaliando terreno?" / "Hoje o que mais pesa pra ti: espaço ou localização?"
+• Condução visita: "Esse tipo de projeto só faz sentido quando tu vê o bairro funcionando"
+• Fechamento visita: "Esse aqui costuma virar chave quando a pessoa pisa lá dentro"
+
+🔥 FRASES DE ALTO IMPACTO (variar nas respostas):
+• "Aqui tu não compra só um lote, compra o entorno pronto"
+• "É um dos poucos projetos que realmente muda rotina"
+• "Esse tipo de produto não é comum na região"
+• "Quem entra aqui geralmente já começa a se imaginar morando"
+• "Esse produto não é pra quem quer só preço — é pra quem quer qualidade de vida"
+
+🧠 GATILHOS MENTAIS PRIORITÁRIOS:
+• Segurança (família) → "Monitoramento 24h, controle de acesso"
+• Espaço (liberdade) → "Sair do apertado, ter quintal, praça"
+• Valorização (razão) → "Região com histórico forte de valorização"
+• Exclusividade → "Bairro planejado, não é loteamento comum"
+
+🎯 ESTRATÉGIA AVANÇADA:
+NÃO FAZER: Falar só do lote, mandar tabela direto, ser técnico demais
+FAZER: Criar cenário de vida, mostrar diferencial do entorno, gerar curiosidade
+OBJETIVO: Levar o lead a pensar "Isso é exatamente o tipo de vida que eu quero"
 
 🔷 CONNECT JOÃO WALLIG (INVESTIMENTO - CYRELA):
 • Posicionamento: Produto de liquidez, fácil locação, marca forte (Cyrela)
