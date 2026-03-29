@@ -30,7 +30,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className={cn("flex flex-col gap-3 mb-6", className)}>
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           {icon && (
             <div className="w-9 h-9 rounded-[10px] bg-[#4F46E5]/10 flex items-center justify-center flex-shrink-0 text-[#4F46E5]">
@@ -40,7 +40,7 @@ export function PageHeader({
           <div className="min-w-0">
             <h1
               className={cn(
-                "font-bold tracking-tight text-[#0a0a0a] dark:text-[#fafafa] leading-none truncate",
+                "font-bold tracking-tight text-[#0a0a0a] dark:text-[#fafafa] leading-none",
                 size === "sm" ? "text-[18px]" : "text-[22px]"
               )}
             >
@@ -54,7 +54,7 @@ export function PageHeader({
           </div>
         </div>
         {actions && (
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             {actions}
           </div>
         )}
