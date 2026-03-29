@@ -60,8 +60,15 @@ export default function FocusModeModal({ open, onClose, pipelineTipo = "leads" }
   const [configPhase, setConfigPhase] = useState(true);
   const [selectedCriteria, setSelectedCriteria] = useState<CriteriaType[]>(["all"]);
   const [selectedStageId, setSelectedStageId] = useState<string>("all");
-  const [stages, setStages] = useState<{ id: string; nome: string }[]>([]);
+  const [stages, setStages] = useState<{ id: string; nome: string; tipo: string }[]>([]);
   const [stagesLoading, setStagesLoading] = useState(false);
+
+  // Stage advance / discard state
+  const [showAdvanceStage, setShowAdvanceStage] = useState(false);
+  const [advanceStageId, setAdvanceStageId] = useState("");
+  const [showDiscard, setShowDiscard] = useState(false);
+  const [discardReason, setDiscardReason] = useState("");
+  const [discardObs, setDiscardObs] = useState("");
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [homiInsight, setHomiInsight] = useState("");
