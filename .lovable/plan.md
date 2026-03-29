@@ -1,64 +1,42 @@
 
 
-## 3 Correções + Nova Página de Gamificação
+## Reorganizar Notificações + Sidebar + Deep-linking Claro
 
-### 1. Botão CALL não abre Oferta Ativa
+### 1. Novas categorias de filtro em `src/pages/Notificacoes.tsx`
 
-**Causa raiz:** O botão "CALL / Oferta Ativa" navega para `/oferta-ativa`, mas `OfertaAtiva.tsx` (linha 31-32) redireciona corretores de volta para `/corretor` com `<Navigate to="/corretor" replace />`. Loop infinito.
+Substituir as 6 tabs atuais por 4 categorias de negócio:
 
-**Correção:** Em `CorretorDashboard.tsx` linha 314, trocar `navigate("/oferta-ativa")` por `navigate("/corretor/call")` — que é a rota correta do corretor (já existe em `App.tsx` linha 220).
+| Tab | Label | Tipos/Categorias incluídos |
+|---|---|---|
+| todas | Todas | * |
+| roleta | 🎰 Roleta | `lead_roleta`, `lead`, `leads`, `lead_timeout`, `lead_urgente`, `lead_ultimo_alerta`, `fila_ceo` + categorias `lead_novo`, `lead_aceito`, `lead_atribuido` |
+| pipeline | 📋 Pipeline | `lead_sem_contato`, `lead_parado`, `lead_alto_valor`, `automacao`, `sequencias`, `radar_intencao` + categorias `lead_retorno`, `lead_sem_atendimento`, `problema_atendimento`, `volume_leads` |
+| visitas | 📅 Visitas | `visitas`, `visita_agendada`, `visita_confirmada`, `visita_noshow` + categoria `visita_*` |
+| performance | 🏆 Performance | `meta_atingida`, `xp_conquista`, `relatorio_semanal`, `corretor_inativo`, `zero_ligacoes`, `corretor_ajuda`, `alertas`, `mensagem_gerente`, `gerente_sem_visita` |
 
-### 2. Botões duplicados no empty state das Oportunidades
+Filtro checa **ambos** `n.tipo` e `n.categoria` para capturar todas as variações.
 
-**Causa:** `OportunidadesLista.tsx` linhas 201-219 mostra "Abrir Pipeline" e "Oferta Ativa" quando não há oportunidades pendentes. Esses botões duplicam os 2 botões de ação que já ficam logo acima na Home (linhas 310-327 do Dashboard).
+### 2. Notificações mais claras e com redirecionamento em `src/components/notifications/NotificationList.tsx`
 
-**Correção:** Remover os 2 botões do empty state em `OportunidadesLista.tsx`, deixando apenas o texto "Você está em dia!" com o ícone de troféu e a mensagem motivacional.
+- **Nome do lead em destaque**: Já existe a extração via `getContextDetails`, mas quando `dados` não tem `lead_nome`, extrair também de `titulo` (padrão "Novo lead: João Silva")
+- **Situação/etapa visível**: Mostrar `d.etapa` ou `d.stage_nome` como badge ao lado do tipo (ex: "Qualificação", "Sem Contato")
+- **Label de ação**: Adicionar texto "Ver lead →" ou "Ver visita →" na linha de tempo quando a notificação é clicável, para deixar claro que dá pra clicar
+- **Mensagem sempre visível**: Mostrar `n.mensagem` em 2 linhas (line-clamp-2) sempre, não esconder quando tem contexto
+- O deep-linking já funciona (`getNotificationRoute`) — apenas tornar visualmente óbvio com o texto de ação
 
-### 3. Nova página `/progresso` — Centro de Gamificação
+### 3. Item "Notificações" no sidebar do corretor em `src/components/AppSidebar.tsx`
 
-Criar uma página dedicada que une tudo que hoje fica espalhado na Home:
-
-**Rota:** `/progresso` (nova rota em `App.tsx`)
-
-**Conteúdo da página (ordem):**
-
-```text
-┌─────────────────────────────────────────┐
-│  🎯 Progresso do Dia                    │
-│  (header imersivo com gradiente)        │
-├─────────────────────────────────────────┤
-│  Level + XP Bar (LevelProgressBar)      │
-├──────────────────┬──────────────────────┤
-│  Missões do Dia  │  Meta do Dia         │
-│  (MissoesDeHoje) │  (DailyProgressCard) │
-├──────────────────┴──────────────────────┤
-│  🏆 Ranking da Equipe                   │
-│  (RankingGestaoLeads, com tabs de       │
-│   período: dia/semana/mês)              │
-├─────────────────────────────────────────┤
-│  🎖️ Conquistas (grid de badges)         │
-│  (reutiliza lógica de Conquistas.tsx)   │
-└─────────────────────────────────────────┘
+Adicionar no grupo "Gestão Comercial" (após Pipeline de Leads):
 ```
-
-**Componentes reutilizados** (zero componente novo):
-- `LevelProgressBar` — já existe
-- `MissoesDeHoje` — já existe
-- `DailyProgressCard` — já existe
-- `RankingGestaoLeads` — já existe
-- Conquistas grid — extraído de `Conquistas.tsx`
-
-**Na Home do Corretor:**
-- Remover as seções 8 (Missões), 9 (Ranking) e 14 (Gamificação) do Dashboard
-- Substituir por um card compacto "🎯 Progresso do Dia" com: barra de XP resumida, % missão geral, e botão "Ver detalhes →" que navega para `/progresso`
-- Isso reduz significativamente o scroll da Home
+{ title: "Notificações", url: "/notificacoes", icon: Bell }
+```
+Com badge de `unreadCount` usando o hook `useNotifications`.
 
 ### Arquivos alterados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/pages/CorretorDashboard.tsx` | Fix rota CALL → `/corretor/call`; substituir seções 8/9/14 por card compacto com link |
-| `src/components/corretor/OportunidadesLista.tsx` | Remover botões duplicados do empty state |
-| `src/pages/CorretorProgresso.tsx` | **NOVO** — Página de gamificação completa |
-| `src/App.tsx` | Adicionar rota `/progresso` |
+| `src/pages/Notificacoes.tsx` | 4 novas categorias de filtro, filtro por tipo+categoria |
+| `src/components/notifications/NotificationList.tsx` | Etapa como badge, label "Ver lead →", mensagem sempre visível, extração de nome melhorada |
+| `src/components/AppSidebar.tsx` | Item Notificações com badge no menu corretor |
 
