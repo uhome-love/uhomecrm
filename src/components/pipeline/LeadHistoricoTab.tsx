@@ -46,6 +46,7 @@ interface Props {
   onToggleFixar: (id: string, fixada: boolean) => Promise<void>;
   onAddTarefa: (data: Partial<PipelineTarefa>) => Promise<void>;
   onReload: () => void;
+  onNextAction?: () => void;
 }
 
 const ATIVIDADE_TIPOS: Record<string, { label: string; icon: any }> = {
@@ -179,7 +180,7 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
   return items;
 }
 
-export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload }: Props) {
+export default function LeadHistoricoTab({ leadId, lead, stages, atividades, anotacoes, tarefas, historico, onAddAtividade, onAddAnotacao, onToggleFixar, onAddTarefa, onReload, onNextAction }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [tipo, setTipo] = useState("ligacao");
   const [resultado, setResultado] = useState("neutro");
@@ -231,6 +232,9 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     setDescricao("");
     setFollowUp("none");
     setFollowUpDate("");
+    if (followUp === "none") {
+      onNextAction?.();
+    }
   };
 
   const handleAddNota = async () => {

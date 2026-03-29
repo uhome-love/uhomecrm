@@ -37,6 +37,7 @@ import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import QuickActionMenu from "./QuickActionMenu";
+import NextActionModal from "./NextActionModal";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
@@ -112,6 +113,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [inativarMotivo, setInativarMotivo] = useState("");
   const [inativarObs, setInativarObs] = useState("");
   const [inativando, setInativando] = useState(false);
+  const [nextActionOpen, setNextActionOpen] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
@@ -545,6 +547,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onToggleTarefa={leadData.toggleTarefa}
                 onDeleteTarefa={leadData.deleteTarefa}
                 onReload={leadData.reload}
+                onNextAction={() => setNextActionOpen(true)}
               />
               {currentStage && (
                 <Collapsible className="px-6 pb-6">
@@ -574,6 +577,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onToggleFixar={leadData.toggleFixarAnotacao}
                 onAddTarefa={leadData.addTarefa}
                 onReload={leadData.reload}
+                onNextAction={() => setNextActionOpen(true)}
               />
             </TabsContent>
 
@@ -710,6 +714,17 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         leadEmpreendimento={lead.empreendimento}
         leadId={lead.id}
         corretorNome={user?.user_metadata?.nome || ""}
+      />
+
+      <NextActionModal
+        open={nextActionOpen}
+        onOpenChange={setNextActionOpen}
+        leadId={lead.id}
+        leadNome={lead.nome}
+        stages={stages}
+        currentStageId={lead.stage_id}
+        onMove={onMove}
+        onReload={leadData.reload}
       />
     </Sheet>
   );
