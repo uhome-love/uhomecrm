@@ -196,6 +196,11 @@ NÃO é apartamento comum. É produto híbrido de estilo de vida urbano.
 • Condução visita: "Vale ver porque a proposta dele muda bastante a percepção"
 • Fechamento: "Esse aqui é muito usado por quem quer começar a investir sem dar um passo muito grande"
 
+📊 DADOS REAIS DE PERFORMANCE (CRM):
+• Total de leads: 81
+• No-show: 0% (leads mais qualificados de todos os produtos)
+• INSIGHT: Leads do Shift são altamente qualificados. Foco é conduzir direto para proposta após visita. Não perder tempo com qualificação excessiva.
+
 🔥 FRASE DE CONVERSÃO: "Esse aqui é muito mais estilo de vida urbano"
 
 🔷 ORYGEM (MÉDIO PADRÃO - VIDA + STATUS + LOCALIZAÇÃO):
