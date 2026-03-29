@@ -37,6 +37,7 @@ import LeadTarefasTab from "./LeadTarefasTab";
 import LeadHistoricoTab from "./LeadHistoricoTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import QuickActionMenu from "./QuickActionMenu";
+import NextActionModal from "./NextActionModal";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
