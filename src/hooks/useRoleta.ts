@@ -612,6 +612,7 @@ export function useRoleta() {
 
       const nextPos = (existing?.[0]?.posicao || 0) + 1;
 
+      // Insert into roleta_fila
       await supabase.from("roleta_fila").insert({
         corretor_id: corretorProfileId,
         segmento_id: segmentoId,
@@ -620,6 +621,38 @@ export function useRoleta() {
         data: hoje,
         ativo: true,
       });
+
+      // FIX: Also upsert into roleta_credenciamentos so the Edge Function sees this corretor
+      const profileId = await getProfileId();
+      // Check if there's already a credenciamento for this corretor+data+janela
+      const { data: existingCred } = await supabase.from("roleta_credenciamentos")
+        .select("id, segmento_1_id, segmento_2_id")
+        .eq("corretor_id", corretorProfileId)
+        .eq("data", hoje)
+        .eq("janela", janela)
+        .limit(1);
+
+      if (existingCred && existingCred.length > 0) {
+        // Already has a credenciamento — add segmento to slot 2 if slot 1 is different
+        const cred = existingCred[0];
+        const updateFields: Record<string, unknown> = { status: "aprovado", saiu_em: null };
+        if (cred.segmento_1_id !== segmentoId && cred.segmento_2_id !== segmentoId) {
+          if (!cred.segmento_1_id) updateFields.segmento_1_id = segmentoId;
+          else updateFields.segmento_2_id = segmentoId;
+        }
+        await supabase.from("roleta_credenciamentos").update(updateFields).eq("id", cred.id);
+      } else {
+        // Create new credenciamento
+        await supabase.from("roleta_credenciamentos").insert({
+          corretor_id: corretorProfileId,
+          data: hoje,
+          janela,
+          segmento_1_id: segmentoId,
+          status: "aprovado",
+          aprovado_por: profileId,
+          aprovado_em: new Date().toISOString(),
+        });
+      }
 
       const { data: profile } = await supabase.from("profiles").select("nome").eq("id", corretorProfileId).single();
       toast.success(`${profile?.nome || "Corretor"} incluído manualmente na fila!`);
