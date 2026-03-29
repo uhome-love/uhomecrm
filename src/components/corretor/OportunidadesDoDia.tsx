@@ -190,12 +190,14 @@ async function alternarStatusOnline(
 
   const payload: Record<string, unknown> = {
     user_id: userId,
-    status: novoStatus ? "online" : "offline",
+    status: novoStatus ? "na_empresa" : "offline",
+    updated_at: agora,
   };
   if (novoStatus) {
     payload.entrada_em = agora;
   } else {
     payload.saida_em = agora;
+    payload.na_roleta = false;
   }
 
   const { error } = await supabase
@@ -204,6 +206,7 @@ async function alternarStatusOnline(
 
   setUpdating(false);
   if (error) {
+    console.error("[alternarStatusOnline] Erro no upsert:", error);
     setStatusOnline(!novoStatus);
     toast.error("Erro ao atualizar status. Tente novamente.");
   } else {
@@ -231,23 +234,29 @@ async function alternarRoleta(
   }
 
   setUpdating(true);
-  const novoStatus = !naRoleta;
-  setNaRoleta(novoStatus);
+  const novoEstado = !naRoleta;
+  setNaRoleta(novoEstado);
 
   const { error } = await supabase
     .from("corretor_disponibilidade")
     .upsert(
-      { user_id: userId, na_roleta: novoStatus } as any,
+      {
+        user_id: userId,
+        na_roleta: novoEstado,
+        status: "na_empresa",
+        updated_at: new Date().toISOString(),
+      } as any,
       { onConflict: "user_id" }
     );
 
   setUpdating(false);
   if (error) {
-    setNaRoleta(!novoStatus);
+    console.error("[alternarRoleta] Erro no upsert:", error);
+    setNaRoleta(!novoEstado);
     toast.error("Erro ao atualizar roleta. Tente novamente.");
   } else {
     toast.success(
-      novoStatus
+      novoEstado
         ? "Você está na roleta! Aguarde novos leads."
         : "Você saiu da roleta."
     );
