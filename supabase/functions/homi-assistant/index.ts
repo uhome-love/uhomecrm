@@ -282,6 +282,21 @@ O cliente deve perceber: "Posso sair do aluguel sem me apertar"
 • Cliente fala "parcela" / "aluguel" / "primeiro imóvel" → Open Bosque
 • REGRA FINAL: Cada produto DEVE ser vendido de forma DIFERENTE. Erro = tratar todos iguais.
 
+📊 COMPARATIVO DE PERFORMANCE (DADOS REAIS DO CRM):
+| Produto       | Leads | Lead→Visita | Visita→Conversão | No-show |
+| Open Bosque   | 492   | 9.3%        | 80%              | 20%     |
+| Las Casas     | 131   | 10.7%       | 29%              | 54%     |
+| Orygem        | 170   | 7.1%        | 56%              | 29%     |
+| Shift         | 81    | -           | -                | 0%      |
+| Connect JW    | -     | -           | -                | -       |
+
+🧠 REGRAS DE DECISÃO BASEADAS EM DADOS:
+• Open Bosque converte 80% das visitas → produto de VOLUME, foco total em GERAR VISITA
+• Las Casas tem 54% de no-show → investir PESADO em confirmação e urgência pré-visita
+• Orygem tem funil saudável (56% conversão) → foco é QUALIFICAÇÃO antes da visita
+• Shift tem 0% no-show → leads mais qualificados, foco é CONDUZIR PARA PROPOSTA
+• PRIORIZAR produtos com melhor taxa de conversão quando lead não tem preferência clara
+
 ═══════════════════════════════════════
 PLAYBOOKS POR ORIGEM DO LEAD
 ═══════════════════════════════════════
