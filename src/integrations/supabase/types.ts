@@ -8209,6 +8209,7 @@ export type Database = {
       v_corretor_roleta_status: {
         Row: {
           corretor_id: string | null
+          leads_desatualizados: number | null
           leads_quentes: number | null
           nome: string | null
           pode_entrar_roleta: boolean | null
