@@ -295,8 +295,15 @@ export default function StageCoachBar({
   // Filter messages by origin
   const filteredMessages = config.messages.filter(msg => matchesOrigem(msg.origens));
 
+  // Determine dot color based on alert severity
+  const dotColor = config.alert?.severity === "danger"
+    ? "bg-[#E24B4A]"
+    : config.alert?.severity === "warning"
+      ? "bg-[#EF9F27]"
+      : "bg-[#B4B2A9]";
+
   return (
-    <div className={`mx-5 mb-2 rounded-lg border ${config.color} p-3`}>
+    <div className="bg-muted border-b py-2 px-6 flex flex-col">
       {/* Alert banner for stalled leads */}
       {config.alert && (
         <div className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 mb-2 text-[11px] font-medium ${
@@ -309,101 +316,100 @@ export default function StageCoachBar({
         </div>
       )}
 
-      <div className="flex items-start gap-2">
-        <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs font-medium text-foreground">{config.diagnostic}</p>
-            {/* Follow-up 5 dias badge */}
-            {sequenceInfo && (
-              <Badge variant="outline" className="text-[10px] h-4 gap-1">
-                <Clock className="h-2.5 w-2.5" />
-                Dia {Math.min(sequenceInfo.enviados + 1, sequenceInfo.total)}/{sequenceInfo.total}
-              </Badge>
-            )}
-            {followUpDay && followUpDay <= 5 && (
-              <Badge variant={followUpDay >= 4 ? "destructive" : "secondary"} className="text-[10px] h-4 gap-0.5">
-                {followUpDay === 1 && "📩 Msg simples"}
-                {followUpDay === 2 && "🖼️ Imagem/Áudio"}
-                {followUpDay === 3 && "🎥 Vídeo"}
-                {followUpDay === 4 && "⚡ Urgência"}
-                {followUpDay === 5 && "👋 Encerramento"}
-              </Badge>
-            )}
-          </div>
+      {/* Line 1 */}
+      <div className="flex items-center gap-2 w-full">
+        <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+        <p className="flex-1 min-w-0">
+          <span className="font-medium text-foreground text-xs">{config.diagnostic}</span>
+          {sequenceInfo && (
+            <span className="text-muted-foreground text-xs ml-2">
+              · Dia {Math.min(sequenceInfo.enviados + 1, sequenceInfo.total)}/{sequenceInfo.total}
+            </span>
+          )}
+          {followUpDay && followUpDay <= 5 && (
+            <span className="text-muted-foreground text-xs ml-1.5">
+              {followUpDay === 1 && "· 📩 Msg simples"}
+              {followUpDay === 2 && "· 🖼️ Imagem/Áudio"}
+              {followUpDay === 3 && "· 🎥 Vídeo"}
+              {followUpDay === 4 && "· ⚡ Urgência"}
+              {followUpDay === 5 && "· 👋 Encerramento"}
+            </span>
+          )}
+        </p>
 
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            {config.actions.map((action, i) => (
-              <Button
-                key={i}
-                variant="outline"
-                size="sm"
-                className="h-7 text-[11px] gap-1 px-2.5"
-                onClick={action.onClick || (action.homiPrompt ? () => triggerHomi(action.homiPrompt!) : undefined)}
-              >
-                <action.icon className="h-3 w-3" />
-                {action.label}
-              </Button>
-            ))}
-            {onOpenHomi && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-[11px] gap-1 px-2.5 text-primary"
-                onClick={() => onOpenHomi()}
-              >
-                <Sparkles className="h-3 w-3" />
-                HOMI
-              </Button>
-            )}
-          </div>
-
-          <Collapsible open={expanded} onOpenChange={setExpanded}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-1.5 mt-1.5 text-muted-foreground hover:text-foreground">
-                <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
-                {expanded ? "Ocultar mensagens" : `${filteredMessages.length} mensagens prontas`}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2 space-y-2">
-              {filteredMessages.map((msg, i) => (
-                <div key={i} className="bg-background/80 rounded-md border border-border/50 p-2.5">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-medium">{msg.title}</span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 text-[10px] gap-1 px-1.5"
-                        onClick={() => copyMessage(msg.body)}
-                      >
-                        <Copy className="h-3 w-3" />
-                        Copiar
-                      </Button>
-                      {telefone && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 text-[10px] gap-1 px-1.5 text-emerald-600"
-                          onClick={() => openWhatsApp(msg.body)}
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          WhatsApp
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {msg.body
-                      .replace(/\{\{nome\}\}/g, nome)
-                      .replace(/\{\{empreendimento\}\}/g, emp)}
-                  </p>
-                </div>
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
+        {/* Action buttons */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {config.actions.map((action, i) => (
+            <button
+              key={i}
+              className="text-[11px] font-medium px-2.5 py-1 rounded-md border border-border bg-background text-muted-foreground hover:bg-muted transition-colors inline-flex items-center gap-1"
+              onClick={action.onClick || (action.homiPrompt ? () => triggerHomi(action.homiPrompt!) : undefined)}
+            >
+              <action.icon className="h-3 w-3" />
+              {action.label}
+            </button>
+          ))}
+          {onOpenHomi && (
+            <button
+              className="text-[11px] font-medium px-2.5 py-1 rounded-md border border-border bg-background text-muted-foreground hover:bg-muted transition-colors inline-flex items-center gap-1"
+              onClick={() => onOpenHomi()}
+            >
+              <Sparkles className="h-3 w-3" />
+              HOMI
+            </button>
+          )}
         </div>
+
+        {/* Expand trigger */}
+        <Collapsible open={expanded} onOpenChange={setExpanded}>
+          <CollapsibleTrigger asChild>
+            <button className="text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-1">
+              {expanded ? "▴ Ocultar" : `▾ ${filteredMessages.length} mensagens`}
+            </button>
+          </CollapsibleTrigger>
+        </Collapsible>
       </div>
+
+      {/* Line 2 — expanded messages */}
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CollapsibleContent className="border-t border-border pt-2 mt-2 flex flex-col gap-2">
+          {filteredMessages.map((msg, i) => (
+            <div key={i} className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-foreground">{msg.title}</span>
+                {i === 0 && (
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#EEEDFE', color: '#534AB7' }}>
+                    Recomendada
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                {msg.body
+                  .replace(/\{\{nome\}\}/g, nome)
+                  .replace(/\{\{empreendimento\}\}/g, emp)}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  className="text-[10px] px-2 py-1 rounded border border-border bg-muted inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => copyMessage(msg.body)}
+                >
+                  <Copy className="h-3 w-3" />
+                  Copiar
+                </button>
+                {telefone && (
+                  <button
+                    className="text-[10px] px-2 py-1 rounded border border-border bg-muted inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => openWhatsApp(msg.body)}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    WhatsApp
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
