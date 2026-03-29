@@ -577,6 +577,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 onToggleFixar={leadData.toggleFixarAnotacao}
                 onAddTarefa={leadData.addTarefa}
                 onReload={leadData.reload}
+                onNextAction={() => setNextActionOpen(true)}
               />
             </TabsContent>
 
