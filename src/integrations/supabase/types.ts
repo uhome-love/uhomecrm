@@ -8524,7 +8524,15 @@ export type Database = {
       cleanup_homi_conversations: { Args: never; Returns: undefined }
       cleanup_jetimob_processed: { Args: never; Returns: undefined }
       cleanup_ops_events: { Args: never; Returns: undefined }
+      contar_leads_desatualizados: {
+        Args: { p_corretor_id: string }
+        Returns: number
+      }
       corretor_pode_entrar_roleta: {
+        Args: { p_corretor_id: string }
+        Returns: boolean
+      }
+      corretor_pode_entrar_roleta_noturna: {
         Args: { p_corretor_id: string }
         Returns: boolean
       }
@@ -8691,6 +8699,10 @@ export type Database = {
       }
       get_distribuicao_performance: {
         Args: { p_periodo?: string }
+        Returns: Json
+      }
+      get_elegibilidade_roleta: {
+        Args: { p_corretor_id: string }
         Returns: Json
       }
       get_individual_oa_ranking: {
