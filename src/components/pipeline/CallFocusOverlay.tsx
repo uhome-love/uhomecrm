@@ -211,8 +211,6 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
   ];
 
   return createPortal(
-
-  return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
       <div style={{ background: 'var(--background)', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
       {/* HEADER */}
