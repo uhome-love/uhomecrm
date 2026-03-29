@@ -335,33 +335,23 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 7. VISITAS DO DIA + AGENDA                                        */}
+      {/* 5. AGENDA + VISITAS (lado a lado)                                  */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {visitasHoje.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <VisitasHojeCard visitas={visitasHoje} loading={visitasLoading} />
-        </motion.div>
-      )}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }}>
-        <MinhaAgendaWidget />
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <MinhaAgendaWidget />
+          {visitasHoje.length > 0 ? (
+            <VisitasHojeCard visitas={visitasHoje} loading={visitasLoading} />
+          ) : (
+            <div />
+          )}
+        </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 8. MISSÕES DE HOJE                                                */}
+      {/* 6. MINI FUNIL + EVOLUÇÃO                                          */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
-        <MissoesDeHoje
-          missoes={missoes}
-          missaoGeral={missaoGeral}
-          pontos={progress.pontos}
-          todasCompletas={progress.todasMissoesCumpridas}
-        />
-      </motion.div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 9. MINI FUNIL + EVOLUÇÃO                                          */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.13 }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <MiniFunilPessoal funil={funil} totalLeads={totalLeads} loading={funilLoading} />
           <EvolucaoSemanal evolucao={evolucao} loading={evolucaoLoading} />
@@ -369,20 +359,9 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 10. RADAR DE LEADS                                                */}
+      {/* 7. META DO DIA                                                     */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}>
-        <RadarLeadsPendentes
-          leads={radarLeads}
-          loading={radarLoading}
-          onOpenPipeline={() => navigate("/pipeline-leads")}
-        />
-      </motion.div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 11. DAILY GOALS                                                   */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
         <DailyProgressCard
           progress={progress}
           goals={goals}
@@ -392,34 +371,19 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 12. PERFORMANCE CARDS                                             */}
+      {/* 8. MISSÕES DE HOJE                                                 */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {[
-            { label: "Ligações", value: progress.ligacoes, icon: Phone, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-            { label: "WhatsApps", value: progress.whatsapps, icon: MessageCircle, color: "text-green-500", bg: "bg-green-500/10" },
-            { label: "E-mails", value: progress.emails, icon: Mail, color: "text-primary", bg: "bg-primary/10" },
-            { label: "Visitas Marcadas", value: progress.visitasMarcadas, icon: CalendarCheck, color: "text-amber-500", bg: "bg-amber-500/10" },
-            { label: "Taxa Aprov.", value: `${progress.taxaAproveitamento}%`, icon: CheckCircle, color: "text-primary", bg: "bg-primary/10" },
-          ].map((item) => (
-            <Card key={item.label} className="border-border/60">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bg} shrink-0`}>
-                  <item.icon className={`h-5 w-5 ${item.color}`} />
-                </div>
-                <div>
-                  <p className="text-xl font-display font-extrabold text-foreground leading-none">{item.value}</p>
-                  <p className="text-[10px] text-muted-foreground font-medium">{item.label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
+        <MissoesDeHoje
+          missoes={missoes}
+          missaoGeral={missaoGeral}
+          pontos={progress.pontos}
+          todasCompletas={progress.todasMissoesCumpridas}
+        />
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 13. RANKING                                                       */}
+      {/* 9. RANKING                                                         */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.19 }}>
         <RankingGestaoLeads
