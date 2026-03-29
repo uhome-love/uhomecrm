@@ -128,8 +128,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     return leadData.atividades.filter(a => a.tipo === "ligacao").length;
   }, [leadData.atividades]);
 
-  const temperatureInfo = TEMPERATURA_MAP[(lead as any).temperatura || "morno"] || TEMPERATURA_MAP.morno;
-  const TempIcon = temperatureInfo.icon;
+  // temperatureInfo removido — chip de status usado no lugar
 
   const jetimobCode = useMemo(() => {
     const jid = (lead as any).jetimob_lead_id;
