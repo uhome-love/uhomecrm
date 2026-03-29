@@ -515,12 +515,12 @@ export function AppSidebar() {
         {
           label: "Gestão Comercial",
           items: [
+            { title: "Notificações", url: "/notificacoes", icon: Bell },
             { title: "Agenda de Tarefas", url: "/minhas-tarefas", icon: ListTodo },
             { title: "Anúncios no Ar", url: "/anuncios", icon: Megaphone },
             { title: "Pipeline de Leads", url: "/pipeline-leads", icon: Kanban },
             { title: "Agenda de Visitas", url: "/agenda-visitas", icon: CalendarDays },
             { title: "Pipeline Negócios", url: "/pipeline-negocios", icon: Briefcase },
-            { title: "Notificações", url: "/notificacoes", icon: Bell },
             { title: "Vendas Realizadas", url: "/vendas-realizadas", icon: Trophy },
             { title: "Pós-Vendas", url: "/pos-vendas", icon: PackageCheck },
           ],
@@ -537,7 +537,7 @@ export function AppSidebar() {
           items: [
             { title: "Meu Desempenho", url: "/corretor/resumo", icon: BarChart3 },
             { title: "Rankings", url: "/corretor/ranking-equipes", icon: Trophy },
-            { title: "Conquistas", url: "/conquistas", icon: Award },
+            { title: "Progresso", url: "/progresso", icon: Award },
           ],
         },
         {
