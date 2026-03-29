@@ -26,11 +26,9 @@ import { useMissoesLeads } from "@/hooks/useMissoesLeads";
 import { useCorretorHomeData } from "@/hooks/useCorretorHomeData";
 import { useConquistas } from "@/hooks/useConquistas";
 
-import { StatusElegibilidadeRoleta } from "@/components/roleta/StatusElegibilidadeRoleta";
 import OportunidadesLista from "@/components/corretor/OportunidadesLista";
 import DailyProgressCard from "@/components/corretor/DailyProgressCard";
 import MissoesDeHoje from "@/components/corretor/MissoesDeHoje";
-import RadarLeadsPendentes from "@/components/corretor/RadarLeadsPendentes";
 import RankingGestaoLeads from "@/components/corretor/RankingGestaoLeads";
 import MinhaAgendaWidget from "@/components/corretor/MinhaAgendaWidget";
 import VisitasHojeCard from "@/components/corretor/VisitasHojeCard";
