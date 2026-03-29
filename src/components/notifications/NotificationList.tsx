@@ -233,9 +233,9 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
                 <p
                   className="leading-tight"
                   style={{
-                    fontSize: 13,
-                    fontWeight: !n.lida ? 600 : 500,
-                    color: !n.lida ? "#1F2937" : "#6B7280",
+                    fontSize: isRadar ? 14 : 13,
+                    fontWeight: isRadar ? 700 : (!n.lida ? 600 : 500),
+                    color: isRadar && !n.lida ? "#9A3412" : (!n.lida ? "#1F2937" : "#6B7280"),
                   }}
                 >
                   {!n.lida && (
