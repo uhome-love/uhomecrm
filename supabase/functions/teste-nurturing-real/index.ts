@@ -6,10 +6,8 @@ const WHATSAPP_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN')!;
 const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')!;
 const UHOMESITE_URL = Deno.env.get('UHOMESITE_URL') || 'https://uhome.com.br';
 
-// Supabase externo (site) para criar vitrines
 const SITE_SUPABASE_URL = "https://huigglwvvzuwwyqvpmec.supabase.co";
 const SITE_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1aWdnbHd2dnp1d3d5cXZwbWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzcsImV4cCI6MjA4OTYyOTM3N30.mi8RveT9gYhxP-sfq0GIN1jog-vU3Sxq511LCq5hhw4";
-
 const supabaseSite = createClient(SITE_SUPABASE_URL, SITE_SUPABASE_ANON);
 
 Deno.serve(async () => {
@@ -23,17 +21,12 @@ Deno.serve(async () => {
     const valorMax = 700000;
     const dormitoriosMin = 2;
 
-    // ── 2. Busca no Typesense com perfil do lead ──
+    // ── 2. Busca no Typesense ──
     const q = bairros.join(" ") + " " + tipos.join(" ");
-    const filterParts = [
-      `valor_venda:>=${valorMin}`,
-      `valor_venda:<=${valorMax}`,
-      `dormitorios:>=${dormitoriosMin}`,
-    ];
     const params = new URLSearchParams({
       q,
       query_by: "bairro,tipo,titulo",
-      filter_by: filterParts.join(" && "),
+      filter_by: `valor_venda:>=${valorMin} && valor_venda:<=${valorMax} && dormitorios:>=${dormitoriosMin}`,
       sort_by: "destaque:desc",
       per_page: "3",
     });
@@ -46,29 +39,24 @@ Deno.serve(async () => {
     const imoveis = (resultado.hits || []).map((h: any) => h.document);
 
     if (imoveis.length === 0) {
-      return new Response(
-        JSON.stringify({ erro: "Nenhum imóvel encontrado", total_hits: resultado.found }),
-        { headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ erro: "Nenhum imóvel encontrado" }), {
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    // ── 3. Extrair códigos dos imóveis ──
-    const imovelCodigos = imoveis.map((im: any) => im.codigo || String(im.id));
-
-    // ── 4. Criar vitrine no Supabase externo ──
+    // ── 3. Criar vitrine no Supabase externo ──
+    const imovelCodigos = imoveis.map((im: any) => String(im.codigo || im.id));
     const titulo = `Seleção para ${leadNome}`;
-    const mensagem = `Olá ${leadNome}! Selecionei ${imoveis.length} imóveis especialmente para você. Confira!`;
+    const mensagem = `Olá ${leadNome}! Selecionei ${imoveis.length} imóveis especialmente para você.`;
 
     const { data: vitrine, error: vitrineError } = await supabaseSite
       .from("vitrines")
       .insert({
         titulo,
         mensagem,
-        imovel_ids: imovelCodigos,
         imovel_codigos: imovelCodigos,
         lead_nome: leadNome,
         lead_telefone: leadTelefone,
-        tipo: "property_selection",
       })
       .select("id")
       .single();
@@ -82,11 +70,10 @@ Deno.serve(async () => {
 
     const vitrineUrl = `${UHOMESITE_URL}/vitrine/${vitrine.id}`;
 
-    // ── 5. Montar params do template WhatsApp ──
+    // ── 4. Enviar WhatsApp com link da vitrine ──
     const bairrosTexto = bairros.slice(0, 3).join(", ");
     const tipoTexto = tipos[0].charAt(0).toUpperCase() + tipos[0].slice(1);
     const faixaPreco = `R$ ${(valorMin / 1000).toFixed(0)} mil a R$ ${(valorMax / 1000).toFixed(0)} mil`;
-    const tituloMsg = `${imoveis.length} imóveis selecionados para você`;
 
     const payload = {
       messaging_product: "whatsapp",
@@ -100,7 +87,7 @@ Deno.serve(async () => {
             type: "body",
             parameters: [
               { type: "text", text: leadNome },
-              { type: "text", text: tituloMsg },
+              { type: "text", text: `${imoveis.length} imóveis selecionados para você` },
               { type: "text", text: bairrosTexto },
               { type: "text", text: tipoTexto },
               { type: "text", text: faixaPreco },
@@ -111,7 +98,6 @@ Deno.serve(async () => {
       },
     };
 
-    // ── 6. Enviar WhatsApp ──
     const wr = await fetch(
       `https://graph.facebook.com/v19.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
       {
@@ -132,22 +118,14 @@ Deno.serve(async () => {
         vitrine_url: vitrineUrl,
         imoveis_encontrados: imoveis.length,
         imovel_codigos: imovelCodigos,
-        template_params: {
-          nome: leadNome,
-          titulo: tituloMsg,
-          bairros: bairrosTexto,
-          tipo: tipoTexto,
-          faixa: faixaPreco,
-          link: vitrineUrl,
-        },
         resposta_meta: wres,
       }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (err: any) {
-    return new Response(
-      JSON.stringify({ erro: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ erro: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 });
