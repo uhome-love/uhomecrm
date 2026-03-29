@@ -209,7 +209,7 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
     negociacao: "Negociação", proposta: "Proposta",
   };
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
