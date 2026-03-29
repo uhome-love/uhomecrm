@@ -47,11 +47,44 @@ interface Imovel {
   codigo: string;
   titulo: string;
   bairro: string;
+  cidade: string;
   tipo: string;
-  preco: number;
+  valor_venda: number;       // campo real no Typesense
   dormitorios: number;
-  area: number;
+  area_privativa: number;
   foto_principal: string;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: gera slug no formato real do site uhome.com.br
+// Padrão: [tipo]-[dormitorios]-quartos-[bairro]-[CODIGO]
+// Exemplo: casa-3-quartos-petropolis-52101-UH
+// ---------------------------------------------------------------------------
+function slugify(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")  // remove acentos
+    .replace(/[^a-z0-9\s-]/g, "")    // remove caracteres especiais
+    .trim()
+    .replace(/\s+/g, "-")            // espaços → hífens
+    .replace(/-+/g, "-");             // hífens duplos → simples
+}
+
+function gerarSlugImovel(imovel: Imovel): string {
+  // Extrai o tipo principal (primeira palavra do tipo)
+  // Ex: "casa de condominio" → "casa", "apartamento" → "apartamento"
+  const tipoPrincipal = slugify(imovel.tipo.split(" ")[0]);
+
+  // Dormitórios
+  const dorms = imovel.dormitorios > 0 ? `${imovel.dormitorios}-quartos` : "";
+
+  // Bairro
+  const bairro = slugify(imovel.bairro);
+
+  // Monta slug: tipo-dorms-bairro-CODIGO
+  const partes = [tipoPrincipal, dorms, bairro, imovel.codigo].filter(Boolean);
+  return partes.join("-");
 }
 
 // ---------------------------------------------------------------------------
@@ -166,8 +199,9 @@ async function buscarImoveisTypesense(
   if (!perfil) return [];
 
   const filtros: string[] = [];
-  if (perfil.valor_max) filtros.push(`preco:<=${perfil.valor_max}`);
-  if (perfil.valor_min) filtros.push(`preco:>=${perfil.valor_min}`);
+  // CORRIGIDO: campo de preço é valor_venda no Typesense
+  if (perfil.valor_max) filtros.push(`valor_venda:<=${perfil.valor_max}`);
+  if (perfil.valor_min) filtros.push(`valor_venda:>=${perfil.valor_min}`);
   if (perfil.dormitorios_min) filtros.push(`dormitorios:>=${perfil.dormitorios_min}`);
 
   const termoBusca =
@@ -189,8 +223,9 @@ async function buscarImoveisTypesense(
   });
 
   try {
+    // CORRIGIDO: coleção chama-se 'imoveis', não 'properties'
     const response = await fetch(
-      `https://${TYPESENSE_HOST}/collections/properties/documents/search?${params}`,
+      `https://${TYPESENSE_HOST}/collections/imoveis/documents/search?${params}`,
       { headers: { "X-TYPESENSE-API-KEY": TYPESENSE_SEARCH_API_KEY } }
     );
 
@@ -241,9 +276,17 @@ async function criarVitrine(
     return null;
   }
 
-  // Usa slug se disponível, senão usa id
+  // Usa slug da vitrine se disponível, senão usa id
   const identificador = data.slug || data.id;
   return `${UHOMESITE_URL}/vitrine/${identificador}`;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: monta URL pública do imóvel no site uhome.com.br
+// Formato real: /imovel/[slug-titulo]-[CODIGO]
+// ---------------------------------------------------------------------------
+function urlImovel(imovel: Imovel): string {
+  return `${UHOMESITE_URL}/imovel/${gerarSlugImovel(imovel)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -266,7 +309,11 @@ async function enviarWhatsAppTemplate(
     style: "currency",
     currency: "BRL",
     maximumFractionDigits: 0,
-  }).format(imovelPrincipal.preco || 0);
+  // CORRIGIDO: campo de preço é valor_venda
+  }).format(imovelPrincipal.valor_venda || 0);
+
+  // Link do imóvel principal (URL real do site)
+  const linkImovel = urlImovel(imovelPrincipal);
 
   const payload = {
     messaging_product: "whatsapp",
@@ -284,7 +331,7 @@ async function enviarWhatsAppTemplate(
             { type: "text", text: imovelPrincipal.bairro || "Sua região" },
             { type: "text", text: imovelPrincipal.tipo || "Imóvel" },
             { type: "text", text: precoFormatado },
-            { type: "text", text: urlVitrine },
+            { type: "text", text: linkImovel },  // link direto para o imóvel no site
           ],
         },
       ],
