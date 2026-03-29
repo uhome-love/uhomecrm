@@ -404,7 +404,7 @@ ${histCtx}
                   defaultOpen={true}
                 />
               ))
-            ) : result ? (
+            ) : (
               <div className="rounded-xl border border-border p-4 text-xs prose prose-sm max-w-none dark:prose-invert leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                 <ReactMarkdown>{result}</ReactMarkdown>
               </div>
