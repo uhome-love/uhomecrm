@@ -1,0 +1,286 @@
+// =============================================================================
+// OportunidadesLista — Lista de oportunidades do dia (sem saudação/status)
+// Extrai apenas a lógica de fetch + renderização de oportunidades.
+// =============================================================================
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
+import {
+  Phone,
+  MessageSquare,
+  Flame,
+  Clock,
+  Zap,
+  Trophy,
+  ChevronRight,
+  RefreshCw,
+  ListTodo,
+} from "lucide-react";
+
+// ---------------------------------------------------------------------------
+// Tipos
+// ---------------------------------------------------------------------------
+interface Oportunidade {
+  tipo: "radar_intencao" | "nurturing_resposta" | "tarefa_atrasada";
+  prioridade: number;
+  lead_id: string;
+  lead_nome: string;
+  lead_telefone: string;
+  lead_temperatura: "frio" | "morno" | "quente" | "urgente";
+  lead_score: number;
+  descricao: string;
+  acao_sugerida: string;
+  created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers visuais
+// ---------------------------------------------------------------------------
+const TEMPERATURA_CONFIG = {
+  urgente: { cor: "bg-red-500", texto: "URGENTE", icone: "🚨" },
+  quente: { cor: "bg-orange-500", texto: "QUENTE", icone: "🔥" },
+  morno: { cor: "bg-yellow-500", texto: "MORNO", icone: "🌡️" },
+  frio: { cor: "bg-blue-400", texto: "FRIO", icone: "❄️" },
+};
+
+const TIPO_CONFIG = {
+  radar_intencao: { icone: <Flame className="w-5 h-5 text-orange-500" />, label: "Radar de Intenção" },
+  nurturing_resposta: { icone: <MessageSquare className="w-5 h-5 text-blue-500" />, label: "Vitrine Enviada" },
+  tarefa_atrasada: { icone: <Clock className="w-5 h-5 text-red-500" />, label: "Tarefa Atrasada" },
+};
+
+// ---------------------------------------------------------------------------
+// Ações de lead
+// ---------------------------------------------------------------------------
+function abrirLigacao(telefone: string) {
+  const limpo = telefone.replace(/\D/g, "");
+  window.open(`tel:+55${limpo}`, "_self");
+}
+
+function abrirWhatsApp(telefone: string, nomeLead: string) {
+  const limpo = telefone.replace(/\D/g, "");
+  const mensagem = encodeURIComponent(
+    `Oi ${nomeLead.split(" ")[0]}! Tudo bem? Aqui é da uHome. Passando para ver se você ainda está buscando imóvel em Porto Alegre. Posso te ajudar? 😊`
+  );
+  window.open(`https://wa.me/55${limpo}?text=${mensagem}`, "_blank");
+}
+
+async function followUpMagico(leadId: string, nomeLead: string) {
+  toast.loading(`Gerando vitrine para ${nomeLead.split(" ")[0]}...`);
+  const { error } = await supabase.functions.invoke("cron-smart-nurturing", {
+    body: { lead_id: leadId, modo: "manual" },
+  });
+  toast.dismiss();
+  if (error) {
+    toast.error("Erro ao gerar vitrine. Tente novamente.");
+  } else {
+    toast.success(`Vitrine enviada para ${nomeLead.split(" ")[0]}! Aguarde a resposta.`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Componente principal
+// ---------------------------------------------------------------------------
+export default function OportunidadesLista() {
+  const { user } = useAuth();
+  const [oportunidades, setOportunidades] = useState<Oportunidade[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const carregar = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("get_oportunidades_do_dia", {
+        p_corretor_id: user.id,
+      });
+      if (error) {
+        console.error("[OportunidadesLista] Erro ao buscar oportunidades:", error);
+      } else {
+        setOportunidades((data as Oportunidade[]) || []);
+      }
+    } catch (err) {
+      console.error("[OportunidadesLista] Erro:", err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    carregar();
+    const interval = setInterval(carregar, 120_000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const urgentes = oportunidades.filter((o) => o.lead_temperatura === "urgente");
+  const quentes = oportunidades.filter((o) => o.lead_temperatura === "quente");
+  const restantes = oportunidades.filter(
+    (o) => o.lead_temperatura !== "urgente" && o.lead_temperatura !== "quente"
+  );
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-bold text-base text-foreground flex items-center gap-1.5">
+          <Zap className="w-4 h-4 text-yellow-500" />
+          Oportunidades do Dia
+          {oportunidades.length > 0 && (
+            <Badge className="ml-1 bg-primary text-primary-foreground text-xs">
+              {oportunidades.length}
+            </Badge>
+          )}
+        </h2>
+        <Button variant="ghost" size="sm" onClick={carregar} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-32">
+          <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {urgentes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wide">
+                🚨 Urgente — Aja agora
+              </p>
+              {urgentes.map((op) => (
+                <CardOportunidade key={op.lead_id + op.tipo} op={op} />
+              ))}
+            </div>
+          )}
+
+          {quentes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wide">
+                🔥 Leads Quentes
+              </p>
+              {quentes.map((op) => (
+                <CardOportunidade key={op.lead_id + op.tipo} op={op} />
+              ))}
+            </div>
+          )}
+
+          {restantes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Outras Ações
+              </p>
+              {restantes.map((op) => (
+                <CardOportunidade key={op.lead_id + op.tipo} op={op} />
+              ))}
+            </div>
+          )}
+
+          {oportunidades.length === 0 && (
+            <Card className="border-green-500/30 bg-green-500/5 dark:bg-green-500/5">
+              <CardContent className="pt-6 pb-6 text-center space-y-3">
+                <Trophy className="w-10 h-10 text-yellow-500 mx-auto" />
+                <div>
+                  <p className="font-bold text-foreground">Você está em dia!</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Nenhuma ação pendente. Credencia-se na roleta e aguarde novos leads.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => (window.location.href = "/pipeline")}
+                  >
+                    <ListTodo className="w-3.5 h-3.5 mr-1" />
+                    Abrir Pipeline
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => (window.location.href = "/oferta-ativa")}
+                  >
+                    <Phone className="w-3.5 h-3.5 mr-1" />
+                    Oferta Ativa
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-componente: Card de oportunidade
+// ---------------------------------------------------------------------------
+function CardOportunidade({ op }: { op: Oportunidade }) {
+  const temp = TEMPERATURA_CONFIG[op.lead_temperatura] ?? TEMPERATURA_CONFIG.frio;
+  const tipo = TIPO_CONFIG[op.tipo];
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="pt-3 pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 space-y-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              {tipo.icone}
+              <span className="font-semibold text-sm text-foreground truncate">
+                {op.lead_nome}
+              </span>
+              <Badge className={`${temp.cor} text-white text-xs shrink-0`}>
+                {temp.icone} {temp.texto}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground leading-snug">{op.descricao}</p>
+            <p className="text-xs font-medium text-primary">💡 {op.acao_sugerida}</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5 shrink-0">
+            {op.tipo === "radar_intencao" && (
+              <Button
+                size="sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs"
+                onClick={() => abrirLigacao(op.lead_telefone)}
+              >
+                <Phone className="w-3 h-3 mr-1" />
+                Ligar
+              </Button>
+            )}
+            {op.tipo === "nurturing_resposta" && (
+              <Button
+                size="sm"
+                className="bg-green-500 hover:bg-green-600 text-white h-8 text-xs"
+                onClick={() => abrirWhatsApp(op.lead_telefone, op.lead_nome)}
+              >
+                <MessageSquare className="w-3 h-3 mr-1" />
+                WhatsApp
+              </Button>
+            )}
+            {op.tipo === "tarefa_atrasada" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                onClick={() => followUpMagico(op.lead_id, op.lead_nome)}
+              >
+                <Zap className="w-3 h-3 mr-1" />
+                Follow-up IA
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" className="h-8 px-2" asChild>
+              <a href={`/pipeline-leads?lead=${op.lead_id}`}>
+                <ChevronRight className="w-4 h-4" />
+              </a>
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
