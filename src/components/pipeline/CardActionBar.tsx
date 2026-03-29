@@ -50,9 +50,9 @@ export default function CardActionBar({
         {/* Ligar */}
         <button
           onClick={onCall}
-          style={{ ...btnBase, background: "#4F46E5", color: "#ffffff", borderRadius: "0 0 0 13px" }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+          style={{ ...btnBase, background: "#ffffff", color: "#4F46E5", border: "1.5px solid #4F46E5", borderRadius: "8px", margin: "4px 2px 4px 4px" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#EEEDFE"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
         >
           <Phone style={{ width: 12, height: 12 }} />
           <span>Ligar</span>
@@ -74,8 +74,7 @@ export default function CardActionBar({
           onMouseEnter={(e) => { e.currentTarget.style.background = "#EAF3DE"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
-          <MessageCircle style={{ width: 12, height: 12 }} />
-          <span>Mensagem</span>
+          <span>💬 Mensagem</span>
         </button>
 
         <div style={divider} />
