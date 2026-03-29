@@ -392,19 +392,19 @@ ${histCtx}
 
         {/* Results */}
         {result && !loading && (
-          <div className="space-y-2.5">
-            {parsedSections.length > 1 ? (
-              parsedSections.map((sec, i) => (
+           <div className="space-y-2.5">
+            {displaySections.length > 1 ? (
+              displaySections.map((sec, i) => (
                 <ResultSectionCard
                   key={i}
                   title={sec.title}
                   body={sec.body}
                   leadTelefone={leadTelefone}
                   isActionable={isActionableSection(sec.title)}
-                  defaultOpen={isActionableSection(sec.title)}
+                  defaultOpen={true}
                 />
               ))
-            ) : (
+            ) : result ? (
               <div className="rounded-xl border border-border p-4 text-xs prose prose-sm max-w-none dark:prose-invert leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                 <ReactMarkdown>{result}</ReactMarkdown>
               </div>
