@@ -287,121 +287,18 @@ serve(async (req) => {
     const errors = results.filter(r => !r.success).length;
     const hasMore = items.length >= pageSize;
 
-    // ── Mirror to Supabase properties table ──
-    let dbUpserted = 0;
-    let dbPriceChanges = 0;
-    try {
-      const BATCH_SIZE = 50;
-      for (let i = 0; i < items.length; i += BATCH_SIZE) {
-        const batch = items.slice(i, i + BATCH_SIZE);
-        const codigos = batch.map((it: any) => String(it.codigo || it.referencia || it.id_imovel || it.id || "")).filter(Boolean);
-
-        // Fetch existing properties to detect price changes
-        const { data: existing } = await sb
-          .from("properties")
-          .select("codigo, valor_venda, valor_locacao, sync_hash")
-          .in("codigo", codigos);
-
-        const existingMap = new Map((existing || []).map(e => [e.codigo, e]));
-
-        const rows: any[] = [];
-        const priceChanges: any[] = [];
-
-        for (const item of batch) {
-          const doc = mapImovelToDocument(item);
-          const thumbs = doc.fotos || [];
-          const fullPhotos = doc.fotos_full || [];
-          const propRow = mapImovelToProperty(item, thumbs, fullPhotos);
-
-          // Compute hash for change detection
-          const hashInput = JSON.stringify({
-            titulo: propRow.titulo, valor_venda: propRow.valor_venda, valor_locacao: propRow.valor_locacao,
-            bairro: propRow.bairro, dormitorios: propRow.dormitorios, area_privativa: propRow.area_privativa,
-            situacao: propRow.situacao, empreendimento: propRow.empreendimento,
-          });
-          const hash = await hashPayload(hashInput);
-          (propRow as any).sync_hash = hash;
-
-          // Detect price changes
-          const prev = existingMap.get(propRow.codigo);
-          if (prev) {
-            const prevVenda = Number(prev.valor_venda || 0);
-            const newVenda = Number(propRow.valor_venda || 0);
-            if (prevVenda > 0 && newVenda > 0 && prevVenda !== newVenda) {
-              const variacao = ((newVenda - prevVenda) / prevVenda) * 100;
-              priceChanges.push({
-                property_id: null, // Will resolve after upsert
-                property_code: propRow.codigo,
-                campo: "valor_venda",
-                valor_anterior: prevVenda,
-                valor_novo: newVenda,
-                variacao_pct: Math.round(variacao * 100) / 100,
-              });
-            }
-            const prevLoc = Number(prev.valor_locacao || 0);
-            const newLoc = Number(propRow.valor_locacao || 0);
-            if (prevLoc > 0 && newLoc > 0 && prevLoc !== newLoc) {
-              const variacao = ((newLoc - prevLoc) / prevLoc) * 100;
-              priceChanges.push({
-                property_id: null,
-                property_code: propRow.codigo,
-                campo: "valor_locacao",
-                valor_anterior: prevLoc,
-                valor_novo: newLoc,
-                variacao_pct: Math.round(variacao * 100) / 100,
-              });
-            }
-          }
-
-          rows.push(propRow);
-        }
-
-        // Upsert properties
-        const { error: upsertErr } = await sb
-          .from("properties")
-          .upsert(rows, { onConflict: "codigo" });
-
-        if (upsertErr) {
-          console.warn(`Properties upsert error (batch ${i}):`, upsertErr.message);
-        } else {
-          dbUpserted += rows.length;
-        }
-
-        // Insert price changes (resolve property_id)
-        if (priceChanges.length > 0) {
-          const changeCodes = priceChanges.map(pc => pc.property_code);
-          const { data: propIds } = await sb
-            .from("properties")
-            .select("id, codigo")
-            .in("codigo", changeCodes);
-
-          const idMap = new Map((propIds || []).map(p => [p.codigo, p.id]));
-          const priceRows = priceChanges
-            .map(pc => ({ property_id: idMap.get(pc.property_code), campo: pc.campo, valor_anterior: pc.valor_anterior, valor_novo: pc.valor_novo, variacao_pct: pc.variacao_pct }))
-            .filter(pr => pr.property_id);
-
-          if (priceRows.length > 0) {
-            await sb.from("property_price_history").insert(priceRows);
-            dbPriceChanges += priceRows.length;
-          }
-        }
-      }
-    } catch (dbErr) {
-      console.warn("Properties mirror error (non-fatal):", dbErr);
-      logOps("warn", "business", "Properties mirror error (non-fatal)", { page, error: dbErr instanceof Error ? dbErr.message : String(dbErr) });
-    }
-
     // Update sync state
     await sb.from("typesense_sync_state").update({
       next_page: hasMore ? page + 1 : page,
       status: hasMore ? "running" : "complete",
       last_indexed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      ...(hasMore ? {} : { finished_at: new Date().toISOString() }),
     }).eq("id", "default");
 
     console.info(JSON.stringify({
       fn: "typesense-sync", level: "info", traceId,
-      msg: `Page ${page}: ${indexed} indexed, ${errors} errors, ${dbUpserted} mirrored, ${dbPriceChanges} price changes, hasMore: ${hasMore}`,
+      msg: `Page ${page}: ${indexed} indexed, ${errors} errors, hasMore: ${hasMore} (source: DB)`,
       ts: new Date().toISOString(),
     }));
 
@@ -409,7 +306,7 @@ serve(async (req) => {
       logOps("warn", "business", `Typesense sync page ${page} had ${errors} indexing errors`, { page, indexed, errors, hasMore });
     }
 
-    return new Response(JSON.stringify({ success: true, page, indexed, errors, dbUpserted, dbPriceChanges, hasMore }), {
+    return new Response(JSON.stringify({ success: true, page, indexed, errors, hasMore }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
