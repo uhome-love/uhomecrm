@@ -132,9 +132,9 @@ export default function StageCoachBar({
               ? { text: `Lead parado há ${diasSemContato} dias em Atendimento — empurre a etapa!`, severity: "warning" }
               : undefined,
           actions: [
-            { label: "Perguntas de qualificação", icon: MessageSquare, homiPrompt: "Gere perguntas de qualificação UHOME para este lead em atendimento. Formato: apenas 2 mensagens WhatsApp curtas com perguntas estratégicas." },
+            { label: "Perguntas de qualificação", icon: MessageSquare, homiPrompt: "Gere perguntas de qualificação UHOME para este lead em atendimento. Formato: apenas 2 mensagens WhatsApp curtas com perguntas estratégicas. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais. Sem análise, sem script, sem recomendações." },
             { label: "Agendar follow-up", icon: Calendar, onClick: () => createQuickTask(`Follow-up com ${nome}`, "follow_up") },
-            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação consultiva para este lead em atendimento. Formato: apenas script Corretor/Cliente." },
+            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação consultiva para este lead em atendimento. Formato: apenas script Corretor/Cliente. IMPORTANTE: Retorne SOMENTE o script de ligação no formato Corretor/Cliente. Nada mais. Sem análise, sem WhatsApp, sem recomendações." },
           ],
           messages: [
             {
