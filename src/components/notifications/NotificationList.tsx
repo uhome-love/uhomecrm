@@ -211,6 +211,18 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
         const isClickable = !!route;
         const { leadName, detail } = getContextDetails(n);
         const isRadar = n.tipo === "radar_intencao";
+        const d = n.dados || {};
+        const etapa = d.etapa || d.stage_nome || d.status || null;
+
+        // Determine action label based on notification type
+        let actionLabel = "Ver →";
+        if (["visitas", "visita_agendada", "visita_confirmada", "visita_noshow"].includes(n.tipo) || n.categoria?.startsWith("visita")) {
+          actionLabel = "Ver visita →";
+        } else if (["leads", "lead", "lead_roleta", "lead_sem_contato", "lead_parado", "lead_alto_valor", "lead_urgente", "lead_ultimo_alerta", "radar_intencao", "automacao", "sequencias"].includes(n.tipo)) {
+          actionLabel = "Ver lead →";
+        } else if (["propostas", "proposta_assinada", "vendas", "negocio_fechado"].includes(n.tipo)) {
+          actionLabel = "Ver negócio →";
+        }
 
         return (
           <div
