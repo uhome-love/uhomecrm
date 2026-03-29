@@ -13,6 +13,7 @@ import PipelineTransferDialog from "./PipelineTransferDialog";
 import CentralComunicacao from "@/components/comunicacao/CentralComunicacao";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import { CallFocusOverlay } from "./CallFocusOverlay";
+import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
 
 // Extracted sub-components
 import CardStatusLine, { getCardStatus } from "./CardStatusLine";
@@ -94,6 +95,7 @@ const PipelineCard = memo(function PipelineCard({
   const [criandoNegocio, setCriandoNegocio] = useState(false);
   const [negocioCriado, setNegocioCriado] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const [isWhatsAppFlowOpen, setIsWhatsAppFlowOpen] = useState(false);
 
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
   const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]);
@@ -146,7 +148,7 @@ const PipelineCard = memo(function PipelineCard({
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!lead.telefone) return;
-    setWhatsappTemplatesOpen(true);
+    setIsWhatsAppFlowOpen(true);
   };
 
   const handleMoveStage = (e: React.MouseEvent, stageId: string) => {
@@ -509,6 +511,13 @@ const PipelineCard = memo(function PipelineCard({
           leadOrigem={lead.origem}
           tarefas={[]}
           availableStages={stages.map(s => ({ id: s.id, tipo: s.tipo, nome: s.nome }))}
+          onRefresh={() => {}}
+        />
+        <WhatsAppFocusFlow
+          isOpen={isWhatsAppFlowOpen}
+          onClose={() => setIsWhatsAppFlowOpen(false)}
+          lead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_id: lead.stage_id }}
+          stageTipo={stage?.tipo}
           onRefresh={() => {}}
         />
       </div>

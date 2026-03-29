@@ -68,9 +68,19 @@ export default function CardQuickTaskPopover({ leadId, leadNome }: CardQuickTask
         created_by: user.id,
         responsavel_id: user.id,
       } as any);
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: leadId,
+        tipo: "tarefa",
+        titulo: `Tarefa criada: ${TIPO_LABELS[type]} — ${obs}`,
+        data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+        prioridade: "media",
+        status: "pendente",
+        created_by: user.id,
+      });
       await supabase.from("pipeline_leads").update({
         proxima_acao: TIPO_LABELS[type] || titulo,
         data_proxima_acao: venceEm,
+        ultima_acao_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as any).eq("id", leadId);
       const dateLabel = dateMode === "hoje" ? "hoje" : dateMode === "amanha" ? "amanhã" : format(customDate!, "dd/MM");
