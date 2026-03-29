@@ -42,6 +42,7 @@ import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
 import StageCoachBar from "./StageCoachBar";
+import { CallFocusOverlay } from "./CallFocusOverlay";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -112,6 +113,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [inativarObs, setInativarObs] = useState("");
   const [inativando, setInativando] = useState(false);
   const [nextActionOpen, setNextActionOpen] = useState(false);
+  const [isCallOpen, setIsCallOpen] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
@@ -361,11 +363,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           {/* Row 3: Actions bar — horizontal scroll on mobile */}
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
             {lead.telefone && (
-              <a href={`tel:${lead.telefone}`} className="shrink-0">
-                <Button variant="outline" size="sm" className="h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap">
-                  <Phone className="h-3.5 w-3.5" /> Ligar
-                </Button>
-              </a>
+              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => setIsCallOpen(true)}>
+                <Phone className="h-3.5 w-3.5" /> Ligar
+              </Button>
             )}
             {lead.telefone && (
               <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setWhatsappTemplatesOpen(true)}>
@@ -747,6 +747,23 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         currentStageId={lead.stage_id}
         onMove={onMove}
         onReload={leadData.reload}
+      />
+
+      <CallFocusOverlay
+        isOpen={isCallOpen}
+        onClose={() => setIsCallOpen(false)}
+        lead={{
+          id: lead.id,
+          nome: lead.nome,
+          telefone: lead.telefone,
+          empreendimento: lead.empreendimento,
+          stage_id: lead.stage_id,
+        }}
+        stageTipo={currentStage?.tipo}
+        leadOrigem={(lead as any).origem}
+        tarefas={leadData.tarefas}
+        availableStages={stages.map(s => ({ id: s.id, tipo: s.tipo, nome: s.nome }))}
+        onRefresh={leadData.reload}
       />
     </Sheet>
   );
