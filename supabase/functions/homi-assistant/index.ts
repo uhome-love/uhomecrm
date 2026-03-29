@@ -129,46 +129,142 @@ NÃO FAZER: Falar só do lote, mandar tabela direto, ser técnico demais
 FAZER: Criar cenário de vida, mostrar diferencial do entorno, gerar curiosidade
 OBJETIVO: Levar o lead a pensar "Isso é exatamente o tipo de vida que eu quero"
 
-🔷 CONNECT JOÃO WALLIG (INVESTIMENTO - CYRELA):
-• Posicionamento: Produto de liquidez, fácil locação, marca forte (Cyrela)
-• Perfil: Investidor iniciante ou médio, quer segurança
-• Psicologia: Medo de errar, quer validação
-• Abertura: "Esse aqui não é tanto sobre morar, é mais uma decisão inteligente de investimento"
-• Exploração: "Tu tá pensando mais em renda ou valorização?"
-• Argumentos: Localização estratégica, produto líquido, fácil revender/alugar
-• Condução: "Esse tipo de produto faz mais sentido quando tu entende o todo, não só a unidade"
-• Visita: "Se tu ver a localização e o projeto, fica muito mais claro o potencial"
-• ERRO CRÍTICO: Vender como imóvel emocional, não falar de investimento
+🔷 CONNECT JOÃO WALLIG (INVESTIMENTO SEGURO - CYRELA):
 
-🔷 SHIFT (INVESTIMENTO - ENTRADA ACESSÍVEL):
-• Posicionamento: Porta de entrada para investir, baixo ticket relativo
-• Perfil: Jovem, primeiro investimento
-• Psicologia: Quer começar, medo de não conseguir
-• Abertura: "Esse aqui é muito usado por quem quer começar a investir sem dar um passo muito grande"
-• Exploração: "Já pensou em investir antes ou seria o primeiro?"
-• Condução: "Ele é interessante justamente por ser mais leve pra entrar"
-• Visita: "Vale ver ele porque muda bastante a percepção de risco"
+📌 POSICIONAMENTO REAL:
+Investimento com marca forte (Cyrela). Produto pensado pra rentabilidade, não pra emoção.
+O cliente deve perceber: "Isso é uma decisão inteligente de investimento, não compra por impulso"
 
-🔷 ORYGEM (MÉDIO PADRÃO - PRODUTO MAIS QUALIFICADO):
-• Posicionamento: Produto mais sofisticado, localização + padrão construtivo
-• Perfil: Cliente mais exigente, já viu outras opções
-• Psicologia: Compara muito, quer acertar
-• Abertura: "Esse aqui já é um nível acima do padrão comum que tu deve ter visto"
-• Exploração: "O que mais tem pesado pra ti: localização ou qualidade do imóvel?"
-• Argumentos: Padrão construtivo, diferenciação real, valorização
-• Condução: "Esse aqui é o tipo de imóvel que quando a pessoa visita, começa a comparar diferente"
-• Visita: "Vale ver pra entender a diferença na prática"
-• ERRO CRÍTICO: Tratar como produto comum, não destacar nível
+📍 DIFERENCIAIS REAIS DO PRODUTO:
+• Localização estratégica: Próximo a tudo (serviços, comércio, transporte)
+• Estrutura completa: Rooftop, lazer, áreas comuns de alto padrão
+• Parceria com gestão profissional de locação (Charlie)
+• Fácil locação: Alta demanda na região, produto líquido
+• Marca Cyrela: Referência nacional em qualidade construtiva
 
-🔷 OPEN BOSQUE (PRIMEIRO IMÓVEL):
-• Perfil: Jovens, primeiro imóvel, saindo do aluguel
-• Abordagem: Acessibilidade, entrada facilitada
-• Mensagem: "Esse aqui é perfeito pra sair do aluguel sem pesar"
+👤 PERFIL DO LEAD:
+• Investidor que busca segurança e previsibilidade
+• Pessoa que quer renda passiva sem dor de cabeça
+• Psicologia: Medo de errar, busca validação, quer números e fatos
+
+❌ ERROS CRÍTICOS DOS CORRETORES:
+• Vender como imóvel emocional / para morar
+• Não falar de investimento, rentabilidade e liquidez
+• Não mencionar a gestão profissional de locação
+
+✅ SCRIPTS DE ABORDAGEM (PADRÃO OURO):
+• Abertura: "Esse aqui é muito mais uma decisão inteligente de investimento do que emocional"
+• Conexão: "Tu tá pensando mais em renda ou valorização?"
+• Construção de valor: "Localização estratégica, estrutura completa e gestão profissional de locação já inclusa"
+• Argumentos: Fácil locação, estrutura completa (rooftop, lazer), gestão profissional, marca Cyrela
+• Condução visita: "Se tu ver o projeto e a localização, fica muito claro o potencial"
+• Fechamento: "Esse tipo de produto faz mais sentido quando tu entende o todo, não só a unidade"
+
+🔥 FRASE DE CONVERSÃO: "Esse é investimento inteligente"
+
+🔷 SHIFT (INVESTIMENTO URBANO - ESTILO DE VIDA + LIQUIDEZ):
+
+📌 POSICIONAMENTO REAL:
+"Life on demand" — Produto urbano, dinâmico. Morar, hospedar ou investir.
+NÃO é apartamento comum. É produto híbrido de estilo de vida urbano.
+
+📍 DIFERENCIAIS REAIS DO PRODUTO:
+• Localização consolidada: Rua Silva Jardim, região viva da cidade
+• Forte apelo jovem e urbano
+• Produto híbrido: moradia + locação (Airbnb, temporada)
+• Alta liquidez: região com demanda constante
+• Produto moderno com conceito diferenciado
+
+👤 PERFIL DO LEAD:
+• Jovem investidor, público Airbnb / locação
+• Pessoa que valoriza praticidade e mobilidade
+• Psicologia: Quer mobilidade, praticidade e retorno
+
+❌ ERROS CRÍTICOS DOS CORRETORES:
+• Vender como apartamento comum
+• Não explorar o conceito "life on demand"
+• Não falar de liquidez e potencial de locação
+
+✅ SCRIPTS DE ABORDAGEM (PADRÃO OURO):
+• Abertura: "Esse aqui é muito mais um produto de estilo de vida urbano do que um imóvel tradicional"
+• Conexão: "Tu pensou mais pra investir ou usar também?"
+• Argumentos: Região viva da cidade, alta liquidez, produto moderno
+• Condução visita: "Vale ver porque a proposta dele muda bastante a percepção"
+• Fechamento: "Esse aqui é muito usado por quem quer começar a investir sem dar um passo muito grande"
+
+🔥 FRASE DE CONVERSÃO: "Esse aqui é muito mais estilo de vida urbano"
+
+🔷 ORYGEM (MÉDIO PADRÃO - VIDA + STATUS + LOCALIZAÇÃO):
+
+📌 POSICIONAMENTO REAL:
+Produto acima da média. Mistura de morar bem + valorização.
+O cliente deve perceber: "Esse já é outro nível de produto"
+
+📍 DIFERENCIAIS REAIS DO PRODUTO:
+• Padrão construtivo superior ao que normalmente aparece no mercado
+• Diferenciação real em acabamento e projeto
+• Valorização consistente pela qualidade + localização
+
+👤 PERFIL DO LEAD:
+• Cliente exigente, já pesquisou bastante, quer acertar a decisão
+• Racional + emocional: compara muito antes de decidir
+• Psicologia: Quer sentir que fez a melhor escolha, não a mais barata
+
+❌ ERROS CRÍTICOS DOS CORRETORES:
+• Tratar como produto comum
+• Não destacar o nível superior do produto
+• Competir por preço ao invés de qualidade
+
+✅ SCRIPTS DE ABORDAGEM (PADRÃO OURO):
+• Abertura: "Esse aqui já é um nível acima do padrão que normalmente aparece"
+• Conexão: "Tu tá olhando mais localização ou qualidade do imóvel?"
+• Argumentos: Padrão construtivo superior, diferenciação real, valorização consistente
+• Condução visita: "Esse tipo de produto só faz sentido quando tu vê pessoalmente"
+• Fechamento: "Esse aqui é o tipo de imóvel que quando a pessoa visita, começa a comparar diferente"
+
+🔥 FRASE DE CONVERSÃO: "Esse já é outro nível de produto"
+
+🔷 OPEN BOSQUE (ECONÔMICO FORTE - VOLUME + FACILIDADE):
+
+📌 POSICIONAMENTO REAL:
+Entrada acessível, alto volume, primeira conquista.
+O cliente deve perceber: "Posso sair do aluguel sem me apertar"
+
+📍 DIFERENCIAIS REAIS DO PRODUTO:
+• Parque linear com +22.000m² de área verde
+• Lazer completo incluso
+• Forte condição de pagamento e entrada facilitada
+• Programa MCMV: parcelas acessíveis
+
+👤 PERFIL DO LEAD:
+• Primeiro imóvel, cliente sensível a parcela
+• MCMV, saindo do aluguel
+• Psicologia: Medo de não conseguir comprar, busca segurança financeira
+
+❌ ERROS CRÍTICOS DOS CORRETORES:
+• Não falar de condição de pagamento e facilidade
+• Focar em características do imóvel ao invés da acessibilidade
+• Não fazer conta comparativa aluguel vs parcela
+
+✅ SCRIPTS DE ABORDAGEM (PADRÃO OURO):
+• Abertura: "Esse aqui é muito usado por quem quer sair do aluguel sem se apertar"
+• Conexão: "Hoje tu paga aluguel ou já tem algo próprio?"
+• Argumentos: Parcela acessível, entrada facilitada, lazer completo, parque linear 22mil m²
+• Condução visita: "Vale ver porque o custo-benefício dele é bem forte"
+• Fechamento: "A maioria das pessoas se surpreende quando vê o que consegue por essa parcela"
+
+🔥 FRASE DE CONVERSÃO: "Esse aqui é porta de entrada"
 
 🔷 MELNICK DAY (EVENTO):
 • Perfil: Urgência, condições exclusivas
 • Abordagem: Escassez, evento especial
 • Mensagem: "Evento com condições que não se repetem"
+
+🧠 LÓGICA DE DIRECIONAMENTO POR PERFIL:
+• Cliente fala "morar melhor" / "espaço" / "família" → Orygem ou Las Casas
+• Cliente fala "investir" / "renda" / "valorização" → Shift ou Connect JW
+• Cliente fala "parcela" / "aluguel" / "primeiro imóvel" → Open Bosque
+• REGRA FINAL: Cada produto DEVE ser vendido de forma DIFERENTE. Erro = tratar todos iguais.
 
 ═══════════════════════════════════════
 PLAYBOOKS POR ORIGEM DO LEAD
