@@ -463,6 +463,31 @@ ${histCtx}
         </div>
       )}
 
+      {/* Client said input */}
+      {!result && !loading && (
+        <div className="mb-3 space-y-1">
+          <label className="text-[10px] font-medium text-muted-foreground">💬 O que o cliente disse/respondeu?</label>
+          <Textarea
+            className="text-xs min-h-[36px]"
+            placeholder="Cole aqui a mensagem do cliente para a IA gerar uma resposta personalizada..."
+            value={clientSaid}
+            onChange={e => setClientSaid(e.target.value)}
+            rows={2}
+          />
+          {clientSaid && (
+            <Button
+              size="sm"
+              className="w-full h-7 text-[10px] gap-1"
+              onClick={() => handleAction("responder_cliente", `O CLIENTE DISSE: "${clientSaid}". Gere uma resposta personalizada para o que o cliente disse.`)}
+              disabled={loading}
+            >
+              <Sparkles className="h-3 w-3" />
+              Gerar resposta para o que o cliente disse
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Result */}
       {result && (
         <div className="space-y-2">
@@ -473,7 +498,22 @@ ${histCtx}
             <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1" onClick={handleCopy}>
               📋 Copiar
             </Button>
-            <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1" onClick={() => { setResult(""); setActiveAction(null); setCustomPrompt(""); setObjecao(""); }}>
+            {leadTelefone && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 text-[10px] flex-1 text-emerald-600 border-emerald-300"
+                onClick={() => {
+                  handleCopy();
+                  const phone = (leadTelefone || "").replace(/\D/g, "");
+                  const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
+                  window.open(`https://wa.me/${fullPhone}`, "_blank");
+                }}
+              >
+                📱 Copiar + WhatsApp
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1" onClick={() => { setResult(""); setActiveAction(null); setCustomPrompt(""); setObjecao(""); setClientSaid(""); }}>
               Nova consulta
             </Button>
           </div>

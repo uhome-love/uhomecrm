@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Lightbulb, Copy, Phone, MessageSquare, Calendar, ChevronDown, Sparkles, Clock, CheckCircle2 } from "lucide-react";
+import { Lightbulb, Copy, Phone, MessageSquare, Calendar, ChevronDown, Sparkles, Clock, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 interface StageCoachBarProps {
@@ -13,14 +13,15 @@ interface StageCoachBarProps {
   tentativasLigacao: number;
   telefone: string | null | undefined;
   onAddTarefa: (data: any) => void;
-  onOpenHomi?: () => void;
+  onOpenHomi?: (prompt?: string) => void;
   sequenceInfo?: { total: number; enviados: number } | null;
 }
 
 interface StageConfig {
   diagnostic: string;
   color: string;
-  actions: { label: string; icon: any; onClick?: () => void }[];
+  alert?: { text: string; severity: "warning" | "danger" };
+  actions: { label: string; icon: any; onClick?: () => void; homiPrompt?: string }[];
   messages: { title: string; body: string }[];
 }
 
@@ -47,9 +48,25 @@ export default function StageCoachBar({
     toast.success("Mensagem copiada!");
   };
 
+  const openWhatsApp = (msg: string) => {
+    if (!telefone) { toast.error("Telefone não disponível"); return; }
+    const phone = telefone.replace(/\D/g, "");
+    const fullPhone = phone.startsWith("55") ? phone : `55${phone}`;
+    const final = msg.replace(/\{\{nome\}\}/g, nome).replace(/\{\{empreendimento\}\}/g, emp);
+    window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(final)}`, "_blank");
+  };
+
   const createQuickTask = (titulo: string, tipo: string) => {
     onAddTarefa({ titulo, tipo, prioridade: "alta" });
   };
+
+  const triggerHomi = (prompt: string) => {
+    if (onOpenHomi) onOpenHomi(prompt);
+    else toast.info("Abra o painel do HOMI para usar esta ação");
+  };
+
+  // Follow-up day badge
+  const followUpDay = sequenceInfo ? sequenceInfo.enviados + 1 : null;
 
   const config = useMemo((): StageConfig | null => {
     switch (stageTipo) {
@@ -61,8 +78,8 @@ export default function StageCoachBar({
             : `Novo lead aguardando primeiro contato · ${tentativasLigacao} tentativa${tentativasLigacao !== 1 ? "s" : ""}`,
           color: "border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20",
           actions: [
-            { label: "Script de ligação", icon: Phone, onClick: () => createQuickTask(`Ligar para ${nome}`, "ligacao") },
-            { label: "WhatsApp apresentação", icon: MessageSquare },
+            { label: "Script de ligação", icon: Phone, onClick: () => createQuickTask(`Ligar para ${nome}`, "ligacao"), homiPrompt: "Gere um script de ligação para primeiro contato com este lead na etapa sem_contato." },
+            { label: "WhatsApp apresentação", icon: MessageSquare, homiPrompt: "Gere uma mensagem de WhatsApp de primeiro contato para este lead." },
           ],
           messages: [
             {
@@ -86,24 +103,34 @@ export default function StageCoachBar({
 
       case "contato_iniciado":
         return {
-          diagnostic: "Conexão iniciada — hora de qualificar o interesse",
-          color: "border-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20",
+          diagnostic: diasSemContato >= 3
+            ? `⚠️ Lead parado há ${diasSemContato} dias em Atendimento — etapa mais crítica do funil!`
+            : "Conexão iniciada — framework UHOME: Relacionamento → Diagnóstico → Oferta (máx 3)",
+          color: diasSemContato >= 3
+            ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10"
+            : "border-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20",
+          alert: diasSemContato >= 6
+            ? { text: `URGENTE: ${diasSemContato} dias parado — lead esfriando! Ação imediata necessária.`, severity: "danger" }
+            : diasSemContato >= 3
+              ? { text: `Lead parado há ${diasSemContato} dias em Atendimento — empurre a etapa!`, severity: "warning" }
+              : undefined,
           actions: [
-            { label: "Perguntas de qualificação", icon: MessageSquare },
+            { label: "Perguntas de qualificação", icon: MessageSquare, homiPrompt: "Gere perguntas de qualificação UHOME para este lead em atendimento: 1) Morar ou investir? 2) Região preferida? 3) Faixa de valor? 4) Prazo?" },
             { label: "Agendar follow-up", icon: Calendar, onClick: () => createQuickTask(`Follow-up com ${nome}`, "follow_up") },
+            { label: "Script de ligação", icon: Phone, homiPrompt: "Gere um script de ligação consultiva para este lead em atendimento. Use o framework: Abertura (15s) → Contexto → Proposta → Avanço para visita." },
           ],
           messages: [
             {
-              title: "🎯 Versão direta",
+              title: "🎯 Diagnóstico UHOME",
               body: `{{nome}}, queria entender melhor teu momento pra te mostrar algo que realmente faça sentido. Tu tá buscando pra morar ou investir?`,
+            },
+            {
+              title: "🔥 Oferta direcionada (máx 3 opções)",
+              body: `{{nome}}, baseado no que conversamos, separei 2 opções que fazem mais sentido pra ti. Posso te mandar? Uma delas é bem diferente do que tu tá vendo no mercado 😊`,
             },
             {
               title: "🏠 Lead Avulso (Usado)",
               body: `{{nome}}, esse imóvel é interessante dentro da proposta dele… mas depende muito do que tu busca. Dependendo do teu objetivo, consigo te mostrar opções melhores 😊`,
-            },
-            {
-              title: "Perguntas estratégicas",
-              body: `{{nome}}, que bom que conseguimos conversar! 😊 Me conta: o imóvel seria pra moradia ou investimento? E qual região tu prefere? Com essas infos consigo filtrar as melhores opções!`,
             },
             {
               title: "Follow-up conexão [Curiosidade]",
@@ -117,8 +144,8 @@ export default function StageCoachBar({
           diagnostic: "Lead em qualificação — entenda o perfil e apresente opções",
           color: "border-purple-500/30 bg-purple-50/50 dark:bg-purple-950/20",
           actions: [
-            { label: "Enviar vitrine IA", icon: Sparkles },
-            { label: "Completar perfil", icon: CheckCircle2 },
+            { label: "Enviar vitrine IA", icon: Sparkles, homiPrompt: "Gere uma vitrine personalizada com até 3 imóveis que fazem sentido para o perfil deste lead." },
+            { label: "Completar perfil", icon: CheckCircle2, homiPrompt: "Quais informações faltam para qualificar este lead? Gere perguntas para completar o perfil." },
           ],
           messages: [
             {
@@ -146,7 +173,7 @@ export default function StageCoachBar({
           color: "border-orange-500/30 bg-orange-50/50 dark:bg-orange-950/20",
           actions: [
             { label: "Agendar visita", icon: Calendar, onClick: () => createQuickTask(`Agendar visita com ${nome}`, "visita") },
-            { label: "Destaques do imóvel", icon: MessageSquare },
+            { label: "Destaques do imóvel", icon: MessageSquare, homiPrompt: "Gere os destaques e diferenciais do empreendimento para convencer este lead a visitar." },
           ],
           messages: [
             {
@@ -166,23 +193,27 @@ export default function StageCoachBar({
 
       case "visita_marcada":
         return {
-          diagnostic: "Visita agendada — confirme e reforce a importância!",
+          diagnostic: "🛡️ Anti No-show: Confirme D-2 (vídeo), D-1 (autoridade), Dia (lembrete+mapa)",
           color: "border-green-500/30 bg-green-50/50 dark:bg-green-950/20",
           actions: [
-            { label: "Lembrete ao cliente", icon: MessageSquare },
-            { label: "Confirmar visita", icon: CheckCircle2 },
+            { label: "Sequência anti no-show", icon: CheckCircle2, homiPrompt: "Gere a sequência completa anti no-show para este lead com visita agendada: D-2 (vídeo curto do empreendimento), D-1 (mensagem com autoridade), Dia (lembrete + localização)." },
+            { label: "Confirmar visita", icon: Phone, onClick: () => createQuickTask(`Confirmar visita ${nome}`, "ligacao") },
           ],
           messages: [
             {
-              title: "Lembrete D-1",
-              body: `{{nome}}, lembrando da nossa visita amanhã em {{empreendimento}}! 📍 Te espero lá. Se precisar reagendar, me avise! 😊`,
+              title: "📹 D-2: Vídeo + Expectativa",
+              body: `{{nome}}, olha esse vídeo rápido de {{empreendimento}} — amanhã tu vai ver isso ao vivo, é outro nível! 🎥`,
             },
             {
-              title: "Confirmação no dia",
-              body: `Bom dia, {{nome}}! Tudo pronto pra nossa visita hoje em {{empreendimento}}! Nos vemos em breve 🏡`,
+              title: "🏆 D-1: Autoridade",
+              body: `{{nome}}, separei as melhores unidades pra te mostrar amanhã. Algumas delas têm poucas disponíveis — vai ser ótimo ver ao vivo! Confirma pra mim? 😊`,
             },
             {
-              title: "Reforço de importância [Escassez]",
+              title: "📍 Dia: Lembrete + Mapa",
+              body: `Bom dia, {{nome}}! Tudo pronto pra nossa visita hoje em {{empreendimento}}! 📍 Te espero lá. Se precisar reagendar, me avise! 😊`,
+            },
+            {
+              title: "🔥 Reforço de importância [Escassez]",
               body: `{{nome}}, separei as melhores unidades pra te mostrar amanhã. Algumas delas têm poucas disponíveis — vai ser ótimo ver ao vivo! 😊`,
             },
           ],
@@ -190,15 +221,18 @@ export default function StageCoachBar({
 
       case "visita_realizada":
         return {
-          diagnostic: "Visita feita — momento crucial para avançar para proposta!",
+          diagnostic: "⚡ Regra UHOME: Follow-up no MESMO DIA da visita! Não deixe esfriar.",
           color: "border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20",
+          alert: diasSemContato >= 1
+            ? { text: `${diasSemContato} dia${diasSemContato > 1 ? "s" : ""} sem follow-up pós-visita — envie AGORA!`, severity: diasSemContato >= 3 ? "danger" : "warning" }
+            : undefined,
           actions: [
-            { label: "Enviar simulação", icon: MessageSquare },
+            { label: "Follow-up pós-visita", icon: MessageSquare, homiPrompt: "Gere follow-up pós-visita para este lead. Regra: deve ser no MESMO DIA. Pergunte o que mais impressionou e prepare terreno para proposta." },
             { label: "Criar proposta", icon: Calendar, onClick: () => createQuickTask(`Preparar proposta para ${nome}`, "follow_up") },
           ],
           messages: [
             {
-              title: "🎯 Versão direta",
+              title: "🎯 Follow-up MESMO DIA",
               body: `{{nome}}, o que pesou mais pra ti na visita? Quero te mandar uma simulação certeira 😊`,
             },
             {
@@ -219,7 +253,7 @@ export default function StageCoachBar({
           color: "border-red-500/30 bg-red-50/50 dark:bg-red-950/20",
           actions: [
             { label: "Follow-up proposta", icon: Phone, onClick: () => createQuickTask(`Follow-up proposta ${nome}`, "follow_up") },
-            { label: "Condições especiais", icon: MessageSquare },
+            { label: "Quebrar objeção", icon: MessageSquare, homiPrompt: "O lead recebeu proposta mas não fechou. Gere estratégias para quebrar objeções e fechar o negócio." },
           ],
           messages: [
             {
@@ -246,15 +280,37 @@ export default function StageCoachBar({
 
   return (
     <div className={`mx-5 mb-2 rounded-lg border ${config.color} p-3`}>
+      {/* Alert banner for stalled leads */}
+      {config.alert && (
+        <div className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 mb-2 text-[11px] font-medium ${
+          config.alert.severity === "danger"
+            ? "bg-destructive/10 text-destructive border border-destructive/20"
+            : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+        }`}>
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          {config.alert.text}
+        </div>
+      )}
+
       <div className="flex items-start gap-2">
         <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-xs font-medium text-foreground">{config.diagnostic}</p>
+            {/* Follow-up 5 dias badge */}
             {sequenceInfo && (
               <Badge variant="outline" className="text-[10px] h-4 gap-1">
                 <Clock className="h-2.5 w-2.5" />
-                Sequência: {sequenceInfo.enviados}/{sequenceInfo.total}
+                Dia {Math.min(sequenceInfo.enviados + 1, sequenceInfo.total)}/{sequenceInfo.total}
+              </Badge>
+            )}
+            {followUpDay && followUpDay <= 5 && (
+              <Badge variant={followUpDay >= 4 ? "destructive" : "secondary"} className="text-[10px] h-4 gap-0.5">
+                {followUpDay === 1 && "📩 Msg simples"}
+                {followUpDay === 2 && "🖼️ Imagem/Áudio"}
+                {followUpDay === 3 && "🎥 Vídeo"}
+                {followUpDay === 4 && "⚡ Urgência"}
+                {followUpDay === 5 && "👋 Encerramento"}
               </Badge>
             )}
           </div>
@@ -266,7 +322,7 @@ export default function StageCoachBar({
                 variant="outline"
                 size="sm"
                 className="h-7 text-[11px] gap-1 px-2.5"
-                onClick={action.onClick}
+                onClick={action.onClick || (action.homiPrompt ? () => triggerHomi(action.homiPrompt!) : undefined)}
               >
                 <action.icon className="h-3 w-3" />
                 {action.label}
@@ -277,7 +333,7 @@ export default function StageCoachBar({
                 variant="ghost"
                 size="sm"
                 className="h-7 text-[11px] gap-1 px-2.5 text-primary"
-                onClick={onOpenHomi}
+                onClick={() => onOpenHomi()}
               >
                 <Sparkles className="h-3 w-3" />
                 HOMI
@@ -297,15 +353,28 @@ export default function StageCoachBar({
                 <div key={i} className="bg-background/80 rounded-md border border-border/50 p-2.5">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[11px] font-medium">{msg.title}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 text-[10px] gap-1 px-1.5"
-                      onClick={() => copyMessage(msg.body)}
-                    >
-                      <Copy className="h-3 w-3" />
-                      Copiar
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 text-[10px] gap-1 px-1.5"
+                        onClick={() => copyMessage(msg.body)}
+                      >
+                        <Copy className="h-3 w-3" />
+                        Copiar
+                      </Button>
+                      {telefone && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 text-[10px] gap-1 px-1.5 text-emerald-600"
+                          onClick={() => openWhatsApp(msg.body)}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          WhatsApp
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed">
                     {msg.body

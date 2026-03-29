@@ -44,12 +44,12 @@ export default function DailyProgressCard({ progress, goals, saveGoals, variant 
     }
   }, [goals?.meta_ligacoes, goals?.meta_aproveitados, goals?.meta_visitas_marcadas]);
 
-  // In full variant, show editor if no goals saved yet (null = no record, undefined = still loading)
+  // Auto-save default goals when null (no record) — corretor sees progress immediately
   useEffect(() => {
-    if (variant === "full" && goals === null) {
-      setEditing(true);
+    if (goals === null) {
+      saveGoals(30, 5, 3).catch(e => console.error("Erro ao salvar meta default:", e));
     }
-  }, [goals, variant]);
+  }, [goals]);
 
 
   const handleSave = async () => {
