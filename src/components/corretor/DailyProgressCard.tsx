@@ -166,10 +166,6 @@ export default function DailyProgressCard({ progress, goals, saveGoals, variant 
   }
 
   // Full variant (CorretorHome)
-  const goalStatus = goals?.status || "pendente";
-  const isApproved = goalStatus === "aprovado";
-  const isPending = goalStatus === "pendente";
-
   return (
     <Card>
       <CardContent className="p-4 space-y-3">
@@ -178,16 +174,6 @@ export default function DailyProgressCard({ progress, goals, saveGoals, variant 
             <Target className="h-4 w-4 text-primary" /> Meta do Dia
           </h3>
           <div className="flex items-center gap-2">
-            {isApproved && (
-              <Badge variant="secondary" className="text-[10px] gap-1 bg-emerald-500/15 text-emerald-700 border-emerald-500/30">
-                ✅ Aprovada
-              </Badge>
-            )}
-            {isPending && goals && (
-              <Badge variant="secondary" className="text-[10px] gap-1 bg-amber-500/15 text-amber-700 border-amber-500/30">
-                ⏳ Aguardando aprovação
-              </Badge>
-            )}
             {progress.todasMissoesCumpridas ? (
               <Badge variant="secondary" className="text-[10px] gap-1">🏆 Todas as metas!</Badge>
             ) : progress.missaoCumprida ? (
@@ -196,21 +182,6 @@ export default function DailyProgressCard({ progress, goals, saveGoals, variant 
             <Button variant="ghost" size="sm" className="text-xs h-7" onClick={openEditor}>Editar</Button>
           </div>
         </div>
-
-        {/* Show approved values if different */}
-        {isApproved && goals?.meta_ligacoes_aprovada != null && (
-          <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/30 px-3 py-2">
-            <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 mb-1">Meta aprovada pelo gerente:</p>
-            <div className="flex items-center gap-4 text-xs">
-              <span>📞 {goals.meta_ligacoes_aprovada} lig</span>
-              <span>✅ {goals.meta_aproveitados_aprovada} aprov</span>
-              <span>📅 {goals.meta_visitas_marcadas} vis</span>
-            </div>
-            {goals.feedback_gerente && (
-              <p className="text-[10px] text-emerald-600 dark:text-emerald-400/80 mt-1 italic">💬 {goals.feedback_gerente}</p>
-            )}
-          </div>
-        )}
         <div className="space-y-3">
           <div>
             <div className="flex justify-between text-xs mb-1">
