@@ -232,6 +232,9 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
     setDescricao("");
     setFollowUp("none");
     setFollowUpDate("");
+    if (followUp === "none") {
+      onNextAction?.();
+    }
   };
 
   const handleAddNota = async () => {
