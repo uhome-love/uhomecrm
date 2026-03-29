@@ -612,6 +612,7 @@ export function useRoleta() {
 
       const nextPos = (existing?.[0]?.posicao || 0) + 1;
 
+      // Insert into roleta_fila
       await supabase.from("roleta_fila").insert({
         corretor_id: corretorProfileId,
         segmento_id: segmentoId,
@@ -620,6 +621,18 @@ export function useRoleta() {
         data: hoje,
         ativo: true,
       });
+
+      // FIX: Also upsert into roleta_credenciamentos so the Edge Function sees this corretor
+      const profileId = await getProfileId();
+      await supabase.from("roleta_credenciamentos").upsert({
+        corretor_id: corretorProfileId,
+        data: hoje,
+        janela,
+        segmento_1_id: segmentoId,
+        status: "aprovado",
+        aprovado_por: profileId,
+        aprovado_em: new Date().toISOString(),
+      }, { onConflict: "corretor_id,data,janela" });
 
       const { data: profile } = await supabase.from("profiles").select("nome").eq("id", corretorProfileId).single();
       toast.success(`${profile?.nome || "Corretor"} incluído manualmente na fila!`);
