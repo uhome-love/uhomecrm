@@ -148,7 +148,7 @@ const PipelineCard = memo(function PipelineCard({
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!lead.telefone) return;
-    setWhatsappTemplatesOpen(true);
+    setIsWhatsAppFlowOpen(true);
   };
 
   const handleMoveStage = (e: React.MouseEvent, stageId: string) => {
