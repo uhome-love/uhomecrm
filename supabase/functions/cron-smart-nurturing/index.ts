@@ -74,11 +74,11 @@ interface Imovel {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Buscar leads parados em estágios de qualificação há mais de 48h
+// 1. Buscar leads parados em estágios de qualificação há mais de 7 dias
 // ---------------------------------------------------------------------------
 async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
-  const quarentaOitoHorasAtras = new Date(
-    Date.now() - 48 * 60 * 60 * 1000
+  const seteDiasAtras = new Date(
+    Date.now() - 7 * 24 * 60 * 60 * 1000
   ).toISOString();
 
   // Busca leads com stage de qualificação/novo/contactado sem interação recente
@@ -104,9 +104,10 @@ async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
         area_max
       )
     `)
-    .lt("ultima_acao_at", quarentaOitoHorasAtras)
+    .lt("ultima_acao_at", seteDiasAtras)
     .not("telefone", "is", null)
-    .limit(100);
+    .order("updated_at", { ascending: true })
+    .limit(50);
 
   if (error) {
     console.error("[nurturing] Erro ao buscar leads:", error);
