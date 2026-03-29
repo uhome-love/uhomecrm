@@ -398,7 +398,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
       </div>
 
       {/* FOOTER */}
-      <div className="border-t border-border/50 px-5 py-3 space-y-2">
+      <div className="border-t border-border/50 px-5 py-3 space-y-2 shrink-0">
         {fase === 1 && (
           <>
             <p className="text-[11px] text-muted-foreground text-center">Como foi a ligação?</p>
