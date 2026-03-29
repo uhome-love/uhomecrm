@@ -498,12 +498,18 @@ async function distributeSingleLead(
 
   const authIds = [...profileToAuth.values()];
 
+      // FIX Bug 3: Count ALL distributions today (including timed-out) for fair balancing
+      const { data: todayDistributions } = await supabase
+        .from("distribuicao_historico")
+        .select("corretor_id, pipeline_lead_id, created_at")
+        .eq("acao", "distribuido")
+        .gte("created_at", todayStart);
+
       const { data: todayLeads } = await supabase
         .from("pipeline_leads")
-        .select("corretor_id, distribuido_em, empreendimento")
+        .select("id, corretor_id, empreendimento")
         .in("corretor_id", authIds)
-        .gte("distribuido_em", todayStart)
-        .in("aceite_status", ["aceito", "pendente"]);
+        .gte("distribuido_em", todayStart);
 
       const { data: activeLeadsData } = await supabase
         .from("pipeline_leads")
@@ -517,20 +523,30 @@ async function distributeSingleLead(
         totalAtivosCount.set(l.corretor_id, (totalAtivosCount.get(l.corretor_id) || 0) + 1);
       }
 
-      // Per-segment lead count for balancing
+      const leadEmpreendimentoMap = new Map<string, string>();
+      for (const l of todayLeads || []) {
+        if (l.empreendimento) leadEmpreendimentoMap.set(l.id, l.empreendimento);
+      }
+
+      // Per-segment lead count based on ALL distributions
       const leadsCountBySegment = new Map<string, number>();
       const leadsCountGlobal = new Map<string, number>();
       const lastReceived = new Map<string, string>();
       for (const uid of authIds) leadsCountGlobal.set(uid, 0);
-      for (const l of todayLeads || []) {
-        leadsCountGlobal.set(l.corretor_id, (leadsCountGlobal.get(l.corretor_id) || 0) + 1);
-        const seg = await resolveSegmento(supabase, l.empreendimento);
-        if (seg) {
-          const key = `${l.corretor_id}::${seg}`;
-          leadsCountBySegment.set(key, (leadsCountBySegment.get(key) || 0) + 1);
+
+      for (const d of todayDistributions || []) {
+        if (!authIds.includes(d.corretor_id)) continue;
+        leadsCountGlobal.set(d.corretor_id, (leadsCountGlobal.get(d.corretor_id) || 0) + 1);
+        const emp = leadEmpreendimentoMap.get(d.pipeline_lead_id);
+        if (emp) {
+          const seg = await resolveSegmento(supabase, emp);
+          if (seg) {
+            const key = `${d.corretor_id}::${seg}`;
+            leadsCountBySegment.set(key, (leadsCountBySegment.get(key) || 0) + 1);
+          }
         }
-        const prev = lastReceived.get(l.corretor_id);
-        if (!prev || l.distribuido_em > prev) lastReceived.set(l.corretor_id, l.distribuido_em);
+        const prev = lastReceived.get(d.corretor_id);
+        if (!prev || d.created_at > prev) lastReceived.set(d.corretor_id, d.created_at);
       }
 
       // ── Exclude corretors who already timed out on this lead ──
