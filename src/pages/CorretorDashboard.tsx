@@ -311,7 +311,7 @@ export default function CorretorDashboard() {
           <Button
             size="lg"
             className="h-14 gap-2 text-sm font-bold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_4px_20px_hsl(152_60%_42%/0.3)]"
-            onClick={() => navigate("/oferta-ativa")}
+            onClick={() => navigate("/corretor/call")}
           >
             <Phone className="h-5 w-5" />
             CALL / Oferta Ativa
@@ -367,47 +367,25 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 8. MISSÕES DE HOJE                                                 */}
+      {/* 8. PROGRESSO DO DIA (card compacto → link /progresso)             */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}>
-        <MissoesDeHoje
-          missoes={missoes}
-          missaoGeral={missaoGeral}
-          pontos={progress.pontos}
-          todasCompletas={progress.todasMissoesCumpridas}
-        />
-      </motion.div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 9. RANKING                                                         */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.19 }}>
-        <RankingGestaoLeads
-          ranking={ranking}
-          loading={rankingLoading}
-          userId={userId}
-        />
-      </motion.div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 14. GAMIFICAÇÃO (Level + Conquistas)                              */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
-        <Card className="border-primary/10 overflow-hidden">
+        <Card className="border-primary/10 overflow-hidden cursor-pointer hover:border-primary/30 transition-colors" onClick={() => navigate("/progresso")}>
           <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                <span className="font-bold text-sm text-foreground">Progresso do Dia</span>
+              </div>
+              <Button variant="ghost" size="sm" className="h-6 text-xs text-primary gap-1">
+                Ver detalhes <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
             <LevelProgressBar points={progress.pontos} />
-            {unlocked.length > 0 && (
-              <div className="flex items-center gap-1.5 pt-1">
-                <p className="text-[10px] text-muted-foreground font-medium shrink-0">Recentes:</p>
-                {unlocked.slice(0, 5).map(u => {
-                  const def = ACHIEVEMENTS_MAP[u.conquista_id];
-                  return def ? (
-                    <span key={u.conquista_id} className="text-sm" title={def.label}>{def.emoji}</span>
-                  ) : null;
-                })}
-                <Button variant="ghost" size="sm" className="h-5 text-[10px] text-primary ml-auto" onClick={() => navigate("/conquistas")}>
-                  Ver todas →
-                </Button>
+            {missaoGeral !== undefined && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
+                <span>Missão geral: <strong className="text-foreground">{missaoGeral}%</strong></span>
               </div>
             )}
           </CardContent>

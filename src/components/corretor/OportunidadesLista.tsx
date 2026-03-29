@@ -198,26 +198,6 @@ export default function OportunidadesLista() {
                     Nenhuma ação pendente. Credencia-se na roleta e aguarde novos leads.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-xs"
-                    onClick={() => (window.location.href = "/pipeline")}
-                  >
-                    <ListTodo className="w-3.5 h-3.5 mr-1" />
-                    Abrir Pipeline
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-xs"
-                    onClick={() => (window.location.href = "/oferta-ativa")}
-                  >
-                    <Phone className="w-3.5 h-3.5 mr-1" />
-                    Oferta Ativa
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}
