@@ -268,7 +268,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             {(() => {
               const isAtualizado = nextTask !== null;
               const diasSemContato = noContactAlert
-                ? Math.floor(differenceInHoursSafe(new Date(), new Date((lead as any).ultima_acao_at || lead.created_at)) / 24)
+                ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
                 : 0;
               const motivosDesat: string[] = [];
               if (!nextTask) motivosDesat.push('sem tarefa futura');
