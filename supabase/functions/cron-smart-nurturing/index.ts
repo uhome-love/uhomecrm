@@ -1,40 +1,21 @@
 // =============================================================================
-// Edge Function: cron-smart-nurturing (v2)
+// Edge Function: cron-smart-nurturing
 // Propósito: Motor de Match Noturno — roda diariamente às 07:00 BRT
-// Correções v2:
-//   - Vitrines criadas no banco do SITE (huigglwvvzuwwyqvpmec) via supabaseSite
-//   - Campos corretos da tabela vitrines: imovel_codigos, created_by, corretor_id
-//   - pipeline_atividades: usa pipeline_lead_id (não lead_id), sem campo automatico
-//   - profiles: usa user_id (não id), campo nome (não full_name)
-//   - pipeline_leads: sem campo ativo, sem FK direta para profiles
+// Varre leads parados há mais de 7 dias, busca os melhores imóveis no Typesense
+// e dispara vitrine via WhatsApp usando Template Oficial da Meta.
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Cliente do CRM (banco principal da Edge Function)
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-// Cliente do Site (banco separado onde ficam as vitrines)
-const UHOMESITE_URL = Deno.env.get("UHOMESITE_URL")!;
-const UHOMESITE_SERVICE_KEY = Deno.env.get("UHOMESITE_SERVICE_KEY")!;
-
 const TYPESENSE_HOST = Deno.env.get("TYPESENSE_HOST")!;
 const TYPESENSE_SEARCH_API_KEY = Deno.env.get("TYPESENSE_SEARCH_API_KEY")!;
 const WHATSAPP_ACCESS_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN")!;
 const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID")!;
-
-// URL pública do site para montar o link da vitrine
-const SITE_PUBLIC_URL = Deno.env.get("UHOMESITE_URL") || "https://uhome.com.br";
+const UHOMESITE_URL = Deno.env.get("UHOMESITE_URL")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-// Cliente separado apontando para o banco do site
-const supabaseSite = createClient(
-  // O Supabase URL do site é derivado do project ref huigglwvvzuwwyqvpmec
-  "https://huigglwvvzuwwyqvpmec.supabase.co",
-  UHOMESITE_SERVICE_KEY
-);
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -45,8 +26,9 @@ interface LeadComPerfil {
   telefone: string;
   corretor_id: string;
   corretor_nome: string;
+  corretor_telefone: string;
   stage_tipo: string;
-  ultima_acao_at: string;
+  updated_at: string;
   perfil: {
     bairros: string[] | null;
     regioes: string[] | null;
@@ -74,23 +56,29 @@ interface Imovel {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Buscar leads parados em estágios de qualificação há mais de 7 dias
+// 1. Buscar leads parados há mais de 7 dias (Limite: 200/dia)
 // ---------------------------------------------------------------------------
 async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
   const seteDiasAtras = new Date(
     Date.now() - 7 * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  // Busca leads com stage de qualificação/novo/contactado sem interação recente
-  const { data: leads, error } = await supabase
+  // Busca leads antigos, sem contato recente e com score baixo
+  const { data, error } = await supabase
     .from("pipeline_leads")
     .select(`
       id,
       nome,
       telefone,
-      ultima_acao_at,
+      updated_at,
       corretor_id,
-      stage_id,
+      profiles!pipeline_leads_corretor_id_fkey (
+        full_name,
+        phone
+      ),
+      pipeline_stages!inner (
+        tipo
+      ),
       lead_property_profiles (
         bairros,
         regioes,
@@ -104,55 +92,34 @@ async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
         area_max
       )
     `)
-    .lt("ultima_acao_at", seteDiasAtras)
+    .in("pipeline_stages.tipo", ["novo_lead", "sem_contato", "contato_inicial", "qualificacao"])
+    .not("corretor_id", "is", null)
     .not("telefone", "is", null)
+    .lt("updated_at", seteDiasAtras)
+    .or("lead_score.is.null,lead_score.lt.5")
+    .eq("ativo", true)
     .order("updated_at", { ascending: true })
-    .limit(50);
+    .limit(200);
 
   if (error) {
     console.error("[nurturing] Erro ao buscar leads:", error);
     return [];
   }
 
-  // Busca os stage_ids de qualificação/novo/contactado
-  const { data: stagesElegiveis } = await supabase
-    .from("pipeline_stages")
-    .select("id")
-    .in("tipo", ["qualificacao", "novo_lead", "contato_inicial", "sem_contato"]);
-
-  const stageIdsElegiveis = new Set(
-    (stagesElegiveis || []).map((s: any) => s.id)
-  );
-
-  // Filtra leads que estão em stages elegíveis
-  const leadsFiltrados = (leads || []).filter((lead: any) =>
-    stageIdsElegiveis.has(lead.stage_id)
-  );
-
-  // Busca nomes dos corretores em lote
-  const corretorIds = [...new Set(leadsFiltrados.map((l: any) => l.corretor_id).filter(Boolean))];
-  const { data: corretores } = await supabase
-    .from("profiles")
-    .select("user_id, nome")
-    .in("user_id", corretorIds);
-
-  const mapaCorretores = new Map(
-    (corretores || []).map((c: any) => [c.user_id, c.nome || "Corretor uHome"])
-  );
-
-  // Filtra leads que já receberam nurturing nas últimas 72h
+  // Filtra leads que já receberam nurturing automático nos últimos 15 dias
   const leadsElegiveis: LeadComPerfil[] = [];
-  for (const lead of leadsFiltrados) {
-    const jaRecebeu = await verificarNurturingRecente(lead.id);
-    if (!jaRecebeu) {
+  for (const lead of data || []) {
+    const jaRecebeuRecente = await verificarNurturingRecente(lead.id);
+    if (!jaRecebeuRecente) {
       leadsElegiveis.push({
         id: lead.id,
         nome: lead.nome || "Cliente",
         telefone: lead.telefone,
         corretor_id: lead.corretor_id,
-        corretor_nome: mapaCorretores.get(lead.corretor_id) || "Corretor uHome",
-        stage_tipo: "qualificacao",
-        ultima_acao_at: lead.ultima_acao_at,
+        corretor_nome: (lead.profiles as any)?.full_name || "Corretor uHome",
+        corretor_telefone: (lead.profiles as any)?.phone || "",
+        stage_tipo: (lead.pipeline_stages as any)?.tipo || "qualificacao",
+        updated_at: lead.updated_at,
         perfil: (lead.lead_property_profiles as any)?.[0] || null,
       });
     }
@@ -163,19 +130,19 @@ async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Verificar se o lead já recebeu nurturing automático nas últimas 72h
+// 2. Verificar se o lead já recebeu nurturing automático recentemente (15 dias)
 // ---------------------------------------------------------------------------
 async function verificarNurturingRecente(leadId: string): Promise<boolean> {
-  const setentaDuasHorasAtras = new Date(
-    Date.now() - 72 * 60 * 60 * 1000
+  const quinzeDiasAtras = new Date(
+    Date.now() - 15 * 24 * 60 * 60 * 1000
   ).toISOString();
 
   const { count } = await supabase
     .from("pipeline_atividades")
     .select("id", { count: "exact", head: true })
-    .eq("pipeline_lead_id", leadId)
+    .eq("lead_id", leadId)
     .eq("tipo", "nurturing_automatico")
-    .gte("created_at", setentaDuasHorasAtras);
+    .gte("created_at", quinzeDiasAtras);
 
   return (count || 0) > 0;
 }
@@ -215,7 +182,11 @@ async function buscarImoveisTypesense(
   try {
     const response = await fetch(
       `https://${TYPESENSE_HOST}/collections/properties/documents/search?${params}`,
-      { headers: { "X-TYPESENSE-API-KEY": TYPESENSE_SEARCH_API_KEY } }
+      {
+        headers: {
+          "X-TYPESENSE-API-KEY": TYPESENSE_SEARCH_API_KEY,
+        },
+      }
     );
 
     if (!response.ok) {
@@ -232,86 +203,82 @@ async function buscarImoveisTypesense(
 }
 
 // ---------------------------------------------------------------------------
-// 4. Criar vitrine no banco do SITE (não do CRM)
+// 4. Criar vitrine no banco do site e obter URL pública
 // ---------------------------------------------------------------------------
 async function criarVitrine(
-  lead: LeadComPerfil,
+  leadId: string,
+  corretorId: string,
   imoveis: Imovel[]
 ): Promise<string | null> {
   const codigos = imoveis.map((i) => i.codigo);
 
-  // Busca o corretor_slug para montar a URL personalizada
-  const { data: corretorProfile } = await supabase
-    .from("profiles")
-    .select("slug")
-    .eq("user_id", lead.corretor_id)
-    .single();
-
-  const corretorSlug = (corretorProfile as any)?.slug || null;
-
-  // Insere a vitrine no banco do SITE via supabaseSite
-  const { data, error } = await supabaseSite
+  const { data, error } = await supabase
     .from("vitrines")
     .insert({
-      created_by: lead.corretor_id,
-      corretor_id: lead.corretor_id,
-      corretor_slug: corretorSlug,
-      titulo: `Seleção especial para ${lead.nome.split(" ")[0]}`,
-      subtitulo: "Imóveis selecionados especialmente para você",
-      mensagem: `Olá ${lead.nome.split(" ")[0]}! Separei esses imóveis que combinam com o que você busca.`,
+      lead_id: leadId,
+      corretor_id: corretorId,
       imovel_codigos: codigos,
-      imovel_ids: JSON.stringify(imoveis.map((i) => i.id)),
-      lead_nome: lead.nome,
-      lead_telefone: lead.telefone,
-      tipo: "nurturing_automatico",
-      tema_visual: "default",
+      origem: "nurturing_automatico",
+      titulo: "Seleção especial para você",
+      ativo: true,
     })
-    .select("id, slug")
+    .select("id")
     .single();
 
   if (error || !data) {
-    console.error("[nurturing] Erro ao criar vitrine no site:", error);
+    console.error("[nurturing] Erro ao criar vitrine:", error);
     return null;
   }
 
-  // Usa slug se disponível, senão usa o ID
-  const identificador = (data as any).slug || (data as any).id;
-  return `${SITE_PUBLIC_URL}/vitrine/${identificador}`;
+  return `${UHOMESITE_URL}/vitrine/${data.id}`;
 }
 
 // ---------------------------------------------------------------------------
-// 5. Montar mensagem personalizada para WhatsApp
+// 5. Enviar mensagem via WhatsApp (Meta Cloud API) usando Template
 // ---------------------------------------------------------------------------
-function montarMensagem(
-  nomeCliente: string,
-  nomeCorretor: string,
-  urlVitrine: string,
-  imoveis: Imovel[]
-): string {
-  const primeiroNome = nomeCliente.split(" ")[0];
-  const bairro = imoveis[0]?.bairro || "Porto Alegre";
-
-  return (
-    `Oi ${primeiroNome}! 👋 Aqui é ${nomeCorretor} da uHome.\n\n` +
-    `Estava analisando o mercado hoje cedo e separei ${imoveis.length} imóvel(is) ` +
-    `em ${bairro} que combinam com o que você busca.\n\n` +
-    `🏠 Veja a seleção especial que preparei para você:\n` +
-    `👉 ${urlVitrine}\n\n` +
-    `Algum chamou atenção? Me conta! 😊`
-  );
-}
-
-// ---------------------------------------------------------------------------
-// 6. Enviar mensagem via WhatsApp (Meta Cloud API)
-// ---------------------------------------------------------------------------
-async function enviarWhatsApp(
+async function enviarWhatsAppTemplate(
   telefone: string,
-  mensagem: string
+  leadNome: string,
+  imovelPrincipal: Imovel,
+  urlVitrine: string
 ): Promise<boolean> {
   const telefoneLimpo = telefone.replace(/\D/g, "");
   const telefoneComDDI = telefoneLimpo.startsWith("55")
     ? telefoneLimpo
     : `55${telefoneLimpo}`;
+
+  const primeiroNome = leadNome.split(" ")[0] || "Cliente";
+  
+  const precoFormatado = new Intl.NumberFormat('pt-BR', { 
+    style: 'currency', 
+    currency: 'BRL',
+    maximumFractionDigits: 0 
+  }).format(imovelPrincipal.preco || 0);
+
+  const payload = {
+    messaging_product: "whatsapp",
+    to: telefoneComDDI,
+    type: "template",
+    template: {
+      name: "vitrine_imoveis_personalizada",
+      language: {
+        code: "pt_BR"
+      },
+      components: [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: primeiroNome },
+            { type: "text", text: imovelPrincipal.titulo || "Imóvel selecionado" },
+            { type: "text", text: imovelPrincipal.bairro || "Sua região" },
+            { type: "text", text: imovelPrincipal.tipo || "Imóvel" },
+            { type: "text", text: precoFormatado },
+            { type: "text", text: urlVitrine }
+          ]
+        }
+      ]
+    }
+  };
 
   try {
     const response = await fetch(
@@ -322,20 +289,13 @@ async function enviarWhatsApp(
           Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: telefoneComDDI,
-          type: "text",
-          text: { body: mensagem },
-        }),
+        body: JSON.stringify(payload),
       }
     );
 
     if (!response.ok) {
-      console.error(
-        `[nurturing] WhatsApp erro para ${telefoneComDDI}:`,
-        await response.text()
-      );
+      const erro = await response.text();
+      console.error(`[nurturing] WhatsApp erro para ${telefoneComDDI}:`, erro);
       return false;
     }
 
@@ -347,7 +307,7 @@ async function enviarWhatsApp(
 }
 
 // ---------------------------------------------------------------------------
-// 7. Registrar atividade no CRM (pipeline_atividades com campos reais)
+// 6. Registrar atividade no histórico do lead
 // ---------------------------------------------------------------------------
 async function registrarAtividade(
   leadId: string,
@@ -355,27 +315,23 @@ async function registrarAtividade(
   urlVitrine: string,
   imoveisEnviados: number
 ): Promise<void> {
-  // Registra no histórico do lead (pipeline_atividades)
   await supabase.from("pipeline_atividades").insert({
-    pipeline_lead_id: leadId,
+    lead_id: leadId,
+    corretor_id: corretorId,
     tipo: "nurturing_automatico",
-    titulo: `🤖 Vitrine automática enviada (${imoveisEnviados} imóvel(is))`,
-    descricao: `IA enviou vitrine automática. Link: ${urlVitrine}`,
-    data: new Date().toISOString().split("T")[0],
-    status: "concluida",
-    prioridade: "normal",
-    created_by: corretorId,
+    descricao: `🤖 IA enviou vitrine automática com ${imoveisEnviados} imóvel(is). Link: ${urlVitrine}`,
+    automatico: true,
   });
 
-  // Atualiza ultima_acao_at do lead
+  // Atualiza updated_at do lead para ele ir pro final da fila
   await supabase
     .from("pipeline_leads")
-    .update({ ultima_acao_at: new Date().toISOString() })
+    .update({ updated_at: new Date().toISOString() })
     .eq("id", leadId);
 }
 
 // ---------------------------------------------------------------------------
-// 8. Notificar corretor via notifications
+// 7. Notificar corretor via push notification
 // ---------------------------------------------------------------------------
 async function notificarCorretor(
   corretorId: string,
@@ -398,66 +354,12 @@ Deno.serve(async (req) => {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  // Permite chamada manual para um lead específico (modo: "manual")
-  let leadIdManual: string | null = null;
-  if (req.method === "POST") {
-    try {
-      const body = await req.json();
-      if (body.lead_id && body.modo === "manual") {
-        leadIdManual = body.lead_id;
-      }
-    } catch {
-      // ignora body inválido
-    }
-  }
-
   console.log("[nurturing] Iniciando Motor de Match Noturno...");
 
-  let leads: LeadComPerfil[];
-
-  if (leadIdManual) {
-    // Modo manual: processa apenas o lead específico (chamado pelo botão "Follow-up IA")
-    const { data: leadData } = await supabase
-      .from("pipeline_leads")
-      .select(`
-        id, nome, telefone, ultima_acao_at, corretor_id, stage_id,
-        lead_property_profiles (
-          bairros, regioes, tipos, valor_min, valor_max,
-          dormitorios_min, suites_min, vagas_min, area_min, area_max
-        )
-      `)
-      .eq("id", leadIdManual)
-      .single();
-
-    if (!leadData) {
-      return new Response(
-        JSON.stringify({ success: false, erro: "Lead não encontrado" }),
-        { headers: { "Content-Type": "application/json" }, status: 404 }
-      );
-    }
-
-    const { data: corretorData } = await supabase
-      .from("profiles")
-      .select("nome")
-      .eq("user_id", (leadData as any).corretor_id)
-      .single();
-
-    leads = [{
-      id: (leadData as any).id,
-      nome: (leadData as any).nome || "Cliente",
-      telefone: (leadData as any).telefone,
-      corretor_id: (leadData as any).corretor_id,
-      corretor_nome: (corretorData as any)?.nome || "Corretor uHome",
-      stage_tipo: "qualificacao",
-      ultima_acao_at: (leadData as any).ultima_acao_at,
-      perfil: ((leadData as any).lead_property_profiles as any)?.[0] || null,
-    }];
-  } else {
-    // Modo automático: busca todos os leads elegíveis
-    leads = await buscarLeadsParados();
-  }
+  const leads = await buscarLeadsParados();
 
   if (leads.length === 0) {
+    console.log("[nurturing] Nenhum lead elegível. Encerrando.");
     return new Response(
       JSON.stringify({ success: true, processados: 0, mensagem: "Nenhum lead elegível" }),
       { headers: { "Content-Type": "application/json" } }
@@ -465,38 +367,50 @@ Deno.serve(async (req) => {
   }
 
   let enviados = 0;
+  let semPerfil = 0;
   let semImoveis = 0;
   let erros = 0;
 
   for (const lead of leads) {
     try {
-      if (!lead.telefone) { erros++; continue; }
+      if (!lead.telefone) {
+        erros++;
+        continue;
+      }
 
       const imoveis = await buscarImoveisTypesense(lead.perfil);
 
       if (imoveis.length === 0) {
         semImoveis++;
-        console.log(`[nurturing] Lead ${lead.nome}: sem imóveis compatíveis`);
+        console.log(`[nurturing] Lead ${lead.id} (${lead.nome}): sem imóveis compatíveis`);
         continue;
       }
 
-      const urlVitrine = await criarVitrine(lead, imoveis);
-      if (!urlVitrine) { erros++; continue; }
+      const urlVitrine = await criarVitrine(lead.id, lead.corretor_id, imoveis);
+      if (!urlVitrine) {
+        erros++;
+        continue;
+      }
 
-      const mensagem = montarMensagem(lead.nome, lead.corretor_nome, urlVitrine, imoveis);
-      const enviou = await enviarWhatsApp(lead.telefone, mensagem);
+      // Envia usando o template aprovado da Meta
+      const enviou = await enviarWhatsAppTemplate(
+        lead.telefone,
+        lead.nome,
+        imoveis[0], // Passa o imóvel principal para preencher as variáveis
+        urlVitrine
+      );
 
       if (enviou) {
         await registrarAtividade(lead.id, lead.corretor_id, urlVitrine, imoveis.length);
         await notificarCorretor(lead.corretor_id, lead.nome);
         enviados++;
-        console.log(`[nurturing] ✅ ${lead.nome}: vitrine enviada com ${imoveis.length} imóveis`);
+        console.log(`[nurturing] ✅ Lead ${lead.nome}: vitrine enviada com ${imoveis.length} imóveis`);
       } else {
         erros++;
       }
 
-      // Pausa para não sobrecarregar a API do WhatsApp
-      await new Promise((r) => setTimeout(r, 500));
+      // Pausa de 1 segundo entre envios para segurança da API
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (err) {
       console.error(`[nurturing] Erro ao processar lead ${lead.id}:`, err);
       erros++;
@@ -507,6 +421,7 @@ Deno.serve(async (req) => {
     success: true,
     total_leads: leads.length,
     enviados,
+    sem_perfil: semPerfil,
     sem_imoveis: semImoveis,
     erros,
     timestamp: new Date().toISOString(),
