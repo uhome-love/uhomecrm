@@ -4,11 +4,28 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus, Pin, PinOff, Send, StickyNote, ArrowRight, CheckCircle2,
   PhoneCall, MessageSquare, Video, MapPin, FileText, Clock, ClipboardList,
-  Building2, Share2, Search as SearchIcon
+  Building2, Share2, Search as SearchIcon, Trash2
 } from "lucide-react";
 import { formatDateSafe, parseDateTimeSafe } from "@/lib/utils";
+import { ptBR } from "date-fns/locale";
+import { todayBRT, dateToBRT } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import type { PipelineAtividade, PipelineAnotacao, PipelineTarefa, PipelineHistorico } from "@/hooks/usePipelineLeadData";
+import type { PipelineStage, PipelineLead } from "@/hooks/usePipeline";
+import { useLeadImoveisEvents, type LeadImovelEvent } from "@/hooks/useLeadImoveisEvents";
 import { ptBR } from "date-fns/locale";
 import { todayBRT, dateToBRT } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
