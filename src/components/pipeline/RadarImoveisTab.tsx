@@ -1155,6 +1155,25 @@ Responda SOMENTE com o JSON, sem markdown.`;
           status_imovel: profileForm.status_imovel,
         }}
         matches={results}
+        isSearching={loading}
+        onUpdateMatch={(edited) => {
+          setProfileForm(prev => ({
+            ...prev,
+            tipos: edited.tipos,
+            bairros: edited.bairros,
+            valor_min: edited.valor_min,
+            valor_max: edited.valor_max,
+            dormitorios_min: edited.dormitorios_min,
+            suites_min: edited.suites_min,
+            vagas_min: edited.vagas_min,
+            area_min: edited.area_min,
+            area_max: edited.area_max,
+            momento_compra: edited.momento_compra,
+            urgencia: edited.urgencia,
+            status_imovel: edited.status_imovel,
+          }));
+          setTimeout(() => handleSearch(), 50);
+        }}
       />
       {/* ── SUB-TABS ── */}
       <Tabs value={subTab} onValueChange={(v) => setSubTab(v as any)}>
