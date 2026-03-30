@@ -31,6 +31,7 @@ import { useLeadImoveisEvents } from "@/hooks/useLeadImoveisEvents";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import LeadMatchesWidget from "./LeadMatchesWidget";
+import RadarFullscreenModal from "./radar/RadarFullscreenModal";
 
 /* ═══════════════════════════════════════════
    TYPES
