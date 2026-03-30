@@ -132,9 +132,9 @@ export default function LeadMatchesWidget({ leadId, leadNome, leadTelefone }: Pr
         </div>
       )}
 
-      {/* Match cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }} className="max-h-[400px] overflow-y-auto pr-1">
-        {filtered.map(m => {
+      {/* Match cards — lista compacta */}
+      <div style={{ border: "0.5px solid hsl(var(--border))", borderRadius: 10, overflow: "hidden" }} className="max-h-[400px] overflow-y-auto">
+        {filtered.map((m, idx) => {
           const p = m.property;
           if (!p) return null;
           const badge = scoreBadge(m.score);
@@ -143,53 +143,40 @@ export default function LeadMatchesWidget({ leadId, leadNome, leadTelefone }: Pr
             <div
               key={m.id}
               className={cn(
-                "overflow-hidden transition-all",
+                "transition-all",
                 m.status === "descartado" && "opacity-40",
-                m.status === "favorito" && "border-amber-500/30 bg-amber-500/5",
+                m.status === "favorito" && "bg-amber-500/5",
               )}
               style={{
-                maxHeight: 220,
-                borderRadius: 10,
-                border: "0.5px solid hsl(var(--border))",
-                display: "flex",
-                flexDirection: "column",
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 12px",
+                borderBottom: idx < filtered.length - 1 ? "0.5px solid hsl(var(--border))" : "none",
+                background: "hsl(var(--background))",
               }}
             >
-              {/* Image */}
-              {p.fotos?.[0] && (
-                <div style={{ position: "relative", height: 100, flexShrink: 0 }}>
-                  <img src={p.fotos[0]} alt="" style={{ height: 100, width: "100%", objectFit: "cover", display: "block" }} />
-                  <span style={{
-                    position: "absolute", top: 6, right: 6,
-                    fontSize: 10, padding: "2px 6px", borderRadius: 10,
-                    background: "#16a34a", color: "white", fontWeight: 700,
-                  }}>
-                    {badge.label}
-                  </span>
-                </div>
-              )}
-              {!p.fotos?.[0] && (
-                <div style={{
-                  position: "relative", height: 100, flexShrink: 0,
-                  background: "hsl(var(--muted))", display: "flex", alignItems: "center", justifyContent: "center",
+              {/* Foto */}
+              <div style={{ position: "relative", width: 64, height: 64, flexShrink: 0 }}>
+                {p.fotos?.[0] ? (
+                  <img src={p.fotos[0]} alt="" style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ width: 64, height: 64, borderRadius: 8, background: "hsl(var(--muted))", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Sparkles className="h-4 w-4 text-muted-foreground/40" />
+                  </div>
+                )}
+                <span style={{
+                  position: "absolute", bottom: 4, right: 4,
+                  fontSize: 9, padding: "1px 4px", borderRadius: 4,
+                  background: "#16a34a", color: "white", fontWeight: 700,
                 }}>
-                  <Sparkles className="h-5 w-5 text-muted-foreground/40" />
-                  <span style={{
-                    position: "absolute", top: 6, right: 6,
-                    fontSize: 10, padding: "2px 6px", borderRadius: 10,
-                    background: "#16a34a", color: "white", fontWeight: 700,
-                  }}>
-                    {badge.label}
-                  </span>
-                </div>
-              )}
+                  {badge.label}
+                </span>
+              </div>
 
-              {/* Body */}
-              <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 3, flex: 1, minHeight: 0 }}>
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                 <p style={{
                   fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", lineHeight: 1.3,
-                  overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-                  margin: 0,
+                  margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                 }}>
                   {p.titulo || p.empreendimento || `Cód. ${p.codigo}`}
                 </p>
@@ -203,42 +190,40 @@ export default function LeadMatchesWidget({ leadId, leadNome, leadTelefone }: Pr
                   {p.area_privativa ? ` · ${p.area_privativa}m²` : ""}
                 </p>
                 {(m as any).motivos?.includes("mesmo_empreendimento") && (
-                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))", alignSelf: "flex-start" }}>
+                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: "#FAEEDA", color: "#854F0B", alignSelf: "flex-start" }}>
                     Mesmo empreendimento
                   </span>
                 )}
               </div>
 
-              {/* Footer */}
-              <div style={{
-                display: "flex", gap: 6, padding: "6px 10px",
-                borderTop: "0.5px solid hsl(var(--border))", marginTop: "auto",
-                alignItems: "center",
-              }}>
-                <button
-                  onClick={() => handleCopyWhatsApp(m)}
-                  style={{ fontSize: 10, color: "#16a34a", fontWeight: 500, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}
-                >
-                  <Send style={{ width: 12, height: 12 }} /> WhatsApp
-                </button>
-                <button
-                  onClick={() => window.open(`/imovel/${p.codigo}`, "_blank")}
-                  style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}
-                >
-                  <ExternalLink style={{ width: 12, height: 12 }} /> Ver
-                </button>
-                <div style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center" }}>
+              {/* Botões */}
+              <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <button
+                    onClick={() => handleCopyWhatsApp(m)}
+                    style={{ fontSize: 10, color: "#16a34a", fontWeight: 500, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}
+                  >
+                    <Send style={{ width: 12, height: 12 }} /> WhatsApp
+                  </button>
+                  <button
+                    onClick={() => window.open(`/imovel/${p.codigo}`, "_blank")}
+                    style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}
+                  >
+                    <ExternalLink style={{ width: 12, height: 12 }} /> Ver
+                  </button>
+                </div>
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   <button
                     onClick={() => updateMatchStatus({ matchId: m.id, status: m.status === "favorito" ? "novo" : "favorito" })}
                     style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
                   >
-                    <Star style={{ width: 14, height: 14 }} className={cn("text-muted-foreground", m.status === "favorito" && "text-amber-500 fill-amber-500")} />
+                    <Star style={{ width: 13, height: 13 }} className={cn("text-muted-foreground", m.status === "favorito" && "text-amber-500 fill-amber-500")} />
                   </button>
                   <button
                     onClick={() => updateMatchStatus({ matchId: m.id, status: "descartado" })}
                     style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
                   >
-                    <X style={{ width: 14, height: 14 }} className="text-muted-foreground hover:text-destructive" />
+                    <X style={{ width: 13, height: 13 }} className="text-muted-foreground hover:text-destructive" />
                   </button>
                 </div>
               </div>
