@@ -1218,6 +1218,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
               window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
             }
             toast.success("Vitrine criada! Link copiado ✨", { description: vitrineUrl, duration: 6000 });
+            return vitrineUrl;
           } catch (err: any) {
             console.error("Erro ao criar vitrine:", err);
             toast.error("Erro ao criar vitrine");
