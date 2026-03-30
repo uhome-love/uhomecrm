@@ -93,6 +93,8 @@ const MOMENTO_OPTIONS = [
 export default function RadarFullscreenModal({ open, onClose, leadNome, profile, matches, isSearching, onUpdateMatch, onIAPerfil, isAIAnalyzing, onCriarVitrine, isCreatingVitrine }: RadarFullscreenModalProps) {
   const [form, setForm] = useState<RadarProfileData>(profile);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [vitrineUrl, setVitrineUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (open) { setForm(profile); setSelected(new Set()); }
