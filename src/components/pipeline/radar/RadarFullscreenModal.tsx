@@ -433,7 +433,13 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
                             return next;
                           });
 
-                          const slug = item.slug || item.codigo || item.id;
+                          const slug = gerarSlugUhome({
+                            tipo: item.tipo || "imovel",
+                            quartos: item.dorms ? Number(item.dorms) : null,
+                            bairro: item.bairro || "",
+                            codigo: String(item.codigo || item.id || ""),
+                            slug: item.slug || null,
+                          });
                           const siteUrl = `https://uhome.com.br/imovel/${slug}`;
 
                           return (
