@@ -1238,9 +1238,10 @@ Responda SOMENTE com o JSON, sem markdown.`;
               created_by: user.id,
             }).then(() => {}).catch(() => {});
 
-            toast.success("Vitrine criada! ✨", { description: vitrineUrl, duration: 6000 });
             console.log("[RadarImoveisTab] vitrineUrl gerada:", vitrineUrl);
-            setCreatingVitrine(false);
+            // Return URL first, then reset loading state after a tick
+            // so the modal's .then() callback can capture the URL before re-render
+            setTimeout(() => setCreatingVitrine(false), 100);
             return vitrineUrl;
           } catch (err: any) {
             console.error("Erro ao criar vitrine:", err);
