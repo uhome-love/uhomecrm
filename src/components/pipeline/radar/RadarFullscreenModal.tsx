@@ -535,7 +535,7 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
         <div className="p-4 border-t border-border flex justify-between items-center shrink-0 gap-3">
           <span className="text-sm text-muted-foreground">{selected.size} selecionado{selected.size !== 1 ? "s" : ""}</span>
           
-          {vitrineUrl && (
+          {(vitrineUrl || vitrineUrlRef.current) && (
             <div className="flex items-center gap-2 flex-1 justify-center">
               <div className="flex items-center gap-1.5 bg-muted rounded-md px-3 py-1.5 max-w-lg">
                 <span className="text-xs text-muted-foreground truncate">{vitrineUrl}</span>
