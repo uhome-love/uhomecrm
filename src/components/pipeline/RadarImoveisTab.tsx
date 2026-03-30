@@ -1245,7 +1245,6 @@ Responda SOMENTE com o JSON, sem markdown.`;
           : "Nenhum imóvel buscado ainda"}
       </p>
 
-        <TabsContent value="radar" className="mt-2 space-y-2">
           {/* ── Perfil em 1 linha — pills clicáveis ── */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {/* Pills de perfil */}
