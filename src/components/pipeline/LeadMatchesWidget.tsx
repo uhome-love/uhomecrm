@@ -133,76 +133,113 @@ export default function LeadMatchesWidget({ leadId, leadNome, leadTelefone }: Pr
       )}
 
       {/* Match cards */}
-      <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-1">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }} className="max-h-[400px] overflow-y-auto pr-1">
         {filtered.map(m => {
           const p = m.property;
           if (!p) return null;
           const badge = scoreBadge(m.score);
-          const statusIcon = STATUS_ICONS[m.status];
 
           return (
             <div
               key={m.id}
               className={cn(
-                "border rounded-lg overflow-hidden max-h-[200px] transition-all flex flex-col",
+                "overflow-hidden transition-all",
                 m.status === "descartado" && "opacity-40",
                 m.status === "favorito" && "border-amber-500/30 bg-amber-500/5",
               )}
+              style={{
+                maxHeight: 220,
+                borderRadius: 10,
+                border: "0.5px solid hsl(var(--border))",
+                display: "flex",
+                flexDirection: "column",
+              }}
             >
+              {/* Image */}
               {p.fotos?.[0] && (
-                <img src={p.fotos[0]} alt="" className="h-[100px] w-full object-cover shrink-0" />
-              )}
-              <div className="p-2 flex flex-col gap-1 flex-1 min-h-0">
-                <div className="flex items-center gap-1">
-                  <Badge variant="outline" className={cn("text-[10px] font-bold px-1.5 py-0.5", badge.cls)}>
+                <div style={{ position: "relative", height: 100, flexShrink: 0 }}>
+                  <img src={p.fotos[0]} alt="" style={{ height: 100, width: "100%", objectFit: "cover", display: "block" }} />
+                  <span style={{
+                    position: "absolute", top: 6, right: 6,
+                    fontSize: 10, padding: "2px 6px", borderRadius: 10,
+                    background: "#16a34a", color: "white", fontWeight: 700,
+                  }}>
                     {badge.label}
-                  </Badge>
-                  {statusIcon && <statusIcon.icon className={cn("h-3 w-3", statusIcon.cls)} />}
+                  </span>
                 </div>
-                <p className="text-xs font-medium text-foreground truncate">
+              )}
+              {!p.fotos?.[0] && (
+                <div style={{
+                  position: "relative", height: 100, flexShrink: 0,
+                  background: "hsl(var(--muted))", display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Sparkles className="h-5 w-5 text-muted-foreground/40" />
+                  <span style={{
+                    position: "absolute", top: 6, right: 6,
+                    fontSize: 10, padding: "2px 6px", borderRadius: 10,
+                    background: "#16a34a", color: "white", fontWeight: 700,
+                  }}>
+                    {badge.label}
+                  </span>
+                </div>
+              )}
+
+              {/* Body */}
+              <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 3, flex: 1, minHeight: 0 }}>
+                <p style={{
+                  fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", lineHeight: 1.3,
+                  overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  margin: 0,
+                }}>
                   {p.titulo || p.empreendimento || `Cód. ${p.codigo}`}
                 </p>
-                <p className="text-[11px] text-muted-foreground truncate">
+                {p.valor_venda && (
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "#4F46E5", margin: 0 }}>
+                    {formatCurrency(Number(p.valor_venda))}
+                  </p>
+                )}
+                <p style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {p.bairro} · {p.dormitorios}d{p.suites ? `/${p.suites}s` : ""} · {p.vagas}v
                   {p.area_privativa ? ` · ${p.area_privativa}m²` : ""}
                 </p>
-                {p.valor_venda && (
-                  <p className="text-xs font-medium text-[#4F46E5]">{formatCurrency(Number(p.valor_venda))}</p>
+                {m.motivos?.includes("mesmo_empreendimento") && (
+                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))", alignSelf: "flex-start" }}>
+                    Mesmo empreendimento
+                  </span>
                 )}
-                <div className="flex items-center gap-1 mt-auto">
-                  <Button
-                    size="sm"
-                    variant={m.status === "favorito" ? "default" : "ghost"}
-                    className="h-6 text-[11px] px-2 py-1 gap-1"
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                display: "flex", gap: 6, padding: "6px 10px",
+                borderTop: "0.5px solid hsl(var(--border))", marginTop: "auto",
+                alignItems: "center",
+              }}>
+                <button
+                  onClick={() => handleCopyWhatsApp(m)}
+                  style={{ fontSize: 10, color: "#16a34a", fontWeight: 500, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}
+                >
+                  <Send style={{ width: 12, height: 12 }} /> WhatsApp
+                </button>
+                <button
+                  onClick={() => window.open(`/imovel/${p.codigo}`, "_blank")}
+                  style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}
+                >
+                  <ExternalLink style={{ width: 12, height: 12 }} /> Ver
+                </button>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center" }}>
+                  <button
                     onClick={() => updateMatchStatus({ matchId: m.id, status: m.status === "favorito" ? "novo" : "favorito" })}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
                   >
-                    <Star className={cn("h-3 w-3", m.status === "favorito" && "fill-current")} />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 text-[11px] px-2 py-1 gap-1 text-emerald-600"
-                    onClick={() => handleCopyWhatsApp(m)}
-                    title="Copiar para WhatsApp"
-                  >
-                    <Send className="h-3 w-3" /> WA
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 text-[11px] px-2 py-1 gap-1"
-                    onClick={() => window.open(`/imovel/${p.codigo}`, "_blank")}
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 text-[11px] px-2 py-1 gap-1 text-destructive"
+                    <Star style={{ width: 14, height: 14 }} className={cn("text-muted-foreground", m.status === "favorito" && "text-amber-500 fill-amber-500")} />
+                  </button>
+                  <button
                     onClick={() => updateMatchStatus({ matchId: m.id, status: "descartado" })}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
                   >
-                    <X className="h-3 w-3" />
-                  </Button>
+                    <X style={{ width: 14, height: 14 }} className="text-muted-foreground hover:text-destructive" />
+                  </button>
                 </div>
               </div>
             </div>
