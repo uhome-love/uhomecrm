@@ -70,9 +70,24 @@ const TEMPLATES = [
   },
 ];
 
-export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, leadTelefone, leadEmpreendimento, leadId, corretorNome }: Props) {
+export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, leadTelefone, leadEmpreendimento, leadId, corretorNome, stageTipo }: Props) {
   const { user } = useAuth();
   const [generating, setGenerating] = useState(false);
+  const [showOthers, setShowOthers] = useState(false);
+
+  const templatesPorEtapa: Record<string, string[]> = {
+    sem_contato: ['primeiro_contato', 'nao_atendeu'],
+    contato_iniciado: ['follow_up', 'nao_atendeu'],
+    qualificacao: ['follow_up', 'convite_visita'],
+    possivel_visita: ['convite_visita', 'follow_up'],
+    visita_marcada: ['convite_visita', 'follow_up'],
+    visita_realizada: ['envio_proposta', 'follow_up'],
+    negociacao: ['envio_proposta', 'follow_up'],
+  };
+
+  const filteredIds = stageTipo ? templatesPorEtapa[stageTipo] || null : null;
+  const primaryTemplates = filteredIds ? TEMPLATES.filter(t => filteredIds.includes(t.id)) : TEMPLATES;
+  const secondaryTemplates = filteredIds ? TEMPLATES.filter(t => !filteredIds.includes(t.id)) : [];
 
   const replaceVars = (template: string) => {
     return template
