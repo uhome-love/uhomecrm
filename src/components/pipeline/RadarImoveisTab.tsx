@@ -1247,6 +1247,25 @@ Responda SOMENTE com o JSON, sem markdown.`;
           : "Nenhum imóvel buscado ainda"}
       </p>
 
+      {/* ── Histórico do Radar ── */}
+      {radarHistory.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Últimas ações</p>
+          <div className="space-y-1.5">
+            {radarHistory.map((item) => {
+              const icon = item.tipo === 'vitrine' ? '📋' : item.tipo === 'envio_imovel' ? '📨' : '🔍';
+              return (
+                <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{icon}</span>
+                  <span className="truncate">{item.titulo}</span>
+                  <span className="shrink-0">· {format(new Date(item.created_at), 'dd/MM')}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
