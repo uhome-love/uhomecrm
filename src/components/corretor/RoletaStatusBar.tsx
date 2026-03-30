@@ -92,7 +92,8 @@ function getJanelasConfig(): JanelaConfig[] {
   ];
 }
 
-// Keep JANELAS_CONFIG as a getter for backward compat in static references
+// Use dynamic getter — JANELAS_CONFIG must be recalculated each render
+// to handle day changes (weekday vs saturday vs sunday)
 const JANELAS_CONFIG = getJanelasConfig();
 
 function getHoraDecimal() {
