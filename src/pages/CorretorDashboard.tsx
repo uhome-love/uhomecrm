@@ -3,7 +3,7 @@
 // Combina identidade visual do CorretorHome com lógica corrigida.
 // =============================================================================
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Phone, MessageCircle, Trophy, CheckCircle, Zap, Bot, Target, ListTodo,
