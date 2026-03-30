@@ -230,7 +230,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
         <span className="text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0" style={{ background: "#FCEBEB", color: "#A32D2D" }}>
           {STAGE_LABELS[stageTipo || ""] || stageTipo || "—"}
         </span>
-        <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted transition-colors shrink-0">
+        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }} className="p-1.5 rounded-md hover:bg-muted transition-colors shrink-0">
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
