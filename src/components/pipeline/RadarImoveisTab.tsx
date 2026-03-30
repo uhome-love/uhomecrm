@@ -1093,9 +1093,10 @@ Responda SOMENTE com o JSON, sem markdown.`;
   const sendWhatsApp = () => {
     if (!leadTelefone) { toast.error("Lead sem telefone cadastrado"); return; }
     const phone = leadTelefone.replace(/\D/g, "");
+    const finalPhone = phone.startsWith("55") ? phone : `55${phone}`;
     const items = selectedItems.length > 0 ? selectedItems : results.filter(r => r.score >= 60).slice(0, 5);
     handleMarkSent(items);
-    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(generateWhatsAppMsg())}`, "_blank");
+    window.open(`https://wa.me/${finalPhone}?text=${encodeURIComponent(generateWhatsAppMsg())}`, "_blank");
     toast.success("Abrindo WhatsApp...");
   };
 
