@@ -100,7 +100,7 @@ function gerarSlugImovel(imovel: Imovel): string {
 // ---------------------------------------------------------------------------
 async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
   const seteDiasAtras = new Date(
-    Date.now() - 3 * 24 * 60 * 60 * 1000
+    Date.now() - 7 * 24 * 60 * 60 * 1000
   ).toISOString();
 
   // Busca leads elegíveis sem tentar join via FK inexistente
