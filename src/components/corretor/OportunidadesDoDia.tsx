@@ -560,8 +560,38 @@ export function OportunidadesDoDia() {
 // Sub-componente: Card de oportunidade
 // ---------------------------------------------------------------------------
 function CardOportunidade({ op }: { op: Oportunidade }) {
+  const { user } = useAuth();
   const temp = TEMPERATURA_CONFIG[op.lead_temperatura] ?? TEMPERATURA_CONFIG.frio;
   const tipo = TIPO_CONFIG[op.tipo];
+  const [followUpCriado, setFollowUpCriado] = useState(false);
+  const [criandoFollowUp, setCriandoFollowUp] = useState(false);
+
+  const handleCriarFollowUp = async () => {
+    if (!user) return;
+    setCriandoFollowUp(true);
+    try {
+      const amanha = new Date();
+      amanha.setDate(amanha.getDate() + 1);
+      const venceEm = amanha.toISOString().split("T")[0];
+
+      const { error } = await supabase.from("pipeline_tarefas").insert({
+        pipeline_lead_id: op.lead_id,
+        titulo: `Follow-up: ${op.lead_nome}`,
+        tipo: "follow_up",
+        vence_em: venceEm,
+        hora_vencimento: "09:00:00",
+        responsavel_id: user.id,
+        status: "pendente",
+      });
+      if (error) throw error;
+      toast.success("Follow-up agendado para amanhã");
+      setFollowUpCriado(true);
+    } catch (err) {
+      toast.error("Erro ao criar follow-up");
+    } finally {
+      setCriandoFollowUp(false);
+    }
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -573,6 +603,11 @@ function CardOportunidade({ op }: { op: Oportunidade }) {
               <span className="font-semibold text-sm text-foreground truncate">
                 {op.lead_nome}
               </span>
+              {op.lead_etapa && (
+                <span className="bg-muted text-muted-foreground text-xs rounded-full px-2 py-0.5">
+                  {op.lead_etapa}
+                </span>
+              )}
               <Badge className={`${temp.cor} text-white text-xs shrink-0`}>
                 {temp.icone} {temp.texto}
               </Badge>
@@ -613,6 +648,15 @@ function CardOportunidade({ op }: { op: Oportunidade }) {
                 Follow-up IA
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              onClick={handleCriarFollowUp}
+              disabled={followUpCriado || criandoFollowUp}
+            >
+              {followUpCriado ? "✓ Agendado" : criandoFollowUp ? "Criando..." : "+Follow-up"}
+            </Button>
             <Button size="sm" variant="ghost" className="h-8 px-2" asChild>
               <a href={`/pipeline-leads?lead=${op.lead_id}`}>
                 <ChevronRight className="w-4 h-4" />
