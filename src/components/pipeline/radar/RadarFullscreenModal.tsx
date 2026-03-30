@@ -342,12 +342,45 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, profile,
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border flex justify-between items-center shrink-0">
+        <div className="p-4 border-t border-border flex justify-between items-center shrink-0 gap-3">
           <span className="text-sm text-muted-foreground">{selected.size} selecionado{selected.size !== 1 ? "s" : ""}</span>
+          
+          {vitrineUrl && (
+            <div className="flex items-center gap-2 flex-1 justify-center">
+              <div className="flex items-center gap-1.5 bg-muted rounded-md px-3 py-1.5 max-w-md">
+                <span className="text-xs text-muted-foreground truncate">{vitrineUrl}</span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 shrink-0"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(vitrineUrl);
+                    setCopied(true);
+                    toast.success("Link copiado!");
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 shrink-0"
+                  onClick={() => window.open(vitrineUrl, "_blank")}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          )}
+
           <Button
             disabled={selected.size === 0 || isCreatingVitrine}
             className="bg-emerald-600 text-white hover:bg-emerald-700"
-            onClick={() => onCriarVitrine?.(Array.from(selected))}
+            onClick={async () => {
+              const url = await onCriarVitrine?.(Array.from(selected));
+              if (url) setVitrineUrl(url);
+            }}
           >
             {isCreatingVitrine ? "Criando..." : "Criar Vitrine"}
           </Button>
