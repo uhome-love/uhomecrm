@@ -92,9 +92,7 @@ function getJanelasConfig(): JanelaConfig[] {
   ];
 }
 
-// Use dynamic getter — JANELAS_CONFIG must be recalculated each render
-// to handle day changes (weekday vs saturday vs sunday)
-const JANELAS_CONFIG = getJanelasConfig();
+// NOTE: JANELAS_CONFIG is now computed inside the component to handle day changes
 
 function getHoraDecimal() {
   const now = new Date();
