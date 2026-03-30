@@ -212,12 +212,15 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
   return createPortal(
     <div
       style={{
-        position: "fixed", inset: 0, zIndex: 9999,
+        position: "fixed", inset: 0, zIndex: 99999,
         background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
         display: "flex", alignItems: "center", justifyContent: "center",
         fontFamily: "'Plus Jakarta Sans', sans-serif",
+        pointerEvents: "auto",
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+      onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (e.target === e.currentTarget) handleClose(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <div
         style={{
@@ -226,6 +229,8 @@ export default function WhatsAppFocusFlow({ isOpen, onClose, lead, stageTipo, on
           boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
         }}
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div style={{
