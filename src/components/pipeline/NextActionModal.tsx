@@ -134,13 +134,8 @@ export default function NextActionModal({ open, onOpenChange, leadId, leadNome, 
   ];
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent
-        className="sm:max-w-md [&>button[data-radix-dialog-close]]:hidden"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base flex items-center gap-2">
             ⚡ Ação registrada! Qual o próximo passo com este lead?

@@ -159,7 +159,11 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     setCompletingId(null);
     setCompletionNote("");
     onReload();
-    onNextAction?.();
+    // Only prompt next action if no more pending tasks remain after this one
+    const remainingPending = pendentes.filter(t => t.id !== completingId);
+    if (remainingPending.length === 0) {
+      onNextAction?.();
+    }
   };
 
   const handleAdiarRapido = async (id: string, horas: number) => {
