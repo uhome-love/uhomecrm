@@ -114,7 +114,8 @@ export default function OportunidadesLista() {
     if (!user) return;
     const amanha = new Date();
     amanha.setDate(amanha.getDate() + 1);
-    const venceEm = amanha.toISOString().split("T")[0];
+    amanha.setHours(9, 0, 0, 0);
+    const venceEm = amanha.toISOString();
 
     const { error } = await supabase.from("pipeline_tarefas").insert({
       pipeline_lead_id: op.lead_id,
