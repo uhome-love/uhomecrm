@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -396,6 +398,22 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
     saveSearch, trackInteraction, isLoadingHistory,
   } = useLeadPropertySearch(leadId);
   const { data: siteEvents } = useLeadImoveisEvents(leadId);
+
+  // ── Histórico radar (vitrine/match/envio) ──
+  const { data: radarHistory = [] } = useQuery({
+    queryKey: ["radar-history", leadId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pipeline_atividades")
+        .select("id, titulo, tipo, created_at")
+        .eq("pipeline_lead_id", leadId)
+        .in("tipo", ["vitrine", "match", "envio_imovel", "radar"])
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!leadId,
+  });
 
   // ── Tab state ──
   const [subTab, setSubTab] = useState<"radar" | "matches" | "perfil" | "historico">("radar");
@@ -1244,6 +1262,25 @@ Responda SOMENTE com o JSON, sem markdown.`;
           ? `${results.length} imóveis compatíveis`
           : "Nenhum imóvel buscado ainda"}
       </p>
+
+      {/* ── Histórico do Radar ── */}
+      {radarHistory.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Últimas ações</p>
+          <div className="space-y-1.5">
+            {radarHistory.map((item) => {
+              const icon = item.tipo === 'vitrine' ? '📋' : item.tipo === 'envio_imovel' ? '📨' : '🔍';
+              return (
+                <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{icon}</span>
+                  <span className="truncate">{item.titulo}</span>
+                  <span className="shrink-0">· {format(new Date(item.created_at), 'dd/MM')}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
     </div>
   );
