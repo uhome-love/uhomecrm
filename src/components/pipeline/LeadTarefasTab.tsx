@@ -197,12 +197,13 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   const renderTarefa = (tarefa: PipelineTarefa) => {
     const isOverdue = tarefa.status === "pendente" && tarefa.vence_em && isBefore(parseDateBRT(tarefa.vence_em), today);
     const isConcluida = tarefa.status === "concluida";
+    const horaRaw = (tarefa as any).hora_vencimento;
+    const timeLabel = horaRaw ? horaRaw.slice(0, 5) : "";
     const dateLabel = tarefa.vence_em
-      ? isToday(parseDateBRT(tarefa.vence_em)) ? "Hoje"
-      : isTomorrow(parseDateBRT(tarefa.vence_em)) ? "Amanhã"
-      : format(parseDateBRT(tarefa.vence_em), "dd/MM", { locale: ptBR })
+      ? isToday(parseDateBRT(tarefa.vence_em)) ? (timeLabel ? `Hoje às ${timeLabel}` : "Hoje")
+      : isTomorrow(parseDateBRT(tarefa.vence_em)) ? (timeLabel ? `Amanhã às ${timeLabel}` : "Amanhã")
+      : format(parseDateBRT(tarefa.vence_em), "dd/MM", { locale: ptBR }) + (timeLabel ? ` às ${timeLabel}` : "")
       : "Sem data";
-    const timeLabel = (tarefa as any).hora_vencimento ? ` ${(tarefa as any).hora_vencimento.slice(0, 5)}` : "";
 
     return (
       <div key={tarefa.id} className={`p-3 rounded-xl border transition-colors ${
@@ -213,7 +214,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <span className={`text-xs font-medium ${isOverdue ? "text-red-500" : "text-muted-foreground"}`}>
-              {isOverdue && "⏰ "}{dateLabel}{timeLabel}
+              {isOverdue && "⏰ "}{dateLabel}
             </span>
             <span className="text-xs text-muted-foreground">·</span>
             <span className="text-xs font-medium text-primary/70">
@@ -235,54 +236,11 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
             } catch { return <span className="text-xs text-green-600">✅ Concluída</span>; }
           })()}
 
-          {!isConcluida && (() => {
-            const tipo = (tarefa as any).tipo;
-            const isLigar = tipo === 'ligar' || tipo === 'ligacao';
-            const isWhatsApp = tipo === 'whatsapp';
-            return (
+          {!isConcluida && (
             <div className="flex items-center gap-1 pt-1 flex-wrap">
-              {leadTelefone && (
-                <>
-                  <a href={`tel:${leadTelefone}`}>
-                    <button
-                      style={{
-                        padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', border: 'none',
-                        ...(isLigar
-                          ? { background: '#EAF3DE', color: '#27500A', fontWeight: 600 }
-                          : isWhatsApp
-                            ? { background: 'transparent', color: '#27500A', fontWeight: 500 }
-                            : { background: 'transparent', color: 'var(--muted-foreground)', fontWeight: 400 })
-                      }}
-                    >
-                      <Phone className="h-3 w-3" /> Ligar
-                    </button>
-                  </a>
-                  {whatsappUrl && (
-                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                      <button
-                        style={{
-                          padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', border: 'none',
-                          ...(isWhatsApp
-                            ? { background: '#EAF3DE', color: '#16a34a', fontWeight: 600 }
-                            : isLigar
-                              ? { background: 'transparent', color: '#16a34a', fontWeight: 500 }
-                              : { background: 'transparent', color: 'var(--muted-foreground)', fontWeight: 400 })
-                        }}
-                      >
-                        <MessageCircle className="h-3 w-3" /> WhatsApp
-                      </button>
-                    </a>
-                  )}
-                </>
-              )}
               <button
                 onClick={() => handleConcluir(tarefa)}
-                style={{
-                  padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer',
-                  ...(isLigar || isWhatsApp
-                    ? { background: 'transparent', color: '#4F46E5', border: '1px solid #4F46E5', fontWeight: 600 }
-                    : { background: '#4F46E5', color: '#fff', border: 'none', fontWeight: 600 })
-                }}
+                style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: '#4F46E5', color: '#fff', border: 'none', fontWeight: 600 }}
               >
                 <CheckCircle2 className="h-3 w-3" /> Feito
               </button>
@@ -302,8 +260,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
                 <Trash2 className="h-3 w-3" />
               </button>
             </div>
-            );
-          })()}
+          )}
         </div>
       </div>
     );
