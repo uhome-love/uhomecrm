@@ -571,9 +571,10 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
                         variant="ghost"
                         className="h-6 w-6 shrink-0 text-emerald-600 hover:text-emerald-700"
                         onClick={() => {
-                          const phone = leadTelefone.replace(/\D/g, "");
-                          const msg = `Olá ${leadNome}! 😊\n\nPreparei uma seleção especial de imóveis para você:\n\n🔗 ${displayUrl}\n\nDá uma olhada e me conta o que achou! 🏠`;
-                          window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                           const phone = leadTelefone.replace(/\D/g, "");
+                           const finalPhone = phone.startsWith("55") ? phone : `55${phone}`;
+                           const msg = `Olá ${leadNome}! 😊\n\nPreparei uma seleção especial de imóveis para você:\n\n🔗 ${displayUrl}\n\nDá uma olhada e me conta o que achou! 🏠`;
+                           window.open(`https://wa.me/${finalPhone}?text=${encodeURIComponent(msg)}`, "_blank");
                         }}
                         title="Enviar via WhatsApp"
                       >
