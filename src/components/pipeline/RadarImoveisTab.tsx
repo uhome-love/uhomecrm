@@ -604,6 +604,21 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
         radar_status_imovel: profileForm.status_imovel === "qualquer" ? null : profileForm.status_imovel,
         radar_atualizado_em: new Date().toISOString(),
       });
+      // Log profile update as activity
+      try {
+        const parts: string[] = [];
+        if (profileForm.tipos.length) parts.push(`Tipo: ${profileForm.tipos.join(", ")}`);
+        if (profileForm.bairros.length) parts.push(`Bairros: ${profileForm.bairros.join(", ")}`);
+        if (profileForm.valor_min || profileForm.valor_max) parts.push(`Preço: ${profileForm.valor_min || "0"}-${profileForm.valor_max || "∞"}`);
+        if (profileForm.dormitorios_min) parts.push(`Dorms: ${profileForm.dormitorios_min}+`);
+        await supabase.from("pipeline_atividades").insert({
+          pipeline_lead_id: leadId,
+          tipo: "match",
+          titulo: "Perfil de busca atualizado",
+          descricao: parts.join(" · ") || "Perfil atualizado",
+          created_by: user?.id || null,
+        });
+      } catch {}
       toast.success("Perfil salvo!");
     } catch (err) {
       toast.error("Erro ao salvar perfil");
@@ -1157,6 +1172,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
         onClose={() => setRadarOpen(false)}
         leadNome={leadNome}
         leadTelefone={leadTelefone}
+        leadId={leadId}
         profile={{
           tipos: profileForm.tipos,
           bairros: profileForm.bairros,
@@ -1212,6 +1228,18 @@ Responda SOMENTE com o JSON, sem markdown.`;
             if (error) throw error;
             const vitrineUrl = getVitrinePublicUrl(vitrine.id);
             handleMarkSent(items);
+
+            // Log vitrine creation as activity
+            try {
+              await supabase.from("pipeline_atividades").insert({
+                pipeline_lead_id: leadId,
+                tipo: "vitrine",
+                titulo: `Vitrine criada (${items.length} imóveis)`,
+                descricao: `Link: ${vitrineUrl}\nImóveis: ${imovelCodigos.join(", ")}`,
+                created_by: user.id,
+              });
+            } catch {}
+
             toast.success("Vitrine criada! ✨", { description: vitrineUrl, duration: 6000 });
             return vitrineUrl;
           } catch (err: any) {

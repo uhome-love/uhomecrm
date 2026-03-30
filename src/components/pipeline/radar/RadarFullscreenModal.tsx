@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Select,
@@ -9,9 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Search, Sparkles, Home, MapPin, DollarSign, Bed, Car, Ruler, Copy, ExternalLink, Check, MessageSquare } from "lucide-react";
+import { X, Search, Sparkles, Home, MapPin, DollarSign, Bed, Car, Ruler, Copy, ExternalLink, Check, MessageSquare, Save } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface RadarProfileData {
   tipos: string[];
@@ -34,6 +36,7 @@ interface RadarFullscreenModalProps {
   onClose: () => void;
   leadNome: string;
   leadTelefone?: string | null;
+  leadId?: string;
   profile: RadarProfileData;
   isSearching?: boolean;
   matches: any[];
@@ -57,7 +60,7 @@ function EditableField({ label, icon, children }: { label: string; icon: React.R
 }
 
 const TIPO_OPTIONS = [
-  { value: "apartamento", label: "Apartamento" },
+  { value: "apartamento", label: "Apto" },
   { value: "casa", label: "Casa" },
   { value: "terreno", label: "Terreno" },
   { value: "comercial", label: "Comercial" },
@@ -91,20 +94,108 @@ const MOMENTO_OPTIONS = [
   { value: "pesquisando", label: "Pesquisando" },
 ];
 
-export default function RadarFullscreenModal({ open, onClose, leadNome, leadTelefone, profile, matches, isSearching, onUpdateMatch, onIAPerfil, isAIAnalyzing, onCriarVitrine, isCreatingVitrine }: RadarFullscreenModalProps) {
+/** Toggle chip for multi-select */
+function ToggleChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-background text-muted-foreground border-border hover:border-primary/50"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+export default function RadarFullscreenModal({ open, onClose, leadNome, leadTelefone, leadId, profile, matches, isSearching, onUpdateMatch, onIAPerfil, isAIAnalyzing, onCriarVitrine, isCreatingVitrine }: RadarFullscreenModalProps) {
   const [form, setForm] = useState<RadarProfileData>(profile);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [vitrineUrl, setVitrineUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [discarded, setDiscarded] = useState<Set<number>>(new Set());
   const [previewFoto, setPreviewFoto] = useState<string | null>(null);
+  const [bairroInput, setBairroInput] = useState("");
+  const [bairroSuggestions, setBairroSuggestions] = useState<string[]>([]);
+  const [showBairroDropdown, setShowBairroDropdown] = useState(false);
+  const bairroInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) { setForm(profile); setSelected(new Set()); }
+    if (open) { setForm(profile); setSelected(new Set()); setVitrineUrl(null); }
   }, [open, profile]);
 
   const updateField = <K extends keyof RadarProfileData>(key: K, value: RadarProfileData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Multi-select togglers
+  const toggleTipo = (tipo: string) => {
+    setForm(prev => ({
+      ...prev,
+      tipos: prev.tipos.includes(tipo)
+        ? prev.tipos.filter(t => t !== tipo)
+        : [...prev.tipos, tipo],
+    }));
+  };
+
+  const toggleDorm = (dorm: string) => {
+    setForm(prev => ({
+      ...prev,
+      dormitorios_min: prev.dormitorios_min === dorm ? "" : dorm,
+      // For multi-dorm, store as comma-separated or just use the value
+    }));
+  };
+
+  const toggleVaga = (vaga: string) => {
+    setForm(prev => ({
+      ...prev,
+      vagas_min: prev.vagas_min === vaga ? "" : vaga,
+    }));
+  };
+
+  const addBairro = (bairro: string) => {
+    if (bairro && !form.bairros.includes(bairro)) {
+      setForm(prev => ({ ...prev, bairros: [...prev.bairros, bairro] }));
+    }
+    setBairroInput("");
+    setShowBairroDropdown(false);
+  };
+
+  const removeBairro = (bairro: string) => {
+    setForm(prev => ({ ...prev, bairros: prev.bairros.filter(b => b !== bairro) }));
+  };
+
+  // Bairro autocomplete from DB
+  useEffect(() => {
+    if (bairroInput.length < 2) { setBairroSuggestions([]); setShowBairroDropdown(false); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("properties")
+        .select("bairro")
+        .ilike("bairro", `%${bairroInput}%`)
+        .eq("ativo", true)
+        .limit(20);
+      const seen = new Set<string>();
+      const unique: string[] = [];
+      for (const d of (data || [])) {
+        const b = String((d as any).bairro || "");
+        if (b && !seen.has(b) && !form.bairros.includes(b)) { seen.add(b); unique.push(b); }
+        if (unique.length >= 8) break;
+      }
+      setBairroSuggestions(unique);
+      setShowBairroDropdown(unique.length > 0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [bairroInput, form.bairros]);
+
+  const handleBairroKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && bairroInput.trim()) {
+      e.preventDefault();
+      addBairro(bairroInput.trim());
+    }
   };
 
   return (
@@ -124,31 +215,65 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
           <div className="w-[320px] min-w-[320px] border-r border-border p-4 overflow-y-auto">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Perfil do Lead</h3>
 
+            {/* Tipo de imóvel — multi-select chips */}
             <EditableField label="Tipo de imóvel" icon={<Home className="h-3.5 w-3.5 text-muted-foreground" />}>
-              <Select
-                value={form.tipos[0] || ""}
-                onValueChange={(v) => updateField("tipos", [v])}
-              >
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIPO_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-1.5">
+                {TIPO_OPTIONS.map((o) => (
+                  <ToggleChip
+                    key={o.value}
+                    label={o.label}
+                    active={form.tipos.includes(o.value)}
+                    onClick={() => toggleTipo(o.value)}
+                  />
+                ))}
+              </div>
             </EditableField>
 
+            {/* Bairros — input com tags */}
             <EditableField label="Bairros de interesse" icon={<MapPin className="h-3.5 w-3.5 text-muted-foreground" />}>
-              <Input
-                className="h-8 text-sm"
-                placeholder="Ex: Moema, Vila Mariana"
-                value={form.bairros.join(", ")}
-                onChange={(e) => updateField("bairros", e.target.value.split(",").map((b) => b.trim()).filter(Boolean))}
-              />
+              {form.bairros.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {form.bairros.map(b => (
+                    <Badge key={b} variant="secondary" className="text-xs gap-1 pr-1">
+                      {b}
+                      <button
+                        onClick={() => removeBairro(b)}
+                        className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <div className="relative">
+                <Input
+                  ref={bairroInputRef}
+                  className="h-8 text-sm"
+                  placeholder="Digite e Enter para adicionar..."
+                  value={bairroInput}
+                  onChange={(e) => setBairroInput(e.target.value)}
+                  onKeyDown={handleBairroKeyDown}
+                  onBlur={() => setTimeout(() => setShowBairroDropdown(false), 200)}
+                  onFocus={() => { if (bairroSuggestions.length > 0) setShowBairroDropdown(true); }}
+                />
+                {showBairroDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-md max-h-40 overflow-y-auto">
+                    {bairroSuggestions.map(b => (
+                      <button
+                        key={b}
+                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors"
+                        onMouseDown={(e) => { e.preventDefault(); addBairro(b); }}
+                      >
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </EditableField>
 
+            {/* Faixa de preço */}
             <EditableField label="Faixa de preço" icon={<DollarSign className="h-3.5 w-3.5 text-muted-foreground" />}>
               <div className="flex gap-2">
                 <Input
@@ -168,38 +293,35 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
               </div>
             </EditableField>
 
+            {/* Dormitórios — multi-select chips */}
             <EditableField label="Dormitórios" icon={<Bed className="h-3.5 w-3.5 text-muted-foreground" />}>
-              <Select
-                value={form.dormitorios_min || ""}
-                onValueChange={(v) => updateField("dormitorios_min", v)}
-              >
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {DORM_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-1.5">
+                {DORM_OPTIONS.map((o) => (
+                  <ToggleChip
+                    key={o.value}
+                    label={o.label}
+                    active={form.dormitorios_min === o.value}
+                    onClick={() => toggleDorm(o.value)}
+                  />
+                ))}
+              </div>
             </EditableField>
 
+            {/* Vagas — multi-select chips */}
             <EditableField label="Vagas" icon={<Car className="h-3.5 w-3.5 text-muted-foreground" />}>
-              <Select
-                value={form.vagas_min || ""}
-                onValueChange={(v) => updateField("vagas_min", v)}
-              >
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {VAGAS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-1.5">
+                {VAGAS_OPTIONS.map((o) => (
+                  <ToggleChip
+                    key={o.value}
+                    label={o.label}
+                    active={form.vagas_min === o.value}
+                    onClick={() => toggleVaga(o.value)}
+                  />
+                ))}
+              </div>
             </EditableField>
 
+            {/* Metragem */}
             <EditableField label="Metragem (m²)" icon={<Ruler className="h-3.5 w-3.5 text-muted-foreground" />}>
               <div className="flex gap-2">
                 <Input
@@ -226,19 +348,16 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
             )}
 
             <EditableField label="Status do imóvel" icon={<Home className="h-3.5 w-3.5 text-muted-foreground" />}>
-              <Select
-                value={form.status_imovel || "qualquer"}
-                onValueChange={(v) => updateField("status_imovel", v)}
-              >
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_OPTIONS.map((o) => (
+                  <ToggleChip
+                    key={o.value}
+                    label={o.label}
+                    active={form.status_imovel === o.value}
+                    onClick={() => updateField("status_imovel", o.value)}
+                  />
+                ))}
+              </div>
             </EditableField>
 
             <EditableField label="Momento de compra" icon={<Home className="h-3.5 w-3.5 text-muted-foreground" />}>
@@ -275,7 +394,9 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
                 <Sparkles className="h-4 w-4" />
                 {isAIAnalyzing ? "Analisando..." : "🤖 IA Perfil"}
               </Button>
-              <p className="text-xs text-muted-foreground text-center">Última busca: --</p>
+              <p className="text-xs text-muted-foreground text-center">
+                Perfil salvo automaticamente ao buscar
+              </p>
             </div>
           </div>
 
