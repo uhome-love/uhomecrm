@@ -646,7 +646,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </div>
 
                 {/* Botões de ação */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
                   <button
                     onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Gere uma mensagem de WhatsApp de apresentação para ' + lead.nome + ' sobre ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE as mensagens prontas para copiar, nada mais.'); }}
                     style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer' }}
