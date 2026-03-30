@@ -43,6 +43,7 @@ import RadarImoveisTab from "./RadarImoveisTab";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
 import StageCoachBar from "./StageCoachBar";
 import { CallFocusOverlay } from "./CallFocusOverlay";
+import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -107,6 +108,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [partnerOpen, setPartnerOpen] = useState(false);
   const [comunicacaoOpen, setComunicacaoOpen] = useState(false);
   const [whatsappTemplatesOpen, setWhatsappTemplatesOpen] = useState(false);
+  const [isWhatsAppFlowOpen, setIsWhatsAppFlowOpen] = useState(false);
   const [showNovaTarefa, setShowNovaTarefa] = useState(false);
   const [inativarOpen, setInativarOpen] = useState(false);
   const [inativarMotivo, setInativarMotivo] = useState("");
@@ -188,7 +190,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement)?.isContentEditable) return;
       switch (e.key.toLowerCase()) {
         case "l": if (lead.telefone) window.open(`tel:${lead.telefone}`, "_self"); break;
-        case "w": if (lead.telefone) setWhatsappTemplatesOpen(true); break;
+        case "w": if (lead.telefone) setIsWhatsAppFlowOpen(true); break;
         case "t": setActiveTab("tarefas"); setShowNovaTarefa(true); break;
         case "s": setComunicacaoOpen(true); break;
         case "i": setActiveTab("radar"); break;
@@ -364,7 +366,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </Button>
             )}
             {lead.telefone && (
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setWhatsappTemplatesOpen(true)}>
+              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setIsWhatsAppFlowOpen(true)}>
                 <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
               </Button>
             )}
@@ -811,6 +813,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         leadOrigem={(lead as any).origem}
         tarefas={leadData.tarefas}
         availableStages={stages.map(s => ({ id: s.id, tipo: s.tipo, nome: s.nome }))}
+        onRefresh={leadData.reload}
+      />
+      <WhatsAppFocusFlow
+        isOpen={isWhatsAppFlowOpen}
+        onClose={() => setIsWhatsAppFlowOpen(false)}
+        lead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_id: lead.stage_id }}
+        stageTipo={currentStage?.tipo}
         onRefresh={leadData.reload}
       />
     </Sheet>
