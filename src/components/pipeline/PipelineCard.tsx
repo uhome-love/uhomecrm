@@ -479,6 +479,7 @@ const PipelineCard = memo(function PipelineCard({
         onOpenTransfer={() => setTransferOpen(true)}
         onOpenPartner={() => setPartnerOpen(true)}
         onMarkLost={handleMarkLost}
+        onInactivate={handleInactivate}
         onMoveStage={handleMoveStage}
       />
 
