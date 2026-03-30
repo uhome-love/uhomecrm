@@ -1,23 +1,20 @@
 
 
-## Alinhar botões do card — espaçamento uniforme
+## Remover espaço vazio entre conteúdo e botões
 
-O problema: o botão Tarefa está dentro de um `<div style={{ flex: 1 }}>` wrapper + o Popover, enquanto Ligar e WhatsApp são botões diretos com `flex: 1`. Isso causa larguras desiguais.
+### Problema
+Há um `<div>` separador redundante (linha 466) com `height: 1px` entre o body e o `CardActionBar`, que já tem seu próprio `border-top`. Isso cria espaço duplicado. Além disso, o padding-bottom do body (`11px`) pode ser reduzido para `8px`.
 
-### Mudanças
+### Mudanças em `src/components/pipeline/PipelineCard.tsx`
 
-**CardActionBar.tsx** — padronizar o padding do botão Ligar e WhatsApp para `8px 4px` (já está) e garantir que o `minHeight: 36` está em todos. Atualizar o wrapper do Tarefa (linha 59) para incluir `alignItems: "center"` e `justifyContent: "center"`.
+1. **Linha 277** — Reduzir padding-bottom do body de `11px` para `8px`:
+   - `padding: "13px 14px 11px"` → `padding: "13px 14px 8px"`
 
-Mais importante: o padding do botão Tarefa no `CardQuickTaskPopover.tsx` está com `6px 4px` enquanto os outros estão com `8px 4px`. Padronizar para `8px 4px`.
+2. **Linha 466** — Remover o `<div>` separador redundante:
+   - Deletar `<div style={{ height: 1, background: "#e8e8f0" }} />`
 
-**Edições concretas:**
+Resultado: o card fica mais compacto, sem espaço fantasma entre conteúdo e botões.
 
-1. **`CardQuickTaskPopover.tsx` linha 110** — trocar `padding: "6px 4px"` → `padding: "8px 4px"`
-
-2. **`CardActionBar.tsx` linha 59** — o wrapper `<div>` do Tarefa já tem `flex: 1, minWidth: 0, display: "flex"`. Não precisa mudar — o botão interno já tem `flex: 1, width: "100%"` que preenche corretamente.
-
-Resultado: os 3 botões (Ligar, Tarefa, WhatsApp) terão exatamente o mesmo `flex: 1`, `padding: 8px 4px`, `fontSize: 11`, `fontWeight: 600`, `minHeight: 36` — ficando perfeitamente alinhados e com a mesma largura.
-
-### Arquivos
-- `src/components/pipeline/CardQuickTaskPopover.tsx` (1 linha)
+### Arquivos alterados
+- `src/components/pipeline/PipelineCard.tsx` (2 linhas)
 
