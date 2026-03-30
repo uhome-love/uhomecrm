@@ -223,53 +223,10 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 2. LINHA DE STATUS COMPACTA                                       */}
+      {/* 2. STATUS + CREDENCIAMENTO ROLETA (componente completo)            */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
-        <div className="flex items-center gap-4 px-1">
-          {/* Na Empresa */}
-          <div className="flex items-center gap-2">
-            {statusOnline ? (
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-              </span>
-            ) : (
-              <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />
-            )}
-            <span className="text-xs font-medium text-foreground">
-              {statusOnline ? "Na Empresa" : "Offline"}
-            </span>
-            <Switch
-              checked={statusOnline}
-              disabled={statusUpdating}
-              onCheckedChange={alternarOnline}
-              className="scale-75"
-            />
-          </div>
-
-          <span className="text-muted-foreground/40">•</span>
-
-          {/* Roleta */}
-          <div className="flex items-center gap-2">
-            <Target className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-foreground">
-              {naRoleta ? "Na Roleta" : !podeFazerRoleta ? "Roleta 🔒" : "Fora da Roleta"}
-            </span>
-            <Switch
-              checked={naRoleta}
-              disabled={roletaUpdating}
-              onCheckedChange={alternarRoleta}
-              className="scale-75"
-            />
-          </div>
-
-          {!podeFazerRoleta && !naRoleta && (
-            <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive ml-auto">
-              {leadsDesatualizados} sem tarefa
-            </Badge>
-          )}
-        </div>
+        <RoletaStatusBar />
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
