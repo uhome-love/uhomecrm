@@ -268,28 +268,24 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </Popover>
 
             {(() => {
-              const isAtualizado = nextTask !== null;
               const diasSemContato = noContactAlert
                 ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
                 : 0;
+              const chipColor = nextTask
+                ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
+                : noContactAlert === 'critical'
+                  ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
+                  : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
               const motivosDesat: string[] = [];
               if (!nextTask) motivosDesat.push('sem tarefa futura');
-              if (noContactAlert === 'critical') motivosDesat.push(`${diasSemContato}d sem contato`);
-              else if (noContactAlert === 'warning') motivosDesat.push(`${diasSemContato}d sem contato`);
+              if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
               return (
                 <>
-                  {isAtualizado ? (
-                    <span className="flex items-center gap-1 text-xs font-medium text-success-700 bg-success-50 px-2 py-0.5 rounded-full shrink-0">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Atualizado
-                    </span>
-                  ) : (
-                    <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${noContactAlert === 'critical' ? 'text-danger-700 bg-danger-50' : 'text-warning-700 bg-warning-50'}`}>
-                      <AlertTriangle className="h-3 w-3" />
-                      Desatualizado
-                    </span>
-                  )}
-                  {!isAtualizado && motivosDesat.length > 0 && (
+                  <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0" style={{ background: chipColor.bg, color: chipColor.color }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
+                    {chipColor.text}
+                  </span>
+                  {!nextTask && motivosDesat.length > 0 && (
                     <span className="text-[10px] text-muted-foreground shrink-0">{motivosDesat.join(' · ')}</span>
                   )}
                 </>
