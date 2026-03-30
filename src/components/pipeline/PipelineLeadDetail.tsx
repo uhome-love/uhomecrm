@@ -120,7 +120,6 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const currentStage = stages.find(s => s.id === lead.stage_id);
   const segmento = segmentos.find(s => s.id === lead.segmento_id);
   const hoursInStage = differenceInHoursSafe(lead.stage_changed_at) ?? 0;
-  const daysSinceCreation = differenceInDaysSafe(lead.created_at) ?? 0;
   const lastActivity = leadData.atividades[0];
   const pendingTasks = leadData.tarefas.filter(t => t.status === "pendente").length;
   const overdueTasks = leadData.tarefas.filter(t => {
@@ -128,9 +127,20 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     return t.status === "pendente" && !!dueDate && dueDate < new Date();
   }).length;
 
-  const callAttempts = useMemo(() => {
-    return leadData.atividades.filter(a => a.tipo === "ligacao").length;
+  const contactTypes = ["ligacao", "whatsapp", "email", "contato"];
+  const contactActivities = useMemo(() => {
+    return leadData.atividades.filter(a => contactTypes.some(t => a.tipo?.includes(t)));
   }, [leadData.atividades]);
+
+  const callAttempts = contactActivities.length;
+
+  const daysSinceCreation = useMemo(() => {
+    if (contactActivities.length > 0) {
+      const lastContact = contactActivities[0]; // already sorted desc
+      return differenceInDaysSafe(lastContact.created_at) ?? 0;
+    }
+    return differenceInDaysSafe(lead.created_at) ?? 0;
+  }, [contactActivities, lead.created_at]);
 
   // temperatureInfo removido — chip de status usado no lugar
 
