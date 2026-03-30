@@ -222,6 +222,24 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
         const d = n.dados || {};
         const etapa = d.etapa || d.stage_nome || d.status || null;
 
+        // Enrich old generic titles with lead name from dados/message
+        let displayTitle = n.titulo;
+        if (displayTitle?.includes("Seu lead precisa de atenção")) {
+          let name = d.lead_nome || leadName;
+          let stage = etapa;
+          // Parse from message: "NomeLead está na etapa "EtapaName" há X dias"
+          if (!name && n.mensagem) {
+            const msgMatch = n.mensagem.match(/^(.+?)\s+está na etapa\s+"([^"]+)"/);
+            if (msgMatch) {
+              name = msgMatch[1];
+              if (!stage) stage = msgMatch[2];
+            }
+          }
+          if (name) {
+            displayTitle = `⏰ ${name}${stage ? ` — ${stage}` : ""} precisa de atenção`;
+          }
+        }
+
         // Determine action label based on notification type
         let actionLabel = "Ver →";
         if (["visitas", "visita_agendada", "visita_confirmada", "visita_noshow"].includes(n.tipo) || n.categoria?.startsWith("visita")) {
@@ -264,7 +282,7 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
                       style={{ width: 7, height: 7, background: config.borderColor, verticalAlign: "middle" }}
                     />
                   )}
-                  {n.titulo}
+                  {displayTitle}
                   {n.agrupamento_count > 1 && (
                     <span
                       className="ml-1.5"
