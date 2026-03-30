@@ -137,12 +137,13 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       date: h.created_at,
       icon: ArrowRight,
       color: "bg-primary/10 text-primary",
+      sourceType: "historico",
+      sourceId: h.id,
     });
   }
 
   for (const a of atividades) {
     const info = ATIVIDADE_TIPOS[a.tipo];
-    // For 'entrada' activities, show the full descricao (contains origin details like ImovelWeb info)
     const isEntrada = a.tipo === "entrada";
     const desc = isEntrada && a.descricao
       ? a.descricao
@@ -153,12 +154,14 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
       date: a.created_at,
       icon: info?.icon || PhoneCall,
       color: isEntrada ? "bg-emerald-100 text-emerald-600" : (a.status === "concluida" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"),
+      sourceType: "atividade",
+      sourceId: a.id,
     });
   }
 
   for (const t of tarefas) {
     if (t.status === "concluida" && t.concluida_em) {
-      items.push({ title: `✅ ${t.titulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600" });
+      items.push({ title: `✅ ${t.titulo}`, date: t.concluida_em, icon: CheckCircle2, color: "bg-green-100 text-green-600", sourceType: "tarefa", sourceId: t.id });
     }
   }
 
