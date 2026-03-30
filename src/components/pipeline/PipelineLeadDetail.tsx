@@ -540,8 +540,9 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               <TabsTrigger value="radar" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
                 🎯 Match
               </TabsTrigger>
-              <TabsTrigger value="indicados" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
-                🏠 Indicados
+              <TabsTrigger value="homi" className="text-xs h-6 data-[state=active]:shadow-sm gap-1">
+                ⚡ HOMI
+              </TabsTrigger>
               </TabsTrigger>
             </TabsList>
             <Button
