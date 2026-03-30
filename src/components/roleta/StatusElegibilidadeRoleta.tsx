@@ -5,6 +5,7 @@
 // =============================================================================
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
 import { CheckCircle, XCircle, Moon, Clock, ChevronDown, ChevronUp, ListTodo, ChevronRight, Trash2 } from "lucide-react";
 
