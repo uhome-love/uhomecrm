@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
-import { CheckCircle, XCircle, Moon, Clock, ChevronDown, ChevronUp, ListTodo, ChevronRight } from "lucide-react";
+import { CheckCircle, XCircle, Moon, Clock, ChevronDown, ChevronUp, ListTodo, ChevronRight, Trash2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Helpers
