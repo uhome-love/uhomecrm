@@ -1112,7 +1112,6 @@ Responda SOMENTE com o JSON, sem markdown.`;
           imovel_codigos: imovelCodigos,
           lead_nome: leadNome,
           lead_telefone: leadTelefone || null,
-          tipo: "property_selection",
           corretor_slug: slugRef || null,
         })
         .select("id")
@@ -1206,7 +1205,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
             const mensagem = `Olá ${leadNome}! Selecionei ${items.length} imóveis especialmente para você. Confira!`;
             const { data: vitrine, error } = await supabaseSite
               .from("vitrines")
-              .insert({ titulo, mensagem, imovel_codigos: imovelCodigos, lead_nome: leadNome, lead_telefone: leadTelefone || null, tipo: "property_selection", corretor_slug: slugRef || null })
+              .insert({ titulo, mensagem, imovel_codigos: imovelCodigos, lead_nome: leadNome, lead_telefone: leadTelefone || null, corretor_slug: slugRef || null })
               .select("id")
               .single();
             if (error) throw error;
