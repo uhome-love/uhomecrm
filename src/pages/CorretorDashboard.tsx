@@ -3,23 +3,20 @@
 // Combina identidade visual do CorretorHome com lógica corrigida.
 // =============================================================================
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Phone, MessageCircle, Trophy, CheckCircle, Zap, Bot,
-  WifiOff, Target, ListTodo,
+  Phone, MessageCircle, Trophy, CheckCircle, Zap, Bot, Target, ListTodo,
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+
 import { useNavigate } from "react-router-dom";
 
-import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
+
 import { useCorretorProgress } from "@/hooks/useCorretorProgress";
 import { useDailyMotivation } from "@/hooks/useCorretorDailyStats";
 import { useMissoesLeads } from "@/hooks/useMissoesLeads";
@@ -27,6 +24,7 @@ import { useCorretorHomeData } from "@/hooks/useCorretorHomeData";
 import { useConquistas } from "@/hooks/useConquistas";
 
 import OportunidadesLista from "@/components/corretor/OportunidadesLista";
+import RoletaStatusBar from "@/components/corretor/RoletaStatusBar";
 import DailyProgressCard from "@/components/corretor/DailyProgressCard";
 import MissoesDeHoje from "@/components/corretor/MissoesDeHoje";
 import RankingGestaoLeads from "@/components/corretor/RankingGestaoLeads";
@@ -44,102 +42,8 @@ const ACHIEVEMENTS_MAP: Record<string, { emoji: string; label: string }> = Objec
   ACHIEVEMENTS.map(a => [a.id, { emoji: a.emoji, label: a.label }])
 );
 
-// ---------------------------------------------------------------------------
-// Hook: status online / roleta (extraído do OportunidadesDoDia)
-// ---------------------------------------------------------------------------
-function useCorretorStatus() {
-  const { user } = useAuth();
-  const { podeFazerRoleta, leadsDesatualizados, recarregar: recarregarElegibilidade } = useElegibilidadeRoleta();
-  const [statusOnline, setStatusOnline] = useState(false);
-  const [naRoleta, setNaRoleta] = useState(false);
-  const [statusUpdating, setStatusUpdating] = useState(false);
-  const [roletaUpdating, setRoletaUpdating] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("corretor_disponibilidade")
-      .select("status, na_roleta")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("[useCorretorStatus] Erro:", error);
-          return;
-        }
-        if (data) {
-          setStatusOnline(data.status === "na_empresa");
-          setNaRoleta(data.na_roleta ?? false);
-        }
-      });
-  }, [user]);
 
-  const alternarOnline = useCallback(async (novoStatus: boolean) => {
-    if (!user) return;
-    setStatusUpdating(true);
-    setStatusOnline(novoStatus);
-    const agora = new Date().toISOString();
-
-    const payload: Record<string, unknown> = {
-      user_id: user.id,
-      status: novoStatus ? "na_empresa" : "offline",
-      updated_at: agora,
-    };
-    if (novoStatus) payload.entrada_em = agora;
-    else { payload.saida_em = agora; payload.na_roleta = false; }
-
-    const { error } = await supabase
-      .from("corretor_disponibilidade")
-      .upsert(payload as any, { onConflict: "user_id" });
-
-    setStatusUpdating(false);
-    if (error) {
-      console.error("[alternarOnline] Erro:", error);
-      setStatusOnline(!novoStatus);
-      toast.error("Erro ao atualizar status. Tente novamente.");
-    } else {
-      toast.success(novoStatus ? "Você está online na empresa" : "Você está offline");
-      if (!novoStatus) setNaRoleta(false);
-    }
-  }, [user]);
-
-  const alternarRoleta = useCallback(async () => {
-    if (!user) return;
-    if (!naRoleta && !podeFazerRoleta) {
-      toast.error(
-        `Você tem ${leadsDesatualizados} lead(s) sem tarefa pendente (máx: 10). Crie tarefas no pipeline para se desbloquear.`,
-        { duration: 5000 }
-      );
-      return;
-    }
-    setRoletaUpdating(true);
-    const novoEstado = !naRoleta;
-    setNaRoleta(novoEstado);
-
-    const { error } = await supabase
-      .from("corretor_disponibilidade")
-      .upsert(
-        { user_id: user.id, na_roleta: novoEstado, status: "na_empresa", updated_at: new Date().toISOString() } as any,
-        { onConflict: "user_id" }
-      );
-
-    setRoletaUpdating(false);
-    if (error) {
-      console.error("[alternarRoleta] Erro:", error);
-      setNaRoleta(!novoEstado);
-      toast.error("Erro ao atualizar roleta. Tente novamente.");
-    } else {
-      toast.success(novoEstado ? "Você está na roleta! Aguarde novos leads." : "Você saiu da roleta.");
-    }
-  }, [user, naRoleta, podeFazerRoleta, leadsDesatualizados]);
-
-  return {
-    statusOnline, naRoleta, podeFazerRoleta, leadsDesatualizados,
-    statusUpdating, roletaUpdating,
-    alternarOnline, alternarRoleta,
-    recarregarElegibilidade,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Componente Principal
@@ -161,12 +65,8 @@ export default function CorretorDashboard() {
   const primeiroNome = (profile?.nome || "Corretor").split(" ")[0];
   const initials = (profile?.nome || "").split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
-  // Status
-  const {
-    statusOnline, naRoleta, podeFazerRoleta, leadsDesatualizados,
-    statusUpdating, roletaUpdating,
-    alternarOnline, alternarRoleta,
-  } = useCorretorStatus();
+
+
 
   // Data hooks
   const { progress, goals, saveGoals } = useCorretorProgress();
@@ -222,53 +122,10 @@ export default function CorretorDashboard() {
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 2. LINHA DE STATUS COMPACTA                                       */}
+      {/* 2. STATUS + CREDENCIAMENTO ROLETA (componente completo)            */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
-        <div className="flex items-center gap-4 px-1">
-          {/* Na Empresa */}
-          <div className="flex items-center gap-2">
-            {statusOnline ? (
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-              </span>
-            ) : (
-              <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />
-            )}
-            <span className="text-xs font-medium text-foreground">
-              {statusOnline ? "Na Empresa" : "Offline"}
-            </span>
-            <Switch
-              checked={statusOnline}
-              disabled={statusUpdating}
-              onCheckedChange={alternarOnline}
-              className="scale-75"
-            />
-          </div>
-
-          <span className="text-muted-foreground/40">•</span>
-
-          {/* Roleta */}
-          <div className="flex items-center gap-2">
-            <Target className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-foreground">
-              {naRoleta ? "Na Roleta" : !podeFazerRoleta ? "Roleta 🔒" : "Fora da Roleta"}
-            </span>
-            <Switch
-              checked={naRoleta}
-              disabled={roletaUpdating}
-              onCheckedChange={alternarRoleta}
-              className="scale-75"
-            />
-          </div>
-
-          {!podeFazerRoleta && !naRoleta && (
-            <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive ml-auto">
-              {leadsDesatualizados} sem tarefa
-            </Badge>
-          )}
-        </div>
+        <RoletaStatusBar />
       </motion.div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}

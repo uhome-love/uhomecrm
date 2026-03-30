@@ -86,14 +86,13 @@ function getJanelasConfig(): JanelaConfig[] {
   }
   
   return [
-    { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 7.5, fim: saturdayMorning ? 10.5 : 9.5 }, recebimento: saturdayMorning ? "7h30 — 10h30" : "7h30 — 9h30", temRequisitos: false },
-    { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 13.5 }, recebimento: "13h30 — 18h", temRequisitos: false },
-    { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18.5, fim: 20.5 }, recebimento: "18h — 23h30", temRequisitos: true },
+    { key: "manha", label: "Manhã", emoji: "🌅", icon: Sun, credAberto: { inicio: 7.5, fim: saturdayMorning ? 10.5 : 12 }, recebimento: saturdayMorning ? "7h30 — 10h30" : "7h30 — 12h", temRequisitos: false },
+    { key: "tarde", label: "Tarde", emoji: "🌞", icon: Sunset, credAberto: { inicio: 12, fim: 18 }, recebimento: "13h30 — 18h", temRequisitos: false },
+    { key: "noite", label: "Noite", emoji: "🌙", icon: Moon, credAberto: { inicio: 18, fim: 22 }, recebimento: "18h — 23h30", temRequisitos: true },
   ];
 }
 
-// Keep JANELAS_CONFIG as a getter for backward compat in static references
-const JANELAS_CONFIG = getJanelasConfig();
+// NOTE: JANELAS_CONFIG is now computed inside the component to handle day changes
 
 function getHoraDecimal() {
   const now = new Date();
@@ -161,6 +160,7 @@ function useNightRequirements(userId: string | undefined, profileId: string | nu
 }
 
 export default function RoletaStatusBar() {
+  const JANELAS_CONFIG = getJanelasConfig();
   const { user } = useAuth();
   const [status, setStatus] = useState<StatusOnline>("offline");
   const [statusOpen, setStatusOpen] = useState(false);
