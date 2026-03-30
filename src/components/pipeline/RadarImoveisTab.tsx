@@ -1156,6 +1156,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
         open={radarOpen}
         onClose={() => setRadarOpen(false)}
         leadNome={leadNome}
+        leadTelefone={leadTelefone}
         profile={{
           tipos: profileForm.tipos,
           bairros: profileForm.bairros,
