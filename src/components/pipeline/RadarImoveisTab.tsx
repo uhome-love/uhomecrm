@@ -1211,13 +1211,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
             if (error) throw error;
             const vitrineUrl = getVitrinePublicUrl(vitrine.id);
             handleMarkSent(items);
-            await navigator.clipboard.writeText(vitrineUrl);
-            if (leadTelefone) {
-              const phone = leadTelefone.replace(/\D/g, "");
-              const msg = `Olá ${leadNome}! 😊\n\nPreparei uma seleção especial de ${items.length} imóveis para você:\n\n🔗 ${vitrineUrl}\n\nDá uma olhada e me conta o que achou! 🏠`;
-              window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-            }
-            toast.success("Vitrine criada! Link copiado ✨", { description: vitrineUrl, duration: 6000 });
+            toast.success("Vitrine criada! ✨", { description: vitrineUrl, duration: 6000 });
             return vitrineUrl;
           } catch (err: any) {
             console.error("Erro ao criar vitrine:", err);
