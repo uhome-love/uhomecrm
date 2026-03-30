@@ -654,7 +654,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     Gerar mensagem
                   </button>
                   <button
-                    onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Gere um follow-up para ' + lead.nome + ' que está em ' + stageTipo + ' há ' + diasSemContato + ' dias. IMPORTANTE: Retorne SOMENTE a mensagem pronta para copiar.'); }}
+                    onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Gere um follow-up para ' + lead.nome + ' que está em ' + (currentStage?.nome || '') + ' há ' + daysSinceCreation + ' dias. IMPORTANTE: Retorne SOMENTE a mensagem pronta para copiar.'); }}
                     style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'var(--muted)', color: 'var(--foreground)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
                   >
                     Follow-up
