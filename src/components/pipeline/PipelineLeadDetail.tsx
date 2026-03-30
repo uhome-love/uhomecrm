@@ -660,7 +660,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                     Follow-up
                   </button>
                   <button
-                    onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Quebre a objeção mais comum para um lead em ' + stageTipo + ' interessado em ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE os argumentos prontos para usar.'); }}
+                    onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Quebre a objeção mais comum para um lead em ' + (currentStage?.nome || '') + ' interessado em ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE os argumentos prontos para usar.'); }}
                     style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'var(--muted)', color: 'var(--foreground)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
                   >
                     Quebrar objeção
