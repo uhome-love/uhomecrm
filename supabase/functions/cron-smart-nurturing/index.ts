@@ -134,9 +134,8 @@ async function buscarLeadsParados(): Promise<LeadComPerfil[]> {
     .not("telefone", "is", null)
     .lt("updated_at", seteDiasAtras)
     .or("lead_score.is.null,lead_score.lt.5")
-    .eq("ativo", true)
     .order("updated_at", { ascending: true })
-    .limit(200);
+    .limit(500);
 
   if (error) {
     console.error("[nurturing] Erro ao buscar leads:", error);
