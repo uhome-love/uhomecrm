@@ -39,7 +39,7 @@ interface RadarFullscreenModalProps {
   onUpdateMatch?: (editedProfile: RadarProfileData) => void;
   onIAPerfil?: () => void;
   isAIAnalyzing?: boolean;
-  onCriarVitrine?: (selectedIndexes: number[]) => void;
+  onCriarVitrine?: (selectedIndexes: number[]) => Promise<string | void>;
   isCreatingVitrine?: boolean;
 }
 
