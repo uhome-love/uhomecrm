@@ -1212,9 +1212,9 @@ Responda SOMENTE com o JSON, sem markdown.`;
         isAIAnalyzing={aiAnalyzing}
         isCreatingVitrine={creatingVitrine}
         onCriarVitrine={async (selectedIndexes) => {
-          if (!user?.id) { toast.error("Você precisa estar logado"); return; }
+          if (!user?.id) { toast.error("Você precisa estar logado"); return undefined; }
           const items = selectedIndexes.map(i => results[i]).filter(Boolean);
-          if (items.length === 0) { toast.error("Selecione ao menos 1 imóvel"); return; }
+          if (items.length === 0) { toast.error("Selecione ao menos 1 imóvel"); return undefined; }
           setCreatingVitrine(true);
           try {
             const imovelCodigos = items.map(item => getPropertyCode(item));
@@ -1227,26 +1227,26 @@ Responda SOMENTE com o JSON, sem markdown.`;
               .single();
             if (error) throw error;
             const vitrineUrl = getVitrinePublicUrl(vitrine.id);
-            handleMarkSent(items);
 
-            // Log vitrine creation as activity
-            try {
-              await supabase.from("pipeline_atividades").insert({
-                pipeline_lead_id: leadId,
-                tipo: "vitrine",
-                titulo: `Vitrine criada (${items.length} imóveis)`,
-                descricao: `Link: ${vitrineUrl}\nImóveis: ${imovelCodigos.join(", ")}`,
-                created_by: user.id,
-              });
-            } catch {}
+            // Fire-and-forget: mark sent & log activity
+            handleMarkSent(items);
+            supabase.from("pipeline_atividades").insert({
+              pipeline_lead_id: leadId,
+              tipo: "vitrine",
+              titulo: `Vitrine criada (${items.length} imóveis)`,
+              descricao: `Link: ${vitrineUrl}\nImóveis: ${imovelCodigos.join(", ")}`,
+              created_by: user.id,
+            }).then(() => {}).catch(() => {});
 
             toast.success("Vitrine criada! ✨", { description: vitrineUrl, duration: 6000 });
+            console.log("[RadarImoveisTab] vitrineUrl gerada:", vitrineUrl);
+            setCreatingVitrine(false);
             return vitrineUrl;
           } catch (err: any) {
             console.error("Erro ao criar vitrine:", err);
             toast.error("Erro ao criar vitrine");
-          } finally {
             setCreatingVitrine(false);
+            return undefined;
           }
         }}
       />
