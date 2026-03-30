@@ -194,8 +194,8 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
 
           <div className="h-px bg-border my-2" />
 
-          {/* Templates */}
-          {TEMPLATES.map((t) => (
+          {/* Templates filtrados por etapa */}
+          {primaryTemplates.map((t) => (
             <button
               key={t.id}
               className="w-full text-left flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-accent transition-colors group"
@@ -209,6 +209,33 @@ export default function WhatsAppTemplatesDialog({ open, onOpenChange, leadNome, 
               <Copy className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-1 shrink-0" />
             </button>
           ))}
+
+          {/* Outros templates (colapsável) */}
+          {secondaryTemplates.length > 0 && (
+            <>
+              <button
+                className="w-full text-left text-[11px] text-muted-foreground font-medium px-3 py-1.5 hover:text-foreground transition-colors flex items-center gap-1"
+                onClick={() => setShowOthers(!showOthers)}
+              >
+                <ChevronDown className={`h-3 w-3 transition-transform ${showOthers ? 'rotate-180' : ''}`} />
+                Outros templates ({secondaryTemplates.length})
+              </button>
+              {showOthers && secondaryTemplates.map((t) => (
+                <button
+                  key={t.id}
+                  className="w-full text-left flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-accent transition-colors group opacity-80"
+                  onClick={() => handleSelectTemplate(t.template)}
+                >
+                  <span className="text-lg shrink-0 mt-0.5">{t.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{t.label}</p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-2">{replaceVars(t.template)}</p>
+                  </div>
+                  <Copy className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-1 shrink-0" />
+                </button>
+              ))}
+            </>
+          )}
 
           <div className="h-px bg-border my-2" />
 
