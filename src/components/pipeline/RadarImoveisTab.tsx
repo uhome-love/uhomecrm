@@ -1126,6 +1126,19 @@ Responda SOMENTE com o JSON, sem markdown.`;
 
   return (
     <div className="px-6 pb-8 space-y-3">
+      {/* ── Botão Radar Fullscreen ── */}
+      <Button
+        className="w-full gap-2 h-10 bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+        onClick={() => setRadarOpen(true)}
+      >
+        <Maximize2 className="h-4 w-4" />
+        Abrir Radar Completo
+      </Button>
+      <RadarFullscreenModal
+        open={radarOpen}
+        onClose={() => setRadarOpen(false)}
+        leadNome={leadNome}
+      />
       {/* ── SUB-TABS ── */}
       <Tabs value={subTab} onValueChange={(v) => setSubTab(v as any)}>
         <TabsList className="h-8 bg-muted/50 w-full">
