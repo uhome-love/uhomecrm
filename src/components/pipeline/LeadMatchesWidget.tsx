@@ -1,6 +1,7 @@
 /**
  * LeadMatchesWidget — Shows top auto-matched properties for a lead.
  * Used inside the lead detail tabs (Radar Imóveis).
+ * // v2 - layout compacto horizontal
  */
 import { useState } from "react";
 import { useLeadPropertyMatches } from "@/hooks/useLeadPropertyMatches";
