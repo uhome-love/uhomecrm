@@ -242,22 +242,81 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </div>
         }>
 
-        {/* ════════════ HEADER COMPACTO ════════════ */}
-        <div className="shrink-0 border-b border-border/50 bg-card px-5 pt-4 pb-3 space-y-2.5">
-          {/* Row 1: Name + Stage + Temp + Score + Days */}
-          <div className="flex items-center gap-2 min-w-0">
-            {editingName ? (
-              <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                <Input value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") { setEditingName(false); setEditName(lead.nome); } }} className="h-8 text-lg font-bold flex-1" autoFocus disabled={saving} />
-                <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={saving} className="h-7 px-2 text-xs">{saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "✓"}</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setEditingName(false); setEditName(lead.nome); }} className="h-7 px-2 text-xs">✕</Button>
-              </div>
-            ) : (
-              <h2 className="text-lg font-bold text-foreground truncate cursor-pointer hover:text-primary transition-colors flex-1 min-w-0" onClick={() => { setEditName(lead.nome); setEditingName(true); }} title="Clique para editar">
-                {lead.nome}
-              </h2>
-            )}
+        {/* ════════════ HEADER COMPACTO (3 linhas) ════════════ */}
+        <div className="shrink-0 border-b border-border/50 bg-card px-5 pt-3 pb-2 space-y-1.5">
 
+          {/* LINE 1: Nome + empreendimento tag | telefone + origem(formulário) + SLA | etapa dropdown + X */}
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Left: name + empreendimento */}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {editingName ? (
+                <div className="flex items-center gap-1 flex-1 min-w-0">
+                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") { setEditingName(false); setEditName(lead.nome); } }} className="h-7 text-sm font-bold flex-1" autoFocus disabled={saving} />
+                  <Button size="sm" variant="ghost" onClick={handleSaveName} disabled={saving} className="h-6 px-1.5 text-[10px]">{saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "✓"}</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingName(false); setEditName(lead.nome); }} className="h-6 px-1.5 text-[10px]">✕</Button>
+                </div>
+              ) : (
+                <h2 className="text-sm font-bold text-foreground truncate cursor-pointer hover:text-primary transition-colors" onClick={() => { setEditName(lead.nome); setEditingName(true); }} title="Clique para editar">
+                  {lead.nome}
+                </h2>
+              )}
+
+              {lead.empreendimento && !editingName && (
+                <button
+                  className="shrink-0 text-[10px] font-medium bg-muted text-muted-foreground rounded-full px-2 py-0.5 hover:bg-accent transition-colors"
+                  onClick={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
+                  title="Editar empreendimento"
+                >
+                  📍 {lead.empreendimento}
+                </button>
+              )}
+              {!lead.empreendimento && !editingName && (
+                <button
+                  className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => { setEmpreendimentoSearch(""); setEmpreendimentoOpen(true); }}
+                >
+                  + Emp.
+                </button>
+              )}
+            </div>
+
+            {/* Center: telefone · origem(form) · SLA */}
+            <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+              {lead.telefone && (
+                <a href={`tel:${lead.telefone}`} className="hover:text-foreground transition-colors font-medium tabular-nums">
+                  {lead.telefone}
+                </a>
+              )}
+              {(lead.plataforma || lead.formulario) && (
+                <>
+                  <span className="text-muted-foreground/40">·</span>
+                  <span className="truncate max-w-[160px]">
+                    {lead.plataforma && lead.formulario
+                      ? `${lead.plataforma} (${lead.formulario})`
+                      : lead.plataforma || lead.formulario}
+                  </span>
+                </>
+              )}
+              <span className="text-muted-foreground/40">·</span>
+              {(() => {
+                const diasSemContato = noContactAlert
+                  ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
+                  : 0;
+                const sla = nextTask
+                  ? { dot: '#639922', text: 'Em dia' }
+                  : noContactAlert === 'critical'
+                    ? { dot: '#E24B4A', text: `${diasSemContato}d sem contato` }
+                    : { dot: '#EF9F27', text: 'Atenção' };
+                return (
+                  <span className="flex items-center gap-1 font-medium">
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: sla.dot, flexShrink: 0 }} />
+                    {sla.text}
+                  </span>
+                );
+              })()}
+            </div>
+
+            {/* Right: stage dropdown + close */}
             <Popover>
               <PopoverTrigger asChild>
                 <button className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity shrink-0" style={{ backgroundColor: currentStage?.cor + "18", color: currentStage?.cor, borderColor: currentStage?.cor + "44" }}>
@@ -279,122 +338,76 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </PopoverContent>
             </Popover>
 
-            {(() => {
-              const diasSemContato = noContactAlert
-                ? Math.floor((differenceInHoursSafe((lead as any).ultima_acao_at || lead.created_at) ?? 0) / 24)
-                : 0;
-              const chipColor = nextTask
-                ? { bg: '#EAF3DE', color: '#27500A', dot: '#639922', text: 'Em dia' }
-                : noContactAlert === 'critical'
-                  ? { bg: '#FCEBEB', color: '#A32D2D', dot: '#E24B4A', text: 'Desatualizado' }
-                  : { bg: '#FAEEDA', color: '#854F0B', dot: '#EF9F27', text: 'Atenção' };
-              const motivosDesat: string[] = [];
-              if (!nextTask) motivosDesat.push('sem tarefa futura');
-              if (noContactAlert) motivosDesat.push(`${diasSemContato}d sem contato`);
-              return (
-                <>
-                  <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0" style={{ background: chipColor.bg, color: chipColor.color }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: chipColor.dot, flexShrink: 0 }} />
-                    {chipColor.text}
-                  </span>
-                  {!nextTask && motivosDesat.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground shrink-0">{motivosDesat.join(' · ')}</span>
-                  )}
-                </>
-              );
-            })()}
-
-            <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{daysSinceCreation}d</span>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg shrink-0" onClick={() => onOpenChange(false)}>
+              ✕
+            </Button>
           </div>
 
-          {/* Row 2: Contact + Corretor + Origin — single line */}
-          <div className="flex items-center gap-3 text-sm flex-wrap">
-            {lead.telefone && (
-              <a href={`tel:${lead.telefone}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5" /> <span className="text-sm">{lead.telefone}</span>
-              </a>
-            )}
-            {lead.email && (
-              <a href={`mailto:${lead.email}`} className="text-foreground hover:text-primary transition-colors flex items-center gap-1 truncate max-w-[180px]">
-                <Mail className="h-3.5 w-3.5" /> <span className="text-sm truncate">{lead.email}</span>
-              </a>
-            )}
-            {lead.corretor_id && corretorNomes[lead.corretor_id] && (
-              <span className="flex items-center gap-1 text-xs text-primary font-medium">
-                👤 {corretorNomes[lead.corretor_id]}
-              </span>
-            )}
-          </div>
-
-          {/* Row 2.5: Empreendimento edit */}
-          <div className="flex items-center gap-2">
-            {empreendimentoOpen ? (
-              <div className="flex items-center gap-2 flex-1">
-                <EmpreendimentoCombobox
-                  value={empreendimentoSearch || lead.empreendimento || ""}
-                  onChange={setEmpreendimentoSearch}
-                  className="h-8 text-xs flex-1"
-                />
-                <Button
-                  size="sm"
-                  className="h-8 text-xs px-3"
-                  disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
-                  onClick={async () => {
-                    setSavingEmpreendimento(true);
-                    try {
-                      await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
-                      toast.success("Empreendimento atualizado");
-                      setEmpreendimentoOpen(false);
-                    } catch { toast.error("Erro ao salvar"); }
-                    finally { setSavingEmpreendimento(false); }
-                  }}
-                >
-                  {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
-                  Cancelar
-                </Button>
-              </div>
-            ) : (
+          {/* Empreendimento edit inline (only when open) */}
+          {empreendimentoOpen && (
+            <div className="flex items-center gap-2">
+              <EmpreendimentoCombobox
+                value={empreendimentoSearch || lead.empreendimento || ""}
+                onChange={setEmpreendimentoSearch}
+                className="h-7 text-xs flex-1"
+              />
               <Button
-                variant="outline"
                 size="sm"
-                className="h-7 text-xs gap-1.5 rounded-lg"
-                onClick={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
+                className="h-7 text-xs px-2"
+                disabled={savingEmpreendimento || !empreendimentoSearch.trim()}
+                onClick={async () => {
+                  setSavingEmpreendimento(true);
+                  try {
+                    await onUpdate(lead.id, { empreendimento: empreendimentoSearch.trim() } as any);
+                    toast.success("Empreendimento atualizado");
+                    setEmpreendimentoOpen(false);
+                  } catch { toast.error("Erro ao salvar"); }
+                  finally { setSavingEmpreendimento(false); }
+                }}
               >
-                <Building2 className="h-3 w-3" />
-                {lead.empreendimento ? `📍 ${lead.empreendimento}` : "+ Empreendimento"}
+                {savingEmpreendimento ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
               </Button>
-            )}
-          </div>
+              <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => { setEmpreendimentoOpen(false); setEmpreendimentoSearch(""); }}>
+                ✕
+              </Button>
+            </div>
+          )}
 
-          {/* Row 3: Actions bar — horizontal scroll on mobile */}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
+          {/* LINE 2: Action buttons */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1">
             {lead.telefone && (
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => setIsCallOpen(true)}>
+              <Button variant="outline" size="sm" className="shrink-0 h-8 text-xs gap-1 rounded-lg px-2 whitespace-nowrap" onClick={() => setIsCallOpen(true)}>
                 <Phone className="h-3.5 w-3.5" /> Ligar
               </Button>
             )}
             {lead.telefone && (
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setIsWhatsAppFlowOpen(true)}>
+              <Button variant="outline" size="sm" className="shrink-0 h-8 text-xs gap-1 rounded-lg px-2 whitespace-nowrap border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950" onClick={() => setIsWhatsAppFlowOpen(true)}>
                 <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
               </Button>
             )}
-            <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap" onClick={() => setComunicacaoOpen(true)}>
+            <Button variant="outline" size="sm" className="shrink-0 h-8 text-xs gap-1 rounded-lg px-2 whitespace-nowrap" onClick={() => setComunicacaoOpen(true)}>
               <FileText className="h-3.5 w-3.5" /> Scripts
             </Button>
-            
-            
             <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
-              <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap">
+              <Button variant="outline" size="sm" className="shrink-0 h-8 text-xs gap-1 rounded-lg px-2 whitespace-nowrap">
                 <Zap className="h-3.5 w-3.5" /> Registrar
               </Button>
             </QuickActionMenu>
 
-            {/* More menu */}
+            <div className="flex-1" />
+
+            {/* Tags + More menu */}
+            {((lead as any).tags || []).includes("MELNICK_DAY") && (
+              <Badge className="text-[9px] h-5 px-1.5 bg-orange-500 text-white border-none shrink-0">🔥 Melnick</Badge>
+            )}
+            {callAttempts > 0 && (
+              <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="text-[9px] h-5 px-1 shrink-0">
+                📞 {callAttempts}/4
+              </Badge>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg shrink-0">
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg shrink-0">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -417,6 +430,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   <Tag className="h-3.5 w-3.5 mr-2" />
                   {((lead as any).tags || []).includes("MELNICK_DAY") ? "🔥 Remover Melnick Day" : "🔥 Marcar Melnick Day"}
                 </DropdownMenuItem>
+                {lead.corretor_id && corretorNomes[lead.corretor_id] && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled className="text-[10px] text-muted-foreground">
+                      👤 {corretorNomes[lead.corretor_id]}
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setInativarOpen(true); }}>
                   <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
@@ -430,88 +451,47 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </DropdownMenu>
           </div>
 
-          {/* Row 4: Context line — empreendimento + formulário + status + tags */}
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-            {((lead as any).tags || []).includes("MELNICK_DAY") && (
-              <Badge className="text-[9px] h-4 px-1.5 bg-orange-500 text-white border-none">🔥 Melnick Day</Badge>
-            )}
-            {(lead.empreendimento || lead.plataforma) && (
-              <span className="flex items-center gap-1">
-                <Building2 className="h-3 w-3" />
-                <span className="font-semibold text-foreground/80">{originLine}</span>
-              </span>
-            )}
-            {lead.formulario && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <span className="truncate max-w-[220px]">{lead.formulario}</span>
-              </>
-            )}
-            {callAttempts > 0 && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <Badge variant={callAttempts >= 4 ? "destructive" : "secondary"} className="text-[9px] h-4 px-1">
-                  📞 {callAttempts}/4
-                </Badge>
-              </>
-            )}
-            {jetimobCode && (
-              <>
-                <span className="text-muted-foreground/40">|</span>
-                <span className="text-muted-foreground/60">
-                  <Tag className="h-2.5 w-2.5 inline" /> {jetimobCode}
+          {/* LINE 3: Next action bar + obs link */}
+          <div className="flex items-center gap-2 text-[11px]">
+            <div className="flex-1 min-w-0">
+              {overdueTasks > 0 ? (
+                <span className="font-semibold text-destructive">
+                  🔴 {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
                 </span>
-              </>
-            )}
-            <span className="text-muted-foreground/40">|</span>
-            {noContactAlert ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span className={`font-semibold ${noContactAlert === "critical" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
-                  {noContactAlert === "critical" ? "🔴" : "🟡"} Sem contato
+              ) : nextTask ? (
+                <span className="font-semibold text-primary truncate">
+                  ✅ Próx: {nextTask.titulo || nextTask.descricao}
+                  {nextTask.vence_em && <span className="font-normal text-muted-foreground ml-1">· {formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "" })}</span>}
                 </span>
-                <button
-                  onClick={() => setActiveTab("historico")}
-                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                >
-                  Resolver →
-                </button>
-              </span>
-            ) : overdueTasks > 0 ? (
-              <span className="font-semibold text-red-600 dark:text-red-400">
-                🔴 {overdueTasks} tarefa{overdueTasks > 1 ? "s" : ""} atrasada{overdueTasks > 1 ? "s" : ""}
-              </span>
-            ) : nextTask ? (
-              <span className="font-semibold text-primary">
-                ✅ Próx: {nextTask.titulo || nextTask.descricao}
-                {nextTask.vence_em && <span className="font-normal ml-1">· {formatDateSafe(nextTask.vence_em, "dd/MM", { locale: ptBR, dateOnly: true, fallback: "" })}</span>}
-              </span>
-            ) : (
-              <span className="font-semibold text-amber-600 dark:text-amber-400">⚠️ Sem próxima ação</span>
+              ) : noContactAlert ? (
+                <span className="font-semibold text-destructive">
+                  ⚠️ Sem próxima ação · {daysSinceCreation}d sem contato
+                  <button
+                    onClick={() => setActiveTab("historico")}
+                    className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    Resolver →
+                  </button>
+                </span>
+              ) : (
+                <span className="text-muted-foreground">⚠️ Sem próxima ação</span>
+              )}
+            </div>
+
+            {(lead.observacoes || lead.origem_detalhe) && (
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors shrink-0">
+                  <FileText className="h-3 w-3" />
+                  obs ›
+                </CollapsibleTrigger>
+                <CollapsibleContent className="absolute left-5 right-5 mt-1 z-10">
+                  <div className="text-[11px] text-muted-foreground bg-card rounded-md px-3 py-2 whitespace-pre-wrap leading-relaxed border border-border shadow-md">
+                    {lead.observacoes || lead.origem_detalhe}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
           </div>
-
-          {/* Row 5: Observações / Dados do anúncio (ImovelWeb, etc.) */}
-          {lead.observacoes && (
-            <Collapsible>
-              <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors group">
-                <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
-                <FileText className="h-3 w-3" />
-                {lead.origem === "imovelweb" ? "Dados do anúncio ImovelWeb" : "Observações do lead"}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1.5">
-                <div className="text-[11px] text-muted-foreground bg-muted/50 rounded-md px-3 py-2 whitespace-pre-wrap leading-relaxed border border-border/50">
-                  {lead.observacoes}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-
-          {/* origem_detalhe inline */}
-          {lead.origem_detalhe && !lead.observacoes && (
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <FileText className="h-3 w-3" /> {lead.origem_detalhe}
-            </p>
-          )}
         </div>
 
         {/* ════════════ STAGE COACH ════════════ */}
