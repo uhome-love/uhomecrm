@@ -226,7 +226,7 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
         let actionLabel = "Ver →";
         if (["visitas", "visita_agendada", "visita_confirmada", "visita_noshow"].includes(n.tipo) || n.categoria?.startsWith("visita")) {
           actionLabel = "Ver visita →";
-        } else if (["leads", "lead", "lead_roleta", "lead_sem_contato", "lead_parado", "lead_alto_valor", "lead_urgente", "lead_ultimo_alerta", "radar_intencao", "automacao", "sequencias"].includes(n.tipo)) {
+        } else if (["leads", "lead", "lead_roleta", "lead_sem_contato", "lead_parado", "lead_alto_valor", "lead_urgente", "lead_ultimo_alerta", "radar_intencao", "automacao", "sequencias", "alertas"].includes(n.tipo)) {
           actionLabel = "Ver lead →";
         } else if (["propostas", "proposta_assinada", "vendas", "negocio_fechado"].includes(n.tipo)) {
           actionLabel = "Ver negócio →";
