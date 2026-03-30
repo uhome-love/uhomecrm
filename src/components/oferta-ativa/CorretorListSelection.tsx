@@ -291,6 +291,15 @@ export default function CorretorListSelection() {
     sessionStorage.setItem("campaign_lista_ids", JSON.stringify(listaIds));
     sessionStorage.setItem("campaign_name", campanha);
     
+    // Store empreendimento → lista_ids mapping for filtering in arena
+    const empMap: Record<string, string[]> = {};
+    for (const l of listas) {
+      const emp = l.empreendimento || "Outros";
+      if (!empMap[emp]) empMap[emp] = [];
+      empMap[emp].push(l.id);
+    }
+    sessionStorage.setItem("campaign_emp_map", JSON.stringify(empMap));
+    
     // Create a virtual OALista representing the campaign
     const virtualLista: OALista = {
       id: `campaign_${campanha}`,
