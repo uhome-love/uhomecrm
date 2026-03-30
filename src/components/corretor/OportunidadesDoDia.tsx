@@ -75,6 +75,7 @@ interface Oportunidade {
   descricao: string;
   acao_sugerida: string;
   created_at: string;
+  lead_etapa?: string;
 }
 
 // ---------------------------------------------------------------------------
