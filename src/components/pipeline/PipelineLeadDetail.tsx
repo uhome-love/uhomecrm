@@ -190,7 +190,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement)?.isContentEditable) return;
       switch (e.key.toLowerCase()) {
         case "l": if (lead.telefone) window.open(`tel:${lead.telefone}`, "_self"); break;
-        case "w": if (lead.telefone) setWhatsappTemplatesOpen(true); break;
+        case "w": if (lead.telefone) setIsWhatsAppFlowOpen(true); break;
         case "t": setActiveTab("tarefas"); setShowNovaTarefa(true); break;
         case "s": setComunicacaoOpen(true); break;
         case "i": setActiveTab("radar"); break;
