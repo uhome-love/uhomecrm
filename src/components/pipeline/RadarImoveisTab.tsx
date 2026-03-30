@@ -1248,14 +1248,6 @@ Responda SOMENTE com o JSON, sem markdown.`;
     </div>
   );
 }
-            {profileForm.bairros.length > 0 && (
-              <button onClick={() => setShowFilters(f => !f)} className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors flex items-center gap-1">
-                <MapPin className="h-2.5 w-2.5" /> {profileForm.bairros.join(", ")}
-              </button>
-            )}
-            {(profileForm.valor_min || profileForm.valor_max) && (
-              <button onClick={() => setShowFilters(f => !f)} className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors flex items-center gap-1">
-                <DollarSign className="h-2.5 w-2.5" />
                 {profileForm.valor_min ? fmtPrice(parseFloat(profileForm.valor_min)) : "0"} – {profileForm.valor_max ? fmtPrice(parseFloat(profileForm.valor_max)) : "∞"}
               </button>
             )}
