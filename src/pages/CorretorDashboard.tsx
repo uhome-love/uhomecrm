@@ -67,12 +67,8 @@ export default function CorretorDashboard() {
   const primeiroNome = (profile?.nome || "Corretor").split(" ")[0];
   const initials = (profile?.nome || "").split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
-  // Status
-  const {
-    statusOnline, naRoleta, podeFazerRoleta, leadsDesatualizados,
-    statusUpdating, roletaUpdating,
-    alternarOnline, alternarRoleta,
-  } = useCorretorStatus();
+
+
 
   // Data hooks
   const { progress, goals, saveGoals } = useCorretorProgress();
