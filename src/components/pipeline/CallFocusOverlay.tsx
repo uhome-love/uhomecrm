@@ -211,8 +211,13 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
   ];
 
   return createPortal(
-    <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}>
+    <div
+      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', pointerEvents: 'auto' }}
+    >
+      <div onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}>
       {/* HEADER */}
       <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-border/50">
         <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: "#EEEDFE", color: "#534AB7" }}>
@@ -225,7 +230,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
         <span className="text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0" style={{ background: "#FCEBEB", color: "#A32D2D" }}>
           {STAGE_LABELS[stageTipo || ""] || stageTipo || "—"}
         </span>
-        <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted transition-colors shrink-0">
+        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }} className="p-1.5 rounded-md hover:bg-muted transition-colors shrink-0">
           <X className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
@@ -424,7 +429,7 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
 
         {fase === 2 && (
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors">
+            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClose(); }} className="px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors">
               Fechar sem salvar
             </button>
             <div className="flex-1" />
