@@ -54,7 +54,13 @@ export function useElegibilidadeRoleta() {
   }, [carregar]);
 
   const podeFazerRoleta = elegibilidade
-    ? elegibilidade.pode_roleta_manha
+    ? (() => {
+        const now = new Date();
+        const mins = now.getHours() * 60 + now.getMinutes();
+        if (mins >= 18 * 60 + 30) return elegibilidade.pode_roleta_noturna;
+        if (mins >= 13 * 60 + 30) return elegibilidade.pode_roleta_tarde;
+        return elegibilidade.pode_roleta_manha;
+      })()
     : true;
 
   const leadsDesatualizados = elegibilidade?.leads_desatualizados ?? 0;

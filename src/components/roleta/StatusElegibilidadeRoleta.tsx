@@ -5,6 +5,7 @@
 // =============================================================================
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
 import { CheckCircle, XCircle, Moon, Clock, ChevronDown, ChevronUp, ListTodo, ChevronRight, Trash2 } from "lucide-react";
 
@@ -37,6 +38,7 @@ function getCorBarra(desatualizados: number, limite: number): string {
 export function StatusElegibilidadeRoleta() {
   const { elegibilidade, carregando } = useElegibilidadeRoleta();
   const [expandido, setExpandido] = useState(false);
+  const navigate = useNavigate();
   const proximaRoleta = getProximaRoleta();
 
   if (carregando) {
@@ -53,7 +55,9 @@ export function StatusElegibilidadeRoleta() {
   const elegívelProxima =
     proximaRoleta.tipo === "noturna"
       ? elegibilidade.pode_roleta_noturna
-      : elegibilidade.pode_roleta_manha;
+      : proximaRoleta.tipo === "tarde"
+        ? elegibilidade.pode_roleta_tarde
+        : elegibilidade.pode_roleta_manha;
 
   const pctBarra = getBarraProgresso(elegibilidade.leads_desatualizados, elegibilidade.limite_bloqueio);
   const corBarra = getCorBarra(elegibilidade.leads_desatualizados, elegibilidade.limite_bloqueio);
@@ -137,7 +141,7 @@ export function StatusElegibilidadeRoleta() {
                 <strong>{elegibilidade.leads_desatualizados - 10} lead(s)</strong> para se desbloquear.
               </p>
               <button
-                onClick={() => (window.location.href = "/pipeline?filtro=sem_tarefa")}
+                onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
                 className="w-full text-xs font-medium py-2 px-3 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors flex items-center justify-center gap-1.5"
               >
                 <ListTodo className="w-3.5 h-3.5" />
@@ -155,7 +159,7 @@ export function StatusElegibilidadeRoleta() {
 
         {/* Alerta de descartes excessivos */}
         {elegibilidade.bloqueado_descarte && (
-          <div className="mx-4 mt-3 rounded-lg px-3 py-2.5 bg-destructive/10 border border-destructive/20">
+          <div className="mt-3 rounded-lg px-3 py-2.5 bg-destructive/10 border border-destructive/20">
             <div className="flex items-start gap-2">
               <Trash2 className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
               <div>
@@ -171,7 +175,7 @@ export function StatusElegibilidadeRoleta() {
           </div>
         )}
         {!elegibilidade.bloqueado_descarte && elegibilidade.descartes_mes >= 40 && (
-          <div className="mx-4 mt-3 rounded-lg px-3 py-2 text-xs flex items-center gap-2 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+          <div className="mt-3 rounded-lg px-3 py-2 text-xs flex items-center gap-2 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
             <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
             <span>
               ⚠️ Atenção: você já descartou {elegibilidade.descartes_mes} leads este mês. Ao atingir {elegibilidade.limite_descartes}, será bloqueado da roleta.
@@ -240,7 +244,7 @@ export function StatusElegibilidadeRoleta() {
           )}
 
           <button
-            onClick={() => (window.location.href = "/pipeline?filtro=sem_tarefa")}
+            onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
             className="mt-3 w-full rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-2 transition-colors"
           >
             Ir para o pipeline e atualizar leads →

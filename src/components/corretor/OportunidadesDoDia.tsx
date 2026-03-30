@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
@@ -310,6 +311,7 @@ export function OportunidadesDoDia() {
     recarregar,
     userId,
   } = useHomeCorretor();
+  const navigate = useNavigate();
 
   const primeiroNome = nomeCorretor.split(" ")[0];
   const saudacao = getSaudacao();
@@ -421,7 +423,7 @@ export function OportunidadesDoDia() {
                   Você tem <strong>{leadsDesatualizados} lead(s)</strong> sem tarefa pendente (máx: 10). Crie tarefas para se desbloquear.
                 </p>
                 <button
-                  onClick={() => (window.location.href = "/pipeline?filtro=sem_tarefa")}
+                  onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
                   className="w-full text-xs font-medium py-2 px-3 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors flex items-center justify-center gap-1.5"
                 >
                   <ListTodo className="w-3.5 h-3.5" />
@@ -447,7 +449,7 @@ export function OportunidadesDoDia() {
                 <p className="text-xs text-muted-foreground">
                   Faltam {10 - leadsDesatualizados > 0 ? 10 - leadsDesatualizados : 0} para bloqueio. 
                   <button
-                    onClick={() => (window.location.href = "/pipeline?filtro=sem_tarefa")}
+                    onClick={() => navigate("/pipeline-leads?filtro=sem_tarefa")}
                     className="text-primary underline ml-1"
                   >
                     Atualizar pipeline
@@ -531,7 +533,7 @@ export function OportunidadesDoDia() {
                       variant="outline"
                       size="sm"
                       className="flex-1 text-xs"
-                      onClick={() => (window.location.href = "/pipeline")}
+                      onClick={() => navigate("/pipeline-leads")}
                     >
                       <ListTodo className="w-3.5 h-3.5 mr-1" />
                       Abrir Pipeline
@@ -540,7 +542,7 @@ export function OportunidadesDoDia() {
                       variant="outline"
                       size="sm"
                       className="flex-1 text-xs"
-                      onClick={() => (window.location.href = "/oferta-ativa")}
+                      onClick={() => navigate("/oferta-ativa")}
                     >
                       <Phone className="w-3.5 h-3.5 mr-1" />
                       Oferta Ativa
