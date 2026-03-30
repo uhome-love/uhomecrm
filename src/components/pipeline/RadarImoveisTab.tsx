@@ -1174,6 +1174,8 @@ Responda SOMENTE com o JSON, sem markdown.`;
           }));
           setTimeout(() => handleSearch(), 50);
         }}
+        onIAPerfil={handleAIAnalyze}
+        isAIAnalyzing={aiAnalyzing}
       />
       {/* ── SUB-TABS ── */}
       <Tabs value={subTab} onValueChange={(v) => setSubTab(v as any)}>
