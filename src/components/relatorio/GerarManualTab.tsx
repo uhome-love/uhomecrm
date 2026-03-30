@@ -31,10 +31,20 @@ interface PeriodData {
   taxaAproveitamento: number;
   visitasMarcadas: number;
   visitasRealizadas: number;
+  visitasNoShow: number;
   leadsAtivos: number;
   leadsAproveitados: number;
+  leadsNovos: number;
+  followUpsConcluidos: number;
+  leadsDesatualizados: number;
   negociosAtivos: number;
+  propostas: number;
+  vendas: number;
+  perdidos: number;
+  vgvGerado: number;
+  vgvAssinado: number;
   vgvAndamento: number;
+  pontosGestao: number;
 }
 
 interface ReportJSON {
