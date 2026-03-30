@@ -148,11 +148,10 @@ export function CallFocusOverlay({ isOpen, onClose, lead, stageTipo, leadOrigem,
   }, [scriptKey, primeiroNome, emp]);
 
   const proximasEtapas = useMemo(() => {
-    const tipos = PROXIMAS_ETAPAS[stageTipo || ""] || [];
-    return tipos.map(tipo => {
-      const stage = availableStages.find(s => s.tipo === tipo);
-      return stage ? { tipo, id: stage.id, nome: stage.nome } : { tipo, id: "", nome: STAGE_LABELS[tipo] || tipo };
-    }).filter(s => s.id);
+    // Show ALL available stages (except the current one) so the broker can move to any stage
+    return availableStages
+      .filter(s => s.tipo !== stageTipo)
+      .map(s => ({ tipo: s.tipo, id: s.id, nome: s.nome }));
   }, [stageTipo, availableStages]);
 
   const handleSalvar = async () => {
