@@ -24,6 +24,7 @@ interface RadarFullscreenModalProps {
   onClose: () => void;
   leadNome: string;
   profile: RadarProfileData;
+  matches: any[];
   onUpdateMatch?: () => void;
   onIAPerfil?: () => void;
 }
@@ -54,7 +55,7 @@ function formatPriceRange(min: string, max: string): string | null {
   return `Até ${formatBRL(vMax)}`;
 }
 
-export default function RadarFullscreenModal({ open, onClose, leadNome, profile, onUpdateMatch, onIAPerfil }: RadarFullscreenModalProps) {
+export default function RadarFullscreenModal({ open, onClose, leadNome, profile, matches, onUpdateMatch, onIAPerfil }: RadarFullscreenModalProps) {
   const priceRange = formatPriceRange(profile.valor_min, profile.valor_max);
 
   const MOMENTO_LABELS: Record<string, string> = {
@@ -166,7 +167,7 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, profile,
 
           {/* Coluna direita — Imóveis */}
           <div className="flex-1 p-4 overflow-y-auto">
-            <p className="text-sm text-muted-foreground">Imóveis compatíveis (em breve)</p>
+            <p className="text-sm text-muted-foreground">{matches.length} imóveis encontrados</p>
           </div>
         </div>
 

@@ -1154,6 +1154,7 @@ Responda SOMENTE com o JSON, sem markdown.`;
           urgencia: profileForm.urgencia,
           status_imovel: profileForm.status_imovel,
         }}
+        matches={results}
       />
       {/* ── SUB-TABS ── */}
       <Tabs value={subTab} onValueChange={(v) => setSubTab(v as any)}>
