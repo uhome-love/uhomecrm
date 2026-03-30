@@ -1112,7 +1112,6 @@ Responda SOMENTE com o JSON, sem markdown.`;
           imovel_codigos: imovelCodigos,
           lead_nome: leadNome,
           lead_telefone: leadTelefone || null,
-          tipo: "property_selection",
           corretor_slug: slugRef || null,
         })
         .select("id")
