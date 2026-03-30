@@ -5,7 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import {
   Phone,
   MessageSquare,
@@ -15,8 +17,10 @@ import {
   Trophy,
   ChevronRight,
   RefreshCw,
-  ListTodo,
   Plus,
+  Check,
+  CalendarPlus,
+  ExternalLink,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -132,6 +136,68 @@ export default function OportunidadesLista() {
     }
   };
 
+  const concluirTarefaDoLead = async (leadId: string, leadNome: string) => {
+    const { data: tarefas, error: fetchErr } = await supabase
+      .from("pipeline_tarefas")
+      .select("id")
+      .eq("pipeline_lead_id", leadId)
+      .eq("status", "pendente")
+      .is("concluida_em", null)
+      .lt("vence_em", new Date().toISOString())
+      .order("vence_em", { ascending: true })
+      .limit(1);
+
+    if (fetchErr || !tarefas?.length) {
+      toast.error("Tarefa não encontrada ou já concluída.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("pipeline_tarefas")
+      .update({ status: "concluida", concluida_em: new Date().toISOString() })
+      .eq("id", tarefas[0].id);
+
+    if (error) {
+      toast.error("Erro ao concluir tarefa.");
+    } else {
+      await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString() }).eq("id", leadId);
+      toast.success(`Tarefa de ${leadNome.split(" ")[0]} concluída!`);
+      carregar();
+    }
+  };
+
+  const reagendarTarefaDoLead = async (leadId: string, leadNome: string) => {
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+
+    const { data: tarefas, error: fetchErr } = await supabase
+      .from("pipeline_tarefas")
+      .select("id")
+      .eq("pipeline_lead_id", leadId)
+      .eq("status", "pendente")
+      .is("concluida_em", null)
+      .lt("vence_em", new Date().toISOString())
+      .order("vence_em", { ascending: true })
+      .limit(1);
+
+    if (fetchErr || !tarefas?.length) {
+      toast.error("Tarefa não encontrada.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("pipeline_tarefas")
+      .update({ vence_em: amanha.toISOString().split("T")[0] })
+      .eq("id", tarefas[0].id);
+
+    if (error) {
+      toast.error("Erro ao reagendar tarefa.");
+    } else {
+      toast.success(`Tarefa de ${leadNome.split(" ")[0]} reagendada para amanhã!`);
+      carregar();
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -161,7 +227,13 @@ export default function OportunidadesLista() {
                 🚨 Urgente — Aja agora
               </p>
               {urgentes.map((op) => (
-                <CardOportunidade key={op.lead_id + op.tipo} op={op} onCriarFollowUp={criarFollowUp} />
+                <CardOportunidade
+                  key={op.lead_id + op.tipo}
+                  op={op}
+                  onCriarFollowUp={criarFollowUp}
+                  onConcluir={concluirTarefaDoLead}
+                  onReagendar={reagendarTarefaDoLead}
+                />
               ))}
             </div>
           )}
@@ -172,7 +244,13 @@ export default function OportunidadesLista() {
                 🔥 Leads Quentes
               </p>
               {quentes.map((op) => (
-                <CardOportunidade key={op.lead_id + op.tipo} op={op} onCriarFollowUp={criarFollowUp} />
+                <CardOportunidade
+                  key={op.lead_id + op.tipo}
+                  op={op}
+                  onCriarFollowUp={criarFollowUp}
+                  onConcluir={concluirTarefaDoLead}
+                  onReagendar={reagendarTarefaDoLead}
+                />
               ))}
             </div>
           )}
@@ -183,7 +261,13 @@ export default function OportunidadesLista() {
                 Outras Ações
               </p>
               {restantes.map((op) => (
-                <CardOportunidade key={op.lead_id + op.tipo} op={op} onCriarFollowUp={criarFollowUp} />
+                <CardOportunidade
+                  key={op.lead_id + op.tipo}
+                  op={op}
+                  onCriarFollowUp={criarFollowUp}
+                  onConcluir={concluirTarefaDoLead}
+                  onReagendar={reagendarTarefaDoLead}
+                />
               ))}
             </div>
           )}
@@ -213,11 +297,18 @@ export default function OportunidadesLista() {
 function CardOportunidade({
   op,
   onCriarFollowUp,
+  onConcluir,
+  onReagendar,
 }: {
   op: Oportunidade;
   onCriarFollowUp: (op: Oportunidade) => Promise<void>;
+  onConcluir: (leadId: string, leadNome: string) => Promise<void>;
+  onReagendar: (leadId: string, leadNome: string) => Promise<void>;
 }) {
+  const navigate = useNavigate();
   const [criando, setCriando] = useState(false);
+  const [resolvendo, setResolvendo] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const temp = TEMPERATURA_CONFIG[op.lead_temperatura] ?? TEMPERATURA_CONFIG.frio;
   const tipo = TIPO_CONFIG[op.tipo];
   const isSemTarefa = op.prioridade === 4 && op.acao_sugerida === "Criar tarefa de follow-up";
@@ -226,6 +317,20 @@ function CardOportunidade({
     setCriando(true);
     await onCriarFollowUp(op);
     setCriando(false);
+  };
+
+  const handleConcluir = async () => {
+    setResolvendo(true);
+    await onConcluir(op.lead_id, op.lead_nome);
+    setResolvendo(false);
+    setPopoverOpen(false);
+  };
+
+  const handleReagendar = async () => {
+    setResolvendo(true);
+    await onReagendar(op.lead_id, op.lead_nome);
+    setResolvendo(false);
+    setPopoverOpen(false);
   };
 
   return (
@@ -286,20 +391,52 @@ function CardOportunidade({
               </Button>
             )}
             {op.tipo === "tarefa_atrasada" && !isSemTarefa && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs"
-                onClick={() => (window.location.href = `/pipeline-leads?lead=${op.lead_id}`)}
-              >
-                <Clock className="w-3 h-3 mr-1" />
-                Resolver
-              </Button>
+              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                  >
+                    <Clock className="w-3 h-3 mr-1" />
+                    Resolver
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-52 p-1.5" sideOffset={4}>
+                  <div className="space-y-0.5">
+                    <button
+                      disabled={resolvendo}
+                      onClick={handleConcluir}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors disabled:opacity-50"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      Concluir tarefa
+                    </button>
+                    <button
+                      disabled={resolvendo}
+                      onClick={handleReagendar}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors disabled:opacity-50"
+                    >
+                      <CalendarPlus className="w-3.5 h-3.5" />
+                      Reagendar p/ amanhã
+                    </button>
+                    <div className="border-t border-border my-1" />
+                    <button
+                      onClick={() => {
+                        setPopoverOpen(false);
+                        navigate(`/pipeline-leads?lead=${op.lead_id}`);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Ver lead no pipeline
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
-            <Button size="sm" variant="ghost" className="h-8 px-2" asChild>
-              <a href={`/pipeline-leads?lead=${op.lead_id}`}>
-                <ChevronRight className="w-4 h-4" />
-              </a>
+            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => navigate(`/pipeline-leads?lead=${op.lead_id}`)}>
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
