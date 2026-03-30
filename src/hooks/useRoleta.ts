@@ -317,24 +317,24 @@ export function useRoleta() {
       .in("id", profileIds);
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-    // Get auth user IDs to count real leads from pipeline_leads
+    // Get auth user IDs to count ONLY roleta-distributed leads (not manual transfers)
     const authUserIds = (profiles || []).map(p => p.user_id).filter(Boolean) as string[];
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    // Count leads received TODAY per auth user (only aceito + pendente = actually assigned)
-    const { data: todayLeads } = authUserIds.length > 0
+    // Count leads distributed via roleta TODAY per corretor (acao='distribuido' only)
+    const { data: todayDistribuicoes } = authUserIds.length > 0
       ? await supabase
-          .from("pipeline_leads")
+          .from("distribuicao_historico")
           .select("corretor_id")
           .in("corretor_id", authUserIds)
-          .gte("distribuido_em", todayStart.toISOString())
-          .in("aceite_status", ["aceito", "pendente"])
+          .eq("acao", "distribuido")
+          .gte("created_at", todayStart.toISOString())
       : { data: [] };
 
     // Build count map: auth_user_id → count
     const authLeadCount = new Map<string, number>();
-    for (const l of todayLeads || []) {
+    for (const l of todayDistribuicoes || []) {
       authLeadCount.set(l.corretor_id, (authLeadCount.get(l.corretor_id) || 0) + 1);
     }
     // Map profile_id → real lead count
