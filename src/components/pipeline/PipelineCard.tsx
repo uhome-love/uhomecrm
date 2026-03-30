@@ -178,7 +178,7 @@ const PipelineCard = memo(function PipelineCard({
   const handleCardClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest("[data-actions-area]") || target.closest("[data-no-card-click]")) return;
-    if (comunicacaoOpen) return;
+    if (comunicacaoOpen || isCallOpen || isWhatsAppFlowOpen) return;
     onClick();
   };
 
