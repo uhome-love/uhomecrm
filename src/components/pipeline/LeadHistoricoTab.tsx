@@ -447,6 +447,30 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
           </div>
         ))}
       </div>
+
+      {/* Confirmação de exclusão */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover registro do histórico?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-medium">{deleteTarget?.title}</span>
+              <br />
+              Esta ação não pode ser desfeita. O registro será permanentemente removido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteItem}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
