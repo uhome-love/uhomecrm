@@ -167,7 +167,55 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, profile,
 
           {/* Coluna direita — Imóveis */}
           <div className="flex-1 p-4 overflow-y-auto">
-            <p className="text-sm text-muted-foreground">{matches.length} imóveis encontrados</p>
+            {matches.length > 0 ? (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-lg text-foreground">Imóveis Compatíveis</h3>
+                  <span className="bg-muted text-muted-foreground text-xs font-semibold px-2 py-1 rounded-full">
+                    {matches.length}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {matches.map((item, idx) => {
+                    const foto = item.imagem || item.foto_principal_url || (item.fotos && item.fotos[0]) || null;
+                    const nome = item.nome || item.titulo || item.empreendimento || "Imóvel";
+                    const preco = item.preco ? formatBRL(item.preco) : "—";
+                    const infoParts = [
+                      item.dorms ? `${item.dorms} quartos` : null,
+                      item.vagas ? `${item.vagas} vagas` : null,
+                      item.metragem ? `${item.metragem} m²` : (item.metragens || null),
+                    ].filter(Boolean);
+
+                    return (
+                      <div key={item.codigo || item.id || idx} className="border border-border rounded-lg overflow-hidden bg-card">
+                        {foto ? (
+                          <img src={foto} alt={nome} className="h-40 w-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="h-40 w-full bg-muted flex items-center justify-center">
+                            <Home className="h-8 w-8 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <p className="font-semibold text-sm truncate text-foreground">{nome}</p>
+                          <p className="text-xs text-muted-foreground">{item.bairro || "—"}</p>
+                          <p className="text-base font-bold text-[#4F46E5] mt-1">{preco}</p>
+                        </div>
+                        {infoParts.length > 0 && (
+                          <div className="px-3 pb-3">
+                            <p className="text-xs text-muted-foreground">{infoParts.join(" · ")}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+                <Search className="h-10 w-10 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Clique em Atualizar Match para buscar imóveis</p>
+              </div>
+            )}
           </div>
         </div>
 
