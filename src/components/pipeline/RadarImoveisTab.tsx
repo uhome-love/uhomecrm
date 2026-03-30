@@ -1139,6 +1139,21 @@ Responda SOMENTE com o JSON, sem markdown.`;
         open={radarOpen}
         onClose={() => setRadarOpen(false)}
         leadNome={leadNome}
+        profile={{
+          tipos: profileForm.tipos,
+          bairros: profileForm.bairros,
+          valor_min: profileForm.valor_min,
+          valor_max: profileForm.valor_max,
+          dormitorios_min: profileForm.dormitorios_min,
+          suites_min: profileForm.suites_min,
+          vagas_min: profileForm.vagas_min,
+          area_min: profileForm.area_min,
+          area_max: profileForm.area_max,
+          empreendimento: leadData?.empreendimento,
+          momento_compra: profileForm.momento_compra,
+          urgencia: profileForm.urgencia,
+          status_imovel: profileForm.status_imovel,
+        }}
       />
       {/* ── SUB-TABS ── */}
       <Tabs value={subTab} onValueChange={(v) => setSubTab(v as any)}>
