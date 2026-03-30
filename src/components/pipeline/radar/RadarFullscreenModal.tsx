@@ -408,7 +408,7 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
           
           {vitrineUrl && (
             <div className="flex items-center gap-2 flex-1 justify-center">
-              <div className="flex items-center gap-1.5 bg-muted rounded-md px-3 py-1.5 max-w-md">
+              <div className="flex items-center gap-1.5 bg-muted rounded-md px-3 py-1.5 max-w-lg">
                 <span className="text-xs text-muted-foreground truncate">{vitrineUrl}</span>
                 <Button
                   size="icon"
@@ -420,6 +420,7 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
                     toast.success("Link copiado!");
                     setTimeout(() => setCopied(false), 2000);
                   }}
+                  title="Copiar link"
                 >
                   {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
                 </Button>
@@ -428,9 +429,25 @@ export default function RadarFullscreenModal({ open, onClose, leadNome, leadTele
                   variant="ghost"
                   className="h-6 w-6 shrink-0"
                   onClick={() => window.open(vitrineUrl, "_blank")}
+                  title="Abrir no navegador"
                 >
                   <ExternalLink className="h-3 w-3" />
                 </Button>
+                {leadTelefone && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 shrink-0 text-emerald-600 hover:text-emerald-700"
+                    onClick={() => {
+                      const phone = leadTelefone.replace(/\D/g, "");
+                      const msg = `Olá ${leadNome}! 😊\n\nPreparei uma seleção especial de imóveis para você:\n\n🔗 ${vitrineUrl}\n\nDá uma olhada e me conta o que achou! 🏠`;
+                      window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                    }}
+                    title="Enviar via WhatsApp"
+                  >
+                    <MessageSquare className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </div>
           )}
