@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, Search, Sparkles, Home, MapPin, DollarSign, Bed, Car, Ruler, Copy, ExternalLink, Check } from "lucide-react";
+import { X, Search, Sparkles, Home, MapPin, DollarSign, Bed, Car, Ruler, Copy, ExternalLink, Check, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/utils";
 
