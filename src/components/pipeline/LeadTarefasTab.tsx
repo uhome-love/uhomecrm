@@ -235,44 +235,75 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
             } catch { return <span className="text-xs text-green-600">✅ Concluída</span>; }
           })()}
 
-          {!isConcluida && (
+          {!isConcluida && (() => {
+            const tipo = (tarefa as any).tipo;
+            const isLigar = tipo === 'ligar' || tipo === 'ligacao';
+            const isWhatsApp = tipo === 'whatsapp';
+            return (
             <div className="flex items-center gap-1 pt-1 flex-wrap">
               {leadTelefone && (
                 <>
                   <a href={`tel:${leadTelefone}`}>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
+                    <button
+                      style={{
+                        padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', border: 'none',
+                        ...(isLigar
+                          ? { background: '#EAF3DE', color: '#27500A', fontWeight: 600 }
+                          : isWhatsApp
+                            ? { background: 'transparent', color: '#27500A', fontWeight: 500 }
+                            : { background: 'transparent', color: 'var(--muted-foreground)', fontWeight: 400 })
+                      }}
+                    >
                       <Phone className="h-3 w-3" /> Ligar
-                    </Button>
+                    </button>
                   </a>
                   {whatsappUrl && (
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
+                      <button
+                        style={{
+                          padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', border: 'none',
+                          ...(isWhatsApp
+                            ? { background: '#EAF3DE', color: '#16a34a', fontWeight: 600 }
+                            : isLigar
+                              ? { background: 'transparent', color: '#16a34a', fontWeight: 500 }
+                              : { background: 'transparent', color: 'var(--muted-foreground)', fontWeight: 400 })
+                        }}
+                      >
                         <MessageCircle className="h-3 w-3" /> WhatsApp
-                      </Button>
+                      </button>
                     </a>
                   )}
                 </>
               )}
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => handleConcluir(tarefa)}>
+              <button
+                onClick={() => handleConcluir(tarefa)}
+                style={{
+                  padding: '5px 12px', borderRadius: 7, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer',
+                  ...(isLigar || isWhatsApp
+                    ? { background: 'transparent', color: '#4F46E5', border: '1px solid #4F46E5', fontWeight: 600 }
+                    : { background: '#4F46E5', color: '#fff', border: 'none', fontWeight: 600 })
+                }}
+              >
                 <CheckCircle2 className="h-3 w-3" /> Feito
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => {
+              </button>
+              <button onClick={() => {
                 setEditId(tarefa.id);
                 setEditTipo((tarefa as any).tipo || "follow_up");
                 setEditData(tarefa.vence_em || "");
                 setEditHora((tarefa as any).hora_vencimento?.slice(0, 5) || "");
                 setEditObs(tarefa.descricao || "");
-              }}>
+              }} style={{ padding: '4px 8px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <Pencil className="h-3 w-3" /> Editar
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => { setAdiarId(tarefa.id); setAdiarData(""); setAdiarHora(""); }}>
+              </button>
+              <button onClick={() => { setAdiarId(tarefa.id); setAdiarData(""); setAdiarHora(""); }} style={{ padding: '4px 8px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <Calendar className="h-3 w-3" /> Adiar
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => onDeleteTarefa(tarefa.id)}>
+              </button>
+              <button onClick={() => onDeleteTarefa(tarefa.id)} style={{ padding: '4px 4px', fontSize: 11, color: 'var(--muted-foreground)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
                 <Trash2 className="h-3 w-3" />
-              </Button>
+              </button>
             </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     );

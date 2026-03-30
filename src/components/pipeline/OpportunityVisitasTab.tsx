@@ -61,7 +61,7 @@ export default function OpportunityVisitasTab({ pipelineLeadId }: { pipelineLead
 
   if (visitas.length === 0) {
     return (
-      <div className="flex flex-col items-center py-8 text-center">
+      <div className="flex flex-col items-center py-4 text-center">
         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-2">
           <MapPin className="h-4 w-4 text-muted-foreground/40" />
         </div>

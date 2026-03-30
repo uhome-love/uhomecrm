@@ -636,8 +636,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             <TabsContent value="homi" className="p-0">
               <div className="p-4 flex flex-col gap-4">
                 {/* Briefing compacto */}
-                <div style={{ background: 'var(--muted)', borderRadius: 8, padding: '10px 14px' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>
+                <div style={{ background: 'var(--muted)', borderRadius: 8, padding: '10px 14px', borderLeft: '3px solid #4F46E5', marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 3 }}>
                     {lead.nome} · {currentStage?.nome || 'N/A'} · {daysSinceCreation}d sem contato
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
@@ -646,22 +646,22 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </div>
 
                 {/* Botões de ação */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
                   <button
                     onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Gere uma mensagem de WhatsApp de apresentação para ' + lead.nome + ' sobre ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE as mensagens prontas para copiar, nada mais.'); }}
-                    style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer' }}
+                    style={{ padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer' }}
                   >
                     Gerar mensagem
                   </button>
                   <button
                     onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Gere um follow-up para ' + lead.nome + ' que está em ' + (currentStage?.nome || '') + ' há ' + daysSinceCreation + ' dias. IMPORTANTE: Retorne SOMENTE a mensagem pronta para copiar.'); }}
-                    style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'var(--muted)', color: 'var(--foreground)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
+                    style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, background: 'transparent', color: 'var(--foreground)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
                   >
                     Follow-up
                   </button>
                   <button
                     onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Quebre a objeção mais comum para um lead em ' + (currentStage?.nome || '') + ' interessado em ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE os argumentos prontos para usar.'); }}
-                    style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'var(--muted)', color: 'var(--foreground)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
+                    style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, background: 'transparent', color: 'var(--foreground)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
                   >
                     Quebrar objeção
                   </button>
@@ -669,12 +669,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
                 {/* Campo o que o cliente disse */}
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)', marginBottom: 6 }}>
                     O que o cliente disse?
                   </div>
                   <textarea
                     placeholder="Cole aqui a mensagem do cliente para a IA gerar uma resposta personalizada..."
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '0.5px solid var(--border)', fontSize: 13, fontFamily: 'var(--font-sans)', resize: 'none', background: 'var(--muted)', color: 'var(--foreground)', lineHeight: 1.5 }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '0.5px solid var(--border)', fontSize: 13, fontFamily: 'inherit', resize: 'none', background: 'var(--background)', color: 'var(--foreground)', lineHeight: 1.5, marginBottom: 10 }}
                     rows={3}
                     id="homi-client-message"
                   />
@@ -684,7 +684,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                       setHomiOpen(true);
                       setHomiInitialPrompt('O cliente disse: "' + msg + '". Gere uma resposta personalizada para ' + lead.nome + ' sobre ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE a resposta pronta para copiar.');
                     }}
-                    style={{ marginTop: 8, padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer', width: '100%' }}
+                    style={{ padding: 10, borderRadius: 8, fontSize: 13, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer', width: '100%' }}
                   >
                     Gerar resposta com IA
                   </button>
