@@ -173,7 +173,7 @@ export function StatusElegibilidadeRoleta() {
           </div>
         )}
         {!elegibilidade.bloqueado_descarte && elegibilidade.descartes_mes >= 40 && (
-          <div className="mx-4 mt-3 rounded-lg px-3 py-2 text-xs flex items-center gap-2 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+          <div className="mt-3 rounded-lg px-3 py-2 text-xs flex items-center gap-2 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
             <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
             <span>
               ⚠️ Atenção: você já descartou {elegibilidade.descartes_mes} leads este mês. Ao atingir {elegibilidade.limite_descartes}, será bloqueado da roleta.
