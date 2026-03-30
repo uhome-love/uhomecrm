@@ -222,6 +222,15 @@ export default function NotificationList({ notifications, onMarkAsRead, onDelete
         const d = n.dados || {};
         const etapa = d.etapa || d.stage_nome || d.status || null;
 
+        // Enrich old generic titles with lead name from dados/message
+        let displayTitle = n.titulo;
+        if (displayTitle?.includes("Seu lead precisa de atenção")) {
+          const name = d.lead_nome || leadName;
+          if (name) {
+            displayTitle = `⏰ ${name}${etapa ? ` — ${etapa}` : ""} precisa de atenção`;
+          }
+        }
+
         // Determine action label based on notification type
         let actionLabel = "Ver →";
         if (["visitas", "visita_agendada", "visita_confirmada", "visita_noshow"].includes(n.tipo) || n.categoria?.startsWith("visita")) {
