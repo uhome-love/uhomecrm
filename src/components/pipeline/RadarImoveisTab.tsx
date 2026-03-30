@@ -386,6 +386,7 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   const slugRef = useBrokerSlug();
   const { search: typesenseSearch } = useTypesenseSearch();
   const [creatingVitrine, setCreatingVitrine] = useState(false);
+  const [radarOpen, setRadarOpen] = useState(false);
 
   // ── New hooks ──
   const { profile: savedProfile, upsertProfile, isSaving: isSavingProfile } = useLeadPropertyProfile(leadId);
