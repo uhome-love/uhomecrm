@@ -634,8 +634,63 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               />
             </TabsContent>
 
-            <TabsContent value="indicados" className="mt-0">
-              <LeadImoveisIndicadosTab leadId={lead.id} corretorNomes={corretorNomes} />
+            <TabsContent value="homi" className="p-0">
+              <div className="p-4 flex flex-col gap-4">
+                {/* Briefing compacto */}
+                <div style={{ background: 'var(--muted)', borderRadius: 8, padding: '10px 14px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>
+                    {lead.nome} · {stageTipo} · {diasSemContato}d sem contato
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                    {(lead as any).origem} · {(lead as any).empreendimento}
+                  </div>
+                </div>
+
+                {/* Botões de ação */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Gere uma mensagem de WhatsApp de apresentação para ' + lead.nome + ' sobre ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE as mensagens prontas para copiar, nada mais.'); }}
+                    style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer' }}
+                  >
+                    Gerar mensagem
+                  </button>
+                  <button
+                    onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Gere um follow-up para ' + lead.nome + ' que está em ' + stageTipo + ' há ' + diasSemContato + ' dias. IMPORTANTE: Retorne SOMENTE a mensagem pronta para copiar.'); }}
+                    style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'var(--muted)', color: 'var(--foreground)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
+                  >
+                    Follow-up
+                  </button>
+                  <button
+                    onClick={() => { setHomiOpen(true); setHomiInitialPrompt('Quebre a objeção mais comum para um lead em ' + stageTipo + ' interessado em ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE os argumentos prontos para usar.'); }}
+                    style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'var(--muted)', color: 'var(--foreground)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
+                  >
+                    Quebrar objeção
+                  </button>
+                </div>
+
+                {/* Campo o que o cliente disse */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    O que o cliente disse?
+                  </div>
+                  <textarea
+                    placeholder="Cole aqui a mensagem do cliente para a IA gerar uma resposta personalizada..."
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '0.5px solid var(--border)', fontSize: 13, fontFamily: 'var(--font-sans)', resize: 'none', background: 'var(--muted)', color: 'var(--foreground)', lineHeight: 1.5 }}
+                    rows={3}
+                    id="homi-client-message"
+                  />
+                  <button
+                    onClick={() => {
+                      const msg = (document.getElementById('homi-client-message') as HTMLTextAreaElement)?.value || '';
+                      setHomiOpen(true);
+                      setHomiInitialPrompt('O cliente disse: "' + msg + '". Gere uma resposta personalizada para ' + lead.nome + ' sobre ' + ((lead as any).empreendimento || 'o empreendimento') + '. IMPORTANTE: Retorne SOMENTE a resposta pronta para copiar.');
+                    }}
+                    style={{ marginTop: 8, padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer', width: '100%' }}
+                  >
+                    Gerar resposta com IA
+                  </button>
+                </div>
+              </div>
             </TabsContent>
           </ScrollArea>
         </Tabs>
