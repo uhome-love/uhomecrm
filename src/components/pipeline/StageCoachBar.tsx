@@ -296,18 +296,33 @@ export default function StageCoachBar({
   // Filter messages by origin
   const filteredMessages = config.messages.filter(msg => matchesOrigem(msg.origens));
 
-  // Determine dot color based on alert severity
-  const dotColor = config.alert?.severity === "danger"
+  // Dynamic diagnostic text based on real lead situation
+  const temTarefaPendente = !!nextTask;
+  const diagnosticText = (() => {
+    if (!temTarefaPendente && diasSemContato === 0) {
+      return `Sem próxima tarefa agendada${empreendimento ? ` · ${empreendimento}` : ''}`;
+    }
+    if (!temTarefaPendente && diasSemContato > 0) {
+      return `Sem próxima tarefa · ${diasSemContato}d sem contato${origem ? ` · ${origem}` : ''}`;
+    }
+    if (temTarefaPendente && diasSemContato > 2) {
+      return `${diasSemContato}d sem contato · ${tentativasLigacao} tentativa${tentativasLigacao !== 1 ? 's' : ''}${origem ? ` · ${origem}` : ''}`;
+    }
+    return `Em dia · próxima ação agendada${origem ? ` · ${origem}` : ''}`;
+  })();
+
+  // Dot color based on real situation
+  const dotColor = (!temTarefaPendente || diasSemContato > 3)
     ? "bg-[#E24B4A]"
-    : config.alert?.severity === "warning"
+    : (diasSemContato > 1 && diasSemContato <= 3)
       ? "bg-[#EF9F27]"
-      : "bg-[#B4B2A9]";
+      : "bg-[#639922]";
 
   return (
     <div className="bg-muted flex items-center gap-2" style={{ padding: '6px 24px', borderBottom: '0.5px solid var(--border)' }}>
       <span className={`inline-block w-[6px] h-[6px] rounded-full shrink-0 ${dotColor}`} />
       <p className="flex-1 min-w-0 truncate text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{config.diagnostic}</span>
+        <span className="font-medium text-foreground">{diagnosticText}</span>
         {sequenceInfo && (
           <span className="ml-2">
             · Dia {Math.min(sequenceInfo.enviados + 1, sequenceInfo.total)}/{sequenceInfo.total}
@@ -322,7 +337,6 @@ export default function StageCoachBar({
             {followUpDay === 5 && "· 👋 Encerramento"}
           </span>
         )}
-        {origem && <span className="ml-1.5">· {origem}</span>}
       </p>
     </div>
   );

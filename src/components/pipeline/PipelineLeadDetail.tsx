@@ -520,6 +520,8 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             setHomiInitialPrompt(prompt);
           }}
           origem={lead.origem}
+          nextTask={nextTask}
+          noContactAlert={noContactAlert}
         />
 
         {/* ════════════ ABAS ════════════ */}
