@@ -134,13 +134,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const callAttempts = contactActivities.length;
 
-  const daysSinceCreation = useMemo(() => {
+  const daysSinceLastAction = useMemo(() => {
+    // Use ultima_acao_at first (most accurate), then latest activity, then created_at
+    const ultimaAcao = (lead as any).ultima_acao_at;
+    if (ultimaAcao) return differenceInDaysSafe(ultimaAcao) ?? 0;
     if (contactActivities.length > 0) {
-      const lastContact = contactActivities[0]; // already sorted desc
-      return differenceInDaysSafe(lastContact.created_at) ?? 0;
+      return differenceInDaysSafe(contactActivities[0].created_at) ?? 0;
     }
     return differenceInDaysSafe(lead.created_at) ?? 0;
-  }, [contactActivities, lead.created_at]);
+  }, [contactActivities, lead.created_at, (lead as any).ultima_acao_at]);
+
+  // daysSinceCreation kept for display — but SLA uses daysSinceLastAction
+  const daysSinceCreation = daysSinceLastAction;
 
   // temperatureInfo removido — chip de status usado no lugar
 
@@ -223,10 +228,12 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   // Has no contact alert
   const noContactAlert = useMemo(() => {
     if (nextTask) return null;
-    const lastContact = (lead as any).ultima_acao_at;
+    // Check most recent activity date too
+    const lastActivityDate = leadData.atividades.length > 0 ? leadData.atividades[0]?.created_at : null;
+    const lastContact = (lead as any).ultima_acao_at || lastActivityDate;
     const hoursSince = differenceInHoursSafe(lastContact) ?? 999;
-    if (leadData.atividades.length === 0 || hoursSince > 24) {
-      return hoursSince > 48 ? "critical" : "warning";
+    if (leadData.atividades.length === 0 || hoursSince > 48) {
+      return hoursSince > 96 ? "critical" : "warning";
     }
     return null;
   }, [nextTask, leadData.atividades, lead]);
