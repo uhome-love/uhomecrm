@@ -542,7 +542,7 @@ export function OportunidadesDoDia() {
                       variant="outline"
                       size="sm"
                       className="flex-1 text-xs"
-                      onClick={() => (window.location.href = "/oferta-ativa")}
+                      onClick={() => navigate("/oferta-ativa")}
                     >
                       <Phone className="w-3.5 h-3.5 mr-1" />
                       Oferta Ativa
