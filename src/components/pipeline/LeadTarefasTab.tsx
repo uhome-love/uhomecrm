@@ -214,7 +214,7 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <span className={`text-xs font-medium ${isOverdue ? "text-red-500" : "text-muted-foreground"}`}>
-              {isOverdue && "⏰ "}{dateLabel}{timeLabel}
+              {isOverdue && "⏰ "}{dateLabel}
             </span>
             <span className="text-xs text-muted-foreground">·</span>
             <span className="text-xs font-medium text-primary/70">
