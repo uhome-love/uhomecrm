@@ -392,14 +392,29 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
         <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
         <div className="space-y-0">
           {timeline.slice(0, 15).map((item, i) => (
-            <div key={i} className="relative flex gap-4 pb-4">
+            <div key={i} className="relative flex gap-4 pb-4 group/timeline">
               <div className={`relative z-10 h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${item.color}`}>
                 <item.icon className="h-3.5 w-3.5" />
               </div>
-              <div className="pt-0.5">
-                <p className="text-sm font-medium text-foreground">{item.title}</p>
-                {item.description && <p className="text-xs text-muted-foreground whitespace-pre-wrap">{item.description}</p>}
-                <p className="text-xs text-muted-foreground/60">{formatDateSafe(item.date, "dd/MM 'às' HH:mm", { locale: ptBR, fallback: "Data inválida" })}</p>
+              <div className="pt-0.5 flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{item.title}</p>
+                    {item.description && <p className="text-xs text-muted-foreground whitespace-pre-wrap">{item.description}</p>}
+                    <p className="text-xs text-muted-foreground/60">{formatDateSafe(item.date, "dd/MM 'às' HH:mm", { locale: ptBR, fallback: "Data inválida" })}</p>
+                  </div>
+                  {item.sourceId && item.sourceType !== "system" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 opacity-0 group-hover/timeline:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      onClick={() => setDeleteTarget(item)}
+                      title="Remover registro"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
