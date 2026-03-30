@@ -55,7 +55,7 @@ function formatPriceRange(min: string, max: string): string | null {
   return `Até ${formatBRL(vMax)}`;
 }
 
-export default function RadarFullscreenModal({ open, onClose, leadNome, profile, onUpdateMatch, onIAPerfil }: RadarFullscreenModalProps) {
+export default function RadarFullscreenModal({ open, onClose, leadNome, profile, matches, onUpdateMatch, onIAPerfil }: RadarFullscreenModalProps) {
   const priceRange = formatPriceRange(profile.valor_min, profile.valor_max);
 
   const MOMENTO_LABELS: Record<string, string> = {
