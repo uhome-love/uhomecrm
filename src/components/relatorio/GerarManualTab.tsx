@@ -199,12 +199,14 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
       const vgvAssinado = vendasPeriodo
         .reduce((s, n) => s + (Number(n.vgv_final) || Number(n.vgv_estimado) || 0), 0);
 
-      // Lead management — pipeline count
+      // Lead management — pipeline count (exclude Descarte and Convertido stages)
+      const STAGE_DESCARTE = "1dd66c25-3848-4053-9f66-82e902989b4d";
+      const STAGE_CONVERTIDO = "a8a1a867-5b0c-414e-9532-8873c4ca5a0f";
       const { count: leadsAtivos } = await (supabase
         .from("pipeline_leads")
         .select("id", { count: "exact", head: true }) as any)
         .eq("corretor_id", corretorUserId)
-        .not("status", "in", '("arquivado","descarte")');
+        .not("stage_id", "in", `("${STAGE_DESCARTE}","${STAGE_CONVERTIDO}")`);
 
       const pontosGestao = gestaoRows.reduce((s: number, r: any) => s + (Number(r.pontos) || 0), 0);
 
