@@ -11,6 +11,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ── Horário inteligente por canal (BRT = UTC-3) ──
+function isWithinWindow(canal: string): boolean {
+  const now = new Date();
+  const brtHour = (now.getUTCHours() - 3 + 24) % 24;
+  const day = now.getUTCDay();
+
+  if (canal === "whatsapp") return brtHour >= 8 && brtHour < 21 && day >= 1 && day <= 6;
+  if (canal === "email") return brtHour >= 7 && brtHour < 22; // email any day
+  if (canal === "voz") return brtHour >= 9 && brtHour < 20 && day >= 1 && day <= 5;
+  return true;
+}
+
+// ── Call orchestrator to update scoring ──
+async function notifyOrchestrator(supabaseUrl: string, serviceKey: string, event_type: string, pipeline_lead_id: string, canal: string) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/nurturing-orchestrator`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ event_type, pipeline_lead_id, canal }),
+    });
+  } catch (e) {
+    console.error("Orchestrator notify failed:", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
