@@ -233,12 +233,14 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
     setGenerating(true);
     setReport(null);
 
-    const pd = periodData || { ligacoes: 0, aproveitados: 0, taxaAproveitamento: 0, visitasMarcadas: 0, visitasRealizadas: 0, visitasNoShow: 0, leadsAtivos: 0, leadsAproveitados: 0, leadsNovos: 0, followUpsConcluidos: 0, leadsDesatualizados: 0, negociosAtivos: 0, propostas: 0, vendas: 0, perdidos: 0, vgvGerado: 0, vgvAssinado: 0, vgvAndamento: 0, pontosGestao: 0 };
+    const pd = periodData || { ligacoes: 0, aproveitados: 0, taxaAproveitamento: 0, visitasMarcadas: 0, visitasRealizadas: 0, visitasNoShow: 0, leadsAtivos: 0, leadsAproveitados: 0, leadsNovos: 0, leadsRoleta: 0, followUpsConcluidos: 0, leadsDesatualizados: 0, negociosAtivos: 0, negociosCriados: 0, propostas: 0, vendas: 0, perdidos: 0, vgvGerado: 0, vgvAssinado: 0, vgvAndamento: 0, pontosGestao: 0, pipeline: 0 };
     const metricas = {
       // Oferta Ativa
       ligacoes: pd.ligacoes,
       aproveitados: pd.aproveitados,
       taxa_aproveitamento: pd.taxaAproveitamento,
+      // Distribuição
+      leads_roleta: pd.leadsRoleta,
       // Visitas
       visitas_marcadas: pd.visitasMarcadas,
       visitas_realizadas: pd.visitasRealizadas,
@@ -248,7 +250,9 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
       leads_novos_periodo: pd.leadsNovos,
       follow_ups_concluidos: pd.followUpsConcluidos,
       pontos_gestao: pd.pontosGestao,
+      pipeline_total: pd.pipeline,
       // Negócios
+      negocios_abertos: pd.negociosCriados,
       negocios_ativos: pd.negociosAtivos,
       propostas: pd.propostas,
       vendas: pd.vendas,
