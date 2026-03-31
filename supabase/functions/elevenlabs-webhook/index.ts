@@ -29,6 +29,19 @@ function phoneVariants(norm: string): string[] {
   return [...variants];
 }
 
+// ── Notify orchestrator for lead scoring ──
+async function notifyOrchestrator(supabaseUrl: string, serviceKey: string, event_type: string, pipeline_lead_id: string, canal: string) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/nurturing-orchestrator`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ event_type, pipeline_lead_id, canal }),
+    });
+  } catch (e) {
+    console.error("Orchestrator notify failed:", e);
+  }
+}
+
 const POSITIVE_STATUSES = [
   "interesse", "positivo", "com_interesse", "qualificado", "visita_marcada",
   "interessado_quente", "interessado_morno", "quer_visita", "quer_whatsapp",
