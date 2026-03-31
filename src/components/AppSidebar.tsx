@@ -366,7 +366,7 @@ export function AppSidebar() {
             label: "Marketing",
             items: [
               { title: "Central de Marketing", url: "/marketing", icon: TrendingUp },
-              { title: "Email Marketing", url: "/email-marketing", icon: MailCheck },
+              { title: "Central de Nutrição", url: "/central-nutricao", icon: MailCheck },
               { title: "Disparo WhatsApp", url: "/disparador-whatsapp", icon: Phone },
               { title: "Disparador Ligação IA", url: "/disparador-ligacoes-ia", icon: Phone },
               { title: "Tarefas & Marketing (Ana)", url: "/backoffice/tarefas", icon: ClipboardCheck },
