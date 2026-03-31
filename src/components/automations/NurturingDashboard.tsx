@@ -101,7 +101,7 @@ export default function NurturingDashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      await Promise.all([loadStats(), loadLogs(), loadReactivation()]);
+      await Promise.all([loadStats(), loadLogs(), loadReactivation(), loadChannelPerf(), loadHotLeads()]);
     } catch (err) {
       console.error("Error loading nurturing data:", err);
     } finally {
