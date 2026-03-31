@@ -95,7 +95,7 @@ export default function NurturingDashboard() {
   const [avgScore, setAvgScore] = useState(0);
   const [windowOpen24h, setWindowOpen24h] = useState(0);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); checkPausedState(); }, []);
 
   const loadData = async () => {
     setLoading(true);
