@@ -3,6 +3,7 @@
 // Cérebro central event-driven do sistema de nutrição
 // Recebe eventos de qualquer canal, aplica scoring e decide próxima ação
 // Inclui decisão inteligente via IA para leads quentes
+// Bloco 1: Sets conversation_window_until on whatsapp_respondeu
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -22,6 +23,7 @@ const SCORE_MAP: Record<string, number> = {
   whatsapp_entregue: 1,
   whatsapp_lido: 3,
   whatsapp_respondeu: 15,
+  email_enviado: 1,
   email_aberto: 3,
   email_clicou: 8,
   vitrine_visualizada: 10,
@@ -36,10 +38,8 @@ const SCORE_MAP: Record<string, number> = {
   corretor_tarefa_feita: 5,
 };
 
-// ── Score Thresholds ──
 const SCORE_QUENTE = 30;
 const SCORE_MORNO = 15;
-const SCORE_FRIO = 5;
 
 interface OrchestratorEvent {
   event_type: string;
@@ -75,11 +75,7 @@ Sugira em 2-3 frases curtas a melhor abordagem para o corretor entrar em contato
       }),
     });
 
-    if (!response.ok) {
-      console.error("AI gateway error:", response.status);
-      return null;
-    }
-
+    if (!response.ok) return null;
     const data = await response.json();
     return data.choices?.[0]?.message?.content || null;
   } catch (e) {
@@ -146,7 +142,7 @@ Deno.serve(async (req) => {
     const scoreChange = SCORE_MAP[event_type] ?? 0;
     const newScore = (state.lead_score || 0) + scoreChange;
 
-    // 3. Determine action based on event
+    // 3. Build updates
     const updates: Record<string, any> = {
       lead_score: newScore,
       ultimo_evento: event_type,
@@ -162,6 +158,14 @@ Deno.serve(async (req) => {
 
     // 4. Handle special events
     let action: string | null = null;
+
+    // ── Bloco 1: Set 24h conversation window on reply ──
+    if (event_type === "whatsapp_respondeu") {
+      const windowUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await supabase.from("pipeline_leads")
+        .update({ conversation_window_until: windowUntil })
+        .eq("id", pipeline_lead_id);
+    }
 
     // Lead responded → pause sequence, notify corretor
     if (["whatsapp_respondeu", "voz_atendida"].includes(event_type)) {
@@ -187,12 +191,12 @@ Deno.serve(async (req) => {
         .eq("status", "pendente");
     }
 
-    // Score thresholds → determine urgency
+    // Score thresholds
     if (newScore >= SCORE_QUENTE && state.status === "ativo") {
       action = "notify_corretor_hot";
     }
 
-    // 5. If lead is hot and was in reactivation → redistribute
+    // Hot lead in reactivation → redistribute
     if (newScore >= SCORE_QUENTE && state.sequencia_ativa === "reativacao") {
       action = "redistribute";
       updates.status = "converteu";
@@ -226,7 +230,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (lead?.corretor_id) {
-        // Generate AI suggestion for hot leads
         let aiSuggestion: string | null = null;
         if (newScore >= SCORE_MORNO) {
           aiSuggestion = await generateAISuggestion(lead, newScore, event_type);
@@ -237,9 +240,7 @@ Deno.serve(async (req) => {
           : `💬 ${lead.nome || "Lead"} respondeu via ${canal || "automação"}`;
 
         const descParts = [`Evento: ${event_type}. Score atual: ${newScore}. Contato humano recomendado.`];
-        if (aiSuggestion) {
-          descParts.push(`\n🤖 Sugestão IA: ${aiSuggestion}`);
-        }
+        if (aiSuggestion) descParts.push(`\n🤖 Sugestão IA: ${aiSuggestion}`);
 
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id,
@@ -252,7 +253,6 @@ Deno.serve(async (req) => {
           created_by: lead.corretor_id,
         });
 
-        // Log AI suggestion separately in timeline
         if (aiSuggestion) {
           await supabase.from("pipeline_atividades").insert({
             pipeline_lead_id,
@@ -269,10 +269,7 @@ Deno.serve(async (req) => {
     }
 
     // 7. Update state
-    await supabase
-      .from("lead_nurturing_state")
-      .update(updates)
-      .eq("id", state.id);
+    await supabase.from("lead_nurturing_state").update(updates).eq("id", state.id);
 
     // 8. Log in timeline
     await supabase.from("pipeline_atividades").insert({

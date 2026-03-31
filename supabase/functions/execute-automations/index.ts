@@ -8,10 +8,9 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, serviceKey);
 
   const traceId = req.headers.get("x-trace-id") || `t-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
   const logOps = (level: string, category: string, message: string, ctx?: Record<string, unknown>, errorDetail?: string) => {
@@ -19,7 +18,7 @@ Deno.serve(async (req) => {
   };
 
   try {
-    // ── Overlap guard: skip if another run started within the last 50 seconds ──
+    // ── Overlap guard ──
     const guardCutoff = new Date(Date.now() - 50_000).toISOString();
     const { data: recentRun } = await supabase
       .from("ops_events")
@@ -31,19 +30,16 @@ Deno.serve(async (req) => {
       .limit(1);
 
     if (recentRun && recentRun.length > 0) {
-      console.info(`Skipping overlapping run — recent trace ${recentRun[0].trace_id}`);
-      return new Response(JSON.stringify({ skipped: true, reason: "overlap_guard", recent_trace: recentRun[0].trace_id }), {
+      return new Response(JSON.stringify({ skipped: true, reason: "overlap_guard" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Stamp run start
     await supabase.from("ops_events").insert({
       fn: "execute-automations", level: "info", category: "guard",
       message: "run_start", trace_id: traceId, ctx: {}, error_detail: null,
     });
 
-    // Fetch all active automations
     const { data: automations, error: autoErr } = await supabase
       .from("automations")
       .select("*")
@@ -70,7 +66,7 @@ Deno.serve(async (req) => {
             const cutoff = new Date(now.getTime() - hoursThreshold * 60 * 60 * 1000).toISOString();
             const { data: leads } = await supabase
               .from("pipeline_leads")
-              .select("id, nome, telefone, empreendimento, corretor_id, segmento_id, origem, stage_changed_at")
+              .select("id, nome, telefone, email, empreendimento, corretor_id, segmento_id, origem, stage_changed_at, conversation_window_until")
               .lt("stage_changed_at", cutoff)
               .order("stage_changed_at", { ascending: true })
               .limit(50);
@@ -82,7 +78,7 @@ Deno.serve(async (req) => {
             const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
             const { data: leads } = await supabase
               .from("pipeline_leads")
-              .select("id, nome, telefone, empreendimento, corretor_id, segmento_id, origem, created_at")
+              .select("id, nome, telefone, email, empreendimento, corretor_id, segmento_id, origem, created_at, conversation_window_until")
               .gt("created_at", fiveMinAgo)
               .limit(50);
             matchedLeads = leads || [];
@@ -109,7 +105,7 @@ Deno.serve(async (req) => {
               if (leadIds.length > 0) {
                 const { data: leads } = await supabase
                   .from("pipeline_leads")
-                  .select("id, nome, telefone, empreendimento, corretor_id, segmento_id, origem")
+                  .select("id, nome, telefone, email, empreendimento, corretor_id, segmento_id, origem, conversation_window_until")
                   .in("id", leadIds);
                 matchedLeads = leads || [];
               }
@@ -140,7 +136,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Deduplicate: check if already executed today for each lead
+        // Deduplicate: check if already executed today
         if (auto.trigger_type !== "cron" && matchedLeads.length > 0) {
           const { data: existingLogs } = await supabase
             .from("automation_logs")
@@ -193,7 +189,6 @@ Deno.serve(async (req) => {
                 }
 
                 case "notify_manager": {
-                  // Replace {{nome}} placeholder in notify_text
                   const notifyMsg = (action.notify_text || `Lead ${lead.nome} precisa de atenção`)
                     .replace(/\{\{nome\}\}/g, lead.nome || "Lead");
                   await supabase.from("notifications").insert({
@@ -208,8 +203,72 @@ Deno.serve(async (req) => {
                   break;
                 }
 
+                // ── Bloco 3: Real WhatsApp dispatch ──
                 case "whatsapp": {
-                  executedActions.push("whatsapp");
+                  const leadPhone = lead.telefone;
+                  if (!leadPhone) {
+                    console.warn(`WhatsApp action skipped: lead ${lead.id} has no phone`);
+                    break;
+                  }
+
+                  // Check if 24h conversation window is open
+                  const windowOpen = lead.conversation_window_until && new Date(lead.conversation_window_until) > now;
+
+                  let waBody: Record<string, any>;
+                  if (windowOpen && action.message) {
+                    // Free-text message within 24h window
+                    const msg = (action.message || "Olá {{nome}}, temos novidades para você!")
+                      .replace(/\{\{nome\}\}/g, lead.nome?.split(" ")[0] || "Cliente")
+                      .replace(/\{\{empreendimento\}\}/g, lead.empreendimento || "nosso empreendimento");
+                    waBody = { telefone: leadPhone, mensagem: msg };
+                  } else {
+                    // Template message (outside 24h window)
+                    const templateName = action.template_name || "hello_world";
+                    waBody = {
+                      telefone: leadPhone,
+                      template: {
+                        name: templateName,
+                        language: action.template_language || "pt_BR",
+                        parameters: {
+                          nome: lead.nome?.split(" ")[0] || "Cliente",
+                          empreendimento: lead.empreendimento || "nosso empreendimento",
+                        },
+                      },
+                    };
+                  }
+
+                  try {
+                    const waResponse = await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${serviceKey}`,
+                      },
+                      body: JSON.stringify(waBody),
+                    });
+
+                    const waResult = await waResponse.json();
+
+                    if (waResponse.ok && waResult.success) {
+                      executedActions.push("whatsapp");
+
+                      // Register in timeline
+                      await supabase.from("pipeline_atividades").insert({
+                        pipeline_lead_id: lead.id,
+                        tipo: "nurturing_sequencia",
+                        titulo: `📨 WhatsApp automático — ${auto.name}`,
+                        descricao: windowOpen ? `Mensagem livre (janela 24h): "${(waBody.mensagem || '').slice(0, 100)}"` : `Template: ${waBody.template?.name || 'N/A'}`,
+                        data: now.toISOString().slice(0, 10),
+                        status: "concluida",
+                        created_by: auto.created_by,
+                      });
+                    } else {
+                      console.error(`WhatsApp send failed for lead ${lead.id}:`, waResult.error);
+                      logOps("warn", "business", `WhatsApp failed for automation ${auto.name}`, { lead_id: lead.id, error: waResult.error });
+                    }
+                  } catch (waErr: any) {
+                    console.error(`WhatsApp send exception for lead ${lead.id}:`, waErr.message);
+                  }
                   break;
                 }
 

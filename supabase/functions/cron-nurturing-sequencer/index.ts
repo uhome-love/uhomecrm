@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // ── CANAL: WHATSAPP (lógica original) ──
+      // ── CANAL: WHATSAPP ──
       if (!lead || !lead.telefone) {
         await supabase
           .from("lead_nurturing_sequences")
