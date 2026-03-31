@@ -302,6 +302,8 @@ Deno.serve(async (req) => {
 
           if (waResponse.ok) {
             sendSuccess = true;
+            // Notify orchestrator about WhatsApp sent
+            notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_entregue", lead.id, "whatsapp");
           } else {
             const errData = await waResponse.json();
             errorMsg = JSON.stringify(errData?.error?.message || errData).slice(0, 500);
