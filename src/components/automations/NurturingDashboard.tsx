@@ -97,6 +97,14 @@ export default function NurturingDashboard() {
 
   useEffect(() => { loadData(); checkPausedState(); }, []);
 
+  const checkPausedState = async () => {
+    const { count } = await supabase
+      .from("lead_nurturing_sequences")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pausado");
+    setPaused((count || 0) > 0);
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
