@@ -378,7 +378,7 @@ export default function CeoDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
               {localPendentes.map((c: any) => (
                 <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border border-[#e8e8f0] dark:border-white/[0.07] bg-white dark:bg-white/[0.03]">
                   <div className="flex items-center gap-3">
