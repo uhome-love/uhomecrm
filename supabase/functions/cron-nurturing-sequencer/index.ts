@@ -53,10 +53,10 @@ Deno.serve(async (req) => {
     const whatsappPhoneId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
     const mailgunApiKey = Deno.env.get("MAILGUN_API_KEY");
 
-    // Fetch pending sequences that are due
+    // Fetch pending sequences that are due — include conversation_window_until
     const { data: pendingSteps, error: fetchError } = await supabase
       .from("lead_nurturing_sequences")
-      .select("*, pipeline_leads!inner(id, nome, telefone, email, empreendimento, corretor_id)")
+      .select("*, pipeline_leads!inner(id, nome, telefone, email, empreendimento, corretor_id, conversation_window_until)")
       .eq("status", "pendente")
       .lte("scheduled_at", new Date().toISOString())
       .order("scheduled_at", { ascending: true })
