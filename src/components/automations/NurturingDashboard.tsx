@@ -294,15 +294,22 @@ export default function NurturingDashboard() {
 
   const togglePause = async () => {
     if (!paused) {
+      // Pause: set status to 'pausado' (reversible) instead of 'cancelado'
       const { error } = await supabase
         .from("lead_nurturing_sequences")
-        .update({ status: "cancelado" } as any)
+        .update({ status: "pausado" } as any)
         .eq("status", "pendente");
       if (error) { toast.error("Erro ao pausar"); return; }
-      toast.success("Todas as sequências pausadas");
+      toast.success("Todas as sequências pausadas (reversível)");
       setPaused(true);
     } else {
-      toast.info("Para retomar, leads precisam mudar de etapa para gerar novos steps");
+      // Resume: set status back to 'pendente'
+      const { error } = await supabase
+        .from("lead_nurturing_sequences")
+        .update({ status: "pendente" } as any)
+        .eq("status", "pausado");
+      if (error) { toast.error("Erro ao retomar"); return; }
+      toast.success("Sequências retomadas");
       setPaused(false);
     }
     loadData();
