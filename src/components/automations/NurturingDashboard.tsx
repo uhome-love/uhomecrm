@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Send, Pause, Play, AlertCircle, CheckCircle2, Clock, BarChart3, RefreshCcw, Mail, MessageCircle } from "lucide-react";
+import { Loader2, Send, Pause, Play, AlertCircle, CheckCircle2, Clock, BarChart3, RefreshCcw, Mail, MessageCircle, Phone, TrendingUp, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
