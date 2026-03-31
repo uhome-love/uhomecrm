@@ -108,14 +108,22 @@ export default function NurturingDashboard() {
   };
 
   const loadGlobalKpis = async () => {
+    // Use count query to avoid 1000-row truncation
+    const { count: activeCount } = await supabase
+      .from("lead_nurturing_state")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "ativo");
+    setActiveLeads(activeCount || 0);
+
+    // For avg score, fetch only scores (paginate if needed)
     const { data: states } = await supabase
       .from("lead_nurturing_state")
-      .select("lead_score, status")
-      .eq("status", "ativo");
-    if (states) {
-      setActiveLeads(states.length);
+      .select("lead_score")
+      .eq("status", "ativo")
+      .limit(1000);
+    if (states && states.length > 0) {
       const totalScore = states.reduce((s, st: any) => s + (st.lead_score || 0), 0);
-      setAvgScore(states.length > 0 ? Math.round(totalScore / states.length) : 0);
+      setAvgScore(Math.round(totalScore / states.length));
     }
   };
 
