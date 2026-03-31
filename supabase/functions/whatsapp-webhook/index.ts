@@ -107,6 +107,20 @@ Deno.serve(async (req) => {
             } else {
               updatedCount++;
             }
+
+            // ── Notify orchestrator on read status ──
+            if (statusType === "read") {
+              const { data: sendRecord } = await supabase
+                .from("whatsapp_campaign_sends")
+                .select("pipeline_lead_id")
+                .eq("message_id", waMessageId)
+                .maybeSingle();
+              if (sendRecord?.pipeline_lead_id) {
+                const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+                const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+                notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_lido", sendRecord.pipeline_lead_id, "whatsapp");
+              }
+            }
           }
 
           // Process incoming messages (replies)
