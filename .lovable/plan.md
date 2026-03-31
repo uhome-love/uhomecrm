@@ -1,62 +1,67 @@
 
 
-# Plano Completo — Automação e Nutrição de Leads Event-Driven
+# Central de Nutrição — Página Unificada
 
-## O que já existe
+## Situação Atual
 
-- **cron-nurturing-sequencer**: Executa steps pendentes (WhatsApp + Email via Mailgun)
-- **reactivate-cold-leads**: Varredura semanal por segmento, agenda sequências fixas
-- **twilio-ai-call**: Ligações individuais ElevenLabs + Twilio (CEO)
-- **elevenlabs-webhook**: Processa transcrições e resultados de chamadas
-- **DisparadorLigacoesIA**: Página de discagem sequencial
-- **NurturingDashboard**: Painel com abas Visão Geral e Reativação
-- **SequenceTemplates**: Templates de sequências (boas-vindas, reengajamento, etc.)
-- **whatsapp-webhook / mailgun-webhook / site-events**: Webhooks já recebem eventos
+A nutrição está fragmentada em 4 lugares diferentes:
+- `/automacoes` → Automações + SequenceTemplates + NurturingDashboard (misturado)
+- `/campanhas-voz` → Campanhas de voz IA (página separada)
+- `/disparador-ligacoes-ia` → Discagem IA individual (página separada)
+- `/email-marketing` → Email marketing (página separada)
 
-## O que será construído
+O CEO precisa navegar entre 4 rotas para ter visão completa da nutrição.
 
-### Fase 1 — Estado Central + Lead Scoring (Fundação)
+## Solução
 
-**Migration**: Criar tabela `lead_nurturing_state` com campos de estado, scoring, último evento, próximo step e metadata. Índices em `proximo_step_at` e `pipeline_lead_id`.
+Criar uma **página unificada `/central-nutricao`** com 5 abas organizadas:
 
-**Edge Function `nurturing-orchestrator`**: Cérebro central event-driven.
-- Recebe eventos de qualquer canal (WhatsApp lido, email aberto, vitrine vista, voz atendida, lead parado)
-- Consulta `lead_nurturing_state` do lead
-- Aplica tabela de scoring (+1 entregue, +3 lido, +15 respondeu, +10 vitrine, +20 voz atendida, -50 opt-out)
-- Decide próxima ação baseado no score (30+ = notificar corretor, 15-29 = WhatsApp, 5-14 = multicanal, 0-4 = só email/voz, <0 = parar)
-- Agenda próximo step ou cancela sequência se lead respondeu
-- Registra tudo no histórico
+```text
+┌──────────────────────────────────────────────────────┐
+│  Central de Nutrição                                 │
+│  Orquestração multicanal inteligente                 │
+├──────┬──────────┬──────────┬──────────┬──────────────┤
+│ Visão│ Sequên-  │ Campanhas│ Disparo  │ Automações   │
+│ Geral│ cias     │ de Voz   │ Email    │              │
+└──────┴──────────┴──────────┴──────────┴──────────────┘
+```
 
-**Alterações nos webhooks existentes**: `whatsapp-webhook`, `mailgun-webhook` e `site-events` passam a chamar o orquestrador via fetch interno quando detectam interações relevantes (msg lida, email aberto, vitrine visualizada).
+### Aba 1 — Visão Geral (Dashboard de Performance)
+- KPIs consolidados: leads em nutrição, score médio, hot leads, taxa de resposta
+- Performance por canal (WhatsApp / Email / Voz) com métricas lado a lado
+- Hot leads (score ≥ 15) com ação rápida
+- Reativação: tentados vs reativados (30d)
+- Últimos disparos (log unificado de todos os canais)
+- Botão pausar/retomar global
 
-### Fase 2 — Cadências Inteligentes Baseadas em Comportamento
+### Aba 2 — Sequências
+- Conteúdo do `SequenceTemplates` (templates de cadência)
+- Stats por etapa do funil (sem_contato, qualificação, reativação)
+- Ativar/desativar sequências
 
-**Refatorar `cron-nurturing-sequencer`**: Em vez de executar cegamente steps por dia, consulta `lead_nurturing_state` para checar score e último evento. Se lead já interagiu, pula ou adapta o step.
+### Aba 3 — Campanhas de Voz
+- Conteúdo completo do `CampanhasVozPage` (criar, monitorar, histórico)
+- Integrado na mesma página sem navegação extra
 
-**Refatorar `reactivate-cold-leads`**: Ao agendar sequências, cria também o registro em `lead_nurturing_state`. Implementa lógica de horário inteligente (WhatsApp 8-21h, Email 7-22h, Voz 9-20h BRT). Steps fora da janela são reagendados.
+### Aba 4 — Email Marketing
+- Conteúdo do `EmailMarketingPage` movido para componente reutilizável
+- Campanhas de email, templates, histórico
 
-**3 cadências atualizadas** em `SequenceTemplates.tsx`:
-- **Sem Contato Agressivo**: D0 WA → D1 Email → D3 WA (condicional) → D5 Voz → D7 Alerta → D10 Email → D14 Descarte
-- **Qualificação Parada**: D0 WA → D2 Email → D4 WA (adaptativo por score) → D7 Voz → D10 Alerta → D14 Email
-- **Reativação Fria**: D0 Email → D3 WA (só se abriu email) → D7 Voz → D10 Email (só se interagiu) → D14 Avaliação score
+### Aba 5 — Automações
+- Conteúdo das automações custom (wizard, lista, logs)
+- Manter possibilidade de criar automações personalizadas
 
-**Lógica de fallback entre canais**: WA falhou 24h → Email. Email não abriu 48h → sugerir voz. Voz não atendeu → WA imediato "Tentamos te ligar".
+## Implementação Técnica
 
-### Fase 3 — Campanhas de Voz IA em Lote
+1. **Criar `src/pages/CentralNutricaoPage.tsx`** — Página principal com Tabs e lazy loading de cada aba
 
-**Migration**: Criar tabelas `voice_campaigns` e `voice_call_logs` com campos de resultados agregados, transcrição, sentimento e próximo passo.
+2. **Refatorar componentes existentes** — Extrair o conteúdo interno de `AutomacoesPage`, `CampanhasVozPage` e `EmailMarketingPage` em componentes reutilizáveis (ex: `AutomacoesContent`, `CampanhasVozContent`, `EmailMarketingContent`) para renderizar dentro das abas
 
-**Edge Function `voice-campaign-launcher`**:
-- Recebe lista de lead_ids + template de campanha
-- Valida horário (9-20h BRT, seg-sex)
-- Processa em batches de 50 com intervalo de 30s entre ligações
-- Usa `twilio-ai-call` existente como base, adaptado para lote
-- Atualiza `voice_campaigns` com progresso em tempo real
+3. **Criar `src/components/central-nutricao/NutricaoVisaoGeral.tsx`** — Dashboard consolidado que une os dados do `NurturingDashboard` com métricas globais de todos os canais
 
-**Atualizar `elevenlabs-webhook`**: Quando recebe resultado de ligação de campanha, atualiza `voice_call_logs` e chama o orquestrador para ajustar score e próximo step do lead.
+4. **Atualizar rota em `App.tsx`** — Adicionar `/central-nutricao` protegida para admin
 
-**Templates de agente ElevenLabs**: 4 templates em pt-BR (reativação, novidades, confirmação interesse, convite visita) com persona HOMI gaúcha e regras de opt-out.
+5. **Atualizar Sidebars** — Substituir os 4 links separados por um único "Central de Nutrição" no grupo de Marketing/Automação
 
-### Fase 4 — Dashboard CEO Completo
+6. **Manter rotas antigas** como redirect para `/central-nutricao` (não quebrar bookmarks)
 
-**Nova rota `/ceo/campanhas-voz`**: Interface para criar,
