@@ -284,8 +284,8 @@ export default function NurturingDashboard() {
     setWindowOpen24h(windowCount || 0);
 
     setChannelPerf({
-      whatsapp: { enviados: waEnviados + (waSends?.length || 0), lidos: waLidos, respondidos: waRespondidos },
-      email: { enviados: emailEnviados + (emailRecipients?.length || 0), abertos: emailAbertos, clicados: emailClicados },
+      whatsapp: { enviados: waEnviadosNurturing + (waCampTotal || 0), lidos: waLidos || 0, respondidos: waRespondidos || 0 },
+      email: { enviados: emailEnviadosNurturing + (emailCampTotal || 0), abertos: emailAbertos || 0, clicados: emailClicados || 0 },
       voz: {
         total: voiceLogs?.length || 0,
         atendidas: (voiceLogs || []).filter((v: any) => v.status === "atendida").length,

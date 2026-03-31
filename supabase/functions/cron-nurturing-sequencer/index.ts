@@ -382,7 +382,9 @@ Deno.serve(async (req) => {
                     errorMsg = "WhatsApp falhou, email enviado como fallback";
                     notifyOrchestrator(supabaseUrl, serviceKey, "email_enviado", lead.id, "email");
                   }
-                } catch {}
+                } catch (fallbackErr: any) {
+                  console.error(`Email fallback also failed for lead ${lead.id}:`, fallbackErr.message);
+                }
               }
             }
           }

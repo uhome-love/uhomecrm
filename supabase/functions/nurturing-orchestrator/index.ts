@@ -90,8 +90,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body: OrchestratorEvent = await req.json();
-    const { event_type, pipeline_lead_id, canal, metadata } = body;
+    const body = await req.json();
+
+    // ── Health-check / manual test mode ──
+    if (body.source === "manual" || body.healthcheck) {
+      return new Response(JSON.stringify({ status: "ok", message: "Orchestrator is running" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { event_type, pipeline_lead_id, canal, metadata } = body as OrchestratorEvent;
 
     if (!event_type || !pipeline_lead_id) {
       return new Response(JSON.stringify({ error: "event_type and pipeline_lead_id required" }), {
