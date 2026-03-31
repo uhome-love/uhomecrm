@@ -350,23 +350,23 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
   };
 
   const dataCards = [
-    // Oferta Ativa
+    // Oferta Ativa (matching team report order: Ligações, Aprov., Taxa, Roleta)
     { icon: Phone, label: "Ligações", value: periodData?.ligacoes ?? 0, color: "text-blue-600", bg: "bg-blue-50" },
     { icon: ThumbsUp, label: "Aproveitados", value: `${periodData?.aproveitados ?? 0} (${periodData?.taxaAproveitamento ?? 0}%)`, color: "text-green-600", bg: "bg-green-50" },
-    // Visitas
+    { icon: Users, label: "Leads Roleta", value: periodData?.leadsRoleta ?? 0, color: "text-indigo-600", bg: "bg-indigo-50" },
+    // Visitas (Visitas, Realiz., No Show)
     { icon: CalendarDays, label: "Visitas Marcadas", value: periodData?.visitasMarcadas ?? 0, color: "text-purple-600", bg: "bg-purple-50" },
     { icon: Eye, label: "Visitas Realizadas", value: periodData?.visitasRealizadas ?? 0, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { icon: AlertTriangle, label: "No-Show", value: periodData?.visitasNoShow ?? 0, color: "text-red-600", bg: "bg-red-50" },
-    // Gestão de Leads
-    { icon: Users, label: "Leads Ativos", value: periodData?.leadsAtivos ?? 0, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { icon: TrendingUp, label: "Leads Novos", value: periodData?.leadsNovos ?? 0, color: "text-cyan-600", bg: "bg-cyan-50" },
-    { icon: ClipboardCheck, label: "Follow-ups", value: periodData?.followUpsConcluidos ?? 0, color: "text-teal-600", bg: "bg-teal-50" },
-    { icon: Target, label: "Pts Gestão", value: periodData?.pontosGestao ?? 0, color: "text-orange-600", bg: "bg-orange-50" },
-    // Negócios
-    { icon: Briefcase, label: "Negócios Ativos", value: periodData?.negociosAtivos ?? 0, color: "text-amber-600", bg: "bg-amber-50" },
+    { icon: AlertTriangle, label: "No-Show", value: `${periodData?.visitasNoShow ?? 0}${(periodData?.visitasMarcadas ?? 0) > 0 ? ` (${Math.round(((periodData?.visitasNoShow ?? 0) / (periodData?.visitasMarcadas ?? 1)) * 100)}%)` : ""}`, color: "text-red-600", bg: "bg-red-50" },
+    // Negócios (Negócios, Prop., Vendas, VGV Assin.)
+    { icon: Briefcase, label: "Negócios Abertos", value: periodData?.negociosCriados ?? 0, color: "text-amber-600", bg: "bg-amber-50" },
     { icon: Briefcase, label: "Propostas", value: periodData?.propostas ?? 0, color: "text-violet-600", bg: "bg-violet-50" },
     { icon: CheckCircle, label: "Vendas", value: periodData?.vendas ?? 0, color: "text-green-700", bg: "bg-green-50" },
     { icon: DollarSign, label: "VGV Assinado", value: fmtVgv(periodData?.vgvAssinado ?? 0), color: "text-emerald-700", bg: "bg-emerald-50" },
+    // Pipeline & Gestão
+    { icon: TrendingUp, label: "Pipeline", value: periodData?.pipeline ?? 0, color: "text-cyan-600", bg: "bg-cyan-50" },
+    { icon: ClipboardCheck, label: "Follow-ups", value: periodData?.followUpsConcluidos ?? 0, color: "text-teal-600", bg: "bg-teal-50" },
+    { icon: Target, label: "Pts Gestão", value: periodData?.pontosGestao ?? 0, color: "text-orange-600", bg: "bg-orange-50" },
     { icon: DollarSign, label: "VGV Andamento", value: fmtVgv(periodData?.vgvAndamento ?? 0), color: "text-emerald-600", bg: "bg-emerald-50" },
   ];
 
