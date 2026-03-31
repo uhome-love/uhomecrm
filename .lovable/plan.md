@@ -1,58 +1,114 @@
 
 
-## Plan: 6 Visual & Logic Corrections
+# Plano de Nutrição e Reativação da Base de Leads
 
-### Files to modify
+## Contexto Atual
 
-1. **`src/components/pipeline/PipelineCard.tsx`** — Corrections 1 & 2
-2. **`src/components/pipeline/PipelineLeadDetail.tsx`** — Corrections 3 & 5
-3. **`src/components/pipeline/LeadMatchesWidget.tsx`** — Correction 4
-4. **`src/components/pipeline/WhatsAppFocusFlow.tsx`** — Correction 6
+O sistema já possui infraestrutura robusta:
+- **Motor 1 (cron-smart-nurturing)**: Match noturno — varre leads parados há 7+ dias, busca imóveis no Typesense, cria vitrine e envia via WhatsApp template
+- **Motor 2 (cron-nurturing-sequencer)**: Executa sequências agendadas (D0, D2, D5) por etapa do funil
+- **Mailgun**: E-mail marketing com batch cron, templates e tracking de eventos
+- **WhatsApp Campaign Dispatcher**: Disparos em lote com templates Meta
+- **Sweep Descartados**: Move leads descartados para listas de Oferta Ativa
+- **Templates de Sequência**: Boas-vindas, reengajamento, pós-visita, lembrete de proposta
 
----
+## O Que Falta (Gaps Identificados)
 
-### Correction 1 — SLA-based day badge color (PipelineCard.tsx)
-
-Replace the `daysBadge` useMemo (lines 136-140) with the `getSLAColor` function that uses `stage.tipo` and `daysInStage` to determine colors based on per-stage SLA limits (sem_contato: 1d, contato_iniciado: 2d, qualificacao: 7d, etc.). Apply returned `bg`/`color` to the badge span (lines 313-321).
-
-### Correction 2 — Remove empty space in card body (PipelineCard.tsx)
-
-Audit the card body container (line 285) and all child elements for any `min-h-*`, `h-*` fixed heights, `flex-1` causing empty stretch, or excessive `pb-*`. The `pipeline-card-body` div currently has `display: flex, flexDirection: column` — ensure no child has `flex: 1` or `min-height` creating gaps. Remove any spacer elements between content rows and the action bar.
-
-### Correction 3 — Green dot when lead is on track (PipelineLeadDetail.tsx)
-
-Lines 270-297: The current logic sets `isAtualizado = nextTask !== null` but the chip only shows green class when `isAtualizado` is true, using Tailwind `text-success-700 bg-success-50`. The issue is that `noContactAlert` is computed at line 212-220 and returns `null` when `nextTask` exists — so the chip IS green when there's a task. However, the dot color and chip styling need explicit hex values per the user's spec:
-- `nextTask` exists → bg `#EAF3DE`, color `#27500A`, dot `#639922`, text "Em dia"
-- `noContactAlert === 'critical'` → bg `#FCEBEB`, color `#A32D2D`, dot `#E24B4A`, text "Desatualizado"
-- Otherwise → bg `#FAEEDA`, color `#854F0B`, dot `#EF9F27`, text "Atenção"
-
-Replace the Tailwind class-based chip with inline styles using these exact colors.
-
-### Correction 4 — Force compact horizontal list in LeadMatchesWidget.tsx
-
-The file already uses the compact horizontal layout (lines 136-230). However, verify and ensure no grid/grid-cols/aspect-ratio exists anywhere. The current implementation matches the requested layout — 64x64 photos, flex row, score badge overlay, WhatsApp/Ver buttons on right. Confirm the container uses `border: 0.5px solid`, `borderRadius: 10`. This is already correct per lines 137 and 151-156. **No changes needed** unless the rendered output differs (which was the RadarImoveisTab issue, not this component).
-
-### Correction 5 — HOMI tab briefing background & button borders (PipelineLeadDetail.tsx)
-
-Lines 642-671: The briefing already has `background: 'var(--muted)'`. The Follow-up and Quebrar objeção buttons already have `border: '0.5px solid var(--border)'`. Change button background from `'transparent'` to `'var(--background)'` and border from `0.5px` to `1px` for visibility.
-
-### Correction 6 — Filter WhatsApp messages by stage (WhatsAppFocusFlow.tsx)
-
-The `WhatsAppFocusFlow` already filters messages by `stageTipo` via `STAGE_MESSAGES[stageTipo]` (line 31-77). The `WhatsAppTemplatesDialog.tsx` does NOT filter — it shows all 6 templates regardless of stage. Add filtering logic to `WhatsAppTemplatesDialog.tsx`:
-- Define `templatesPorEtapa` mapping stage types to template IDs
-- Show filtered templates first, then collapsible "Outros templates" section with remaining ones
-- Add `stageTipo` prop to the component interface
+1. **Leads descartados não são reativados** — o sweep apenas move para OA, mas não dispara nutrição automática
+2. **Leads "sem contato" não recebem sequência agressiva** — ficam esperando o corretor agir
+3. **Leads parados em qualificação** não recebem conteúdo de valor (site novo, vitrines)
+4. **E-mail não é usado como canal complementar** — toda nutrição é apenas WhatsApp
+5. **Não há cadência multicanal** — WhatsApp D0 → Email D2 → WhatsApp D5
 
 ---
 
-### Technical summary
+## Plano de Implementação
 
-| # | File | Lines | Change |
-|---|------|-------|--------|
-| 1 | PipelineCard.tsx | 136-140, 313-321 | Replace daysBadge with getSLAColor using stage.tipo |
-| 2 | PipelineCard.tsx | 285 | Audit/remove min-h, flex-1, excess padding |
-| 3 | PipelineLeadDetail.tsx | 270-297 | Replace Tailwind chip classes with inline hex colors |
-| 4 | LeadMatchesWidget.tsx | — | Already correct, verify no regressions |
-| 5 | PipelineLeadDetail.tsx | 661, 667 | Change background to var(--background), border to 1px |
-| 6 | WhatsAppTemplatesDialog.tsx | 72, 155-195 | Add stageTipo prop, filter templates by stage, collapsible "Outros" |
+### 1. Criar Sequências de Reativação por Segmento
+
+Três novas sequências automáticas no `SequenceTemplates.tsx`:
+
+**A) Leads Sem Contato (etapa: sem_contato, 48h+ parado)**
+```text
+D0: WhatsApp template → "Oi {nome}, separei imóveis para você!"
+D2: E-mail com vitrine personalizada (Mailgun)
+D5: WhatsApp template → "Última chance! Condições especiais..."
+D7: Notifica gerente → avaliar descarte ou redistribuição
+```
+
+**B) Leads Parados em Qualificação (72h+ sem ação)**
+```text
+D0: WhatsApp → Vitrine automática via cron-smart-nurturing (já existe)
+D3: E-mail → "Conheça nosso site novo" + link vitrine
+D6: WhatsApp template → Novo match de imóveis
+D10: Alerta gerente → lead não respondeu nenhuma tentativa
+```
+
+**C) Leads Descartados (reativação da base fria)**
+```text
+D0: E-mail → "Novidades no mercado" + vitrine genérica por perfil
+D3: WhatsApp template → "Oi {nome}, temos novos imóveis na sua região"
+D7: Se clicou/abriu → redistribuir via roleta como lead quente
+D7: Se não interagiu → manter na OA, tentar novamente em 30 dias
+```
+
+### 2. Criar Edge Function `reactivate-cold-leads`
+
+Nova Edge Function que:
+- Busca leads descartados nas listas de OA (últimos 90 dias)
+- Cruza com `lead_property_profiles` para buscar perfil
+- Faz match no Typesense (mesma lógica do cron-smart-nurturing)
+- Cria vitrine e agenda sequência multicanal (WhatsApp + Email)
+- Registra em `lead_nurturing_sequences` com `stage_tipo: "reativacao"`
+- Roda via cron semanal (1x por semana, domingo à noite)
+
+### 3. Adicionar Canal E-mail ao Sequencer
+
+Atualizar `cron-nurturing-sequencer` para suportar `canal: "email"`:
+- Quando `canal === "email"`, usar `mailgun-send` em modo single
+- Template HTML com link da vitrine e imóveis em destaque
+- Criar 3 templates de e-mail responsivos:
+  - `reativacao-vitrine`: Vitrine personalizada com imóveis
+  - `novidades-mercado`: Novidades + link do site novo
+  - `ultimo-lembrete`: Urgência + CTA para WhatsApp
+
+### 4. Dashboard de Reativação (CEO/Gerente)
+
+Adicionar aba no `NurturingDashboard`:
+- Total de leads reativados vs tentados
+- Taxa de abertura de e-mail (via Mailgun webhook)
+- Taxa de clique em vitrine
+- Leads que responderam WhatsApp → redistribuídos
+- Filtro por empreendimento e período
+
+### 5. Gatilho Inteligente de Redistribuição
+
+Quando um lead descartado/frio interage (clica na vitrine, responde WhatsApp):
+- Cancelar steps pendentes da sequência
+- Marcar `status: "reativado"` no `lead_nurturing_sequences`
+- Criar novo lead no pipeline OU reativar o existente
+- Encaminhar para roleta de distribuição
+- Notificar corretor: "Lead reativado pela IA"
+
+---
+
+## Resumo Técnico
+
+| Item | Arquivo/Recurso | Ação |
+|------|-----------------|------|
+| 3 novas sequências | `SequenceTemplates.tsx` | Adicionar templates |
+| Edge Function reativação | `supabase/functions/reactivate-cold-leads/` | Criar |
+| Suporte a e-mail no sequencer | `cron-nurturing-sequencer/index.ts` | Editar |
+| 3 templates HTML e-mail | `_shared/mailgun-campaigns.ts` ou templates dedicados | Criar |
+| Dashboard reativação | `NurturingDashboard.tsx` | Expandir |
+| Gatilho de redistribuição | `whatsapp-webhook` + `site-events` | Editar |
+| Cron semanal | SQL `cron.schedule` | Criar |
+| Migration: campo `stage_tipo` | Adicionar valor `reativacao` | Migration |
+
+## Guardrails
+- Manter intervalo mínimo de 15 dias entre nutrições do mesmo lead
+- Limite de 200 leads/dia para WhatsApp (rate limit Meta)
+- Respeitar opt-out / números inválidos
+- E-mails só para leads com e-mail válido
+- Não tocar em leads com negócio ativo
 
