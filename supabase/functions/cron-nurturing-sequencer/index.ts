@@ -380,7 +380,7 @@ Deno.serve(async (req) => {
                   if (fallbackResult.success) {
                     sendSuccess = true;
                     errorMsg = "WhatsApp falhou, email enviado como fallback";
-                    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_entregue", lead.id, "email");
+                    notifyOrchestrator(supabaseUrl, serviceKey, "email_enviado", lead.id, "email");
                   }
                 } catch {}
               }
