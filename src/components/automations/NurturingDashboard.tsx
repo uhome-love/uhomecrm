@@ -319,8 +319,8 @@ export default function NurturingDashboard() {
     setWindowOpen24h(windowCount || 0);
 
     setChannelPerf({
-      whatsapp: { enviados: waEnviadosNurturing + (waCampTotal || 0), lidos: waLidos || 0, respondidos: waRespondidos || 0 },
-      email: { enviados: emailEnviadosNurturing + (emailCampTotal || 0), abertos: emailAbertos || 0, clicados: emailClicados || 0 },
+      whatsapp: { enviados: (waEnviadosNurturing || 0) + (waCampTotal || 0), lidos: waLidos || 0, respondidos: waRespondidos || 0 },
+      email: { enviados: (emailEnviadosNurturing || 0) + (emailCampTotal || 0), abertos: emailAbertos || 0, clicados: emailClicados || 0 },
       voz: {
         total: vozTotal || 0,
         atendidas: vozAtendidas || 0,
