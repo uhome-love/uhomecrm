@@ -130,11 +130,25 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Gelado (0-4): skip WhatsApp, only email/voz
+        // Gelado (0-4): skip WhatsApp, try email fallback instead
         if (score <= 4 && canal === "whatsapp") {
+          // Create an email fallback step if lead has email
+          if (lead.email) {
+            await supabase.from("lead_nurturing_sequences").insert({
+              pipeline_lead_id: lead.id,
+              step_key: step.step_key + "_email_fallback",
+              stage_tipo: step.stage_tipo,
+              canal: "email",
+              template_name: step.template_name,
+              template_key: "reativacao-vitrine",
+              mensagem: step.mensagem,
+              scheduled_at: new Date().toISOString(),
+              status: "pendente",
+            } as any);
+          }
           await supabase
             .from("lead_nurturing_sequences")
-            .update({ status: "cancelado", error_message: "Score baixo — canal WhatsApp pulado" } as any)
+            .update({ status: "cancelado", error_message: "Score baixo — canal WhatsApp pulado, email fallback criado" } as any)
             .eq("id", step.id);
           continue;
         }
