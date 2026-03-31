@@ -221,14 +221,40 @@ export default function NurturingDashboard() {
     const waEnviados = (seqs || []).filter((s: any) => s.canal === "whatsapp").length;
     const emailEnviados = (seqs || []).filter((s: any) => s.canal === "email").length;
 
+    // ── Bloco 4: Real WhatsApp read/reply data ──
+    const { data: waSends } = await supabase
+      .from("whatsapp_campaign_sends")
+      .select("status_envio")
+      .gte("sent_at", thirtyDaysAgo);
+
+    const waLidos = (waSends || []).filter((s: any) => ["read", "replied"].includes(s.status_envio)).length;
+    const waRespondidos = (waSends || []).filter((s: any) => s.status_envio === "replied").length;
+
+    // ── Real email open/click data ──
+    const { data: emailRecipients } = await supabase
+      .from("email_campaign_recipients")
+      .select("status, aberturas, cliques")
+      .gte("created_at", thirtyDaysAgo);
+
+    const emailAbertos = (emailRecipients || []).filter((r: any) => (r.aberturas || 0) > 0).length;
+    const emailClicados = (emailRecipients || []).filter((r: any) => (r.cliques || 0) > 0).length;
+
     const { data: voiceLogs } = await supabase
       .from("voice_call_logs")
       .select("status, resultado")
       .gte("created_at", thirtyDaysAgo);
 
+    // ── Count leads with open 24h window ──
+    const { count: windowCount } = await supabase
+      .from("pipeline_leads")
+      .select("id", { count: "exact", head: true })
+      .gt("conversation_window_until", new Date().toISOString());
+
+    setWindowOpen24h(windowCount || 0);
+
     setChannelPerf({
-      whatsapp: { enviados: waEnviados, lidos: 0, respondidos: 0 },
-      email: { enviados: emailEnviados, abertos: 0, clicados: 0 },
+      whatsapp: { enviados: waEnviados + (waSends?.length || 0), lidos: waLidos, respondidos: waRespondidos },
+      email: { enviados: emailEnviados + (emailRecipients?.length || 0), abertos: emailAbertos, clicados: emailClicados },
       voz: {
         total: voiceLogs?.length || 0,
         atendidas: (voiceLogs || []).filter((v: any) => v.status === "atendida").length,
