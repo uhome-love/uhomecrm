@@ -128,11 +128,11 @@ export default function NurturingDashboard() {
   };
 
   const loadHealth = async () => {
-    // Check last cron runs via ops_events
+    // ops_events uses 'fn' and 'message' columns, NOT 'tipo'
     const { data: seqRun } = await supabase
       .from("ops_events")
       .select("created_at")
-      .eq("tipo", "cron_nurturing_sequencer")
+      .eq("fn", "cron-nurturing-sequencer")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -140,13 +140,12 @@ export default function NurturingDashboard() {
     const { data: reactRun } = await supabase
       .from("ops_events")
       .select("created_at")
-      .eq("tipo", "cron_reactivate_cold")
+      .eq("fn", "reactivate-cold-leads")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    // Check secrets via a test — we can't read secrets from client,
-    // but we can check if recent sends succeeded (proxy for config)
+    // Check if recent sends succeeded (proxy for config being valid)
     const { data: recentWa } = await supabase
       .from("lead_nurturing_sequences")
       .select("status")
