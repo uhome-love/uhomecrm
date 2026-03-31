@@ -199,7 +199,7 @@ export default function NurturingDashboard() {
     const { data: logs } = await supabase
       .from("lead_nurturing_sequences")
       .select("id, step_key, stage_tipo, canal, mensagem, status, sent_at, scheduled_at, pipeline_leads(nome)")
-      .or(`sent_at.gte.${since},scheduled_at.lte.${new Date().toISOString()}`)
+      .gte("scheduled_at", since)
       .neq("status", "cancelado")
       .order("scheduled_at", { ascending: false })
       .limit(50);
