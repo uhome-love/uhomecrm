@@ -406,7 +406,7 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
               <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dados do Período</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                 {dataCards.map(dc => (
                   <div key={dc.label} className={`rounded-lg p-2.5 ${dc.bg} border border-border/30`}>
                     <div className="flex items-center gap-1.5 mb-1">
