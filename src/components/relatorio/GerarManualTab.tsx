@@ -35,9 +35,11 @@ interface PeriodData {
   leadsAtivos: number;
   leadsAproveitados: number;
   leadsNovos: number;
+  leadsRoleta: number;
   followUpsConcluidos: number;
   leadsDesatualizados: number;
   negociosAtivos: number;
+  negociosCriados: number;
   propostas: number;
   vendas: number;
   perdidos: number;
@@ -45,6 +47,7 @@ interface PeriodData {
   vgvAssinado: number;
   vgvAndamento: number;
   pontosGestao: number;
+  pipeline: number;
 }
 
 interface ReportJSON {
