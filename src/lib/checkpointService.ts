@@ -17,6 +17,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/paginatedFetch";
 import { log } from "@/lib/logger";
 import { generateTraceId } from "@/lib/traceContext";
 
@@ -88,12 +89,15 @@ export async function fetchDailyOAStats(
 ): Promise<Record<string, DailyOAStats>> {
   if (userIds.length === 0) return {};
   
-  const { data } = await supabase
-    .from("oferta_ativa_tentativas")
-    .select("corretor_id, resultado")
-    .in("corretor_id", userIds)
-    .gte("created_at", `${date}T00:00:00`)
-    .lte("created_at", `${date}T23:59:59`);
+  const data = await fetchAllRows<{ corretor_id: string; resultado: string }>((from, to) =>
+    supabase
+      .from("oferta_ativa_tentativas")
+      .select("corretor_id, resultado")
+      .in("corretor_id", userIds)
+      .gte("created_at", `${date}T00:00:00`)
+      .lte("created_at", `${date}T23:59:59`)
+      .range(from, to)
+  );
 
   const result: Record<string, DailyOAStats> = {};
   for (const t of data || []) {

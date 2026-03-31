@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/paginatedFetch";
 import { useAuth } from "@/hooks/useAuth";
 import { Phone, Award, MapPin, Target, AlertTriangle, TrendingDown, ArrowDown, Trophy } from "lucide-react";
 import ManagerKpiDetailDialog, { type ManagerKpiType } from "./ManagerKpiDetailDialog";
@@ -76,11 +77,14 @@ export default function RelatoriosTab({ teamUserIds, teamNameMap }: Props) {
     const fimStr = format(hoje, "yyyy-MM-dd");
 
     // Build queries with proper date filters
-    const tentQuery = supabase.from("oferta_ativa_tentativas")
-      .select("corretor_id, resultado")
-      .in("corretor_id", teamUserIds)
-      .gte("created_at", `${inicioStr}T00:00:00`)
-      .lte("created_at", `${fimStr}T23:59:59`);
+    const tentQuery = fetchAllRows<{ corretor_id: string; resultado: string }>((from, to) =>
+      supabase.from("oferta_ativa_tentativas")
+        .select("corretor_id, resultado")
+        .in("corretor_id", teamUserIds)
+        .gte("created_at", `${inicioStr}T00:00:00`)
+        .lte("created_at", `${fimStr}T23:59:59`)
+        .range(from, to)
+    );
 
     const visQuery = supabase.from("visitas")
       .select("corretor_id, status")
@@ -100,7 +104,7 @@ export default function RelatoriosTab({ teamUserIds, teamNameMap }: Props) {
       .gte("created_at", `${inicioStr}T00:00:00`)
       .lte("created_at", `${fimStr}T23:59:59`);
 
-    const [{ data: tent }, { data: vis }, { data: neg }, { data: pipelineLeads }] = await Promise.all([
+    const [tent, { data: vis }, { data: neg }, { data: pipelineLeads }] = await Promise.all([
       tentQuery, visQuery, negQuery, pipelineQuery,
     ]);
 

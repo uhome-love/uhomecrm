@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { formatBRLCompact } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/paginatedFetch";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,7 @@ export default function GerarManualTab({ team, gerenteNome }: Props) {
 
       // Parallel queries - comprehensive
       const [tentativasRes, visitasRes, negociosRes, leadsNovosRes, tarefasRes, gestaoRes, roletaRes, negociosCriadosRes] = await Promise.all([
-        supabase.from("oferta_ativa_tentativas").select("id, resultado").eq("corretor_id", corretorUserId).gte("created_at", dayStart).lte("created_at", dayEnd),
+        fetchAllRows<{ id: string; resultado: string }>((from, to) => supabase.from("oferta_ativa_tentativas").select("id, resultado").eq("corretor_id", corretorUserId).gte("created_at", dayStart).lte("created_at", dayEnd).range(from, to)).then(data => ({ data, error: null })),
         supabase.from("visitas").select("id, status").eq("corretor_id", corretorUserId).gte("data_visita", dataInicio).lte("data_visita", dataFim),
         supabase.from("negocios").select("id, fase, vgv_estimado, data_assinatura").eq("corretor_id", corretorUserId),
         supabase.from("pipeline_leads").select("id", { count: "exact", head: true }).eq("corretor_id", corretorUserId).gte("created_at", dayStart).lte("created_at", dayEnd) as any,

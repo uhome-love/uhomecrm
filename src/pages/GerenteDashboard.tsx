@@ -6,6 +6,7 @@ import { useGerenteDashboard, Period, formatCurrency } from "@/hooks/useGerenteD
 import { useDateFilter } from "@/contexts/DateFilterContext";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/paginatedFetch";
 import { motion } from "framer-motion";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -133,7 +134,7 @@ export default function GerenteDashboard() {
     queryKey: ["sheet-ligacoes", teamUserIds.join(","), today],
     queryFn: async () => {
       const [{ data: tent }, { data: profs }] = await Promise.all([
-        supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`),
+        fetchAllRows<{ corretor_id: string; resultado: string }>((from, to) => supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado").in("corretor_id", teamUserIds).gte("created_at", `${today}T00:00:00`).lte("created_at", `${today}T23:59:59`).range(from, to)).then(data => ({ data, error: null })),
         supabase.from("profiles").select("user_id, nome, avatar_url").in("user_id", teamUserIds),
       ]);
       const stats: Record<string, { lig: number; apr: number }> = {};

@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/paginatedFetch";
 import { useAuth } from "@/hooks/useAuth";
 import { format, startOfDay } from "date-fns";
 import { ChevronDown, ChevronRight, Phone, Loader2 } from "lucide-react";
@@ -49,13 +50,16 @@ export default function PipelineTeamOfertaAtiva() {
       const teamUserIds = members.map(t => t.user_id).filter(Boolean);
       if (teamUserIds.length === 0) return { members: [], tentativas: [], byCorretor: {} };
 
-      // Get today's tentativas
-      const { data: tentativas } = await supabase
-        .from("oferta_ativa_tentativas")
-        .select("corretor_id, resultado")
-        .in("corretor_id", teamUserIds)
-        .gte("created_at", today + "T00:00:00")
-        .lte("created_at", today + "T23:59:59");
+      // Get today's tentativas — paginated to avoid 1000-row cap
+      const tentativas = await fetchAllRows<TeamTentativa>((from, to) =>
+        supabase
+          .from("oferta_ativa_tentativas")
+          .select("corretor_id, resultado")
+          .in("corretor_id", teamUserIds)
+          .gte("created_at", today + "T00:00:00")
+          .lte("created_at", today + "T23:59:59")
+          .range(from, to)
+      );
 
       const allTentativas = (tentativas || []) as TeamTentativa[];
 

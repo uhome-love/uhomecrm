@@ -112,23 +112,7 @@ function ds(d: Date) { return format(d, "yyyy-MM-dd"); }
 function tsStart(d: Date) { return `${ds(d)}T00:00:00-03:00`; }
 function tsEnd(d: Date) { return `${ds(d)}T23:59:59.999-03:00`; }
 
-/** Paginated fetch to bypass Supabase 1000-row default limit */
-async function fetchAllRows<T = any>(
-  buildQuery: (from: number, to: number) => any,
-  pageSize = 1000,
-): Promise<T[]> {
-  const all: T[] = [];
-  let offset = 0;
-  while (true) {
-    const { data, error } = await buildQuery(offset, offset + pageSize - 1);
-    if (error) { console.error("fetchAllRows error:", error); break; }
-    if (!data || data.length === 0) break;
-    all.push(...data);
-    if (data.length < pageSize) break;
-    offset += pageSize;
-  }
-  return all;
-}
+import { fetchAllRows } from "@/lib/paginatedFetch";
 
 const TEAM_COLORS = [
   "bg-blue-100 text-blue-800 border-blue-200",

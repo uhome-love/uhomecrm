@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/paginatedFetch";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Phone, UserCheck, MapPin, Users, Briefcase, BarChart3,
@@ -72,7 +73,7 @@ export default function CheckpointVisaoGeralTab({ teamUserIds, teamNameMap }: Pr
     const stageMap: Record<string, string> = {};
     (stagesDef || []).forEach((s: any) => { stageMap[s.id] = s.tipo; });
 
-    const q1: any = supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, canal").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`);
+    const q1: any = fetchAllRows((from, to) => supabase.from("oferta_ativa_tentativas").select("corretor_id, resultado, canal").in("corretor_id", teamUserIds).gte("created_at", `${dateStr}T00:00:00`).lte("created_at", `${dateStr}T23:59:59`).range(from, to)).then(data => ({ data, error: null }));
     const q2: any = supabase.from("pipeline_leads").select("corretor_id, stage_id").in("corretor_id", teamUserIds).limit(5000);
     const q3: any = supabase.from("negocios").select("corretor_id, fase, vgv_estimado, vgv_final, nome_cliente, updated_at, fase_changed_at, empreendimento").in("corretor_id", teamUserIds).not("fase", "in", "(perdido,cancelado)");
     const q4: any = supabase.from("visitas").select("corretor_id, status, empreendimento, hora_visita").in("corretor_id", teamUserIds).eq("data_visita", dateStr);
