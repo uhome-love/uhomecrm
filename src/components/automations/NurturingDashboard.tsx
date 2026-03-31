@@ -108,23 +108,31 @@ export default function NurturingDashboard() {
   };
 
   const loadGlobalKpis = async () => {
+    // Use count query to avoid 1000-row truncation
+    const { count: activeCount } = await supabase
+      .from("lead_nurturing_state")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "ativo");
+    setActiveLeads(activeCount || 0);
+
+    // For avg score, fetch only scores (paginate if needed)
     const { data: states } = await supabase
       .from("lead_nurturing_state")
-      .select("lead_score, status")
-      .eq("status", "ativo");
-    if (states) {
-      setActiveLeads(states.length);
+      .select("lead_score")
+      .eq("status", "ativo")
+      .limit(1000);
+    if (states && states.length > 0) {
       const totalScore = states.reduce((s, st: any) => s + (st.lead_score || 0), 0);
-      setAvgScore(states.length > 0 ? Math.round(totalScore / states.length) : 0);
+      setAvgScore(Math.round(totalScore / states.length));
     }
   };
 
   const loadHealth = async () => {
-    // Check last cron runs via ops_events
+    // ops_events uses 'fn' and 'message' columns, NOT 'tipo'
     const { data: seqRun } = await supabase
       .from("ops_events")
       .select("created_at")
-      .eq("tipo", "cron_nurturing_sequencer")
+      .eq("fn", "cron-nurturing-sequencer")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -132,13 +140,12 @@ export default function NurturingDashboard() {
     const { data: reactRun } = await supabase
       .from("ops_events")
       .select("created_at")
-      .eq("tipo", "cron_reactivate_cold")
+      .eq("fn", "reactivate-cold-leads")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    // Check secrets via a test — we can't read secrets from client,
-    // but we can check if recent sends succeeded (proxy for config)
+    // Check if recent sends succeeded (proxy for config being valid)
     const { data: recentWa } = await supabase
       .from("lead_nurturing_sequences")
       .select("status")
@@ -270,9 +277,22 @@ export default function NurturingDashboard() {
       .gt("cliques", 0)
       .gte("created_at", thirtyDaysAgo);
 
-    const { data: voiceLogs } = await supabase
+    // Use count queries for voice to avoid truncation
+    const { count: vozTotal } = await supabase
       .from("voice_call_logs")
-      .select("status, resultado")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", thirtyDaysAgo);
+
+    const { count: vozAtendidas } = await supabase
+      .from("voice_call_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "atendida")
+      .gte("created_at", thirtyDaysAgo);
+
+    const { count: vozInteressados } = await supabase
+      .from("voice_call_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("resultado", "interessado")
       .gte("created_at", thirtyDaysAgo);
 
     // ── Count leads with open 24h window ──
@@ -287,9 +307,9 @@ export default function NurturingDashboard() {
       whatsapp: { enviados: waEnviadosNurturing + (waCampTotal || 0), lidos: waLidos || 0, respondidos: waRespondidos || 0 },
       email: { enviados: emailEnviadosNurturing + (emailCampTotal || 0), abertos: emailAbertos || 0, clicados: emailClicados || 0 },
       voz: {
-        total: voiceLogs?.length || 0,
-        atendidas: (voiceLogs || []).filter((v: any) => v.status === "atendida").length,
-        interessados: (voiceLogs || []).filter((v: any) => v.resultado === "interessado").length,
+        total: vozTotal || 0,
+        atendidas: vozAtendidas || 0,
+        interessados: vozInteressados || 0,
       },
     });
   };
