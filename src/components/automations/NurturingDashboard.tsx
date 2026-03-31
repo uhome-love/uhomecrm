@@ -426,7 +426,7 @@ export default function NurturingDashboard() {
 
         {/* ── CANAIS ── */}
         <TabsContent value="canais" className="space-y-4 mt-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card className="p-3 text-center">
               <MessageCircle className="h-5 w-5 mx-auto text-emerald-500 mb-1" />
               <p className="text-xl font-bold">{channelPerf.whatsapp.enviados}</p>
@@ -442,7 +442,60 @@ export default function NurturingDashboard() {
               <p className="text-xl font-bold">{channelPerf.voz.total}</p>
               <p className="text-[10px] text-muted-foreground">Voz IA (30d)</p>
             </Card>
+            <Card className="p-3 text-center border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20">
+              <Zap className="h-5 w-5 mx-auto text-emerald-600 mb-1" />
+              <p className="text-xl font-bold text-emerald-600">{windowOpen24h}</p>
+              <p className="text-[10px] text-muted-foreground">Janela 24h aberta</p>
+            </Card>
           </div>
+
+          {/* WhatsApp Detailed Stats */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-emerald-500" /> WhatsApp (30 dias)
+            </h3>
+            <div className="grid grid-cols-3 gap-3 text-center text-xs">
+              <div>
+                <p className="text-lg font-bold">{channelPerf.whatsapp.enviados}</p>
+                <span className="text-muted-foreground">Enviados</span>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-blue-600">{channelPerf.whatsapp.lidos}</p>
+                <span className="text-muted-foreground">Lidos</span>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-emerald-600">{channelPerf.whatsapp.respondidos}</p>
+                <span className="text-muted-foreground">Respondidos</span>
+              </div>
+            </div>
+            {channelPerf.whatsapp.enviados > 0 && (
+              <div className="mt-2 pt-2 border-t text-[10px] text-muted-foreground text-center">
+                Taxa leitura: {Math.round((channelPerf.whatsapp.lidos / channelPerf.whatsapp.enviados) * 100)}% · 
+                Taxa resposta: {Math.round((channelPerf.whatsapp.respondidos / channelPerf.whatsapp.enviados) * 100)}%
+              </div>
+            )}
+          </Card>
+
+          {/* Email Detailed Stats */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Mail className="h-4 w-4 text-blue-500" /> Email (30 dias)
+            </h3>
+            <div className="grid grid-cols-3 gap-3 text-center text-xs">
+              <div>
+                <p className="text-lg font-bold">{channelPerf.email.enviados}</p>
+                <span className="text-muted-foreground">Enviados</span>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-blue-600">{channelPerf.email.abertos}</p>
+                <span className="text-muted-foreground">Abertos</span>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-emerald-600">{channelPerf.email.clicados}</p>
+                <span className="text-muted-foreground">Clicados</span>
+              </div>
+            </div>
+          </Card>
 
           {channelPerf.voz.total > 0 && (
             <Card className="p-4">
