@@ -308,6 +308,39 @@ Deno.serve(async (req) => {
             const errData = await waResponse.json();
             errorMsg = JSON.stringify(errData?.error?.message || errData).slice(0, 500);
             console.error(`WhatsApp send error for step ${step.id}:`, errorMsg);
+
+            // ── FALLBACK: WhatsApp failed → try email ──
+            if (lead.email && mailgunApiKey) {
+              console.log(`WhatsApp failed for ${lead.id}, attempting email fallback...`);
+              if (!emailSettings) {
+                emailSettings = await getEmailSettings(supabase);
+              }
+              const vars: Record<string, string> = {
+                nome: lead.nome?.split(" ")[0] || "Cliente",
+                nome_completo: lead.nome || "Cliente",
+                empreendimento: lead.empreendimento || "nosso empreendimento",
+                corretor_nome: "",
+                vitrine_url: "",
+              };
+              const fallbackRendered = renderNurturingEmail("reativacao-vitrine", vars);
+              if (fallbackRendered) {
+                try {
+                  const fallbackResult = await sendViaMailgun(emailSettings, mailgunApiKey, {
+                    to: lead.email,
+                    to_name: lead.nome || undefined,
+                    subject: fallbackRendered.subject,
+                    html: fallbackRendered.html,
+                    lead_id: lead.id,
+                    tags: ["nurturing", "fallback-wa", step.stage_tipo || "geral"],
+                  }, 2);
+                  if (fallbackResult.success) {
+                    sendSuccess = true;
+                    errorMsg = "WhatsApp falhou, email enviado como fallback";
+                    notifyOrchestrator(supabaseUrl, serviceKey, "whatsapp_entregue", lead.id, "email");
+                  }
+                } catch {}
+              }
+            }
           }
         } catch (e: any) {
           errorMsg = e.message || "WhatsApp send failed";

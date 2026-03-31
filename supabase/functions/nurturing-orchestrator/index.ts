@@ -2,6 +2,7 @@
 // Edge Function: nurturing-orchestrator
 // Cérebro central event-driven do sistema de nutrição
 // Recebe eventos de qualquer canal, aplica scoring e decide próxima ação
+// Inclui decisão inteligente via IA para leads quentes
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -36,17 +37,55 @@ const SCORE_MAP: Record<string, number> = {
 };
 
 // ── Score Thresholds ──
-const SCORE_QUENTE = 30;    // Notificar corretor IMEDIATAMENTE
-const SCORE_MORNO = 15;     // Priorizar WhatsApp
-const SCORE_FRIO = 5;       // Multicanal normal
-// 0-4 = Gelado (só email/voz)
-// < 0 = Opt-out (parar tudo)
+const SCORE_QUENTE = 30;
+const SCORE_MORNO = 15;
+const SCORE_FRIO = 5;
 
 interface OrchestratorEvent {
   event_type: string;
   pipeline_lead_id: string;
   canal?: string;
   metadata?: Record<string, any>;
+}
+
+// ── AI-powered follow-up suggestion for hot leads ──
+async function generateAISuggestion(lead: any, score: number, eventType: string): Promise<string | null> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) return null;
+
+  try {
+    const prompt = `Você é um assistente de vendas imobiliárias. Um lead chamado "${lead.nome || 'Lead'}" atingiu score ${score} no sistema de nutrição.
+Empreendimento de interesse: ${lead.empreendimento || 'não especificado'}.
+Último evento: ${eventType}.
+
+Sugira em 2-3 frases curtas a melhor abordagem para o corretor entrar em contato AGORA. Seja direto e prático. Inclua sugestão de canal (WhatsApp, ligação ou email) e tom da mensagem.`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: "Você é HOMI, assistente de vendas imobiliárias da UHome. Responda em português brasileiro, de forma direta e prática." },
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("AI gateway error:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || null;
+  } catch (e) {
+    console.error("AI suggestion error:", e);
+    return null;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -73,7 +112,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (!state) {
-      // Auto-create state for this lead
       const { data: newState, error: insertErr } = await supabase
         .from("lead_nurturing_state")
         .insert({
@@ -86,7 +124,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (insertErr) {
-        // Might already exist (race condition)
         const { data: existing } = await supabase
           .from("lead_nurturing_state")
           .select("*")
@@ -131,7 +168,6 @@ Deno.serve(async (req) => {
       updates.status = "respondeu";
       action = "notify_corretor";
 
-      // Cancel pending nurturing steps
       await supabase
         .from("lead_nurturing_sequences")
         .update({ status: "cancelado" } as any)
@@ -156,20 +192,18 @@ Deno.serve(async (req) => {
       action = "notify_corretor_hot";
     }
 
-    // 5. If lead is hot (score 30+) and was in reactivation → redistribute
+    // 5. If lead is hot and was in reactivation → redistribute
     if (newScore >= SCORE_QUENTE && state.sequencia_ativa === "reativacao") {
       action = "redistribute";
       updates.status = "converteu";
 
-      // Get lead info for notification
       const { data: lead } = await supabase
         .from("pipeline_leads")
-        .select("nome, corretor_id")
+        .select("nome, corretor_id, empreendimento")
         .eq("id", pipeline_lead_id)
         .single();
 
       if (lead?.corretor_id) {
-        // Create task for corretor
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id,
           tipo: "nurturing_sequencia",
@@ -183,29 +217,54 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 6. Notify corretor for hot leads
+    // 6. Notify corretor for hot leads + AI suggestion
     if (action === "notify_corretor" || action === "notify_corretor_hot") {
       const { data: lead } = await supabase
         .from("pipeline_leads")
-        .select("nome, corretor_id")
+        .select("nome, corretor_id, empreendimento")
         .eq("id", pipeline_lead_id)
         .single();
 
       if (lead?.corretor_id) {
+        // Generate AI suggestion for hot leads
+        let aiSuggestion: string | null = null;
+        if (newScore >= SCORE_MORNO) {
+          aiSuggestion = await generateAISuggestion(lead, newScore, event_type);
+        }
+
         const title = action === "notify_corretor_hot"
           ? `🔥 Lead QUENTE: ${lead.nome || "Lead"} (score ${newScore})`
           : `💬 ${lead.nome || "Lead"} respondeu via ${canal || "automação"}`;
+
+        const descParts = [`Evento: ${event_type}. Score atual: ${newScore}. Contato humano recomendado.`];
+        if (aiSuggestion) {
+          descParts.push(`\n🤖 Sugestão IA: ${aiSuggestion}`);
+        }
 
         await supabase.from("pipeline_atividades").insert({
           pipeline_lead_id,
           tipo: "nurturing_sequencia",
           titulo: title,
-          descricao: `Evento: ${event_type}. Score atual: ${newScore}. Contato humano recomendado.`,
+          descricao: descParts.join(""),
           data: new Date().toLocaleDateString("en-CA"),
           prioridade: newScore >= SCORE_QUENTE ? "alta" : "media",
           status: "pendente",
           created_by: lead.corretor_id,
         });
+
+        // Log AI suggestion separately in timeline
+        if (aiSuggestion) {
+          await supabase.from("pipeline_atividades").insert({
+            pipeline_lead_id,
+            tipo: "nurturing_sequencia",
+            titulo: `🤖 Sugestão IA para abordagem`,
+            descricao: aiSuggestion,
+            data: new Date().toLocaleDateString("en-CA"),
+            prioridade: "baixa",
+            status: "concluida",
+            created_by: "00000000-0000-0000-0000-000000000000",
+          });
+        }
       }
     }
 
