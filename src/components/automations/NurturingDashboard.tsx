@@ -325,7 +325,74 @@ export default function NurturingDashboard() {
           <LogsSection logs={recentLogs} />
         </TabsContent>
 
-        <TabsContent value="reativacao" className="space-y-4 mt-4">
+        {/* ── Performance por Canal ── */}
+        <TabsContent value="canais" className="space-y-4 mt-4">
+          <div className="grid grid-cols-3 gap-3">
+            <Card className="p-3 text-center">
+              <MessageCircle className="h-5 w-5 mx-auto text-emerald-500 mb-1" />
+              <p className="text-xl font-bold">{channelPerf.whatsapp.enviados}</p>
+              <p className="text-[10px] text-muted-foreground">WhatsApp enviados</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <Mail className="h-5 w-5 mx-auto text-blue-500 mb-1" />
+              <p className="text-xl font-bold">{channelPerf.email.enviados}</p>
+              <p className="text-[10px] text-muted-foreground">Emails enviados</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <Phone className="h-5 w-5 mx-auto text-purple-500 mb-1" />
+              <p className="text-xl font-bold">{channelPerf.voz.total}</p>
+              <p className="text-[10px] text-muted-foreground">Ligações IA</p>
+            </Card>
+          </div>
+
+          {/* Voz details */}
+          {channelPerf.voz.total > 0 && (
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <Phone className="h-4 w-4" /> Voz IA (30 dias)
+              </h3>
+              <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                <div>
+                  <p className="text-lg font-bold">{channelPerf.voz.total}</p>
+                  <span className="text-muted-foreground">Total</span>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-emerald-600">{channelPerf.voz.atendidas}</p>
+                  <span className="text-muted-foreground">Atendidas</span>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-amber-600">{channelPerf.voz.interessados}</p>
+                  <span className="text-muted-foreground">Interessados</span>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Hot Leads */}
+          {hotLeads.length > 0 && (
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <Flame className="h-4 w-4 text-orange-500" /> Leads Quentes (score ≥ 15)
+              </h3>
+              <div className="space-y-2">
+                {hotLeads.map((lead) => (
+                  <div key={lead.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/30">
+                    <div>
+                      <p className="font-medium text-xs">{lead.lead_nome}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {lead.sequencia_ativa} · Último: {lead.ultimo_evento}
+                      </p>
+                    </div>
+                    <Badge variant={lead.lead_score >= 30 ? "destructive" : "default"} className="text-xs">
+                      Score {lead.lead_score}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </TabsContent>
+
           {/* Reactivation KPIs */}
           <div className="grid grid-cols-2 gap-3">
             <Card className="p-4">
