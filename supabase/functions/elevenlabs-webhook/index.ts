@@ -29,6 +29,19 @@ function phoneVariants(norm: string): string[] {
   return [...variants];
 }
 
+// ── Notify orchestrator for lead scoring ──
+async function notifyOrchestrator(supabaseUrl: string, serviceKey: string, event_type: string, pipeline_lead_id: string, canal: string) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/nurturing-orchestrator`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ event_type, pipeline_lead_id, canal }),
+    });
+  } catch (e) {
+    console.error("Orchestrator notify failed:", e);
+  }
+}
+
 const POSITIVE_STATUSES = [
   "interesse", "positivo", "com_interesse", "qualificado", "visita_marcada",
   "interessado_quente", "interessado_morno", "quer_visita", "quer_whatsapp",
@@ -337,6 +350,44 @@ async function handlePostCallWebhook(
         updated_at: new Date().toISOString(),
       }).eq("id", matchedCallId);
       console.info(`[elevenlabs-webhook] ai_calls updated: ${matchedCallId}, status=${status}, positive=${isPositive}`);
+
+      // ── Update voice_call_logs if exists ──
+      if (callInfo?.lead_id) {
+        await supabase.from("voice_call_logs")
+          .update({
+            status: status === "nao_atendeu" ? "nao_atendeu" : "atendida",
+            resultado: isPositive ? "interessado" : "sem_interesse",
+            duracao_segundos: callDuration,
+            resumo_ia: transcriptSummary || null,
+            finalizado_at: new Date().toISOString(),
+          } as any)
+          .eq("ai_call_id", matchedCallId);
+
+        // ── Update voice_campaigns counters ──
+        const { data: voiceLog } = await supabase
+          .from("voice_call_logs")
+          .select("campaign_id")
+          .eq("ai_call_id", matchedCallId)
+          .maybeSingle();
+
+        if (voiceLog?.campaign_id) {
+          const field = status === "nao_atendeu" ? "nao_atenderam" : isPositive ? "interessados" : "atendidas";
+          const { data: campaign } = await supabase
+            .from("voice_campaigns")
+            .select("atendidas, nao_atenderam, interessados")
+            .eq("id", voiceLog.campaign_id)
+            .single();
+          if (campaign) {
+            await supabase.from("voice_campaigns")
+              .update({ [field]: ((campaign as any)[field] || 0) + 1 } as any)
+              .eq("id", voiceLog.campaign_id);
+          }
+        }
+
+        // ── Notify orchestrator ──
+        const orchEvent = status === "nao_atendeu" ? "voz_nao_atendeu" : "voz_atendida";
+        notifyOrchestrator(supabaseUrl, serviceKey, orchEvent, callInfo.lead_id, "voz");
+      }
 
       // ── Forward to ia-call-result for pipeline processing ──
       if (aiSecret) {

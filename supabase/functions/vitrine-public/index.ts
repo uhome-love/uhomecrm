@@ -273,6 +273,32 @@ Deno.serve(async (req) => {
           })
           .then(() => {});
 
+        // ── Notify orchestrator for vitrine events ──
+        if (["favorite", "whatsapp_click", "schedule_click", "compare_open"].includes(event_type)) {
+          // Try to find the lead via vitrine
+          supabase.from("vitrines")
+            .select("pipeline_lead_id")
+            .eq("id", vitrine_id)
+            .maybeSingle()
+            .then(async ({ data: vit }) => {
+              if (vit?.pipeline_lead_id) {
+                const orchEvent = event_type === "whatsapp_click" || event_type === "schedule_click"
+                  ? "imovel_clicado" : "vitrine_visualizada";
+                try {
+                  await fetch(`${supabaseUrl}/functions/v1/nurturing-orchestrator`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+                    body: JSON.stringify({
+                      event_type: orchEvent,
+                      pipeline_lead_id: vit.pipeline_lead_id,
+                      canal: "vitrine",
+                    }),
+                  });
+                } catch {}
+              }
+            });
+        }
+
         // Send WhatsApp alert for high-intent events
         const HIGH_INTENT = ["favorite", "whatsapp_click", "schedule_click", "compare_open"];
         if (HIGH_INTENT.includes(event_type)) {

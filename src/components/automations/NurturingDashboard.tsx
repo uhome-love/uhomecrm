@@ -1,11 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Send, Pause, Play, AlertCircle, CheckCircle2, Clock, BarChart3, RefreshCcw, Mail, MessageCircle, Phone, TrendingUp, Flame } from "lucide-react";
+import {
+  Loader2, Send, Pause, Play, AlertCircle, CheckCircle2, Clock, BarChart3,
+  RefreshCcw, Mail, MessageCircle, Phone, Flame, Zap, Activity, ShieldCheck, ShieldAlert, Rocket
+} from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -31,15 +34,6 @@ interface RecentLog {
   lead_nome?: string;
 }
 
-interface ReactivationStats {
-  totalTentados: number;
-  totalReativados: number;
-  emailEnviados: number;
-  whatsappEnviados: number;
-  emailErros: number;
-  whatsappErros: number;
-}
-
 interface ChannelPerf {
   whatsapp: { enviados: number; lidos: number; respondidos: number };
   email: { enviados: number; abertos: number; clicados: number };
@@ -55,20 +49,20 @@ interface HotLead {
   lead_nome?: string;
 }
 
+interface HealthStatus {
+  whatsapp: boolean;
+  mailgun: boolean;
+  elevenlabs: boolean;
+  lastSequencerRun: string | null;
+  lastReactivationRun: string | null;
+}
+
 // ── Constants ──
 const STAGE_LABELS: Record<string, string> = {
-  novo: "Novo Lead",
-  sem_contato: "Sem Contato",
-  contato_iniciado: "Contato Iniciado",
-  qualificacao: "Qualificação",
-  possivel_visita: "Possível Visita",
-  visita_marcada: "Visita Marcada",
-  visita_realizada: "Visita Realizada",
-  negociacao: "Negociação",
-  proposta: "Proposta",
-  venda_realizada: "Venda Realizada",
-  reativacao: "Reativação Base Fria",
-  descartado: "Descartado",
+  novo: "Novo Lead", sem_contato: "Sem Contato", contato_iniciado: "Contato Iniciado",
+  qualificacao: "Qualificação", possivel_visita: "Possível Visita", visita_marcada: "Visita Marcada",
+  visita_realizada: "Visita Realizada", negociacao: "Negociação", proposta: "Proposta",
+  venda_realizada: "Venda Realizada", reativacao: "Reativação Base Fria", descartado: "Descartado",
 };
 
 const STATUS_ICONS: Record<string, { icon: any; color: string }> = {
@@ -82,31 +76,100 @@ const STATUS_ICONS: Record<string, { icon: any; color: string }> = {
 export default function NurturingDashboard() {
   const [stats, setStats] = useState<StageStats[]>([]);
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
-  const [reactivationStats, setReactivationStats] = useState<ReactivationStats>({
-    totalTentados: 0, totalReativados: 0, emailEnviados: 0,
-    whatsappEnviados: 0, emailErros: 0, whatsappErros: 0,
-  });
   const [channelPerf, setChannelPerf] = useState<ChannelPerf>({
     whatsapp: { enviados: 0, lidos: 0, respondidos: 0 },
     email: { enviados: 0, abertos: 0, clicados: 0 },
     voz: { total: 0, atendidas: 0, interessados: 0 },
   });
   const [hotLeads, setHotLeads] = useState<HotLead[]>([]);
+  const [health, setHealth] = useState<HealthStatus>({
+    whatsapp: false, mailgun: false, elevenlabs: false,
+    lastSequencerRun: null, lastReactivationRun: null,
+  });
   const [loading, setLoading] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [executing, setExecuting] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("geral");
+  const [activeLeads, setActiveLeads] = useState(0);
+  const [avgScore, setAvgScore] = useState(0);
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      await Promise.all([loadStats(), loadLogs(), loadReactivation(), loadChannelPerf(), loadHotLeads()]);
+      await Promise.all([loadStats(), loadLogs(), loadChannelPerf(), loadHotLeads(), loadHealth(), loadGlobalKpis()]);
     } catch (err) {
       console.error("Error loading nurturing data:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadGlobalKpis = async () => {
+    const { data: states } = await supabase
+      .from("lead_nurturing_state")
+      .select("lead_score, status")
+      .eq("status", "ativo");
+    if (states) {
+      setActiveLeads(states.length);
+      const totalScore = states.reduce((s, st: any) => s + (st.lead_score || 0), 0);
+      setAvgScore(states.length > 0 ? Math.round(totalScore / states.length) : 0);
+    }
+  };
+
+  const loadHealth = async () => {
+    // Check last cron runs via ops_events
+    const { data: seqRun } = await supabase
+      .from("ops_events")
+      .select("created_at")
+      .eq("tipo", "cron_nurturing_sequencer")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const { data: reactRun } = await supabase
+      .from("ops_events")
+      .select("created_at")
+      .eq("tipo", "cron_reactivate_cold")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Check secrets via a test — we can't read secrets from client,
+    // but we can check if recent sends succeeded (proxy for config)
+    const { data: recentWa } = await supabase
+      .from("lead_nurturing_sequences")
+      .select("status")
+      .eq("canal", "whatsapp")
+      .eq("status", "enviado")
+      .order("sent_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const { data: recentEmail } = await supabase
+      .from("lead_nurturing_sequences")
+      .select("status")
+      .eq("canal", "email")
+      .eq("status", "enviado")
+      .order("sent_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const { data: recentVoz } = await supabase
+      .from("voice_call_logs")
+      .select("status")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    setHealth({
+      whatsapp: !!recentWa,
+      mailgun: !!recentEmail,
+      elevenlabs: !!recentVoz,
+      lastSequencerRun: seqRun?.created_at || null,
+      lastReactivationRun: reactRun?.created_at || null,
+    });
   };
 
   const loadStats = async () => {
@@ -142,45 +205,13 @@ export default function NurturingDashboard() {
 
     if (logs) {
       setRecentLogs(
-        (logs as any[]).map((l) => ({
-          ...l,
-          lead_nome: l.pipeline_leads?.nome || "Lead",
-        }))
+        (logs as any[]).map((l) => ({ ...l, lead_nome: l.pipeline_leads?.nome || "Lead" }))
       );
-    }
-  };
-
-  const loadReactivation = async () => {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-    const { data: reactivSeqs } = await supabase
-      .from("lead_nurturing_sequences")
-      .select("canal, status")
-      .in("stage_tipo", ["reativacao", "sem_contato", "qualificacao"])
-      .gte("created_at", thirtyDaysAgo);
-
-    if (reactivSeqs) {
-      const stats: ReactivationStats = {
-        totalTentados: 0, totalReativados: 0, emailEnviados: 0,
-        whatsappEnviados: 0, emailErros: 0, whatsappErros: 0,
-      };
-
-      const leadIds = new Set<string>();
-      for (const s of reactivSeqs as any[]) {
-        if (s.canal === "email" && s.status === "enviado") stats.emailEnviados++;
-        if (s.canal === "whatsapp" && s.status === "enviado") stats.whatsappEnviados++;
-        if (s.canal === "email" && s.status === "erro") stats.emailErros++;
-        if (s.canal === "whatsapp" && s.status === "erro") stats.whatsappErros++;
-      }
-      stats.totalTentados = reactivSeqs.length;
-      setReactivationStats(stats);
     }
   };
 
   const loadChannelPerf = async () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-    // Nurturing sequences by channel
     const { data: seqs } = await supabase
       .from("lead_nurturing_sequences")
       .select("canal, status")
@@ -190,20 +221,19 @@ export default function NurturingDashboard() {
     const waEnviados = (seqs || []).filter((s: any) => s.canal === "whatsapp").length;
     const emailEnviados = (seqs || []).filter((s: any) => s.canal === "email").length;
 
-    // Voice call logs
     const { data: voiceLogs } = await supabase
       .from("voice_call_logs")
       .select("status, resultado")
       .gte("created_at", thirtyDaysAgo);
 
-    const vozTotal = voiceLogs?.length || 0;
-    const vozAtendidas = (voiceLogs || []).filter((v: any) => v.status === "atendida").length;
-    const vozInteressados = (voiceLogs || []).filter((v: any) => v.resultado === "interessado").length;
-
     setChannelPerf({
       whatsapp: { enviados: waEnviados, lidos: 0, respondidos: 0 },
       email: { enviados: emailEnviados, abertos: 0, clicados: 0 },
-      voz: { total: vozTotal, atendidas: vozAtendidas, interessados: vozInteressados },
+      voz: {
+        total: voiceLogs?.length || 0,
+        atendidas: (voiceLogs || []).filter((v: any) => v.status === "atendida").length,
+        interessados: (voiceLogs || []).filter((v: any) => v.resultado === "interessado").length,
+      },
     });
   };
 
@@ -217,12 +247,21 @@ export default function NurturingDashboard() {
       .limit(10);
 
     if (hot) {
-      setHotLeads(
-        (hot as any[]).map((h) => ({
-          ...h,
-          lead_nome: h.pipeline_leads?.nome || "Lead",
-        }))
-      );
+      setHotLeads((hot as any[]).map((h) => ({ ...h, lead_nome: h.pipeline_leads?.nome || "Lead" })));
+    }
+  };
+
+  const executeNow = async (fn: string) => {
+    setExecuting(fn);
+    try {
+      const { data, error } = await supabase.functions.invoke(fn, { body: { source: "manual" } });
+      if (error) throw error;
+      toast.success(`${fn} executado com sucesso`, { description: JSON.stringify(data).slice(0, 100) });
+      loadData();
+    } catch (e: any) {
+      toast.error(`Erro ao executar ${fn}`, { description: e.message });
+    } finally {
+      setExecuting(null);
     }
   };
 
@@ -261,7 +300,7 @@ export default function NurturingDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Send className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-bold">Sequências de Nutrição</h2>
+          <h2 className="text-lg font-bold">Motor de Nutrição</h2>
           <Badge variant="outline" className="text-xs">{totalPendentes} pendentes</Badge>
         </div>
         <div className="flex gap-2">
@@ -276,26 +315,36 @@ export default function NurturingDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 w-full max-w-sm">
+        <TabsList className="grid grid-cols-4 w-full max-w-md">
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="canais">Canais</TabsTrigger>
+          <TabsTrigger value="operacao">Operação</TabsTrigger>
           <TabsTrigger value="reativacao">Reativação</TabsTrigger>
         </TabsList>
 
+        {/* ── GERAL ── */}
         <TabsContent value="geral" className="space-y-4 mt-4">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Global KPIs */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card className="p-3 text-center">
+              <Activity className="h-4 w-4 mx-auto text-primary mb-1" />
+              <p className="text-2xl font-bold">{activeLeads}</p>
+              <p className="text-xs text-muted-foreground">Leads em nutrição</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <BarChart3 className="h-4 w-4 mx-auto text-blue-500 mb-1" />
+              <p className="text-2xl font-bold">{avgScore}</p>
+              <p className="text-xs text-muted-foreground">Score médio</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <Flame className="h-4 w-4 mx-auto text-orange-500 mb-1" />
+              <p className="text-2xl font-bold text-orange-600">{hotLeads.length}</p>
+              <p className="text-xs text-muted-foreground">Hot leads</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <CheckCircle2 className="h-4 w-4 mx-auto text-emerald-500 mb-1" />
               <p className="text-2xl font-bold text-emerald-600">{totalEnviados}</p>
               <p className="text-xs text-muted-foreground">Enviados</p>
-            </Card>
-            <Card className="p-3 text-center">
-              <p className="text-2xl font-bold text-amber-600">{totalPendentes}</p>
-              <p className="text-xs text-muted-foreground">Pendentes</p>
-            </Card>
-            <Card className="p-3 text-center">
-              <p className="text-2xl font-bold text-red-600">{totalErros}</p>
-              <p className="text-xs text-muted-foreground">Erros</p>
             </Card>
           </div>
 
@@ -317,53 +366,6 @@ export default function NurturingDashboard() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </Card>
-          )}
-
-          {/* Recent Logs */}
-          <LogsSection logs={recentLogs} />
-        </TabsContent>
-
-        {/* ── Performance por Canal ── */}
-        <TabsContent value="canais" className="space-y-4 mt-4">
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="p-3 text-center">
-              <MessageCircle className="h-5 w-5 mx-auto text-emerald-500 mb-1" />
-              <p className="text-xl font-bold">{channelPerf.whatsapp.enviados}</p>
-              <p className="text-[10px] text-muted-foreground">WhatsApp enviados</p>
-            </Card>
-            <Card className="p-3 text-center">
-              <Mail className="h-5 w-5 mx-auto text-blue-500 mb-1" />
-              <p className="text-xl font-bold">{channelPerf.email.enviados}</p>
-              <p className="text-[10px] text-muted-foreground">Emails enviados</p>
-            </Card>
-            <Card className="p-3 text-center">
-              <Phone className="h-5 w-5 mx-auto text-purple-500 mb-1" />
-              <p className="text-xl font-bold">{channelPerf.voz.total}</p>
-              <p className="text-[10px] text-muted-foreground">Ligações IA</p>
-            </Card>
-          </div>
-
-          {/* Voz details */}
-          {channelPerf.voz.total > 0 && (
-            <Card className="p-4">
-              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                <Phone className="h-4 w-4" /> Voz IA (30 dias)
-              </h3>
-              <div className="grid grid-cols-3 gap-3 text-center text-xs">
-                <div>
-                  <p className="text-lg font-bold">{channelPerf.voz.total}</p>
-                  <span className="text-muted-foreground">Total</span>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-emerald-600">{channelPerf.voz.atendidas}</p>
-                  <span className="text-muted-foreground">Atendidas</span>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-amber-600">{channelPerf.voz.interessados}</p>
-                  <span className="text-muted-foreground">Interessados</span>
-                </div>
               </div>
             </Card>
           )}
@@ -391,58 +393,210 @@ export default function NurturingDashboard() {
               </div>
             </Card>
           )}
+
+          <LogsSection logs={recentLogs} />
         </TabsContent>
 
+        {/* ── CANAIS ── */}
+        <TabsContent value="canais" className="space-y-4 mt-4">
+          <div className="grid grid-cols-3 gap-3">
+            <Card className="p-3 text-center">
+              <MessageCircle className="h-5 w-5 mx-auto text-emerald-500 mb-1" />
+              <p className="text-xl font-bold">{channelPerf.whatsapp.enviados}</p>
+              <p className="text-[10px] text-muted-foreground">WhatsApp (30d)</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <Mail className="h-5 w-5 mx-auto text-blue-500 mb-1" />
+              <p className="text-xl font-bold">{channelPerf.email.enviados}</p>
+              <p className="text-[10px] text-muted-foreground">Emails (30d)</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <Phone className="h-5 w-5 mx-auto text-purple-500 mb-1" />
+              <p className="text-xl font-bold">{channelPerf.voz.total}</p>
+              <p className="text-[10px] text-muted-foreground">Voz IA (30d)</p>
+            </Card>
+          </div>
+
+          {channelPerf.voz.total > 0 && (
+            <Card className="p-4">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <Phone className="h-4 w-4" /> Voz IA (30 dias)
+              </h3>
+              <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                <div>
+                  <p className="text-lg font-bold">{channelPerf.voz.total}</p>
+                  <span className="text-muted-foreground">Total</span>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-emerald-600">{channelPerf.voz.atendidas}</p>
+                  <span className="text-muted-foreground">Atendidas</span>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-amber-600">{channelPerf.voz.interessados}</p>
+                  <span className="text-muted-foreground">Interessados</span>
+                </div>
+              </div>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ── OPERAÇÃO (Health Check + Execução Manual) ── */}
+        <TabsContent value="operacao" className="space-y-4 mt-4">
+          {/* Health Check */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-500" /> Saúde do Sistema
+            </h3>
+            <div className="space-y-2">
+              <HealthItem label="WhatsApp (Meta API)" ok={health.whatsapp} />
+              <HealthItem label="Email (Mailgun)" ok={health.mailgun} />
+              <HealthItem label="Voz IA (ElevenLabs)" ok={health.elevenlabs} />
+            </div>
+            <div className="mt-3 pt-3 border-t space-y-1">
+              <p className="text-xs text-muted-foreground">
+                Último Sequenciador: {health.lastSequencerRun
+                  ? formatDistanceToNow(new Date(health.lastSequencerRun), { addSuffix: true, locale: ptBR })
+                  : "Nunca executou"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Última Reativação: {health.lastReactivationRun
+                  ? formatDistanceToNow(new Date(health.lastReactivationRun), { addSuffix: true, locale: ptBR })
+                  : "Nunca executou"}
+              </p>
+            </div>
+          </Card>
+
+          {/* Manual Execution */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Rocket className="h-4 w-4 text-primary" /> Execução Manual
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Sequenciador</p>
+                  <p className="text-xs text-muted-foreground">Processa steps pendentes agora</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!!executing}
+                  onClick={() => executeNow("cron-nurturing-sequencer")}
+                >
+                  {executing === "cron-nurturing-sequencer" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  <span className="ml-1">Executar</span>
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Reativar Base Fria</p>
+                  <p className="text-xs text-muted-foreground">Varre leads parados e agenda nutrição</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!!executing}
+                  onClick={() => executeNow("reactivate-cold-leads")}
+                >
+                  {executing === "reactivate-cold-leads" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  <span className="ml-1">Executar</span>
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Orquestrador</p>
+                  <p className="text-xs text-muted-foreground">Testa o motor de scoring</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!!executing}
+                  onClick={() => executeNow("nurturing-orchestrator")}
+                >
+                  {executing === "nurturing-orchestrator" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  <span className="ml-1">Testar</span>
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Erros */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-500" /> Erros Recentes
+            </h3>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-emerald-600">{totalEnviados}</p>
+                <p className="text-xs text-muted-foreground">Enviados</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-amber-600">{totalPendentes}</p>
+                <p className="text-xs text-muted-foreground">Pendentes</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-red-600">{totalErros}</p>
+                <p className="text-xs text-muted-foreground">Erros</p>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* ── REATIVAÇÃO ── */}
         <TabsContent value="reativacao" className="space-y-4 mt-4">
-          {/* Reactivation KPIs */}
           <div className="grid grid-cols-2 gap-3">
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Mail className="h-4 w-4 text-blue-500" />
                 <h3 className="text-sm font-semibold">E-mails (30d)</h3>
               </div>
-              <p className="text-2xl font-bold text-blue-600">{reactivationStats.emailEnviados}</p>
-              <p className="text-xs text-muted-foreground">
-                enviados · {reactivationStats.emailErros} erros
-              </p>
+              <p className="text-2xl font-bold text-blue-600">{channelPerf.email.enviados}</p>
             </Card>
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <MessageCircle className="h-4 w-4 text-emerald-500" />
                 <h3 className="text-sm font-semibold">WhatsApp (30d)</h3>
               </div>
-              <p className="text-2xl font-bold text-emerald-600">{reactivationStats.whatsappEnviados}</p>
-              <p className="text-xs text-muted-foreground">
-                enviados · {reactivationStats.whatsappErros} erros
-              </p>
+              <p className="text-2xl font-bold text-emerald-600">{channelPerf.whatsapp.enviados}</p>
             </Card>
           </div>
 
-          <Card className="p-4">
-            <h3 className="text-sm font-semibold mb-2">Resumo de Reativação</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total de disparos (30d)</span>
-                <span className="font-medium">{reactivationStats.totalTentados}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Via E-mail</span>
-                <span className="font-medium">{reactivationStats.emailEnviados + reactivationStats.emailErros}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Via WhatsApp</span>
-                <span className="font-medium">{reactivationStats.whatsappEnviados + reactivationStats.whatsappErros}</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Reactivation logs filtered */}
           <LogsSection
             logs={recentLogs.filter(l => ["reativacao", "sem_contato", "qualificacao"].includes(l.stage_tipo))}
             title="Últimos disparos de reativação"
           />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ── Health indicator ──
+function HealthItem({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span>{label}</span>
+      {ok ? (
+        <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300 gap-1">
+          <ShieldCheck className="h-3 w-3" /> Ativo
+        </Badge>
+      ) : (
+        <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 gap-1">
+          <ShieldAlert className="h-3 w-3" /> Sem dados
+        </Badge>
+      )}
     </div>
   );
 }
