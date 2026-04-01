@@ -475,6 +475,10 @@ async function distributeSingleLead(
   supabase: any, supabaseUrl: string, serviceKey: string,
   leadId: string, forceJanela?: string, excludeAuthUserId?: string
 ) {
+  // Acquire advisory lock to serialize concurrent single-lead distributions
+  // This prevents race conditions when multiple webhooks arrive simultaneously
+  await supabase.rpc("distribute_lead_with_lock", { p_lead_id: leadId, p_janela: forceJanela || null });
+
   const { data: lead } = await supabase
     .from("pipeline_leads")
     .select("id, nome, telefone, empreendimento, aceite_status, corretor_id")
