@@ -6,85 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ─── Dynamic Empreendimento → Roleta Segmento resolution ───
-let cachedMapping: Record<string, string> | null = null;
-let cacheTime = 0;
-const CACHE_TTL = 5 * 60 * 1000;
-
-interface CampanhaMapping {
-  segmentoId: string;
-  ignorarSegmento: boolean;
-}
-
-let cachedMappingV2: Record<string, CampanhaMapping> | null = null;
-
-async function loadEmpreendimentoMapping(supabase: any): Promise<Record<string, CampanhaMapping>> {
-  if (cachedMappingV2 && Date.now() - cacheTime < CACHE_TTL) return cachedMappingV2;
-  const { data } = await supabase
-    .from("roleta_campanhas")
-    .select("empreendimento, segmento_id, ignorar_segmento")
-    .eq("ativo", true);
-  const mapping: Record<string, CampanhaMapping> = {};
-  for (const row of data || []) {
-    if (row.empreendimento && row.segmento_id) {
-      mapping[row.empreendimento.toLowerCase().trim()] = {
-        segmentoId: row.segmento_id,
-        ignorarSegmento: row.ignorar_segmento === true,
-      };
-    }
-  }
-  cachedMappingV2 = mapping;
-  cacheTime = Date.now();
-  return mapping;
-}
-
-async function resolveSegmento(supabase: any, empreendimento: string | null): Promise<string | null> {
-  if (!empreendimento) return null;
-  const mapping = await loadEmpreendimentoMapping(supabase);
-  const lower = empreendimento.toLowerCase().trim();
-  
-  // Check direct match
-  const direct = mapping[lower];
-  if (direct) return direct.ignorarSegmento ? null : direct.segmentoId;
-  
-  // Check partial match
-  for (const [key, entry] of Object.entries(mapping)) {
-    if (lower.includes(key) || key.includes(lower)) {
-      return entry.ignorarSegmento ? null : entry.segmentoId;
-    }
-  }
-  return null;
-}
-
-function isSundayBRT(): boolean {
-  const now = new Date();
-  const brHour = (now.getUTCHours() - 3 + 24) % 24;
-  // Approximate BRT day: if brHour < UTC hour, we crossed midnight
-  const utcDay = now.getUTCDay();
-  const brDay = brHour < now.getUTCHours() ? (utcDay + 1) % 7 : utcDay;
-  // Fix: recalculate properly using offset
-  const brtMs = now.getTime() - 3 * 60 * 60 * 1000;
-  const brtDate = new Date(brtMs);
-  return brtDate.getUTCDay() === 0; // 0 = Sunday
-}
-
-function getCurrentJanela(): string {
-  if (isSundayBRT()) return "dia_todo";
-  const now = new Date();
-  const brHour = (now.getUTCHours() - 3 + 24) % 24;
-  if (brHour >= 8 && brHour < 13) return "manha";
-  if (brHour >= 13 && brHour < 19) return "tarde";
-  return "noturna";
-}
-
-interface CorretorCandidate {
-  corretorId: string;  // profiles.id
-  authUserId: string;  // auth.users.id
-  leadsHoje: number;
-  totalAtivos: number;
-  lastReceivedAt: string | null;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -100,9 +21,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "No authorization" }, 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -120,9 +39,7 @@ Deno.serve(async (req) => {
     if (token !== serviceKey && token !== anonKey) {
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       if (authError || !user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ error: "Unauthorized" }, 401);
       }
       userId = user.id;
     }
@@ -149,303 +66,49 @@ Deno.serve(async (req) => {
 
     L.info("Request", { action, singleLeadId, batchCount: batchLeadIds.length });
 
-    // ─── Accept / Reject (now using atomic RPCs) ───
+    // ─── Accept / Reject ───
     if (action === "aceitar" || action === "rejeitar") {
       return await handleAcceptReject(supabase, body, userId!, supabaseUrl, serviceKey);
     }
 
-    // ─── Batch dispatch ───
+    // ─── Batch dispatch (uses atomic RPC sequentially) ───
     if (action === "dispatch_batch" || action === "dispatch_fila_ceo") {
-      const leadIds: string[] = batchLeadIds.length
+      const allLeadIds: string[] = batchLeadIds.length
         ? batchLeadIds
         : (singleLeadId ? [singleLeadId] : []);
-      const targetJanela = janela || getCurrentJanela();
+      const targetJanela = janela || null; // Let the RPC determine janela if not specified
 
-      const { data: leadsData } = await supabase
-        .from("pipeline_leads")
-        .select("id, empreendimento, nome, telefone")
-        .in("id", leadIds)
-        .is("corretor_id", null);
-
-      const leads = leadsData || [];
-      if (leads.length === 0) {
-        return jsonResponse({ success: true, dispatched: 0, reason: "no_eligible_leads" });
-      }
-
-      const todayStart = getTodayStartUTC();
-
-      // On Sunday (dia_todo), accept credenciamentos from any janela
-      let credsQuery = supabase
-        .from("roleta_credenciamentos")
-        .select("corretor_id, segmento_1_id, segmento_2_id, janela")
-        .eq("data", getTodayDateStr())
-        .eq("status", "aprovado")
-        .is("saiu_em", null);
-      
-      if (targetJanela !== "dia_todo") {
-        credsQuery = credsQuery.eq("janela", targetJanela);
-      }
-
-      const { data: creds } = await credsQuery;
-      if (!creds || creds.length === 0) {
-        return jsonResponse({ success: false, reason: "no_credenciados", dispatched: 0 });
-      }
-
-      const corretorSegments = new Map<string, Set<string>>();
-      for (const c of creds) {
-        if (!corretorSegments.has(c.corretor_id)) corretorSegments.set(c.corretor_id, new Set());
-        const segs = corretorSegments.get(c.corretor_id)!;
-        if (c.segmento_1_id) segs.add(c.segmento_1_id);
-        if (c.segmento_2_id) segs.add(c.segmento_2_id);
-      }
-
-      const corretorProfileIds = [...corretorSegments.keys()];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, user_id")
-        .in("id", corretorProfileIds);
-
-      const profileToAuth = new Map<string, string>();
-      const authToProfile = new Map<string, string>();
-      for (const p of profiles || []) {
-        if (p.user_id) {
-          profileToAuth.set(p.id, p.user_id);
-          authToProfile.set(p.user_id, p.id);
-        }
-      }
-
-      // For "qualquer" (real-time), filter by na_roleta=true.
-      // For specific janela dispatches (manha/tarde/noturna/dia_todo), the approved credenciamento is enough.
-      if (targetJanela === "qualquer") {
-        const allAuthUserIds = [...profileToAuth.values()];
-        const { data: dispRows } = await supabase
-          .from("corretor_disponibilidade")
-          .select("user_id")
-          .in("user_id", allAuthUserIds)
-          .eq("na_roleta", true);
-        const activeAuthIds = new Set((dispRows || []).map((d: any) => d.user_id));
-        
-        for (const [profileId, authId] of profileToAuth.entries()) {
-          if (!activeAuthIds.has(authId)) {
-            profileToAuth.delete(profileId);
-            authToProfile.delete(authId);
-            corretorSegments.delete(profileId);
-          }
-        }
-      }
-      
-      const authUserIds = [...profileToAuth.values()];
-      if (authUserIds.length === 0) {
-        return jsonResponse({ success: false, reason: "no_corretores_na_roleta", dispatched: 0 });
-      }
-      // FIX Bug 3: Count ALL distributed leads today (including timed-out ones)
-      // This ensures corretores who received but didn't accept still have it counted
-      const { data: todayDistributions } = await supabase
-        .from("distribuicao_historico")
-        .select("corretor_id, pipeline_lead_id, created_at")
-        .in("acao", ["distribuido"])
-        .gte("created_at", todayStart);
-
-      // Also get current leads for segment resolution
-      const { data: todayLeads } = await supabase
-        .from("pipeline_leads")
-        .select("id, corretor_id, distribuido_em, empreendimento")
-        .in("corretor_id", authUserIds)
-        .gte("distribuido_em", todayStart);
-
-      const { data: activeLeadsData } = await supabase
-        .from("pipeline_leads")
-        .select("corretor_id")
-        .in("corretor_id", authUserIds)
-        .in("aceite_status", ["aceito", "pendente"]);
-
-      const totalAtivosCount = new Map<string, number>();
-      for (const uid of authUserIds) totalAtivosCount.set(uid, 0);
-      for (const l of activeLeadsData || []) {
-        totalAtivosCount.set(l.corretor_id, (totalAtivosCount.get(l.corretor_id) || 0) + 1);
-      }
-
-      // Build a map of lead_id → empreendimento for segment resolution
-      const leadEmpreendimentoMap = new Map<string, string>();
-      for (const l of todayLeads || []) {
-        if (l.empreendimento) leadEmpreendimentoMap.set(l.id, l.empreendimento);
-      }
-
-      // Per-segment lead count based on ALL distributions (not just current assignment)
-      const leadsCountBySegment = new Map<string, number>();
-      const leadsCountGlobal = new Map<string, number>();
-      const lastReceived = new Map<string, string>();
-      for (const uid of authUserIds) leadsCountGlobal.set(uid, 0);
-
-      for (const d of todayDistributions || []) {
-        if (!authUserIds.includes(d.corretor_id)) continue;
-        leadsCountGlobal.set(d.corretor_id, (leadsCountGlobal.get(d.corretor_id) || 0) + 1);
-        // Resolve segment from the lead's empreendimento
-        const emp = leadEmpreendimentoMap.get(d.pipeline_lead_id);
-        if (emp) {
-          const seg = await resolveSegmento(supabase, emp);
-          if (seg) {
-            const key = `${d.corretor_id}::${seg}`;
-            leadsCountBySegment.set(key, (leadsCountBySegment.get(key) || 0) + 1);
-          }
-        }
-        const prev = lastReceived.get(d.corretor_id);
-        if (!prev || d.created_at > prev) lastReceived.set(d.corretor_id, d.created_at);
+      if (allLeadIds.length === 0) {
+        return jsonResponse({ success: true, dispatched: 0, reason: "no_leads_provided" });
       }
 
       let dispatched = 0;
       let failed = 0;
-      const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string; leadsHoje?: number; totalAtivos?: number }> = [];
+      const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string }> = [];
 
-      // ── Pre-fetch ALL timeouts for all leads in a single query ──
-      const allLeadIds = leads.map((l: any) => l.id);
-      const { data: allTimeouts } = await supabase
-        .from("distribuicao_historico")
-        .select("corretor_id, pipeline_lead_id")
-        .in("pipeline_lead_id", allLeadIds)
-        .eq("acao", "timeout");
-      
-      const timeoutsByLead = new Map<string, Set<string>>();
-      for (const t of allTimeouts || []) {
-        if (!timeoutsByLead.has(t.pipeline_lead_id)) timeoutsByLead.set(t.pipeline_lead_id, new Set());
-        timeoutsByLead.get(t.pipeline_lead_id)!.add(t.corretor_id);
-      }
-
-      // ── Pre-resolve all segments ──
-      const segmentoByLead = new Map<string, string | null>();
-      for (const lead of leads) {
-        segmentoByLead.set(lead.id, await resolveSegmento(supabase, lead.empreendimento));
-      }
-
-      // ── Process leads SEQUENTIALLY to prevent race conditions (Bug 1 fix) ──
-      for (const lead of leads) {
-          const segmentoId = segmentoByLead.get(lead.id) || null;
-          const excludeAuthIds = timeoutsByLead.get(lead.id) || new Set<string>();
-
-          const eligible: CorretorCandidate[] = [];
-          for (const [profileId, segs] of corretorSegments.entries()) {
-            if (segmentoId && !segs.has(segmentoId)) continue;
-            const authId = profileToAuth.get(profileId);
-            if (!authId) continue;
-            if (excludeAuthIds.has(authId)) continue;
-            const segKey = segmentoId ? `${authId}::${segmentoId}` : null;
-            const leadsHojeSegmento = segKey ? (leadsCountBySegment.get(segKey) || 0) : (leadsCountGlobal.get(authId) || 0);
-            eligible.push({
-              corretorId: profileId,
-              authUserId: authId,
-              leadsHoje: leadsHojeSegmento,
-              totalAtivos: totalAtivosCount.get(authId) || 0,
-              lastReceivedAt: lastReceived.get(authId) || null,
-            });
-          }
-
-          if (eligible.length === 0) {
-            L.warn("No eligible corretor", { leadId: lead.id, empreendimento: lead.empreendimento, segmentoId });
-            failed++;
-            continue;
-          }
-
-          eligible.sort((a, b) => {
-            if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
-            if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
-            if (!a.lastReceivedAt && b.lastReceivedAt) return -1;
-            if (a.lastReceivedAt && !b.lastReceivedAt) return 1;
-            if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
-            return 0;
-          });
-
-          L.info("Lead routing", { leadNome: lead.nome, segmentoId, eligible: eligible.length, top: eligible.slice(0, 3).map(e => ({ id: e.authUserId.slice(0,8), hojeSegmento: e.leadsHoje, total: e.totalAtivos })) });
-          const chosen = eligible[0];
-          const now = new Date();
-          const expireAt = new Date(now.getTime() + 10 * 60 * 1000);
-
-          const { error: updateErr } = await supabase
-            .from("pipeline_leads")
-            .update({
-              corretor_id: chosen.authUserId,
-              aceite_status: "pendente",
-              distribuido_em: now.toISOString(),
-              aceite_expira_em: expireAt.toISOString(),
-              updated_at: now.toISOString(),
-            })
-            .eq("id", lead.id);
-
-          if (updateErr) {
-            L.error("Failed to assign lead", { leadId: lead.id }, updateErr);
-            failed++;
-            continue;
-          }
-
-          // Update in-memory counters IMMEDIATELY for correct balancing of next lead
-          if (segmentoId) {
-            const segKey = `${chosen.authUserId}::${segmentoId}`;
-            leadsCountBySegment.set(segKey, (leadsCountBySegment.get(segKey) || 0) + 1);
-          }
-          leadsCountGlobal.set(chosen.authUserId, (leadsCountGlobal.get(chosen.authUserId) || 0) + 1);
-          totalAtivosCount.set(chosen.authUserId, (totalAtivosCount.get(chosen.authUserId) || 0) + 1);
-          lastReceived.set(chosen.authUserId, now.toISOString());
-
-          // Bug 2 fix: AWAIT distribuicao_historico insert in batch path
-          await supabase.from("distribuicao_historico").insert({
-            pipeline_lead_id: lead.id,
-            corretor_id: chosen.authUserId,
-            segmento_id: segmentoId || null,
-            acao: "distribuido",
-          });
-
-          // Secondary inserts (fire-and-forget is OK for these)
-          if (segmentoId) {
-            supabase.rpc("increment_roleta_fila", {
-              p_corretor_profile_id: chosen.corretorId,
-              p_segmento_id: segmentoId,
-              p_data: getTodayDateStr(),
-            }).then((r: any) => { if (r?.error) console.warn("roleta_fila sync:", r.error.message); });
-          }
-
-          supabase.from("roleta_distribuicoes").insert({
-            lead_id: lead.id,
-            corretor_id: chosen.corretorId,
-            segmento_id: segmentoId,
-            janela: targetJanela,
-            status: "aguardando",
-            enviado_em: now.toISOString(),
-            expira_em: expireAt.toISOString(),
-            avisos_enviados: 0,
-          }).then(r => { if (r.error) console.warn("roleta_distribuicoes insert:", r.error.message); });
-
-          supabase.from("notifications").insert({
-            user_id: chosen.authUserId,
-            tipo: "lead",
-            categoria: "lead_novo",
-            titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
-            mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}${lead.origem ? ` (${lead.origem})` : ""}. Aceite em 10 minutos!`,
-            dados: { pipeline_lead_id: lead.id, lead_nome: lead.nome, empreendimento: lead.empreendimento, telefone: lead.telefone, origem: lead.origem },
-            agrupamento_key: `lead_novo_${lead.id}`,
-          }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
-
-          sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
-            console.warn("WhatsApp notify error:", e)
-          );
-          sendPush(supabaseUrl, serviceKey, chosen.authUserId, lead).catch(e =>
-            console.warn("Push notify error:", e)
-          );
-
-          distributionLog.push({ leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown", leadsHoje: chosen.leadsHoje, totalAtivos: chosen.totalAtivos });
+      // Process leads SEQUENTIALLY — each call to the RPC is atomic with advisory lock
+      for (const lid of allLeadIds) {
+        const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, lid, targetJanela, null, L);
+        if (result.success) {
           dispatched++;
+          distributionLog.push({ leadId: lid, corretorId: result.corretor_id, segmento: result.segmento_id || "sem_segmento" });
+        } else {
+          L.warn("Batch lead failed", { leadId: lid, reason: result.reason });
+          failed++;
+        }
       }
 
       if (userId) {
-        await supabase.from("audit_log").insert({
+        supabase.from("audit_log").insert({
           user_id: userId,
           modulo: "roleta",
           acao: "dispatch_fila_ceo",
-          descricao: `Disparou ${dispatched} leads (${failed} falharam) via janela ${targetJanela}`,
+          descricao: `Disparou ${dispatched} leads (${failed} falharam) via janela ${targetJanela || "auto"}`,
           depois: { dispatched, failed, janela: targetJanela, distribution: distributionLog.slice(0, 20) },
         }).then(r => { if (r.error) console.warn("audit_log insert:", r.error.message); });
       }
 
       L.info("Dispatch complete", { dispatched, failed });
-      if (failed > 0) logOps("warn", "business", `Dispatch partial failure: ${failed} leads failed`, { dispatched, failed, janela: targetJanela });
       logOps("info", "business", `Dispatch complete: ${dispatched} leads`, { dispatched, failed, janela: targetJanela });
       return jsonResponse({ success: true, dispatched, failed });
     }
@@ -455,7 +118,7 @@ Deno.serve(async (req) => {
       if (!singleLeadId) {
         return jsonResponse({ error: "pipeline_lead_id required" }, 400);
       }
-      const result = await distributeSingleLead(supabase, supabaseUrl, serviceKey, singleLeadId, janela);
+      const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, singleLeadId, janela || null, null, L);
       return jsonResponse(result);
     }
 
@@ -470,247 +133,72 @@ Deno.serve(async (req) => {
   }
 });
 
-// ─── Distribute a single lead ───
-async function distributeSingleLead(
+// ─── Core: distribute a single lead via atomic RPC ───
+async function distributeViaRPC(
   supabase: any, supabaseUrl: string, serviceKey: string,
-  leadId: string, forceJanela?: string, excludeAuthUserId?: string
-) {
-  // Acquire advisory lock to serialize concurrent single-lead distributions
-  // This prevents race conditions when multiple webhooks arrive simultaneously
-  await supabase.rpc("distribute_lead_with_lock", { p_lead_id: leadId, p_janela: forceJanela || null });
-
-  const { data: lead } = await supabase
-    .from("pipeline_leads")
-    .select("id, nome, telefone, empreendimento, aceite_status, corretor_id")
-    .eq("id", leadId)
-    .maybeSingle();
-
-  if (!lead) return { success: false, reason: "lead_not_found" };
-  if (lead.corretor_id && lead.aceite_status !== "pendente_distribuicao") {
-    return { success: false, reason: "already_assigned" };
-  }
-
-  const segmentoId = await resolveSegmento(supabase, lead.empreendimento);
-  const targetJanela = forceJanela || getCurrentJanela();
-  const todayStart = getTodayStartUTC();
-  const todayStr = getTodayDateStr();
-
-  // On Sunday (dia_todo), accept credenciamentos from any janela
-  let credsQuery = supabase
-    .from("roleta_credenciamentos")
-    .select("corretor_id, segmento_1_id, segmento_2_id")
-    .eq("data", todayStr)
-    .eq("status", "aprovado")
-    .is("saiu_em", null);
-  
-  if (targetJanela !== "dia_todo") {
-    credsQuery = credsQuery.eq("janela", targetJanela);
-  }
-
-  const { data: creds } = await credsQuery;
-  if (!creds || creds.length === 0) {
-    return { success: false, reason: "no_credenciados" };
-  }
-
-  const corretorSegments = new Map<string, Set<string>>();
-  for (const c of creds) {
-    if (!corretorSegments.has(c.corretor_id)) corretorSegments.set(c.corretor_id, new Set());
-    const segs = corretorSegments.get(c.corretor_id)!;
-    if (c.segmento_1_id) segs.add(c.segmento_1_id);
-    if (c.segmento_2_id) segs.add(c.segmento_2_id);
-  }
-
-  const eligibleProfileIds: string[] = [];
-  for (const [profileId, segs] of corretorSegments.entries()) {
-    if (!segmentoId || segs.has(segmentoId)) {
-      eligibleProfileIds.push(profileId);
-    }
-  }
-
-  if (eligibleProfileIds.length === 0) {
-    return { success: false, reason: "no_corretor_available", segmento_id: segmentoId };
-  }
-
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, user_id")
-    .in("id", eligibleProfileIds);
-
-  const profileToAuth = new Map<string, string>();
-  for (const p of profiles || []) {
-    if (p.user_id) profileToAuth.set(p.id, p.user_id);
-  }
-
-  const authIds = [...profileToAuth.values()];
-
-      // FIX Bug 3: Count ALL distributions today (including timed-out) for fair balancing
-      const { data: todayDistributions } = await supabase
-        .from("distribuicao_historico")
-        .select("corretor_id, pipeline_lead_id, created_at")
-        .eq("acao", "distribuido")
-        .gte("created_at", todayStart);
-
-      const { data: todayLeads } = await supabase
-        .from("pipeline_leads")
-        .select("id, corretor_id, empreendimento")
-        .in("corretor_id", authIds)
-        .gte("distribuido_em", todayStart);
-
-      const { data: activeLeadsData } = await supabase
-        .from("pipeline_leads")
-        .select("corretor_id")
-        .in("corretor_id", authIds)
-        .in("aceite_status", ["aceito", "pendente"]);
-
-      const totalAtivosCount = new Map<string, number>();
-      for (const uid of authIds) totalAtivosCount.set(uid, 0);
-      for (const l of activeLeadsData || []) {
-        totalAtivosCount.set(l.corretor_id, (totalAtivosCount.get(l.corretor_id) || 0) + 1);
-      }
-
-      const leadEmpreendimentoMap = new Map<string, string>();
-      for (const l of todayLeads || []) {
-        if (l.empreendimento) leadEmpreendimentoMap.set(l.id, l.empreendimento);
-      }
-
-      // Per-segment lead count based on ALL distributions
-      const leadsCountBySegment = new Map<string, number>();
-      const leadsCountGlobal = new Map<string, number>();
-      const lastReceived = new Map<string, string>();
-      for (const uid of authIds) leadsCountGlobal.set(uid, 0);
-
-      for (const d of todayDistributions || []) {
-        if (!authIds.includes(d.corretor_id)) continue;
-        leadsCountGlobal.set(d.corretor_id, (leadsCountGlobal.get(d.corretor_id) || 0) + 1);
-        const emp = leadEmpreendimentoMap.get(d.pipeline_lead_id);
-        if (emp) {
-          const seg = await resolveSegmento(supabase, emp);
-          if (seg) {
-            const key = `${d.corretor_id}::${seg}`;
-            leadsCountBySegment.set(key, (leadsCountBySegment.get(key) || 0) + 1);
-          }
-        }
-        const prev = lastReceived.get(d.corretor_id);
-        if (!prev || d.created_at > prev) lastReceived.set(d.corretor_id, d.created_at);
-      }
-
-      // ── Exclude corretors who already timed out on this lead ──
-      const excludeAuthIds = new Set<string>();
-      if (excludeAuthUserId) excludeAuthIds.add(excludeAuthUserId);
-
-      const { data: prevTimeouts } = await supabase
-        .from("distribuicao_historico")
-        .select("corretor_id")
-        .eq("pipeline_lead_id", leadId)
-        .eq("acao", "timeout");
-
-      if (prevTimeouts && prevTimeouts.length > 0) {
-        for (const t of prevTimeouts) {
-          if (t.corretor_id) excludeAuthIds.add(t.corretor_id);
-        }
-        console.info(JSON.stringify({ fn: "distribute-lead", level: "info", msg: "Excluding timed-out corretors", ctx: { leadId, excluded: excludeAuthIds.size }, ts: new Date().toISOString() }));
-      }
-
-      const candidates: CorretorCandidate[] = [];
-      for (const [profileId, authId] of profileToAuth.entries()) {
-        if (excludeAuthIds.has(authId)) continue;
-        const segKey = segmentoId ? `${authId}::${segmentoId}` : null;
-        const leadsHojeSegmento = segKey ? (leadsCountBySegment.get(segKey) || 0) : (leadsCountGlobal.get(authId) || 0);
-        candidates.push({
-          corretorId: profileId,
-          authUserId: authId,
-          leadsHoje: leadsHojeSegmento,
-          totalAtivos: totalAtivosCount.get(authId) || 0,
-          lastReceivedAt: lastReceived.get(authId) || null,
-        });
-      }
-
-      candidates.sort((a, b) => {
-        if (a.leadsHoje !== b.leadsHoje) return a.leadsHoje - b.leadsHoje;
-        if (a.totalAtivos !== b.totalAtivos) return a.totalAtivos - b.totalAtivos;
-        if (!a.lastReceivedAt && b.lastReceivedAt) return -1;
-        if (a.lastReceivedAt && !b.lastReceivedAt) return 1;
-        if (a.lastReceivedAt && b.lastReceivedAt) return a.lastReceivedAt < b.lastReceivedAt ? -1 : 1;
-        return 0;
-      });
-
-  if (candidates.length === 0) {
-    return { success: false, reason: "no_corretor_available", segmento_id: segmentoId };
-  }
-
-  const chosen = candidates[0];
-  const now = new Date();
-  const expireAt = new Date(now.getTime() + 10 * 60 * 1000);
-
-  const { error } = await supabase
-    .from("pipeline_leads")
-    .update({
-      corretor_id: chosen.authUserId,
-      aceite_status: "pendente",
-      distribuido_em: now.toISOString(),
-      aceite_expira_em: expireAt.toISOString(),
-      updated_at: now.toISOString(),
-    })
-    .eq("id", leadId);
+  leadId: string, janela: string | null, excludeAuthUserId: string | null,
+  L: { info: Function; warn: Function; error: Function }
+): Promise<any> {
+  const { data: result, error } = await supabase.rpc("distribuir_lead_atomico", {
+    p_lead_id: leadId,
+    p_janela: janela,
+    p_exclude_auth_user_id: excludeAuthUserId,
+  });
 
   if (error) {
-    console.error(JSON.stringify({ fn: "distribute-lead", level: "error", msg: "Failed to assign single lead", ctx: { leadId }, err: { message: error.message }, ts: new Date().toISOString() }));
-    // Note: logOps not available in this standalone function scope; error persisted via stdout
-    return { success: false, reason: "update_failed", error: error.message };
+    L.error("RPC distribuir_lead_atomico failed", { leadId }, error);
+    return { success: false, reason: "rpc_error", error: error.message };
   }
 
-  // FIX Bug 2: Sync roleta_fila for single lead distribution
-  if (segmentoId) {
-    supabase.rpc("increment_roleta_fila", {
-      p_corretor_profile_id: chosen.corretorId,
-      p_segmento_id: segmentoId,
-      p_data: getTodayDateStr(),
-    }).then((r: any) => { if (r?.error) console.warn("roleta_fila sync:", r.error.message); });
+  if (!result || !result.success) {
+    return result || { success: false, reason: "unknown" };
   }
 
-  // Log in distribuicao_historico for fair counting (Bug 3 fix: segmento_id correctly set)
-  await supabase.from("distribuicao_historico").insert({
-    pipeline_lead_id: leadId,
-    corretor_id: chosen.authUserId,
-    segmento_id: segmentoId || null,
-    acao: "distribuido",
-  });
+  // RPC handled: assignment, distribuicao_historico, roleta_distribuicoes, roleta_fila
+  // Edge function handles: notifications (WhatsApp, push, in-app)
 
-  const distRes = await supabase.from("roleta_distribuicoes").insert({
-    lead_id: leadId,
-    corretor_id: chosen.corretorId,
-    segmento_id: segmentoId,
-    janela: targetJanela,
-    status: "aguardando",
-    enviado_em: now.toISOString(),
-    expira_em: expireAt.toISOString(),
-    avisos_enviados: 0,
-  });
-  if (distRes.error) console.warn("roleta_distribuicoes insert:", distRes.error.message);
+  const lead = {
+    id: leadId,
+    nome: result.lead_nome,
+    empreendimento: result.lead_empreendimento,
+    telefone: result.lead_telefone,
+    origem: result.lead_origem,
+  };
 
-  const notifRes = await supabase.from("notifications").insert({
-    user_id: chosen.authUserId,
+  // Notification insert
+  supabase.from("notifications").insert({
+    user_id: result.corretor_id,
     tipo: "lead",
     categoria: "lead_novo",
     titulo: `🚨 Novo Lead! ${lead.nome || ""}`.trim(),
     mensagem: `Você recebeu o lead ${lead.nome || "Lead"}${lead.empreendimento ? ` — ${lead.empreendimento}` : ""}${lead.origem ? ` (${lead.origem})` : ""}. Aceite em 10 minutos!`,
-    dados: { pipeline_lead_id: leadId, lead_nome: lead.nome, empreendimento: lead.empreendimento, origem: lead.origem },
+    dados: { pipeline_lead_id: leadId, lead_nome: lead.nome, empreendimento: lead.empreendimento, telefone: lead.telefone, origem: lead.origem },
     agrupamento_key: `lead_novo_${leadId}`,
+  }).then((r: any) => { if (r.error) console.warn("notification insert:", r.error.message); });
+
+  // WhatsApp + Push (fire-and-forget)
+  sendWhatsApp(supabase, supabaseUrl, serviceKey, result.corretor_id, lead).catch(e =>
+    console.warn("WhatsApp notify error:", e)
+  );
+  sendPush(supabaseUrl, serviceKey, result.corretor_id, lead).catch(e =>
+    console.warn("Push notify error:", e)
+  );
+
+  L.info("Lead distributed", {
+    leadId,
+    corretorId: result.corretor_id,
+    segmento: result.segmento_id,
+    janela: result.janela,
   });
-  if (notifRes.error) console.warn("notification insert:", notifRes.error.message);
 
-  try { await sendWhatsApp(supabase, supabaseUrl, serviceKey, chosen.authUserId, lead); } catch (e) { console.warn("WhatsApp error:", e); }
-  try { await sendPush(supabaseUrl, serviceKey, chosen.authUserId, lead); } catch (e) { console.warn("Push error:", e); }
-
-  return { success: true, corretor_id: chosen.authUserId, segmento_id: segmentoId };
+  return result;
 }
 
-// ─── Accept / Reject handler (now using atomic RPCs) ───
+// ─── Accept / Reject handler ───
 async function handleAcceptReject(supabase: any, body: any, userId: string, supabaseUrl: string, serviceKey: string) {
   const { action, pipeline_lead_id, status_inicial, motivo } = body;
 
   if (action === "aceitar") {
-    // Use atomic RPC instead of direct update
     const { data: result, error } = await supabase.rpc("aceitar_lead", {
       p_lead_id: pipeline_lead_id,
       p_corretor_id: userId,
@@ -723,11 +211,9 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
     }
 
     if (!result?.success) {
-      console.log(`Lead acceptance rejected: ${JSON.stringify(result)}`);
       return jsonResponse(result);
     }
 
-    // Post-acceptance: notification (non-blocking)
     const { data: leadData } = await supabase
       .from("pipeline_leads")
       .select("nome, empreendimento")
@@ -735,7 +221,7 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
       .maybeSingle();
 
     if (leadData) {
-      await supabase.from("notifications").insert({
+      supabase.from("notifications").insert({
         user_id: userId,
         tipo: "lead",
         categoria: "lead_aceito",
@@ -750,7 +236,6 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
   }
 
   if (action === "rejeitar") {
-    // Use atomic RPC instead of direct update
     const { data: result, error } = await supabase.rpc("rejeitar_lead", {
       p_lead_id: pipeline_lead_id,
       p_corretor_id: userId,
@@ -766,9 +251,16 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
       return jsonResponse(result);
     }
 
-    // Try to redistribute immediately, excluding the broker who just rejected
-    const redistResult = await distributeSingleLead(supabase, supabaseUrl, serviceKey, pipeline_lead_id, undefined, userId);
-    console.log(`Redistribution after reject (excluded ${userId}):`, JSON.stringify(redistResult));
+    // Redistribute via atomic RPC, excluding the rejector
+    const L = {
+      info: (msg: string, ctx?: any) => console.info(JSON.stringify({ fn: "distribute-lead", msg, ctx })),
+      warn: (msg: string, ctx?: any) => console.warn(JSON.stringify({ fn: "distribute-lead", msg, ctx })),
+      error: (msg: string, ctx?: any, err?: any) => console.error(JSON.stringify({ fn: "distribute-lead", msg, ctx, err })),
+    };
+    const redistResult = await distributeViaRPC(
+      supabase, Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      pipeline_lead_id, undefined, userId, L
+    );
 
     return jsonResponse({ success: true, redistributed: redistResult.success });
   }
@@ -817,24 +309,6 @@ async function sendPush(supabaseUrl: string, serviceKey: string, authUserId: str
   } catch (e) {
     console.warn("Push notification error:", e);
   }
-}
-
-function getTodayStartUTC(): string {
-  const now = new Date();
-  const brDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  const y = brDate.getUTCFullYear();
-  const m = String(brDate.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(brDate.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${d}T03:00:00.000Z`;
-}
-
-function getTodayDateStr(): string {
-  const now = new Date();
-  const brDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  const y = brDate.getUTCFullYear();
-  const m = String(brDate.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(brDate.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 function jsonResponse(data: any, status = 200) {
