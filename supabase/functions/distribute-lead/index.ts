@@ -300,11 +300,8 @@ Deno.serve(async (req) => {
         segmentoByLead.set(lead.id, await resolveSegmento(supabase, lead.empreendimento));
       }
 
-      // ── Process leads in parallel chunks of 5 ──
-      const CHUNK_SIZE = 5;
-      for (let i = 0; i < leads.length; i += CHUNK_SIZE) {
-        const chunk = leads.slice(i, i + CHUNK_SIZE);
-        const results = await Promise.all(chunk.map(async (lead: any) => {
+      // ── Process leads SEQUENTIALLY to prevent race conditions (Bug 1 fix) ──
+      for (const lead of leads) {
           const segmentoId = segmentoByLead.get(lead.id) || null;
           const excludeAuthIds = timeoutsByLead.get(lead.id) || new Set<string>();
 
@@ -327,7 +324,8 @@ Deno.serve(async (req) => {
 
           if (eligible.length === 0) {
             L.warn("No eligible corretor", { leadId: lead.id, empreendimento: lead.empreendimento, segmentoId });
-            return { success: false };
+            failed++;
+            continue;
           }
 
           eligible.sort((a, b) => {
@@ -357,10 +355,11 @@ Deno.serve(async (req) => {
 
           if (updateErr) {
             L.error("Failed to assign lead", { leadId: lead.id }, updateErr);
-            return { success: false };
+            failed++;
+            continue;
           }
 
-          // Update counters (synchronous map updates for correct balancing within chunk)
+          // Update in-memory counters IMMEDIATELY for correct balancing of next lead
           if (segmentoId) {
             const segKey = `${chosen.authUserId}::${segmentoId}`;
             leadsCountBySegment.set(segKey, (leadsCountBySegment.get(segKey) || 0) + 1);
@@ -369,7 +368,15 @@ Deno.serve(async (req) => {
           totalAtivosCount.set(chosen.authUserId, (totalAtivosCount.get(chosen.authUserId) || 0) + 1);
           lastReceived.set(chosen.authUserId, now.toISOString());
 
-          // Fire-and-forget: secondary inserts (no await)
+          // Bug 2 fix: AWAIT distribuicao_historico insert in batch path
+          await supabase.from("distribuicao_historico").insert({
+            pipeline_lead_id: lead.id,
+            corretor_id: chosen.authUserId,
+            segmento_id: segmentoId || null,
+            acao: "distribuido",
+          });
+
+          // Secondary inserts (fire-and-forget is OK for these)
           if (segmentoId) {
             supabase.rpc("increment_roleta_fila", {
               p_corretor_profile_id: chosen.corretorId,
@@ -406,17 +413,8 @@ Deno.serve(async (req) => {
             console.warn("Push notify error:", e)
           );
 
-          return { success: true, leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown", leadsHoje: chosen.leadsHoje, totalAtivos: chosen.totalAtivos };
-        }));
-
-        for (const r of results) {
-          if (r.success) {
-            distributionLog.push({ leadId: r.leadId!, corretorId: r.corretorId!, segmento: r.segmento!, leadsHoje: r.leadsHoje, totalAtivos: r.totalAtivos });
-            dispatched++;
-          } else {
-            failed++;
-          }
-        }
+          distributionLog.push({ leadId: lead.id, corretorId: chosen.authUserId, segmento: segmentoId || "unknown", leadsHoje: chosen.leadsHoje, totalAtivos: chosen.totalAtivos });
+          dispatched++;
       }
 
       if (userId) {
