@@ -359,24 +359,25 @@ export default function PlacarDoDia() {
         <Confetti active={metaGeralAtingida} />
 
         {/* Header */}
-        <div style={{ textAlign: "center", padding: "10px 24px 6px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
-          <div style={{ fontSize: 10, letterSpacing: 4, color: "#ffffff44", fontFamily: "monospace", marginBottom: 2 }}>
+        <div style={{ textAlign: "center", padding: "6px 24px 4px", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
+          <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff44", fontFamily: "monospace", marginBottom: 1 }}>
             UHOME NEGÓCIOS IMOBILIÁRIOS
           </div>
           <h1 style={{
-            fontSize: "clamp(24px, 4vw, 48px)",
+            fontSize: "clamp(20px, 3.5vw, 40px)",
             letterSpacing: 4,
             margin: 0,
+            lineHeight: 1.1,
             background: "linear-gradient(90deg, #F59E0B, #EF4444, #9333EA)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             textTransform: "uppercase",
           }}>⚡ Placar do Dia ⚡</h1>
           <p style={{
-            fontSize: "clamp(9px, 1.2vw, 13px)",
+            fontSize: "clamp(8px, 1vw, 11px)",
             letterSpacing: 6,
             color: "#ffffff55",
-            margin: "2px 0 0",
+            margin: "1px 0 0",
             textTransform: "uppercase",
             fontFamily: "monospace",
             fontWeight: 400,
@@ -386,20 +387,20 @@ export default function PlacarDoDia() {
             gap: 16,
           }}>
             <span>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" })}</span>
-            <span style={{ color: "#F59E0B", fontSize: "clamp(12px, 1.5vw, 18px)", fontWeight: 700, letterSpacing: 2 }}>
+            <span style={{ color: "#F59E0B", fontSize: "clamp(10px, 1.3vw, 16px)", fontWeight: 700, letterSpacing: 2 }}>
               {formatTime(relogio)}
             </span>
           </p>
         </div>
 
         {/* Meta geral da empresa */}
-        <div style={{ padding: "6px 32px 8px", background: "#ffffff06", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
+        <div style={{ padding: "4px 32px 6px", background: "#ffffff06", borderBottom: "1px solid #ffffff14", flexShrink: 0 }}>
           <div style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 4,
-            fontSize: 11,
+            marginBottom: 3,
+            fontSize: 10,
             letterSpacing: 2,
             color: "#ffffff77",
             textTransform: "uppercase",
@@ -444,15 +445,15 @@ export default function PlacarDoDia() {
         </div>
 
         {/* Main content: Cards + Feed lateral */}
-        <div style={{ display: "flex", gap: 14, padding: "14px 24px", flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <div style={{ display: "flex", gap: 10, padding: "8px 20px", flex: 1, minHeight: 0, overflow: "hidden" }}>
 
           {/* Left: Cards + Ranking */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
             {/* Cards das equipes */}
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 14,
+              gap: 10,
               flex: 1,
               minHeight: 0,
             }}>
@@ -482,7 +483,7 @@ export default function PlacarDoDia() {
                         : "#0d0d20",
                       border: `2px solid ${isFlash ? equipe.cor : metaBatida ? equipe.cor + "88" : equipe.corBorda + "44"}`,
                       borderRadius: 16,
-                      padding: "16px 20px",
+                      padding: "10px 14px",
                       transition: "all 0.3s",
                       position: "relative",
                       overflow: "hidden",
@@ -510,7 +511,7 @@ export default function PlacarDoDia() {
                       <span style={{ fontSize: 24 }}>{equipe.emoji}</span>
                       <h2 style={{ fontSize: "clamp(16px, 2.5vw, 24px)", letterSpacing: 2, textTransform: "uppercase", margin: "0 0 2px", color: equipe.cor }}>{equipe.nome}</h2>
                     </div>
-                    <div style={{ fontSize: "clamp(56px, 9vw, 88px)", fontWeight: 900, color: equipe.cor, lineHeight: 1, letterSpacing: -2, textShadow: `0 0 40px ${equipe.cor}66`, margin: "4px 0" }}>{total}</div>
+                    <div style={{ fontSize: "clamp(40px, 7vw, 72px)", fontWeight: 900, color: equipe.cor, lineHeight: 1, letterSpacing: -2, textShadow: `0 0 40px ${equipe.cor}66`, margin: "2px 0" }}>{total}</div>
                     <div style={{ fontSize: 10, letterSpacing: 2, color: "#ffffff55", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 6, minHeight: 14 }}>
                       {ultima ? `Última: ${ultima.nome} às ${ultima.hora}` : "visitas marcadas hoje"}
                     </div>
@@ -533,15 +534,15 @@ export default function PlacarDoDia() {
             {ranking.length > 0 && (
               <div style={{ flexShrink: 0 }}>
                 <div style={{ fontSize: "clamp(12px, 1.8vw, 16px)", letterSpacing: 4, textTransform: "uppercase", color: "#ffffff77", marginBottom: 6, textAlign: "center" }}>🏅 Top 3 corretores</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                   {ranking.map((c, i) => (
                     <div key={c.nome} style={{
                       background: i === 0 ? "#1a1400" : i === 1 ? "#0d0d14" : "#0a100a",
                       border: `1px solid ${i === 0 ? "#F59E0B44" : i === 1 ? "#9CA3AF44" : "#16A34A44"}`,
-                      borderRadius: 10, padding: "8px 6px", textAlign: "center",
+                      borderRadius: 10, padding: "6px 6px", textAlign: "center",
                     }}>
-                      <div style={{ fontSize: 22 }}>{medalhas[i]}</div>
-                      <div style={{ fontSize: "clamp(20px, 3vw, 32px)", fontWeight: 900, color: i === 0 ? "#F59E0B" : i === 1 ? "#9CA3AF" : "#16A34A", lineHeight: 1 }}>{c.count}</div>
+                      <div style={{ fontSize: 18 }}>{medalhas[i]}</div>
+                      <div style={{ fontSize: "clamp(18px, 2.5vw, 28px)", fontWeight: 900, color: i === 0 ? "#F59E0B" : i === 1 ? "#9CA3AF" : "#16A34A", lineHeight: 1 }}>{c.count}</div>
                       <div style={{ fontSize: "clamp(9px, 1.1vw, 12px)", color: "#ffffffcc", marginTop: 2, fontFamily: "monospace", letterSpacing: 1, wordBreak: "break-word" }}>{c.nome}</div>
                     </div>
                   ))}
