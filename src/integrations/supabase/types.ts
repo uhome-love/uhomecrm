@@ -1756,13 +1756,6 @@ export type Database = {
             referencedRelation: "pipeline_leads"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "distribuicao_historico_segmento_id_fkey"
-            columns: ["segmento_id"]
-            isOneToOne: false
-            referencedRelation: "pipeline_segmentos"
-            referencedColumns: ["id"]
-          },
         ]
       }
       email_campaign_recipients: {
