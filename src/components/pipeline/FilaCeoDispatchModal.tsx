@@ -9,33 +9,42 @@ import { toast } from "sonner";
 
 // Empreendimento → Segmento mapping (mirrors edge function)
 const EMPREENDIMENTO_SEGMENTO: Record<string, string> = {
+  // MCMV / Até 500k
   "open bosque": "MCMV / Até 500k",
-  "melnick day médio padrão": "Médio-Alto Padrão",
-  "melnick day medio padrao": "Médio-Alto Padrão",
-  "melnick day - médio padrão": "Médio-Alto Padrão",
-  "melnick day alto padrão": "Altíssimo Padrão",
-  "melnick day - alto padrão": "Altíssimo Padrão",
-  "melnick day alto padrao": "Altíssimo Padrão",
-  "melnick day compactos": "Investimento",
-  "melnick day - compactos": "Investimento",
+  "alto lindóia": "MCMV / Até 500k",
+  "alto lindoia": "MCMV / Até 500k",
   "melnick day": "MCMV / Até 500k",
-  "casa tua": "Médio-Alto Padrão",
+  // Médio-Alto Padrão
   "las casas": "Médio-Alto Padrão",
   "orygem": "Médio-Alto Padrão",
   "me day": "Médio-Alto Padrão",
-  "alto lindóia": "Médio-Alto Padrão",
-  "alto lindoia": "Médio-Alto Padrão",
+  "melnick day médio padrão": "Médio-Alto Padrão",
+  "melnick day medio padrao": "Médio-Alto Padrão",
+  "melnick day - médio padrão": "Médio-Alto Padrão",
   "terrace": "Médio-Alto Padrão",
-  "alfa": "Médio-Alto Padrão",
   "duetto - morana": "Médio-Alto Padrão",
+  // Altíssimo Padrão
   "lake eyre": "Altíssimo Padrão",
   "seen": "Altíssimo Padrão",
   "seen menino deus": "Altíssimo Padrão",
+  "seen três figueiras": "Altíssimo Padrão",
+  "seen tres figueiras": "Altíssimo Padrão",
   "boa vista country club": "Altíssimo Padrão",
   "boa vista": "Altíssimo Padrão",
+  "high garden iguatemi": "Altíssimo Padrão",
+  "high garden": "Altíssimo Padrão",
+  "melnick day alto padrão": "Altíssimo Padrão",
+  "melnick day - alto padrão": "Altíssimo Padrão",
+  "melnick day alto padrao": "Altíssimo Padrão",
+  // Investimento
+  "alfa": "Investimento",
   "shift": "Investimento",
   "shift - vanguard": "Investimento",
   "casa bastian": "Investimento",
+  "connect jw": "Investimento",
+  "go carlos gomes": "Investimento",
+  "melnick day compactos": "Investimento",
+  "melnick day - compactos": "Investimento",
 };
 
 function resolveSegmentoNome(emp: string | null): string | null {
