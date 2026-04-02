@@ -193,9 +193,10 @@ export default function PlacarDoDia() {
       if (allUserIds.length > 0) {
         const { data: visitas, error: vErr } = await supabase
           .from("visitas")
-          .select("id,corretor_id,created_at,status,nome_cliente,data_visita")
+          .select("id,corretor_id,created_at,status,nome_cliente,data_visita,empreendimento")
           .in("corretor_id", allUserIds)
-          .eq("data_visita", hoje)
+          .gte("created_at", inicioHoje)
+          .lte("created_at", fimHoje)
           .in("status", ["marcada", "confirmada", "realizada", "reagendada"]);
         if (vErr) throw vErr;
         todasVisitas = visitas || [];
@@ -251,6 +252,8 @@ export default function PlacarDoDia() {
           return {
             corretor: primeiroNome,
             cliente: v.nome_cliente || "—",
+            empreendimento: v.empreendimento || null,
+            dataVisita: v.data_visita || null,
             hora: new Date(v.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }),
             equipe,
           };
@@ -617,15 +620,19 @@ export default function PlacarDoDia() {
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           fontWeight: 700,
-                        }}>{v.corretor}</div>
+                        }}>{v.corretor} → {v.cliente}</div>
                         <div style={{
                           fontSize: 10,
-                          color: "#ffffff66",
+                          color: "#ffffff55",
                           fontFamily: "monospace",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
-                        }}>{v.cliente}</div>
+                        }}>
+                          {v.empreendimento && <span>{v.empreendimento}</span>}
+                          {v.empreendimento && v.dataVisita && <span> · </span>}
+                          {v.dataVisita && <span>📅 {v.dataVisita.split("-").reverse().join("/")}</span>}
+                        </div>
                       </div>
                       <div style={{
                         fontSize: 10,
