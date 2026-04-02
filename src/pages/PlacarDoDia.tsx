@@ -193,9 +193,10 @@ export default function PlacarDoDia() {
       if (allUserIds.length > 0) {
         const { data: visitas, error: vErr } = await supabase
           .from("visitas")
-          .select("id,corretor_id,created_at,status,nome_cliente,data_visita")
+          .select("id,corretor_id,created_at,status,nome_cliente,data_visita,empreendimento")
           .in("corretor_id", allUserIds)
-          .eq("data_visita", hoje)
+          .gte("created_at", inicioHoje)
+          .lte("created_at", fimHoje)
           .in("status", ["marcada", "confirmada", "realizada", "reagendada"]);
         if (vErr) throw vErr;
         todasVisitas = visitas || [];
