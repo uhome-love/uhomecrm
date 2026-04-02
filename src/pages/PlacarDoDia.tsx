@@ -127,10 +127,7 @@ export default function PlacarDoDia() {
   const [ultimasVisitas, setUltimasVisitas] = useState([]);
 
   // Meta configurável
-  const [meta, setMeta] = useState(() => {
-    const saved = localStorage.getItem("placar_meta");
-    return saved ? Number(saved) : DEFAULT_META;
-  });
+  const [meta, setMeta] = useState(DEFAULT_META);
 
   // Show admin controls if ?admin=true in URL
   const isAdminMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("admin") === "true";
