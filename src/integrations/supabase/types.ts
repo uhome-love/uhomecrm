@@ -2300,6 +2300,24 @@ export type Database = {
         }
         Relationships: []
       }
+      feriados: {
+        Row: {
+          data: string
+          descricao: string | null
+          id: string
+        }
+        Insert: {
+          data: string
+          descricao?: string | null
+          id?: string
+        }
+        Update: {
+          data?: string
+          descricao?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       funnel_entries: {
         Row: {
           analise_ia: string | null
