@@ -73,13 +73,26 @@ function isSundayBRTLocal(): boolean {
   return brt.getDay() === 0;
 }
 
+// Feriados liberados (dia todo, sem limite de horário) — formato "YYYY-MM-DD"
+const FERIADOS_LIBERADOS = [
+  "2026-04-03", // Sexta-feira Santa
+];
+
+function isHolidayBRT(): boolean {
+  const now = new Date();
+  const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const dateStr = brt.toISOString().slice(0, 10);
+  return FERIADOS_LIBERADOS.includes(dateStr);
+}
+
 // Janelas de credenciamento com horários de abertura e fechamento
 function getJanelasConfig(): JanelaConfig[] {
   const saturdayMorning = isSaturdayBRT();
   const sunday = isSundayBRTLocal();
+  const holiday = isHolidayBRT();
   
-  // Sunday: single "Dia Todo" window, open 08:00–23:59
-  if (sunday) {
+  // Sunday or Holiday: single "Dia Todo" window, open 08:00–23:59
+  if (sunday || holiday) {
     return [
       { key: "dia_todo" as JanelaKey, label: "Dia Todo", emoji: "☀️", icon: Sun, credAberto: { inicio: 8, fim: 23.99 }, recebimento: "08:00 — 23:59", temRequisitos: false },
     ];
