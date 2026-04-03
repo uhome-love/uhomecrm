@@ -85,7 +85,7 @@ export default function NewLeadBanner() {
       }, (payload) => {
         const newRow = payload.new as any;
         // Only show banner for leads pending acceptance
-        if (newRow?.aceite_status !== "pendente") return;
+        if (!["pendente", "aguardando_aceite"].includes(newRow?.aceite_status)) return;
         if (dismissedRef.current.has(newRow.id)) return;
 
          const lead: BannerLead = {

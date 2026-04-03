@@ -272,7 +272,7 @@ export function AppSidebar() {
       .from("pipeline_leads")
       .select("id", { count: "exact", head: true })
       .eq("corretor_id", user.id)
-      .eq("aceite_status", "pendente")
+      .in("aceite_status", ["pendente", "aguardando_aceite"])
       .gt("aceite_expira_em", now);
     setAceiteLeadsPendentes(count ?? 0);
   }, [user, isAdmin, isGestor, isBackoffice]);

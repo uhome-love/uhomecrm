@@ -301,7 +301,8 @@ export default function AceiteLeads() {
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead, campanha")
       .eq("corretor_id", user.id)
-      .eq("aceite_status", "pendente")
+      .in("aceite_status", ["pendente", "aguardando_aceite"])
+      .gt("aceite_expira_em", new Date().toISOString())
       .order("distribuido_em", { ascending: true });
     const newLeads = (data as PendingLead[]) || [];
     setLeads(newLeads);

@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     const { data: pendingLeads } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, empreendimento, corretor_id, distribuido_em, escalation_level, last_escalation_at")
-      .eq("aceite_status", "pendente")
+      .in("aceite_status", ["pendente", "aguardando_aceite"])
       .not("corretor_id", "is", null)
       .not("distribuido_em", "is", null);
 
