@@ -10,10 +10,26 @@ import { todayBRT } from "@/lib/utils";
 
 export type JanelaId = "manha" | "tarde" | "noturna" | "madrugada" | "dia_todo";
 
-export function isSundayBRT(): boolean {
+const FERIADOS_LIBERADOS = ["2026-04-03"];
+
+export function getBrtDateInfo() {
   const now = new Date();
   const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  return brt.getDay() === 0;
+  const dateStr = brt.toISOString().slice(0, 10);
+  return {
+    brt,
+    dateStr,
+    isSunday: brt.getDay() === 0,
+    isHoliday: FERIADOS_LIBERADOS.includes(dateStr),
+  };
+}
+
+export function isSundayBRT(): boolean {
+  return getBrtDateInfo().isSunday;
+}
+
+export function isHolidayBRT(): boolean {
+  return getBrtDateInfo().isHoliday;
 }
 
 interface JanelaInfo {

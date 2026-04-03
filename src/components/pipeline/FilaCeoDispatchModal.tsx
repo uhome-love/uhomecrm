@@ -6,86 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Rocket, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-
-// Empreendimento → Segmento mapping (mirrors edge function)
-const EMPREENDIMENTO_SEGMENTO: Record<string, string> = {
-  // MCMV / Até 500k
-  "open bosque": "MCMV / Até 500k",
-  "alto lindóia": "MCMV / Até 500k",
-  "alto lindoia": "MCMV / Até 500k",
-  "melnick day": "MCMV / Até 500k",
-  // Médio-Alto Padrão
-  "las casas": "Médio-Alto Padrão",
-  "orygem": "Médio-Alto Padrão",
-  "me day": "Médio-Alto Padrão",
-  "melnick day médio padrão": "Médio-Alto Padrão",
-  "melnick day medio padrao": "Médio-Alto Padrão",
-  "melnick day - médio padrão": "Médio-Alto Padrão",
-  "terrace": "Médio-Alto Padrão",
-  "duetto - morana": "Médio-Alto Padrão",
-  // Altíssimo Padrão
-  "lake eyre": "Altíssimo Padrão",
-  "seen": "Altíssimo Padrão",
-  "seen menino deus": "Altíssimo Padrão",
-  "seen três figueiras": "Altíssimo Padrão",
-  "seen tres figueiras": "Altíssimo Padrão",
-  "boa vista country club": "Altíssimo Padrão",
-  "boa vista": "Altíssimo Padrão",
-  "high garden iguatemi": "Altíssimo Padrão",
-  "high garden": "Altíssimo Padrão",
-  "melnick day alto padrão": "Altíssimo Padrão",
-  "melnick day - alto padrão": "Altíssimo Padrão",
-  "melnick day alto padrao": "Altíssimo Padrão",
-  // Investimento
-  "alfa": "Investimento",
-  "shift": "Investimento",
-  "shift - vanguard": "Investimento",
-  "casa bastian": "Investimento",
-  "connect jw": "Investimento",
-  "go carlos gomes": "Investimento",
-  "melnick day compactos": "Investimento",
-  "melnick day - compactos": "Investimento",
-};
-
-function resolveSegmentoNome(emp: string | null): string | null {
-  if (!emp) return null;
-  const lower = emp.toLowerCase().trim();
-  if (EMPREENDIMENTO_SEGMENTO[lower]) return EMPREENDIMENTO_SEGMENTO[lower];
-  // Sort keys by length descending to match most specific first
-  const sortedKeys = Object.keys(EMPREENDIMENTO_SEGMENTO).sort((a, b) => b.length - a.length);
-  for (const key of sortedKeys) {
-    if (lower.includes(key) || key.includes(lower)) return EMPREENDIMENTO_SEGMENTO[key];
-  }
-  return null;
-}
-
-interface SegmentoPreview {
-  segmento_nome: string;
-  empreendimentos: string[];
-  count: number;
-}
-
-interface Props {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDispatched?: () => void;
-}
-
+import { getBrtDateInfo } from "@/hooks/useRoleta";
+...
 type Destino = "manha" | "tarde" | "noturna" | "qualquer" | "dia_todo" | "oferta_ativa";
 
-function isSundayBRT(): boolean {
-  const now = new Date();
-  const brtMs = now.getTime() - 3 * 60 * 60 * 1000;
-  const brtDate = new Date(brtMs);
-  return brtDate.getUTCDay() === 0;
-}
-
-const DESTINO_OPTIONS: { id: Destino; label: string; emoji: string; group: "roleta" | "oferta"; sundayOnly?: boolean; weekdayOnly?: boolean }[] = [
-  { id: "dia_todo", label: "Domingo (Dia Todo)", emoji: "☀️", group: "roleta", sundayOnly: true },
-  { id: "manha", label: "Roleta da Manhã", emoji: "🌅", group: "roleta", weekdayOnly: true },
-  { id: "tarde", label: "Roleta da Tarde", emoji: "☀️", group: "roleta", weekdayOnly: true },
-  { id: "noturna", label: "Roleta Noturna", emoji: "🌙", group: "roleta", weekdayOnly: true },
-  { id: "qualquer", label: "Qualquer corretor ativo (na_roleta)", emoji: "📋", group: "roleta" },
+const DESTINO_OPTIONS: { id: Destino; label: string; emoji: string; group: "roleta" | "oferta"; allDayOnly?: boolean; shiftOnly?: boolean }[] = [
+  { id: "dia_todo", label: "Dia Todo", emoji: "☀️", group: "roleta", allDayOnly: true },
+  { id: "manha", label: "Roleta da Manhã", emoji: "🌅", group: "roleta", shiftOnly: true },
+  { id: "tarde", label: "Roleta da Tarde", emoji: "☀️", group: "roleta", shiftOnly: true },
+  { id: "noturna", label: "Roleta Noturna", emoji: "🌙", group: "roleta", shiftOnly: true },
+  { id: "qualquer", label: "Balancear automaticamente", emoji: "📋", group: "roleta" },
   { id: "oferta_ativa", label: "Enviar para Oferta Ativa", emoji: "📞", group: "oferta" },
 ];
 
@@ -93,7 +23,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
-  const [selectedDestino, setSelectedDestino] = useState<Destino>(isSundayBRT() ? "dia_todo" : "qualquer");
+  const isAllDayRoleta = getBrtDateInfo().isSunday || getBrtDateInfo().isHoliday;
+  const [selectedDestino, setSelectedDestino] = useState<Destino>(isAllDayRoleta ? "dia_todo" : "qualquer");
   const [includeUnidentified, setIncludeUnidentified] = useState(true);
 
   useEffect(() => {
