@@ -75,7 +75,18 @@ function isSundayBRTLocal(): boolean {
 
 // Feriados liberados (dia todo, sem limite de horário) — formato "YYYY-MM-DD"
 const FERIADOS_LIBERADOS = [
-  "2026-04-03", // Sexta-feira Santa
+  "2026-01-01",
+  "2026-02-16",
+  "2026-02-17",
+  "2026-04-03",
+  "2026-04-21",
+  "2026-05-01",
+  "2026-06-04",
+  "2026-09-07",
+  "2026-10-12",
+  "2026-11-02",
+  "2026-11-15",
+  "2026-12-25",
 ];
 
 function isHolidayBRT(): boolean {
@@ -91,7 +102,6 @@ function getJanelasConfig(): JanelaConfig[] {
   const sunday = isSundayBRTLocal();
   const holiday = isHolidayBRT();
   
-  // Sunday or Holiday: single "Dia Todo" window, open 08:00–23:59
   if (sunday || holiday) {
     return [
       { key: "dia_todo" as JanelaKey, label: "Dia Todo", emoji: "☀️", icon: Sun, credAberto: { inicio: 8, fim: 23.99 }, recebimento: "08:00 — 23:59", temRequisitos: false },
@@ -109,7 +119,8 @@ function getJanelasConfig(): JanelaConfig[] {
 
 function getHoraDecimal() {
   const now = new Date();
-  return now.getHours() + now.getMinutes() / 60;
+  const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  return brt.getHours() + brt.getMinutes() / 60;
 }
 
 function isJanelaAberta(j: JanelaConfig): boolean {
