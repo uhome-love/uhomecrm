@@ -199,9 +199,8 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1 mb-1">Roleta</p>
               <div className="grid grid-cols-1 gap-1.5">
                 {DESTINO_OPTIONS.filter(d => d.group === "roleta").filter(d => {
-                  const sunday = isSundayBRT();
-                  if (d.sundayOnly && !sunday) return false;
-                  if (d.weekdayOnly && sunday) return false;
+                  if (d.allDayOnly && !isAllDayRoleta) return false;
+                  if (d.shiftOnly && isAllDayRoleta) return false;
                   return true;
                 }).map(j => (
                   <button

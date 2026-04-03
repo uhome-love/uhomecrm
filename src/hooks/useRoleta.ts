@@ -68,18 +68,14 @@ export function getCurrentWindowInfo(): {
   proximaTransicao: Date;
   minutosRestantes: number;
 } {
-  const now = new Date();
-  const mins = getMinutesFromMidnight(now.getHours(), now.getMinutes());
+  const { brt: brtNow, isSunday, isHoliday } = getBrtDateInfo();
+  const mins = getMinutesFromMidnight(brtNow.getHours(), brtNow.getMinutes());
 
-  // Detect Saturday/Sunday (BRT = UTC-3)
-  const brtNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const isSaturday = brtNow.getDay() === 6;
-  const isSunday = brtNow.getDay() === 0;
 
   // Janelas de distribuição:
-  // Manhã:   07:30 — 09:30 (cred 07:30-09:30, sábado até 10:30)
-  // Tarde:   13:30 — 18:00 (cred 12:00-13:30)
-  // Noturna: 18:30 — 23:59 (cred 18:30-20:30, com requisitos)
+  // Domingo e feriado: dia todo
+  // Seg-Sáb: Manhã / Tarde / Noturna
 
   const t0730 = parseTime("07:30");
   const t0930_cred = isSaturday ? parseTime("10:30") : parseTime("09:30");
@@ -97,20 +93,19 @@ export function getCurrentWindowInfo(): {
   let credenciamentoJanela: JanelaId | null = null;
   let nextTransitionMins: number;
 
-  // ─── Sunday Exception: No shifts, open all day (08:00–23:59) ───
-  if (isSunday) {
+  if (isSunday || isHoliday) {
     const t0800 = parseTime("08:00");
     const t2359 = parseTime("23:59");
 
     if (mins < t0800) {
       janela = "madrugada";
       emoji = "🌅";
-      descricao = "Domingo · Roleta abre às 08:00";
+      descricao = `${isHoliday ? "Feriado" : "Domingo"} · Roleta abre às 08:00`;
       nextTransitionMins = t0800;
     } else {
       janela = "dia_todo";
       emoji = "☀️";
-      descricao = "Domingo · Roleta aberta o dia todo";
+      descricao = `${isHoliday ? "Feriado" : "Domingo"} · Roleta aberta o dia todo`;
       credenciamentoAberto = true;
       credenciamentoJanela = "dia_todo";
       nextTransitionMins = t2359;
