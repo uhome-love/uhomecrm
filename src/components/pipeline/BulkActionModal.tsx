@@ -28,6 +28,8 @@ interface Props {
 export default function BulkActionModal({ open, onOpenChange, selectedLeadIds, onComplete }: Props) {
   const [dispatching, setDispatching] = useState(false);
   const [selectedDestino, setSelectedDestino] = useState<Destino>("descarte");
+  const { isSunday, isHoliday } = getBrtDateInfo();
+  const isAllDayRoleta = isSunday || isHoliday;
 
   const isOfertaAtiva = selectedDestino === "oferta_ativa";
   const isDescarte = selectedDestino === "descarte";
