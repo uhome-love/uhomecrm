@@ -305,7 +305,8 @@ export function useRoleta() {
   const loadFila = useCallback(async () => {
     const windowInfo = getCurrentWindowInfo();
     const currentJanela = windowInfo.janela;
-    const sunday = isSundayBRT();
+    const { isSunday, isHoliday } = getBrtDateInfo();
+    const isAllDay = isSunday || isHoliday;
 
     let query = supabase
       .from("roleta_fila")
@@ -313,8 +314,8 @@ export function useRoleta() {
       .eq("data", hoje)
       .eq("ativo", true);
     
-    // On Sunday, show all janelas; otherwise filter by current
-    if (!sunday) {
+    // On Sunday/holiday, show all janelas; otherwise filter by current
+    if (!isAllDay) {
       query = query.eq("janela", currentJanela);
     }
 
