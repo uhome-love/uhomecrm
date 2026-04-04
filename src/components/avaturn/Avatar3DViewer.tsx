@@ -1,5 +1,15 @@
-import { memo } from "react";
-import "@google/model-viewer";
+import { memo, useEffect, useState } from "react";
+
+function useModelViewer() {
+  const [ready, setReady] = useState(typeof customElements !== "undefined" && !!customElements.get("model-viewer"));
+  useEffect(() => {
+    if (ready) return;
+    import("@google/model-viewer")
+      .then(() => setReady(true))
+      .catch((err) => console.warn("model-viewer failed to load:", err));
+  }, [ready]);
+  return ready;
+}
 
 interface Avatar3DViewerProps {
   src: string;
