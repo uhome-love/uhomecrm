@@ -611,83 +611,50 @@ export function useRoleta() {
     if (!user) return;
     setSubmitting(true);
     try {
-      // Check if already active
-      const { data: alreadyActive } = await supabase.from("roleta_fila")
-        .select("id")
-        .eq("data", hoje)
-        .eq("segmento_id", segmentoId)
-        .eq("corretor_id", corretorProfileId)
-        .eq("ativo", true)
-        .limit(1);
-
-      if (alreadyActive && alreadyActive.length > 0) {
-        toast.warning("Corretor já está ativo neste segmento.");
-        setSubmitting(false);
-        return;
-      }
-
-      // Get next position
-      const { data: existing } = await supabase.from("roleta_fila")
-        .select("posicao")
-        .eq("data", hoje)
-        .eq("segmento_id", segmentoId)
-        .eq("ativo", true)
-        .order("posicao", { ascending: false })
-        .limit(1);
-
-      const nextPos = (existing?.[0]?.posicao || 0) + 1;
-
-      // Insert into roleta_fila
-      await supabase.from("roleta_fila").insert({
-        corretor_id: corretorProfileId,
-        segmento_id: segmentoId,
-        janela,
-        posicao: nextPos,
-        data: hoje,
-        ativo: true,
-      });
-
-      // FIX: Also upsert into roleta_credenciamentos so the Edge Function sees this corretor
-      const profileId = await getProfileId();
       // Check if there's already a credenciamento for this corretor+data+janela
       const { data: existingCred } = await supabase.from("roleta_credenciamentos")
-        .select("id, segmento_1_id, segmento_2_id")
+        .select("id, segmento_1_id, segmento_2_id, status")
         .eq("corretor_id", corretorProfileId)
         .eq("data", hoje)
         .eq("janela", janela)
         .limit(1);
 
       if (existingCred && existingCred.length > 0) {
-        // Already has a credenciamento — add segmento to slot 2 if slot 1 is different
         const cred = existingCred[0];
-        const updateFields: Record<string, unknown> = { status: "aprovado", saiu_em: null };
+        if (cred.status === "aprovado") {
+          toast.warning("Corretor já está aprovado nesta janela.");
+          setSubmitting(false);
+          return;
+        }
+        const updateFields: Record<string, unknown> = { saiu_em: null };
+        if (cred.status === "saiu" || cred.status === "recusado") {
+          updateFields.status = "pendente";
+        }
         if (cred.segmento_1_id !== segmentoId && cred.segmento_2_id !== segmentoId) {
           if (!cred.segmento_1_id) updateFields.segmento_1_id = segmentoId;
           else updateFields.segmento_2_id = segmentoId;
         }
         await supabase.from("roleta_credenciamentos").update(updateFields).eq("id", cred.id);
       } else {
-        // Create new credenciamento
+        // Create new credenciamento as pendente — CEO must approve
         await supabase.from("roleta_credenciamentos").insert({
           corretor_id: corretorProfileId,
           data: hoje,
           janela,
           segmento_1_id: segmentoId,
-          status: "aprovado",
-          aprovado_por: profileId,
-          aprovado_em: new Date().toISOString(),
+          status: "pendente",
         });
       }
 
       const { data: profile } = await supabase.from("profiles").select("nome").eq("id", corretorProfileId).single();
-      toast.success(`${profile?.nome || "Corretor"} incluído manualmente na fila!`);
-      await loadFila();
+      toast.success(`${profile?.nome || "Corretor"} adicionado! Aguardando aprovação do CEO.`);
+      await loadCredenciamentos();
     } catch (e: any) {
       toast.error("Erro ao incluir na fila.");
     } finally {
       setSubmitting(false);
     }
-  }, [user, hoje, loadFila]);
+  }, [user, hoje, loadCredenciamentos]);
 
   // Current corretor's credenciamento
   const meuCredenciamento = useMemo(() => {
