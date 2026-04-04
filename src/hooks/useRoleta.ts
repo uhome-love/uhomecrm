@@ -673,9 +673,7 @@ export function useRoleta() {
           data: hoje,
           janela,
           segmento_1_id: segmentoId,
-          status: "aprovado",
-          aprovado_por: profileId,
-          aprovado_em: new Date().toISOString(),
+          status: "pendente",
         });
       }
 
