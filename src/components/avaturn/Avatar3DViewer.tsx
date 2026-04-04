@@ -18,6 +18,8 @@ interface Avatar3DViewerProps {
 }
 
 function Avatar3DViewerInner({ src, size, className }: Avatar3DViewerProps) {
+  const modelReady = useModelViewer();
+  if (!modelReady) return <div className={className} style={{ width: "100%", height: "100%" }} />;
   const cameraOrbit = size === "xl" ? "0deg 90deg 2.8m" : "0deg 90deg 2.2m";
   const autoRotate = size === "xl";
 
