@@ -1,5 +1,15 @@
-import { memo } from "react";
-import "@google/model-viewer";
+import { memo, useEffect, useState } from "react";
+
+function useModelViewer() {
+  const [ready, setReady] = useState(typeof customElements !== "undefined" && !!customElements.get("model-viewer"));
+  useEffect(() => {
+    if (ready) return;
+    import("@google/model-viewer")
+      .then(() => setReady(true))
+      .catch((err) => console.warn("model-viewer failed to load:", err));
+  }, [ready]);
+  return ready;
+}
 
 interface Avatar3DViewerProps {
   src: string;
@@ -8,6 +18,8 @@ interface Avatar3DViewerProps {
 }
 
 function Avatar3DViewerInner({ src, size, className }: Avatar3DViewerProps) {
+  const modelReady = useModelViewer();
+  if (!modelReady) return <div className={className} style={{ width: "100%", height: "100%" }} />;
   const cameraOrbit = size === "xl" ? "0deg 90deg 2.8m" : "0deg 90deg 2.2m";
   const autoRotate = size === "xl";
 
