@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
     );
     if (recycleError) L.error("Recycle RPC failed", {}, recycleError);
 
-    // 4b. Auto-redistribute recycled leads + notify CEO/gerentes
+    // 4b. Notify CEO/gerentes about expired leads (NO auto-redistribute — CEO dispatches manually)
     if (recycledCount && recycledCount > 0) {
       try {
         const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
@@ -279,7 +279,6 @@ Deno.serve(async (req) => {
           .gte("created_at", twoMinAgo);
 
         if (expiredLeads && expiredLeads.length > 0) {
-          // Get all CEOs/admins once
           const { data: adminRoles } = await supabase
             .from("user_roles")
             .select("user_id")
@@ -301,27 +300,7 @@ Deno.serve(async (req) => {
 
             if (!leadData) continue;
 
-            // ── AUTO-REDISTRIBUTE with retry + duplicate guard ──
-            if (leadData.aceite_status === "pendente_distribuicao") {
-              // Re-check status right before distributing to avoid duplicate assignment
-              const { data: freshLead } = await supabase
-                .from("pipeline_leads")
-                .select("aceite_status, corretor_id")
-                .eq("id", expired.pipeline_lead_id)
-                .maybeSingle();
-
-              if (freshLead?.aceite_status !== "pendente_distribuicao") {
-                L.info("Skip redistribute — status changed", { leadId: expired.pipeline_lead_id, status: freshLead?.aceite_status });
-              } else {
-                const ok = await distributeWithRetry(supabaseUrl, serviceKey, expired.pipeline_lead_id, traceId, 2, supabase);
-                if (ok) {
-                  L.info("Auto-redistribute succeeded", { leadId: expired.pipeline_lead_id });
-                } else {
-                  L.warn("Auto-redistribute failed after retries", { leadId: expired.pipeline_lead_id });
-                  logOps("error", "business", "Auto-redistribute failed after retries", { lead_id: expired.pipeline_lead_id }, "All retry attempts exhausted");
-                }
-              }
-            }
+            // Lead stays in pendente_distribuicao (CEO queue) — NO auto-redistribute
 
             // Notify CEO/gerentes
             const recipientIds = new Set<string>();
@@ -359,8 +338,8 @@ Deno.serve(async (req) => {
               }
 
               await sendPush(supabaseUrl, serviceKey, gestorProfile.user_id,
-                "⏱️ Lead redistribuído — timeout",
-                `${corretorProfile?.nome || "Corretor"} não aceitou ${leadData.nome || "lead"} em 10 min. Redistribuindo.`,
+                "⏱️ Lead expirado — aguardando CEO",
+                `${corretorProfile?.nome || "Corretor"} não aceitou ${leadData.nome || "lead"} em 10 min. Lead na fila do CEO.`,
                 { lead_id: expired.pipeline_lead_id }
               );
             }
@@ -371,60 +350,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4c. Sweep stuck leads — catch pendente_distribuicao that 4b missed (previous retry failures)
-    let stuckRedistributed = 0;
-    try {
-      const threeMinAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-
-      const { data: stuckLeads } = await supabase
-        .from("pipeline_leads")
-        .select("id, nome, empreendimento")
-        .eq("aceite_status", "pendente_distribuicao")
-        .is("corretor_id", null)
-        .lt("updated_at", threeMinAgo)    // stuck for >3 min (not being handled by 4b)
-        .gt("updated_at", thirtyMinAgo);  // cap at 30 min to avoid ancient orphans
-
-      if (stuckLeads && stuckLeads.length > 0) {
-        for (const stuck of stuckLeads) {
-          // Cap: check how many timeout entries exist for this lead (max 5 total redistribute attempts)
-          const { count } = await supabase
-            .from("distribuicao_historico")
-            .select("id", { count: "exact", head: true })
-            .eq("pipeline_lead_id", stuck.id)
-            .eq("acao", "timeout");
-
-          if ((count || 0) >= 5) {
-            L.warn("Stuck lead exceeded max redistribute attempts — requires manual intervention", { leadId: stuck.id, attempts: count });
-            logOps("warn", "business", "Stuck lead max attempts reached", { lead_id: stuck.id, attempts: count }, "Requires manual CEO queue assignment");
-            continue;
-          }
-
-          // Double-check status atomically before calling distribute
-          const { data: freshCheck } = await supabase
-            .from("pipeline_leads")
-            .select("aceite_status, corretor_id")
-            .eq("id", stuck.id)
-            .maybeSingle();
-
-          if (freshCheck?.aceite_status !== "pendente_distribuicao" || freshCheck?.corretor_id) {
-            L.info("Stuck sweep — status changed, skipping", { leadId: stuck.id, status: freshCheck?.aceite_status });
-            continue;
-          }
-
-          const ok = await distributeWithRetry(supabaseUrl, serviceKey, stuck.id, traceId, 2, supabase);
-          if (ok) {
-            stuckRedistributed++;
-            L.info("Stuck lead redistributed successfully", { leadId: stuck.id, previousAttempts: count });
-          } else {
-            L.warn("Stuck lead redistribute failed — will retry next cycle", { leadId: stuck.id, attempt: (count || 0) + 1 });
-            logOps("warn", "business", "Stuck lead redistribute retry failed", { lead_id: stuck.id, attempt: (count || 0) + 1 }, "Will retry next cron cycle");
-          }
-        }
-      }
-    } catch (stuckErr) {
-      L.error("Stuck leads sweep error (non-blocking)", {}, stuckErr);
-    }
+    // 4c. Stuck leads stay in CEO queue — no auto-sweep (manual dispatch only)
+    const stuckRedistributed = 0;
 
     // 5. Clean expired OA locks
     const { data: cleanedCount, error: cleanError } = await supabase.rpc(
