@@ -73,9 +73,27 @@ Deno.serve(async (req) => {
 
     // ─── Batch dispatch (uses atomic RPC sequentially) ───
     if (action === "dispatch_batch" || action === "dispatch_fila_ceo") {
-      const allLeadIds: string[] = batchLeadIds.length
+      let allLeadIds: string[] = batchLeadIds.length
         ? batchLeadIds
         : (singleLeadId ? [singleLeadId] : []);
+
+      if (action === "dispatch_fila_ceo" && allLeadIds.length === 0) {
+        const { data: pendingQueueLeads, error: pendingQueueError } = await supabase
+          .from("pipeline_leads")
+          .select("id")
+          .eq("aceite_status", "pendente_distribuicao")
+          .is("corretor_id", null)
+          .order("created_at", { ascending: true });
+
+        if (pendingQueueError) {
+          L.error("Failed to load CEO queue leads", {}, pendingQueueError);
+          logOps("error", "system", "Failed to load CEO queue leads", {}, pendingQueueError.message);
+          return jsonResponse({ error: "Failed to load CEO queue leads" }, 500);
+        }
+
+        allLeadIds = (pendingQueueLeads || []).map((lead: { id: string }) => lead.id);
+      }
+
       const targetJanela = janela || null; // Let the RPC determine janela if not specified
 
       if (allLeadIds.length === 0) {
