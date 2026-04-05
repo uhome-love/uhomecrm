@@ -582,6 +582,24 @@ function CorretorView() {
             </Select>
           </div>
 
+          {/* Sunday/Holiday eligibility check */}
+          {isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
+              <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <p className="text-xs text-destructive">
+                Para participar da roleta de {isSunday ? "domingo" : "feriado"}, você precisa ter realizado pelo menos {elegibilidade.visitas_min_domingo} visitas de segunda a sábado. Você realizou {elegibilidade.visitas_semana}.
+              </p>
+            </div>
+          )}
+          {isDiaEspecial && elegibilidade && elegibilidade.pode_domingo && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                Elegível! {elegibilidade.visitas_semana} visitas realizadas na semana.
+              </p>
+            </div>
+          )}
+
           {/* Noturna validation feedback */}
           {selectedJanela === "noturna" && (
             <>
@@ -617,7 +635,12 @@ function CorretorView() {
           <Button
             className="w-full"
             onClick={handleCredenciar}
-            disabled={!seg1 || submitting || (selectedJanela === "noturna" && (checkingNoturna || noturnaEligible === false))}
+            disabled={
+              !seg1 || submitting
+              || (selectedJanela === "noturna" && (checkingNoturna || noturnaEligible === false))
+              || (isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo)
+              || carregandoElegibilidade
+            }
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Users className="h-4 w-4 mr-1" />}
             📋 Me credenciar
