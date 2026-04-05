@@ -7323,6 +7323,7 @@ export type Database = {
           leads_recebidos: number | null
           posicao: number
           segmento_id: string | null
+          ultima_distribuicao_at: string | null
         }
         Insert: {
           ativo?: boolean | null
@@ -7334,6 +7335,7 @@ export type Database = {
           leads_recebidos?: number | null
           posicao: number
           segmento_id?: string | null
+          ultima_distribuicao_at?: string | null
         }
         Update: {
           ativo?: boolean | null
@@ -7345,6 +7347,7 @@ export type Database = {
           leads_recebidos?: number | null
           posicao?: number
           segmento_id?: string | null
+          ultima_distribuicao_at?: string | null
         }
         Relationships: [
           {
