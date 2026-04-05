@@ -297,13 +297,14 @@ export default function AceiteLeads() {
   const fetchPending = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    const now = new Date().toISOString();
     const { data } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead, campanha")
       .eq("corretor_id", user.id)
       .in("aceite_status", ["pendente", "aguardando_aceite"])
-      .gt("aceite_expira_em", new Date().toISOString())
-      .order("distribuido_em", { ascending: true });
+      .or(`aceite_expira_em.is.null,aceite_expira_em.gt.${now}`)
+      .order("distribuido_em", { ascending: true, nullsFirst: false });
     const newLeads = (data as PendingLead[]) || [];
     setLeads(newLeads);
     setCurrentIndex(0);
