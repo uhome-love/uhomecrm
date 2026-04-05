@@ -10,20 +10,21 @@ import { todayBRT } from "@/lib/utils";
 
 export type JanelaId = "manha" | "tarde" | "noturna" | "madrugada" | "dia_todo";
 
-const FERIADOS_LIBERADOS = [
-  "2026-01-01",
-  "2026-02-16",
-  "2026-02-17",
-  "2026-04-03",
-  "2026-04-21",
-  "2026-05-01",
-  "2026-06-04",
-  "2026-09-07",
-  "2026-10-12",
-  "2026-11-02",
-  "2026-11-15",
-  "2026-12-25",
-];
+// Holiday cache — loaded from database
+let _feriadosCache: string[] = [];
+let _feriadosCacheExpiry = 0;
+
+async function loadFeriadosFromDB(): Promise<string[]> {
+  if (Date.now() < _feriadosCacheExpiry && _feriadosCache.length > 0) return _feriadosCache;
+  try {
+    const { data } = await supabase.from("feriados").select("data").gte("data", new Date().getFullYear() + "-01-01");
+    _feriadosCache = (data || []).map((f: any) => typeof f.data === "string" ? f.data.slice(0, 10) : "");
+    _feriadosCacheExpiry = Date.now() + 1000 * 60 * 60; // 1h cache
+  } catch { /* fallback to empty */ }
+  return _feriadosCache;
+}
+
+// Synchronous check using cache (call loadFeriadosFromDB on mount)
 export function getBrtDateInfo() {
   const now = new Date();
   const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
@@ -32,7 +33,7 @@ export function getBrtDateInfo() {
     brt,
     dateStr,
     isSunday: brt.getDay() === 0,
-    isHoliday: FERIADOS_LIBERADOS.includes(dateStr),
+    isHoliday: _feriadosCache.includes(dateStr),
   };
 }
 
@@ -55,10 +56,10 @@ interface JanelaInfo {
 }
 
 const JANELAS: JanelaInfo[] = [
-  { id: "manha", label: "Manhã", emoji: "🌅", inicio: "09:30", fim: "13:30", credenciamentoAberto: false, descricao: "Roleta da manhã ativa" },
-  { id: "tarde", label: "Tarde", emoji: "🌞", inicio: "13:30", fim: "18:00", credenciamentoAberto: false, descricao: "Roleta da tarde ativa" },
-  { id: "noturna", label: "Noturna", emoji: "🌙", inicio: "18:00", fim: "23:30", credenciamentoAberto: false, descricao: "Roleta noturna ativa" },
-  { id: "madrugada", label: "Madrugada", emoji: "🔒", inicio: "23:30", fim: "09:30", credenciamentoAberto: false, descricao: "Acumulando leads para amanhã" },
+  { id: "manha", label: "Manhã", emoji: "🌅", inicio: "07:30", fim: "12:00", credenciamentoAberto: false, descricao: "Roleta da manhã ativa" },
+  { id: "tarde", label: "Tarde", emoji: "🌞", inicio: "12:00", fim: "18:30", credenciamentoAberto: false, descricao: "Roleta da tarde ativa" },
+  { id: "noturna", label: "Noturna", emoji: "🌙", inicio: "18:30", fim: "23:30", credenciamentoAberto: false, descricao: "Roleta noturna ativa" },
+  { id: "madrugada", label: "Madrugada", emoji: "🔒", inicio: "23:30", fim: "07:30", credenciamentoAberto: false, descricao: "Acumulando leads para amanhã" },
 ];
 
 function getMinutesFromMidnight(h: number, m: number) {
@@ -95,7 +96,8 @@ export function getCurrentWindowInfo(): {
   const t1200 = parseTime("12:00");
   const t1330 = parseTime("13:30");
   const t1830 = parseTime("18:30");
-  const t2030 = parseTime("20:30");
+  const t2000 = parseTime("20:00");
+  const t2330 = parseTime("23:30");
 
   const credManhaFimLabel = isSaturday ? "10:30" : "09:30";
 
@@ -108,68 +110,70 @@ export function getCurrentWindowInfo(): {
 
   if (isSunday || isHoliday) {
     const t0800 = parseTime("08:00");
-    const t2359 = parseTime("23:59");
 
     if (mins < t0800) {
       janela = "madrugada";
       emoji = "🌅";
       descricao = `${isHoliday ? "Feriado" : "Domingo"} · Roleta abre às 08:00`;
       nextTransitionMins = t0800;
-    } else {
+    } else if (mins < t2330) {
       janela = "dia_todo";
       emoji = "☀️";
-      descricao = `${isHoliday ? "Feriado" : "Domingo"} · Roleta aberta o dia todo`;
+      descricao = `${isHoliday ? "Feriado" : "Domingo"} · Roleta aberta até 23:30`;
       credenciamentoAberto = true;
       credenciamentoJanela = "dia_todo";
-      nextTransitionMins = t2359;
+      nextTransitionMins = t2330;
+    } else {
+      janela = "madrugada";
+      emoji = "🔒";
+      descricao = `${isHoliday ? "Feriado" : "Domingo"} · Roleta encerrada`;
+      nextTransitionMins = 24 * 60;
     }
   } else if (mins < t0730) {
-    // 00:00 — 07:30: Madrugada, nenhum credenciamento aberto
     janela = "madrugada";
     emoji = "🌅";
     descricao = "Acumulando leads · Credenciamento manhã abre às 07:30";
     nextTransitionMins = t0730;
   } else if (mins < t0930_cred) {
-    // 07:30 — 09:30/10:30: Manhã ativa, cred manhã aberto
     janela = "manha";
     emoji = "☀️";
-    descricao = `Roleta da manhã ativa · Cred manhã aberto até ${credManhaFimLabel}`;
+    descricao = `Roleta da manhã ativa · Cred aberto até ${credManhaFimLabel}`;
     credenciamentoAberto = true;
     credenciamentoJanela = "manha";
     nextTransitionMins = t0930_cred;
   } else if (mins < t1200) {
-    // 09:30 — 12:00: Manhã encerrada, aguardando tarde
     janela = "manha";
     emoji = "☀️";
-    descricao = "Manhã encerrada · Cred tarde abre às 12h";
+    descricao = "Manhã ativa · Cred manhã encerrado · Cred tarde abre às 12h";
     nextTransitionMins = t1200;
   } else if (mins < t1330) {
-    // 12:00 — 13:30: Cred tarde aberto
-    janela = "manha";
-    emoji = "☀️";
-    descricao = "Cred tarde aberto";
+    janela = "tarde";
+    emoji = "🌞";
+    descricao = "Cred tarde aberto até 13:30";
     credenciamentoAberto = true;
     credenciamentoJanela = "tarde";
     nextTransitionMins = t1330;
   } else if (mins < t1830) {
-    // 13:30 — 18:30: Tarde ativa
     janela = "tarde";
     emoji = "🌞";
     descricao = "Roleta da tarde ativa";
     nextTransitionMins = t1830;
-  } else if (mins < t2030) {
-    // 18:30 — 20:30: Noturna ativa, cred noturna aberto
+  } else if (mins < t2000) {
     janela = "noturna";
     emoji = "🌙";
-    descricao = "Roleta noturna ativa · Cred noturno aberto";
+    descricao = "Roleta noturna ativa · Cred noturno aberto até 20:00";
     credenciamentoAberto = true;
     credenciamentoJanela = "noturna";
-    nextTransitionMins = t2030;
-  } else {
-    // 20:30+: Noturna ativa, cred encerrado
+    nextTransitionMins = t2000;
+  } else if (mins < t2330) {
     janela = "noturna";
     emoji = "🌙";
-    descricao = "Roleta noturna ativa · Cred noturno encerrado";
+    descricao = "Roleta noturna ativa · Cred encerrado";
+    nextTransitionMins = t2330;
+  } else {
+    janela = "madrugada";
+    emoji = "🔒";
+    descricao = "Roleta encerrada · Leads acumulando para amanhã";
     nextTransitionMins = 24 * 60;
   }
 
@@ -417,7 +421,7 @@ export function useRoleta() {
   // Initial load
   useEffect(() => {
     if (!user) { setLoading(false); return; }
-    Promise.all([loadSegmentos(), loadCredenciamentos(), loadFila(), loadDistribuicoes()])
+    loadFeriadosFromDB().then(() => Promise.all([loadSegmentos(), loadCredenciamentos(), loadFila(), loadDistribuicoes()]))
       .finally(() => setLoading(false));
   }, [user, loadSegmentos, loadCredenciamentos, loadFila, loadDistribuicoes]);
 

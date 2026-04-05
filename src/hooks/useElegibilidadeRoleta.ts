@@ -18,6 +18,9 @@ export interface ElegibilidadeRoleta {
   pode_roleta_manha: boolean;
   pode_roleta_tarde: boolean;
   pode_roleta_noturna: boolean;
+  pode_domingo: boolean;
+  visitas_semana: number;
+  visitas_min_domingo: number;
   leads_desatualizados: number;
   limite_bloqueio: number;
   faltam_para_bloquear: number;

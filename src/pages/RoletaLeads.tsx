@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useRoleta, getCurrentWindowInfo, type JanelaId, type RoletaSegmento } from "@/hooks/useRoleta";
+import { useRoleta, getCurrentWindowInfo, getBrtDateInfo, type JanelaId, type RoletaSegmento } from "@/hooks/useRoleta";
+import { useElegibilidadeRoleta } from "@/hooks/useElegibilidadeRoleta";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,8 @@ import { ptBR } from "date-fns/locale";
 import RoletagensTab from "@/components/roleta/RoletagensTab";
 import LeadsGeradosTab from "@/components/roleta/LeadsGeradosTab";
 import LeadIntelligenceTab from "@/components/roleta/LeadIntelligenceTab";
+import RoletaMetricasTab from "@/components/roleta/RoletaMetricasTab";
+import RoletaConfigTab from "@/components/roleta/RoletaConfigTab";
 import { PageHeader } from "@/components/ui/PageHeader";
 // ─── Countdown Timer ───
 function CountdownTimer({ target }: { target: Date }) {
@@ -64,10 +67,12 @@ function CeoView() {
         icon={<Target size={18} strokeWidth={1.5} />}
         tabs={[
           { label: "Gestão da roleta", value: "gestao" },
+          { label: "Métricas", value: "metricas" },
           { label: "Leads gerados", value: "leads" },
           { label: "Histórico", value: "roletagens" },
           { label: "Leads perdidos", value: "perdidos" },
           { label: "Inteligência", value: "inteligencia" },
+          { label: "Configurações", value: "config" },
         ]}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -225,10 +230,12 @@ function CeoView() {
         </div>
       )}
 
+      {activeTab === "metricas" && <RoletaMetricasTab />}
       {activeTab === "leads" && <LeadsGeradosTab />}
       {activeTab === "roletagens" && <RoletagensTab view="roletagens" />}
       {activeTab === "perdidos" && <RoletagensTab view="perdidos" />}
       {activeTab === "inteligencia" && <LeadIntelligenceTab />}
+      {activeTab === "config" && <RoletaConfigTab />}
 
       {/* Modal: Incluir manualmente na roleta */}
       <Dialog open={showIncluirModal} onOpenChange={setShowIncluirModal}>
@@ -307,8 +314,13 @@ function CorretorView() {
     segmentos, meuCredenciamento, fila, loading, submitting,
     credenciar, sairDaRoleta,
   } = useRoleta();
+  const { elegibilidade, carregando: carregandoElegibilidade } = useElegibilidadeRoleta();
   const windowInfo = getCurrentWindowInfo();
-  const [selectedJanela, setSelectedJanela] = useState<string>(windowInfo.credenciamentoJanela || windowInfo.janela);
+  const { isSunday, isHoliday } = getBrtDateInfo();
+  const isDiaEspecial = isSunday || isHoliday;
+  const [selectedJanela, setSelectedJanela] = useState<string>(
+    isDiaEspecial ? "dia_todo" : (windowInfo.credenciamentoJanela || windowInfo.janela)
+  );
   const [seg1, setSeg1] = useState<string>("");
   const [seg2, setSeg2] = useState<string>("");
   
@@ -462,10 +474,10 @@ function CorretorView() {
             <div className="text-4xl">🔒</div>
             <h2 className="text-lg font-bold">Credenciamento fechado</h2>
             <p className="text-sm text-muted-foreground">O credenciamento abre nos seguintes horários:</p>
-            <div className="space-y-1 text-sm text-left max-w-xs mx-auto">
-              <p>🌅 <strong>Manhã</strong>: Aberto 24h</p>
-              <p>☀️ <strong>Tarde</strong>: 12:00 – 13:30</p>
-              <p>🌙 <strong>Noturna</strong>: 18:00 – 20:30</p>
+             <div className="space-y-1 text-sm text-left max-w-xs mx-auto">
+              <p>🌅 <strong>Manhã</strong>: 07:30 – 09:30</p>
+              <p>🌞 <strong>Tarde</strong>: 12:00 – 13:30</p>
+              <p>🌙 <strong>Noturna</strong>: 18:30 – 20:00</p>
             </div>
             <div className="flex items-center justify-center gap-2 pt-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -512,19 +524,25 @@ function CorretorView() {
                 <SelectValue placeholder="Selecione a janela" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="manha">🌅 Manhã (09:30–13:30)</SelectItem>
-                <SelectItem value="tarde">🌞 Tarde (13:30–18:00)</SelectItem>
-                {/* Noturna only available until 20:30 */}
-                {(() => {
-                  const now = new Date();
-                  const mins = now.getHours() * 60 + now.getMinutes();
-                  const past2030 = mins >= 20 * 60 + 30;
-                  return (
-                    <SelectItem value="noturna" disabled={past2030}>
-                      🌙 Noturna (18:00–20:30) {past2030 ? "— encerrado" : ""}
-                    </SelectItem>
-                  );
-                })()}
+                {isDiaEspecial ? (
+                  <SelectItem value="dia_todo">☀️ Dia Todo (08:00–23:30)</SelectItem>
+                ) : (
+                  <>
+                    <SelectItem value="manha">🌅 Manhã (07:30–12:00)</SelectItem>
+                    <SelectItem value="tarde">🌞 Tarde (12:00–18:30)</SelectItem>
+                    {(() => {
+                      const now = new Date();
+                      const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+                      const mins = brt.getHours() * 60 + brt.getMinutes();
+                      const past2000 = mins >= 20 * 60;
+                      return (
+                        <SelectItem value="noturna" disabled={past2000}>
+                          🌙 Noturna (18:30–23:30) {past2000 ? "— encerrado" : ""}
+                        </SelectItem>
+                      );
+                    })()}
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -564,6 +582,24 @@ function CorretorView() {
             </Select>
           </div>
 
+          {/* Sunday/Holiday eligibility check */}
+          {isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30">
+              <Ban className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <p className="text-xs text-destructive">
+                Para participar da roleta de {isSunday ? "domingo" : "feriado"}, você precisa ter realizado pelo menos {elegibilidade.visitas_min_domingo} visitas de segunda a sábado. Você realizou {elegibilidade.visitas_semana}.
+              </p>
+            </div>
+          )}
+          {isDiaEspecial && elegibilidade && elegibilidade.pode_domingo && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                Elegível! {elegibilidade.visitas_semana} visitas realizadas na semana.
+              </p>
+            </div>
+          )}
+
           {/* Noturna validation feedback */}
           {selectedJanela === "noturna" && (
             <>
@@ -599,7 +635,12 @@ function CorretorView() {
           <Button
             className="w-full"
             onClick={handleCredenciar}
-            disabled={!seg1 || submitting || (selectedJanela === "noturna" && (checkingNoturna || noturnaEligible === false))}
+            disabled={
+              !seg1 || submitting
+              || (selectedJanela === "noturna" && (checkingNoturna || noturnaEligible === false))
+              || (isDiaEspecial && elegibilidade && !elegibilidade.pode_domingo)
+              || carregandoElegibilidade
+            }
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Users className="h-4 w-4 mr-1" />}
             📋 Me credenciar
