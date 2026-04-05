@@ -5527,6 +5527,7 @@ export type Database = {
           radar_status_imovel: string | null
           radar_tipologia: string | null
           radar_valor_max: number | null
+          roleta_distribuido_em: string | null
           segmento_id: string | null
           stage_changed_at: string
           stage_id: string
@@ -5600,6 +5601,7 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          roleta_distribuido_em?: string | null
           segmento_id?: string | null
           stage_changed_at?: string
           stage_id: string
@@ -5673,6 +5675,7 @@ export type Database = {
           radar_status_imovel?: string | null
           radar_tipologia?: string | null
           radar_valor_max?: number | null
+          roleta_distribuido_em?: string | null
           segmento_id?: string | null
           stage_changed_at?: string
           stage_id?: string

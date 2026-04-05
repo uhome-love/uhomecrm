@@ -1,0 +1,1 @@
+ALTER TABLE public.pipeline_leads ADD COLUMN IF NOT EXISTS roleta_distribuido_em TIMESTAMPTZ;
