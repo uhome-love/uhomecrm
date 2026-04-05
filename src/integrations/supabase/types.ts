@@ -8833,14 +8833,24 @@ export type Database = {
         Returns: string
       }
       detectar_leads_parados: { Args: never; Returns: number }
-      distribuir_lead_atomico: {
-        Args: {
-          p_exclude_auth_user_id?: string
-          p_janela?: string
-          p_lead_id: string
-        }
-        Returns: Json
-      }
+      distribuir_lead_atomico:
+        | {
+            Args: {
+              p_exclude_auth_user_id?: string
+              p_janela?: string
+              p_lead_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_exclude_auth_user_id?: string
+              p_force?: boolean
+              p_janela?: string
+              p_lead_id: string
+            }
+            Returns: Json
+          }
       distribuir_lead_roleta: {
         Args: { p_pipeline_lead_id: string; p_segmento_id?: string }
         Returns: Json
