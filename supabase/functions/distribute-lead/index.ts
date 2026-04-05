@@ -252,7 +252,7 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
         mensagem: `${leadData.nome || "Lead"}${leadData.empreendimento ? ` — ${leadData.empreendimento}` : ""}. Faça o primeiro contato agora!`,
         dados: { pipeline_lead_id, lead_nome: leadData.nome, empreendimento: leadData.empreendimento },
         agrupamento_key: `lead_aceito_${pipeline_lead_id}`,
-      }).then(r => { if (r.error) console.warn("notification insert:", r.error.message); });
+      }).then((r: any) => { if (r.error) console.warn("notification insert:", r.error.message); });
     }
 
     return jsonResponse({ success: true });
@@ -282,7 +282,7 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
     };
     const redistResult = await distributeViaRPC(
       supabase, Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      pipeline_lead_id, undefined, userId, L
+      pipeline_lead_id, null, userId, L
     );
 
     return jsonResponse({ success: true, redistributed: redistResult.success });
