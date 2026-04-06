@@ -95,7 +95,7 @@ export default function CeoMetasMensais() {
   const startEdit = (g: GerenteMeta) => {
     setEditing(g.gerente_id);
     setEditValues({
-      vgv: String(g.meta_vgv_assinado),
+      vgv: g.meta_vgv_assinado ? String(Math.round(g.meta_vgv_assinado * 100)) : "",
       vmarc: String(g.meta_visitas_marcadas),
       vreal: String(g.meta_visitas_realizadas),
     });

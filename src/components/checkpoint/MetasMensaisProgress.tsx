@@ -97,7 +97,7 @@ export default function MetasMensaisProgress() {
     };
     setData(metaData);
     setEditValues({
-      vgv: String(metaData.metaVgv),
+      vgv: metaData.metaVgv ? String(Math.round(metaData.metaVgv * 100)) : "",
       visitasM: String(metaData.metaVisitasMarcadas),
       visitasR: String(metaData.metaVisitasRealizadas),
     });
@@ -109,7 +109,7 @@ export default function MetasMensaisProgress() {
   const startEdit = () => {
     if (data) {
       setEditValues({
-        vgv: String(data.metaVgv),
+        vgv: data.metaVgv ? String(Math.round(data.metaVgv * 100)) : "",
         visitasM: String(data.metaVisitasMarcadas),
         visitasR: String(data.metaVisitasRealizadas),
       });
