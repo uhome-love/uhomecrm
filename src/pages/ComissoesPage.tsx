@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatCurrencyInput, parseCurrencyToNumber, numberToRawCurrency } from "@/utils/currencyFormat";
 import { useComissaoFaixas } from "@/hooks/useBackofficeData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";

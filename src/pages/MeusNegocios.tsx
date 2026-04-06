@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { formatCurrencyInput, handleCurrencyChange } from "@/utils/currencyFormat";
 import PeriodBadge from "@/components/PeriodBadge";
 import { formatBRLCompact } from "@/lib/utils";
 import { useNegocios, NEGOCIOS_FASES, type Negocio, type CorretorInfo } from "@/hooks/useNegocios";
@@ -432,9 +433,9 @@ function NegocioCard({ negocio, corretorNome, corretorInfo, showCorretor, parado
             <div>
               <Label className="text-xs">VGV (R$)</Label>
               <Input
-                value={quickVgvValue ? `R$ ${quickVgvValue.replace(/^0+/, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}` : ""}
-                onChange={(e) => setQuickVgvValue(e.target.value.replace(/\D/g, ""))}
-                placeholder="R$ 500.000"
+                value={formatCurrencyInput(quickVgvValue)}
+                onChange={(e) => setQuickVgvValue(handleCurrencyChange(e.target.value))}
+                placeholder="R$ 500.000,00"
                 inputMode="numeric"
                 className="h-9"
               />
