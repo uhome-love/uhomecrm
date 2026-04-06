@@ -526,8 +526,7 @@ function CorretorView() {
               <SelectContent>
                 {isDiaEspecial ? (
                   <SelectItem value="dia_todo">☀️ Dia Todo (08:00–23:30)</SelectItem>
-                ) : (
-                  {(() => {
+                ) : (() => {
                       const now = new Date();
                       const brt = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
                       const mins = brt.getHours() * 60 + brt.getMinutes();
@@ -538,20 +537,17 @@ function CorretorView() {
                       const t1830 = 18 * 60 + 30;
                       const t2000 = 20 * 60;
                       
-                      const manhaAberto = mins >= t0730 && mins < t0930;
                       const manhaEncerrado = mins >= t0930;
-                      const tardeAberto = mins >= t1200 && mins < t1330;
                       const tardeEncerrado = mins >= t1330;
-                      const noturnaAberto = mins >= t1830 && mins < t2000;
                       const noturnaEncerrado = mins >= t2000;
                       const noturnaAindaNaoAbriu = mins < t1830;
                       
                       return (
                         <>
-                          <SelectItem value="manha" disabled={!manhaAberto && manhaEncerrado}>
-                            🌅 Manhã (07:30–12:00) {manhaEncerrado && !manhaAberto ? "— encerrado" : ""}
+                          <SelectItem value="manha" disabled={manhaEncerrado}>
+                            🌅 Manhã (07:30–12:00) {manhaEncerrado ? "— encerrado" : ""}
                           </SelectItem>
-                          <SelectItem value="tarde" disabled={!tardeAberto && (tardeEncerrado || mins < t1200)}>
+                          <SelectItem value="tarde" disabled={tardeEncerrado || mins < t1200}>
                             🌞 Tarde (12:00–18:30) {tardeEncerrado ? "— encerrado" : mins < t1200 ? "— abre às 12:00" : ""}
                           </SelectItem>
                           <SelectItem value="noturna" disabled={noturnaEncerrado || noturnaAindaNaoAbriu}>
@@ -560,7 +556,6 @@ function CorretorView() {
                         </>
                       );
                     })()}
-                )}
               </SelectContent>
             </Select>
           </div>
