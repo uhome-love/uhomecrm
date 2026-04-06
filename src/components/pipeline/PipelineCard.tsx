@@ -326,6 +326,16 @@ const PipelineCard = memo(function PipelineCard({
                 <tempConfig.icon className="h-2.5 w-2.5" />
               </span>
             )}
+            {semContatoAlert && (
+              <span style={{
+                fontSize: 9, fontWeight: 700,
+                padding: "2px 5px", borderRadius: 4,
+                background: semContatoAlert.bg, color: semContatoAlert.color,
+                animation: semContatoAlert.label === "48h!" ? "pulse 1.5s infinite" : undefined,
+              }} title="Tempo sem contato — risco de redistribuição">
+                ⏰ {semContatoAlert.label}
+              </span>
+            )}
             <span style={{
               fontSize: 10, fontWeight: 700,
               padding: "2px 8px", borderRadius: 100,
