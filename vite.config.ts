@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => ({
           globPatterns: ["**/*.{js,css,html,ico,svg,woff2}"],
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
           importScripts: ["/sw-push.js"],
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -38,7 +41,7 @@ export default defineConfig(({ mode }) => ({
             },
           ],
         },
-        manifest: false, // using public/manifest.json
+        manifest: false,
       }),
   ].filter(Boolean),
   resolve: {

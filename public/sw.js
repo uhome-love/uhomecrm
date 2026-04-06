@@ -1,5 +1,4 @@
-const CACHE_NAME = "uhomesales-runtime-v2";
-const STATIC_DESTINATIONS = new Set(["script", "style", "document", "worker"]);
+const CACHE_VERSION = "uhomesales-v3";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -8,7 +7,11 @@ self.addEventListener("install", () => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((names) =>
-      Promise.all(names.map((n) => caches.delete(n)))
+      Promise.all(
+        names
+          .filter((n) => n !== CACHE_VERSION)
+          .map((n) => caches.delete(n))
+      )
     ).then(() => clients.claim())
   );
 });
@@ -20,24 +23,30 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.startsWith("/~oauth")) return;
   if (url.hostname.includes("supabase")) return;
 
-  // Never cache app shell/assets that can leave the published UI stale
-  if (STATIC_DESTINATIONS.has(e.request.destination)) {
-    e.respondWith(fetch(e.request, { cache: "no-store" }));
+  // Always fetch fresh for navigation and scripts — never serve stale app
+  const dest = e.request.destination;
+  if (dest === "document" || dest === "script" || dest === "style" || dest === "worker") {
+    e.respondWith(
+      fetch(e.request, { cache: "no-store" }).catch(() => caches.match(e.request))
+    );
     return;
   }
 
-  // Cache only lightweight same-origin GETs as offline fallback
-  e.respondWith(
-    fetch(e.request)
-      .then((response) => {
-        if (response.ok && url.origin === self.location.origin && e.request.destination === "image") {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(e.request))
-  );
+  // Only cache images as offline fallback
+  if (dest === "image" && url.origin === self.location.origin) {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
 });
 
 // Push notifications
@@ -83,7 +92,6 @@ self.addEventListener("notificationclick", (e) => {
   );
 });
 
-// Listen for skip waiting message from the app
 self.addEventListener("message", (e) => {
   if (e.data === "skipWaiting") self.skipWaiting();
 });
