@@ -221,12 +221,21 @@ export default function MetasMensaisProgress() {
           {items.map((item) => (
             <div key={item.editKey}>
               <label className="text-[10px] text-muted-foreground uppercase">{item.label}</label>
-              <Input
-                type="number"
-                className="h-8 text-xs mt-1"
-                value={editValues[item.editKey]}
-                onChange={(e) => setEditValues(p => ({ ...p, [item.editKey]: e.target.value }))}
-              />
+              {item.editKey === "vgv" ? (
+                <Input
+                  className="h-8 text-xs mt-1"
+                  value={formatCurrencyInput(editValues[item.editKey])}
+                  onChange={(e) => setEditValues(p => ({ ...p, [item.editKey]: handleCurrencyChange(e.target.value) }))}
+                  inputMode="numeric"
+                />
+              ) : (
+                <Input
+                  type="number"
+                  className="h-8 text-xs mt-1"
+                  value={editValues[item.editKey]}
+                  onChange={(e) => setEditValues(p => ({ ...p, [item.editKey]: e.target.value }))}
+                />
+              )}
             </div>
           ))}
           <div className="col-span-3 flex gap-2 justify-end">
