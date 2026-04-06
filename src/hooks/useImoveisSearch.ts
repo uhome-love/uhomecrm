@@ -305,26 +305,37 @@ export function useImoveisSearch({
 
   // ── PostgREST fetch ──
   const fetchViaPostgREST = useCallback(async (pageNum: number, seq: number): Promise<"ok" | "aborted" | "error"> => {
-    try {
-      const startTime = Date.now();
-      const queryFilters = buildQueryFilters(pageNum);
-      const result = await fetchImoveis(queryFilters);
+    const attempt = async (): Promise<"ok" | "aborted" | "error"> => {
+      try {
+        const startTime = Date.now();
+        const queryFilters = buildQueryFilters(pageNum);
+        const result = await fetchImoveis(queryFilters);
 
-      if (seq !== fetchSeqRef.current) return "aborted";
+        if (seq !== fetchSeqRef.current) return "aborted";
 
-      const elapsed = Date.now() - startTime;
-      const mapped = result.data.map(mapPropertyRow);
-      setImoveis(mapped);
-      setTotal(result.count);
-      setTotalPages(Math.max(1, Math.ceil(result.count / PAGE_SIZE)));
-      setPage(pageNum);
-      setSearchTimeMs(elapsed);
-      return "ok";
-    } catch (err) {
+        const elapsed = Date.now() - startTime;
+        const mapped = result.data.map(mapPropertyRow);
+        setImoveis(mapped);
+        setTotal(result.count);
+        setTotalPages(Math.max(1, Math.ceil(result.count / PAGE_SIZE)));
+        setPage(pageNum);
+        setSearchTimeMs(elapsed);
+        return "ok";
+      } catch (err) {
+        if (seq !== fetchSeqRef.current) return "aborted";
+        console.error("PostgREST fetch error:", err);
+        return "error";
+      }
+    };
+
+    const first = await attempt();
+    if (first === "error") {
+      // Retry once after 500ms
+      await new Promise(r => setTimeout(r, 500));
       if (seq !== fetchSeqRef.current) return "aborted";
-      console.error("PostgREST fetch error:", err);
-      return "error";
+      return attempt();
     }
+    return first;
   }, [buildQueryFilters]);
 
   // ── Campanha fetch (unchanged) ──

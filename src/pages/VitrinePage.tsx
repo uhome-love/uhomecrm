@@ -105,6 +105,7 @@ export default function VitrinePage() {
   const [data, setData] = useState<ShowcaseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [fatalError, setFatalError] = useState<string | null>(null);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     if (!id) {
@@ -115,8 +116,8 @@ export default function VitrinePage() {
 
     let active = true;
 
-    (async () => {
-      console.log("[Vitrine] vitrine carregada: iniciando fetch principal", { vitrineId: id });
+    const fetchVitrine = async () => {
+      console.log("[Vitrine] iniciando fetch", { vitrineId: id, attempt: retryCountRef.current });
       try {
         const { data: result, error: fnError } = await supabase.functions.invoke("vitrine-public", {
           body: { action: "get_vitrine", vitrine_id: id },
@@ -126,24 +127,39 @@ export default function VitrinePage() {
         if (fnError) throw fnError;
         if (result?.error) throw new Error(result.error);
 
-        console.log("[Vitrine] vitrine encontrada", { vitrineId: id });
-
         const sanitized = sanitizeShowcaseData(result);
         if (!sanitized) throw new Error("Dados de vitrine inválidos");
 
         console.log("[Vitrine] imóveis carregados", { total: sanitized.imoveis.length });
-        console.log("[Vitrine] segundo fetch iniciado", { enabled: false, reason: "não utilizado neste fluxo" });
-        console.log("[Vitrine] segundo fetch concluído", { status: "skipped" });
+
+        // If 0 imóveis and haven't retried yet, retry after 3s
+        if (sanitized.imoveis.length === 0 && retryCountRef.current < 1) {
+          console.log("[Vitrine] 0 imóveis, retrying in 3s...");
+          retryCountRef.current++;
+          setTimeout(() => { if (active) fetchVitrine(); }, 3000);
+          return;
+        }
 
         setData(sanitized);
       } catch (err: any) {
-        console.error("[Vitrine] erro capturado no carregamento inicial", err);
+        console.error("[Vitrine] erro capturado", err);
         if (!active) return;
+        // Retry once on error
+        if (retryCountRef.current < 1) {
+          retryCountRef.current++;
+          setTimeout(() => { if (active) fetchVitrine(); }, 2000);
+          return;
+        }
         setFatalError(err?.message || "Erro ao carregar vitrine");
       } finally {
-        if (active) setLoading(false);
+        if (active && retryCountRef.current >= 1) setLoading(false);
+        else if (active && data) setLoading(false);
       }
-    })();
+    };
+
+    fetchVitrine().then(() => {
+      if (active) setLoading(false);
+    });
 
     return () => {
       active = false;
