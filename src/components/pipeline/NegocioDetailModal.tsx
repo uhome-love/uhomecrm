@@ -192,7 +192,7 @@ export default function NegocioDetailModal({ open, onOpenChange, negocio, onUpda
         setFullNeg(n);
         setImovelEmpreendimento(n.empreendimento || "");
         setImovelUnidade(n.unidade || "");
-        setImovelVgv(n.vgv_estimado ? String(n.vgv_estimado) : "");
+        setImovelVgv(n.vgv_estimado ? String(Math.round(n.vgv_estimado * 100)) : "");
         setImovelObs(n.observacoes || "");
       }
       setAtividades((atvsRes.data || []) as NegocioAtividade[]);
