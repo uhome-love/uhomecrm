@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
           telefone_normalizado: telefoneNorm,
           email: leadEmail,
           origem: 'site_uhome',
-          origem_detalhe: origemComponente || `site_${tipo}`,
+          origem_detalhe: origemDetalheLabel || origemComponente || `site_${tipo}`,
           origem_ref: origemRef,
           tipo_acao: tipo,
           dados_site: record,
