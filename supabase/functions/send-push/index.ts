@@ -82,10 +82,10 @@ serve(async (req) => {
         );
         sent++;
       } catch (err: any) {
-        console.error(`Push failed for ${sub.endpoint}:`, err.statusCode);
+        console.error(`Push failed for ${sub.endpoint.substring(0, 60)}...:`, err.statusCode, err.body || '');
         failed++;
-        // Remove expired/invalid subscriptions (410 Gone, 404 Not Found)
-        if (err.statusCode === 410 || err.statusCode === 404) {
+        // Remove expired/invalid subscriptions (410 Gone, 404 Not Found, 400 Bad Request, 403 Forbidden)
+        if (err.statusCode === 410 || err.statusCode === 404 || err.statusCode === 400 || err.statusCode === 403) {
           expiredEndpoints.push(sub.endpoint);
         }
       }
