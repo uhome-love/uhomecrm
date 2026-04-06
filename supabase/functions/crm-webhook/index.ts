@@ -40,6 +40,20 @@ Deno.serve(async (req) => {
       imovel_cta: 'Página do Imóvel',
     }
     const origemComponente = origemComponenteRaw ? (ORIGEM_LABELS[origemComponenteRaw] || origemComponenteRaw) : null
+
+    const DETALHE_LABELS: Record<string, string> = {
+      exit_intent: 'Formulário Saída',
+      detalhe_sidebar: 'Página do Imóvel',
+      floating_whatsapp: 'WhatsApp Site',
+      retargeting_popup: 'Retargeting Site',
+      header_cta: 'CTA Site',
+      footer_cta: 'CTA Rodapé',
+      imovel_cta: 'Página do Imóvel',
+      hero_form: 'Formulário Home',
+      contact_form: 'Formulário Contato',
+    }
+    const origemDetalheRaw = record.origem_detalhe || null
+    const origemDetalheLabel = origemDetalheRaw ? (DETALHE_LABELS[origemDetalheRaw] || origemDetalheRaw) : null
     const imovelCodigo = record.imovel_codigo || null
     const imovelSlug = record.imovel_slug || null
     const paginaUrl = record.pagina_url || record.origem_pagina || null
@@ -199,7 +213,7 @@ Deno.serve(async (req) => {
           telefone_normalizado: telefoneNorm,
           email: leadEmail,
           origem: 'site_uhome',
-          origem_detalhe: origemComponente || `site_${tipo}`,
+          origem_detalhe: origemDetalheLabel || origemComponente || `site_${tipo}`,
           origem_ref: origemRef,
           tipo_acao: tipo,
           dados_site: record,
