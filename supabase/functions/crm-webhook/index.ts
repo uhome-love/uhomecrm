@@ -96,12 +96,48 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Fallback: resolve from imovel_interesse text (e.g. "Apartamento 3 quartos — Rio Branco") ──
+    const bairroInteresse = record.bairro_interesse || null
+    if (!imovelUrl && !imovelCodigo && !imovelSlug && imovelTitulo && bairroInteresse) {
+      // Extract tipo and quartos from interest text
+      const interestText = (imovelTitulo as string).toLowerCase()
+      const tipoMatch = interestText.match(/^(apartamento|casa|cobertura|studio|loft|sala|terreno|loja|sobrado)/)
+      const quartosMatch = interestText.match(/(\d+)\s*quarto/)
+      if (tipoMatch) {
+        const queryFilters: Record<string, unknown> = {}
+        const bairroNorm = (bairroInteresse as string).trim()
+        
+        const { data: candidates } = await supabase
+          .from('properties')
+          .select('codigo, titulo, tipo, dormitorios, bairro')
+          .ilike('tipo', `${tipoMatch[1]}%`)
+          .ilike('bairro', `%${bairroNorm}%`)
+          .eq('dormitorios', quartosMatch ? parseInt(quartosMatch[1]) : 0)
+          .limit(1)
+          .maybeSingle()
+
+        if (candidates) {
+          const slugify = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+          const tipoSlug = slugify(candidates.tipo || 'imovel')
+          const quartos = candidates.dormitorios ?? 0
+          const bairroSlug = slugify(candidates.bairro || 'porto-alegre')
+          const codigoSlug = slugify(candidates.codigo)
+          const slug = quartos > 0
+            ? `${tipoSlug}-${quartos}-quartos-${bairroSlug}-${codigoSlug}`
+            : `${tipoSlug}-para-venda-${bairroSlug}-${codigoSlug}`
+          imovelUrl = `https://uhome.com.br/imovel/${slug}`
+          if (candidates.titulo) imovelTitulo = candidates.titulo
+          console.log(`[crm-webhook] Resolved from interest: ${bairroInteresse} → ${candidates.codigo} → ${imovelUrl}`)
+        }
+      }
+    }
+
     // Use pagina_url as fallback context
-    if (!imovelTitulo && !imovelCodigo && !imovelSlug) {
+    if (!imovelUrl && !imovelCodigo && !imovelSlug) {
       if (paginaUrl && paginaUrl.includes('/imovel/')) {
-        imovelTitulo = 'Imóvel do site (ver link)'
+        imovelTitulo = imovelTitulo || 'Imóvel do site (ver link)'
         imovelUrl = paginaUrl
-      } else {
+      } else if (!imovelTitulo) {
         imovelTitulo = 'Lead Geral (sem imóvel específico)'
       }
     }
