@@ -10,6 +10,7 @@ import { formatBRLCompact } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileDown, Loader2, Printer, CalendarIcon } from "lucide-react";
 import { FileDown, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 
