@@ -229,6 +229,8 @@ Deno.serve(async (req) => {
           lead_nome: leadNome,
           lead_telefone: leadTelefone,
           imovel_titulo: imovelTitulo,
+          imovel_url: imovelUrl,
+          pagina_url: paginaUrl,
           tipo_acao: tipo,
           origem_ref: origemRef,
           origem_componente: origemComponente,
