@@ -133,6 +133,17 @@ const PipelineCard = memo(function PipelineCard({
     return Math.floor((Date.now() - d.getTime()) / 86400000);
   }, [lead.stage_changed_at]);
 
+  // Sem Contato 48h inactivity alert
+  const semContatoAlert = useMemo(() => {
+    if (stage?.tipo !== "sem_contato") return null;
+    const refDate = (lead as any).ultima_acao_at || lead.stage_changed_at || (lead as any).updated_at;
+    if (!refDate) return null;
+    const hoursInactive = (Date.now() - new Date(refDate).getTime()) / 3600000;
+    if (hoursInactive >= 48) return { label: "48h!", color: "#DC2626", bg: "#FEE2E2" };
+    if (hoursInactive >= 24) return { label: `${Math.floor(hoursInactive)}h`, color: "#D97706", bg: "#FEF3C7" };
+    return null;
+  }, [stage?.tipo, (lead as any).ultima_acao_at, lead.stage_changed_at, (lead as any).updated_at]);
+
   const daysBadge = useMemo(() => {
     const slaLimits: Record<string, number> = {
       sem_contato: 1, contato_iniciado: 2, qualificacao: 7,
@@ -313,6 +324,16 @@ const PipelineCard = memo(function PipelineCard({
                 title={lead.oportunidade_score != null ? getScoreTooltip(lead.oportunidade_score) : tempConfig.label}
               >
                 <tempConfig.icon className="h-2.5 w-2.5" />
+              </span>
+            )}
+            {semContatoAlert && (
+              <span style={{
+                fontSize: 9, fontWeight: 700,
+                padding: "2px 5px", borderRadius: 4,
+                background: semContatoAlert.bg, color: semContatoAlert.color,
+                animation: semContatoAlert.label === "48h!" ? "pulse 1.5s infinite" : undefined,
+              }} title="Tempo sem contato — risco de redistribuição">
+                ⏰ {semContatoAlert.label}
               </span>
             )}
             <span style={{

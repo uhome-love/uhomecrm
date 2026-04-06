@@ -353,6 +353,77 @@ Deno.serve(async (req) => {
     // 4c. Stuck leads stay in CEO queue — no auto-sweep (manual dispatch only)
     const stuckRedistributed = 0;
 
+    // 4d. Reciclar leads "Sem Contato" inativos há 48h
+    let semContatoRecycled = 0;
+    try {
+      const { data: recycledSemContato, error: scError } = await supabase.rpc("reciclar_leads_sem_contato");
+      if (scError) {
+        L.error("Sem Contato recycle RPC failed", {}, scError);
+      } else if (recycledSemContato && recycledSemContato.length > 0) {
+        semContatoRecycled = recycledSemContato.length;
+        L.info("Sem Contato leads recycled", { count: semContatoRecycled });
+
+        for (const item of recycledSemContato) {
+          // Tentar redistribuir pela roleta
+          await distributeWithRetry(supabaseUrl, serviceKey, item.lead_id, traceId, 1, supabase);
+
+          // Notificar corretor original (in-app)
+          if (item.corretor_anterior) {
+            await supabase.from("notifications").insert({
+              user_id: item.corretor_anterior,
+              tipo: "lead_reciclado_sem_contato",
+              categoria: "leads",
+              titulo: `🔄 Lead redistribuído por inatividade`,
+              mensagem: `${item.lead_nome || "Lead"} (${item.lead_empreendimento || "N/A"}) foi redistribuído após 48h sem contato.`,
+              dados: { lead_id: item.lead_id },
+              cargo_destino: ["corretor"],
+            } as any);
+
+            // Push ao corretor
+            await sendPush(supabaseUrl, serviceKey, item.corretor_anterior,
+              "🔄 Lead redistribuído",
+              `${item.lead_nome || "Lead"} foi redistribuído por inatividade 48h.`,
+              { lead_id: item.lead_id }
+            );
+
+            // Notificar gerente do corretor
+            const { data: tm } = await supabase
+              .from("team_members")
+              .select("gerente_id")
+              .eq("user_id", item.corretor_anterior)
+              .maybeSingle();
+            if (tm?.gerente_id) {
+              const { data: gp } = await supabase
+                .from("profiles")
+                .select("user_id, nome")
+                .eq("id", tm.gerente_id)
+                .maybeSingle();
+              if (gp?.user_id) {
+                const { data: corretorProfile } = await supabase
+                  .from("profiles")
+                  .select("nome")
+                  .eq("user_id", item.corretor_anterior)
+                  .maybeSingle();
+                await supabase.from("notifications").insert({
+                  user_id: gp.user_id,
+                  tipo: "lead_reciclado_sem_contato",
+                  categoria: "leads",
+                  titulo: `🔄 Lead sem contato redistribuído`,
+                  mensagem: `${corretorProfile?.nome || "Corretor"} perdeu ${item.lead_nome || "lead"} por inatividade 48h. Redistribuído automaticamente.`,
+                  dados: { lead_id: item.lead_id, corretor_id: item.corretor_anterior },
+                  cargo_destino: ["gerente"],
+                } as any);
+              }
+            }
+          }
+        }
+
+        logOps("info", "business", `Sem Contato recycled: ${semContatoRecycled} leads`, { count: semContatoRecycled });
+      }
+    } catch (scErr) {
+      L.error("Sem Contato recycling error (non-blocking)", {}, scErr);
+    }
+
     // 5. Clean expired OA locks
     const { data: cleanedCount, error: cleanError } = await supabase.rpc(
       "cleanup_expired_locks"
@@ -364,14 +435,15 @@ Deno.serve(async (req) => {
       push_sent: pushSent,
       stale_alerts: staleCount || 0,
       recycled: recycledCount || 0,
+      sem_contato_recycled: semContatoRecycled,
       stuck_redistributed: stuckRedistributed,
       locks_cleaned: cleanedCount || 0,
       timestamp: new Date().toISOString(),
     };
 
     L.info("Lead escalation run", result);
-    if (result.escalated > 0 || result.recycled > 0 || result.stuck_redistributed > 0) {
-      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled, ${result.stuck_redistributed} stuck retried`, result as unknown as Record<string, unknown>);
+    if (result.escalated > 0 || result.recycled > 0 || result.sem_contato_recycled > 0 || result.stuck_redistributed > 0) {
+      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled, ${result.sem_contato_recycled} sem_contato recycled`, result as unknown as Record<string, unknown>);
     }
 
     return new Response(JSON.stringify(result), {
