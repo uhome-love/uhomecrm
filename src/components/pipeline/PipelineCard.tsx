@@ -133,6 +133,17 @@ const PipelineCard = memo(function PipelineCard({
     return Math.floor((Date.now() - d.getTime()) / 86400000);
   }, [lead.stage_changed_at]);
 
+  // Sem Contato 48h inactivity alert
+  const semContatoAlert = useMemo(() => {
+    if (stage?.tipo !== "sem_contato") return null;
+    const refDate = (lead as any).ultima_acao_at || lead.stage_changed_at || (lead as any).updated_at;
+    if (!refDate) return null;
+    const hoursInactive = (Date.now() - new Date(refDate).getTime()) / 3600000;
+    if (hoursInactive >= 48) return { label: "48h!", color: "#DC2626", bg: "#FEE2E2" };
+    if (hoursInactive >= 24) return { label: `${Math.floor(hoursInactive)}h`, color: "#D97706", bg: "#FEF3C7" };
+    return null;
+  }, [stage?.tipo, (lead as any).ultima_acao_at, lead.stage_changed_at, (lead as any).updated_at]);
+
   const daysBadge = useMemo(() => {
     const slaLimits: Record<string, number> = {
       sem_contato: 1, contato_iniciado: 2, qualificacao: 7,
