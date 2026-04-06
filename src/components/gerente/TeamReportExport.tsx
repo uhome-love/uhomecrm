@@ -183,7 +183,7 @@ export default function TeamReportExport({ teamUserIds, teamNameMap, gerenteNome
     } finally {
       setLoading(false);
     }
-  }, [user, teamUserIds, teamNameMap, period, gerenteNome]);
+  }, [user, teamUserIds, teamNameMap, period, gerenteNome, customFrom, customTo]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
