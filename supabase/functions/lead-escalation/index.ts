@@ -435,14 +435,15 @@ Deno.serve(async (req) => {
       push_sent: pushSent,
       stale_alerts: staleCount || 0,
       recycled: recycledCount || 0,
+      sem_contato_recycled: semContatoRecycled,
       stuck_redistributed: stuckRedistributed,
       locks_cleaned: cleanedCount || 0,
       timestamp: new Date().toISOString(),
     };
 
     L.info("Lead escalation run", result);
-    if (result.escalated > 0 || result.recycled > 0 || result.stuck_redistributed > 0) {
-      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled, ${result.stuck_redistributed} stuck retried`, result as unknown as Record<string, unknown>);
+    if (result.escalated > 0 || result.recycled > 0 || result.sem_contato_recycled > 0 || result.stuck_redistributed > 0) {
+      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled, ${result.sem_contato_recycled} sem_contato recycled`, result as unknown as Record<string, unknown>);
     }
 
     return new Response(JSON.stringify(result), {
