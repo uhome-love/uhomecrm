@@ -126,20 +126,20 @@ export default function TeamReportExport({ teamUserIds, teamNameMap, gerenteNome
         };
       });
 
-      (r1.data || []).forEach(t => {
+      r1.forEach(t => {
         if (!stats[t.corretor_id]) return;
         stats[t.corretor_id].ligacoes++;
         stats[t.corretor_id].pontos += t.pontos || 0;
         if (t.resultado === "com_interesse") stats[t.corretor_id].aproveitados++;
       });
 
-      (r2.data || []).forEach(v => {
+      r2.forEach(v => {
         if (!v.corretor_id || !stats[v.corretor_id]) return;
         if (v.status !== "cancelada") stats[v.corretor_id].visitas_marcadas++;
         if (v.status === "realizada") stats[v.corretor_id].visitas_realizadas++;
       });
 
-      (r3.data || []).forEach(n => {
+      r3.forEach(n => {
         if (!n.corretor_id) return;
         const uid = profileToUser[n.corretor_id];
         if (!uid || !stats[uid]) return;
@@ -151,10 +151,10 @@ export default function TeamReportExport({ teamUserIds, teamNameMap, gerenteNome
         }
       });
 
-      (r4.data || []).forEach(f => { const uid = (f as any).responsavel_id; if (uid && stats[uid]) stats[uid].followups++; });
-      (r5.data || []).forEach(r => { if (r.corretor_id && stats[r.corretor_id]) stats[r.corretor_id].roleta++; });
-      (r6.data || []).forEach(d => { if (d.corretor_id && stats[d.corretor_id]) stats[d.corretor_id].descartados++; });
-      (r7.data || []).forEach(a => { if (a.corretor_id && stats[a.corretor_id]) stats[a.corretor_id].atualizados++; });
+      r4.forEach(f => { const uid = (f as any).responsavel_id; if (uid && stats[uid]) stats[uid].followups++; });
+      r5.forEach(r => { if (r.corretor_id && stats[r.corretor_id]) stats[r.corretor_id].roleta++; });
+      r6.forEach(d => { if (d.corretor_id && stats[d.corretor_id]) stats[d.corretor_id].descartados++; });
+      r7.forEach(a => { if (a.corretor_id && stats[a.corretor_id]) stats[a.corretor_id].atualizados++; });
 
       Object.values(stats).forEach(s => {
         s.taxa = s.ligacoes > 0 ? Math.round((s.aproveitados / s.ligacoes) * 100) : 0;
