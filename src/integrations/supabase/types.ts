@@ -3426,6 +3426,7 @@ export type Database = {
           imovel_codigo: string | null
           imovel_id_site: string | null
           imovel_interesse: string | null
+          imovel_slug: string | null
           nome: string
           observacoes: string | null
           origem: string | null
@@ -3450,6 +3451,7 @@ export type Database = {
           imovel_codigo?: string | null
           imovel_id_site?: string | null
           imovel_interesse?: string | null
+          imovel_slug?: string | null
           nome: string
           observacoes?: string | null
           origem?: string | null
@@ -3474,6 +3476,7 @@ export type Database = {
           imovel_codigo?: string | null
           imovel_id_site?: string | null
           imovel_interesse?: string | null
+          imovel_slug?: string | null
           nome?: string
           observacoes?: string | null
           origem?: string | null
