@@ -261,6 +261,34 @@ export default function StageCoachBar({
           ],
         };
 
+      case "em_evolucao":
+        return {
+          diagnostic: "Lead em evolução — acompanhe de perto e nutra o interesse até converter.",
+          color: "border-cyan-500/30 bg-cyan-50/50 dark:bg-cyan-950/20",
+          alert: diasSemContato >= 5
+            ? { text: `${diasSemContato} dias sem contato — lead pode estar esfriando!`, severity: diasSemContato >= 7 ? "danger" : "warning" }
+            : undefined,
+          actions: [
+            { label: "Follow-up consultivo", icon: MessageSquare, homiPrompt: "Gere follow-up consultivo para lead que visitou mas ainda está decidindo. Formato: apenas 2 mensagens WhatsApp curtas. IMPORTANTE: Retorne SOMENTE as mensagens de WhatsApp prontas para copiar. Nada mais." },
+            { label: "Agendar check-in", icon: Calendar, onClick: () => createQuickTask(`Check-in com ${nome}`, "follow_up") },
+            { label: "Nova visita/opção", icon: Sparkles, homiPrompt: "O lead visitou mas ainda não decidiu. Sugira novas opções de imóveis ou uma segunda visita. Formato: apenas 2 mensagens WhatsApp curtas. IMPORTANTE: Retorne SOMENTE as mensagens prontas para copiar." },
+          ],
+          messages: [
+            {
+              title: "🔄 Check-in pós-visita",
+              body: `{{nome}}, como tá a análise? Surgiu alguma dúvida sobre {{empreendimento}}? Tô aqui pra te ajudar a decidir 😊`,
+            },
+            {
+              title: "💡 Nova opção",
+              body: `{{nome}}, pensando no que conversamos, encontrei uma opção que pode fazer sentido pra ti. Posso te mandar os detalhes?`,
+            },
+            {
+              title: "⏰ Urgência sutil",
+              body: `{{nome}}, só passando pra avisar que as condições de {{empreendimento}} estão mudando em breve. Se quiser garantir, é bom a gente conversar! 😊`,
+            },
+          ],
+        };
+
       case "negociacao":
       case "proposta":
         return {

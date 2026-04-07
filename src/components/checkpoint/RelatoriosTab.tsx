@@ -152,7 +152,7 @@ export default function RelatoriosTab({ teamUserIds, teamNameMap }: Props) {
 
     // Build funnel
     const totalPipelineLeads = Object.values(pipelineCounts).reduce((a, b) => a + b, 0);
-    const contatoIniciado = (pipelineCounts["contato_iniciado"] || 0) + (pipelineCounts["qualificacao"] || 0) + (pipelineCounts["possivel_visita"] || 0) + (pipelineCounts["visita_marcada"] || 0) + (pipelineCounts["visita_realizada"] || 0);
+    const contatoIniciado = (pipelineCounts["contato_iniciado"] || 0) + (pipelineCounts["qualificacao"] || 0) + (pipelineCounts["possivel_visita"] || 0) + (pipelineCounts["visita_marcada"] || 0) + (pipelineCounts["visita_realizada"] || 0) + (pipelineCounts["em_evolucao"] || 0);
     const assinadoCount = (neg || []).filter(n => n.fase === "assinado").length;
 
     const funnelRaw = [

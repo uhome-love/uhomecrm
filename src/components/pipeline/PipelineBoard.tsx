@@ -780,8 +780,8 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
               "Possível Visita": { emojiBg: "#FFFBEB", badgeBg: "#FFFBEB", badgeColor: "#B45309", gradient: "linear-gradient(90deg, #F59E0B, #FCD34D)" },
               "Visita Marcada": { emojiBg: "#FFFBEB", badgeBg: "#FFFBEB", badgeColor: "#B45309", gradient: "linear-gradient(90deg, #F59E0B, #FCD34D)" },
               "Visita Realizada": { emojiBg: "#F0FDF4", badgeBg: "#F0FDF4", badgeColor: "#059669", gradient: "linear-gradient(90deg, #10B981, #34D399)" },
+              "Em Evolução": { emojiBg: "#ECFEFF", badgeBg: "#ECFEFF", badgeColor: "#0891B2", gradient: "linear-gradient(90deg, #06B6D4, #67E8F9)" },
               "Descarte": { emojiBg: "#FEF2F2", badgeBg: "#FEF2F2", badgeColor: "#DC2626", gradient: "linear-gradient(90deg, #EF4444, #FCA5A5)" },
-              "Convertido": { emojiBg: "#F5F3FF", badgeBg: "#F5F3FF", badgeColor: "#7C3AED", gradient: "linear-gradient(90deg, #8B5CF6, #C084FC)" },
               "Negócio Criado": { emojiBg: "#F5F3FF", badgeBg: "#F5F3FF", badgeColor: "#7C3AED", gradient: "linear-gradient(90deg, #8B5CF6, #C084FC)" },
             };
             const theme = STAGE_THEMES[stage.nome] || { emojiBg: "#F1F5F9", badgeBg: "#F1F5F9", badgeColor: "#64748B", gradient: "linear-gradient(90deg, #94A3B8, #CBD5E1)" };

@@ -431,11 +431,11 @@ export function usePipeline(pipelineTipo: string = "leads") {
 
     const newStage = stages.find(s => s.id === newStageId);
 
-    // ═══ AUTO-CREATE NEGÓCIO when moving to "Visita Realizada" ═══
-    const isVisitaRealizada = newStage && (newStage.tipo === "visita_realizada" || newStage.nome.toLowerCase().includes("visita realizada"));
-    console.log("[moveLead] Stage check:", { newStageTipo: newStage?.tipo, newStageNome: newStage?.nome, isVisitaRealizada });
+    // ═══ AUTO-CREATE NEGÓCIO when moving to "Negócio Criado" (convertido) ═══
+    const isConvertido = newStage && (newStage.tipo === "convertido" || newStage.nome.toLowerCase().includes("negócio criado"));
+    console.log("[moveLead] Stage check:", { newStageTipo: newStage?.tipo, newStageNome: newStage?.nome, isConvertido });
 
-    if (isVisitaRealizada) {
+    if (isConvertido) {
       try {
         // Check if negócio already exists for this lead
         const { data: existingNegocio, error: checkError } = await supabase
