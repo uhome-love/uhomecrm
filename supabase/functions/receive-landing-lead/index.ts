@@ -101,12 +101,16 @@ Deno.serve(async (req) => {
     // Accept either webhook secret (for external callers) or anon apikey header (for own landing pages)
     const webhookSecret = Deno.env.get("LANDING_WEBHOOK_SECRET");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("ANON_KEY") || "";
+    const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const providedSecret = body.secret || req.headers.get("x-webhook-secret") || "";
     const providedApikey = req.headers.get("apikey") || "";
+    const authHeader = req.headers.get("authorization") || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
     const isValidSecret = webhookSecret && providedSecret === webhookSecret;
     const isValidApikey = anonKey && providedApikey === anonKey;
+    const isValidServiceRole = svcKey && bearerToken === svcKey;
 
-    if (webhookSecret && !isValidSecret && !isValidApikey) {
+    if (webhookSecret && !isValidSecret && !isValidApikey && !isValidServiceRole) {
       L.warn("Auth failed — invalid webhook secret or apikey", { source: body.source });
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
