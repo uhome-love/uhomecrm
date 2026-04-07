@@ -232,6 +232,9 @@ Deno.serve(async (req) => {
         await supabase
           .from('pipeline_leads')
           .update({
+            arquivado: false,
+            stage_id: NOVO_LEAD_STAGE_ID,
+            stage_changed_at: new Date().toISOString(),
             dados_site: record,
             tipo_acao: tipo,
             origem_ref: origemRef,
