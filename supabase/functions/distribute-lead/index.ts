@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         allLeadIds = (pendingQueueLeads || []).map((lead: { id: string }) => lead.id);
       }
 
-      const targetJanela = janela || null; // Let the RPC determine janela if not specified
+      const targetJanela = janela || null;
 
       if (allLeadIds.length === 0) {
         return jsonResponse({ success: true, dispatched: 0, reason: "no_leads_provided" });
@@ -102,20 +102,22 @@ Deno.serve(async (req) => {
 
       let dispatched = 0;
       let failed = 0;
+      let forceRecovered = 0;
+      const failedByReason: Record<string, number> = {};
       const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string }> = [];
 
-      // CEO dispatch forces distribution even if brokers aren't flagged na_roleta
       const forceDispatch = true;
 
-      // Process leads SEQUENTIALLY — each call to the RPC is atomic with advisory lock
       for (const lid of allLeadIds) {
         const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, lid, targetJanela, null, L, forceDispatch);
         if (result.success) {
           dispatched++;
           distributionLog.push({ leadId: lid, corretorId: result.corretor_id, segmento: result.segmento_id || "sem_segmento" });
         } else {
-          L.warn("Batch lead failed", { leadId: lid, reason: result.reason });
+          const reason = result.reason || "unknown";
+          L.warn("Batch lead failed", { leadId: lid, reason, detail: result.detail });
           failed++;
+          failedByReason[reason] = (failedByReason[reason] || 0) + 1;
         }
       }
 
@@ -125,13 +127,13 @@ Deno.serve(async (req) => {
           modulo: "roleta",
           acao: "dispatch_fila_ceo",
           descricao: `Disparou ${dispatched} leads (${failed} falharam) via janela ${targetJanela || "auto"}`,
-          depois: { dispatched, failed, janela: targetJanela, distribution: distributionLog.slice(0, 20) },
+          depois: { dispatched, failed, forceRecovered, failedByReason, janela: targetJanela, distribution: distributionLog.slice(0, 20) },
         }).then(r => { if (r.error) console.warn("audit_log insert:", r.error.message); });
       }
 
-      L.info("Dispatch complete", { dispatched, failed });
-      logOps("info", "business", `Dispatch complete: ${dispatched} leads`, { dispatched, failed, janela: targetJanela });
-      return jsonResponse({ success: true, dispatched, failed });
+      L.info("Dispatch complete", { dispatched, failed, failedByReason });
+      logOps("info", "business", `Dispatch complete: ${dispatched} leads`, { dispatched, failed, failedByReason, janela: targetJanela });
+      return jsonResponse({ success: true, dispatched, failed, failed_by_reason: failedByReason });
     }
 
     // ─── Single lead distribution ───
@@ -176,9 +178,6 @@ async function distributeViaRPC(
   if (!result || !result.success) {
     return result || { success: false, reason: "unknown" };
   }
-
-  // RPC handled: assignment, distribuicao_historico, roleta_distribuicoes, roleta_fila
-  // Edge function handles: notifications (WhatsApp, push, in-app)
 
   const lead = {
     id: leadId,
@@ -274,7 +273,6 @@ async function handleAcceptReject(supabase: any, body: any, userId: string, supa
       return jsonResponse(result);
     }
 
-    // Redistribute via atomic RPC, excluding the rejector
     const L = {
       info: (msg: string, ctx?: any) => console.info(JSON.stringify({ fn: "distribute-lead", msg, ctx })),
       warn: (msg: string, ctx?: any) => console.warn(JSON.stringify({ fn: "distribute-lead", msg, ctx })),
