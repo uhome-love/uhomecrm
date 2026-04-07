@@ -9221,7 +9221,17 @@ export type Database = {
         Returns: number
       }
       recalculate_all_scores: { Args: never; Returns: undefined }
-      reciclar_leads_expirados: { Args: never; Returns: number }
+      reciclar_leads_expirados: {
+        Args: never
+        Returns: {
+          corretor_anterior: string
+          lead_empreendimento: string
+          lead_id: string
+          lead_nome: string
+          lead_telefone: string
+          segmento_id: string
+        }[]
+      }
       reciclar_leads_sem_contato: {
         Args: never
         Returns: {
