@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, lazy, Suspense, useEffect } from "react";
+import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LoadingState, ErrorState } from "@/components/ui/screen-states";
 import PeriodBadge from "@/components/PeriodBadge";
@@ -83,6 +83,8 @@ export default function PipelineKanban() {
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [bulkActionOpen, setBulkActionOpen] = useState(false);
   const [focusModeOpen, setFocusModeOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileSearchRef = React.useRef<HTMLInputElement>(null);
 
   // Focus mode leads count
   const { leads: focusLeads, reload: reloadFocusLeads } = useFocusLeads(authUser?.id ?? null, "leads");
@@ -318,6 +320,30 @@ export default function PipelineKanban() {
               isManager={isGestor || isAdmin}
             />
 
+            {/* Mobile search toggle */}
+            <button
+              onClick={() => {
+                setMobileSearchOpen(v => !v);
+                setTimeout(() => mobileSearchRef.current?.focus(), 100);
+              }}
+              className="relative"
+              style={{
+                width: 24, height: 24, borderRadius: 6,
+                border: "1px solid #E2E8F0", background: "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <Search className="h-3 w-3" style={{ color: "#64748B" }} />
+              {filters.search && (
+                <div style={{
+                  position: "absolute", top: -2, right: -2,
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: "#3B82F6",
+                }} />
+              )}
+            </button>
+
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
@@ -331,6 +357,31 @@ export default function PipelineKanban() {
               </button>
             )}
           </div>
+
+          {/* Mobile search bar (expandable) */}
+          {(mobileSearchOpen || filters.search) && (
+            <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in" style={{ borderBottom: "1px solid #E2E8F0" }}>
+              <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "#94A3B8" }} />
+              <input
+                ref={mobileSearchRef}
+                type="text"
+                placeholder="Buscar lead por nome, telefone..."
+                value={filters.search}
+                onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+                className="flex-1 bg-transparent text-sm outline-none"
+                style={{ fontSize: 12, color: "#1E293B", height: 28 }}
+              />
+              <button
+                onClick={() => {
+                  setFilters(f => ({ ...f, search: "" }));
+                  setMobileSearchOpen(false);
+                }}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
+              >
+                <X className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
+              </button>
+            </div>
+          )}
 
           {/* Line 2 mobile: Status chips compact */}
           <div className="flex items-center gap-3 px-3 pb-2" style={{ borderBottom: "1px solid #E2E8F0" }}>
