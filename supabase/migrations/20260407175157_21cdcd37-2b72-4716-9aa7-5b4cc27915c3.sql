@@ -1,0 +1,1 @@
+UPDATE email_campaigns SET total_destinatarios = 2891, status = 'enviando' WHERE id = '47f69044-a2fe-4568-ac7c-3166841dc89b';
