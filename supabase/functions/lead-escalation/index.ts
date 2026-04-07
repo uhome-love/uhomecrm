@@ -469,7 +469,9 @@ Deno.serve(async (req) => {
       escalated: escalationCount || 0,
       push_sent: pushSent,
       stale_alerts: staleCount || 0,
-      recycled: recycledCount || 0,
+      recycled: recycledCount,
+      auto_redistributed: autoRedistributed,
+      sent_to_ceo_queue: sentToCeoQueue,
       sem_contato_recycled: semContatoRecycled,
       stuck_redistributed: stuckRedistributed,
       locks_cleaned: cleanedCount || 0,
@@ -477,8 +479,8 @@ Deno.serve(async (req) => {
     };
 
     L.info("Lead escalation run", result);
-    if (result.escalated > 0 || result.recycled > 0 || result.sem_contato_recycled > 0 || result.stuck_redistributed > 0) {
-      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled, ${result.sem_contato_recycled} sem_contato recycled`, result as unknown as Record<string, unknown>);
+    if (result.escalated > 0 || result.recycled > 0 || result.sem_contato_recycled > 0 || result.auto_redistributed > 0) {
+      logOps("info", "business", `Escalation run: ${result.escalated} escalated, ${result.recycled} recycled (${result.auto_redistributed} auto, ${result.sent_to_ceo_queue} CEO), ${result.sem_contato_recycled} sem_contato`, result as unknown as Record<string, unknown>);
     }
 
     return new Response(JSON.stringify(result), {
