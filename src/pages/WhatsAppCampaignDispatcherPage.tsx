@@ -105,6 +105,7 @@ const TEMPLATE_DEFAULT_IMAGES: Record<string, string> = {
   melnick_day_poa_2026: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
   melnick_day_wa_v2: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fmelnick-day-2026-header.png",
   ofertas_meday: "https://hunbxqzhvuemgntklyzb.supabase.co/storage/v1/object/public/campaign-images/templates%2Fofertas-meday-header.png",
+  casa_tua_abril: "",
 };
 
 /* ─── Template default redirect URLs ─── */
@@ -112,6 +113,7 @@ const TEMPLATE_DEFAULT_URLS: Record<string, string> = {
   melnick_day_poa_2026: "https://uhomesales.com/wa?origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1",
   melnick_day_wa_v2: "https://uhomesales.com/wa?phone={{phone}}&nome={{nome}}&origem=whatsapp_api&campanha=melnick_day_2026&bloco=cta1",
   ofertas_meday: "https://uhomesales.com/wa?phone={{phone}}&nome={{nome}}&origem=whatsapp_api&campanha=ofertas_meday",
+  casa_tua_abril: "https://uhomesales.com/casatua?origem=whatsapp_api&campanha=casa_tua_abril_2026&utm_source=whatsapp&utm_medium=disparo&utm_campaign=casa_tua_abril_2026",
 };
 
 
@@ -440,6 +442,7 @@ function NovaCampanhaTab({ onCreated }: { onCreated: (id: string) => void }) {
                 <option value="ofertas_meday">ofertas_meday (MEDAY Ofertas ✅)</option>
                 <option value="melnick_day_poa_2026">melnick_day_poa_2026 (botão estático)</option>
                 <option value="melnick_day_wa_v2">melnick_day_wa_v2 (botão dinâmico)</option>
+                <option value="casa_tua_abril">casa_tua_abril (Casa Tua Abril 🏡)</option>
               </select>
             </div>
             <div>
