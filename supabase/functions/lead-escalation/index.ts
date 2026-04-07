@@ -262,96 +262,131 @@ Deno.serve(async (req) => {
     );
     if (staleError) L.error("Stale detection RPC failed", {}, staleError);
 
-    // 4. Recycle expired acceptance leads
-    const { data: recycledCount, error: recycleError } = await supabase.rpc(
+    // 4. Recycle expired acceptance leads — now returns lead details for auto-redistribution
+    const { data: recycledLeads, error: recycleError } = await supabase.rpc(
       "reciclar_leads_expirados"
     );
+    const recycledCount = recycledLeads?.length || 0;
     if (recycleError) L.error("Recycle RPC failed", {}, recycleError);
 
-    // 4b. Notify CEO/gerentes about expired leads (NO auto-redistribute — CEO dispatches manually)
-    if (recycledCount && recycledCount > 0) {
-      try {
-        const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-        const { data: expiredLeads } = await supabase
-          .from("distribuicao_historico")
-          .select("pipeline_lead_id, corretor_id")
-          .eq("acao", "timeout")
-          .gte("created_at", twoMinAgo);
+    // 4b. Auto-redistribute expired leads to next eligible broker
+    let autoRedistributed = 0;
+    let sentToCeoQueue = 0;
 
-        if (expiredLeads && expiredLeads.length > 0) {
-          const { data: adminRoles } = await supabase
-            .from("user_roles")
-            .select("user_id")
-            .eq("role", "admin");
-          const adminUserIds = new Set((adminRoles || []).map((r: any) => r.user_id));
+    if (recycledLeads && recycledLeads.length > 0) {
+      for (const expired of recycledLeads) {
+        // Try to redistribute via the distribution engine
+        const distributed = await distributeWithRetry(
+          supabaseUrl, serviceKey, expired.lead_id, traceId, 1, supabase
+        );
 
-          for (const expired of expiredLeads) {
-            const { data: corretorProfile } = await supabase
-              .from("profiles")
-              .select("nome")
-              .eq("user_id", expired.corretor_id)
-              .maybeSingle();
+        if (distributed) {
+          // Check if it was actually assigned or fell to CEO queue
+          const { data: check } = await supabase
+            .from("pipeline_leads")
+            .select("aceite_status, corretor_id")
+            .eq("id", expired.lead_id)
+            .maybeSingle();
 
-            const { data: leadData } = await supabase
-              .from("pipeline_leads")
-              .select("nome, empreendimento, aceite_status")
-              .eq("id", expired.pipeline_lead_id)
-              .maybeSingle();
+          if (check?.corretor_id && check.aceite_status === "aguardando_aceite") {
+            autoRedistributed++;
+            L.info("Lead auto-redistributed after timeout", {
+              leadId: expired.lead_id,
+              previousBroker: expired.corretor_anterior,
+              newBroker: check.corretor_id,
+            });
 
-            if (!leadData) continue;
+            // Notify the previous broker they lost the lead
+            if (expired.corretor_anterior) {
+              await supabase.from("notifications").insert({
+                user_id: expired.corretor_anterior,
+                tipo: "lead_timeout_redistribuido",
+                categoria: "leads",
+                titulo: "⏱️ Lead redistribuído por timeout",
+                mensagem: `${expired.lead_nome || "Lead"} (${expired.lead_empreendimento || "N/A"}) foi redistribuído após expirar o tempo de aceite.`,
+                dados: { lead_id: expired.lead_id },
+                cargo_destino: ["corretor"],
+              } as any);
 
-            // Lead stays in pendente_distribuicao (CEO queue) — NO auto-redistribute
-
-            // Notify CEO/gerentes
-            const recipientIds = new Set<string>();
-            const { data: teamMember } = await supabase
-              .from("team_members")
-              .select("gerente_id")
-              .eq("user_id", expired.corretor_id)
-              .maybeSingle();
-
-            if (teamMember?.gerente_id) {
-              const { data: gProfile } = await supabase
-                .from("profiles")
-                .select("user_id")
-                .eq("id", teamMember.gerente_id)
-                .maybeSingle();
-              if (gProfile?.user_id) recipientIds.add(gProfile.user_id);
-            }
-            for (const uid of adminUserIds) recipientIds.add(uid);
-
-            for (const recipientId of recipientIds) {
-              const { data: gestorProfile } = await supabase
-                .from("profiles")
-                .select("user_id, telefone, nome")
-                .eq("user_id", recipientId)
-                .maybeSingle();
-              if (!gestorProfile) continue;
-
-              if (gestorProfile.telefone) {
-                await sendWhatsApp(supabaseUrl, serviceKey, gestorProfile.telefone, "lead_expirado_ceo", {
-                  corretor: corretorProfile?.nome || "Desconhecido",
-                  nome: leadData.nome || "Lead",
-                  empreendimento: leadData.empreendimento || "Não identificado",
-                  motivo: "Tempo de aceite expirado (10 min)",
-                });
-              }
-
-              await sendPush(supabaseUrl, serviceKey, gestorProfile.user_id,
-                "⏱️ Lead expirado — aguardando CEO",
-                `${corretorProfile?.nome || "Corretor"} não aceitou ${leadData.nome || "lead"} em 10 min. Lead na fila do CEO.`,
-                { lead_id: expired.pipeline_lead_id }
+              await sendPush(supabaseUrl, serviceKey, expired.corretor_anterior,
+                "⏱️ Lead redistribuído",
+                `${expired.lead_nome || "Lead"} foi redistribuído por timeout.`,
+                { lead_id: expired.lead_id }
               );
             }
+          } else {
+            // No broker available — stays in CEO queue
+            sentToCeoQueue++;
+            L.info("Lead sent to CEO queue — no eligible broker", {
+              leadId: expired.lead_id,
+              previousBroker: expired.corretor_anterior,
+            });
+
+            // Notify CEO/gerentes only when no broker is available
+            try {
+              const { data: adminRoles } = await supabase
+                .from("user_roles")
+                .select("user_id")
+                .eq("role", "admin");
+
+              const recipientIds = new Set<string>();
+
+              // Find corretor's gerente
+              if (expired.corretor_anterior) {
+                const { data: tm } = await supabase
+                  .from("team_members")
+                  .select("gerente_id")
+                  .eq("user_id", expired.corretor_anterior)
+                  .maybeSingle();
+                if (tm?.gerente_id) {
+                  const { data: gp } = await supabase
+                    .from("profiles")
+                    .select("user_id")
+                    .eq("id", tm.gerente_id)
+                    .maybeSingle();
+                  if (gp?.user_id) recipientIds.add(gp.user_id);
+                }
+              }
+              for (const admin of adminRoles || []) recipientIds.add(admin.user_id);
+
+              const { data: corretorProfile } = expired.corretor_anterior
+                ? await supabase.from("profiles").select("nome").eq("user_id", expired.corretor_anterior).maybeSingle()
+                : { data: null };
+
+              for (const recipientId of recipientIds) {
+                await supabase.from("notifications").insert({
+                  user_id: recipientId,
+                  tipo: "lead_expirado_sem_corretor",
+                  categoria: "leads",
+                  titulo: "⏱️ Lead expirado — sem corretor disponível",
+                  mensagem: `${corretorProfile?.nome || "Corretor"} não aceitou ${expired.lead_nome || "lead"} (${expired.lead_empreendimento || "N/A"}). Sem corretores elegíveis — aguardando despacho manual.`,
+                  dados: { lead_id: expired.lead_id, corretor_anterior: expired.corretor_anterior },
+                  cargo_destino: ["gerente", "ceo", "admin"],
+                } as any);
+
+                await sendPush(supabaseUrl, serviceKey, recipientId,
+                  "⏱️ Lead sem corretor disponível",
+                  `${expired.lead_nome || "Lead"} expirou e não há corretor elegível. Despacho manual necessário.`,
+                  { lead_id: expired.lead_id }
+                );
+              }
+            } catch (notifyErr) {
+              L.error("CEO notification error (non-blocking)", {}, notifyErr);
+            }
           }
+        } else {
+          sentToCeoQueue++;
+          L.warn("Distribute retry failed for expired lead", { leadId: expired.lead_id });
         }
-      } catch (notifyErr) {
-        L.error("CEO notification error (non-blocking)", {}, notifyErr);
       }
+
+      logOps("info", "business",
+        `Expired leads: ${recycledCount} recycled, ${autoRedistributed} auto-redistributed, ${sentToCeoQueue} to CEO queue`,
+        { recycledCount, autoRedistributed, sentToCeoQueue } as unknown as Record<string, unknown>
+      );
     }
 
-    // 4c. Stuck leads stay in CEO queue — no auto-sweep (manual dispatch only)
-    const stuckRedistributed = 0;
+    const stuckRedistributed = autoRedistributed;
 
     // 4d. Reciclar leads "Sem Contato" inativos há 48h
     let semContatoRecycled = 0;
