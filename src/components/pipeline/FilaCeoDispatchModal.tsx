@@ -86,6 +86,16 @@ const DESTINO_OPTIONS: {
   { id: "oferta_ativa", label: "Enviar para Oferta Ativa", emoji: "📞", group: "oferta" },
 ];
 
+const FAILURE_REASON_LABELS: Record<string, string> = {
+  all_brokers_exhausted: "já passaram por todos os corretores (timeout/rejeição)",
+  no_fila_active: "sem corretores na fila/janela selecionada",
+  no_broker_available: "sem corretor elegível disponível",
+  lead_not_found: "lead não encontrado",
+  already_assigned: "lead já atribuído",
+  rpc_error: "erro interno na distribuição",
+  unknown: "motivo desconhecido",
+};
+
 export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched }: Props) {
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
@@ -201,11 +211,20 @@ export default function FilaCeoDispatchModal({ open, onOpenChange, onDispatched 
           console.error("Batch dispatch error:", error);
           toast.error("Erro ao disparar leads: " + (error.message || ""));
         } else if (result) {
-          const { dispatched = 0, failed = 0 } = result;
-          if (dispatched > 0) {
-            toast.success(`✅ ${dispatched} leads distribuídos com balanceamento correto!${failed > 0 ? ` (${failed} sem corretor)` : ""}`);
+          const { dispatched = 0, failed = 0, failed_by_reason = {} } = result;
+
+          if (dispatched > 0 && failed === 0) {
+            toast.success(`✅ ${dispatched} leads distribuídos com sucesso!`);
+          } else if (dispatched > 0 && failed > 0) {
+            const reasonParts = Object.entries(failed_by_reason as Record<string, number>)
+              .map(([reason, count]) => `${count} ${FAILURE_REASON_LABELS[reason] || reason}`)
+              .join(", ");
+            toast.success(`✅ ${dispatched} distribuídos. ⚠️ ${failed} falharam: ${reasonParts}`);
           } else {
-            toast.error(`❌ Nenhum lead distribuído. Verifique se há corretores ativos no modo ${selectedDestino}.`);
+            const reasonParts = Object.entries(failed_by_reason as Record<string, number>)
+              .map(([reason, count]) => `${count} ${FAILURE_REASON_LABELS[reason] || reason}`)
+              .join(", ");
+            toast.error(`❌ Nenhum lead distribuído. ${reasonParts || "Verifique a roleta."}`);
           }
         }
       }
