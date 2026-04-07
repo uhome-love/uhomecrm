@@ -408,39 +408,6 @@ const PipelineCard = memo(function PipelineCard({
         <CardStatusLine status={status} stageChangedAt={lead.stage_changed_at} />
       </div>
 
-      {/* Create Negócio button — only on Visita Realizada without linked deal */}
-      {stage?.nome?.toLowerCase().includes("visita realizada") && !lead.negocio_id && !negocioCriado && (
-        <div data-actions-area style={{ padding: "0 14px 8px" }}>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={criandoNegocio}
-            className="w-full h-7 text-[11px] gap-1.5 font-semibold"
-            style={{
-              borderColor: "#A7F3D0", color: "#059669",
-              borderRadius: 8,
-            }}
-            onClick={handleCreateNegocio}
-          >
-            {criandoNegocio ? (
-              <><span className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> Criando...</>
-            ) : (
-              <><FileText className="h-3 w-3" /> Criar Negócio</>
-            )}
-          </Button>
-        </div>
-      )}
-
-      {negocioCriado && (
-        <div data-actions-area style={{ padding: "0 14px 8px" }}>
-          <div style={{
-            width: "100%", height: 28, display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 11, fontWeight: 600, color: "#059669", background: "#ECFDF5", borderRadius: 8,
-          }}>
-            ✅ Negócio criado com sucesso!
-          </div>
-        </div>
-      )}
 
       {/* Negócio Criado stage — show deal info + regression */}
       {stage?.tipo === "convertido" && (
