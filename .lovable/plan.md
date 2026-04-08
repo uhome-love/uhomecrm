@@ -1,23 +1,32 @@
 
+# Plano: Excluir leads em Descarte dos status "Atrasado" e "Desatualizado"
 
-# Plano: Remover botão "Criar Negócio" + Reordenar Descarte para última etapa
+## Problema
+Leads na etapa "Descarte" estão sendo classificados como "atrasados" ou "desatualizados" nos indicadores do pipeline e na inteligência. Leads descartados não são mais ativos e devem ser sempre considerados neutros.
 
 ## Mudanças
 
-### 1. Remover botão "Criar Negócio" do card
-- **`src/components/pipeline/PipelineCard.tsx`**: Remover o bloco do botão "Criar Negócio" que aparece em "Visita Realizada", junto com a função `handleCreateNegocio` e estados associados (`criandoNegocio`, `negocioCriado`)
-- **`src/hooks/useVisitas.ts`**: Atualizar toast da visita realizada removendo referência ao botão, substituir por "Arraste para 'Negócio Criado' quando estiver pronto"
+### 1. `src/components/pipeline/CardStatusLine.tsx`
+- Adicionar parâmetro opcional `stageTipo` nas funções `getLeadStatusFilter` e `getCardStatus`
+- Se `stageTipo === "descarte"`, retornar imediatamente `"em_dia"` (sem indicador de atraso/desatualizado)
+- Na função `getCardStatus`, quando descarte, exibir texto neutro como "Descartado" com indicador cinza
 
-### 2. Reordenar etapas (migration de dados)
-Ordem final:
-```text
-... → Visita Realizada (6) → Em Evolução (7) → Negócio Criado (8) → Descarte (9)
-```
-- "Negócio Criado" passa para `ordem = 8`
-- "Descarte" passa para `ordem = 9` (última etapa)
+### 2. `src/pages/PipelineKanban.tsx`
+- Passar o `stageTipo` ao chamar `getLeadStatusFilter` nos filtros e contadores, usando o mapa de stages já disponível
 
-### Arquivos afetados
-- `src/components/pipeline/PipelineCard.tsx` — remover botão e lógica associada
-- `src/hooks/useVisitas.ts` — atualizar mensagem toast
-- Update de dados nas ordens das etapas via SQL
+### 3. `src/components/pipeline/PipelineCard.tsx`
+- Passar `stage?.tipo` ao chamar `getCardStatus` para que o card reflita o status correto
 
+### 4. `src/hooks/useLeadsParados.ts`
+- Adicionar campo opcional `stage_tipo` na interface `LeadWithDate`
+- Pular leads com `stage_tipo === "descarte"` (similar ao skip de `pos_vendas`)
+
+### 5. `src/hooks/useLeadIntelligence.ts`
+- Na contagem de KPIs e métricas, filtrar leads em stages do tipo "descarte" para não inflarem contadores de "desatualizados" ou "atrasados"
+
+## Arquivos afetados
+- `src/components/pipeline/CardStatusLine.tsx`
+- `src/pages/PipelineKanban.tsx`
+- `src/components/pipeline/PipelineCard.tsx`
+- `src/hooks/useLeadsParados.ts`
+- `src/hooks/useLeadIntelligence.ts`
