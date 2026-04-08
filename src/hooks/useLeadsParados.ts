@@ -7,6 +7,7 @@ interface LeadWithDate {
   updated_at?: string;
   stage_changed_at?: string;
   modulo_atual?: string;
+  stage_tipo?: string;
   corretor_id?: string | null;
 }
 
@@ -26,8 +27,9 @@ export function useLeadsParados(leads: LeadWithDate[], userId?: string) {
     const result: LeadParadoInfo[] = [];
 
     for (const lead of leads) {
-      // Skip pos_vendas leads
+      // Skip pos_vendas and descarte leads
       if ((lead as any).modulo_atual === "pos_vendas") continue;
+      if (lead.stage_tipo === "descarte") continue;
 
       // Filter by corretor if userId provided
       if (userId && lead.corretor_id && lead.corretor_id !== userId) continue;

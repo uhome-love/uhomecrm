@@ -48,7 +48,9 @@ function getTaskHour(task: ProximaTarefa | null | undefined) {
   return task?.hora_vencimento?.slice(0, 5) || "";
 }
 
-export function getLeadStatusFilter(lead: PipelineLead, proximaTarefa: ProximaTarefa | null): LeadClientStatus {
+export function getLeadStatusFilter(lead: PipelineLead, proximaTarefa: ProximaTarefa | null, stageTipo?: string): LeadClientStatus {
+  // Leads descartados não são considerados atrasados/desatualizados
+  if (stageTipo === "descarte") return "em_dia";
   // Leads com negócio criado (negocio_id) são sempre considerados "em dia"
   if ((lead as any).negocio_id) return "em_dia";
 
@@ -82,8 +84,11 @@ export function isTaskHigherPriority(candidate: ProximaTarefa, current: ProximaT
   return false;
 }
 
-export function getCardStatus(lead: PipelineLead, proximaTarefa: ProximaTarefa | null): CardStatusResult {
-  const status = getLeadStatusFilter(lead, proximaTarefa);
+export function getCardStatus(lead: PipelineLead, proximaTarefa: ProximaTarefa | null, stageTipo?: string): CardStatusResult {
+  if (stageTipo === "descarte") {
+    return { indicator: "⚫", indicatorCls: "text-muted-foreground", text: "Descartado", textCls: "text-muted-foreground", borderCls: "border-l-muted" };
+  }
+  const status = getLeadStatusFilter(lead, proximaTarefa, stageTipo);
   const taskDate = getTaskDate(proximaTarefa, lead);
   const hora = getTaskHour(proximaTarefa);
   const label = getTaskLabel(proximaTarefa, lead);

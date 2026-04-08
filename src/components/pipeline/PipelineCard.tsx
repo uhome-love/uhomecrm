@@ -96,7 +96,7 @@ const PipelineCard = memo(function PipelineCard({
   const [isWhatsAppFlowOpen, setIsWhatsAppFlowOpen] = useState(false);
 
   const displayEmpreendimento = deduplicateEmpreendimento(lead.empreendimento || (lead as any).origem_detalhe || "");
-  const status = useMemo(() => getCardStatus(lead, proximaTarefa || null), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento]);
+  const status = useMemo(() => getCardStatus(lead, proximaTarefa || null, stage?.tipo), [(lead as any).ultima_acao_at, lead.stage_changed_at, proximaTarefa?.tipo, proximaTarefa?.vence_em, proximaTarefa?.hora_vencimento, stage?.tipo]);
 
   const leadScore = useMemo(() => calculateLeadScore({
     telefone: lead.telefone,
