@@ -79,7 +79,7 @@ interface TimelineItem {
   date: string;
   icon: any;
   color: string;
-  sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "system";
+  sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "anotacao" | "system";
   sourceId?: string;
 }
 
