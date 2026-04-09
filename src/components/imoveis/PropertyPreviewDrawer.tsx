@@ -22,7 +22,7 @@ import {
   Heart, Copy, Phone, MapPin, CalendarClock, Share2, Building2,
   Loader2, UserCircle, Mail, BedDouble, Bath, Car,
   Maximize2, ChevronLeft, ChevronRight, RulerIcon, DoorOpen,
-  MessageCircle,
+  MessageCircle, ExternalLink,
 } from "lucide-react";
 import PhotoLightbox from "@/components/imoveis/PhotoLightbox";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
