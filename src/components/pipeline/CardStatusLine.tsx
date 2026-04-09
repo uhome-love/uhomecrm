@@ -114,9 +114,6 @@ interface CardStatusLineProps {
 }
 
 export default function CardStatusLine({ status }: CardStatusLineProps) {
-  // Don't render anything if no text (em_dia without task)
-  if (!status.text) return null;
-
   const badgeStyle = useMemo(() => {
     if (status.indicator === "🔴") return { bg: "hsl(var(--danger-50))", color: "hsl(var(--danger-600))", border: "hsl(var(--danger-100))" };
     if (status.indicator === "🟡" || status.indicator === "⚠️") return { bg: "hsl(var(--warning-50))", color: "hsl(var(--warning-600))", border: "hsl(var(--warning-100))" };
