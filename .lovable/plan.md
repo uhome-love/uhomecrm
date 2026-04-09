@@ -1,46 +1,90 @@
 
 
-# Plano: Cards Compactos + Ocultar Listas Esgotadas
+# Plano: Oferta Ativa com Tema Dinâmico (Dark/Light)
 
 ## Problema
-1. Listas esgotadas (naFila === 0) continuam visíveis com `opacity-50`, poluindo a tela
-2. Cards são grandes demais (stats em fonte 32px, progress bar, etc.) — quando há muitas listas, o corretor precisa rolar demais
-3. O formato grid de cards grandes não escala bem para 10+ listas
+Toda a Arena usa cores hardcoded escuras (#0A0F1E, #161B22, rgba(255,255,255,0.08), `text-white`, etc.) tanto no CSS quanto em inline styles no JSX. Quando o sistema está em modo light, a Arena continua escura.
 
 ## Solução
+Converter todas as referências de cor para usar CSS variables e classes Tailwind que respondem ao tema, sem alterar nenhuma funcionalidade.
 
-### 1. Ocultar listas esgotadas
-- Em todas as views (campanhas, listas), filtrar items onde `naFila === 0` do `statsMap`
-- Adicionar um toggle discreto no final: "Mostrar X listas esgotadas" para o corretor poder ver se quiser, mas **desativado por padrão**
-- Campanhas onde **todas** as listas estão esgotadas também ficam ocultas
+---
 
-### 2. Redesenhar cards para formato compacto em lista
-Trocar o grid de cards grandes por **rows compactas**, uma por linha:
+### Parte 1 — CSS: Trocar hardcoded por variáveis temáticas
+**Arquivo:** `src/index.css`
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│ 🏠 Casa Tua        12 na fila · 5 aproveit. · 45 total │ ████░░ 73%  │ [▶ Iniciar] │
-│ 🏠 Botanique        8 na fila · 3 aproveit. · 30 total │ ███░░░ 60%  │ [▶ Iniciar] │
-│ 📂 Campanha Sul     20 na fila · 8 aproveit. · 60 total│ ██░░░░ 33%  │ [▶ Iniciar] │
-└─────────────────────────────────────────────────────────┘
+Reescrever o bloco Arena (~linhas 600-718) usando variáveis CSS com valores light por padrão e override no `.dark`:
+
+```css
+:root {
+  --arena-bg-from: #F8FAFC;
+  --arena-bg-to: #F1F5F9;
+  --arena-scoreboard: rgba(255,255,255,0.85);
+  --arena-scoreboard-border: rgba(0,0,0,0.08);
+  --arena-card-bg: #FFFFFF;
+  --arena-card-border: rgba(0,0,0,0.08);
+  --arena-card-hover-border: rgba(59,130,246,0.3);
+  --arena-text: #1E293B;
+  --arena-text-muted: #64748B;
+  --arena-subtle-bg: rgba(0,0,0,0.04);
+  --arena-particle-color: #3B82F6;
+  --arena-floor-glow: rgba(59,130,246,0.04);
+  --arena-vignette: rgba(255,255,255,0.3);
+}
+
+.dark {
+  --arena-bg-from: #0A0F1E;
+  --arena-bg-to: #111827;
+  --arena-scoreboard: rgba(15,23,42,0.85);
+  --arena-scoreboard-border: rgba(255,255,255,0.08);
+  --arena-card-bg: #161B22;
+  --arena-card-border: rgba(255,255,255,0.08);
+  --arena-card-hover-border: rgba(59,130,246,0.4);
+  --arena-text: #FFFFFF;
+  --arena-text-muted: #9CA3AF;
+  --arena-subtle-bg: rgba(255,255,255,0.06);
+  --arena-particle-color: #60A5FA;
+  --arena-floor-glow: rgba(59,130,246,0.06);
+  --arena-vignette: rgba(0,0,0,0.4);
+}
 ```
 
-Cada row: ~48px de altura. Contém:
-- Nome (bold) + campanha (subtle, se houver)
-- Stats inline: "12 na fila · 5 aproveitados · 45 total"
-- Mini progress bar (inline, ~80px de largura)
-- Botão verde "Iniciar" compacto no lado direito
-- Badge de tentativas do dia (se > 0)
+Todas as classes `.arena-*` passam a usar essas variáveis em vez de valores fixos.
 
-### 3. Campanhas view — mesmo padrão compacto
-Campanhas também viram rows, não cards. O ícone 📂 diferencia de lista individual.
+### Parte 2 — JSX: Remover inline styles hardcoded
+**Arquivo:** `src/pages/CorretorCall.tsx`
+
+Substituir todos os `style={{ background: "#0A0F1E" }}`, `style={{ background: "rgba(255,255,255,0.1)" }}`, `text-white`, `text-neutral-400` por classes Tailwind temáticas:
+
+- `style={{ background: "#0A0F1E" }}` → remover (herdado do `.arena-bg`)
+- `text-white` → `text-arena` (ou `text-foreground`)
+- `text-neutral-400` → `text-muted-foreground`
+- `bg-white/[0.08]` → `bg-arena-subtle` (classe utilitária)
+- `border-white/[0.15]` → `border-arena-border`
+- Progress bar backgrounds: usar variáveis CSS
+
+### Parte 3 — Subcomponentes
+**Arquivo:** `src/components/oferta-ativa/CorretorListSelection.tsx`
+
+Trocar referências hardcoded de cores escuras (se houver inline styles) por classes temáticas. O componente já usa `arena-card` e `arena-btn-call` que serão atualizados via CSS.
+
+Verificar `AproveitadosPanel.tsx` e `RankingPanel.tsx` — o `darkMode` prop pode ser substituído pela detecção automática via CSS.
+
+---
 
 ## Arquivos Modificados
 
 | Arquivo | Ação |
 |---------|------|
-| `src/components/oferta-ativa/CorretorListSelection.tsx` | Redesenhar ListaCard → ListaRow compacta, filtrar esgotadas, toggle "mostrar esgotadas" |
+| `src/index.css` | Reescrever arena CSS com variáveis temáticas |
+| `src/pages/CorretorCall.tsx` | Remover inline styles, usar classes temáticas |
+| `src/components/oferta-ativa/CorretorListSelection.tsx` | Ajustar cores hardcoded se houver |
 
 ## Risco
-Baixo. Apenas visual. Nenhuma lógica de negócio muda. O click handler e a seleção de lista permanecem idênticos.
+Zero funcional. Apenas troca de valores de cor. Nenhuma lógica, handler ou query é alterada.
+
+## Teste
+- Alternar tema dark/light e verificar que a Arena adapta
+- Verificar que botões verdes, progress bars e partículas mantêm qualidade visual em ambos os modos
+- Verificar que cards de lista, tabs e scoreboard ficam legíveis em light mode
 
