@@ -224,13 +224,14 @@ export default function CorretorCall() {
         <div className="w-full max-w-lg mx-auto px-6 pt-6 flex items-center justify-between">
           <button
             onClick={() => navigate("/corretor")}
-            className="text-neutral-400 text-sm hover:text-white transition-colors flex items-center gap-1.5"
+            className="text-sm hover:opacity-80 transition-colors flex items-center gap-1.5"
+            style={{ color: "var(--arena-text-muted)" }}
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar à Central
           </button>
           {streakDays > 0 && (
-            <span className="text-neutral-400 text-sm flex items-center gap-1">
-              🔥 <span className="text-white font-semibold">{streakDays} dias</span> seguidos
+            <span className="text-sm flex items-center gap-1" style={{ color: "var(--arena-text-muted)" }}>
+              🔥 <span className="font-semibold" style={{ color: "var(--arena-text)" }}>{streakDays} dias</span> seguidos
             </span>
           )}
         </div>
@@ -258,31 +259,31 @@ export default function CorretorCall() {
             ✦ MODO BATALHA ✦
           </p>
 
-          <h1 className="text-5xl font-black text-white mb-6 leading-tight">
+          <h1 className="text-5xl font-black mb-6 leading-tight" style={{ color: "var(--arena-text)" }}>
             Sua Missão de Hoje
           </h1>
 
           {/* Metas card */}
-          <div className="flex gap-4 bg-white/[0.08] border border-white/[0.15] rounded-2xl px-8 py-5">
+          <div className="flex gap-4 rounded-2xl px-8 py-5" style={{ background: "var(--arena-subtle-bg)", border: "1px solid var(--arena-card-border)" }}>
             <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold text-white">🔥 {progress.metaLigacoes}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">ligações</p>
+              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>🔥 {progress.metaLigacoes}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>ligações</p>
             </div>
-            <div className="w-px bg-white/10" />
+            <div className="w-px" style={{ background: "var(--arena-card-border)" }} />
             <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold text-white">✅ {progress.metaAproveitados}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">aproveit.</p>
+              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>✅ {progress.metaAproveitados}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>aproveit.</p>
             </div>
-            <div className="w-px bg-white/10" />
+            <div className="w-px" style={{ background: "var(--arena-card-border)" }} />
             <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold text-white">📅 {progress.metaVisitas}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">visitas</p>
+              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>📅 {progress.metaVisitas}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>visitas</p>
             </div>
           </div>
 
           {/* Progress if already started today */}
           {progress.tentativas > 0 && (
-            <div className="mt-4 flex gap-4 text-xs text-neutral-400">
+            <div className="mt-4 flex gap-4 text-xs" style={{ color: "var(--arena-text-muted)" }}>
               <span>🔥 {progress.tentativas}/{progress.metaLigacoes} feitas</span>
               <span>✅ {progress.aproveitados}/{progress.metaAproveitados} aprov.</span>
               <span>⭐ {progress.pontos}pts</span>
