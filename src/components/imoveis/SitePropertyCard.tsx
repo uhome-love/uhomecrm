@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useCallback } from "react";
-import { Heart, Share2, MessageCircle, Copy, Link2 } from "lucide-react";
+import { Heart, Share2, MessageCircle, Copy, Link2, ExternalLink, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { type SiteImovel, fotoPrincipal, formatPreco, shareUrlUhome } from "@/services/siteImoveis";
 import { useBrokerSlug } from "@/hooks/useBrokerSlug";
@@ -58,6 +58,7 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
   const [fotoAtiva, setFotoAtiva] = useState(0);
   const [lazyFotos, setLazyFotos] = useState<string[] | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const fotosLoadedRef = useRef(false);
 
   const baseFoto = fotoPrincipal(imovel);
@@ -129,13 +130,14 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
         {!imgLoaded && (
           <div className="absolute inset-0 animate-pulse bg-muted" />
         )}
-        {fotos.length > 0 ? (
+        {fotos.length > 0 && !imgError ? (
           <img
             src={fotos[fotoAtiva]}
             alt={`${tipoCapitalized} ${imovel.bairro}`}
             loading={index < 6 ? "eager" : "lazy"}
             decoding="async"
             onLoad={() => setImgLoaded(true)}
+            onError={() => setImgError(true)}
             className={cn(
               "h-full w-full object-cover transition-all duration-500",
               imgLoaded ? "opacity-100" : "opacity-0",
@@ -143,8 +145,9 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
             style={{ transform: hovering ? "scale(1.04)" : "scale(1)" }}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-muted">
-            <span className="text-3xl opacity-40">🏠</span>
+          <div className="flex h-full w-full flex-col items-center justify-center bg-gray-100 dark:bg-muted gap-1.5">
+            <Building2 className="h-12 w-12 text-gray-300" />
+            <span className="text-xs text-gray-400">Sem foto</span>
           </div>
         )}
 
@@ -284,6 +287,17 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             + R$ {imovel.preco_condominio!.toLocaleString("pt-BR")}/mês cond.
           </p>
+        )}
+
+        {(imovel.slug || imovel.codigo) && shareUrl && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 w-full h-8 text-sm gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:border-indigo-800 dark:hover:bg-indigo-950"
+            onClick={(e) => { e.stopPropagation(); window.open(shareUrl, "_blank"); }}
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> Ver no site
+          </Button>
         )}
       </div>
     </motion.div>

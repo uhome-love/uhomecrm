@@ -493,6 +493,14 @@ export default function PropertyPreviewDrawer({
             </div>
           )}
 
+          {propertyUrl && (
+            <a href={propertyUrl} target="_blank" rel="noopener noreferrer" className="block">
+              <Button className="w-full h-11 text-sm font-bold gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 rounded-xl">
+                <ExternalLink className="h-5 w-5" /> Abrir no uhome.com.br
+              </Button>
+            </a>
+          )}
+
           <a href={`https://wa.me/?text=${whatsappText}`} target="_blank" rel="noopener noreferrer" className="block">
             <Button className="w-full h-12 text-sm font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 rounded-xl">
               <MessageCircle className="h-5 w-5" /> Enviar por WhatsApp
