@@ -80,6 +80,34 @@ function mapPropertyRow(row: any) {
   };
 }
 
+/**
+ * Map a row from the site `imoveis` table to the same output shape.
+ */
+function mapSiteImovelRow(row: any) {
+  const rawFotos = Array.isArray(row.fotos) ? row.fotos : [];
+  const fotos = rawFotos.slice(0, 10).map((f: any) => typeof f === "string" ? f : f?.url || "").filter(Boolean);
+  if (!fotos.length && row.foto_principal) fotos.push(row.foto_principal);
+  return {
+    id: row.jetimob_id || row.id,
+    codigo: row.jetimob_id || String(row.id),
+    titulo: row.titulo || row.condominio_nome || `Imóvel ${row.jetimob_id || row.id}`,
+    endereco: row.bairro ? `${row.bairro}${row.cidade ? ` — ${row.cidade}` : ""}` : null,
+    bairro: row.bairro || null,
+    cidade: row.cidade || null,
+    area: row.area_total || null,
+    quartos: row.quartos || null,
+    suites: row.suites || null,
+    vagas: row.vagas || null,
+    banheiros: row.banheiros || null,
+    valor: row.preco || null,
+    fotos,
+    empreendimento: row.condominio_nome || null,
+    descricao: row.titulo || null,
+    lat: row.latitude || null,
+    lng: row.longitude || null,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
