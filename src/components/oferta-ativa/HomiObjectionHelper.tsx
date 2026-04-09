@@ -120,9 +120,9 @@ export default function HomiObjectionHelper({ leadNome, leadEmpreendimento, sele
         style={{
           height: 36,
           padding: "0 12px",
-          background: "rgba(6,182,212,0.12)",
-          border: "1px solid rgba(6,182,212,0.2)",
-          color: "#22D3EE",
+          background: "rgba(6,182,212,0.15)",
+          border: "1px solid rgba(6,182,212,0.35)",
+          color: "#0891B2",
         }}
       >
         <span className="flex items-center gap-1.5">

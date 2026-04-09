@@ -843,7 +843,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
         {/* ⚡ Objeções Rápidas — always visible */}
         <div>
-          <span style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>⚡ Objeções Rápidas</span>
+          <span style={{ fontSize: 11, color: "#D97706", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>⚡ Objeções Rápidas</span>
           <div className="grid grid-cols-2 gap-1.5 pt-1.5">
             {objections.map((obj, i) => {
               const isOpen = openObjections.includes(i);
@@ -856,13 +856,13 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                   }}
                   className="transition-all text-left flex items-center"
                   style={{
-                    background: isOpen ? "rgba(245,158,11,0.12)" : "#1C2128",
-                    border: isOpen ? "1px solid rgba(245,158,11,0.4)" : "1px dashed rgba(255,255,255,0.1)",
+                    background: isOpen ? "rgba(245,158,11,0.12)" : "var(--arena-subtle-bg)",
+                    border: isOpen ? "1px solid rgba(245,158,11,0.4)" : "1px solid var(--arena-card-border)",
                     borderRadius: 8,
                     padding: "6px 10px",
                     fontSize: 11,
                     fontWeight: 600,
-                    color: isOpen ? "#FCD34D" : "#D1D5DB",
+                    color: isOpen ? "#D97706" : "var(--arena-text)",
                     height: 32,
                   }}
                 >
@@ -891,7 +891,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
                 </button>
                 <div className="flex items-center gap-1.5 mb-1 pr-5">
                   <Sparkles className="h-3 w-3 shrink-0" style={{ color: "#FBBF24" }} />
-                  <span className="text-xs font-bold" style={{ color: "#FBBF24" }}>✨ {objections[i].label}</span>
+                  <span className="text-xs font-bold" style={{ color: "#D97706" }}>✨ {objections[i].label}</span>
                 </div>
                 <p className="text-sm leading-snug line-clamp-3" style={{ color: "var(--arena-text)" }}>{objections[i].answer}</p>
               </div>
@@ -904,7 +904,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
 
       {/* Recent calls — collapsed, outside card */}
       <Collapsible>
-        <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-neutral-300 transition-colors w-full px-1">
+        <CollapsibleTrigger className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors w-full px-1">
           <History className="h-3 w-3" />
           <span>Últimas Ligações ({lead.tentativas_count})</span>
           <ChevronDown className="h-3 w-3 ml-auto" />
@@ -927,8 +927,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           className="flex-1 py-2.5 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
           style={{
             background: scriptTab === "ligacao" ? "var(--arena-subtle-bg)" : "transparent",
-            color: scriptTab === "ligacao" ? "#86EFAC" : "var(--arena-text-muted)",
-            borderBottom: scriptTab === "ligacao" ? "2px solid rgba(34,197,94,0.6)" : "2px solid transparent",
+            color: scriptTab === "ligacao" ? "#16A34A" : "var(--arena-text-muted)",
+            borderBottom: scriptTab === "ligacao" ? "2px solid rgba(22,163,74,0.6)" : "2px solid transparent",
           }}
         >
           📋 Script Ligação
@@ -938,8 +938,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           className="flex-1 py-2.5 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
           style={{
             background: scriptTab === "whatsapp" ? "var(--arena-subtle-bg)" : "transparent",
-            color: scriptTab === "whatsapp" ? "#86EFAC" : "var(--arena-text-muted)",
-            borderBottom: scriptTab === "whatsapp" ? "2px solid rgba(34,197,94,0.6)" : "2px solid transparent",
+            color: scriptTab === "whatsapp" ? "#16A34A" : "var(--arena-text-muted)",
+            borderBottom: scriptTab === "whatsapp" ? "2px solid rgba(22,163,74,0.6)" : "2px solid transparent",
           }}
         >
           💬 Script WhatsApp
@@ -974,8 +974,8 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
           borderBottom: "1px solid rgba(59,130,246,0.15)",
         }}
       >
-        <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className="uppercase mb-1.5 text-blue-400">🎯 CTA Final</h4>
-        <p style={{ fontSize: "15px", fontStyle: "italic", color: "#FDE68A" }} className="p-2 rounded-lg">
+        <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className="uppercase mb-1.5 text-blue-600 dark:text-blue-400">🎯 CTA Final</h4>
+        <p style={{ fontSize: "15px", fontStyle: "italic", color: "var(--arena-text)" }} className="p-2 rounded-lg font-medium">
           "Que tal agendar uma visita sem compromisso? Posso reservar o melhor horário para você!"
         </p>
       </div>
@@ -1129,7 +1129,7 @@ export default function DialingModeWithScript({ lista, onBack }: Props) {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-emerald-400/70">🔒 Reservado</span>
-          <span className="text-[10px] text-neutral-600 flex items-center gap-1"><Clock className="h-3 w-3" />{formatSessionTime(sessionSeconds)}</span>
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />{formatSessionTime(sessionSeconds)}</span>
           {streak >= 2 && (
             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5" }}>
               🔥 {streak}x
