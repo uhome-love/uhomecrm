@@ -288,8 +288,8 @@ export default function ScriptPanel({ empreendimento, lead, compact, darkMode, s
 
       {!hideCta && (!scriptFilter || scriptFilter === "ligacao") && (
         <div className="rounded-xl p-3" style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)" }}>
-          <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className="uppercase mb-1.5 text-primary">🎯 CTA Final</h4>
-          <p style={{ fontSize: "15px", fontStyle: "italic", color: "#FBBF24" }} className="p-2 rounded-lg">
+          <h4 style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em" }} className="uppercase mb-1.5 text-blue-600 dark:text-blue-400">🎯 CTA Final</h4>
+          <p style={{ fontSize: "15px", fontStyle: "italic", color: "var(--arena-text)" }} className="p-2 rounded-lg font-medium">
             "Que tal agendar uma visita sem compromisso? Posso reservar o melhor horário para você!"
           </p>
         </div>
