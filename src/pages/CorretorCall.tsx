@@ -574,7 +574,7 @@ export default function CorretorCall() {
               <AproveitadosPanel />
             </TabsContent>
             <TabsContent value="ranking" className="mt-0">
-              <RankingPanel darkMode />
+              <RankingPanel />
             </TabsContent>
           </Tabs>
         </div>
