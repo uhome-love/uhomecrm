@@ -1,40 +1,92 @@
 
-# Plano: Corrigir interesse de imóvel para leads do site
 
-## Problema
-Quando um lead vem do site com um imóvel específico (ex: código `340340-UP`), o trigger `sync_site_lead_to_pipeline` cria o registro em `pipeline_leads` mas **não preenche** as colunas `imovel_codigo` e `imovel_url`. Os dados ficam apenas dentro do JSON `dados_site`, invisíveis para o corretor.
+# Plano: Evolução Arquitetural — Fases 1, 2 e 3
 
-O campo `empreendimento` recebe o texto genérico `"Apartamento 3 quartos — Rio Branco"` em vez do título real do imóvel ou um link clicável.
+Execução incremental, fase a fase, com teste de funcionamento ao final de cada uma. Fase 4 (Lead Detail) fica para redesenho futuro. Fase 5 (polish) pode ser feita depois.
 
-## Solução
+---
 
-### 1. Migração SQL — Atualizar trigger `sync_site_lead_to_pipeline`
-Alterar o trigger para:
-- **Setar `imovel_codigo`** com `NEW.imovel_codigo` na inserção e no update
-- **Gerar `imovel_url`** a partir do slug: concatenar `https://uhomesales.com/imovel/` + `NEW.imovel_slug` quando disponível
-- **Melhorar `empreendimento`**: se houver `imovel_codigo`, buscar o título real na tabela `properties` via subselect; caso contrário, manter `NEW.imovel_interesse`
+## FASE 1 — Segurança e Limpeza Invisível
 
-### 2. Migração SQL — Corrigir leads existentes
-Script para preencher `imovel_codigo` e `imovel_url` dos leads que já estão no pipeline com `dados_site` contendo esses dados:
-```sql
-UPDATE pipeline_leads SET
-  imovel_codigo = dados_site->>'imovel_codigo',
-  imovel_url = 'https://uhomesales.com/imovel/' || (dados_site->>'imovel_slug')
-WHERE origem = 'site_uhome'
-  AND imovel_codigo IS NULL
-  AND dados_site->>'imovel_codigo' IS NOT NULL
-  AND dados_site->>'imovel_slug' IS NOT NULL;
-```
+**Risco: zero. Nenhum fluxo ativo é afetado.**
 
-### 3. UI — Mostrar link do imóvel no detalhe do lead
-- **`src/components/pipeline/PipelineLeadDetail.tsx`**: Na seção do empreendimento (row 2.5), quando `imovel_url` existir, exibir como link clicável (abre em nova aba). Quando houver `imovel_codigo`, mostrar o código como badge ao lado.
-- **`src/components/pipeline/PipelineCard.tsx`**: No card do kanban, se `imovel_codigo` existir, exibir como badge pequeno junto ao empreendimento.
+### 1.1 Proteger `/import-brevo-contacts`
+- Linha 193 do `App.tsx`: trocar de rota pública para `<ProtectedPage roles={["admin"]}>`.
 
-### 4. Buscar dados do lead
-- **`src/hooks/usePipeline.ts`** ou query equivalente: garantir que `imovel_codigo` e `imovel_url` são incluídos no select dos pipeline_leads.
+### 1.2 Deletar 5 arquivos órfãos (sem rota ativa ou rota duplicada)
+- `src/pages/FechamentoDay.tsx` — a rota `/fechamento-day` já renderiza `PlacarDoDia` diretamente (linha 197)
+- `src/pages/ForecastDashboard.tsx` — sem rota no App.tsx
+- `src/pages/FunilDashboard.tsx` — sem rota no App.tsx
+- `src/pages/Index.tsx` — sem rota no App.tsx
+- `src/pages/AlertasPage.tsx` — sem rota no App.tsx
+
+### 1.3 Remover import morto
+- Linha 49: remover `const RankingComercial = lazyRetry(...)` — não tem nenhuma `<Route>` associada
+
+### Teste Fase 1
+- Build compila sem erros
+- Todas as rotas do sidebar funcionam
+- `/import-brevo-contacts` redireciona para `/auth` se não logado, e para home se não admin
+
+---
+
+## FASE 2 — Unificação de Rotas Duplicadas
+
+**Risco: baixo. Redirects preservam acesso por bookmark/URL.**
+
+### 2.1 Rotas a substituir por `<Navigate to="..." replace />`
+| Rota atual | Redireciona para | Motivo |
+|---|---|---|
+| `/fechamento-day` (linha 197) | `/placar-do-dia` | Mesmo componente `PlacarDoDia` |
+| `/corretor/call` (linha 225) | `/oferta-ativa` | Dialers duplicados |
+| `/corretor/ranking-equipes` (linha 228) | `/ranking` | Mesmo componente `RankingEquipe` |
+| `/gestao` (linha 207) | `/gerente/dashboard` | Mesmo componente `GestorDashboard` |
+| `/corretor/resumo` (linha 227) | `/corretor` | Sem entrada no sidebar |
+
+### 2.2 Remover lazy imports que ficam órfãos após redirects
+- `CorretorCall` (linha 74)
+- `CorretorResumo` (linha 53)
+- `GestorDashboard` continua sendo usado em `/gestao`? Não — `/gestao` renderiza `GestorDashboard` mas o redirect elimina isso. Porém `GestorDashboard` pode ser usado em outra rota? Verificar... Não, apenas `/gestao`. Mas o import `GestorDashboard` na linha 39 é usado em algum outro lugar? Não. Mas o componente é a **home do gestor via HomeDashboard**? Não — `HomeDashboard` é separado. Remover o import `GestorDashboard` e o arquivo `GestorDashboard.tsx`.
+
+**Espera** — preciso ser cauteloso. `GestorDashboard` é importado na linha 39 e usado apenas na rota `/gestao` (linha 207). Se `/gestao` vira redirect, o import fica órfão. Mas o arquivo pode ser referenciado por outros componentes. Vou manter o arquivo e apenas remover o import do App.tsx.
+
+### Teste Fase 2
+- Acessar cada URL antiga e confirmar redirect
+- Sidebar continua funcionando normalmente
+- Nenhum 404
+
+---
+
+## FASE 3 — Ajuste do Sidebar do Corretor
+
+**Risco: médio-visual. Só reorganização, sem perder funcionalidade.**
+
+### 3.1 No `src/components/layout/Sidebar.tsx`
+- Alterar o path do item "Oferta ativa" de `/corretor/call` para `/oferta-ativa` (linha 175)
+- Verificar se há outros itens apontando para rotas que agora são redirects e atualizar
+
+### Teste Fase 3
+- Clicar em cada item do sidebar do corretor — todos funcionam
+- Clicar em cada item do sidebar do admin — todos funcionam
+- Clicar em cada item do sidebar do gestor — todos funcionam
+
+---
 
 ## Arquivos afetados
-- Migração SQL (trigger + backfill de dados)
-- `src/components/pipeline/PipelineLeadDetail.tsx` — link clicável do imóvel
-- `src/components/pipeline/PipelineCard.tsx` — badge de código
-- Query de pipeline_leads (se não incluir esses campos)
+
+| Arquivo | Ação |
+|---|---|
+| `src/App.tsx` | Proteger brevo, remover 3 imports órfãos, substituir 5 rotas por redirects |
+| `src/components/layout/Sidebar.tsx` | Atualizar path oferta-ativa |
+| `src/pages/FechamentoDay.tsx` | Deletar |
+| `src/pages/ForecastDashboard.tsx` | Deletar |
+| `src/pages/FunilDashboard.tsx` | Deletar |
+| `src/pages/Index.tsx` | Deletar |
+| `src/pages/AlertasPage.tsx` | Deletar |
+
+## Estratégia anti-quebra
+- Cada fase é um commit separado
+- Se qualquer fase causar problema, revertemos apenas ela
+- Redirects garantem que URLs antigas continuam funcionando
+- Nenhum componente ativo é modificado ou removido
+
