@@ -49,7 +49,9 @@ function getTaskHour(task: ProximaTarefa | null | undefined) {
 }
 
 export function getLeadStatusFilter(lead: PipelineLead, proximaTarefa: ProximaTarefa | null, stageTipo?: string): LeadClientStatus {
+  // Leads descartados não são considerados atrasados/desatualizados
   if (stageTipo === "descarte") return "em_dia";
+  // Leads com negócio criado (negocio_id) são sempre considerados "em dia"
   if ((lead as any).negocio_id) return "em_dia";
 
   const todayStart = startOfDay(new Date());
@@ -73,10 +75,12 @@ export function isTaskHigherPriority(candidate: ProximaTarefa, current: ProximaT
     if (candidateDate.getTime() !== currentDate.getTime()) {
       return candidateDate.getTime() < currentDate.getTime();
     }
+
     const candidateHour = candidate.hora_vencimento || "23:59";
     const currentHour = current.hora_vencimento || "23:59";
     return candidateHour < currentHour;
   }
+
   return false;
 }
 
@@ -91,21 +95,23 @@ export function getCardStatus(lead: PipelineLead, proximaTarefa: ProximaTarefa |
 
   if (status === "tarefa_atrasada" && taskDate) {
     const dateLabel = isYesterdayFn(taskDate) ? "ontem" : format(taskDate, "dd/MM");
-    return { indicator: "🔴", indicatorCls: "text-destructive", text: `Atrasado: ${label} ${dateLabel} ${hora}`.trim(), textCls: "text-destructive font-semibold", borderCls: "border-l-destructive" };
+    return { indicator: "🔴", indicatorCls: "text-destructive", text: `🔴 Atrasado: ${label} ${dateLabel} ${hora}`.trim(), textCls: "text-destructive font-semibold", borderCls: "border-l-destructive" };
   }
 
   if (status === "em_dia") {
     if (!taskDate) {
-      return { indicator: "✅", indicatorCls: "text-green-500", text: "", textCls: "", borderCls: "border-l-green-400" };
+      return { indicator: "✅", indicatorCls: "text-green-500", text: "✅ Em dia", textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
     }
+
     if (isTodayFn(taskDate)) {
-      return { indicator: "✅", indicatorCls: "text-green-500", text: `Hoje ${hora}: ${label}`.trim(), textCls: "text-emerald-700", borderCls: "border-l-green-400" };
+      return { indicator: "✅", indicatorCls: "text-green-500", text: `✅ Hoje ${hora}: ${label}`.trim(), textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
     }
+
     const dateLabel = isTomorrowFn(taskDate) ? "amanhã" : format(taskDate, "dd/MM");
-    return { indicator: "🔵", indicatorCls: "text-blue-500", text: `${label} ${dateLabel} ${hora}`.trim(), textCls: "text-blue-600", borderCls: "border-l-green-400" };
+    return { indicator: "✅", indicatorCls: "text-green-500", text: `✅ Próximo: ${label} ${dateLabel} ${hora}`.trim(), textCls: "text-muted-foreground", borderCls: "border-l-green-400" };
   }
 
-  return { indicator: "🟡", indicatorCls: "text-amber-500", text: "Desatualizado · sem tarefa futura", textCls: "text-amber-700 font-semibold", borderCls: "border-l-amber-400" };
+  return { indicator: "🟡", indicatorCls: "text-amber-500", text: "🟡 Desatualizado · sem tarefa futura", textCls: "text-amber-600 dark:text-amber-400 font-semibold", borderCls: "border-l-amber-400" };
 }
 
 interface CardStatusLineProps {
@@ -114,29 +120,21 @@ interface CardStatusLineProps {
 }
 
 export default function CardStatusLine({ status }: CardStatusLineProps) {
-  const badgeStyle = useMemo(() => {
-    if (status.indicator === "🔴") return { bg: "hsl(var(--danger-50))", color: "hsl(var(--danger-600))", border: "hsl(var(--danger-100))" };
-    if (status.indicator === "🟡" || status.indicator === "⚠️") return { bg: "hsl(var(--warning-50))", color: "hsl(var(--warning-600))", border: "hsl(var(--warning-100))" };
-    if (status.indicator === "🔵") return { bg: "hsl(var(--primary-50))", color: "hsl(var(--primary-600))", border: "hsl(var(--primary-100))" };
-    // ✅ today
-    return { bg: "hsl(var(--success-50))", color: "hsl(var(--success-600))", border: "hsl(var(--success-100))" };
+  const statusColor = useMemo(() => {
+    if (status.indicator === "🔴") return "hsl(var(--danger-500))";
+    if (status.indicator === "🟡" || status.indicator === "⚠️") return "hsl(var(--warning-600))";
+    return "hsl(var(--success-500))";
   }, [status.indicator]);
 
-  // Don't render anything if no text (em_dia without task)
-  if (!status.text) return null;
-
   return (
-    <div style={{ paddingTop: 2 }}>
-      <span style={{
-        display: "inline-flex", alignItems: "center",
-        fontSize: 11, fontWeight: 600, lineHeight: "16px",
-        padding: "2px 8px", borderRadius: 100,
-        background: badgeStyle.bg, color: badgeStyle.color,
-        border: `1px solid ${badgeStyle.border}`,
-        maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+    <div className="flex items-center justify-between gap-1" style={{ paddingTop: 2 }}>
+      <p style={{
+        fontSize: 11, fontWeight: 600, color: statusColor,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
       }}>
-        {status.text}
-      </span>
+        {status.text || "✅ Em dia"}
+      </p>
     </div>
   );
 }

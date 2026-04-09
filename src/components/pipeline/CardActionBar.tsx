@@ -29,7 +29,7 @@ export default function CardActionBar({
 }: CardActionBarProps) {
   const btnBase: React.CSSProperties = {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-    padding: "6px 4px", cursor: "pointer",
+    padding: "8px 4px", cursor: "pointer",
     background: "transparent", border: "none", outline: "none",
     fontSize: 11, fontWeight: 600,
     fontFamily: "'Plus Jakarta Sans', sans-serif",
@@ -37,19 +37,19 @@ export default function CardActionBar({
     width: "100%", minWidth: 0,
   };
 
+  const separatorStyle: React.CSSProperties = {
+    borderRight: "0.5px solid hsl(var(--border))",
+  };
+
   return (
-    <div
-      data-actions-area
-      className="opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-150"
-    >
+    <div data-actions-area>
       <div style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr 1fr 36px",
-        borderTop: "1px solid hsl(var(--pipeline-card-border))",
-        background: "hsl(var(--pipeline-card-bg))",
+        borderTop: "0.5px solid hsl(var(--border))",
       }}>
         {/* Ligar */}
-        <div style={{ borderRight: "1px solid hsl(var(--pipeline-card-border))" }}>
+        <div style={separatorStyle}>
           <button
             onClick={onCall}
             style={{ ...btnBase, color: "#4F46E5" }}
@@ -62,12 +62,12 @@ export default function CardActionBar({
         </div>
 
         {/* Tarefa */}
-        <div style={{ borderRight: "1px solid hsl(var(--pipeline-card-border))" }}>
+        <div style={separatorStyle}>
           <CardQuickTaskPopover leadId={leadId} leadNome={leadNome} />
         </div>
 
         {/* WhatsApp */}
-        <div style={{ borderRight: "1px solid hsl(var(--pipeline-card-border))" }}>
+        <div style={separatorStyle}>
           <button
             onClick={onWhatsApp}
             style={{ ...btnBase, color: "#16a34a" }}
@@ -85,7 +85,7 @@ export default function CardActionBar({
             <DropdownMenuTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
-                style={{ ...btnBase, width: 36, color: "hsl(var(--muted-foreground))", outline: "none" }}
+                style={{ ...btnBase, width: 36, color: "#888780", outline: "none" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--muted))"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >

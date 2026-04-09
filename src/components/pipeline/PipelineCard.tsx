@@ -1,6 +1,6 @@
 import { memo, useState, useMemo, useEffect } from "react";
 import type { PipelineLead, PipelineSegmento, PipelineStage } from "@/hooks/usePipeline";
-import { Handshake, Flame, Snowflake, ThermometerSun, Undo2 } from "lucide-react";
+import { Phone, MessageCircle, Handshake, ArrowRightLeft, FileText, Flame, Snowflake, ThermometerSun, Undo2, ChevronDown } from "lucide-react";
 import { getScoreTooltip } from "@/lib/scoreTemperatureLabels";
 import { calculateLeadScore } from "@/lib/leadScoring";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -204,6 +204,7 @@ const PipelineCard = memo(function PipelineCard({
     onClick();
   };
 
+
   // Origin tag
   const originTag = useMemo(() => {
     const o = lead.origem?.toLowerCase() || "";
@@ -238,7 +239,7 @@ const PipelineCard = memo(function PipelineCard({
       data-pipeline-card
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = "hsl(var(--pipeline-card-border-hover))";
-        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+        e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.10)";
         e.currentTarget.style.transform = "translateY(-1px)";
       }}
       onMouseLeave={(e) => {
@@ -251,15 +252,14 @@ const PipelineCard = memo(function PipelineCard({
       {/* Stripe top 3px */}
       <div style={{ height: 3, background: stripeGradient }} />
 
-      {/* Body — compact 4-line layout */}
-      <div style={{ padding: "10px 12px 8px", display: "flex", flexDirection: "column", gap: 4 }}>
-        {/* LINE 1: Name + badges + days */}
-        <div className="flex items-center justify-between gap-1" style={{ minHeight: 18 }}>
+      {/* Body */}
+      <div className="pipeline-card-body" style={{ padding: "12px 12px 8px", display: "flex", flexDirection: "column", gap: 0 }}>
+        {/* ROW 1: Name + tags + days badge */}
+        <div className="flex items-center justify-between gap-1.5" style={{ marginBottom: 6 }}>
           <span style={{
-            fontSize: 13, fontWeight: 600, letterSpacing: "-0.2px",
-            color: "hsl(var(--pipeline-text-primary))",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            flex: 1, lineHeight: "18px",
+            fontSize: 14, fontWeight: 600, letterSpacing: "-0.3px",
+            color: "hsl(var(--pipeline-text-primary))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            flex: 1,
           }}>
             {cleanName(lead.nome)}
           </span>
@@ -267,14 +267,15 @@ const PipelineCard = memo(function PipelineCard({
             {originTag && (
               <span style={{
                 fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em",
-                padding: "1px 5px", borderRadius: 4, lineHeight: "14px",
-                background: originTag.bg, color: originTag.color,
+                padding: "2px 6px", borderRadius: 4,
+                background: originTag.label === "NOVO" ? "hsl(var(--primary-50))" : originTag.bg,
+                color: originTag.label === "NOVO" ? "#4F46E5" : originTag.color,
               }}>
                 {originTag.label}
               </span>
             )}
-            {tempConfig && lead.temperatura === "quente" && (
-              <span className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-bold ${tempConfig.bg} ${tempConfig.cls}`}
+            {tempConfig && (
+              <span className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold ${tempConfig.bg} ${tempConfig.cls}`}
                 title={lead.oportunidade_score != null ? getScoreTooltip(lead.oportunidade_score) : tempConfig.label}
               >
                 <tempConfig.icon className="h-2.5 w-2.5" />
@@ -283,16 +284,16 @@ const PipelineCard = memo(function PipelineCard({
             {semContatoAlert && (
               <span style={{
                 fontSize: 9, fontWeight: 700,
-                padding: "1px 4px", borderRadius: 4, lineHeight: "13px",
+                padding: "2px 5px", borderRadius: 4,
                 background: semContatoAlert.bg, color: semContatoAlert.color,
                 animation: semContatoAlert.label === "48h!" ? "pulse 1.5s infinite" : undefined,
-              }} title="Tempo sem contato">
+              }} title="Tempo sem contato — risco de redistribuição">
                 ⏰ {semContatoAlert.label}
               </span>
             )}
             <span style={{
-              fontSize: 10, fontWeight: 600,
-              padding: "1px 6px", borderRadius: 100, lineHeight: "14px",
+              fontSize: 10, fontWeight: 700,
+              padding: "2px 8px", borderRadius: 100,
               background: daysBadge.bg, color: daysBadge.color,
               border: `1px solid ${daysBadge.border}`,
             }}>
@@ -301,16 +302,16 @@ const PipelineCard = memo(function PipelineCard({
           </div>
         </div>
 
-        {/* LINE 2: Corretor avatar + name */}
+        {/* ROW 2: Corretor */}
         {corretorNome && (
-          <div className="flex items-center gap-1.5" style={{ minHeight: 16 }}>
+          <div className="flex items-center gap-1.5" style={{ marginBottom: 5 }}>
             <div style={{
-              width: 18, height: 18, borderRadius: "50%",
+              width: 20, height: 20, borderRadius: "50%",
               background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
-              boxShadow: "0 0 0 1px hsl(var(--pipeline-card-bg)), 0 1px 2px rgba(0,0,0,0.1)",
+              boxShadow: "0 0 0 1.5px #fff, 0 1px 2px rgba(0,0,0,0.1)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 8, fontWeight: 700, color: "#fff",
-              overflow: "hidden", flexShrink: 0,
+              fontSize: 9, fontWeight: 700, color: "#fff",
+              overflow: "hidden",
             }}>
               {corretorAvatar ? (
                 <img src={corretorAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -318,32 +319,106 @@ const PipelineCard = memo(function PipelineCard({
                 corretorNome[0]
               )}
             </div>
-            <span style={{ fontSize: 12, fontWeight: 500, color: "hsl(var(--pipeline-text-secondary))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#4F46E5" }}>
               {corretorNome.split(" ").slice(0, 2).join(" ")}
             </span>
           </div>
         )}
 
-        {/* LINE 3: Empreendimento dot + name */}
-        {displayEmpreendimento && (
-          <div className="flex items-center gap-1.5" style={{ minHeight: 16 }}>
-            <div style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: empColorHash(displayEmpreendimento),
-              flexShrink: 0,
-            }} />
+        {/* ROW 3: Empreendimento + Phone */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6,
+          flexWrap: "nowrap", overflow: "hidden", marginBottom: 5,
+        }}>
+          {displayEmpreendimento && (
             <span style={{
-              fontSize: 12, fontWeight: 500, color: "hsl(var(--pipeline-text-secondary))",
+              display: "inline-flex", alignItems: "center", gap: 4,
+              background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))",
+              borderRadius: 6, padding: "3px 8px",
+              fontSize: 11, fontWeight: 600, color: "hsl(var(--pipeline-text-secondary))",
+              flexShrink: 0, maxWidth: 140,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: empColorHash(displayEmpreendimento),
+                flexShrink: 0,
+              }} />
               {displayEmpreendimento}
             </span>
+          )}
+          {(lead as any).imovel_codigo && (
+            <span style={{
+              display: "inline-flex", alignItems: "center",
+              background: "hsl(var(--primary-100))", border: "1px solid hsl(var(--primary-300))",
+              borderRadius: 4, padding: "1px 5px",
+              fontSize: 9, fontWeight: 700, color: "hsl(var(--primary-600))",
+              flexShrink: 0, whiteSpace: "nowrap",
+            }}>
+              {(lead as any).imovel_codigo}
+            </span>
+          )}
+          {lead.telefone && (
+            <span style={{
+              fontSize: 11, color: "hsl(var(--pipeline-text-muted))",
+              fontFamily: "'DM Mono', monospace",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              flexShrink: 1, minWidth: 0,
+            }}>
+              {formatPhone(lead.telefone)}
+            </span>
+          )}
+        </div>
+
+        {/* Badges row — score inline with partnership/negocio */}
+        {(parceiroNome || lead.negocio_id) && (
+          <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
+            {parceiroNome && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: "hsl(var(--purple-500))",
+                background: "hsl(var(--purple-50))", padding: "2px 6px", borderRadius: 5,
+                display: "inline-flex", alignItems: "center", gap: 3,
+              }}>
+                <Handshake style={{ height: 10, width: 10 }} /> {parceiroNome.split(" ")[0]}
+              </span>
+            )}
+            {lead.negocio_id && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: "hsl(var(--success-500))",
+                background: "hsl(var(--success-50))", padding: "2px 6px", borderRadius: 5,
+              }}>✅ Negócio</span>
+            )}
           </div>
         )}
 
-        {/* LINE 4: Task status badge (conditional) */}
+        {/* Campaign tags - non-empreendimento only */}
+        {(lead.tags || []).length > 0 && (() => {
+          const NON_EMP_TAGS: Record<string, { label: string; color: string; bg: string }> = {
+            MELNICK_DAY: { label: "🔥 Melnick Day", color: "#EA580C", bg: "#FFF7ED" },
+          };
+          const rendered = (lead.tags || []).map(tag => {
+            const cfg = NON_EMP_TAGS[tag];
+            if (!cfg) return null;
+            return (
+              <span key={tag} style={{
+                fontSize: 9, fontWeight: 700, color: cfg.color, background: cfg.bg,
+                padding: "2px 6px", borderRadius: 5,
+              }}>
+                {cfg.label}
+              </span>
+            );
+          }).filter(Boolean);
+          return rendered.length > 0 ? (
+            <div className="flex items-center gap-1 flex-wrap" style={{ marginBottom: 4 }}>
+              {rendered}
+            </div>
+          ) : null;
+        })()}
+
+        {/* ROW 4: Status */}
         <CardStatusLine status={status} stageChangedAt={lead.stage_changed_at} />
       </div>
+
 
       {/* Negócio Criado stage — show deal info + regression */}
       {stage?.tipo === "convertido" && (
@@ -354,7 +429,8 @@ const PipelineCard = memo(function PipelineCard({
         />
       )}
 
-      {/* Card Footer — hover-only action bar */}
+
+      {/* Card Footer — 3 equal buttons */}
       <CardActionBar
         leadId={lead.id}
         leadNome={lead.nome}
@@ -437,6 +513,7 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
   const [showStageSelector, setShowStageSelector] = useState(false);
   const [regressing, setRegressing] = useState(false);
 
+  // Fetch deal info
   useEffect(() => {
     if (!(lead as any).negocio_id) return;
     supabase
@@ -462,10 +539,13 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
     if (!onMoveLead || regressing) return;
     setRegressing(true);
     try {
+      // Cancel the deal
       if ((lead as any).negocio_id) {
         await supabase.from("negocios").update({ status: "perdido", fase: "perdido" }).eq("id", (lead as any).negocio_id);
       }
+      // Clear negocio_id from lead
       await supabase.from("pipeline_leads").update({ negocio_id: null } as any).eq("id", lead.id);
+      // Move lead to chosen stage
       onMoveLead(lead.id, targetStageId);
       toast.success("🔄 Lead retornado ao Pipeline — Negócio cancelado");
       setShowStageSelector(false);
@@ -481,6 +561,7 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
 
   return (
     <div data-actions-area style={{ padding: "0 12px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
+      {/* Deal info */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         background: "hsl(var(--purple-50))", borderRadius: 8, padding: "6px 10px",
@@ -500,6 +581,7 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
         )}
       </div>
 
+      {/* Regression flow */}
       {!showStageSelector ? (
         <Button
           size="sm"
