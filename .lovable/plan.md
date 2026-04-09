@@ -1,92 +1,45 @@
 
 
-# Plano: Evolução Arquitetural — Fases 1, 2 e 3
+# Plano: Notas na Timeline — Visão 360 do Lead
 
-Execução incremental, fase a fase, com teste de funcionamento ao final de cada uma. Fase 4 (Lead Detail) fica para redesenho futuro. Fase 5 (polish) pode ser feita depois.
+## O que muda
 
----
+Hoje as notas (anotações) ficam numa seção separada abaixo da timeline no `LeadHistoricoTab`. O corretor não tem visão cronológica unificada.
 
-## FASE 1 — Segurança e Limpeza Invisível
+A mudança é simples: incluir as anotações como itens na timeline, ordenadas junto com atividades, movimentações de etapa, tarefas concluídas e eventos de imóvel.
 
-**Risco: zero. Nenhum fluxo ativo é afetado.**
+## Implementação
 
-### 1.1 Proteger `/import-brevo-contacts`
-- Linha 193 do `App.tsx`: trocar de rota pública para `<ProtectedPage roles={["admin"]}>`.
+### Arquivo: `src/components/pipeline/LeadHistoricoTab.tsx`
 
-### 1.2 Deletar 5 arquivos órfãos (sem rota ativa ou rota duplicada)
-- `src/pages/FechamentoDay.tsx` — a rota `/fechamento-day` já renderiza `PlacarDoDia` diretamente (linha 197)
-- `src/pages/ForecastDashboard.tsx` — sem rota no App.tsx
-- `src/pages/FunilDashboard.tsx` — sem rota no App.tsx
-- `src/pages/Index.tsx` — sem rota no App.tsx
-- `src/pages/AlertasPage.tsx` — sem rota no App.tsx
+1. Na função `buildTimeline`, adicionar loop pelas `anotacoes` criando itens do tipo `"anotacao"`:
+   - Título: `📝 Nota de {autor_nome}`
+   - Descrição: conteúdo da nota
+   - Ícone: `StickyNote`
+   - Cor: notas fixadas em amarelo, normais em cinza
+   - sourceType: `"anotacao"`, sourceId: `nota.id`
 
-### 1.3 Remover import morto
-- Linha 49: remover `const RankingComercial = lazyRetry(...)` — não tem nenhuma `<Route>` associada
+2. Atualizar o tipo `TimelineItem.sourceType` para incluir `"anotacao"`
 
-### Teste Fase 1
-- Build compila sem erros
-- Todas as rotas do sidebar funcionam
-- `/import-brevo-contacts` redireciona para `/auth` se não logado, e para home se não admin
+3. Manter a seção de notas separada (input + lista) como está — o corretor continua podendo criar e fixar notas ali. A diferença é que agora elas também aparecem na timeline cronológica.
 
----
+4. Na função `handleDeleteItem`, adicionar suporte para deletar anotações (`pipeline_anotacoes`)
 
-## FASE 2 — Unificação de Rotas Duplicadas
+## O que NÃO muda
+- Botão ligar (já funciona com CallFocusOverlay)
+- Tarefas inline (já funciona com LeadTarefasTab)
+- WhatsApp (já funciona com WhatsAppFocusFlow)
+- Sugestão de imóvel (adiado)
+- Layout do Lead Detail (adiado)
+- Central de Tarefas e Agenda (continuam independentes)
 
-**Risco: baixo. Redirects preservam acesso por bookmark/URL.**
+## Risco
+Nenhum. É uma adição ao array de items da timeline. Nenhum fluxo existente é alterado.
 
-### 2.1 Rotas a substituir por `<Navigate to="..." replace />`
-| Rota atual | Redireciona para | Motivo |
-|---|---|---|
-| `/fechamento-day` (linha 197) | `/placar-do-dia` | Mesmo componente `PlacarDoDia` |
-| `/corretor/call` (linha 225) | `/oferta-ativa` | Dialers duplicados |
-| `/corretor/ranking-equipes` (linha 228) | `/ranking` | Mesmo componente `RankingEquipe` |
-| `/gestao` (linha 207) | `/gerente/dashboard` | Mesmo componente `GestorDashboard` |
-| `/corretor/resumo` (linha 227) | `/corretor` | Sem entrada no sidebar |
-
-### 2.2 Remover lazy imports que ficam órfãos após redirects
-- `CorretorCall` (linha 74)
-- `CorretorResumo` (linha 53)
-- `GestorDashboard` continua sendo usado em `/gestao`? Não — `/gestao` renderiza `GestorDashboard` mas o redirect elimina isso. Porém `GestorDashboard` pode ser usado em outra rota? Verificar... Não, apenas `/gestao`. Mas o import `GestorDashboard` na linha 39 é usado em algum outro lugar? Não. Mas o componente é a **home do gestor via HomeDashboard**? Não — `HomeDashboard` é separado. Remover o import `GestorDashboard` e o arquivo `GestorDashboard.tsx`.
-
-**Espera** — preciso ser cauteloso. `GestorDashboard` é importado na linha 39 e usado apenas na rota `/gestao` (linha 207). Se `/gestao` vira redirect, o import fica órfão. Mas o arquivo pode ser referenciado por outros componentes. Vou manter o arquivo e apenas remover o import do App.tsx.
-
-### Teste Fase 2
-- Acessar cada URL antiga e confirmar redirect
-- Sidebar continua funcionando normalmente
-- Nenhum 404
-
----
-
-## FASE 3 — Ajuste do Sidebar do Corretor
-
-**Risco: médio-visual. Só reorganização, sem perder funcionalidade.**
-
-### 3.1 No `src/components/layout/Sidebar.tsx`
-- Alterar o path do item "Oferta ativa" de `/corretor/call` para `/oferta-ativa` (linha 175)
-- Verificar se há outros itens apontando para rotas que agora são redirects e atualizar
-
-### Teste Fase 3
-- Clicar em cada item do sidebar do corretor — todos funcionam
-- Clicar em cada item do sidebar do admin — todos funcionam
-- Clicar em cada item do sidebar do gestor — todos funcionam
-
----
-
-## Arquivos afetados
-
-| Arquivo | Ação |
-|---|---|
-| `src/App.tsx` | Proteger brevo, remover 3 imports órfãos, substituir 5 rotas por redirects |
-| `src/components/layout/Sidebar.tsx` | Atualizar path oferta-ativa |
-| `src/pages/FechamentoDay.tsx` | Deletar |
-| `src/pages/ForecastDashboard.tsx` | Deletar |
-| `src/pages/FunilDashboard.tsx` | Deletar |
-| `src/pages/Index.tsx` | Deletar |
-| `src/pages/AlertasPage.tsx` | Deletar |
-
-## Estratégia anti-quebra
-- Cada fase é um commit separado
-- Se qualquer fase causar problema, revertemos apenas ela
-- Redirects garantem que URLs antigas continuam funcionando
-- Nenhum componente ativo é modificado ou removido
+## Teste
+- Abrir lead detail → aba Histórico
+- Criar uma nota → deve aparecer na timeline na posição cronológica correta
+- Nota fixada deve ter visual diferenciado (amarelo) na timeline
+- Deletar nota pela timeline deve funcionar
+- Seção de notas abaixo continua funcionando normalmente
 
