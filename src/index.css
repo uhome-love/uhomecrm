@@ -167,6 +167,34 @@
     --glass-border:      rgba(255,255,255,0.45);
     --glass-border-dark: rgba(255,255,255,0.08);
     --glass-blur:        blur(14px) saturate(180%);
+
+    /* ── Pipeline Design System (Pipedrive-style) ── */
+
+    /* Stage Colors */
+    --stage-novo-lead: 217 91% 60%;
+    --stage-sem-contato: 38 92% 50%;
+    --stage-contato: 239 84% 67%;
+    --stage-qualificacao: 258 90% 66%;
+    --stage-possivel-visita: 330 81% 60%;
+    --stage-visita-marcada: 160 84% 39%;
+    --stage-visita-realizada: 189 94% 43%;
+    --stage-em-evolucao: 25 95% 53%;
+    --stage-negocio-criado: 142 71% 45%;
+    --stage-descarte: 220 9% 46%;
+
+    /* Pipeline Tokens */
+    --pipeline-card-bg: 0 0% 100%;
+    --pipeline-card-border: 214 32% 91%;
+    --pipeline-card-border-hover: 213 94% 68%;
+    --pipeline-text-primary: 222 47% 11%;
+    --pipeline-text-secondary: 215 19% 35%;
+    --pipeline-text-muted: 215 16% 57%;
+    --pipeline-column-bg: 0 0% 100%;
+    --pipeline-column-border: 214 32% 91%;
+    --pipeline-tab-bg: 210 40% 98%;
+    --pipeline-tab-active-bg: 0 0% 100%;
+    --pipeline-progress-track: 240 5% 96%;
+    --pipeline-empty-icon-bg: 239 84% 67%;
   }
 
   /* Dark mode (mantido mas nao usado por padrao) */
@@ -192,6 +220,20 @@
     --ring:                var(--primary-400);
     --sidebar-background:  218 44% 6%;
     --sidebar-border:      218 30% 10%;
+
+    /* Pipeline Dark Mode Tokens */
+    --pipeline-card-bg: 218 35% 13%;
+    --pipeline-card-border: 218 30% 20%;
+    --pipeline-card-border-hover: 213 94% 68%;
+    --pipeline-text-primary: 210 40% 96%;
+    --pipeline-text-secondary: 215 20% 65%;
+    --pipeline-text-muted: 215 20% 55%;
+    --pipeline-column-bg: 218 35% 11%;
+    --pipeline-column-border: 218 30% 18%;
+    --pipeline-tab-bg: 218 30% 14%;
+    --pipeline-tab-active-bg: 218 35% 16%;
+    --pipeline-progress-track: 218 30% 18%;
+    --pipeline-empty-icon-bg: 239 84% 67%;
   }
 }
 

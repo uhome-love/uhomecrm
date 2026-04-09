@@ -149,11 +149,11 @@ const VirtualizedCardList = memo(function VirtualizedCardList({
     >
       {stageLeads.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-10 h-10 rounded-[12px] bg-[#4F46E5]/10 flex items-center justify-center mb-2 text-[#4F46E5]">
+          <div className="w-10 h-10 rounded-[12px] flex items-center justify-center mb-2" style={{ background: "hsl(var(--pipeline-empty-icon-bg) / 0.1)", color: "hsl(var(--pipeline-empty-icon-bg))" }}>
             <AlignLeft size={18} strokeWidth={1.5} />
           </div>
-          <span className="text-[12px] font-bold text-[#0a0a0a] dark:text-white tracking-[-0.2px]">Nenhum lead aqui</span>
-          <span className="text-[11px] text-[#a1a1aa] mt-0.5">Os leads desta etapa aparecerão aqui</span>
+          <span className="text-[12px] font-bold tracking-[-0.2px]" style={{ color: "hsl(var(--pipeline-text-primary))" }}>Nenhum lead aqui</span>
+          <span className="text-[11px] mt-0.5" style={{ color: "hsl(var(--pipeline-text-muted))" }}>Os leads desta etapa aparecerão aqui</span>
         </div>
       )}
       {visibleLeads.map((lead) => {
@@ -693,9 +693,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "5px 10px", borderRadius: 7, fontSize: 11, fontWeight: 500,
                 whiteSpace: "nowrap",
-                background: isActive ? "#fff" : "#f7f7fb",
-                border: isActive ? "1px solid #4F46E5" : "1px solid #e8e8f0",
-                color: isActive ? "#0a0a0a" : "#52525b",
+                background: isActive ? "hsl(var(--pipeline-tab-active-bg))" : "hsl(var(--pipeline-tab-bg))",
+                border: isActive ? "1px solid #4F46E5" : "1px solid hsl(var(--pipeline-column-border))",
+                color: isActive ? "hsl(var(--pipeline-text-primary))" : "hsl(var(--pipeline-text-secondary))",
                 cursor: "pointer",
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
@@ -749,18 +749,18 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
             // Theme colors per stage
             const STAGE_THEMES: Record<string, { emojiBg: string; badgeBg: string; badgeColor: string; gradient: string }> = {
-              "Novo Lead": { emojiBg: "#EFF6FF", badgeBg: "#EFF6FF", badgeColor: "#1D4ED8", gradient: "linear-gradient(90deg, #2563EB, #60A5FA)" },
-              "Sem Contato": { emojiBg: "#FEF2F2", badgeBg: "#FEF2F2", badgeColor: "#DC2626", gradient: "linear-gradient(90deg, #EF4444, #FCA5A5)" },
-              "Contato Iniciado": { emojiBg: "#F0FDF4", badgeBg: "#F0FDF4", badgeColor: "#059669", gradient: "linear-gradient(90deg, #10B981, #34D399)" },
-              "Qualificação": { emojiBg: "#FDF4FF", badgeBg: "#FDF4FF", badgeColor: "#7C3AED", gradient: "linear-gradient(90deg, #8B5CF6, #C084FC)" },
-              "Possível Visita": { emojiBg: "#FFFBEB", badgeBg: "#FFFBEB", badgeColor: "#B45309", gradient: "linear-gradient(90deg, #F59E0B, #FCD34D)" },
-              "Visita Marcada": { emojiBg: "#FFFBEB", badgeBg: "#FFFBEB", badgeColor: "#B45309", gradient: "linear-gradient(90deg, #F59E0B, #FCD34D)" },
-              "Visita Realizada": { emojiBg: "#F0FDF4", badgeBg: "#F0FDF4", badgeColor: "#059669", gradient: "linear-gradient(90deg, #10B981, #34D399)" },
-              "Em Evolução": { emojiBg: "#ECFEFF", badgeBg: "#ECFEFF", badgeColor: "#0891B2", gradient: "linear-gradient(90deg, #06B6D4, #67E8F9)" },
-              "Descarte": { emojiBg: "#FEF2F2", badgeBg: "#FEF2F2", badgeColor: "#DC2626", gradient: "linear-gradient(90deg, #EF4444, #FCA5A5)" },
-              "Negócio Criado": { emojiBg: "#F5F3FF", badgeBg: "#F5F3FF", badgeColor: "#7C3AED", gradient: "linear-gradient(90deg, #8B5CF6, #C084FC)" },
+              "Novo Lead": { emojiBg: "hsl(var(--stage-novo-lead) / 0.1)", badgeBg: "hsl(var(--stage-novo-lead) / 0.1)", badgeColor: "hsl(var(--stage-novo-lead))", gradient: "linear-gradient(90deg, hsl(var(--stage-novo-lead)), hsl(var(--stage-novo-lead) / 0.6))" },
+              "Sem Contato": { emojiBg: "hsl(var(--stage-sem-contato) / 0.1)", badgeBg: "hsl(var(--stage-sem-contato) / 0.1)", badgeColor: "hsl(var(--stage-sem-contato))", gradient: "linear-gradient(90deg, hsl(var(--stage-sem-contato)), hsl(var(--stage-sem-contato) / 0.6))" },
+              "Contato Iniciado": { emojiBg: "hsl(var(--stage-contato) / 0.1)", badgeBg: "hsl(var(--stage-contato) / 0.1)", badgeColor: "hsl(var(--stage-contato))", gradient: "linear-gradient(90deg, hsl(var(--stage-contato)), hsl(var(--stage-contato) / 0.6))" },
+              "Qualificação": { emojiBg: "hsl(var(--stage-qualificacao) / 0.1)", badgeBg: "hsl(var(--stage-qualificacao) / 0.1)", badgeColor: "hsl(var(--stage-qualificacao))", gradient: "linear-gradient(90deg, hsl(var(--stage-qualificacao)), hsl(var(--stage-qualificacao) / 0.6))" },
+              "Possível Visita": { emojiBg: "hsl(var(--stage-possivel-visita) / 0.1)", badgeBg: "hsl(var(--stage-possivel-visita) / 0.1)", badgeColor: "hsl(var(--stage-possivel-visita))", gradient: "linear-gradient(90deg, hsl(var(--stage-possivel-visita)), hsl(var(--stage-possivel-visita) / 0.6))" },
+              "Visita Marcada": { emojiBg: "hsl(var(--stage-visita-marcada) / 0.1)", badgeBg: "hsl(var(--stage-visita-marcada) / 0.1)", badgeColor: "hsl(var(--stage-visita-marcada))", gradient: "linear-gradient(90deg, hsl(var(--stage-visita-marcada)), hsl(var(--stage-visita-marcada) / 0.6))" },
+              "Visita Realizada": { emojiBg: "hsl(var(--stage-visita-realizada) / 0.1)", badgeBg: "hsl(var(--stage-visita-realizada) / 0.1)", badgeColor: "hsl(var(--stage-visita-realizada))", gradient: "linear-gradient(90deg, hsl(var(--stage-visita-realizada)), hsl(var(--stage-visita-realizada) / 0.6))" },
+              "Em Evolução": { emojiBg: "hsl(var(--stage-em-evolucao) / 0.1)", badgeBg: "hsl(var(--stage-em-evolucao) / 0.1)", badgeColor: "hsl(var(--stage-em-evolucao))", gradient: "linear-gradient(90deg, hsl(var(--stage-em-evolucao)), hsl(var(--stage-em-evolucao) / 0.6))" },
+              "Descarte": { emojiBg: "hsl(var(--stage-descarte) / 0.1)", badgeBg: "hsl(var(--stage-descarte) / 0.1)", badgeColor: "hsl(var(--stage-descarte))", gradient: "linear-gradient(90deg, hsl(var(--stage-descarte)), hsl(var(--stage-descarte) / 0.6))" },
+              "Negócio Criado": { emojiBg: "hsl(var(--stage-negocio-criado) / 0.1)", badgeBg: "hsl(var(--stage-negocio-criado) / 0.1)", badgeColor: "hsl(var(--stage-negocio-criado))", gradient: "linear-gradient(90deg, hsl(var(--stage-negocio-criado)), hsl(var(--stage-negocio-criado) / 0.6))" },
             };
-            const theme = STAGE_THEMES[stage.nome] || { emojiBg: "#F1F5F9", badgeBg: "#F1F5F9", badgeColor: "#64748B", gradient: "linear-gradient(90deg, #94A3B8, #CBD5E1)" };
+            const theme = STAGE_THEMES[stage.nome] || { emojiBg: "hsl(var(--muted))", badgeBg: "hsl(var(--muted))", badgeColor: "hsl(var(--pipeline-text-muted))", gradient: "linear-gradient(90deg, hsl(var(--pipeline-text-muted)), hsl(var(--pipeline-text-muted) / 0.6))" };
             const emoji = PIPELINE_STAGE_EMOJIS[stage.nome] || "📍";
 
             // Progress bar percentage (based on count relative to total)
@@ -785,9 +785,9 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                 <div
                   className="shrink-0"
                   style={{
-                    background: "#fff",
-                    border: isDragOver ? "1px solid #4F46E5" : "1px solid #e8e8f0",
-                    borderRadius: 12,
+                    background: "hsl(var(--pipeline-column-bg))",
+                    border: isDragOver ? "1px solid #4F46E5" : "1px solid hsl(var(--pipeline-column-border))",
+                    borderRadius: 10,
                     padding: "10px 12px",
                     boxShadow: isDragOver ? "0 4px 16px rgba(79,70,229,0.10)" : "0 1px 2px rgba(0,0,0,0.04)",
                     marginBottom: 8,
@@ -806,7 +806,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     }}>
                       {emoji}
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#0a0a0a", flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--pipeline-text-primary))", flex: 1 }}>
                       {stage.tipo === "convertido" ? "Negócio Criado" : stage.nome}
                     </span>
                     <span style={{
@@ -829,7 +829,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
 
                   {/* Progress bar — unified #4F46E5 */}
                   <div style={{
-                    height: 2, borderRadius: 100, background: "#f0f0f5",
+                    height: 2, borderRadius: 100, background: "hsl(var(--pipeline-progress-track))",
                     marginBottom: 6, overflow: "hidden",
                   }}>
                     <div style={{
@@ -844,7 +844,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                   <div className="flex items-center justify-between">
                     {totalVGV > 0 ? (
                       <span style={{
-                        fontSize: 11, fontWeight: 600, color: "#a1a1aa",
+                        fontSize: 11, fontWeight: 600, color: "hsl(var(--pipeline-text-muted))",
                         fontFamily: "'DM Mono', monospace",
                       }}>
                         {formatVGV(totalVGV)}
@@ -852,7 +852,7 @@ export default function PipelineBoard({ stages, leads, segmentos, corretorNomes,
                     ) : <span />}
                     <div className="flex items-center gap-2">
                       {avgTime && (
-                        <span style={{ fontSize: 11, color: "#a1a1aa" }}>
+                        <span style={{ fontSize: 11, color: "hsl(var(--pipeline-text-muted))" }}>
                           ⏱ {avgTime}
                         </span>
                       )}

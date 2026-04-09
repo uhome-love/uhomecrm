@@ -119,9 +119,9 @@ const PipelineCard = memo(function PipelineCard({
 
   // Determine stripe color based on status
   const stripeGradient = useMemo(() => {
-    if (status.indicator === "🔴") return "linear-gradient(90deg, #DC2626, #F87171)";
-    if (status.indicator === "🟡" || status.indicator === "⚠️") return "linear-gradient(90deg, #D97706, #FCD34D)";
-    return "linear-gradient(90deg, #059669, #34D399)";
+    if (status.indicator === "🔴") return "linear-gradient(90deg, hsl(var(--danger-500)), hsl(var(--danger-500) / 0.6))";
+    if (status.indicator === "🟡" || status.indicator === "⚠️") return "linear-gradient(90deg, hsl(var(--warning-500)), hsl(var(--warning-500) / 0.6))";
+    return "linear-gradient(90deg, hsl(var(--success-500)), hsl(var(--success-500) / 0.6))";
   }, [status.indicator]);
 
   // Days in stage for badge
@@ -137,8 +137,8 @@ const PipelineCard = memo(function PipelineCard({
     const refDate = (lead as any).ultima_acao_at || lead.stage_changed_at || (lead as any).updated_at;
     if (!refDate) return null;
     const hoursInactive = (Date.now() - new Date(refDate).getTime()) / 3600000;
-    if (hoursInactive >= 48) return { label: "48h!", color: "#DC2626", bg: "#FEE2E2" };
-    if (hoursInactive >= 24) return { label: `${Math.floor(hoursInactive)}h`, color: "#D97706", bg: "#FEF3C7" };
+    if (hoursInactive >= 48) return { label: "48h!", color: "hsl(var(--danger-500))", bg: "hsl(var(--danger-50))" };
+    if (hoursInactive >= 24) return { label: `${Math.floor(hoursInactive)}h`, color: "hsl(var(--warning-500))", bg: "hsl(var(--warning-50))" };
     return null;
   }, [stage?.tipo, (lead as any).ultima_acao_at, lead.stage_changed_at, (lead as any).updated_at]);
 
@@ -148,9 +148,9 @@ const PipelineCard = memo(function PipelineCard({
       possivel_visita: 10, visita_marcada: 14, visita_realizada: 1, negociacao: 5,
     };
     const limite = slaLimits[stage?.tipo || ""] || 7;
-    if (daysInStage > limite) return { bg: "#FCEBEB", color: "#A32D2D", border: "#F5C6C6" };
-    if (daysInStage > limite * 0.7) return { bg: "#FAEEDA", color: "#854F0B", border: "#F3DDB0" };
-    return { bg: "#F1EFE8", color: "#5F5E5A", border: "#E2E0D8" };
+    if (daysInStage > limite) return { bg: "hsl(var(--danger-50))", color: "hsl(var(--danger-600))", border: "hsl(var(--danger-100))" };
+    if (daysInStage > limite * 0.7) return { bg: "hsl(var(--warning-50))", color: "hsl(var(--warning-600))", border: "hsl(var(--warning-100))" };
+    return { bg: "hsl(var(--muted))", color: "hsl(var(--pipeline-text-secondary))", border: "hsl(var(--border))" };
   }, [daysInStage, stage?.tipo]);
 
   const handleCall = (e: React.MouseEvent) => {
@@ -208,9 +208,9 @@ const PipelineCard = memo(function PipelineCard({
   // Origin tag
   const originTag = useMemo(() => {
     const o = lead.origem?.toLowerCase() || "";
-    if (o.includes("oferta")) return { label: "OA", bg: "#F5F3FF", color: "#7C3AED" };
-    if (o.includes("portal") || o.includes("zap") || o.includes("olx")) return { label: "PORTAL", bg: "#FFF7ED", color: "#EA580C" };
-    if (daysInStage === 0) return { label: "NOVO", bg: "#EFF6FF", color: "#1D4ED8" };
+    if (o.includes("oferta")) return { label: "OA", bg: "hsl(var(--purple-50))", color: "hsl(var(--purple-500))" };
+    if (o.includes("portal") || o.includes("zap") || o.includes("olx")) return { label: "PORTAL", bg: "hsl(var(--warning-50))", color: "hsl(var(--warning-600))" };
+    if (daysInStage === 0) return { label: "NOVO", bg: "hsl(var(--primary-50))", color: "#4F46E5" };
     return null;
   }, [lead.origem, daysInStage]);
 
@@ -227,9 +227,9 @@ const PipelineCard = memo(function PipelineCard({
       onDragEnd={(e) => e.preventDefault()}
       onClick={handleCardClick}
       style={{
-        background: "#fff",
-        border: "1px solid #E2E8F0",
-        borderRadius: 14,
+        background: "hsl(var(--pipeline-card-bg))",
+        border: "1px solid hsl(var(--pipeline-card-border))",
+        borderRadius: 8,
         overflow: "hidden",
         boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
         cursor: "grab",
@@ -238,12 +238,12 @@ const PipelineCard = memo(function PipelineCard({
       }}
       data-pipeline-card
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "#93C5FD";
+        e.currentTarget.style.borderColor = "hsl(var(--pipeline-card-border-hover))";
         e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.10)";
-        e.currentTarget.style.transform = "translateY(-2px)";
+        e.currentTarget.style.transform = "translateY(-1px)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "#E2E8F0";
+        e.currentTarget.style.borderColor = "hsl(var(--pipeline-card-border))";
         e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
         e.currentTarget.style.transform = "translateY(0)";
       }}
@@ -253,12 +253,12 @@ const PipelineCard = memo(function PipelineCard({
       <div style={{ height: 3, background: stripeGradient }} />
 
       {/* Body */}
-      <div className="pipeline-card-body" style={{ padding: "13px 14px 8px", display: "flex", flexDirection: "column", gap: 0 }}>
+      <div className="pipeline-card-body" style={{ padding: "12px 12px 8px", display: "flex", flexDirection: "column", gap: 0 }}>
         {/* ROW 1: Name + tags + days badge */}
         <div className="flex items-center justify-between gap-1.5" style={{ marginBottom: 6 }}>
           <span style={{
             fontSize: 14, fontWeight: 600, letterSpacing: "-0.3px",
-            color: "#0a0a0a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            color: "hsl(var(--pipeline-text-primary))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             flex: 1,
           }}>
             {cleanName(lead.nome)}
@@ -268,7 +268,7 @@ const PipelineCard = memo(function PipelineCard({
               <span style={{
                 fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em",
                 padding: "2px 6px", borderRadius: 4,
-                background: originTag.label === "NOVO" ? "rgba(79,70,229,0.1)" : originTag.bg,
+                background: originTag.label === "NOVO" ? "hsl(var(--primary-50))" : originTag.bg,
                 color: originTag.label === "NOVO" ? "#4F46E5" : originTag.color,
               }}>
                 {originTag.label}
@@ -333,9 +333,9 @@ const PipelineCard = memo(function PipelineCard({
           {displayEmpreendimento && (
             <span style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              background: "#f7f7fb", border: "1px solid #e8e8f0",
+              background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))",
               borderRadius: 6, padding: "3px 8px",
-              fontSize: 11, fontWeight: 600, color: "#52525b",
+              fontSize: 11, fontWeight: 600, color: "hsl(var(--pipeline-text-secondary))",
               flexShrink: 0, maxWidth: 140,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>
@@ -350,9 +350,9 @@ const PipelineCard = memo(function PipelineCard({
           {(lead as any).imovel_codigo && (
             <span style={{
               display: "inline-flex", alignItems: "center",
-              background: "#dbeafe", border: "1px solid #93c5fd",
+              background: "hsl(var(--primary-100))", border: "1px solid hsl(var(--primary-300))",
               borderRadius: 4, padding: "1px 5px",
-              fontSize: 9, fontWeight: 700, color: "#1d4ed8",
+              fontSize: 9, fontWeight: 700, color: "hsl(var(--primary-600))",
               flexShrink: 0, whiteSpace: "nowrap",
             }}>
               {(lead as any).imovel_codigo}
@@ -360,7 +360,7 @@ const PipelineCard = memo(function PipelineCard({
           )}
           {lead.telefone && (
             <span style={{
-              fontSize: 11, color: "#94A3B8",
+              fontSize: 11, color: "hsl(var(--pipeline-text-muted))",
               fontFamily: "'DM Mono', monospace",
               whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
               flexShrink: 1, minWidth: 0,
@@ -375,8 +375,8 @@ const PipelineCard = memo(function PipelineCard({
           <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
             {parceiroNome && (
               <span style={{
-                fontSize: 10, fontWeight: 700, color: "#7C3AED",
-                background: "#F5F3FF", padding: "2px 6px", borderRadius: 5,
+                fontSize: 10, fontWeight: 700, color: "hsl(var(--purple-500))",
+                background: "hsl(var(--purple-50))", padding: "2px 6px", borderRadius: 5,
                 display: "inline-flex", alignItems: "center", gap: 3,
               }}>
                 <Handshake style={{ height: 10, width: 10 }} /> {parceiroNome.split(" ")[0]}
@@ -384,8 +384,8 @@ const PipelineCard = memo(function PipelineCard({
             )}
             {lead.negocio_id && (
               <span style={{
-                fontSize: 10, fontWeight: 700, color: "#059669",
-                background: "#ECFDF5", padding: "2px 6px", borderRadius: 5,
+                fontSize: 10, fontWeight: 700, color: "hsl(var(--success-500))",
+                background: "hsl(var(--success-50))", padding: "2px 6px", borderRadius: 5,
               }}>✅ Negócio</span>
             )}
           </div>
@@ -560,22 +560,22 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
   const vgvLabel = fmtVGV(negocio?.vgv_estimado ?? null);
 
   return (
-    <div data-actions-area style={{ padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
+    <div data-actions-area style={{ padding: "0 12px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
       {/* Deal info */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        background: "#F5F3FF", borderRadius: 8, padding: "6px 10px",
+        background: "hsl(var(--purple-50))", borderRadius: 8, padding: "6px 10px",
       }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "hsl(var(--purple-500))", textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Negócio
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#0a0a0a" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--pipeline-text-primary))" }}>
             {faseLabel}
           </span>
         </div>
         {vgvLabel && (
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#10b981" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--success-500))" }}>
             {vgvLabel}
           </span>
         )}
@@ -587,14 +587,14 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
           size="sm"
           variant="outline"
           className="w-full h-7 text-[11px] gap-1.5 font-semibold"
-          style={{ borderColor: "#FDE68A", color: "#D97706", borderRadius: 8 }}
+          style={{ borderColor: "hsl(var(--warning-100))", color: "hsl(var(--warning-600))", borderRadius: 8 }}
           onClick={(e) => { e.stopPropagation(); setShowStageSelector(true); }}
         >
           <Undo2 className="h-3 w-3" /> Regredir ao Pipeline
         </Button>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#64748B", textAlign: "center" }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "hsl(var(--pipeline-text-muted))", textAlign: "center" }}>
             Escolha a etapa de retorno:
           </span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
@@ -605,13 +605,13 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
                 onClick={(e) => { e.stopPropagation(); handleRegress(s.id); }}
                 style={{
                   fontSize: 10, fontWeight: 500, padding: "3px 8px",
-                  borderRadius: 6, border: "1px solid #e8e8f0",
-                  background: "#fff", color: "#334155",
+                  borderRadius: 6, border: "1px solid hsl(var(--border))",
+                  background: "hsl(var(--pipeline-card-bg))", color: "hsl(var(--pipeline-text-secondary))",
                   cursor: regressing ? "wait" : "pointer",
                   transition: "all 0.15s",
                 }}
                 onMouseEnter={(e) => { (e.target as HTMLElement).style.borderColor = "#4F46E5"; (e.target as HTMLElement).style.color = "#4F46E5"; }}
-                onMouseLeave={(e) => { (e.target as HTMLElement).style.borderColor = "#e8e8f0"; (e.target as HTMLElement).style.color = "#334155"; }}
+                onMouseLeave={(e) => { (e.target as HTMLElement).style.borderColor = "hsl(var(--border))"; (e.target as HTMLElement).style.color = "hsl(var(--pipeline-text-secondary))"; }}
               >
                 {s.nome}
               </button>
@@ -619,7 +619,7 @@ function NegocioCriadoSection({ lead, stages, onMoveLead }: {
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); setShowStageSelector(false); }}
-            style={{ fontSize: 10, color: "#94A3B8", textDecoration: "underline", cursor: "pointer", textAlign: "center", marginTop: 2 }}
+            style={{ fontSize: 10, color: "hsl(var(--pipeline-text-muted))", textDecoration: "underline", cursor: "pointer", textAlign: "center", marginTop: 2 }}
           >
             Cancelar
           </button>

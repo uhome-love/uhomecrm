@@ -121,9 +121,9 @@ interface CardStatusLineProps {
 
 export default function CardStatusLine({ status }: CardStatusLineProps) {
   const statusColor = useMemo(() => {
-    if (status.indicator === "🔴") return "#DC2626";
-    if (status.indicator === "🟡" || status.indicator === "⚠️") return "#D97706";
-    return "#059669";
+    if (status.indicator === "🔴") return "hsl(var(--danger-500))";
+    if (status.indicator === "🟡" || status.indicator === "⚠️") return "hsl(var(--warning-600))";
+    return "hsl(var(--success-500))";
   }, [status.indicator]);
 
   return (

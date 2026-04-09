@@ -53,7 +53,7 @@ export default function CardActionBar({
           <button
             onClick={onCall}
             style={{ ...btnBase, color: "#4F46E5" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#EEEDFE"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--primary-50))"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Phone style={{ width: 12, height: 12 }} />
@@ -71,7 +71,7 @@ export default function CardActionBar({
           <button
             onClick={onWhatsApp}
             style={{ ...btnBase, color: "#16a34a" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#EAF3DE"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--success-50))"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <span style={{ fontSize: 13, lineHeight: 1 }}>💬</span>
