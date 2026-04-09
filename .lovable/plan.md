@@ -1,58 +1,49 @@
 
 
-# Plano Atualizado: Refatorar /imoveis para tabela `imoveis` do site
+# Plano: Botao "Ver no site" + Placeholder sem foto
 
-## Ponto 1 do usuario: Schema discovery obrigatorio
+## Ajuste 1: Botao "Ver no site"
 
-Concordo. O primeiro passo da implementacao sera executar no console:
+### No card (SitePropertyCard.tsx)
 
-```typescript
-const { data, error } = await supabaseSite.from('imoveis').select('*').limit(3);
-console.log({ data, error });
-```
+Adicionar abaixo do bloco de preco/condominio (apos linha 287), antes do fechamento do `</div>` de texto:
 
-O mapeamento `mapDocSite()` so sera escrito APOS inspecionar o resultado real. Se `data` vier `null`/vazio e `error` indicar RLS, paramos e orientamos a adicionar a policy no projeto do site.
+- Botao `w-full h-8 text-sm` com variante `outline`, cor indigo
+- Icone `ExternalLink` + texto "Ver no site"
+- Acao: `window.open(shareUrl, "_blank")` (o `shareUrl` ja esta computado via `shareUrlUhome` na linha 100)
+- Condicional: so renderizar se `imovel.slug || imovel.codigo` (para nao mostrar link quebrado)
+- `onClick` com `e.stopPropagation()` para nao abrir o drawer
 
-## Ponto 2 do usuario: RLS no projeto do site
+### No drawer (PropertyPreviewDrawer.tsx)
 
-Se a query retornar vazio (provavelmente por falta de policy de SELECT para `anon`), a solucao e adicionar no Supabase do site (huigglwvvzuwwyqvpmec):
+Adicionar botao "Abrir no uhome.com.br" no bloco de acoes (entre o WhatsApp e os botoes Favoritar/Copiar, ~linha 500):
 
-```sql
-CREATE POLICY "Allow anon read on imoveis"
-ON public.imoveis
-FOR SELECT
-TO anon
-USING (true);
-```
+- Botao com variante `default` (fundo indigo), `w-full h-11`, icone `ExternalLink`
+- Usa `propertyUrl` que ja esta computado na linha 233-240
+- Condicional: so mostrar se `propertyUrl` nao for vazio
+- `target="_blank"`
 
-Isso precisa ser feito no painel do projeto do **site**, nao do CRM. O Lovable nao tem acesso para criar migrations nesse projeto externo. Se necessario, informaremos o usuario para aplicar manualmente.
+## Ajuste 2: Placeholder sem foto
 
-## Sequencia de execucao
+No SitePropertyCard.tsx, melhorar o bloco de fallback (linhas 146-148):
 
-### Passo 1 — Schema discovery (obrigatorio antes de tudo)
-- Executar `supabaseSite.from('imoveis').select('*').limit(3)` via script
-- Mostrar o resultado ao usuario
-- Se vazio com erro de RLS → instruir a adicionar policy acima
-- Se OK → mapear os nomes reais das colunas
+- Trocar o emoji `🏠` por icone `Building2` do lucide-react (tamanho 48px, cor `text-gray-300`)
+- Adicionar texto "Sem foto" em `text-gray-400 text-xs` abaixo do icone
+- Fundo `bg-gray-100 dark:bg-muted`
 
-### Passo 2 — Criar servico + atualizar pagina
-- Criar `src/services/siteImoveisRemote.ts` usando `supabaseSite` com os nomes de colunas reais descobertos no passo 1
-- Atualizar `ImoveisPageNew.tsx` para importar e usar o novo servico
-- Filtros, paginacao, ordenacao, cards, links "Ver no site" com `https://uhome.com.br/imovel/{slug}`
-
-### Passo 3 — Polish
-- Autocomplete de bairros via distinct no `supabaseSite`
-- Botoes "Copiar link" com toast
-- Responsividade do grid (3/2/1 colunas)
+Adicionar estado `imgError` para tratar imagens que existem mas dao 404:
+- No `<img>`, adicionar `onError={() => setImgError(true)}`
+- Quando `imgError === true`, renderizar o mesmo placeholder do Building2
+- Resetar `imgError` quando `fotoAtiva` mudar
 
 ## Arquivos modificados
-| Arquivo | Acao |
-|---------|------|
-| `src/services/siteImoveisRemote.ts` | **Novo** — queries via `supabaseSite` |
-| `src/pages/ImoveisPageNew.tsx` | Trocar fonte de dados |
 
-## Arquivos NAO modificados
-- `src/services/siteImoveis.ts` — mantido intacto
-- `src/lib/supabaseSite.ts` — mantido intacto
-- Nenhum componente fora de `/imoveis`
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/components/imoveis/SitePropertyCard.tsx` | Botao "Ver no site" + placeholder Building2 + onError handling |
+| `src/components/imoveis/PropertyPreviewDrawer.tsx` | Botao "Abrir no uhome.com.br" nas acoes |
+
+## Nao alterar
+
+- `siteImoveisRemote.ts`, `siteImoveis.ts`, filtros, paginacao, mapa, rotas, sidebar, tema
 
