@@ -79,7 +79,7 @@ interface TimelineItem {
   date: string;
   icon: any;
   color: string;
-  sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "system";
+  sourceType?: "atividade" | "historico" | "tarefa" | "imovel_event" | "anotacao" | "system";
   sourceId?: string;
 }
 
@@ -125,7 +125,7 @@ function LeadOrigemInfo({ lead }: { lead: PipelineLead }) {
   );
 }
 
-function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead, imovelEvents?: LeadImovelEvent[]): TimelineItem[] {
+function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtividade[], tarefas: PipelineTarefa[], stages: PipelineStage[], lead: PipelineLead, imovelEvents?: LeadImovelEvent[], anotacoes?: PipelineAnotacao[]): TimelineItem[] {
   const items: TimelineItem[] = [];
 
   for (const h of historico) {
@@ -184,6 +184,21 @@ function buildTimeline(historico: PipelineHistorico[], atividades: PipelineAtivi
     }
   }
 
+  // Anotações na timeline
+  if (anotacoes) {
+    for (const nota of anotacoes) {
+      items.push({
+        title: `📝 Nota de ${nota.autor_nome || "Usuário"}`,
+        description: nota.conteudo,
+        date: nota.created_at,
+        icon: StickyNote,
+        color: nota.fixada ? "bg-amber-100 text-amber-600" : "bg-muted text-muted-foreground",
+        sourceType: "anotacao",
+        sourceId: nota.id,
+      });
+    }
+  }
+
   if (lead.aceito_em) {
     items.push({ title: "✅ Lead aceito", date: lead.aceito_em, icon: CheckCircle2, color: "bg-emerald-100 text-emerald-600", sourceType: "system" });
   }
@@ -208,7 +223,7 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
 
   const { data: imovelEvents } = useLeadImoveisEvents(leadId);
 
-  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents);
+  const timeline = buildTimeline(historico, atividades, tarefas, stages, lead, imovelEvents, anotacoes);
 
   const handleSave = async () => {
     const titulo = descricao.trim() || (ATIVIDADE_TIPOS[tipo]?.label || tipo);
@@ -270,7 +285,9 @@ export default function LeadHistoricoTab({ leadId, lead, stages, atividades, ano
           ? "pipeline_historico"
           : deleteTarget.sourceType === "tarefa"
             ? "pipeline_tarefas"
-            : null;
+            : deleteTarget.sourceType === "anotacao"
+              ? "pipeline_anotacoes"
+              : null;
       if (!table) { toast.error("Este item não pode ser removido"); return; }
       const { error } = await supabase.from(table).delete().eq("id", deleteTarget.sourceId);
       if (error) throw error;
