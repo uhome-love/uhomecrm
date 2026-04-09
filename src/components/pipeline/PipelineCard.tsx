@@ -208,9 +208,9 @@ const PipelineCard = memo(function PipelineCard({
   // Origin tag
   const originTag = useMemo(() => {
     const o = lead.origem?.toLowerCase() || "";
-    if (o.includes("oferta")) return { label: "OA", bg: "#F5F3FF", color: "#7C3AED" };
-    if (o.includes("portal") || o.includes("zap") || o.includes("olx")) return { label: "PORTAL", bg: "#FFF7ED", color: "#EA580C" };
-    if (daysInStage === 0) return { label: "NOVO", bg: "#EFF6FF", color: "#1D4ED8" };
+    if (o.includes("oferta")) return { label: "OA", bg: "hsl(var(--purple-50))", color: "hsl(var(--purple-500))" };
+    if (o.includes("portal") || o.includes("zap") || o.includes("olx")) return { label: "PORTAL", bg: "hsl(var(--warning-50))", color: "hsl(var(--warning-600))" };
+    if (daysInStage === 0) return { label: "NOVO", bg: "hsl(var(--primary-50))", color: "#4F46E5" };
     return null;
   }, [lead.origem, daysInStage]);
 
@@ -268,7 +268,7 @@ const PipelineCard = memo(function PipelineCard({
               <span style={{
                 fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em",
                 padding: "2px 6px", borderRadius: 4,
-                background: originTag.label === "NOVO" ? "rgba(79,70,229,0.1)" : originTag.bg,
+                background: originTag.label === "NOVO" ? "hsl(var(--primary-50))" : originTag.bg,
                 color: originTag.label === "NOVO" ? "#4F46E5" : originTag.color,
               }}>
                 {originTag.label}
