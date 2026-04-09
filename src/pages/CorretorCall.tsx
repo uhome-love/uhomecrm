@@ -471,125 +471,98 @@ export default function CorretorCall() {
         />
       ))}
 
-      {/* ═══ ARENA SCOREBOARD ═══ */}
+      {/* ═══ COMPACT ARENA SCOREBOARD ═══ */}
       <div className="arena-scoreboard shrink-0 relative z-10">
-        <div className="px-4 py-3 max-w-[1600px] mx-auto">
-          {/* Title row */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <h2 style={{ fontSize: 20 }} className="font-black tracking-[0.2em] uppercase arena-title-gradient">
-                ⚡ ARENA DE LIGAÇÃO
+        <div className="px-4 py-2 max-w-[1600px] mx-auto">
+          {/* Single row: title + KPIs + tabs + actions */}
+          <div className="flex items-center gap-4">
+            {/* Title */}
+            <div className="flex items-center gap-2 shrink-0">
+              <h2 style={{ fontSize: 16 }} className="font-black tracking-[0.15em] uppercase arena-title-gradient">
+                ⚡ ARENA
               </h2>
-              <span className="flex items-center gap-1.5 font-semibold" style={{ fontSize: 13, color: "#4ADE80" }}>
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 live-dot" />
+              <span className="flex items-center gap-1 font-semibold" style={{ fontSize: 11, color: "#4ADE80" }}>
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 live-dot" />
                 AO VIVO
               </span>
             </div>
-            <div className="flex items-center gap-3">
+
+            {/* Inline KPIs */}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span style={{ fontSize: 12 }} className="text-neutral-500">🔥</span>
+                <span style={{ fontSize: 14 }} className="font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <div className="h-full rounded-full" style={{ width: `${ligPct}%`, background: "#F97316" }} />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span style={{ fontSize: 12 }} className="text-neutral-500">✅</span>
+                <span style={{ fontSize: 14 }} className="font-mono font-bold" style={{ color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <div className="h-full rounded-full" style={{ width: `${aprvPct}%`, background: "#22C55E" }} />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span style={{ fontSize: 12 }} className="text-neutral-500">📅</span>
+                <span style={{ fontSize: 14 }} className="font-mono font-bold" style={{ color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                  <div className="h-full rounded-full" style={{ width: `${visitPct}%`, background: "#3B82F6" }} />
+                </div>
+              </div>
               <motion.span
                 key={progress.pontos}
-                className="font-bold text-amber-400"
-                style={{ fontSize: 16 }}
+                className="font-bold text-amber-400 shrink-0"
+                style={{ fontSize: 14 }}
                 initial={{ scale: 1.5 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                ⭐ {progress.pontos} pts
+                ⭐ {progress.pontos}pts
               </motion.span>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="ghost" size="sm"
-                  className="h-8 gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
-                  style={{ fontSize: 14 }}
-                  onClick={handleExitArena}
-                >
-                  <Pause className="h-3.5 w-3.5" /> Pausar
-                </Button>
-                <Button
-                  variant="ghost" size="sm"
-                  className="h-8 gap-1 text-red-400 hover:bg-red-500/10"
-                  style={{ fontSize: 14 }}
-                  onClick={handleExitArena}
-                >
-                  <X className="h-3.5 w-3.5" /> Sair
-                </Button>
-              </div>
+              {nextLevel && (
+                <span className="text-neutral-500 shrink-0" style={{ fontSize: 11 }}>
+                  {currentLevel.emoji} → {nextLevel.emoji} ({ligacoesFaltam})
+                </span>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="ghost" size="sm"
+                className="h-7 gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
+                style={{ fontSize: 12 }}
+                onClick={handleExitArena}
+              >
+                <Pause className="h-3 w-3" /> Pausar
+              </Button>
+              <Button
+                variant="ghost" size="sm"
+                className="h-7 gap-1 text-red-400 hover:bg-red-500/10"
+                style={{ fontSize: 12 }}
+                onClick={handleExitArena}
+              >
+                <X className="h-3 w-3" /> Sair
+              </Button>
             </div>
           </div>
-
-          {/* Progress bars */}
-          <div className="flex items-center gap-6">
-            {/* Ligações */}
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center justify-between">
-                <span style={{ fontSize: 14 }} className="text-neutral-400">🔥 Ligações</span>
-                <span style={{ fontSize: 18 }} className="font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
-              </div>
-              <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-orange" style={{ background: "rgba(255,255,255,0.06)" }}>
-                <motion.div
-                  animate={{ width: `${ligPct}%` }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-full rounded-full"
-                  style={{ background: "#F97316", boxShadow: "0 0 8px rgba(249,115,22,0.6)" }}
-                />
-              </div>
-            </div>
-            {/* Aproveitados */}
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center justify-between">
-                <span style={{ fontSize: 14 }} className="text-neutral-400">✅ Aproveit.</span>
-                <span className="font-mono font-bold" style={{ fontSize: 18, color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
-              </div>
-              <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-green" style={{ background: "rgba(255,255,255,0.06)" }}>
-                <motion.div
-                  animate={{ width: `${aprvPct}%` }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-full rounded-full"
-                  style={{ background: "#22C55E", boxShadow: "0 0 8px rgba(34,197,94,0.6)" }}
-                />
-              </div>
-            </div>
-            {/* Visitas */}
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center justify-between">
-                <span style={{ fontSize: 14 }} className="text-neutral-400">📅 Visitas</span>
-                <span className="font-mono font-bold" style={{ fontSize: 18, color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
-              </div>
-              <div className="h-1.5 rounded-full overflow-hidden arena-bar-glow-blue" style={{ background: "rgba(255,255,255,0.06)" }}>
-                <motion.div
-                  animate={{ width: `${visitPct}%` }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-full rounded-full"
-                  style={{ background: "#3B82F6", boxShadow: "0 0 8px rgba(59,130,246,0.6)" }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {nextLevel && ligacoesFaltam > 0 && (
-            <div className="flex items-center gap-1.5 mt-2">
-              <span style={{ fontSize: 13 }} className="font-semibold text-neutral-300">{currentLevel.emoji} {currentLevel.label}</span>
-              <ChevronRight className="h-3 w-3 text-neutral-500" />
-              <span style={{ fontSize: 13 }} className="font-semibold text-neutral-300">{nextLevel.emoji} {nextLevel.label}</span>
-              <span style={{ fontSize: 13 }} className="text-neutral-500">· faltam {ligacoesFaltam}</span>
-            </div>
-          )}
         </div>
       </div>
 
       {/* ═══ SESSION CONTENT ═══ */}
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-4 relative z-10" style={{ background: "#0A0F1E" }}>
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-3 relative z-10" style={{ background: "#0A0F1E" }}>
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 h-auto mb-4 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.05)" }}>
-              <TabsTrigger value="call" className="gap-1.5 py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 15, fontWeight: 500 }}>
-                <Phone className="h-4 w-4" /> Arena
+            <TabsList className="inline-flex h-9 mb-3 rounded-lg p-0.5" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <TabsTrigger value="call" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+                <Phone className="h-3.5 w-3.5" /> Arena
               </TabsTrigger>
-              <TabsTrigger value="aproveitados" className="gap-1.5 py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 15, fontWeight: 500 }}>
-                <CheckCircle className="h-4 w-4" /> Aproveitados
+              <TabsTrigger value="aproveitados" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+                <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
               </TabsTrigger>
-              <TabsTrigger value="ranking" className="gap-1.5 py-2 rounded-lg text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 15, fontWeight: 500 }}>
-                <Trophy className="h-4 w-4" /> Ranking
+              <TabsTrigger value="ranking" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+                <Trophy className="h-3.5 w-3.5" /> Ranking
               </TabsTrigger>
             </TabsList>
 

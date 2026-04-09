@@ -596,3 +596,123 @@ main[class*="flex-1"],
 .main-content {
   background: hsl(var(--background));
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ARENA DE LIGAÇÃO — Oferta Ativa (Corretor Call)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Background escuro imersivo */
+.arena-bg {
+  background: linear-gradient(180deg, #0A0F1E 0%, #111827 100%);
+  position: relative;
+}
+
+/* Scoreboard header */
+.arena-scoreboard {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Card de lista/campanha */
+.arena-card {
+  background: #161B22;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.arena-card:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.08);
+}
+
+/* Botão verde de iniciar call */
+.arena-btn-call {
+  background: linear-gradient(135deg, #16A34A, #15803D) !important;
+  color: white !important;
+  font-weight: 700;
+  transition: filter 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+.arena-btn-call:hover:not(:disabled) {
+  filter: brightness(1.15);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.5);
+}
+.arena-btn-call:disabled {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #6B7280 !important;
+  box-shadow: none;
+}
+
+/* Título gradient */
+.arena-title-gradient {
+  background: linear-gradient(135deg, #60A5FA, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Efeitos visuais ambientais */
+.arena-floor {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(59, 130, 246, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+.arena-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Partículas flutuantes */
+.arena-particle {
+  position: absolute;
+  background: #60A5FA;
+  border-radius: 50%;
+  animation: arena-float 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes arena-float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+  50% { transform: translateY(-12px) scale(1.2); opacity: 0.6; }
+}
+
+/* Sparkle pulse */
+.arena-sparkle-pulse {
+  animation: arena-sparkle 2s ease-in-out infinite;
+}
+@keyframes arena-sparkle {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Live dot */
+.live-dot {
+  animation: live-pulse 1.5s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Glow nas barras de progresso */
+.arena-bar-glow-orange { box-shadow: 0 0 6px rgba(249, 115, 22, 0.15); }
+.arena-bar-glow-green { box-shadow: 0 0 6px rgba(34, 197, 94, 0.15); }
+.arena-bar-glow-blue { box-shadow: 0 0 6px rgba(59, 130, 246, 0.15); }
+
+/* Pulse glow para CTA */
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 40px rgba(22, 163, 74, 0.4), 0 0 80px rgba(22, 163, 74, 0.1); }
+  50% { box-shadow: 0 0 80px rgba(22, 163, 74, 0.8), 0 0 140px rgba(22, 163, 74, 0.3); }
+  100% { box-shadow: 0 0 40px rgba(22, 163, 74, 0.4), 0 0 80px rgba(22, 163, 74, 0.1); }
+}
+
+/* Arena mode: hide sidebar */
+body.arena-mode .sidebar-container,
+body.arena-mode [data-sidebar] {
+  display: none !important;
+}
