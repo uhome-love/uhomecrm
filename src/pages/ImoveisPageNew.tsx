@@ -31,10 +31,16 @@ import { SearchMapBox } from "@/components/imoveis/SearchMapBox";
 import PropertyPreviewDrawer from "@/components/imoveis/PropertyPreviewDrawer";
 import { SearchAlertModal } from "@/components/imoveis/SearchAlertModal";
 import {
-  fetchSiteImoveis, fetchMapPins, fetchBairros, fetchImovelBySlug, siteImovelToMapPin,
+  siteImovelToMapPin,
   type SiteImovel, type MapPin as MapPinType, type BuscaFilters,
   formatPreco, CIDADES_PERMITIDAS, PROPERTY_TYPES,
 } from "@/services/siteImoveis";
+import {
+  fetchSiteImoveisRemote as fetchSiteImoveis,
+  fetchMapPinsRemote as fetchMapPins,
+  fetchBairrosRemote as fetchBairros,
+  fetchImovelBySlugRemote as fetchImovelBySlug,
+} from "@/services/siteImoveisRemote";
 import {
   useImoveisSearchStore, filtersFromParams, filtersToParams, type MapBounds,
 } from "@/stores/imoveisSearchStore";
