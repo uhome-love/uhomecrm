@@ -198,13 +198,13 @@ export const SitePropertyCard = React.memo(function SitePropertyCard({
           <>
             {fotoAtiva > 0 && (
               <button
-                onClick={(e) => { e.stopPropagation(); setFotoAtiva(i => i - 1); }}
+                onClick={(e) => { e.stopPropagation(); setImgError(false); setFotoAtiva(i => i - 1); }}
                 className="absolute left-2.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm shadow-md transition-all hover:scale-110 active:scale-95"
               >‹</button>
             )}
             {fotoAtiva < fotos.length - 1 && (
               <button
-                onClick={(e) => { e.stopPropagation(); setFotoAtiva(i => i + 1); }}
+                onClick={(e) => { e.stopPropagation(); setImgError(false); setFotoAtiva(i => i + 1); }}
                 className="absolute right-2.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm shadow-md transition-all hover:scale-110 active:scale-95"
               >›</button>
             )}
