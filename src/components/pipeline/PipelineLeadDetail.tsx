@@ -363,15 +363,33 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5 rounded-lg"
-                onClick={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
-              >
-                <Building2 className="h-3 w-3" />
-                {lead.empreendimento ? `📍 ${lead.empreendimento}` : "+ Empreendimento"}
-              </Button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5 rounded-lg"
+                  onClick={() => { setEmpreendimentoSearch(lead.empreendimento || ""); setEmpreendimentoOpen(true); }}
+                >
+                  <Building2 className="h-3 w-3" />
+                  {lead.empreendimento ? `📍 ${lead.empreendimento}` : "+ Empreendimento"}
+                </Button>
+                {(lead as any).imovel_codigo && (
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-blue-50 text-blue-700 border-blue-200">
+                    Cód: {(lead as any).imovel_codigo}
+                  </Badge>
+                )}
+                {(lead as any).imovel_url && (
+                  <a
+                    href={(lead as any).imovel_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <Search className="h-3 w-3" />
+                    Ver imóvel
+                  </a>
+                )}
+              </div>
             )}
           </div>
 
