@@ -301,57 +301,58 @@ export default function CorretorCall() {
           {/* Ranking rivalry card */}
           {w.rankingPos > 0 && (
             <div
-              className="rounded-2xl p-4 bg-white/[0.05] border border-transparent"
+              className="rounded-2xl p-4"
               style={{
-                borderImage: "linear-gradient(135deg, #60A5FA, #A78BFA) 1",
-                borderImageSlice: 1,
+                background: "var(--arena-subtle-bg)",
+                border: "1px solid rgba(96,165,250,0.3)",
               }}
             >
               {w.isLeader ? (
                 <div className="space-y-1">
-                  <p className="text-white font-bold flex items-center gap-2">
+                  <p className="font-bold flex items-center gap-2" style={{ color: "var(--arena-text)" }}>
                     👑 Você lidera o ranking!
                   </p>
                   {w.belowName && (
-                    <p className="text-neutral-300 text-sm">
+                    <p className="text-sm" style={{ color: "var(--arena-text-muted)" }}>
                       🥈 {w.belowName} está em #2
                     </p>
                   )}
-                  <p className="text-neutral-400 text-sm italic">
+                  <p className="text-sm italic" style={{ color: "var(--arena-text-subtle)" }}>
                     "Defende o trono. Ninguém tira isso de quem executa." 🔥
                   </p>
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <p className="text-white font-bold">
+                  <p className="font-bold" style={{ color: "var(--arena-text)" }}>
                     📍 Você está em #{w.rankingPos} — <span className="text-[#60A5FA]">{w.ptsToNext}pts atrás</span>
                   </p>
                   {w.aboveName && (
-                    <p className="text-neutral-300 text-sm">
+                    <p className="text-sm" style={{ color: "var(--arena-text-muted)" }}>
                       🥇 {w.aboveName} lidera com {w.abovePts}pts
                     </p>
                   )}
-                  <p className="text-neutral-400 text-sm italic">
+                  <p className="text-sm italic" style={{ color: "var(--arena-text-subtle)" }}>
                     "Uma boa sessão vira o jogo." ⚡
                   </p>
                 </div>
               )}
+            </div>
             </div>
           )}
 
           {/* Level progression */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-white font-medium flex items-center gap-1.5">
+              <span className="font-medium flex items-center gap-1.5" style={{ color: "var(--arena-text)" }}>
                 {currentLevel.emoji} {currentLevel.label}
               </span>
               {nextLevel && (
-                <span className="text-neutral-400 text-xs">
+                <span className="text-xs" style={{ color: "var(--arena-text-muted)" }}>
                   {ligacoesParaProximo} ligações para virar {nextLevel.emoji} {nextLevel.label}
                 </span>
               )}
             </div>
-            <div className="h-2 rounded-full bg-white/20 overflow-hidden">
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${levelProg}%` }}
@@ -370,7 +371,7 @@ export default function CorretorCall() {
           className="w-full max-w-lg mx-auto px-6 mt-8 mb-12 flex flex-col items-center space-y-5"
         >
           {/* Queue info */}
-          <p className="text-sm text-neutral-400 flex items-center gap-3">
+          <p className="text-sm flex items-center gap-3" style={{ color: "var(--arena-text-muted)" }}>
             <span className="flex items-center gap-1">📋 {w.queueLeads} leads na sua fila</span>
             <span>·</span>
             <span className="flex items-center gap-1">⏱ {estLabel} estimado</span>
