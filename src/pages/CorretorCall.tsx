@@ -498,14 +498,14 @@ export default function CorretorCall() {
               </div>
               <div className="flex items-center gap-1.5">
                 <span style={{ fontSize: 12 }} className="text-neutral-500">✅</span>
-                <span style={{ fontSize: 14 }} className="font-mono font-bold" style={{ color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
+                <span className="font-mono font-bold" style={{ fontSize: 14, color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
                 <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
                   <div className="h-full rounded-full" style={{ width: `${aprvPct}%`, background: "#22C55E" }} />
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
                 <span style={{ fontSize: 12 }} className="text-neutral-500">📅</span>
-                <span style={{ fontSize: 14 }} className="font-mono font-bold" style={{ color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
+                <span className="font-mono font-bold" style={{ fontSize: 14, color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
                 <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
                   <div className="h-full rounded-full" style={{ width: `${visitPct}%`, background: "#3B82F6" }} />
                 </div>
