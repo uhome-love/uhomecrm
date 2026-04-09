@@ -439,7 +439,7 @@ export default function PlacarDoDia() {
           <ProgressBar valor={totalGeral} meta={meta} cor={metaGeralAtingida ? "#22c55e" : "#F59E0B"} />
           {metaGeralAtingida && (
             <div style={{ textAlign: "center", marginTop: 4, fontSize: "clamp(14px, 2vw, 20px)", letterSpacing: 4, color: "#22c55e", animation: "metaPulse 1.5s infinite", fontWeight: 900 }}>
-              🎉 CHURRASCO GARANTIDO! 🎉
+              🎉 META BATIDA! 🎉
             </div>
           )}
         </div>
