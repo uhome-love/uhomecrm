@@ -347,6 +347,17 @@ const PipelineCard = memo(function PipelineCard({
               {displayEmpreendimento}
             </span>
           )}
+          {(lead as any).imovel_codigo && (
+            <span style={{
+              display: "inline-flex", alignItems: "center",
+              background: "#dbeafe", border: "1px solid #93c5fd",
+              borderRadius: 4, padding: "1px 5px",
+              fontSize: 9, fontWeight: 700, color: "#1d4ed8",
+              flexShrink: 0, whiteSpace: "nowrap",
+            }}>
+              {(lead as any).imovel_codigo}
+            </span>
+          )}
           {lead.telefone && (
             <span style={{
               fontSize: 11, color: "#94A3B8",
