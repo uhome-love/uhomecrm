@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const SITE_URL = "https://huigglwvvzuwwyqvpmec.supabase.co";
+const SITE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1aWdnbHd2dnp1d3d5cXZwbWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzcsImV4cCI6MjA4OTYyOTM3N30.mi8RveT9gYhxP-sfq0GIN1jog-vU3Sxq511LCq5hhw4";
+const supabaseSiteClient = createClient(SITE_URL, SITE_ANON);
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -70,6 +74,34 @@ function mapPropertyRow(row: any) {
     valor: row.valor_venda || null,
     fotos: fotos.slice(0, 10),
     empreendimento: row.empreendimento || null,
+    descricao: row.titulo || null,
+    lat: row.latitude || null,
+    lng: row.longitude || null,
+  };
+}
+
+/**
+ * Map a row from the site `imoveis` table to the same output shape.
+ */
+function mapSiteImovelRow(row: any) {
+  const rawFotos = Array.isArray(row.fotos) ? row.fotos : [];
+  const fotos = rawFotos.slice(0, 10).map((f: any) => typeof f === "string" ? f : f?.url || "").filter(Boolean);
+  if (!fotos.length && row.foto_principal) fotos.push(row.foto_principal);
+  return {
+    id: row.jetimob_id || row.id,
+    codigo: row.jetimob_id || String(row.id),
+    titulo: row.titulo || row.condominio_nome || `Imóvel ${row.jetimob_id || row.id}`,
+    endereco: row.bairro ? `${row.bairro}${row.cidade ? ` — ${row.cidade}` : ""}` : null,
+    bairro: row.bairro || null,
+    cidade: row.cidade || null,
+    area: row.area_total || null,
+    quartos: row.quartos || null,
+    suites: row.suites || null,
+    vagas: row.vagas || null,
+    banheiros: row.banheiros || null,
+    valor: row.preco || null,
+    fotos,
+    empreendimento: row.condominio_nome || null,
     descricao: row.titulo || null,
     lat: row.latitude || null,
     lng: row.longitude || null,
@@ -233,7 +265,29 @@ Deno.serve(async (req) => {
           }
         }
 
-        // ── FALLBACK: only call Jetimob for codes NOT found locally ──
+        // ── FALLBACK 1: site `imoveis` table for codes NOT found in CRM ──
+        const missingAfterCRM = ids.filter((id: string) => !foundCodes.has(id));
+
+        const siteResults: any[] = [];
+        if (missingAfterCRM.length > 0) {
+          try {
+            const { data: siteProps } = await supabaseSiteClient
+              .from("imoveis")
+              .select("id, jetimob_id, titulo, tipo, bairro, cidade, preco, area_total, quartos, suites, vagas, banheiros, fotos, foto_principal, condominio_nome, latitude, longitude")
+              .in("jetimob_id", missingAfterCRM)
+              .eq("status", "disponivel");
+            if (siteProps) {
+              for (const row of siteProps) {
+                siteResults.push(mapSiteImovelRow(row));
+                foundCodes.add(row.jetimob_id || String(row.id));
+              }
+            }
+          } catch (e) {
+            console.error("Site imoveis fallback error:", e);
+          }
+        }
+
+        // ── FALLBACK 2: Jetimob API for codes still missing ──
         const missingIds = ids.filter((id: string) => !foundCodes.has(id));
 
         let jetimobResults: any[] = [];
@@ -251,6 +305,7 @@ Deno.serve(async (req) => {
         // Merge: keep original order from ids array
         const allMap = new Map<string, any>();
         for (const item of foundFromDB) allMap.set(String(item.codigo), item);
+        for (const item of siteResults) allMap.set(String(item.codigo), item);
         for (const item of jetimobResults) allMap.set(String(item.codigo), item);
 
         for (const id of ids) {

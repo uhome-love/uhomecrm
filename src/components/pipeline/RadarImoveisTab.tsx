@@ -20,7 +20,7 @@ import {
   Heart, HeartOff, X, Clock, History, Save, ThumbsDown, Wand2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-// supabaseSite removed — vitrines now created on CRM database
+import { supabaseSite } from "@/lib/supabaseSite";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -524,11 +524,11 @@ export default function RadarImoveisTab({ leadId, leadNome, leadTelefone, leadDa
   useEffect(() => {
     if (bairroSearch.length < 3) { setBairroSuggestions([]); setShowBairroDropdown(false); return; }
     const timer = setTimeout(async () => {
-      const { data } = await supabase
-        .from("properties")
+      const { data } = await supabaseSite
+        .from("imoveis")
         .select("bairro")
         .ilike("bairro", `%${bairroSearch}%`)
-        .eq("ativo", true)
+        .eq("status", "disponivel")
         .limit(20);
       const seen = new Set<string>();
       const unique: string[] = [];
@@ -827,59 +827,60 @@ Responda SOMENTE com o JSON, sem markdown.`;
   // ── Supabase direct fallback when Typesense is empty ──
   const searchSupabaseFallback = useCallback(async (): Promise<ImovelResult[]> => {
     try {
-      console.log("[Match] Typesense vazio — usando fallback Supabase direto");
-      let query = supabase
-        .from("properties")
-        .select("id, codigo, titulo, tipo, bairro, valor_venda, dormitorios, suites, vagas, area_privativa, empreendimento, condominio_nome, status_imovel, fotos")
-        .eq("ativo", true)
-        .gt("valor_venda", 0)
+      console.log("[Match] Typesense vazio — usando fallback supabaseSite (imoveis)");
+      let query = supabaseSite
+        .from("imoveis")
+        .select("id, jetimob_id, titulo, tipo, bairro, preco, quartos, suites, vagas, area_total, condominio_nome, fotos, foto_principal, slug")
+        .eq("status", "disponivel")
+        .gt("preco", 0)
         .order("updated_at", { ascending: false })
         .limit(50);
 
       const validTipos = profileForm.tipos.filter(t => t && t !== "qualquer");
       if (validTipos.length > 0) query = query.in("tipo", validTipos);
       
-      // Se tem bairros no perfil, filtrar por eles
       if (profileForm.bairros.length > 0) {
         query = query.in("bairro", profileForm.bairros);
       } else if (leadData?.empreendimento) {
-        // Se sem bairro mas tem empreendimento, buscar pelo empreendimento
         const empNome = leadData.empreendimento
-
           .replace(/\s+JW$/i, '')
           .replace(/\s+João\s+Wallig$/i, '')
           .trim();
         if (empNome.length >= 3) {
           console.log("[Match] Sem bairro — buscando por empreendimento:", empNome);
-          query = query.or(`condominio_nome.ilike.%${empNome}%,empreendimento.ilike.%${empNome}%,titulo.ilike.%${empNome}%`);
+          query = query.or(`condominio_nome.ilike.%${empNome}%,titulo.ilike.%${empNome}%`);
         }
       }
       
-      if (profileForm.valor_min) query = query.gte("valor_venda", parseFloat(profileForm.valor_min) * 0.85);
-      if (profileForm.valor_max) query = query.lte("valor_venda", parseFloat(profileForm.valor_max) * 1.15);
-      if (profileForm.dormitorios_min) query = query.gte("dormitorios", Math.max(1, parseInt(profileForm.dormitorios_min) - 1));
+      if (profileForm.valor_min) query = query.gte("preco", parseFloat(profileForm.valor_min) * 0.85);
+      if (profileForm.valor_max) query = query.lte("preco", parseFloat(profileForm.valor_max) * 1.15);
+      if (profileForm.dormitorios_min) query = query.gte("quartos", Math.max(1, parseInt(profileForm.dormitorios_min) - 1));
 
       const { data, error } = await query;
       if (error) { console.error("[Match] Supabase fallback error:", error); return []; }
 
-      return (data || []).map((doc: any) => ({
-        id: doc.codigo || doc.id,
-        codigo: doc.codigo || String(doc.id),
-        nome: doc.titulo || doc.empreendimento || "Imóvel",
-        empreendimento: doc.empreendimento,
-        bairro: doc.bairro || "",
-        metragem: Number(doc.area_privativa || 0),
-        dorms: Number(doc.dormitorios || 0),
-        vagas: Number(doc.vagas || 0),
-        suites: Number(doc.suites || 0),
-        preco: Number(doc.valor_venda || 0),
-        status: doc.status_imovel || "",
-        imagem: doc.fotos?.[0] || "",
-        tipo: doc.tipo || "",
-        score: 0,
-        source: "typesense" as const,
-        justificativas: [],
-      }));
+      return (data || []).map((doc: any) => {
+        const fotos = Array.isArray(doc.fotos) ? doc.fotos.map((f: any) => typeof f === "string" ? f : f?.url || "").filter(Boolean) : [];
+        const firstImage = fotos[0] || doc.foto_principal || "";
+        return {
+          id: doc.jetimob_id || String(doc.id),
+          codigo: doc.jetimob_id || String(doc.id),
+          nome: doc.titulo || doc.condominio_nome || "Imóvel",
+          empreendimento: doc.condominio_nome || "",
+          bairro: doc.bairro || "",
+          metragem: Number(doc.area_total || 0),
+          dorms: Number(doc.quartos || 0),
+          vagas: Number(doc.vagas || 0),
+          suites: Number(doc.suites || 0),
+          preco: Number(doc.preco || 0),
+          status: "disponivel",
+          imagem: firstImage,
+          tipo: doc.tipo || "",
+          score: 0,
+          source: "typesense" as const,
+          justificativas: [],
+        };
+      });
     } catch (err) {
       console.error("[Match] Supabase fallback exception:", err);
       return [];
