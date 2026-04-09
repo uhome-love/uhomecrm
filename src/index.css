@@ -599,29 +599,71 @@ main[class*="flex-1"],
 
 /* ═══════════════════════════════════════════════════════════
    ARENA DE LIGAÇÃO — Oferta Ativa (Corretor Call)
+   Dynamic theme: light by default, dark override
    ═══════════════════════════════════════════════════════════ */
 
-/* Background escuro imersivo */
+:root {
+  --arena-bg-from: 210 40% 96%;
+  --arena-bg-to: 214 32% 91%;
+  --arena-scoreboard-bg: rgba(255,255,255,0.85);
+  --arena-scoreboard-border: rgba(0,0,0,0.08);
+  --arena-card-bg: rgba(255,255,255,0.9);
+  --arena-card-border: rgba(0,0,0,0.08);
+  --arena-card-hover-border: rgba(59,130,246,0.3);
+  --arena-text: #1E293B;
+  --arena-text-muted: #64748B;
+  --arena-text-subtle: #94A3B8;
+  --arena-subtle-bg: rgba(0,0,0,0.04);
+  --arena-particle-color: #3B82F6;
+  --arena-floor-glow: rgba(59,130,246,0.04);
+  --arena-vignette: rgba(255,255,255,0.3);
+  --arena-progress-track: rgba(0,0,0,0.08);
+  --arena-tab-bg: rgba(0,0,0,0.06);
+  --arena-tab-active-bg: rgba(0,0,0,0.12);
+}
+
+.dark {
+  --arena-bg-from: 222 47% 8%;
+  --arena-bg-to: 220 33% 10%;
+  --arena-scoreboard-bg: rgba(15,23,42,0.85);
+  --arena-scoreboard-border: rgba(255,255,255,0.08);
+  --arena-card-bg: #161B22;
+  --arena-card-border: rgba(255,255,255,0.08);
+  --arena-card-hover-border: rgba(59,130,246,0.4);
+  --arena-text: #FFFFFF;
+  --arena-text-muted: #9CA3AF;
+  --arena-text-subtle: #6B7280;
+  --arena-subtle-bg: rgba(255,255,255,0.06);
+  --arena-particle-color: #60A5FA;
+  --arena-floor-glow: rgba(59,130,246,0.06);
+  --arena-vignette: rgba(0,0,0,0.4);
+  --arena-progress-track: rgba(255,255,255,0.1);
+  --arena-tab-bg: rgba(255,255,255,0.06);
+  --arena-tab-active-bg: rgba(255,255,255,0.15);
+}
+
+/* Background imersivo */
 .arena-bg {
-  background: linear-gradient(180deg, #0A0F1E 0%, #111827 100%);
+  background: linear-gradient(180deg, hsl(var(--arena-bg-from)) 0%, hsl(var(--arena-bg-to)) 100%);
+  color: var(--arena-text);
   position: relative;
 }
 
 /* Scoreboard header */
 .arena-scoreboard {
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--arena-scoreboard-bg);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--arena-scoreboard-border);
 }
 
 /* Card de lista/campanha */
 .arena-card {
-  background: #161B22;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--arena-card-bg);
+  border: 1px solid var(--arena-card-border);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .arena-card:hover {
-  border-color: rgba(59, 130, 246, 0.4);
+  border-color: var(--arena-card-hover-border);
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.08);
 }
 
@@ -638,8 +680,8 @@ main[class*="flex-1"],
   box-shadow: 0 4px 16px rgba(22, 163, 74, 0.5);
 }
 .arena-btn-call:disabled {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #6B7280 !important;
+  background: var(--arena-subtle-bg) !important;
+  color: var(--arena-text-subtle) !important;
   box-shadow: none;
 }
 
@@ -655,14 +697,14 @@ main[class*="flex-1"],
 .arena-floor {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 100%, rgba(59, 130, 246, 0.06) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 100%, var(--arena-floor-glow) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
 .arena-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+  background: radial-gradient(ellipse at center, transparent 40%, var(--arena-vignette) 100%);
   pointer-events: none;
   z-index: 0;
 }
@@ -670,7 +712,7 @@ main[class*="flex-1"],
 /* Partículas flutuantes */
 .arena-particle {
   position: absolute;
-  background: #60A5FA;
+  background: var(--arena-particle-color);
   border-radius: 50%;
   animation: arena-float 4s ease-in-out infinite;
   pointer-events: none;
