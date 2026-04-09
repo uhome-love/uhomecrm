@@ -1,30 +1,40 @@
 
-
-# Plano: Corrigir Criação Automática de Negócio no Pipeline
+# Plano: Corrigir Leads Invisíveis no Pipeline (aceite_status stuck)
 
 ## Diagnóstico
 
-O fluxo principal em `usePipeline.ts` (linha 435) já está correto — só cria negócio quando o lead vai para `convertido` (Negócio Criado). O trigger de banco `lead_to_negocio_on_visita_realizada` já foi removido.
+Leads como "Naira" (Adriana), "Elaine", "Nádia" têm `corretor_id` atribuído mas `aceite_status = 'pendente_distribuicao'`. Isso cria um estado impossível:
+- Pipeline do corretor filtra `aceite_status = 'aceito'` (linha 193 de `usePipeline.ts`) → lead invisível
+- Página de Aceite filtra `aceite_status IN ('pendente', 'aguardando_aceite')` → lead também invisível
+- Resultado: lead fantasma — existe no banco mas ninguém vê
 
-Porém encontrei **dois problemas residuais**:
-
-### 1. `useLeadProgression.ts` — função `onVisitaRealizada` (linha 48-81)
-Cria negócio automaticamente ao marcar visita como realizada. Embora não esteja sendo chamada atualmente, é código ativo exportado que pode ser invocado no futuro. O comentário diz "GATILHO 2: Visita realizada → create negócio" — contradiz a regra atual.
-
-### 2. `PipelineBoard.tsx` — Auto-fix (linhas 285-306)
-Move automaticamente qualquer lead que tenha `negocio_id` para a coluna "Negócio Criado". Isso é problemático porque se por qualquer razão um lead tiver `negocio_id` vinculado (regressão, bug anterior), ele será forçado para a etapa convertido sem intervenção do corretor.
-
-### 3. `usePipeline.ts` — label `origem: "visita_realizada"` (linha 474)
-O insert do negócio na etapa convertido usa `origem: "visita_realizada"` como texto fixo. Deveria ser `"pipeline_convertido"` ou similar.
+**Causa raiz:** O webhook CRM (dedup path, linha 232-246 de `crm-webhook/index.ts`) reativa um lead existente (`arquivado: false`, move para Novo Lead) mas **não atualiza o `aceite_status`**. Se o lead estava com `pendente_distribuicao`, fica preso nesse estado mesmo com corretor atribuído.
 
 ## Correções
 
+### 1. Webhook CRM — dedup path
+**Arquivo:** `supabase/functions/crm-webhook/index.ts` (linha ~234)
+
+Quando reativando lead existente que já tem corretor, setar `aceite_status: 'aceito'`. Se não tem corretor, setar `aceite_status: 'pendente_distribuicao'` para entrar na roleta.
+
+### 2. Proteção no pipeline query
+**Arquivo:** `src/hooks/usePipeline.ts` (linha 193)
+
+Trocar `.eq("aceite_status", "aceito")` por `.in("aceite_status", ["aceito", "pendente"])` para corretores. Assim leads aguardando aceite também aparecem no pipeline (com badge visual, se necessário), evitando que fiquem invisíveis se o aceite_status ficar preso.
+
+### 3. Corrigir leads stuck no banco
+**Migração de dados:** UPDATE nos 4 leads que têm `corretor_id IS NOT NULL` e `aceite_status = 'pendente_distribuicao'` para `aceite_status = 'aceito'`.
+
+### 4. Segurança futura — trigger de proteção
+Adicionar validação: se `corretor_id` é atribuído e `aceite_status` é `pendente_distribuicao`, automaticamente mudar para `pendente` (via trigger ou na lógica da RPC).
+
+## Arquivos Modificados
+
 | Arquivo | Ação |
 |---------|------|
-| `src/hooks/useLeadProgression.ts` | Remover a criação de negócio da função `onVisitaRealizada`. Manter apenas registro de atividade/toast, sem insert em `negocios`. |
-| `src/components/pipeline/PipelineBoard.tsx` | Remover o bloco auto-fix (linhas 285-307). Leads não devem ser movidos automaticamente. |
-| `src/hooks/usePipeline.ts` | Trocar `origem: "visita_realizada"` por `origem: "pipeline_convertido"` na linha 474. |
+| `supabase/functions/crm-webhook/index.ts` | Adicionar `aceite_status` no update de dedup |
+| `src/hooks/usePipeline.ts` | Expandir filtro do corretor para incluir `pendente` |
+| Migração SQL | Corrigir 4 leads stuck |
 
 ## Risco
-Baixo. Remove comportamentos automáticos indesejados. A criação de negócio fica exclusivamente no `moveLead` ao entrar em `convertido`.
-
+Baixo. A mudança no filtro do pipeline pode mostrar leads que antes ficavam na página de aceite, mas isso é desejável — melhor visível do que invisível.
