@@ -189,8 +189,8 @@ export function usePipeline(pipelineTipo: string = "leads") {
       } else if (isGestor) {
         query = query.in("corretor_id", teamUserIds);
       } else {
-        // Corretores: only their own ACCEPTED leads (pendente ones show on AceiteLeads page)
-        query = query.eq("corretor_id", userId).eq("aceite_status", "aceito");
+        // Corretores: own leads that are accepted OR pendente (avoid invisible leads)
+        query = query.eq("corretor_id", userId).in("aceite_status", ["aceito", "pendente"]);
       }
 
       const { data, error } = await query;

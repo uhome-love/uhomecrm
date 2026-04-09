@@ -242,6 +242,8 @@ Deno.serve(async (req) => {
             imovel_url: imovelUrl || undefined,
             observacoes: updateObsParts.join(' | '),
             updated_at: new Date().toISOString(),
+            // Fix: set aceite_status based on whether lead already has a corretor
+            aceite_status: existingCorretorId ? 'aceito' : 'pendente_distribuicao',
           })
           .eq('id', existingLead.id)
 
