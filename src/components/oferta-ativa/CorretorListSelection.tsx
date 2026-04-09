@@ -3,8 +3,7 @@ import { FolderOpen } from "lucide-react";
 import { useOAListas, type OALista } from "@/hooks/useOfertaAtiva";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Phone, ArrowLeft, Loader2, Users, Search, Zap, Sparkles, Trash2 } from "lucide-react";
+import { Phone, ArrowLeft, Loader2, Users, Search, Zap, Sparkles, Trash2, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import DialingModeWithScript from "./DialingModeWithScript";
@@ -56,139 +55,207 @@ function useBatchListaStats(listaIds: string[]) {
       }
       return statsMap;
     },
-    staleTime: 60_000, // Cache 60s
+    staleTime: 60_000,
     enabled: listaIds.length > 0 && !!user,
   });
 }
 
-function ListaCard({ lista, stats, isCustom }: { lista: OALista; stats?: ListaStats; isCustom?: boolean }) {
+/* ── Compact Row for a single lista ── */
+function ListaRow({
+  lista,
+  stats,
+  onClick,
+  isCustom,
+}: {
+  lista: OALista;
+  stats?: ListaStats;
+  onClick?: () => void;
+  isCustom?: boolean;
+}) {
   const hasLeads = (stats?.naFila ?? 0) > 0;
 
   return (
     <div
-      className={`arena-card rounded-xl p-5 space-y-3 cursor-pointer group ${
-        hasLeads ? "" : "opacity-50"
-      }`}
+      className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-150 group"
+      style={{
+        background: "#161B22",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}
+      onMouseEnter={(e) => {
+        if (hasLeads) e.currentTarget.style.borderColor = "rgba(34,197,94,0.4)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+      }}
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "white" }} className="group-hover:text-blue-400 transition-colors">
+      {/* Name */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          {isCustom && <Sparkles className="h-3 w-3 text-purple-400 shrink-0" />}
+          <p className="text-sm font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
             {lista.empreendimento}
-          </h3>
-          {lista.campanha && <p className="text-xs text-neutral-500 mt-0.5">{lista.campanha}</p>}
+          </p>
         </div>
-        {isCustom ? (
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{
-            background: "rgba(168,85,247,0.15)",
-            color: "#c084fc",
-            border: "1px solid rgba(168,85,247,0.3)",
-          }}>
-            ✨ Personalizada
-          </span>
-        ) : (
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{
-            background: "rgba(34,197,94,0.15)",
-            color: "#4ade80",
-            border: "1px solid rgba(34,197,94,0.3)",
-          }}>
-            Liberada
-          </span>
+        {lista.campanha && (
+          <p className="text-[11px] text-neutral-500 truncate">{lista.campanha}</p>
         )}
       </div>
 
+      {/* Inline stats */}
       {stats ? (
-        <>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div>
-              <p style={{ fontSize: 32, fontWeight: 900, color: "#60A5FA" }}>{stats.naFila}</p>
-              <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>na fila</p>
-            </div>
-            <div>
-              <p style={{ fontSize: 32, fontWeight: 900, color: "#4ADE80" }}>{stats.aproveitados}</p>
-              <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>aproveitados</p>
-            </div>
-            <div>
-              <p style={{ fontSize: 32, fontWeight: 900, color: "white" }}>{stats.total}</p>
-              <p style={{ fontSize: 12, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>total</p>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1" style={{ fontSize: 12, color: "#6B7280" }}>
-              <span>Progresso da lista</span>
-              <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 13, color: "#4ADE80" }}>{stats.pct}%</span>
-            </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${stats.pct}%`,
-                  background: "linear-gradient(90deg, #3B82F6, #22C55E)",
-                  boxShadow: "0 0 6px rgba(34,197,94,0.4)",
-                }}
-              />
-            </div>
-          </div>
-
-          {stats.meusTentativas > 0 && (
-            <div className="flex items-center gap-1.5" style={{ fontSize: 13, color: "#FBBF24" }}>
-              <span>⚡</span>
-              <span>Você fez <strong>{stats.meusTentativas}</strong> tentativas hoje nesta lista</span>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="space-y-3 py-2">
-          <div className="grid grid-cols-3 gap-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="text-center space-y-1.5">
-                <Skeleton className="h-8 w-16 mx-auto rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <Skeleton className="h-3 w-12 mx-auto rounded" style={{ background: "rgba(255,255,255,0.04)" }} />
-              </div>
-            ))}
-          </div>
-          <Skeleton className="h-1.5 w-full rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
+        <div className="hidden sm:flex items-center gap-3 text-xs shrink-0">
+          <span style={{ color: "#60A5FA", fontWeight: 700 }}>{stats.naFila}</span>
+          <span className="text-neutral-600">na fila</span>
+          <span className="text-neutral-700">·</span>
+          <span style={{ color: "#4ADE80", fontWeight: 700 }}>{stats.aproveitados}</span>
+          <span className="text-neutral-600">aprov.</span>
+          <span className="text-neutral-700">·</span>
+          <span style={{ color: "#9CA3AF", fontWeight: 600 }}>{stats.total}</span>
+          <span className="text-neutral-600">total</span>
         </div>
+      ) : (
+        <Skeleton className="h-4 w-32 rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
       )}
 
+      {/* Mini progress bar */}
+      <div className="hidden md:block w-20 shrink-0">
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${stats?.pct ?? 0}%`,
+              background: "linear-gradient(90deg, #3B82F6, #22C55E)",
+            }}
+          />
+        </div>
+        <p className="text-[10px] text-neutral-500 text-right mt-0.5" style={{ fontFamily: "monospace" }}>
+          {stats?.pct ?? 0}%
+        </p>
+      </div>
+
+      {/* Tentativas badge */}
+      {(stats?.meusTentativas ?? 0) > 0 && (
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0" style={{ background: "rgba(251,191,36,0.15)", color: "#FBBF24" }}>
+          ⚡{stats!.meusTentativas}
+        </span>
+      )}
+
+      {/* Start button */}
       <button
-        className={`w-full h-10 rounded-lg font-bold transition-colors ${
+        onClick={hasLeads ? onClick : undefined}
+        disabled={!hasLeads}
+        className={`h-8 px-3 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all ${
           hasLeads
             ? "arena-btn-call"
-            : "text-neutral-500 cursor-not-allowed"
+            : "text-neutral-600 cursor-not-allowed"
         }`}
-        style={hasLeads ? { fontSize: 16 } : { background: "rgba(255,255,255,0.05)", fontSize: 16 }}
-        disabled={!hasLeads}
+        style={!hasLeads ? { background: "rgba(255,255,255,0.03)" } : {}}
       >
-        <span className="flex items-center justify-center gap-1.5">
-          <Phone className="h-4 w-4" /> {hasLeads ? "Iniciar o Call" : "Lista Esgotada"}
-        </span>
+        <Phone className="h-3.5 w-3.5" />
+        {hasLeads ? "Iniciar" : "Esgotada"}
       </button>
     </div>
   );
 }
 
-function SavedListCard({ list, onStart, onDelete }: { list: CustomList; onStart: () => void; onDelete: () => void }) {
+/* ── Campaign compact row ── */
+function CampaignRow({
+  campanha,
+  listas,
+  statsMap,
+  onStart,
+}: {
+  campanha: string;
+  listas: OALista[];
+  statsMap: Record<string, ListaStats> | undefined;
+  onStart: () => void;
+}) {
+  const totalNaFila = listas.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
+  const totalAproveitados = listas.reduce((s, l) => s + (statsMap?.[l.id]?.aproveitados ?? 0), 0);
+  const totalLeads = listas.reduce((s, l) => s + (statsMap?.[l.id]?.total ?? 0), 0);
+  const pct = totalLeads > 0 ? Math.round(((totalLeads - totalNaFila) / totalLeads) * 100) : 0;
+  const hasLeads = totalNaFila > 0;
+  const empreendimentos = [...new Set(listas.map(l => l.empreendimento))];
+
   return (
     <div
-      className="rounded-xl p-4 flex items-center justify-between gap-3 transition-all duration-150"
+      className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-150 group"
       style={{
         background: "#161B22",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.06)",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "rgba(168,85,247,0.4)";
+        if (hasLeads) e.currentTarget.style.borderColor = "rgba(59,130,246,0.4)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
       }}
     >
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0" />
-          <p className="text-sm font-semibold text-white truncate">{list.nome}</p>
+      <FolderOpen className="h-4 w-4 text-blue-400 shrink-0" />
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
+          {campanha}
+        </p>
+        <p className="text-[11px] text-neutral-500 truncate">
+          {listas.length} lista{listas.length > 1 ? "s" : ""} · {empreendimentos.join(", ")}
+        </p>
+      </div>
+
+      <div className="hidden sm:flex items-center gap-3 text-xs shrink-0">
+        <span style={{ color: "#60A5FA", fontWeight: 700 }}>{totalNaFila}</span>
+        <span className="text-neutral-600">na fila</span>
+        <span className="text-neutral-700">·</span>
+        <span style={{ color: "#4ADE80", fontWeight: 700 }}>{totalAproveitados}</span>
+        <span className="text-neutral-600">aprov.</span>
+        <span className="text-neutral-700">·</span>
+        <span style={{ color: "#9CA3AF", fontWeight: 600 }}>{totalLeads}</span>
+        <span className="text-neutral-600">total</span>
+      </div>
+
+      <div className="hidden md:block w-20 shrink-0">
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${pct}%`,
+              background: "linear-gradient(90deg, #3B82F6, #22C55E)",
+            }}
+          />
         </div>
-        <p className="text-[10px] text-neutral-500 mt-0.5">
+        <p className="text-[10px] text-neutral-500 text-right mt-0.5" style={{ fontFamily: "monospace" }}>{pct}%</p>
+      </div>
+
+      <button
+        onClick={hasLeads ? onStart : undefined}
+        disabled={!hasLeads}
+        className={`h-8 px-3 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all ${
+          hasLeads ? "arena-btn-call" : "text-neutral-600 cursor-not-allowed"
+        }`}
+        style={!hasLeads ? { background: "rgba(255,255,255,0.03)" } : {}}
+      >
+        <Phone className="h-3.5 w-3.5" />
+        {hasLeads ? "Iniciar" : "Esgotada"}
+      </button>
+    </div>
+  );
+}
+
+function SavedListRow({ list, onStart, onDelete }: { list: CustomList; onStart: () => void; onDelete: () => void }) {
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-150"
+      style={{
+        background: "#161B22",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(168,85,247,0.4)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; }}
+    >
+      <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-white truncate">{list.nome}</p>
+        <p className="text-[10px] text-neutral-500">
           {list.ultima_usada_at
             ? `Usada ${formatDistanceToNow(new Date(list.ultima_usada_at), { addSuffix: true, locale: ptBR })}`
             : "Nunca usada"
@@ -196,22 +263,19 @@ function SavedListCard({ list, onStart, onDelete }: { list: CustomList; onStart:
           {list.vezes_usada > 0 && ` · ${list.vezes_usada}x`}
         </p>
       </div>
-      <div className="flex gap-1.5 shrink-0">
-        <button
-          onClick={onStart}
-          className="h-8 px-3 rounded-lg flex items-center justify-center gap-1.5 text-xs font-bold text-white transition-colors"
-          style={{ background: "linear-gradient(135deg, #16A34A, #15803D)" }}
-        >
-          <Phone className="h-3.5 w-3.5" /> Iniciar
-        </button>
-        <button
-          onClick={onDelete}
-          title="Excluir"
-          className="h-8 w-8 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
+      <button
+        onClick={onStart}
+        className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold text-white transition-colors arena-btn-call shrink-0"
+      >
+        <Phone className="h-3.5 w-3.5" /> Iniciar
+      </button>
+      <button
+        onClick={onDelete}
+        title="Excluir"
+        className="h-8 w-8 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors shrink-0"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -225,11 +289,11 @@ export default function CorretorListSelection() {
   const [search, setSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("campanhas");
+  const [showExhausted, setShowExhausted] = useState(false);
   const { lists: savedLists, isLoading: savedLoading, markUsed, deleteList } = useCustomLists();
   const { setOpen, open } = useSidebar();
   const prevOpenRef = useRef(open);
 
-  // Toggle fullscreen arena-mode only when dialing a specific list
   useEffect(() => {
     if (selectedLista) {
       prevOpenRef.current = open;
@@ -244,28 +308,42 @@ export default function CorretorListSelection() {
 
   const liberadas = listas.filter(l => l.status === "liberada");
   const listaIds = useMemo(() => liberadas.map(l => l.id), [liberadas]);
-
   const { data: statsMap } = useBatchListaStats(listaIds);
 
-  // Pagination: show 20 initially, load more on scroll
-  const PAGE_SIZE = 20;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  // Filter helpers
+  const isExhausted = useCallback((listaId: string) => {
+    if (!statsMap) return false;
+    const s = statsMap[listaId];
+    return s ? s.naFila === 0 : false;
+  }, [statsMap]);
 
-  // Group filtered listas by campaign
-  const { campaignGroups, ungroupedListas } = useMemo(() => {
+  const filterListas = useCallback((items: OALista[]) => {
+    let result = items;
+    // Search filter
     const q = search.trim().toLowerCase();
-    const matchedListas = q
-      ? liberadas.filter(l =>
-          l.empreendimento.toLowerCase().includes(q) ||
-          (l.campanha?.toLowerCase().includes(q)) ||
-          l.nome.toLowerCase().includes(q)
-        )
-      : liberadas;
+    if (q) {
+      result = result.filter(l =>
+        l.empreendimento.toLowerCase().includes(q) ||
+        (l.campanha?.toLowerCase().includes(q)) ||
+        l.nome.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [search]);
+
+  // Count exhausted for toggle label
+  const exhaustedCount = useMemo(() => {
+    if (!statsMap) return 0;
+    return liberadas.filter(l => isExhausted(l.id)).length;
+  }, [liberadas, statsMap, isExhausted]);
+
+  // Campaign groups (filtered, excluding exhausted campaigns)
+  const { campaignGroups, ungroupedListas, exhaustedCampaigns } = useMemo(() => {
+    const matched = filterListas(liberadas);
+    const groups: Record<string, OALista[]> = {};
+    const ungrouped: OALista[] = [];
     
-    const groups: Record<string, typeof liberadas> = {};
-    const ungrouped: typeof liberadas = [];
-    for (const l of matchedListas) {
+    for (const l of matched) {
       if (l.campanha) {
         if (!groups[l.campanha]) groups[l.campanha] = [];
         groups[l.campanha].push(l);
@@ -273,28 +351,37 @@ export default function CorretorListSelection() {
         ungrouped.push(l);
       }
     }
-    return { campaignGroups: groups, ungroupedListas: ungrouped };
-  }, [liberadas, search]);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return liberadas;
-    const q = search.toLowerCase();
-    return liberadas.filter(l =>
-      l.empreendimento.toLowerCase().includes(q) ||
-      (l.campanha?.toLowerCase().includes(q)) ||
-      l.nome.toLowerCase().includes(q)
-    );
-  }, [liberadas, search]);
+    // Separate exhausted campaigns
+    const active: Record<string, OALista[]> = {};
+    const exhausted: Record<string, OALista[]> = {};
+    for (const [camp, items] of Object.entries(groups)) {
+      const totalNaFila = items.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
+      if (totalNaFila === 0) {
+        exhausted[camp] = items;
+      } else {
+        active[camp] = items;
+      }
+    }
 
-  const paginatedFiltered = useMemo(() => ungroupedListas.slice(0, visibleCount), [ungroupedListas, visibleCount]);
-  const hasMore = visibleCount < ungroupedListas.length;
+    // Filter ungrouped
+    const activeUngrouped = showExhausted ? ungrouped : ungrouped.filter(l => !isExhausted(l.id));
+    const finalGroups = showExhausted ? { ...active, ...exhausted } : active;
+
+    return { campaignGroups: finalGroups, ungroupedListas: activeUngrouped, exhaustedCampaigns: exhausted };
+  }, [liberadas, filterListas, statsMap, showExhausted, isExhausted]);
+
+  // All listas flat (for "listas" view mode)
+  const allListasFlat = useMemo(() => {
+    const matched = filterListas(liberadas);
+    return showExhausted ? matched : matched.filter(l => !isExhausted(l.id));
+  }, [liberadas, filterListas, showExhausted, isExhausted]);
 
   const startCampaign = useCallback((campanha: string, listas: OALista[]) => {
     const listaIds = listas.map(l => l.id);
     sessionStorage.setItem("campaign_lista_ids", JSON.stringify(listaIds));
     sessionStorage.setItem("campaign_name", campanha);
     
-    // Store empreendimento → lista_ids mapping for filtering in arena
     const empMap: Record<string, string[]> = {};
     for (const l of listas) {
       const emp = l.empreendimento || "Outros";
@@ -303,7 +390,6 @@ export default function CorretorListSelection() {
     }
     sessionStorage.setItem("campaign_emp_map", JSON.stringify(empMap));
     
-    // Create a virtual OALista representing the campaign
     const virtualLista: OALista = {
       id: `campaign_${campanha}`,
       nome: campanha,
@@ -321,20 +407,6 @@ export default function CorretorListSelection() {
     setSelectedLista(virtualLista);
   }, [user]);
 
-  // Reset pagination when search changes
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search]);
-
-  // Infinite scroll observer
-  useEffect(() => {
-    if (!hasMore || !sentinelRef.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisibleCount(v => v + PAGE_SIZE); },
-      { rootMargin: "200px" }
-    );
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, paginatedFiltered.length]);
-
   if (selectedLista) {
     return (
       <div>
@@ -345,46 +417,23 @@ export default function CorretorListSelection() {
 
   if (isLoading) {
     return (
-      <div className="space-y-3" style={{ background: "#0A0F1E" }}>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="arena-card rounded-xl p-5 space-y-3">
-              <Skeleton className="h-5 w-2/3 rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }} />
-              <Skeleton className="h-3 w-1/3 rounded" style={{ background: "rgba(255,255,255,0.04)" }} />
-              <div className="grid grid-cols-3 gap-2">
-                {[1, 2, 3].map(j => (
-                  <div key={j} className="text-center space-y-1.5">
-                    <Skeleton className="h-8 w-16 mx-auto rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }} />
-                    <Skeleton className="h-3 w-12 mx-auto rounded" style={{ background: "rgba(255,255,255,0.04)" }} />
-                  </div>
-                ))}
-              </div>
-              <Skeleton className="h-1.5 w-full rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
-              <Skeleton className="h-10 w-full rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }} />
-            </div>
-          ))}
-        </div>
+      <div className="space-y-2" style={{ background: "#0A0F1E" }}>
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg" style={{ background: "#161B22" }}>
+            <Skeleton className="h-4 w-32 rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+            <div className="flex-1" />
+            <Skeleton className="h-4 w-40 rounded" style={{ background: "rgba(255,255,255,0.04)" }} />
+            <Skeleton className="h-8 w-20 rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }} />
+          </div>
+        ))}
       </div>
     );
   }
 
-  // All listas flat (for "listas" view mode)
-  const allListasFlat = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const matched = q
-      ? liberadas.filter(l =>
-          l.empreendimento.toLowerCase().includes(q) ||
-          (l.campanha?.toLowerCase().includes(q)) ||
-          l.nome.toLowerCase().includes(q)
-        )
-      : liberadas;
-    return matched;
-  }, [liberadas, search]);
-
   return (
-    <div className="space-y-4" style={{ background: "#0A0F1E" }}>
-      {/* View mode toggle */}
-      <div className="flex items-center gap-2">
+    <div className="space-y-3" style={{ background: "#0A0F1E" }}>
+      {/* View mode toggle + search */}
+      <div className="flex items-center gap-2 flex-wrap">
         {([
           { key: "campanhas" as ViewMode, icon: "📂", label: "Campanhas" },
           { key: "listas" as ViewMode, icon: "📋", label: "Listas" },
@@ -393,7 +442,7 @@ export default function CorretorListSelection() {
           <button
             key={tab.key}
             onClick={() => setViewMode(tab.key)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
             style={{
               background: viewMode === tab.key ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.04)",
               color: viewMode === tab.key ? "#60A5FA" : "#9CA3AF",
@@ -402,31 +451,31 @@ export default function CorretorListSelection() {
           >
             {tab.icon} {tab.label}
             {tab.key === "personalizadas" && savedLists.length > 0 && (
-              <span className="ml-1.5 text-xs opacity-60">({savedLists.length})</span>
+              <span className="ml-1 text-[10px] opacity-60">({savedLists.length})</span>
             )}
           </button>
         ))}
-      </div>
 
-      {/* Search bar */}
-      {viewMode !== "personalizadas" && liberadas.length > 3 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
-          <input
-            type="text"
-            placeholder="Buscar por empreendimento ou campanha..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-xl text-sm text-white placeholder-neutral-500 outline-none transition-colors"
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
-            }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(59,130,246,0.6)"; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
-          />
-        </div>
-      )}
+        {/* Search inline */}
+        {viewMode !== "personalizadas" && liberadas.length > 3 && (
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+            <input
+              type="text"
+              placeholder="Buscar..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full h-8 pl-8 pr-3 rounded-lg text-xs text-white placeholder-neutral-500 outline-none transition-colors"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(59,130,246,0.6)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+            />
+          </div>
+        )}
+      </div>
 
       {/* ── CAMPANHAS VIEW ── */}
       {viewMode === "campanhas" && (
@@ -438,136 +487,66 @@ export default function CorretorListSelection() {
               <p className="text-sm mt-1 text-neutral-500">Aguarde o Admin liberar uma campanha para começar.</p>
             </div>
           ) : (
-            <>
-              {Object.entries(campaignGroups).length > 0 && (
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {Object.entries(campaignGroups).map(([campanha, campanhaListas]) => {
-                    const totalNaFila = campanhaListas.reduce((s, l) => s + (statsMap?.[l.id]?.naFila ?? 0), 0);
-                    const totalAproveitados = campanhaListas.reduce((s, l) => s + (statsMap?.[l.id]?.aproveitados ?? 0), 0);
-                    const totalLeads = campanhaListas.reduce((s, l) => s + (statsMap?.[l.id]?.total ?? 0), 0);
-                    const pct = totalLeads > 0 ? Math.round(((totalLeads - totalNaFila) / totalLeads) * 100) : 0;
-                    const hasLeads = totalNaFila > 0;
-                    const empreendimentos = [...new Set(campanhaListas.map(l => l.empreendimento))];
-                    
-                    return (
-                      <div
-                        key={campanha}
-                        className={`arena-card rounded-xl p-5 space-y-3 cursor-pointer group ${hasLeads ? "" : "opacity-50"}`}
-                        onClick={hasLeads ? () => startCampaign(campanha, campanhaListas) : undefined}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 style={{ fontSize: 20, fontWeight: 700, color: "white" }} className="group-hover:text-blue-400 transition-colors flex items-center gap-2">
-                              <FolderOpen className="h-5 w-5 text-blue-400" />
-                              {campanha}
-                            </h3>
-                            <p className="text-xs text-neutral-500 mt-1">
-                              {campanhaListas.length} lista{campanhaListas.length > 1 ? "s" : ""} · {empreendimentos.join(", ")}
-                            </p>
-                          </div>
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{
-                            background: "rgba(59,130,246,0.15)",
-                            color: "#60A5FA",
-                            border: "1px solid rgba(59,130,246,0.3)",
-                          }}>
-                            📂 Campanha
-                          </span>
-                        </div>
+            <div className="space-y-1.5">
+              {Object.entries(campaignGroups).map(([campanha, campanhaListas]) => (
+                <CampaignRow
+                  key={campanha}
+                  campanha={campanha}
+                  listas={campanhaListas}
+                  statsMap={statsMap}
+                  onStart={() => startCampaign(campanha, campanhaListas)}
+                />
+              ))}
 
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div>
-                            <p style={{ fontSize: 28, fontWeight: 900, color: "#60A5FA" }}>{totalNaFila}</p>
-                            <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>na fila</p>
-                          </div>
-                          <div>
-                            <p style={{ fontSize: 28, fontWeight: 900, color: "#4ADE80" }}>{totalAproveitados}</p>
-                            <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>aproveitados</p>
-                          </div>
-                          <div>
-                            <p style={{ fontSize: 28, fontWeight: 900, color: "white" }}>{totalLeads}</p>
-                            <p style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>total</p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex justify-between mb-1" style={{ fontSize: 12, color: "#6B7280" }}>
-                            <span>Progresso</span>
-                            <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 13, color: "#4ADE80" }}>{pct}%</span>
-                          </div>
-                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${pct}%`,
-                                background: "linear-gradient(90deg, #3B82F6, #22C55E)",
-                                boxShadow: "0 0 6px rgba(34,197,94,0.4)",
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        <button
-                          className={`w-full h-10 rounded-lg font-bold transition-colors ${hasLeads ? "arena-btn-call" : "text-neutral-500 cursor-not-allowed"}`}
-                          style={!hasLeads ? { background: "rgba(255,255,255,0.05)", fontSize: 15 } : { fontSize: 15 }}
-                          disabled={!hasLeads}
-                        >
-                          <span className="flex items-center justify-center gap-1.5">
-                            <Phone className="h-4 w-4" /> {hasLeads ? "Iniciar Campanha" : "Campanha Esgotada"}
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Ungrouped in campaign view */}
               {ungroupedListas.length > 0 && (
                 <>
                   {Object.keys(campaignGroups).length > 0 && (
-                    <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider pt-1">Listas sem campanha</p>
+                    <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider pt-2 pb-0.5 px-1">Listas individuais</p>
                   )}
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {paginatedFiltered.map(lista => {
-                      const stats = statsMap?.[lista.id];
-                      const hasLeads = (stats?.naFila ?? 0) > 0;
-                      return (
-                        <div key={lista.id} onClick={hasLeads ? () => setSelectedLista(lista) : undefined}>
-                          <ListaCard lista={lista} stats={stats} />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {ungroupedListas.map(lista => {
+                    const stats = statsMap?.[lista.id];
+                    return (
+                      <ListaRow
+                        key={lista.id}
+                        lista={lista}
+                        stats={stats}
+                        onClick={() => setSelectedLista(lista)}
+                      />
+                    );
+                  })}
                 </>
               )}
 
-              {filtered.length === 0 && search && (
+              {/* Empty search state */}
+              {Object.keys(campaignGroups).length === 0 && ungroupedListas.length === 0 && search && (
                 <p className="text-sm text-neutral-500 text-center py-4">Nenhuma lista encontrada para "{search}"</p>
               )}
-            </>
+            </div>
           )}
         </>
       )}
 
-      {/* ── LISTAS VIEW (flat, all individual) ── */}
+      {/* ── LISTAS VIEW (flat) ── */}
       {viewMode === "listas" && (
         <>
-          {allListasFlat.length === 0 ? (
+          {allListasFlat.length === 0 && !search ? (
             <div className="rounded-xl py-12 text-center" style={{ background: "#161B22", border: "1px solid rgba(255,255,255,0.08)" }}>
               <Phone className="h-10 w-10 mx-auto mb-3 text-neutral-600" />
-              <p className="font-medium text-neutral-300">
-                {search ? `Nenhuma lista para "${search}"` : "Nenhuma lista liberada"}
-              </p>
+              <p className="font-medium text-neutral-300">Nenhuma lista liberada</p>
             </div>
+          ) : allListasFlat.length === 0 && search ? (
+            <p className="text-sm text-neutral-500 text-center py-4">Nenhuma lista encontrada para "{search}"</p>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-1.5">
               {allListasFlat.map(lista => {
                 const stats = statsMap?.[lista.id];
-                const hasLeads = (stats?.naFila ?? 0) > 0;
                 return (
-                  <div key={lista.id} onClick={hasLeads ? () => setSelectedLista(lista) : undefined}>
-                    <ListaCard lista={lista} stats={stats} />
-                  </div>
+                  <ListaRow
+                    key={lista.id}
+                    lista={lista}
+                    stats={stats}
+                    onClick={() => setSelectedLista(lista)}
+                  />
                 );
               })}
             </div>
@@ -577,38 +556,31 @@ export default function CorretorListSelection() {
 
       {/* ── PERSONALIZADAS VIEW ── */}
       {viewMode === "personalizadas" && (
-        <div className="space-y-4">
-          {/* Create CTA */}
+        <div className="space-y-3">
           <button
             onClick={() => setWizardOpen(true)}
-            className="w-full p-4 rounded-xl text-left flex items-center gap-3 group transition-all duration-150"
+            className="w-full p-3 rounded-xl text-left flex items-center gap-3 group transition-all duration-150"
             style={{
               background: "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15))",
               border: "1px solid rgba(99,102,241,0.35)",
-              boxShadow: "0 0 20px rgba(99,102,241,0.1)",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(99,102,241,0.8)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(99,102,241,0.35)";
-            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(99,102,241,0.8)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(99,102,241,0.35)"; }}
           >
-            <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.2)" }}>
-              <Sparkles className="h-5 w-5 text-indigo-400 arena-sparkle-pulse" />
+            <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.2)" }}>
+              <Sparkles className="h-4 w-4 text-indigo-400 arena-sparkle-pulse" />
             </div>
             <div className="flex-1 min-w-0">
-              <p style={{ fontSize: 16 }} className="font-semibold text-white">Criar lista personalizada</p>
-              <p style={{ fontSize: 13 }} className="text-neutral-400">Filtre seus leads e trabalhe do seu jeito</p>
+              <p className="text-sm font-semibold text-white">Criar lista personalizada</p>
+              <p className="text-xs text-neutral-400">Filtre seus leads e trabalhe do seu jeito</p>
             </div>
             <ArrowLeft className="h-4 w-4 text-blue-400 rotate-180 group-hover:translate-x-1 transition-transform" />
           </button>
 
-          {/* Saved lists */}
           {savedLists.length > 0 ? (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1.5">
               {savedLists.map(list => (
-                <SavedListCard
+                <SavedListRow
                   key={list.id}
                   list={list}
                   onStart={async () => {
@@ -654,10 +626,15 @@ export default function CorretorListSelection() {
         </div>
       )}
 
-      {hasMore && viewMode !== "personalizadas" && (
-        <div ref={sentinelRef} className="flex items-center justify-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
-        </div>
+      {/* Toggle exhausted lists */}
+      {viewMode !== "personalizadas" && exhaustedCount > 0 && (
+        <button
+          onClick={() => setShowExhausted(v => !v)}
+          className="flex items-center gap-1.5 text-[11px] text-neutral-500 hover:text-neutral-400 transition-colors mx-auto"
+        >
+          {showExhausted ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          {showExhausted ? "Ocultar" : "Mostrar"} {exhaustedCount} lista{exhaustedCount > 1 ? "s" : ""} esgotada{exhaustedCount > 1 ? "s" : ""}
+        </button>
       )}
 
       {/* Wizard modal */}
