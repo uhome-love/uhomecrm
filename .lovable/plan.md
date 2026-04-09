@@ -1,52 +1,30 @@
 
 
-# Plano: Tema Dinâmico em TODOS os Componentes da Oferta Ativa
+# Plano: Corrigir Criação Automática de Negócio no Pipeline
 
-## Problema
-As variáveis CSS arena foram criadas no `index.css`, mas **8 componentes** dentro de `src/components/oferta-ativa/` ainda têm 168+ referências inline hardcoded a cores escuras (`#0A0F1E`, `#161B22`, `#1C2128`, `color: "white"`, etc.). A tela de seleção de listas ficou temática, mas ao entrar na Arena (ligação), tudo volta a ser escuro fixo.
+## Diagnóstico
 
-## Arquivos Afetados (8 componentes)
+O fluxo principal em `usePipeline.ts` (linha 435) já está correto — só cria negócio quando o lead vai para `convertido` (Negócio Criado). O trigger de banco `lead_to_negocio_on_visita_realizada` já foi removido.
 
-| Arquivo | Refs hardcoded |
-|---------|---------------|
-| `DialingModeWithScript.tsx` | ~40 (background principal, tabs, ficha rápida, mobile tabs) |
-| `AttemptModal.tsx` | ~20 (dialog, cards de resultado, textarea, botão) |
-| `CustomListAttemptModal.tsx` | ~25 (idêntico ao AttemptModal + próxima ação) |
-| `AproveitadosPanel.tsx` | ~20 (background, cards, textos, filtros) |
-| `RankingPanel.tsx` | ~20 (background, cards, badges) |
-| `ScriptPanel.tsx` | ~15 (cards, tabs, texto) |
-| `FichaRapida.tsx` | ~10 (inputs, notas pessoais) |
-| `HomiObjectionHelper.tsx` | ~10 (dialog, labels) |
-| `ArenaSessionSummary.tsx` | ~8 (background, cards) |
+Porém encontrei **dois problemas residuais**:
 
-## Solução
+### 1. `useLeadProgression.ts` — função `onVisitaRealizada` (linha 48-81)
+Cria negócio automaticamente ao marcar visita como realizada. Embora não esteja sendo chamada atualmente, é código ativo exportado que pode ser invocado no futuro. O comentário diz "GATILHO 2: Visita realizada → create negócio" — contradiz a regra atual.
 
-Substituir **todos** os `style={{ background: "#0A0F1E" }}`, `style={{ color: "white" }}`, etc. por referências às variáveis CSS já definidas no `index.css`:
+### 2. `PipelineBoard.tsx` — Auto-fix (linhas 285-306)
+Move automaticamente qualquer lead que tenha `negocio_id` para a coluna "Negócio Criado". Isso é problemático porque se por qualquer razão um lead tiver `negocio_id` vinculado (regressão, bug anterior), ele será forçado para a etapa convertido sem intervenção do corretor.
 
-**Mapeamento de cores:**
-- `#0A0F1E` / `#111827` → `var(--arena-bg-from)` ou classe `arena-bg`
-- `#161B22` / `#1C2128` → `var(--arena-card-bg)` ou classe `arena-card`
-- `rgba(255,255,255,0.08)` / `0.1` / `0.12` / `0.15` → `var(--arena-card-border)`
-- `color: "white"` / `#E5E7EB` / `#E2E8F0` → `var(--arena-text)` ou `text-foreground`
-- `color: "#6B7280"` / `#94A3B8` / `#64748B` → `var(--arena-text-muted)` ou `text-muted-foreground`
-- `#4ADE80` / `#22C55E` → mantém (verde semântico, igual em ambos os temas)
+### 3. `usePipeline.ts` — label `origem: "visita_realizada"` (linha 474)
+O insert do negócio na etapa convertido usa `origem: "visita_realizada"` como texto fixo. Deveria ser `"pipeline_convertido"` ou similar.
 
-**Abordagem por componente:**
+## Correções
 
-1. **DialingModeWithScript** — remover `style={{ background: "#0A0F1E" }}` do container raiz (herda de `arena-bg`), trocar tabs e ficha rápida para usar `var(--arena-card-bg)`
-2. **AttemptModal + CustomListAttemptModal** — DialogContent usa `bg-card` e `border` padrão do shadcn, cards de resultado usam `var(--arena-card-bg)`, textarea usa `bg-input`
-3. **AproveitadosPanel** — trocar backgrounds e cores de texto para variáveis arena
-4. **RankingPanel** — remover o objeto `dk` de dark mode e usar variáveis CSS direto (funciona automaticamente)
-5. **ScriptPanel** — já usa prop `darkMode` condicionalmente; trocar para variáveis CSS sempre
-6. **FichaRapida** — inputs e notas pessoais usam variáveis arena
-7. **HomiObjectionHelper** — dialog usa `bg-card` padrão
-8. **ArenaSessionSummary** — container usa `arena-bg`
-
-## Resultado
-- Sistema em light mode → Arena inteira em tons claros
-- Sistema em dark mode → Arena inteira em tons escuros
-- Zero mudança funcional — apenas troca de valores de cor
+| Arquivo | Ação |
+|---------|------|
+| `src/hooks/useLeadProgression.ts` | Remover a criação de negócio da função `onVisitaRealizada`. Manter apenas registro de atividade/toast, sem insert em `negocios`. |
+| `src/components/pipeline/PipelineBoard.tsx` | Remover o bloco auto-fix (linhas 285-307). Leads não devem ser movidos automaticamente. |
+| `src/hooks/usePipeline.ts` | Trocar `origem: "visita_realizada"` por `origem: "pipeline_convertido"` na linha 474. |
 
 ## Risco
-Zero funcional. Alto volume de substituições (168+), mas todas mecânicas (trocar valor fixo por variável CSS).
+Baixo. Remove comportamentos automáticos indesejados. A criação de negócio fica exclusivamente no `moveLead` ao entrar em `convertido`.
 
