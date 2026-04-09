@@ -78,26 +78,26 @@ function ListaRow({
     <div
       className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-150 group"
       style={{
-        background: "#161B22",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "var(--arena-card-bg)",
+        border: "1px solid var(--arena-card-border)",
       }}
       onMouseEnter={(e) => {
         if (hasLeads) e.currentTarget.style.borderColor = "rgba(34,197,94,0.4)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.borderColor = "var(--arena-card-border)";
       }}
     >
       {/* Name */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           {isCustom && <Sparkles className="h-3 w-3 text-purple-400 shrink-0" />}
-          <p className="text-sm font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
+          <p className="text-sm font-semibold truncate group-hover:text-blue-400 transition-colors" style={{ color: "var(--arena-text)" }}>
             {lista.empreendimento}
           </p>
         </div>
         {lista.campanha && (
-          <p className="text-[11px] text-neutral-500 truncate">{lista.campanha}</p>
+          <p className="text-[11px] truncate" style={{ color: "var(--arena-text-subtle)" }}>{lista.campanha}</p>
         )}
       </div>
 
@@ -105,21 +105,21 @@ function ListaRow({
       {stats ? (
         <div className="hidden sm:flex items-center gap-3 text-xs shrink-0">
           <span style={{ color: "#60A5FA", fontWeight: 700 }}>{stats.naFila}</span>
-          <span className="text-neutral-600">na fila</span>
-          <span className="text-neutral-700">·</span>
+          <span style={{ color: "var(--arena-text-subtle)" }}>na fila</span>
+          <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
           <span style={{ color: "#4ADE80", fontWeight: 700 }}>{stats.aproveitados}</span>
-          <span className="text-neutral-600">aprov.</span>
-          <span className="text-neutral-700">·</span>
-          <span style={{ color: "#9CA3AF", fontWeight: 600 }}>{stats.total}</span>
-          <span className="text-neutral-600">total</span>
+          <span style={{ color: "var(--arena-text-subtle)" }}>aprov.</span>
+          <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
+          <span style={{ color: "var(--arena-text-muted)", fontWeight: 600 }}>{stats.total}</span>
+          <span style={{ color: "var(--arena-text-subtle)" }}>total</span>
         </div>
       ) : (
-        <Skeleton className="h-4 w-32 rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+        <Skeleton className="h-4 w-32 rounded" style={{ background: "var(--arena-subtle-bg)" }} />
       )}
 
       {/* Mini progress bar */}
       <div className="hidden md:block w-20 shrink-0">
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -128,7 +128,7 @@ function ListaRow({
             }}
           />
         </div>
-        <p className="text-[10px] text-neutral-500 text-right mt-0.5" style={{ fontFamily: "monospace" }}>
+        <p className="text-[10px] text-right mt-0.5" style={{ fontFamily: "monospace", color: "var(--arena-text-subtle)" }}>
           {stats?.pct ?? 0}%
         </p>
       </div>
@@ -147,9 +147,9 @@ function ListaRow({
         className={`h-8 px-3 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all ${
           hasLeads
             ? "arena-btn-call"
-            : "text-neutral-600 cursor-not-allowed"
+            : "cursor-not-allowed"
         }`}
-        style={!hasLeads ? { background: "rgba(255,255,255,0.03)" } : {}}
+        style={!hasLeads ? { background: "var(--arena-subtle-bg)", color: "var(--arena-text-subtle)" } : {}}
       >
         <Phone className="h-3.5 w-3.5" />
         {hasLeads ? "Iniciar" : "Esgotada"}
@@ -181,40 +181,40 @@ function CampaignRow({
     <div
       className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-150 group"
       style={{
-        background: "#161B22",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "var(--arena-card-bg)",
+        border: "1px solid var(--arena-card-border)",
       }}
       onMouseEnter={(e) => {
         if (hasLeads) e.currentTarget.style.borderColor = "rgba(59,130,246,0.4)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.borderColor = "var(--arena-card-border)";
       }}
     >
       <FolderOpen className="h-4 w-4 text-blue-400 shrink-0" />
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
+        <p className="text-sm font-semibold truncate group-hover:text-blue-400 transition-colors" style={{ color: "var(--arena-text)" }}>
           {campanha}
         </p>
-        <p className="text-[11px] text-neutral-500 truncate">
+        <p className="text-[11px] truncate" style={{ color: "var(--arena-text-subtle)" }}>
           {listas.length} lista{listas.length > 1 ? "s" : ""} · {empreendimentos.join(", ")}
         </p>
       </div>
 
       <div className="hidden sm:flex items-center gap-3 text-xs shrink-0">
         <span style={{ color: "#60A5FA", fontWeight: 700 }}>{totalNaFila}</span>
-        <span className="text-neutral-600">na fila</span>
-        <span className="text-neutral-700">·</span>
+        <span style={{ color: "var(--arena-text-subtle)" }}>na fila</span>
+        <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
         <span style={{ color: "#4ADE80", fontWeight: 700 }}>{totalAproveitados}</span>
-        <span className="text-neutral-600">aprov.</span>
-        <span className="text-neutral-700">·</span>
-        <span style={{ color: "#9CA3AF", fontWeight: 600 }}>{totalLeads}</span>
-        <span className="text-neutral-600">total</span>
+        <span style={{ color: "var(--arena-text-subtle)" }}>aprov.</span>
+        <span style={{ color: "var(--arena-text-subtle)", opacity: 0.5 }}>·</span>
+        <span style={{ color: "var(--arena-text-muted)", fontWeight: 600 }}>{totalLeads}</span>
+        <span style={{ color: "var(--arena-text-subtle)" }}>total</span>
       </div>
 
       <div className="hidden md:block w-20 shrink-0">
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
@@ -223,16 +223,16 @@ function CampaignRow({
             }}
           />
         </div>
-        <p className="text-[10px] text-neutral-500 text-right mt-0.5" style={{ fontFamily: "monospace" }}>{pct}%</p>
+        <p className="text-[10px] text-right mt-0.5" style={{ fontFamily: "monospace", color: "var(--arena-text-subtle)" }}>{pct}%</p>
       </div>
 
       <button
         onClick={hasLeads ? onStart : undefined}
         disabled={!hasLeads}
         className={`h-8 px-3 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all ${
-          hasLeads ? "arena-btn-call" : "text-neutral-600 cursor-not-allowed"
+          hasLeads ? "arena-btn-call" : "cursor-not-allowed"
         }`}
-        style={!hasLeads ? { background: "rgba(255,255,255,0.03)" } : {}}
+        style={!hasLeads ? { background: "var(--arena-subtle-bg)", color: "var(--arena-text-subtle)" } : {}}
       >
         <Phone className="h-3.5 w-3.5" />
         {hasLeads ? "Iniciar" : "Esgotada"}
@@ -246,16 +246,16 @@ function SavedListRow({ list, onStart, onDelete }: { list: CustomList; onStart: 
     <div
       className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-150"
       style={{
-        background: "#161B22",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "var(--arena-card-bg)",
+        border: "1px solid var(--arena-card-border)",
       }}
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(168,85,247,0.4)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--arena-card-border)"; }}
     >
       <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate">{list.nome}</p>
-        <p className="text-[10px] text-neutral-500">
+        <p className="text-sm font-semibold truncate" style={{ color: "var(--arena-text)" }}>{list.nome}</p>
+        <p className="text-[10px]" style={{ color: "var(--arena-text-subtle)" }}>
           {list.ultima_usada_at
             ? `Usada ${formatDistanceToNow(new Date(list.ultima_usada_at), { addSuffix: true, locale: ptBR })}`
             : "Nunca usada"
@@ -265,7 +265,7 @@ function SavedListRow({ list, onStart, onDelete }: { list: CustomList; onStart: 
       </div>
       <button
         onClick={onStart}
-        className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold text-white transition-colors arena-btn-call shrink-0"
+        className="h-8 px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-colors arena-btn-call shrink-0"
       >
         <Phone className="h-3.5 w-3.5" /> Iniciar
       </button>
@@ -417,13 +417,13 @@ export default function CorretorListSelection() {
 
   if (isLoading) {
     return (
-      <div className="space-y-2" style={{ background: "#0A0F1E" }}>
+      <div className="space-y-2">
         {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg" style={{ background: "#161B22" }}>
-            <Skeleton className="h-4 w-32 rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+          <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-lg" style={{ background: "var(--arena-card-bg)" }}>
+            <Skeleton className="h-4 w-32 rounded" style={{ background: "var(--arena-subtle-bg)" }} />
             <div className="flex-1" />
-            <Skeleton className="h-4 w-40 rounded" style={{ background: "rgba(255,255,255,0.04)" }} />
-            <Skeleton className="h-8 w-20 rounded-lg" style={{ background: "rgba(255,255,255,0.06)" }} />
+            <Skeleton className="h-4 w-40 rounded" style={{ background: "var(--arena-subtle-bg)" }} />
+            <Skeleton className="h-8 w-20 rounded-lg" style={{ background: "var(--arena-subtle-bg)" }} />
           </div>
         ))}
       </div>
@@ -431,7 +431,7 @@ export default function CorretorListSelection() {
   }
 
   return (
-    <div className="space-y-3" style={{ background: "#0A0F1E" }}>
+    <div className="space-y-3">
       {/* View mode toggle + search */}
       <div className="flex items-center gap-2 flex-wrap">
         {([
@@ -444,9 +444,9 @@ export default function CorretorListSelection() {
             onClick={() => setViewMode(tab.key)}
             className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
             style={{
-              background: viewMode === tab.key ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.04)",
-              color: viewMode === tab.key ? "#60A5FA" : "#9CA3AF",
-              border: viewMode === tab.key ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(255,255,255,0.06)",
+              background: viewMode === tab.key ? "rgba(59,130,246,0.2)" : "var(--arena-subtle-bg)",
+              color: viewMode === tab.key ? "#60A5FA" : "var(--arena-text-muted)",
+              border: viewMode === tab.key ? "1px solid rgba(59,130,246,0.4)" : "1px solid var(--arena-card-border)",
             }}
           >
             {tab.icon} {tab.label}
@@ -459,19 +459,20 @@ export default function CorretorListSelection() {
         {/* Search inline */}
         {viewMode !== "personalizadas" && liberadas.length > 3 && (
           <div className="relative flex-1 min-w-[180px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: "var(--arena-text-subtle)" }} />
             <input
               type="text"
               placeholder="Buscar..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full h-8 pl-8 pr-3 rounded-lg text-xs text-white placeholder-neutral-500 outline-none transition-colors"
+              className="w-full h-8 pl-8 pr-3 rounded-lg text-xs placeholder-opacity-50 outline-none transition-colors"
               style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "var(--arena-subtle-bg)",
+                border: "1px solid var(--arena-card-border)",
+                color: "var(--arena-text)",
               }}
               onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(59,130,246,0.6)"; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--arena-card-border)"; }}
             />
           </div>
         )}
@@ -481,10 +482,10 @@ export default function CorretorListSelection() {
       {viewMode === "campanhas" && (
         <>
           {liberadas.length === 0 ? (
-            <div className="rounded-xl py-12 text-center" style={{ background: "#161B22", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <Phone className="h-10 w-10 mx-auto mb-3 text-neutral-600" />
-              <p className="font-medium text-neutral-300">Nenhuma lista liberada</p>
-              <p className="text-sm mt-1 text-neutral-500">Aguarde o Admin liberar uma campanha para começar.</p>
+            <div className="rounded-xl py-12 text-center" style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)" }}>
+              <Phone className="h-10 w-10 mx-auto mb-3" style={{ color: "var(--arena-text-subtle)" }} />
+              <p className="font-medium" style={{ color: "var(--arena-text-muted)" }}>Nenhuma lista liberada</p>
+              <p className="text-sm mt-1" style={{ color: "var(--arena-text-subtle)" }}>Aguarde o Admin liberar uma campanha para começar.</p>
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -501,7 +502,7 @@ export default function CorretorListSelection() {
               {ungroupedListas.length > 0 && (
                 <>
                   {Object.keys(campaignGroups).length > 0 && (
-                    <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider pt-2 pb-0.5 px-1">Listas individuais</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider pt-2 pb-0.5 px-1" style={{ color: "var(--arena-text-subtle)" }}>Listas individuais</p>
                   )}
                   {ungroupedListas.map(lista => {
                     const stats = statsMap?.[lista.id];
@@ -519,7 +520,7 @@ export default function CorretorListSelection() {
 
               {/* Empty search state */}
               {Object.keys(campaignGroups).length === 0 && ungroupedListas.length === 0 && search && (
-                <p className="text-sm text-neutral-500 text-center py-4">Nenhuma lista encontrada para "{search}"</p>
+                <p className="text-sm text-center py-4" style={{ color: "var(--arena-text-subtle)" }}>Nenhuma lista encontrada para "{search}"</p>
               )}
             </div>
           )}
@@ -530,12 +531,12 @@ export default function CorretorListSelection() {
       {viewMode === "listas" && (
         <>
           {allListasFlat.length === 0 && !search ? (
-            <div className="rounded-xl py-12 text-center" style={{ background: "#161B22", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <Phone className="h-10 w-10 mx-auto mb-3 text-neutral-600" />
-              <p className="font-medium text-neutral-300">Nenhuma lista liberada</p>
+            <div className="rounded-xl py-12 text-center" style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)" }}>
+              <Phone className="h-10 w-10 mx-auto mb-3" style={{ color: "var(--arena-text-subtle)" }} />
+              <p className="font-medium" style={{ color: "var(--arena-text-muted)" }}>Nenhuma lista liberada</p>
             </div>
           ) : allListasFlat.length === 0 && search ? (
-            <p className="text-sm text-neutral-500 text-center py-4">Nenhuma lista encontrada para "{search}"</p>
+            <p className="text-sm text-center py-4" style={{ color: "var(--arena-text-subtle)" }}>Nenhuma lista encontrada para "{search}"</p>
           ) : (
             <div className="space-y-1.5">
               {allListasFlat.map(lista => {
@@ -571,8 +572,8 @@ export default function CorretorListSelection() {
               <Sparkles className="h-4 w-4 text-indigo-400 arena-sparkle-pulse" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">Criar lista personalizada</p>
-              <p className="text-xs text-neutral-400">Filtre seus leads e trabalhe do seu jeito</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--arena-text)" }}>Criar lista personalizada</p>
+              <p className="text-xs" style={{ color: "var(--arena-text-muted)" }}>Filtre seus leads e trabalhe do seu jeito</p>
             </div>
             <ArrowLeft className="h-4 w-4 text-blue-400 rotate-180 group-hover:translate-x-1 transition-transform" />
           </button>
@@ -617,10 +618,10 @@ export default function CorretorListSelection() {
               ))}
             </div>
           ) : (
-            <div className="rounded-xl py-8 text-center" style={{ background: "#161B22", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <Sparkles className="h-8 w-8 mx-auto mb-2 text-neutral-600" />
-              <p className="text-sm text-neutral-400">Nenhuma lista salva ainda</p>
-              <p className="text-xs text-neutral-500 mt-1">Crie uma lista personalizada para começar</p>
+            <div className="rounded-xl py-8 text-center" style={{ background: "var(--arena-card-bg)", border: "1px solid var(--arena-card-border)" }}>
+              <Sparkles className="h-8 w-8 mx-auto mb-2" style={{ color: "var(--arena-text-subtle)" }} />
+              <p className="text-sm" style={{ color: "var(--arena-text-muted)" }}>Nenhuma lista salva ainda</p>
+              <p className="text-xs mt-1" style={{ color: "var(--arena-text-subtle)" }}>Crie uma lista personalizada para começar</p>
             </div>
           )}
         </div>
@@ -630,7 +631,8 @@ export default function CorretorListSelection() {
       {viewMode !== "personalizadas" && exhaustedCount > 0 && (
         <button
           onClick={() => setShowExhausted(v => !v)}
-          className="flex items-center gap-1.5 text-[11px] text-neutral-500 hover:text-neutral-400 transition-colors mx-auto"
+          className="flex items-center gap-1.5 text-[11px] hover:opacity-80 transition-colors mx-auto"
+          style={{ color: "var(--arena-text-subtle)" }}
         >
           {showExhausted ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
           {showExhausted ? "Ocultar" : "Mostrar"} {exhaustedCount} lista{exhaustedCount > 1 ? "s" : ""} esgotada{exhaustedCount > 1 ? "s" : ""}

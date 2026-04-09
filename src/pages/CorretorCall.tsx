@@ -224,13 +224,14 @@ export default function CorretorCall() {
         <div className="w-full max-w-lg mx-auto px-6 pt-6 flex items-center justify-between">
           <button
             onClick={() => navigate("/corretor")}
-            className="text-neutral-400 text-sm hover:text-white transition-colors flex items-center gap-1.5"
+            className="text-sm hover:opacity-80 transition-colors flex items-center gap-1.5"
+            style={{ color: "var(--arena-text-muted)" }}
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar à Central
           </button>
           {streakDays > 0 && (
-            <span className="text-neutral-400 text-sm flex items-center gap-1">
-              🔥 <span className="text-white font-semibold">{streakDays} dias</span> seguidos
+            <span className="text-sm flex items-center gap-1" style={{ color: "var(--arena-text-muted)" }}>
+              🔥 <span className="font-semibold" style={{ color: "var(--arena-text)" }}>{streakDays} dias</span> seguidos
             </span>
           )}
         </div>
@@ -258,31 +259,31 @@ export default function CorretorCall() {
             ✦ MODO BATALHA ✦
           </p>
 
-          <h1 className="text-5xl font-black text-white mb-6 leading-tight">
+          <h1 className="text-5xl font-black mb-6 leading-tight" style={{ color: "var(--arena-text)" }}>
             Sua Missão de Hoje
           </h1>
 
           {/* Metas card */}
-          <div className="flex gap-4 bg-white/[0.08] border border-white/[0.15] rounded-2xl px-8 py-5">
+          <div className="flex gap-4 rounded-2xl px-8 py-5" style={{ background: "var(--arena-subtle-bg)", border: "1px solid var(--arena-card-border)" }}>
             <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold text-white">🔥 {progress.metaLigacoes}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">ligações</p>
+              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>🔥 {progress.metaLigacoes}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>ligações</p>
             </div>
-            <div className="w-px bg-white/10" />
+            <div className="w-px" style={{ background: "var(--arena-card-border)" }} />
             <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold text-white">✅ {progress.metaAproveitados}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">aproveit.</p>
+              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>✅ {progress.metaAproveitados}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>aproveit.</p>
             </div>
-            <div className="w-px bg-white/10" />
+            <div className="w-px" style={{ background: "var(--arena-card-border)" }} />
             <div className="text-center min-w-[80px]">
-              <p className="text-3xl font-bold text-white">📅 {progress.metaVisitas}</p>
-              <p className="text-xs text-neutral-400 mt-0.5">visitas</p>
+              <p className="text-3xl font-bold" style={{ color: "var(--arena-text)" }}>📅 {progress.metaVisitas}</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--arena-text-muted)" }}>visitas</p>
             </div>
           </div>
 
           {/* Progress if already started today */}
           {progress.tentativas > 0 && (
-            <div className="mt-4 flex gap-4 text-xs text-neutral-400">
+            <div className="mt-4 flex gap-4 text-xs" style={{ color: "var(--arena-text-muted)" }}>
               <span>🔥 {progress.tentativas}/{progress.metaLigacoes} feitas</span>
               <span>✅ {progress.aproveitados}/{progress.metaAproveitados} aprov.</span>
               <span>⭐ {progress.pontos}pts</span>
@@ -300,37 +301,37 @@ export default function CorretorCall() {
           {/* Ranking rivalry card */}
           {w.rankingPos > 0 && (
             <div
-              className="rounded-2xl p-4 bg-white/[0.05] border border-transparent"
+              className="rounded-2xl p-4"
               style={{
-                borderImage: "linear-gradient(135deg, #60A5FA, #A78BFA) 1",
-                borderImageSlice: 1,
+                background: "var(--arena-subtle-bg)",
+                border: "1px solid rgba(96,165,250,0.3)",
               }}
             >
               {w.isLeader ? (
                 <div className="space-y-1">
-                  <p className="text-white font-bold flex items-center gap-2">
+                  <p className="font-bold flex items-center gap-2" style={{ color: "var(--arena-text)" }}>
                     👑 Você lidera o ranking!
                   </p>
                   {w.belowName && (
-                    <p className="text-neutral-300 text-sm">
+                    <p className="text-sm" style={{ color: "var(--arena-text-muted)" }}>
                       🥈 {w.belowName} está em #2
                     </p>
                   )}
-                  <p className="text-neutral-400 text-sm italic">
+                  <p className="text-sm italic" style={{ color: "var(--arena-text-subtle)" }}>
                     "Defende o trono. Ninguém tira isso de quem executa." 🔥
                   </p>
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <p className="text-white font-bold">
+                  <p className="font-bold" style={{ color: "var(--arena-text)" }}>
                     📍 Você está em #{w.rankingPos} — <span className="text-[#60A5FA]">{w.ptsToNext}pts atrás</span>
                   </p>
                   {w.aboveName && (
-                    <p className="text-neutral-300 text-sm">
+                    <p className="text-sm" style={{ color: "var(--arena-text-muted)" }}>
                       🥇 {w.aboveName} lidera com {w.abovePts}pts
                     </p>
                   )}
-                  <p className="text-neutral-400 text-sm italic">
+                  <p className="text-sm italic" style={{ color: "var(--arena-text-subtle)" }}>
                     "Uma boa sessão vira o jogo." ⚡
                   </p>
                 </div>
@@ -341,16 +342,16 @@ export default function CorretorCall() {
           {/* Level progression */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-white font-medium flex items-center gap-1.5">
+              <span className="font-medium flex items-center gap-1.5" style={{ color: "var(--arena-text)" }}>
                 {currentLevel.emoji} {currentLevel.label}
               </span>
               {nextLevel && (
-                <span className="text-neutral-400 text-xs">
+                <span className="text-xs" style={{ color: "var(--arena-text-muted)" }}>
                   {ligacoesParaProximo} ligações para virar {nextLevel.emoji} {nextLevel.label}
                 </span>
               )}
             </div>
-            <div className="h-2 rounded-full bg-white/20 overflow-hidden">
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${levelProg}%` }}
@@ -369,7 +370,7 @@ export default function CorretorCall() {
           className="w-full max-w-lg mx-auto px-6 mt-8 mb-12 flex flex-col items-center space-y-5"
         >
           {/* Queue info */}
-          <p className="text-sm text-neutral-400 flex items-center gap-3">
+          <p className="text-sm flex items-center gap-3" style={{ color: "var(--arena-text-muted)" }}>
             <span className="flex items-center gap-1">📋 {w.queueLeads} leads na sua fila</span>
             <span>·</span>
             <span className="flex items-center gap-1">⏱ {estLabel} estimado</span>
@@ -490,23 +491,23 @@ export default function CorretorCall() {
             {/* Inline KPIs */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span style={{ fontSize: 12 }} className="text-neutral-500">🔥</span>
-                <span style={{ fontSize: 14 }} className="font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
-                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <span style={{ fontSize: 12, color: "var(--arena-text-subtle)" }}>🔥</span>
+                <span style={{ fontSize: 14, color: "var(--arena-text)" }} className="font-mono font-bold">{progress.tentativas}/{progress.metaLigacoes}</span>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
                   <div className="h-full rounded-full" style={{ width: `${ligPct}%`, background: "#F97316" }} />
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                <span style={{ fontSize: 12 }} className="text-neutral-500">✅</span>
+                <span style={{ fontSize: 12, color: "var(--arena-text-subtle)" }}>✅</span>
                 <span className="font-mono font-bold" style={{ fontSize: 14, color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
-                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
                   <div className="h-full rounded-full" style={{ width: `${aprvPct}%`, background: "#22C55E" }} />
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                <span style={{ fontSize: 12 }} className="text-neutral-500">📅</span>
+                <span style={{ fontSize: 12, color: "var(--arena-text-subtle)" }}>📅</span>
                 <span className="font-mono font-bold" style={{ fontSize: 14, color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
-                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
                   <div className="h-full rounded-full" style={{ width: `${visitPct}%`, background: "#3B82F6" }} />
                 </div>
               </div>
@@ -521,7 +522,7 @@ export default function CorretorCall() {
                 ⭐ {progress.pontos}pts
               </motion.span>
               {nextLevel && (
-                <span className="text-neutral-500 shrink-0" style={{ fontSize: 11 }}>
+                <span className="shrink-0" style={{ fontSize: 11, color: "var(--arena-text-subtle)" }}>
                   {currentLevel.emoji} → {nextLevel.emoji} ({ligacoesFaltam})
                 </span>
               )}
@@ -531,8 +532,8 @@ export default function CorretorCall() {
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 variant="ghost" size="sm"
-                className="h-7 gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
-                style={{ fontSize: 12 }}
+                className="h-7 gap-1 hover:opacity-80"
+                style={{ fontSize: 12, color: "var(--arena-text-muted)" }}
                 onClick={handleExitArena}
               >
                 <Pause className="h-3 w-3" /> Pausar
@@ -551,28 +552,28 @@ export default function CorretorCall() {
       </div>
 
       {/* ═══ SESSION CONTENT ═══ */}
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-3 relative z-10" style={{ background: "#0A0F1E" }}>
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-3 relative z-10">
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="inline-flex h-9 mb-3 rounded-lg p-0.5" style={{ background: "rgba(255,255,255,0.06)" }}>
-              <TabsTrigger value="call" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+            <TabsList className="inline-flex h-9 mb-3 rounded-lg p-0.5" style={{ background: "var(--arena-tab-bg)" }}>
+              <TabsTrigger value="call" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }} data-active-style>
                 <Phone className="h-3.5 w-3.5" /> Arena
               </TabsTrigger>
-              <TabsTrigger value="aproveitados" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+              <TabsTrigger value="aproveitados" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
                 <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
               </TabsTrigger>
-              <TabsTrigger value="ranking" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+              <TabsTrigger value="ranking" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
                 <Trophy className="h-3.5 w-3.5" /> Ranking
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="call" className="mt-0" style={{ background: "#0A0F1E" }}>
+            <TabsContent value="call" className="mt-0">
               <CorretorListSelection />
             </TabsContent>
-            <TabsContent value="aproveitados" className="mt-0" style={{ background: "#0A0F1E" }}>
+            <TabsContent value="aproveitados" className="mt-0">
               <AproveitadosPanel />
             </TabsContent>
-            <TabsContent value="ranking" className="mt-0" style={{ background: "#0A0F1E" }}>
+            <TabsContent value="ranking" className="mt-0">
               <RankingPanel darkMode />
             </TabsContent>
           </Tabs>
