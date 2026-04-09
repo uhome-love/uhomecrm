@@ -444,7 +444,7 @@ export default function CeoDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2.5 max-h-56 overflow-y-auto">
+              <div className="space-y-2.5">
                 {leadsPorEmpreendimento.filter(l => l.emp !== "Sem empreendimento").slice(0, 10).map((l, idx) => {
                   const max = Math.max(...leadsPorEmpreendimento.map(x => x.count), 1);
                   const color = FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
@@ -463,7 +463,7 @@ export default function CeoDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2.5 max-h-56 overflow-y-auto">
+              <div className="space-y-2.5">
                 {origens.slice(0, 8).map((o, idx) => {
                   const max = Math.max(...origens.map(x => x.count), 1);
                   const color = ORIGIN_COLORS[o.origem] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
@@ -482,7 +482,7 @@ export default function CeoDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`space-y-2.5 ${showAllCorretorLeads ? "max-h-96" : "max-h-56"} overflow-y-auto`}>
+              <div className={`space-y-2.5 ${showAllCorretorLeads ? "" : ""}`}>
                 {(showAllCorretorLeads ? leadsPorCorretor : leadsPorCorretor.slice(0, 6)).map((c, idx) => {
                   const max = Math.max(...leadsPorCorretor.map(x => x.count), 1);
                   const color = FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
