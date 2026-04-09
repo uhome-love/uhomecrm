@@ -491,23 +491,23 @@ export default function CorretorCall() {
             {/* Inline KPIs */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span style={{ fontSize: 12 }} className="text-neutral-500">🔥</span>
-                <span style={{ fontSize: 14 }} className="font-mono font-bold text-white">{progress.tentativas}/{progress.metaLigacoes}</span>
-                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <span style={{ fontSize: 12, color: "var(--arena-text-subtle)" }}>🔥</span>
+                <span style={{ fontSize: 14, color: "var(--arena-text)" }} className="font-mono font-bold">{progress.tentativas}/{progress.metaLigacoes}</span>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
                   <div className="h-full rounded-full" style={{ width: `${ligPct}%`, background: "#F97316" }} />
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                <span style={{ fontSize: 12 }} className="text-neutral-500">✅</span>
+                <span style={{ fontSize: 12, color: "var(--arena-text-subtle)" }}>✅</span>
                 <span className="font-mono font-bold" style={{ fontSize: 14, color: "#22C55E" }}>{progress.aproveitados}/{progress.metaAproveitados}</span>
-                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
                   <div className="h-full rounded-full" style={{ width: `${aprvPct}%`, background: "#22C55E" }} />
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                <span style={{ fontSize: 12 }} className="text-neutral-500">📅</span>
+                <span style={{ fontSize: 12, color: "var(--arena-text-subtle)" }}>📅</span>
                 <span className="font-mono font-bold" style={{ fontSize: 14, color: "#3B82F6" }}>{progress.visitasMarcadas || 0}/{progress.metaVisitas}</span>
-                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: "var(--arena-progress-track)" }}>
                   <div className="h-full rounded-full" style={{ width: `${visitPct}%`, background: "#3B82F6" }} />
                 </div>
               </div>
@@ -522,7 +522,7 @@ export default function CorretorCall() {
                 ⭐ {progress.pontos}pts
               </motion.span>
               {nextLevel && (
-                <span className="text-neutral-500 shrink-0" style={{ fontSize: 11 }}>
+                <span className="shrink-0" style={{ fontSize: 11, color: "var(--arena-text-subtle)" }}>
                   {currentLevel.emoji} → {nextLevel.emoji} ({ligacoesFaltam})
                 </span>
               )}
@@ -532,8 +532,8 @@ export default function CorretorCall() {
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 variant="ghost" size="sm"
-                className="h-7 gap-1 text-neutral-400 hover:text-white hover:bg-white/5"
-                style={{ fontSize: 12 }}
+                className="h-7 gap-1 hover:opacity-80"
+                style={{ fontSize: 12, color: "var(--arena-text-muted)" }}
                 onClick={handleExitArena}
               >
                 <Pause className="h-3 w-3" /> Pausar
@@ -552,28 +552,28 @@ export default function CorretorCall() {
       </div>
 
       {/* ═══ SESSION CONTENT ═══ */}
-      <div className="flex-1 min-h-0 overflow-auto px-4 py-3 relative z-10" style={{ background: "#0A0F1E" }}>
+      <div className="flex-1 min-h-0 overflow-auto px-4 py-3 relative z-10">
         <div className="max-w-[1600px] mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="inline-flex h-9 mb-3 rounded-lg p-0.5" style={{ background: "rgba(255,255,255,0.06)" }}>
-              <TabsTrigger value="call" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+            <TabsList className="inline-flex h-9 mb-3 rounded-lg p-0.5" style={{ background: "var(--arena-tab-bg)" }}>
+              <TabsTrigger value="call" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }} data-active-style>
                 <Phone className="h-3.5 w-3.5" /> Arena
               </TabsTrigger>
-              <TabsTrigger value="aproveitados" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+              <TabsTrigger value="aproveitados" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
                 <CheckCircle className="h-3.5 w-3.5" /> Aproveitados
               </TabsTrigger>
-              <TabsTrigger value="ranking" className="gap-1.5 px-4 py-1.5 rounded-md text-neutral-400 data-[state=active]:text-white data-[state=active]:bg-white/15 data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500 }}>
+              <TabsTrigger value="ranking" className="gap-1.5 px-4 py-1.5 rounded-md data-[state=active]:shadow-none" style={{ fontSize: 13, fontWeight: 500, color: "var(--arena-text-muted)" }}>
                 <Trophy className="h-3.5 w-3.5" /> Ranking
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="call" className="mt-0" style={{ background: "#0A0F1E" }}>
+            <TabsContent value="call" className="mt-0">
               <CorretorListSelection />
             </TabsContent>
-            <TabsContent value="aproveitados" className="mt-0" style={{ background: "#0A0F1E" }}>
+            <TabsContent value="aproveitados" className="mt-0">
               <AproveitadosPanel />
             </TabsContent>
-            <TabsContent value="ranking" className="mt-0" style={{ background: "#0A0F1E" }}>
+            <TabsContent value="ranking" className="mt-0">
               <RankingPanel darkMode />
             </TabsContent>
           </Tabs>
