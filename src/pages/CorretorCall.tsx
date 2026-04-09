@@ -337,7 +337,6 @@ export default function CorretorCall() {
                 </div>
               )}
             </div>
-            </div>
           )}
 
           {/* Level progression */}
