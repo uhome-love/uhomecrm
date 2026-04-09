@@ -305,6 +305,7 @@ Deno.serve(async (req) => {
         // Merge: keep original order from ids array
         const allMap = new Map<string, any>();
         for (const item of foundFromDB) allMap.set(String(item.codigo), item);
+        for (const item of siteResults) allMap.set(String(item.codigo), item);
         for (const item of jetimobResults) allMap.set(String(item.codigo), item);
 
         for (const id of ids) {
