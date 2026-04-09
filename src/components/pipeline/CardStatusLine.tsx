@@ -122,6 +122,9 @@ export default function CardStatusLine({ status }: CardStatusLineProps) {
     return { bg: "hsl(var(--success-50))", color: "hsl(var(--success-600))", border: "hsl(var(--success-100))" };
   }, [status.indicator]);
 
+  // Don't render anything if no text (em_dia without task)
+  if (!status.text) return null;
+
   return (
     <div style={{ paddingTop: 2 }}>
       <span style={{
