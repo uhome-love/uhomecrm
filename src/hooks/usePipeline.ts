@@ -471,7 +471,7 @@ export function usePipeline(pipelineTipo: string = "leads") {
             empreendimento: lead.empreendimento || null,
             telefone: lead.telefone || null,
             fase: "novo_negocio",
-            origem: "visita_realizada",
+            origem: "pipeline_convertido",
             vgv_estimado: lead.valor_estimado || null,
           };
           console.log("[moveLead] Inserting negocio:", insertPayload);

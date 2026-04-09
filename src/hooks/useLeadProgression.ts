@@ -43,7 +43,8 @@ export function useLeadProgression() {
   }, [user]);
 
   /**
-   * GATILHO 2: Visita realizada → create negócio
+   * GATILHO 2: Visita realizada → registra atividade (NÃO cria negócio)
+   * Negócio só é criado ao mover para etapa "Negócio Criado" no pipeline.
    */
   const onVisitaRealizada = useCallback(async (params: {
     pipelineLeadId: string;
@@ -56,36 +57,11 @@ export function useLeadProgression() {
   }) => {
     if (!user) return;
 
-    // Create negócio
-    const { data: negocio, error } = await supabase
-      .from("negocios")
-      .insert({
-        lead_id: params.pipelineLeadId,
-        visita_id: params.visitaId,
-        corretor_id: params.corretorId,
-        gerente_id: params.gerenteId,
-        nome_cliente: params.nomeCliente,
-        empreendimento: params.empreendimento || null,
-        telefone: params.telefone || null,
-        fase: "proposta",
-        origem: "visita_realizada",
-        pipeline_lead_id: params.pipelineLeadId,
-      } as any)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error creating negocio:", error);
-      toast.error("Erro ao criar negócio");
-      return;
-    }
-
-    // Update pipeline_leads
+    // Update pipeline_leads — move to "em_evolucao" stage, NOT negocios
     await supabase
       .from("pipeline_leads")
       .update({
-        modulo_atual: "negocios",
-        negocio_id: negocio.id,
+        modulo_atual: "agenda",
         ultima_acao_at: new Date().toISOString(),
       } as any)
       .eq("id", params.pipelineLeadId);
@@ -94,20 +70,17 @@ export function useLeadProgression() {
     await supabase.from("lead_progressao").insert({
       lead_id: params.pipelineLeadId,
       modulo_origem: "agenda",
-      modulo_destino: "negocios",
-      fase_destino: "proposta",
+      modulo_destino: "agenda",
+      fase_destino: "visita_realizada",
       triggered_by: "visita_realizada",
       corretor_id: params.corretorId,
       visita_id: params.visitaId,
-      negocio_id: negocio.id,
     });
 
-    toast("🎉 Visita realizada! Negócio criado!", {
-      description: "🎯 Envie a proposta em até 24h — leads que recebem proposta rápida convertem 3x mais!",
+    toast("🎉 Visita realizada!", {
+      description: "Lead avançou para Em Evolução. Crie o negócio quando estiver pronto!",
       duration: 5000,
     });
-
-    return negocio;
   }, [user]);
 
   /**
