@@ -277,12 +277,12 @@ export default function PipelineKanban() {
         {/* ── MOBILE HEADER (< md) ── */}
         <div className="md:hidden">
           {/* Line 1: Title + filters + novo */}
-          <div className="flex items-center gap-2" style={{ height: 46, padding: "0 12px" }}>
+          <div className="flex items-center gap-2 h-[46px] px-3">
             <div className="h-6 w-6 rounded-md bg-[#4F46E5] flex items-center justify-center shrink-0">
               <LayoutGrid className="h-3 w-3 text-white" />
             </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#1E293B" }}>Pipeline</span>
-            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{filteredLeads.length}</span>
+            <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeads.length}</span>
             <div className="flex-1" />
 
             {(isAdmin || isGestor) && (
