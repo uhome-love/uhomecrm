@@ -195,7 +195,7 @@ export default function PipelineKanban() {
       result = result.filter(l => (l.tags || []).includes(campaignTagFilter));
     }
     return result;
-  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds]);
+  }, [pipeline.leads, filters, pipeline.stages, filaCeoFilter, corretorFilter, campaignTagFilter, visitaLeadIds, kanbanTarefasMap]);
 
   const filteredLeads = useMemo(() => {
     if (clientStatusFilter !== "todos") {
