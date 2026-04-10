@@ -656,6 +656,7 @@ export default function MeusNegocios() {
     reload();
   }, [reload]);
 
+  const moveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
