@@ -123,15 +123,22 @@ export default function PipelineKanban() {
     queryFn: async () => {
       if (leadIds.length === 0) return {};
       const map: Record<string, ProximaTarefa> = {};
+      // Build all chunk queries and run in parallel
+      const chunkPromises = [];
       for (let i = 0; i < leadIds.length; i += 200) {
         const chunk = leadIds.slice(i, i + 200);
-        const { data } = await supabase
-          .from("pipeline_tarefas")
-          .select("pipeline_lead_id, tipo, vence_em, hora_vencimento")
-          .in("pipeline_lead_id", chunk)
-          .eq("status", "pendente")
-          .order("vence_em", { ascending: true })
-          .order("hora_vencimento", { ascending: true });
+        chunkPromises.push(
+          supabase
+            .from("pipeline_tarefas")
+            .select("pipeline_lead_id, tipo, vence_em, hora_vencimento")
+            .in("pipeline_lead_id", chunk)
+            .eq("status", "pendente")
+            .order("vence_em", { ascending: true })
+            .order("hora_vencimento", { ascending: true })
+        );
+      }
+      const results = await Promise.all(chunkPromises);
+      for (const { data } of results) {
         if (data) {
           for (const row of data) {
             const nextTask: ProximaTarefa = { tipo: row.tipo, vence_em: row.vence_em, hora_vencimento: row.hora_vencimento };
@@ -260,45 +267,32 @@ export default function PipelineKanban() {
       </div>
     } onError={(err) => console.error("[PipelineKanban] Render crash:", err.message, err.stack)}>
     <div
-      className="flex flex-col w-full max-w-full min-w-0 overflow-hidden"
-      style={{
-        height: "calc(100vh - 56px)",
-        background: "#f0f0f5",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-      }}
+      className="flex flex-col w-full max-w-full min-w-0 overflow-hidden bg-[#f0f0f5] dark:bg-[#0e1525]"
+      style={{ height: "calc(100vh - 56px)" }}
     >
       {/* ═══ HEADER ═══ */}
       <div
-        className="shrink-0"
-        style={{
-          background: "#f7f7fb",
-          borderBottom: "1px solid #e8e8f0",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-        }}
+        className="shrink-0 bg-[#f7f7fb] dark:bg-[#141e30] border-b border-[#e8e8f0] dark:border-white/[0.07] sticky top-0 z-40"
       >
         {/* ── MOBILE HEADER (< md) ── */}
         <div className="md:hidden">
           {/* Line 1: Title + filters + novo */}
-          <div className="flex items-center gap-2" style={{ height: 46, padding: "0 12px" }}>
+          <div className="flex items-center gap-2 h-[46px] px-3">
             <div className="h-6 w-6 rounded-md bg-[#4F46E5] flex items-center justify-center shrink-0">
               <LayoutGrid className="h-3 w-3 text-white" />
             </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#1E293B" }}>Pipeline</span>
-            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{filteredLeads.length}</span>
+            <span className="text-[15px] font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeads.length}</span>
             <div className="flex-1" />
 
             {(isAdmin || isGestor) && (
               <Select value={corretorFilter} onValueChange={setCorretorFilter}>
                 <SelectTrigger
-                  className="h-7 text-[10px] w-[100px] shrink-0"
-                  style={{
-                    borderRadius: 7, fontSize: 10, fontWeight: 600,
-                    border: corretorFilter !== "all" ? "1px solid #BFDBFE" : "1px solid #E2E8F0",
-                    background: corretorFilter !== "all" ? "#EFF6FF" : "#fff",
-                    color: corretorFilter !== "all" ? "#1D4ED8" : "#64748B",
-                  }}
+                  className={`h-7 text-[10px] w-[100px] shrink-0 rounded-[7px] text-[10px] font-semibold ${
+                    corretorFilter !== "all"
+                      ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
+                      : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
+                  }`}
                 >
                   <SelectValue placeholder="Corretor" />
                 </SelectTrigger>
@@ -328,32 +322,18 @@ export default function PipelineKanban() {
                 setMobileSearchOpen(v => !v);
                 setTimeout(() => mobileSearchRef.current?.focus(), 100);
               }}
-              className="relative"
-              style={{
-                width: 24, height: 24, borderRadius: 6,
-                border: "1px solid #E2E8F0", background: "#fff",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer",
-              }}
+              className="relative w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
             >
-              <Search className="h-3 w-3" style={{ color: "#64748B" }} />
+              <Search className="h-3 w-3 text-slate-500 dark:text-slate-400" />
               {filters.search && (
-                <div style={{
-                  position: "absolute", top: -2, right: -2,
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: "#3B82F6",
-                }} />
+                <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
               )}
             </button>
 
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
-                style={{
-                  background: "#4F46E5", color: "#fff", borderRadius: 7,
-                  padding: "5px 10px", fontWeight: 700, fontSize: 12, border: "none",
-                  cursor: "pointer", whiteSpace: "nowrap",
-                }}
+                className="bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap"
               >
                 + Novo
               </button>
@@ -362,97 +342,90 @@ export default function PipelineKanban() {
 
           {/* Mobile search bar (expandable) */}
           {(mobileSearchOpen || filters.search) && (
-            <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in" style={{ borderBottom: "1px solid #E2E8F0" }}>
-              <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "#94A3B8" }} />
+            <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in border-b border-slate-200 dark:border-gray-700">
+              <Search className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
               <input
                 ref={mobileSearchRef}
                 type="text"
                 placeholder="Buscar lead por nome, telefone..."
                 value={filters.search}
                 onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="flex-1 bg-transparent text-sm outline-none"
-                style={{ fontSize: 12, color: "#1E293B", height: 28 }}
+                className="flex-1 bg-transparent text-xs text-slate-800 dark:text-slate-100 outline-none h-7"
               />
               <button
                 onClick={() => {
                   setFilters(f => ({ ...f, search: "" }));
                   setMobileSearchOpen(false);
                 }}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
+                className="bg-transparent border-none cursor-pointer p-0.5"
               >
-                <X className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
+                <X className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
               </button>
             </div>
           )}
 
           {/* Line 2 mobile: Status chips compact */}
-          <div className="flex items-center gap-3 px-3 pb-2" style={{ borderBottom: "1px solid #E2E8F0" }}>
+          <div className="flex items-center gap-3 px-3 pb-2 border-b border-slate-200 dark:border-gray-700">
             <button
               onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
-              className="flex items-center gap-1"
-              style={{ fontSize: 11, fontWeight: 600, color: "#059669", background: "none", border: "none", cursor: "pointer" }}
+              className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-transparent border-none cursor-pointer"
             >
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#059669" }} />
+              <div className="w-[5px] h-[5px] rounded-full bg-emerald-600" />
               {clientStatusCounts.em_dia}
             </button>
             <button
               onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
-              className="flex items-center gap-1"
-              style={{ fontSize: 11, fontWeight: 600, color: "#D97706", background: "none", border: "none", cursor: "pointer" }}
+              className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-transparent border-none cursor-pointer"
             >
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#D97706" }} />
+              <div className="w-[5px] h-[5px] rounded-full bg-amber-600" />
               {clientStatusCounts.desatualizado}
             </button>
             <button
               onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
-              className="flex items-center gap-1"
-              style={{ fontSize: 11, fontWeight: 600, color: "#DC2626", background: "none", border: "none", cursor: "pointer" }}
+              className="flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-transparent border-none cursor-pointer"
             >
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#DC2626" }} />
+              <div className="w-[5px] h-[5px] rounded-full bg-red-600" />
               {clientStatusCounts.tarefa_atrasada}
             </button>
             <div className="flex-1" />
             {hasAnyFilter && (
-              <button onClick={clearAllFilters} style={{ fontSize: 10, fontWeight: 600, color: "#DC2626", background: "none", border: "none", cursor: "pointer" }}>
-                <X style={{ height: 10, width: 10 }} /> Limpar
+              <button onClick={clearAllFilters} className="text-[10px] font-semibold text-red-600 bg-transparent border-none cursor-pointer">
+                <X className="h-[10px] w-[10px] inline" /> Limpar
               </button>
             )}
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              className="w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
             >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} style={{ color: "#64748B" }} />
+              <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
 
         {/* ── TABLET HEADER (md to lg) ── */}
         <div className="hidden md:block lg:hidden">
-          <div className="flex items-center gap-2" style={{ height: 48, padding: "0 16px", borderBottom: "1px solid #E2E8F0" }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Pipeline</span>
-            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{filteredLeads.length}</span>
+          <div className="flex items-center gap-2 h-12 px-4 border-b border-slate-200 dark:border-gray-700">
+            <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeads.length}</span>
 
             <div className="flex-1" />
 
             {/* Tab switcher - icons only */}
-            <div className="flex items-center" style={{ background: "#F1F5F9", borderRadius: 7, padding: 2 }}>
+            <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-[7px] p-0.5">
               {[
-                { key: "kanban", icon: <LayoutGrid style={{ height: 12, width: 12 }} />, label: "Kanban" },
-                { key: "inteligencia", icon: <Brain style={{ height: 12, width: 12 }} />, label: "Intel" },
+                { key: "kanban", icon: <LayoutGrid className="h-3 w-3" />, label: "Kanban" },
+                { key: "inteligencia", icon: <Brain className="h-3 w-3" />, label: "Intel" },
               ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   title={tab.label}
-                  className="flex items-center gap-1"
-                  style={{
-                    padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    background: activeTab === tab.key ? "#fff" : "transparent",
-                    boxShadow: activeTab === tab.key ? "0 1px 3px rgba(0,0,0,0.09)" : "none",
-                    color: activeTab === tab.key ? "#1E293B" : "#64748B",
-                    border: "none", cursor: "pointer",
-                  }}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold border-none cursor-pointer ${
+                    activeTab === tab.key
+                      ? "bg-white dark:bg-gray-700 shadow-sm text-slate-800 dark:text-slate-100"
+                      : "bg-transparent text-slate-500 dark:text-slate-400"
+                  }`}
                 >
                   {tab.icon}
                   <span className="hidden xl:inline">{tab.label}</span>
@@ -463,13 +436,11 @@ export default function PipelineKanban() {
             {(isAdmin || isGestor) && (
               <Select value={corretorFilter} onValueChange={setCorretorFilter}>
                 <SelectTrigger
-                  className="h-7 text-[10px] w-[110px] shrink-0"
-                  style={{
-                    borderRadius: 7, fontSize: 10, fontWeight: 600,
-                    border: corretorFilter !== "all" ? "1px solid #BFDBFE" : "1px solid #E2E8F0",
-                    background: corretorFilter !== "all" ? "#EFF6FF" : "#fff",
-                    color: corretorFilter !== "all" ? "#1D4ED8" : "#64748B",
-                  }}
+                  className={`h-7 text-[10px] w-[110px] shrink-0 rounded-[7px] font-semibold ${
+                    corretorFilter !== "all"
+                      ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
+                      : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
+                  }`}
                 >
                   <SelectValue placeholder="Corretores" />
                 </SelectTrigger>
@@ -493,33 +464,24 @@ export default function PipelineKanban() {
               isManager={isGestor || isAdmin}
             />
 
-            <div className="relative" style={{ width: 120 }}>
-              <Search className="absolute top-1/2 -translate-y-1/2" style={{ left: 8, height: 12, width: 12, color: "#94A3B8" }} />
+            <div className="relative w-[120px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 dark:text-slate-500" />
               <input
                 placeholder="Buscar..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="w-full outline-none"
-                style={{
-                  height: 30, borderRadius: 7, background: "#F8FAFC",
-                  border: "1px solid #E2E8F0", paddingLeft: 26, paddingRight: 8,
-                  fontSize: 11, fontWeight: 500,
-                }}
+                className="w-full outline-none h-[30px] rounded-[7px] bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 pl-[26px] pr-2 text-[11px] font-medium text-slate-800 dark:text-slate-100"
               />
             </div>
 
-            <button onClick={handleRefresh} disabled={refreshing} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #E2E8F0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} style={{ color: "#64748B" }} />
+            <button onClick={handleRefresh} disabled={refreshing} className="w-7 h-7 rounded-[7px] border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer">
+              <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
             </button>
 
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
-                style={{
-                  background: "#2563EB", color: "#fff", borderRadius: 8,
-                  padding: "6px 10px", fontWeight: 700, fontSize: 11, border: "none",
-                  cursor: "pointer", whiteSpace: "nowrap",
-                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-1.5 font-bold text-[11px] border-none cursor-pointer whitespace-nowrap"
               >
                 + Novo Lead
               </button>
@@ -527,26 +489,22 @@ export default function PipelineKanban() {
           </div>
 
           {/* Tablet line 2: status chips + fila ceo */}
-          <div className="flex items-center gap-2 overflow-x-auto" style={{ height: 32, padding: "0 16px" }}>
+          <div className="flex items-center gap-2 overflow-x-auto h-8 px-4">
             {/* Status chips */}
             {[
-              { key: "em_dia" as const, label: "Em dia", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", count: clientStatusCounts.em_dia },
-              { key: "desatualizado" as const, label: "Desatual.", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", count: clientStatusCounts.desatualizado },
-              { key: "tarefa_atrasada" as const, label: "Atrasado", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA", count: clientStatusCounts.tarefa_atrasada },
+              { key: "em_dia" as const, label: "Em dia", color: "#059669", bg: "bg-emerald-50 dark:bg-emerald-950", border: "border-emerald-300 dark:border-emerald-800", count: clientStatusCounts.em_dia },
+              { key: "desatualizado" as const, label: "Desatual.", color: "#D97706", bg: "bg-amber-50 dark:bg-amber-950", border: "border-amber-300 dark:border-amber-800", count: clientStatusCounts.desatualizado },
+              { key: "tarefa_atrasada" as const, label: "Atrasado", color: "#DC2626", bg: "bg-red-50 dark:bg-red-950", border: "border-red-300 dark:border-red-800", count: clientStatusCounts.tarefa_atrasada },
             ].map(chip => (
               <button
                 key={chip.key}
                 onClick={() => setClientStatusFilter(f => f === chip.key ? "todos" : chip.key)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 4,
-                  padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
-                  background: clientStatusFilter === chip.key ? chip.bg : "#fff",
-                  color: chip.color,
-                  border: clientStatusFilter === chip.key ? `1.5px solid ${chip.border}` : "1px solid #E2E8F0",
-                  cursor: "pointer", whiteSpace: "nowrap",
-                }}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer whitespace-nowrap border ${
+                  clientStatusFilter === chip.key ? `${chip.bg} ${chip.border}` : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700"
+                }`}
+                style={{ color: chip.color }}
               >
-                <div style={{ width: 5, height: 5, borderRadius: "50%", background: chip.color }} />
+                <div className="w-[5px] h-[5px] rounded-full" style={{ background: chip.color }} />
                 {chip.label} {chip.count > 0 && chip.count}
               </button>
             ))}
@@ -555,26 +513,19 @@ export default function PipelineKanban() {
               <>
                 <button
                   onClick={() => setFilaCeoFilter(f => !f)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 3,
-                    padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
-                    background: filaCeoFilter ? "#F5F3FF" : "#fff",
-                    color: filaCeoFilter ? "#7C3AED" : "#94A3B8",
-                    border: filaCeoFilter ? "1.5px solid #C4B5FD" : "1px solid #E2E8F0",
-                    cursor: "pointer", whiteSpace: "nowrap",
-                  }}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer whitespace-nowrap border ${
+                    filaCeoFilter
+                      ? "bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-800"
+                      : "bg-white dark:bg-gray-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-gray-700"
+                  }`}
                 >
                   📥 CEO {filaCeoCount}
                 </button>
                 <button
                   onClick={() => setDispatchOpen(true)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 3,
-                    height: 20, padding: "0 6px", borderRadius: 6, fontSize: 9, fontWeight: 700,
-                    background: "#7C3AED", color: "#fff", border: "none", cursor: "pointer",
-                  }}
+                  className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-violet-600 text-white border-none cursor-pointer"
                 >
-                  <Rocket style={{ height: 10, width: 10 }} /> Disparar
+                  <Rocket className="h-[10px] w-[10px]" /> Disparar
                 </button>
               </>
             )}
@@ -582,23 +533,20 @@ export default function PipelineKanban() {
             {isAdmin && activeTab === "kanban" && (
               <button
                 onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
-                style={{
-                  height: 22, borderRadius: 6, padding: "0 8px",
-                  border: selectionMode ? "1px solid #2563EB" : "1px solid #E2E8F0",
-                  background: selectionMode ? "#EFF6FF" : "#fff",
-                  color: selectionMode ? "#2563EB" : "#64748B",
-                  fontSize: 10, fontWeight: 600, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 3,
-                }}
+                className={`h-[22px] rounded-md px-2 text-[10px] font-semibold cursor-pointer flex items-center gap-1 border ${
+                  selectionMode
+                    ? "border-blue-600 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400"
+                    : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
+                }`}
               >
-                {selectionMode ? <CheckSquare style={{ height: 10, width: 10 }} /> : <Square style={{ height: 10, width: 10 }} />}
+                {selectionMode ? <CheckSquare className="h-[10px] w-[10px]" /> : <Square className="h-[10px] w-[10px]" />}
                 {selectionMode ? "Selec..." : "Selec."}
               </button>
             )}
 
             {hasAnyFilter && (
-              <button onClick={clearAllFilters} style={{ fontSize: 9, fontWeight: 600, color: "#DC2626", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2 }}>
-                <X style={{ height: 9, width: 9 }} /> Limpar
+              <button onClick={clearAllFilters} className="text-[9px] font-semibold text-red-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5">
+                <X className="h-[9px] w-[9px]" /> Limpar
               </button>
             )}
           </div>
@@ -607,36 +555,30 @@ export default function PipelineKanban() {
         {/* ── DESKTOP HEADER (lg+) ── */}
         <div className="hidden lg:block">
           {/* Line 1 — Title + Filters + Search + Novo Lead */}
-          <div
-            className="flex items-center"
-            style={{ height: 48, padding: "0 24px", borderBottom: "1px solid #e8e8f0", gap: 8 }}
-          >
+          <div className="flex items-center h-12 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
             {/* LEFT: Title */}
             <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
               <div className="w-7 h-7 rounded-[7px] bg-[#4F46E5] flex items-center justify-center shrink-0">
                 <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
               </div>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a", letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>
+              <span className="text-[15px] font-bold text-[#0a0a0a] dark:text-white tracking-tight whitespace-nowrap">
                 Pipeline
               </span>
-              <span className="text-[12px] text-[#a1a1aa] font-medium shrink-0">{filteredLeads.length} leads</span>
+              <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeads.length} leads</span>
             </div>
 
             <div className="flex-1" />
 
             {/* CENTER-RIGHT: Filters inline */}
-            <div className="flex items-center" style={{ gap: 6 }}>
+            <div className="flex items-center gap-1.5">
               {(isAdmin || isGestor) && (
                 <Select value={corretorFilter} onValueChange={setCorretorFilter}>
                   <SelectTrigger
-                    className="h-[32px] text-[12px] w-[170px] shrink-0"
-                    style={{
-                      borderRadius: 8, fontSize: 12, fontWeight: 500,
-                      border: corretorFilter !== "all" ? "1px solid #4F46E5" : "1px solid #e8e8f0",
-                      background: corretorFilter !== "all" ? "#4F46E5/5" : "#f7f7fb",
-                      color: corretorFilter !== "all" ? "#4F46E5" : "#52525b",
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    }}
+                    className={`h-[32px] text-[12px] w-[170px] shrink-0 rounded-lg font-medium ${
+                      corretorFilter !== "all"
+                        ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
+                        : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
+                    }`}
                   >
                     <SelectValue placeholder="Todos os corretores" />
                   </SelectTrigger>
@@ -653,14 +595,11 @@ export default function PipelineKanban() {
               {Object.keys(campaignTagCounts).length > 0 && (
                 <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
                   <SelectTrigger
-                    className="h-[32px] text-[12px] w-[160px] shrink-0"
-                    style={{
-                      borderRadius: 8, fontSize: 12, fontWeight: 500,
-                      border: campaignTagFilter !== "all" ? "1px solid #4F46E5" : "1px solid #e8e8f0",
-                      background: campaignTagFilter !== "all" ? "#4F46E5/5" : "#f7f7fb",
-                      color: campaignTagFilter !== "all" ? "#4F46E5" : "#52525b",
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    }}
+                    className={`h-[32px] text-[12px] w-[160px] shrink-0 rounded-lg font-medium ${
+                      campaignTagFilter !== "all"
+                        ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
+                        : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
+                    }`}
                   >
                     <SelectValue placeholder="Todas as origens" />
                   </SelectTrigger>
@@ -676,29 +615,17 @@ export default function PipelineKanban() {
               )}
 
               {/* Search */}
-              <div className="relative" style={{ width: filters.search ? 200 : 160, transition: "width 0.2s ease" }}>
-                <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa]" />
+              <div className="relative transition-all duration-200" style={{ width: filters.search ? 200 : 160 }}>
+                <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
                 <input
                   placeholder="Buscar..."
                   value={filters.search}
                   onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                  className="w-full outline-none"
-                  style={{
-                    height: 32, borderRadius: 8, background: "#f7f7fb",
-                    border: "1px solid #e8e8f0", paddingLeft: 28, paddingRight: 8,
-                    fontSize: 12, fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    transition: "all 0.2s ease",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#4F46E5";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#e8e8f0";
-                  }}
+                  className="w-full outline-none h-8 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-[#4F46E5] dark:focus:border-[#4F46E5]"
                 />
                 {filters.search && (
                   <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <X className="h-3 w-3 text-[#a1a1aa]" />
+                    <X className="h-3 w-3 text-[#a1a1aa] dark:text-[#52525b]" />
                   </button>
                 )}
               </div>
@@ -707,18 +634,12 @@ export default function PipelineKanban() {
               {activeTab === "kanban" && (
                 <button
                   onClick={() => setFocusModeOpen(true)}
-                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors"
-                  style={{
-                    height: 32, padding: "0 12px",
-                    background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", borderRadius: 8,
-                    fontWeight: 600, fontSize: 12, border: "none",
-                    cursor: "pointer",
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  }}
+                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3 rounded-lg font-semibold text-xs border-none cursor-pointer text-white"
+                  style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}
                 >
                   <Zap size={13} strokeWidth={2} /> Modo Foco
                   {focusLeads.length > 0 && (
-                    <span style={{ background: "rgba(255,255,255,0.2)", borderRadius: 6, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
+                    <span className="bg-white/20 rounded-md px-1.5 py-px text-[10px] font-bold">
                       {focusLeads.length}
                     </span>
                   )}
@@ -729,16 +650,7 @@ export default function PipelineKanban() {
               {canAdd && activeTab === "kanban" && (
                 <button
                   onClick={() => setAddOpen(true)}
-                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors"
-                  style={{
-                    height: 32, padding: "0 14px",
-                    background: "#4F46E5", color: "#fff", borderRadius: 8,
-                    fontWeight: 600, fontSize: 12, border: "none",
-                    cursor: "pointer",
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#4338CA"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "#4F46E5"; }}
+                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
                 >
                   <Plus size={13} strokeWidth={2} /> Novo Lead
                 </button>
@@ -747,64 +659,43 @@ export default function PipelineKanban() {
           </div>
 
           {/* Line 2 — Views + actions + indicators — fixed 32px */}
-          <div
-            className="flex items-center overflow-x-auto"
-            style={{ height: 32, padding: "0 24px", gap: 4 }}
-          >
+          <div className="flex items-center overflow-x-auto h-8 px-6 gap-1">
             {/* View switcher */}
-            <button
-              onClick={() => setActiveTab("kanban")}
-              className="flex items-center gap-1.5 shrink-0 transition-colors"
-              style={{
-                height: 28, padding: "0 10px", borderRadius: 7,
-                background: activeTab === "kanban" ? "#4F46E5" : "transparent",
-                color: activeTab === "kanban" ? "#fff" : "#71717a",
-                fontSize: 12, fontWeight: activeTab === "kanban" ? 600 : 500,
-                border: "none", cursor: "pointer",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-            >
-              <LayoutGrid size={12} strokeWidth={1.5} /> Kanban
-            </button>
-            <button
-              onClick={() => setActiveTab("inteligencia")}
-              className="flex items-center gap-1.5 shrink-0 transition-colors"
-              style={{
-                height: 28, padding: "0 10px", borderRadius: 7,
-                background: activeTab === "inteligencia" ? "#4F46E5" : "transparent",
-                color: activeTab === "inteligencia" ? "#fff" : "#71717a",
-                fontSize: 12, fontWeight: activeTab === "inteligencia" ? 600 : 500,
-                border: "none", cursor: "pointer",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-            >
-              <Brain size={12} strokeWidth={1.5} /> Inteligência
-            </button>
+            {[
+              { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
+              { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs border-none cursor-pointer ${
+                  activeTab === tab.key
+                    ? "bg-[#4F46E5] text-white font-semibold"
+                    : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium"
+                }`}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
 
             {activeTab === "inteligencia" && (
-              <div className="flex items-center" style={{ background: "#f0f0f5", borderRadius: 7, padding: 2, marginLeft: 2 }}>
-                <button
-                  onClick={() => setIntelView("funil")}
-                  style={{
-                    padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    background: intelView === "funil" ? "#fff" : "transparent",
-                    color: intelView === "funil" ? "#0a0a0a" : "#71717a",
-                    border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  }}
-                >
-                  <BarChart3 className="h-3 w-3 inline mr-1" />Funil
-                </button>
-                <button
-                  onClick={() => setIntelView("radar")}
-                  style={{
-                    padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    background: intelView === "radar" ? "#fff" : "transparent",
-                    color: intelView === "radar" ? "#0a0a0a" : "#71717a",
-                    border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  }}
-                >
-                  <Radar className="h-3 w-3 inline mr-1" />Radar
-                </button>
+              <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-0.5">
+                {[
+                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
+                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
+                ].map(v => (
+                  <button
+                    key={v.key}
+                    onClick={() => setIntelView(v.key as any)}
+                    className={`px-2 py-[3px] rounded-md text-[11px] font-semibold border-none cursor-pointer ${
+                      intelView === v.key
+                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
+                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
+                    }`}
+                  >
+                    {v.icon}{v.label}
+                  </button>
+                ))}
               </div>
             )}
 
@@ -812,12 +703,7 @@ export default function PipelineKanban() {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="shrink-0 flex items-center justify-center transition-colors"
-              style={{
-                width: 28, height: 28, borderRadius: 7,
-                color: "#a1a1aa", background: "transparent",
-                border: "none", cursor: "pointer",
-              }}
+              className="shrink-0 flex items-center justify-center transition-colors w-7 h-7 rounded-[7px] text-[#a1a1aa] dark:text-[#52525b] bg-transparent border-none cursor-pointer"
             >
               <RefreshCw size={12} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
             </button>
@@ -825,15 +711,11 @@ export default function PipelineKanban() {
             {isAdmin && activeTab === "kanban" && (
               <button
                 onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
-                className="flex items-center gap-1.5 shrink-0 transition-colors"
-                style={{
-                  height: 28, padding: "0 10px", borderRadius: 7,
-                  background: selectionMode ? "#4F46E5" : "transparent",
-                  color: selectionMode ? "#fff" : "#71717a",
-                  fontSize: 12, fontWeight: 500,
-                  border: "none", cursor: "pointer",
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                }}
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs font-medium border-none cursor-pointer ${
+                  selectionMode
+                    ? "bg-[#4F46E5] text-white"
+                    : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
+                }`}
               >
                 {selectionMode ? <CheckSquare size={12} strokeWidth={1.5} /> : <Square size={12} strokeWidth={1.5} />}
                 {selectionMode ? "Selecionando..." : "Selecionar"}
@@ -843,33 +725,22 @@ export default function PipelineKanban() {
             {/* Separator */}
             {isAdmin && filaCeoCount > 0 && (
               <>
-                <div className="w-px h-4 bg-[#e8e8f0] mx-1 shrink-0" />
-                <span style={{ fontSize: 11, color: "#a1a1aa", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Fila CEO</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#4F46E5" }}>{filaCeoCount}</span>
+                <div className="w-px h-4 bg-[#e8e8f0] dark:bg-white/[0.07] mx-1 shrink-0" />
+                <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b]">Fila CEO</span>
+                <span className="text-[11px] font-bold text-[#4F46E5]">{filaCeoCount}</span>
                 <button
                   onClick={() => setFilaCeoFilter(f => !f)}
-                  className="shrink-0 flex items-center gap-1 transition-colors"
-                  style={{
-                    height: 22, padding: "0 6px", borderRadius: 6,
-                    fontSize: 10, fontWeight: 700,
-                    background: filaCeoFilter ? "#4F46E5/10" : "transparent",
-                    color: filaCeoFilter ? "#4F46E5" : "#a1a1aa",
-                    border: filaCeoFilter ? "1px solid #4F46E5" : "1px solid #e8e8f0",
-                    cursor: "pointer",
-                  }}
+                  className={`shrink-0 flex items-center gap-1 transition-colors h-[22px] px-1.5 rounded-md text-[10px] font-bold cursor-pointer border ${
+                    filaCeoFilter
+                      ? "bg-[#4F46E5]/10 text-[#4F46E5] border-[#4F46E5]"
+                      : "bg-transparent text-[#a1a1aa] dark:text-[#52525b] border-[#e8e8f0] dark:border-white/[0.07]"
+                  }`}
                 >
                   {filaCeoFilter ? "Filtrando" : "Filtrar"}
                 </button>
                 <button
                   onClick={() => setDispatchOpen(true)}
-                  className="shrink-0 flex items-center gap-1.5 transition-colors"
-                  style={{
-                    height: 28, padding: "0 10px", borderRadius: 7,
-                    background: "#4F46E5", color: "#fff",
-                    fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#4338CA"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "#4F46E5"; }}
+                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-semibold border-none cursor-pointer"
                 >
                   <Rocket size={11} strokeWidth={1.5} /> Disparar
                 </button>
@@ -882,36 +753,21 @@ export default function PipelineKanban() {
             <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
-                className="flex items-center gap-1 transition-opacity"
-                style={{
-                  fontSize: 11, fontWeight: 600, color: "#10b981",
-                  background: "none", border: "none", cursor: "pointer",
-                  opacity: clientStatusFilter === "em_dia" ? 1 : 0.7,
-                }}
+                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#10b981] bg-transparent border-none cursor-pointer ${clientStatusFilter === "em_dia" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
                 {clientStatusCounts.em_dia.toLocaleString("pt-BR")}
               </button>
               <button
                 onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
-                className="flex items-center gap-1 transition-opacity"
-                style={{
-                  fontSize: 11, fontWeight: 600, color: "#f59e0b",
-                  background: "none", border: "none", cursor: "pointer",
-                  opacity: clientStatusFilter === "desatualizado" ? 1 : 0.7,
-                }}
+                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#f59e0b] bg-transparent border-none cursor-pointer ${clientStatusFilter === "desatualizado" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
                 {clientStatusCounts.desatualizado.toLocaleString("pt-BR")}
               </button>
               <button
                 onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
-                className="flex items-center gap-1 transition-opacity"
-                style={{
-                  fontSize: 11, fontWeight: 600, color: "#ef4444",
-                  background: "none", border: "none", cursor: "pointer",
-                  opacity: clientStatusFilter === "tarefa_atrasada" ? 1 : 0.7,
-                }}
+                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer ${clientStatusFilter === "tarefa_atrasada" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
                 {clientStatusCounts.tarefa_atrasada.toLocaleString("pt-BR")}
@@ -921,11 +777,7 @@ export default function PipelineKanban() {
             {hasAnyFilter && (
               <button
                 onClick={clearAllFilters}
-                className="shrink-0 flex items-center gap-1"
-                style={{
-                  fontSize: 10, fontWeight: 600, color: "#ef4444",
-                  background: "none", border: "none", cursor: "pointer",
-                }}
+                className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer"
               >
                 <X size={10} strokeWidth={1.5} /> Limpar
               </button>
@@ -1136,36 +988,22 @@ export default function PipelineKanban() {
 
       {selectionMode && selectedLeads.size > 0 && (
         <div
-          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
-          style={{
-            padding: "12px 20px", borderRadius: 14, background: "#fff",
-            border: "1px solid #E2E8F0",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-          }}
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-[14px] bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 shadow-lg"
         >
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#1E293B" }}>
+          <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100">
             {selectedLeads.size} selecionado{selectedLeads.size !== 1 ? "s" : ""}
           </span>
           <button
             onClick={() => setBulkActionOpen(true)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              background: "#2563EB", color: "#fff", borderRadius: 10,
-              padding: "8px 16px", fontWeight: 700, fontSize: 12, border: "none",
-              cursor: "pointer",
-            }}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[10px] px-4 py-2 font-bold text-xs border-none cursor-pointer"
           >
-            <Send style={{ height: 14, width: 14 }} /> Ações em Massa
+            <Send className="h-3.5 w-3.5" /> Ações em Massa
           </button>
           <button
             onClick={clearSelection}
-            style={{
-              display: "flex", alignItems: "center", gap: 4,
-              background: "none", color: "#DC2626", border: "none",
-              fontWeight: 600, fontSize: 12, cursor: "pointer",
-            }}
+            className="flex items-center gap-1 bg-transparent text-red-600 border-none font-semibold text-xs cursor-pointer"
           >
-            <X style={{ height: 14, width: 14 }} /> Cancelar
+            <X className="h-3.5 w-3.5" /> Cancelar
           </button>
         </div>
       )}

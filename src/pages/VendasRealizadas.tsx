@@ -212,50 +212,49 @@ export default function VendasRealizadas() {
         });
       }
 
-      // Collect all profile IDs (from negocios.corretor_id) and auth_user_ids (from partnerships)
+      // Collect all profile IDs and auth_user_ids
       const corretorProfileIds = new Set(rows.map(v => v.corretor_id).filter(Boolean) as string[]);
       const partnerAuthUserIds = new Set<string>();
       Object.values(parceriaPartners).forEach(p => p.auth_user_ids.forEach(id => partnerAuthUserIds.add(id)));
 
-      // Load profiles by profile.id (for deal corretor_id)
-      let profileMap: Record<string, ProfileInfo> = {};
       const profileIds = [...corretorProfileIds];
-      if (profileIds.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("id, nome, avatar_url, avatar_gamificado_url").in("id", profileIds);
-        (profiles || []).forEach(p => { profileMap[p.id] = p as ProfileInfo; });
-      }
-
-      // Load profiles by user_id (for partnership auth_user_ids) — keyed by auth user_id
-      let authProfileMap: Record<string, ProfileInfo> = {};
       const authIds = [...partnerAuthUserIds];
-      if (authIds.length > 0) {
-        const { data: authProfiles } = await supabase.from("profiles").select("id, user_id, nome, avatar_url, avatar_gamificado_url").in("user_id", authIds);
-        (authProfiles || []).forEach(p => {
-          if (p.user_id) authProfileMap[p.user_id] = { id: p.id, nome: p.nome, avatar_url: p.avatar_url, avatar_gamificado_url: p.avatar_gamificado_url };
-        });
-      }
 
-      // Annual VGV per corretor from v_kpi_negocios (split-aware)
-      const yearStart = `${new Date().getFullYear()}-01-01`;
+      const [profilesRes, authProfilesRes, annualRes, profileIdMapRes] = await Promise.all([
+        // Load profiles by profile.id (for deal corretor_id)
+        profileIds.length > 0
+          ? supabase.from("profiles").select("id, nome, avatar_url, avatar_gamificado_url").in("id", profileIds)
+          : { data: [] },
+        // Load profiles by user_id (for partnership auth_user_ids)
+        authIds.length > 0
+          ? supabase.from("profiles").select("id, user_id, nome, avatar_url, avatar_gamificado_url").in("user_id", authIds)
+          : { data: [] },
+        // Annual VGV per corretor from v_kpi_negocios (split-aware)
+        (profileIds.length > 0 || authIds.length > 0)
+          ? supabase.from("v_kpi_negocios").select("auth_user_id, vgv_efetivo").in("fase", ["assinado", "vendido"]).gte("data_assinatura", `${new Date().getFullYear()}-01-01`)
+          : { data: [] },
+        // Map profile.id to auth user_id for commission lookup
+        profileIds.length > 0
+          ? supabase.from("profiles").select("id, user_id").in("id", profileIds)
+          : { data: [] },
+      ]);
+
+      let profileMap: Record<string, ProfileInfo> = {};
+      (profilesRes.data || []).forEach(p => { profileMap[p.id] = p as ProfileInfo; });
+
+      let authProfileMap: Record<string, ProfileInfo> = {};
+      (authProfilesRes.data || []).forEach((p: any) => {
+        if (p.user_id) authProfileMap[p.user_id] = { id: p.id, nome: p.nome, avatar_url: p.avatar_url, avatar_gamificado_url: p.avatar_gamificado_url };
+      });
+
       let annualVgvByCorretor: Record<string, number> = {};
-      // Use auth_user_id based annual VGV for commission tiers
-      if (profileIds.length > 0 || authIds.length > 0) {
-        const { data: annualData } = await supabase.from("v_kpi_negocios")
-          .select("auth_user_id, vgv_efetivo")
-          .in("fase", ["assinado", "vendido"])
-          .gte("data_assinatura", yearStart);
-        (annualData || []).forEach(n => {
-          const uid = n.auth_user_id as string;
-          annualVgvByCorretor[uid] = (annualVgvByCorretor[uid] || 0) + Number(n.vgv_efetivo || 0);
-        });
-      }
+      (annualRes.data || []).forEach((n: any) => {
+        const uid = n.auth_user_id as string;
+        annualVgvByCorretor[uid] = (annualVgvByCorretor[uid] || 0) + Number(n.vgv_efetivo || 0);
+      });
 
-      // Map profile.id to auth user_id for commission lookup
       let profileIdToAuthId: Record<string, string> = {};
-      if (profileIds.length > 0) {
-        const { data: pMap } = await supabase.from("profiles").select("id, user_id").in("id", profileIds);
-        (pMap || []).forEach(p => { if (p.user_id) profileIdToAuthId[p.id] = p.user_id; });
-      }
+      (profileIdMapRes.data || []).forEach((p: any) => { if (p.user_id) profileIdToAuthId[p.id] = p.user_id; });
 
       // Load pipeline origin data for sold leads
       let origemMap: Record<string, { origem: string | null; origem_detalhe: string | null; empreendimento_lead: string | null; created_at_lead: string | null }> = {};

@@ -126,6 +126,7 @@ export default function MinhasTarefas() {
         .select("*")
         .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
         .order("vence_em", { ascending: true })
+        .limit(500)
         .order("hora_vencimento", { ascending: true });
       if (error) return [];
       const rows = (data || []) as any[];

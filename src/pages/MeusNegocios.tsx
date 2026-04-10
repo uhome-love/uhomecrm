@@ -656,11 +656,19 @@ export default function MeusNegocios() {
     reload();
   }, [reload]);
 
+  const moveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragNegocioId = useRef<string | null>(null);
   const [dragOverFase, setDragOverFase] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // Cleanup moveTimeout on unmount
+  useEffect(() => {
+    return () => {
+      if (moveTimeoutRef.current) clearTimeout(moveTimeoutRef.current);
+    };
+  }, []);
 
   // Build gerente list from negocios gerente_id + corretorNomes
   const gerenteList = useMemo(() => {
@@ -747,9 +755,11 @@ export default function MeusNegocios() {
         corretorNome: negocio.corretor_id ? corretorNomes[negocio.corretor_id] : undefined,
       });
 
-      // Move to hidden "vendido" fase after a short delay
-      setTimeout(async () => {
+      // Move to hidden "vendido" fase after a short delay (with cleanup)
+      if (moveTimeoutRef.current) clearTimeout(moveTimeoutRef.current);
+      moveTimeoutRef.current = setTimeout(async () => {
         await moveFase(negocioId, "vendido");
+        moveTimeoutRef.current = null;
       }, 10000);
     }
   }, [negocios, moveFase, onNegocioAssinado, user, corretorNomes]);

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, forwardRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2 as Building2Tab } from "lucide-react";
 import TabEmpresa from "@/components/ceo/TabEmpresa";
@@ -61,11 +62,11 @@ function SectionLabel({ children, icon: Icon }: { children: string; icon: any })
 }
 
 // ─── Mini KPI ───
-function MiniKpi({ label, value, sub, variant = "default", onClick }: {
+const MiniKpi = forwardRef<HTMLDivElement, {
   label: string; value: string | number; sub?: string;
   variant?: "default" | "highlight" | "success" | "warning";
   onClick?: () => void;
-}) {
+}>(({ label, value, sub, variant = "default", onClick }, ref) => {
   const colors = {
     default: "text-foreground",
     highlight: "text-[#4F46E5]",
@@ -74,6 +75,7 @@ function MiniKpi({ label, value, sub, variant = "default", onClick }: {
   };
   return (
     <div
+      ref={ref}
       onClick={onClick}
       className={`bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] rounded-xl p-3.5 border-l-[3px] border-l-[#4F46E5] ${onClick ? "cursor-pointer hover:border-[#d0d0d8] dark:hover:border-white/[0.12] transition-colors" : ""}`}
     >
@@ -82,8 +84,8 @@ function MiniKpi({ label, value, sub, variant = "default", onClick }: {
       {sub && <p className="text-[10px] text-[#a1a1aa] mt-1 truncate">{sub}</p>}
     </div>
   );
-}
-
+});
+MiniKpi.displayName = "MiniKpi";
 // ─── Horizontal Bar ───
 function HBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -141,24 +143,26 @@ export default function CeoDashboard() {
     reload, reloadRoleta,
   } = useCeoDashboard(period as DashPeriod, { start: range.start, end: range.end });
 
-  // CEO metas
-  const [ceoMetas, setCeoMetas] = useState<any>({});
-  useEffect(() => {
-    const mesAtual = format(new Date(), "yyyy-MM");
-    supabase.from("ceo_metas_mensais").select("*").eq("mes", mesAtual).then(({ data }) => {
-      if (data && data.length > 0) {
-        setCeoMetas({
-          meta_ligacoes: data.reduce((a: number, m: any) => a + (m.meta_ligacoes || 0), 0),
-          meta_visitas_marcadas: data.reduce((a: number, m: any) => a + (m.meta_visitas_marcadas || 0), 0),
-          meta_visitas_realizadas: data.reduce((a: number, m: any) => a + (m.meta_visitas_realizadas || 0), 0),
-          meta_vgv_assinado: data.reduce((a: number, m: any) => a + (m.meta_vgv_assinado || 0), 0),
-          meta_propostas: data.reduce((a: number, m: any) => a + ((m as any).meta_propostas || 0), 0),
-          meta_contratos: data.reduce((a: number, m: any) => a + ((m as any).meta_contratos || 0), 0),
-          meta_assinados: data.reduce((a: number, m: any) => a + ((m as any).meta_assinados || 0), 0),
-        });
-      }
-    });
-  }, []);
+  // CEO metas (React Query)
+  const mesAtual = useMemo(() => format(new Date(), "yyyy-MM"), []);
+  const { data: ceoMetas = {} } = useQuery({
+    queryKey: ["ceo-metas-mensais", mesAtual],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("ceo_metas_mensais").select("*").eq("mes", mesAtual);
+      if (error) throw error;
+      if (!data || data.length === 0) return {};
+      return {
+        meta_ligacoes: data.reduce((a: number, m: any) => a + (m.meta_ligacoes || 0), 0),
+        meta_visitas_marcadas: data.reduce((a: number, m: any) => a + (m.meta_visitas_marcadas || 0), 0),
+        meta_visitas_realizadas: data.reduce((a: number, m: any) => a + (m.meta_visitas_realizadas || 0), 0),
+        meta_vgv_assinado: data.reduce((a: number, m: any) => a + (m.meta_vgv_assinado || 0), 0),
+        meta_propostas: data.reduce((a: number, m: any) => a + ((m as any).meta_propostas || 0), 0),
+        meta_contratos: data.reduce((a: number, m: any) => a + ((m as any).meta_contratos || 0), 0),
+        meta_assinados: data.reduce((a: number, m: any) => a + ((m as any).meta_assinados || 0), 0),
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 
