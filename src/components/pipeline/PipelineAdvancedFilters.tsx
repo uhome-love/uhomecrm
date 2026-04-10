@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -15,32 +14,33 @@ import { SlidersHorizontal, X, Save, Star, CalendarIcon, Trash2 } from "lucide-r
 import { format, differenceInHours, differenceInDays, startOfDay, startOfWeek, startOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn, differenceInDaysSafe, differenceInHoursSafe, parseDateTimeSafe } from "@/lib/utils";
-import { calculateLeadScore, getSlaStatus } from "@/lib/leadScoring";
+import { getLeadStatusFilter, type ProximaTarefa, type LeadClientStatus } from "@/components/pipeline/CardStatusLine";
 import type { PipelineLead, PipelineStage, PipelineSegmento } from "@/hooks/usePipeline";
 
 export interface PipelineFilters {
   search: string;
   stages: string[];
   corretores: string[];
-  scoreMin: number;
   temperaturas: string[];
   origens: string[];
   segmentos: string[];
   empreendimentos: string[];
-  diasSemAcao: string; // "" | "1" | "3" | "7"
+  diasSemAcao: string; // "" | "1" | "3" | "7" | "15" | "30"
   periodoEntrada: string; // "" | "hoje" | "semana" | "mes" | "custom"
   periodoCustomStart?: Date;
   periodoCustomEnd?: Date;
   comVisita: string; // "" | "sim" | "nao"
-  slaStatus: string; // "" | "ok" | "warning" | "breach"
+  statusLead: string; // "" | "em_dia" | "tarefa_atrasada" | "desatualizado"
   gerenteFilter: string; // "all" | "sem_gerente" | "com_gerente" | "criticos"
+  // Legacy compat — kept so saved filters in localStorage don't crash
+  scoreMin?: number;
+  slaStatus?: string;
 }
 
 export const EMPTY_FILTERS: PipelineFilters = {
   search: "",
   stages: [],
   corretores: [],
-  scoreMin: 0,
   temperaturas: [],
   origens: [],
   segmentos: [],
@@ -48,7 +48,7 @@ export const EMPTY_FILTERS: PipelineFilters = {
   diasSemAcao: "",
   periodoEntrada: "",
   comVisita: "",
-  slaStatus: "",
+  statusLead: "",
   gerenteFilter: "all",
 };
 
@@ -83,9 +83,9 @@ const PRESETS: SavedFilter[] = [
     filters: { ...EMPTY_FILTERS, temperaturas: ["quente"], periodoEntrada: "hoje" },
   },
   {
-    name: "🚨 SLA expirado",
+    name: "🔴 Leads atrasados",
     isPreset: true,
-    filters: { ...EMPTY_FILTERS, slaStatus: "breach" },
+    filters: { ...EMPTY_FILTERS, statusLead: "tarefa_atrasada" },
   },
   {
     name: "📅 Aguardando visita",
@@ -110,6 +110,7 @@ export function applyFilters(
   filters: PipelineFilters,
   stages: PipelineStage[],
   visitaLeadIds?: Set<string>,
+  tarefasMap?: Record<string, ProximaTarefa>,
 ): PipelineLead[] {
   let result = leads;
 
@@ -131,12 +132,6 @@ export function applyFilters(
     result = result.filter(l => l.corretor_id && filters.corretores.includes(l.corretor_id));
   }
 
-  if (filters.scoreMin > 0) {
-    result = result.filter(l => {
-      const score = calculateLeadScore(l as any);
-      return score.score >= filters.scoreMin;
-    });
-  }
 
   if (filters.temperaturas.length > 0) {
     result = result.filter(l => {
@@ -203,12 +198,12 @@ export function applyFilters(
     }
   }
 
-  if (filters.slaStatus) {
+  if (filters.statusLead) {
     result = result.filter(l => {
       const stage = stages.find(s => s.id === l.stage_id);
-      if (!stage) return false;
-      const sla = getSlaStatus(stage.tipo, l.stage_changed_at);
-      return sla.status === filters.slaStatus;
+      const proximaTarefa = tarefasMap?.[l.id] || null;
+      const status = getLeadStatusFilter(l, proximaTarefa, stage?.tipo);
+      return status === filters.statusLead;
     });
   }
 
@@ -224,7 +219,6 @@ export function countActiveFilters(filters: PipelineFilters): number {
   if (filters.search) count++;
   if (filters.stages.length) count++;
   if (filters.corretores.length) count++;
-  if (filters.scoreMin > 0) count++;
   if (filters.temperaturas.length) count++;
   if (filters.origens.length) count++;
   if (filters.segmentos.length) count++;
@@ -232,7 +226,7 @@ export function countActiveFilters(filters: PipelineFilters): number {
   if (filters.diasSemAcao) count++;
   if (filters.periodoEntrada) count++;
   if (filters.comVisita) count++;
-  if (filters.slaStatus) count++;
+  if (filters.statusLead) count++;
   if (filters.gerenteFilter !== "all") count++;
   return count;
 }
@@ -370,22 +364,6 @@ export default function PipelineAdvancedFilters({
 
             <Separator />
 
-            {/* Score Mínimo */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium">Score mínimo</Label>
-                <span className="text-xs font-bold text-primary">{filters.scoreMin > 0 ? `≥ ${filters.scoreMin}` : "Todos"}</span>
-              </div>
-              <Slider
-                value={[filters.scoreMin]}
-                onValueChange={([v]) => update({ scoreMin: v })}
-                max={100}
-                step={5}
-                className="w-full"
-              />
-            </div>
-
-            <Separator />
 
             {/* Temperatura */}
             <div className="space-y-2">
@@ -642,21 +620,21 @@ export default function PipelineAdvancedFilters({
 
             <Separator />
 
-            {/* SLA */}
+            {/* Status do Lead */}
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Status do SLA</Label>
+              <Label className="text-xs font-medium">Status do lead</Label>
               <div className="flex flex-wrap gap-1.5">
                 {[
-                  { value: "ok", label: "✅ No prazo", color: "border-green-400 bg-green-500/10 text-green-700" },
-                  { value: "warning", label: "⏳ Expirando", color: "border-amber-400 bg-amber-500/10 text-amber-700" },
-                  { value: "breach", label: "🚨 Expirado", color: "border-red-400 bg-red-500/10 text-red-700" },
+                  { value: "em_dia", label: "✅ Em dia", color: "border-green-400 bg-green-500/10 text-green-700" },
+                  { value: "tarefa_atrasada", label: "🔴 Atrasado", color: "border-red-400 bg-red-500/10 text-red-700" },
+                  { value: "desatualizado", label: "🟡 Desatualizado", color: "border-amber-400 bg-amber-500/10 text-amber-700" },
                 ].map(s => (
                   <button
                     key={s.value}
-                    onClick={() => update({ slaStatus: filters.slaStatus === s.value ? "" : s.value })}
+                    onClick={() => update({ statusLead: filters.statusLead === s.value ? "" : s.value })}
                     className={cn(
                       "text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all",
-                      filters.slaStatus === s.value
+                      filters.statusLead === s.value
                         ? `${s.color} ring-1 ring-primary/30`
                         : "border-border text-muted-foreground hover:border-primary/30"
                     )}
