@@ -155,11 +155,32 @@ export default function PipelineKanban() {
     staleTime: 30_000,
   });
 
+  // Query real visitas for the "Visita marcada" filter
+  const { data: visitaLeadIds } = useQuery({
+    queryKey: ["pipeline-visita-lead-ids"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("visitas")
+        .select("pipeline_lead_id")
+        .neq("status", "cancelada")
+        .gte("data_visita", today);
+      const ids = new Set<string>();
+      if (data) {
+        for (const row of data) {
+          if (row.pipeline_lead_id) ids.add(row.pipeline_lead_id);
+        }
+      }
+      return ids;
+    },
+    staleTime: 60_000,
+  });
+
   const canAdd = isGestor || isAdmin || isCorretor;
 
   // Pre-filter leads (everything except clientStatusFilter) for accurate status counts
   const preFilteredLeads = useMemo(() => {
-    let result = applyFilters(pipeline.leads, filters, pipeline.stages);
+    let result = applyFilters(pipeline.leads, filters, pipeline.stages, visitaLeadIds);
     if (filaCeoFilter) {
       result = result.filter(l => !l.corretor_id);
     }
