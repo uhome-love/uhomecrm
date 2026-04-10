@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useRoleta, getCurrentWindowInfo, getBrtDateInfo, type JanelaId, type RoletaSegmento } from "@/hooks/useRoleta";
@@ -42,16 +43,19 @@ function CeoView() {
   } = useRoleta();
   const windowInfo = getCurrentWindowInfo();
   const [showIncluirModal, setShowIncluirModal] = useState(false);
-  const [allCorretores, setAllCorretores] = useState<{id: string; nome: string}[]>([]);
   const [selectedCorretor, setSelectedCorretor] = useState("");
   const [selectedSegmentos, setSelectedSegmentos] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("gestao");
 
   // Load all corretores for manual inclusion
-  useEffect(() => {
-    supabase.from("profiles").select("id, nome").eq("cargo", "corretor").order("nome")
-      .then(({ data }) => setAllCorretores(data || []));
-  }, []);
+  const { data: allCorretores = [] } = useQuery({
+    queryKey: ["roleta-all-corretores"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, nome").eq("cargo", "corretor").order("nome");
+      return (data || []) as { id: string; nome: string }[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
