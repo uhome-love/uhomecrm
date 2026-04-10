@@ -61,11 +61,11 @@ function SectionLabel({ children, icon: Icon }: { children: string; icon: any })
 }
 
 // ─── Mini KPI ───
-function MiniKpi({ label, value, sub, variant = "default", onClick }: {
+const MiniKpi = forwardRef<HTMLDivElement, {
   label: string; value: string | number; sub?: string;
   variant?: "default" | "highlight" | "success" | "warning";
   onClick?: () => void;
-}) {
+}>(({ label, value, sub, variant = "default", onClick }, ref) => {
   const colors = {
     default: "text-foreground",
     highlight: "text-[#4F46E5]",
@@ -74,6 +74,7 @@ function MiniKpi({ label, value, sub, variant = "default", onClick }: {
   };
   return (
     <div
+      ref={ref}
       onClick={onClick}
       className={`bg-[#f7f7fb] dark:bg-[#141e30] border border-[#e8e8f0] dark:border-white/[0.07] rounded-xl p-3.5 border-l-[3px] border-l-[#4F46E5] ${onClick ? "cursor-pointer hover:border-[#d0d0d8] dark:hover:border-white/[0.12] transition-colors" : ""}`}
     >
@@ -82,8 +83,8 @@ function MiniKpi({ label, value, sub, variant = "default", onClick }: {
       {sub && <p className="text-[10px] text-[#a1a1aa] mt-1 truncate">{sub}</p>}
     </div>
   );
-}
-
+});
+MiniKpi.displayName = "MiniKpi";
 // ─── Horizontal Bar ───
 function HBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;

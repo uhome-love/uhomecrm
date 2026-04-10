@@ -747,9 +747,11 @@ export default function MeusNegocios() {
         corretorNome: negocio.corretor_id ? corretorNomes[negocio.corretor_id] : undefined,
       });
 
-      // Move to hidden "vendido" fase after a short delay
-      setTimeout(async () => {
+      // Move to hidden "vendido" fase after a short delay (with cleanup)
+      if (moveTimeoutRef.current) clearTimeout(moveTimeoutRef.current);
+      moveTimeoutRef.current = setTimeout(async () => {
         await moveFase(negocioId, "vendido");
+        moveTimeoutRef.current = null;
       }, 10000);
     }
   }, [negocios, moveFase, onNegocioAssinado, user, corretorNomes]);
