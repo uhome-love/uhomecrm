@@ -555,36 +555,30 @@ export default function PipelineKanban() {
         {/* ── DESKTOP HEADER (lg+) ── */}
         <div className="hidden lg:block">
           {/* Line 1 — Title + Filters + Search + Novo Lead */}
-          <div
-            className="flex items-center"
-            style={{ height: 48, padding: "0 24px", borderBottom: "1px solid #e8e8f0", gap: 8 }}
-          >
+          <div className="flex items-center h-12 px-6 border-b border-[#e8e8f0] dark:border-white/[0.07] gap-2">
             {/* LEFT: Title */}
             <div className="flex items-center flex-shrink-0 gap-2 min-w-0">
               <div className="w-7 h-7 rounded-[7px] bg-[#4F46E5] flex items-center justify-center shrink-0">
                 <LayoutGrid size={13} strokeWidth={1.5} className="text-white" />
               </div>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a", letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>
+              <span className="text-[15px] font-bold text-[#0a0a0a] dark:text-white tracking-tight whitespace-nowrap">
                 Pipeline
               </span>
-              <span className="text-[12px] text-[#a1a1aa] font-medium shrink-0">{filteredLeads.length} leads</span>
+              <span className="text-[12px] text-[#a1a1aa] dark:text-[#52525b] font-medium shrink-0">{filteredLeads.length} leads</span>
             </div>
 
             <div className="flex-1" />
 
             {/* CENTER-RIGHT: Filters inline */}
-            <div className="flex items-center" style={{ gap: 6 }}>
+            <div className="flex items-center gap-1.5">
               {(isAdmin || isGestor) && (
                 <Select value={corretorFilter} onValueChange={setCorretorFilter}>
                   <SelectTrigger
-                    className="h-[32px] text-[12px] w-[170px] shrink-0"
-                    style={{
-                      borderRadius: 8, fontSize: 12, fontWeight: 500,
-                      border: corretorFilter !== "all" ? "1px solid #4F46E5" : "1px solid #e8e8f0",
-                      background: corretorFilter !== "all" ? "#4F46E5/5" : "#f7f7fb",
-                      color: corretorFilter !== "all" ? "#4F46E5" : "#52525b",
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    }}
+                    className={`h-[32px] text-[12px] w-[170px] shrink-0 rounded-lg font-medium ${
+                      corretorFilter !== "all"
+                        ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
+                        : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
+                    }`}
                   >
                     <SelectValue placeholder="Todos os corretores" />
                   </SelectTrigger>
@@ -601,14 +595,11 @@ export default function PipelineKanban() {
               {Object.keys(campaignTagCounts).length > 0 && (
                 <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
                   <SelectTrigger
-                    className="h-[32px] text-[12px] w-[160px] shrink-0"
-                    style={{
-                      borderRadius: 8, fontSize: 12, fontWeight: 500,
-                      border: campaignTagFilter !== "all" ? "1px solid #4F46E5" : "1px solid #e8e8f0",
-                      background: campaignTagFilter !== "all" ? "#4F46E5/5" : "#f7f7fb",
-                      color: campaignTagFilter !== "all" ? "#4F46E5" : "#52525b",
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    }}
+                    className={`h-[32px] text-[12px] w-[160px] shrink-0 rounded-lg font-medium ${
+                      campaignTagFilter !== "all"
+                        ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
+                        : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
+                    }`}
                   >
                     <SelectValue placeholder="Todas as origens" />
                   </SelectTrigger>
@@ -624,29 +615,17 @@ export default function PipelineKanban() {
               )}
 
               {/* Search */}
-              <div className="relative" style={{ width: filters.search ? 200 : 160, transition: "width 0.2s ease" }}>
-                <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa]" />
+              <div className="relative transition-all duration-200" style={{ width: filters.search ? 200 : 160 }}>
+                <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
                 <input
                   placeholder="Buscar..."
                   value={filters.search}
                   onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                  className="w-full outline-none"
-                  style={{
-                    height: 32, borderRadius: 8, background: "#f7f7fb",
-                    border: "1px solid #e8e8f0", paddingLeft: 28, paddingRight: 8,
-                    fontSize: 12, fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    transition: "all 0.2s ease",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#4F46E5";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#e8e8f0";
-                  }}
+                  className="w-full outline-none h-8 rounded-lg bg-[#f7f7fb] dark:bg-white/[0.04] border border-[#e8e8f0] dark:border-white/[0.07] pl-7 pr-2 text-xs font-medium text-[#0a0a0a] dark:text-white transition-all duration-200 focus:border-[#4F46E5] dark:focus:border-[#4F46E5]"
                 />
                 {filters.search && (
                   <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <X className="h-3 w-3 text-[#a1a1aa]" />
+                    <X className="h-3 w-3 text-[#a1a1aa] dark:text-[#52525b]" />
                   </button>
                 )}
               </div>
@@ -655,18 +634,12 @@ export default function PipelineKanban() {
               {activeTab === "kanban" && (
                 <button
                   onClick={() => setFocusModeOpen(true)}
-                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors"
-                  style={{
-                    height: 32, padding: "0 12px",
-                    background: "linear-gradient(135deg, #4F46E5, #7C3AED)", color: "#fff", borderRadius: 8,
-                    fontWeight: 600, fontSize: 12, border: "none",
-                    cursor: "pointer",
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  }}
+                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3 rounded-lg font-semibold text-xs border-none cursor-pointer text-white"
+                  style={{ background: "linear-gradient(135deg, #4F46E5, #7C3AED)" }}
                 >
                   <Zap size={13} strokeWidth={2} /> Modo Foco
                   {focusLeads.length > 0 && (
-                    <span style={{ background: "rgba(255,255,255,0.2)", borderRadius: 6, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
+                    <span className="bg-white/20 rounded-md px-1.5 py-px text-[10px] font-bold">
                       {focusLeads.length}
                     </span>
                   )}
@@ -677,16 +650,7 @@ export default function PipelineKanban() {
               {canAdd && activeTab === "kanban" && (
                 <button
                   onClick={() => setAddOpen(true)}
-                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors"
-                  style={{
-                    height: 32, padding: "0 14px",
-                    background: "#4F46E5", color: "#fff", borderRadius: 8,
-                    fontWeight: 600, fontSize: 12, border: "none",
-                    cursor: "pointer",
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#4338CA"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "#4F46E5"; }}
+                  className="whitespace-nowrap flex items-center gap-1.5 transition-colors h-8 px-3.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg font-semibold text-xs border-none cursor-pointer"
                 >
                   <Plus size={13} strokeWidth={2} /> Novo Lead
                 </button>
@@ -695,64 +659,43 @@ export default function PipelineKanban() {
           </div>
 
           {/* Line 2 — Views + actions + indicators — fixed 32px */}
-          <div
-            className="flex items-center overflow-x-auto"
-            style={{ height: 32, padding: "0 24px", gap: 4 }}
-          >
+          <div className="flex items-center overflow-x-auto h-8 px-6 gap-1">
             {/* View switcher */}
-            <button
-              onClick={() => setActiveTab("kanban")}
-              className="flex items-center gap-1.5 shrink-0 transition-colors"
-              style={{
-                height: 28, padding: "0 10px", borderRadius: 7,
-                background: activeTab === "kanban" ? "#4F46E5" : "transparent",
-                color: activeTab === "kanban" ? "#fff" : "#71717a",
-                fontSize: 12, fontWeight: activeTab === "kanban" ? 600 : 500,
-                border: "none", cursor: "pointer",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-            >
-              <LayoutGrid size={12} strokeWidth={1.5} /> Kanban
-            </button>
-            <button
-              onClick={() => setActiveTab("inteligencia")}
-              className="flex items-center gap-1.5 shrink-0 transition-colors"
-              style={{
-                height: 28, padding: "0 10px", borderRadius: 7,
-                background: activeTab === "inteligencia" ? "#4F46E5" : "transparent",
-                color: activeTab === "inteligencia" ? "#fff" : "#71717a",
-                fontSize: 12, fontWeight: activeTab === "inteligencia" ? 600 : 500,
-                border: "none", cursor: "pointer",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-              }}
-            >
-              <Brain size={12} strokeWidth={1.5} /> Inteligência
-            </button>
+            {[
+              { key: "kanban", icon: <LayoutGrid size={12} strokeWidth={1.5} />, label: "Kanban" },
+              { key: "inteligencia", icon: <Brain size={12} strokeWidth={1.5} />, label: "Inteligência" },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs border-none cursor-pointer ${
+                  activeTab === tab.key
+                    ? "bg-[#4F46E5] text-white font-semibold"
+                    : "bg-transparent text-[#71717a] dark:text-[#a1a1aa] font-medium"
+                }`}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
 
             {activeTab === "inteligencia" && (
-              <div className="flex items-center" style={{ background: "#f0f0f5", borderRadius: 7, padding: 2, marginLeft: 2 }}>
-                <button
-                  onClick={() => setIntelView("funil")}
-                  style={{
-                    padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    background: intelView === "funil" ? "#fff" : "transparent",
-                    color: intelView === "funil" ? "#0a0a0a" : "#71717a",
-                    border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  }}
-                >
-                  <BarChart3 className="h-3 w-3 inline mr-1" />Funil
-                </button>
-                <button
-                  onClick={() => setIntelView("radar")}
-                  style={{
-                    padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    background: intelView === "radar" ? "#fff" : "transparent",
-                    color: intelView === "radar" ? "#0a0a0a" : "#71717a",
-                    border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  }}
-                >
-                  <Radar className="h-3 w-3 inline mr-1" />Radar
-                </button>
+              <div className="flex items-center bg-[#f0f0f5] dark:bg-gray-800 rounded-[7px] p-0.5 ml-0.5">
+                {[
+                  { key: "funil", icon: <BarChart3 className="h-3 w-3 inline mr-1" />, label: "Funil" },
+                  { key: "radar", icon: <Radar className="h-3 w-3 inline mr-1" />, label: "Radar" },
+                ].map(v => (
+                  <button
+                    key={v.key}
+                    onClick={() => setIntelView(v.key as any)}
+                    className={`px-2 py-[3px] rounded-md text-[11px] font-semibold border-none cursor-pointer ${
+                      intelView === v.key
+                        ? "bg-white dark:bg-gray-700 text-[#0a0a0a] dark:text-white"
+                        : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
+                    }`}
+                  >
+                    {v.icon}{v.label}
+                  </button>
+                ))}
               </div>
             )}
 
@@ -760,12 +703,7 @@ export default function PipelineKanban() {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="shrink-0 flex items-center justify-center transition-colors"
-              style={{
-                width: 28, height: 28, borderRadius: 7,
-                color: "#a1a1aa", background: "transparent",
-                border: "none", cursor: "pointer",
-              }}
+              className="shrink-0 flex items-center justify-center transition-colors w-7 h-7 rounded-[7px] text-[#a1a1aa] dark:text-[#52525b] bg-transparent border-none cursor-pointer"
             >
               <RefreshCw size={12} strokeWidth={1.5} className={refreshing ? "animate-spin" : ""} />
             </button>
@@ -773,15 +711,11 @@ export default function PipelineKanban() {
             {isAdmin && activeTab === "kanban" && (
               <button
                 onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
-                className="flex items-center gap-1.5 shrink-0 transition-colors"
-                style={{
-                  height: 28, padding: "0 10px", borderRadius: 7,
-                  background: selectionMode ? "#4F46E5" : "transparent",
-                  color: selectionMode ? "#fff" : "#71717a",
-                  fontSize: 12, fontWeight: 500,
-                  border: "none", cursor: "pointer",
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                }}
+                className={`flex items-center gap-1.5 shrink-0 transition-colors h-7 px-2.5 rounded-[7px] text-xs font-medium border-none cursor-pointer ${
+                  selectionMode
+                    ? "bg-[#4F46E5] text-white"
+                    : "bg-transparent text-[#71717a] dark:text-[#a1a1aa]"
+                }`}
               >
                 {selectionMode ? <CheckSquare size={12} strokeWidth={1.5} /> : <Square size={12} strokeWidth={1.5} />}
                 {selectionMode ? "Selecionando..." : "Selecionar"}
@@ -791,33 +725,22 @@ export default function PipelineKanban() {
             {/* Separator */}
             {isAdmin && filaCeoCount > 0 && (
               <>
-                <div className="w-px h-4 bg-[#e8e8f0] mx-1 shrink-0" />
-                <span style={{ fontSize: 11, color: "#a1a1aa", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Fila CEO</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#4F46E5" }}>{filaCeoCount}</span>
+                <div className="w-px h-4 bg-[#e8e8f0] dark:bg-white/[0.07] mx-1 shrink-0" />
+                <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b]">Fila CEO</span>
+                <span className="text-[11px] font-bold text-[#4F46E5]">{filaCeoCount}</span>
                 <button
                   onClick={() => setFilaCeoFilter(f => !f)}
-                  className="shrink-0 flex items-center gap-1 transition-colors"
-                  style={{
-                    height: 22, padding: "0 6px", borderRadius: 6,
-                    fontSize: 10, fontWeight: 700,
-                    background: filaCeoFilter ? "#4F46E5/10" : "transparent",
-                    color: filaCeoFilter ? "#4F46E5" : "#a1a1aa",
-                    border: filaCeoFilter ? "1px solid #4F46E5" : "1px solid #e8e8f0",
-                    cursor: "pointer",
-                  }}
+                  className={`shrink-0 flex items-center gap-1 transition-colors h-[22px] px-1.5 rounded-md text-[10px] font-bold cursor-pointer border ${
+                    filaCeoFilter
+                      ? "bg-[#4F46E5]/10 text-[#4F46E5] border-[#4F46E5]"
+                      : "bg-transparent text-[#a1a1aa] dark:text-[#52525b] border-[#e8e8f0] dark:border-white/[0.07]"
+                  }`}
                 >
                   {filaCeoFilter ? "Filtrando" : "Filtrar"}
                 </button>
                 <button
                   onClick={() => setDispatchOpen(true)}
-                  className="shrink-0 flex items-center gap-1.5 transition-colors"
-                  style={{
-                    height: 28, padding: "0 10px", borderRadius: 7,
-                    background: "#4F46E5", color: "#fff",
-                    fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#4338CA"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "#4F46E5"; }}
+                  className="shrink-0 flex items-center gap-1.5 transition-colors h-7 px-2.5 rounded-[7px] bg-[#4F46E5] hover:bg-[#4338CA] text-white text-[11px] font-semibold border-none cursor-pointer"
                 >
                   <Rocket size={11} strokeWidth={1.5} /> Disparar
                 </button>
@@ -830,36 +753,21 @@ export default function PipelineKanban() {
             <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
-                className="flex items-center gap-1 transition-opacity"
-                style={{
-                  fontSize: 11, fontWeight: 600, color: "#10b981",
-                  background: "none", border: "none", cursor: "pointer",
-                  opacity: clientStatusFilter === "em_dia" ? 1 : 0.7,
-                }}
+                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#10b981] bg-transparent border-none cursor-pointer ${clientStatusFilter === "em_dia" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
                 {clientStatusCounts.em_dia.toLocaleString("pt-BR")}
               </button>
               <button
                 onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
-                className="flex items-center gap-1 transition-opacity"
-                style={{
-                  fontSize: 11, fontWeight: 600, color: "#f59e0b",
-                  background: "none", border: "none", cursor: "pointer",
-                  opacity: clientStatusFilter === "desatualizado" ? 1 : 0.7,
-                }}
+                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#f59e0b] bg-transparent border-none cursor-pointer ${clientStatusFilter === "desatualizado" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
                 {clientStatusCounts.desatualizado.toLocaleString("pt-BR")}
               </button>
               <button
                 onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
-                className="flex items-center gap-1 transition-opacity"
-                style={{
-                  fontSize: 11, fontWeight: 600, color: "#ef4444",
-                  background: "none", border: "none", cursor: "pointer",
-                  opacity: clientStatusFilter === "tarefa_atrasada" ? 1 : 0.7,
-                }}
+                className={`flex items-center gap-1 transition-opacity text-[11px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer ${clientStatusFilter === "tarefa_atrasada" ? "opacity-100" : "opacity-70"}`}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
                 {clientStatusCounts.tarefa_atrasada.toLocaleString("pt-BR")}
@@ -869,11 +777,7 @@ export default function PipelineKanban() {
             {hasAnyFilter && (
               <button
                 onClick={clearAllFilters}
-                className="shrink-0 flex items-center gap-1"
-                style={{
-                  fontSize: 10, fontWeight: 600, color: "#ef4444",
-                  background: "none", border: "none", cursor: "pointer",
-                }}
+                className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-[#ef4444] bg-transparent border-none cursor-pointer"
               >
                 <X size={10} strokeWidth={1.5} /> Limpar
               </button>
