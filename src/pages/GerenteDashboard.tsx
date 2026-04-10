@@ -76,6 +76,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 type SheetType = "presenca" | "ligacoes" | "distribuidos" | "visitas" | "vgv" | null;
 
 export default function GerenteDashboard() {
+  const queryClient = useQueryClient();
   const { isGestor, isAdmin, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { period: globalPeriod } = useDateFilter();
@@ -165,10 +166,7 @@ export default function GerenteDashboard() {
   });
 
   // Sheet: VGV detail
-  const profileId = useMemo(() => {
-    // We get profileId from the hook indirectly; fetch it here for sheet queries
-    return null as string | null;
-  }, []);
+  // profileId removed — was dead code (sheetProfileId is used instead)
   const [sheetProfileId, setSheetProfileId] = useState<string | null>(null);
   useEffect(() => {
     if (!user) return;
@@ -245,7 +243,7 @@ export default function GerenteDashboard() {
       <GreetingBar
         name={profile?.nome || "Gerente"}
         avatarUrl={avatarSrc}
-        onRefresh={() => window.location.reload()}
+        onRefresh={() => queryClient.invalidateQueries()}
         refreshTime={lastUpdate}
         showFilter={false}
       />
