@@ -23,9 +23,10 @@ const CARD_QUICK_TASK_TYPES = [
 interface CardQuickTaskPopoverProps {
   leadId: string;
   leadNome: string;
+  corretorId?: string;
 }
 
-export default function CardQuickTaskPopover({ leadId, leadNome }: CardQuickTaskPopoverProps) {
+export default function CardQuickTaskPopover({ leadId, leadNome, corretorId }: CardQuickTaskPopoverProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState("follow_up");
@@ -66,7 +67,7 @@ export default function CardQuickTaskPopover({ leadId, leadNome }: CardQuickTask
         prioridade: "media",
         status: "pendente",
         created_by: user.id,
-        responsavel_id: user.id,
+        responsavel_id: corretorId || user.id,
       } as any);
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: leadId,

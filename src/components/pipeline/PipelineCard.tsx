@@ -435,6 +435,7 @@ const PipelineCard = memo(function PipelineCard({
         leadId={lead.id}
         leadNome={lead.nome}
         leadTelefone={lead.telefone}
+        corretorId={lead.corretor_id}
         stageId={lead.stage_id}
         stages={stages}
         canTransfer={isAdmin || isGestor || lead.corretor_id === user?.id}

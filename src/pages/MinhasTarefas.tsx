@@ -121,26 +121,42 @@ export default function MinhasTarefas() {
     queryKey: ["minhas-tarefas", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      // 1. Get all lead IDs belonging to this broker
+      const { data: myLeads } = await supabase
+        .from("pipeline_leads")
+        .select("id")
+        .eq("corretor_id", user.id);
+      const myLeadIds = (myLeads || []).map((l: any) => l.id);
+
+      // 2. Fetch tasks: own leads + tasks assigned/created by user (for admin-created tasks on other leads)
+      let query = supabase
         .from("pipeline_tarefas")
         .select("*")
-        .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
         .order("vence_em", { ascending: true })
-        .limit(1000)
         .order("hora_vencimento", { ascending: true });
+
+      if (myLeadIds.length > 0) {
+        query = query.or(`pipeline_lead_id.in.(${myLeadIds.join(",")}),responsavel_id.eq.${user.id},created_by.eq.${user.id}`);
+      } else {
+        query = query.or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`);
+      }
+
+      const { data, error } = await query.limit(2000);
       if (error) return [];
       const rows = (data || []) as any[];
-      const leadIds = [...new Set(rows.map(r => r.pipeline_lead_id).filter(Boolean))];
+      // Deduplicate by id (in case OR conditions overlap)
+      const uniqueRows = [...new Map(rows.map(r => [r.id, r])).values()];
+      const leadIds = [...new Set(uniqueRows.map(r => r.pipeline_lead_id).filter(Boolean))];
       if (leadIds.length > 0) {
         const { data: leads } = await supabase
           .from("pipeline_leads").select("id, nome, telefone, empreendimento").in("id", leadIds);
         const leadMap = new Map((leads as any[] || []).map((l: any) => [l.id, l]));
-        rows.forEach(r => {
+        uniqueRows.forEach(r => {
           const lead = leadMap.get(r.pipeline_lead_id);
           if (lead) { r.lead_nome = lead.nome; r.lead_telefone = lead.telefone; r.lead_empreendimento = lead.empreendimento; }
         });
       }
-      return rows as TarefaComLead[];
+      return uniqueRows as TarefaComLead[];
     },
     enabled: !!user,
     refetchOnWindowFocus: true,

@@ -7,6 +7,7 @@ interface CardActionBarProps {
   leadId: string;
   leadNome: string;
   leadTelefone: string | null;
+  corretorId?: string;
   stageId: string;
   stages: PipelineStage[];
   canTransfer: boolean;
@@ -23,7 +24,7 @@ interface CardActionBarProps {
 }
 
 export default function CardActionBar({
-  leadId, leadNome, leadTelefone, stageId, stages, canTransfer,
+  leadId, leadNome, leadTelefone, corretorId, stageId, stages, canTransfer,
   onCall, onWhatsApp, onOpenDetail, onScheduleVisit, onOpenComunicacao,
   onOpenTransfer, onOpenPartner, onMarkLost, onInactivate, onMoveStage,
 }: CardActionBarProps) {
@@ -63,7 +64,7 @@ export default function CardActionBar({
 
         {/* Tarefa */}
         <div style={separatorStyle}>
-          <CardQuickTaskPopover leadId={leadId} leadNome={leadNome} />
+          <CardQuickTaskPopover leadId={leadId} leadNome={leadNome} corretorId={corretorId} />
         </div>
 
         {/* WhatsApp */}

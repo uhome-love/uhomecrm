@@ -414,7 +414,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
             </Button>
             
             
-            <QuickActionMenu leadId={lead.id} leadNome={lead.nome} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
+            <QuickActionMenu leadId={lead.id} leadNome={lead.nome} corretorId={lead.corretor_id} onOpenDetail={() => setActiveTab("historico")} onRefresh={leadData.reload}>
               <Button variant="outline" size="sm" className="shrink-0 h-9 text-xs gap-1 rounded-lg px-2.5 whitespace-nowrap">
                 <Zap className="h-3.5 w-3.5" /> Registrar
               </Button>

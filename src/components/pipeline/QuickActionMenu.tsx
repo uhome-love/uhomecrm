@@ -9,6 +9,7 @@ import { toast } from "sonner";
 interface Props {
   leadId: string;
   leadNome: string;
+  corretorId?: string;
   children: React.ReactNode;
   onOpenDetail?: () => void;
   onScheduleVisit?: () => void;
@@ -25,7 +26,7 @@ const QUICK_ACTIONS = [
   { id: "visita", emoji: "🏠", label: "Marquei visita", tipo: "visita", titulo: "Visita agendada", openVisit: true },
 ];
 
-export default function QuickActionMenu({ leadId, leadNome, children, onOpenDetail, onScheduleVisit, onRefresh }: Props) {
+export default function QuickActionMenu({ leadId, leadNome, corretorId, children, onOpenDetail, onScheduleVisit, onRefresh }: Props) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
@@ -67,7 +68,7 @@ export default function QuickActionMenu({ leadId, leadNome, children, onOpenDeta
         descricao: `${leadNome} não atendeu. Retornar em 2h.`,
         vence_em: dateStr,
         hora_vencimento: timeStr,
-        responsavel_id: user.id,
+        responsavel_id: corretorId || user.id,
         created_by: user.id,
       });
       toast.success(`${action.emoji} ${action.titulo} + Tarefa criada para retornar em 2h`);
