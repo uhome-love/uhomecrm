@@ -68,7 +68,7 @@ const NEGOCIO_TIPO_EMOJI: Record<string, string> = {
   entregar_presente: "🎁",
 };
 
-type TabFilter = "hoje" | "amanha" | "semana" | "atrasadas" | "concluidas";
+type TabFilter = "todas" | "hoje" | "amanha" | "semana" | "atrasadas" | "concluidas";
 
 function formatPhone(phone: string) {
   const d = phone.replace(/\D/g, "");
@@ -87,7 +87,7 @@ export default function MinhasTarefas() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [categoria, setCategoria] = useState<"leads" | "negocios">("leads");
-  const [activeTab, setActiveTab] = useState<TabFilter>("hoje");
+  const [activeTab, setActiveTab] = useState<TabFilter>("todas");
   const [adiarId, setAdiarId] = useState<string | null>(null);
   const [adiarData, setAdiarData] = useState("");
   const [adiarHora, setAdiarHora] = useState("");
@@ -126,7 +126,7 @@ export default function MinhasTarefas() {
         .select("*")
         .or(`responsavel_id.eq.${user.id},created_by.eq.${user.id}`)
         .order("vence_em", { ascending: true })
-        .limit(500)
+        .limit(1000)
         .order("hora_vencimento", { ascending: true });
       if (error) return [];
       const rows = (data || []) as any[];
@@ -215,7 +215,7 @@ export default function MinhasTarefas() {
     return d >= todayStart && d <= weekEnd;
   }), [pendentes]);
 
-  const filteredTarefas = activeTab === "atrasadas" ? atrasadas : activeTab === "hoje" ? hoje :
+  const filteredTarefas = activeTab === "todas" ? pendentes : activeTab === "atrasadas" ? atrasadas : activeTab === "hoje" ? hoje :
     activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : semana;
 
   const handleConcluir = async (id: string, leadId: string) => {
@@ -325,6 +325,7 @@ export default function MinhasTarefas() {
   };
 
   const tabs: { key: TabFilter; label: string; count: number }[] = [
+    { key: "todas", label: "📋 Todas", count: pendentes.length },
     { key: "atrasadas", label: "🔴 Atrasadas", count: atrasadas.length },
     { key: "hoje", label: "📅 Hoje", count: hoje.length },
     { key: "amanha", label: "📅 Amanhã", count: amanha.length },
@@ -349,11 +350,11 @@ export default function MinhasTarefas() {
 
       {/* Category tabs: Leads vs Negócios */}
       <div className="flex gap-2">
-        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("hoje"); }}>
+        <Button variant={categoria === "leads" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("leads"); setActiveTab("todas"); }}>
           🎯 Tarefas de Leads
           <Badge variant="secondary" className="ml-1 text-xs">{tarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
-        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("hoje"); }}>
+        <Button variant={categoria === "negocios" ? "default" : "outline"} size="sm" className="text-sm gap-1.5" onClick={() => { setCategoria("negocios"); setActiveTab("todas"); }}>
           💼 Tarefas de Negócios
           <Badge variant="secondary" className="ml-1 text-xs">{negociosTarefas.filter(t => t.status === "pendente").length}</Badge>
         </Button>
@@ -361,9 +362,11 @@ export default function MinhasTarefas() {
 
       {/* Summary */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-        <span>📊 <strong className="text-foreground">Hoje:</strong> {hoje.length} pendentes</span>
+        <span>📊 <strong className="text-foreground">Total pendentes:</strong> {pendentes.length}</span>
         <span>·</span>
         <span><strong className="text-destructive">Atrasadas:</strong> {atrasadas.length}</span>
+        <span>·</span>
+        <span><strong className="text-foreground">Hoje:</strong> {hoje.length}</span>
         <span>·</span>
         <span><strong className="text-foreground">Amanhã:</strong> {amanha.length}</span>
         <span>·</span>
