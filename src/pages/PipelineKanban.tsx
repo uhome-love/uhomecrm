@@ -267,23 +267,12 @@ export default function PipelineKanban() {
       </div>
     } onError={(err) => console.error("[PipelineKanban] Render crash:", err.message, err.stack)}>
     <div
-      className="flex flex-col w-full max-w-full min-w-0 overflow-hidden"
-      style={{
-        height: "calc(100vh - 56px)",
-        background: "#f0f0f5",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-      }}
+      className="flex flex-col w-full max-w-full min-w-0 overflow-hidden bg-[#f0f0f5] dark:bg-[#0e1525]"
+      style={{ height: "calc(100vh - 56px)" }}
     >
       {/* ═══ HEADER ═══ */}
       <div
-        className="shrink-0"
-        style={{
-          background: "#f7f7fb",
-          borderBottom: "1px solid #e8e8f0",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-        }}
+        className="shrink-0 bg-[#f7f7fb] dark:bg-[#141e30] border-b border-[#e8e8f0] dark:border-white/[0.07] sticky top-0 z-40"
       >
         {/* ── MOBILE HEADER (< md) ── */}
         <div className="md:hidden">
