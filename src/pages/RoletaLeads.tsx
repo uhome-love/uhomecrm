@@ -16,6 +16,7 @@ import { formatDistanceToNow, differenceInMinutes, format, startOfDay, subHours 
 import { ptBR } from "date-fns/locale";
 import RoletagensTab from "@/components/roleta/RoletagensTab";
 import LeadsGeradosTab from "@/components/roleta/LeadsGeradosTab";
+import WhatsAppEntradasTab from "@/components/roleta/WhatsAppEntradasTab";
 import LeadIntelligenceTab from "@/components/roleta/LeadIntelligenceTab";
 import RoletaMetricasTab from "@/components/roleta/RoletaMetricasTab";
 import RoletaConfigTab from "@/components/roleta/RoletaConfigTab";
@@ -75,6 +76,7 @@ function CeoView() {
           { label: "Leads gerados", value: "leads" },
           { label: "Histórico", value: "roletagens" },
           { label: "Leads perdidos", value: "perdidos" },
+          { label: "Entradas WhatsApp", value: "whatsapp" },
           { label: "Inteligência", value: "inteligencia" },
           { label: "Configurações", value: "config" },
         ]}
@@ -238,6 +240,7 @@ function CeoView() {
       {activeTab === "leads" && <LeadsGeradosTab />}
       {activeTab === "roletagens" && <RoletagensTab view="roletagens" />}
       {activeTab === "perdidos" && <RoletagensTab view="perdidos" />}
+      {activeTab === "whatsapp" && <WhatsAppEntradasTab />}
       {activeTab === "inteligencia" && <LeadIntelligenceTab />}
       {activeTab === "config" && <RoletaConfigTab />}
 
