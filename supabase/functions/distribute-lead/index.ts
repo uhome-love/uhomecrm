@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       const failedByReason: Record<string, number> = {};
       const distributionLog: Array<{ leadId: string; corretorId: string; segmento: string }> = [];
 
-      const forceDispatch = true;
+      const forceDispatch = (action === "dispatch_fila_ceo");
 
       for (const lid of allLeadIds) {
         const result = await distributeViaRPC(supabase, supabaseUrl, serviceKey, lid, targetJanela, null, L, forceDispatch);

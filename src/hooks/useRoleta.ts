@@ -379,8 +379,15 @@ export function useRoleta() {
       corretor_avatar: f.corretor_id ? (profileMap.get(f.corretor_id) as any)?.avatar_url || null : null,
     }));
 
-    // Sort by leads_recebidos ascending (fewer leads = higher priority = top of list)
-    enriched.sort((a, b) => (a.leads_recebidos || 0) - (b.leads_recebidos || 0));
+    // Sort by ultima_distribuicao_at ASC NULLS FIRST — matches the SQL engine's round-robin order
+    enriched.sort((a, b) => {
+      const aTime = (a as any).ultima_distribuicao_at;
+      const bTime = (b as any).ultima_distribuicao_at;
+      if (!aTime && !bTime) return 0;
+      if (!aTime) return -1;
+      if (!bTime) return 1;
+      return new Date(aTime).getTime() - new Date(bTime).getTime();
+    });
 
     setFila(enriched);
   }, [hoje]);
