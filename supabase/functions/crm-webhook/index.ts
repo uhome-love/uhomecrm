@@ -290,6 +290,28 @@ Deno.serve(async (req) => {
         pipelineLeadId = newLead.id
         existingCorretorId = newLead.corretor_id // may be set by trigger
         console.log(`[crm-webhook] New lead ${newLead.id} → Novo Lead stage, corretor from trigger: ${existingCorretorId || 'fila_ceo'}`)
+
+        // ── Auto-distribute new lead ──
+        try {
+          const distResp = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/distribute-lead`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              },
+              body: JSON.stringify({ action: 'distribute_single', lead_id: newLead.id }),
+            }
+          )
+          const distResult = await distResp.json()
+          console.log(`[crm-webhook] distribute-lead response:`, distResult)
+          if (distResult?.corretor_id) {
+            existingCorretorId = distResult.corretor_id
+          }
+        } catch (distErr) {
+          console.error('[crm-webhook] distribute-lead failed (lead stays in fila_ceo):', distErr)
+        }
       }
 
       // Sync to leads table
