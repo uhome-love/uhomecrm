@@ -595,7 +595,7 @@ export default function PipelineKanban() {
               {Object.keys(campaignTagCounts).length > 0 && (
                 <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
                   <SelectTrigger
-                    className={`h-[32px] text-[12px] w-[160px] shrink-0 rounded-lg font-medium ${
+                    className={`h-[32px] text-[12px] w-[190px] shrink-0 rounded-lg font-medium ${
                       campaignTagFilter !== "all"
                         ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
                         : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"

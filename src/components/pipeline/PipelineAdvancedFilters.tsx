@@ -289,9 +289,9 @@ export default function PipelineAdvancedFilters({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant={activeCount > 0 ? "default" : "outline"} size="sm" className="gap-1.5 h-9">
+        <Button variant={activeCount > 0 ? "default" : "outline"} size="sm" className="gap-1.5 h-[32px] text-[12px] rounded-lg">
           <SlidersHorizontal className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Filtros</span>
+          <span className="hidden sm:inline">+ Filtros</span>
           {activeCount > 0 && (
             <Badge variant="secondary" className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full bg-background text-foreground">
               {activeCount}
