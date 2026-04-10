@@ -663,6 +663,13 @@ export default function MeusNegocios() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
+  // Cleanup moveTimeout on unmount
+  useEffect(() => {
+    return () => {
+      if (moveTimeoutRef.current) clearTimeout(moveTimeoutRef.current);
+    };
+  }, []);
+
   // Build gerente list from negocios gerente_id + corretorNomes
   const gerenteList = useMemo(() => {
     const ids = [...new Set(negocios.map(n => n.gerente_id).filter(Boolean))] as string[];
