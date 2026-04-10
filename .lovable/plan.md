@@ -1,23 +1,33 @@
 
 
-## Plano: Corrigir filtro de campanhas cortado + adicionar botão "+ Filtros" visível
+## Plano: Corrigir filtros do + Filtros para funcionar com dados reais
 
-### Problema identificado
+### Problemas identificados
 
-1. **Texto "Todas as campanhas" cortado**: O `SelectTrigger` do filtro de campanhas tem `w-[160px]` — insuficiente para o texto completo.
-2. **Botão "+ Filtros" já existe** (`PipelineAdvancedFilters`) mas usa `h-9` em vez de `h-[32px]`, ficando inconsistente com o header. O componente já é renderizado tanto no desktop (linha 309) quanto no mobile (linha 457).
+1. **"Dias sem ação"** usa `stage_changed_at` em vez de `ultima_acao_at`. O campo `ultima_acao_at` já existe na tabela `pipeline_leads` e já é carregado pelo `usePipeline`. Deve ser a referência primária (com fallback para `stage_changed_at`).
+
+2. **"Visita marcada"** filtra apenas por leads que estão em etapas do tipo "visita" no funil — não verifica se o lead tem visita real agendada na tabela `visitas`. Deve consultar visitas reais vinculadas ao `pipeline_lead_id`.
 
 ### Alterações
 
-**Arquivo: `src/pages/PipelineKanban.tsx`**
-- Linha 598: Aumentar `w-[160px]` para `w-[190px]` no SelectTrigger do filtro de campanhas, garantindo que "Todas as campanhas" apareça completo.
-
 **Arquivo: `src/components/pipeline/PipelineAdvancedFilters.tsx`**
-- Linha 292: Ajustar o botão trigger de `h-9` para `h-[32px]` e estilizar para combinar com os outros filtros do header (mesma paleta de cores, `text-[12px]`, `rounded-lg`).
-- Alterar o label de "Filtros" para "+ Filtros" para deixar mais claro que é expansível.
+
+**1. Corrigir filtro "Dias sem ação" (linhas 159-165)**
+- Trocar `l.stage_changed_at` por `l.ultima_acao_at || l.stage_changed_at` na função `applyFilters`, alinhando com a mesma lógica já usada em `useLeadsParados` e `useFocusLeads`.
+- Adicionar opções `> 15 dias` e `> 30 dias` na UI (linhas 525-528) para identificar leads de longo prazo parados.
+
+**2. Corrigir filtro "Visita marcada" (linhas 187-194)**
+- Adicionar prop `visitaLeadIds: Set<string>` ao componente (um Set de `pipeline_lead_id` com visitas agendadas/confirmadas).
+- No `applyFilters`, ao invés de filtrar por tipo de etapa, verificar se o lead.id está no Set de visitas reais.
+- Na UI, manter as opções "Sim" / "Não" como estão.
+
+**Arquivo: `src/pages/PipelineKanban.tsx`**
+- Fazer uma query à tabela `visitas` filtrando `status != 'cancelada'` e `data_visita >= hoje`, coletando os `pipeline_lead_id`.
+- Passar o Set resultante como prop `visitaLeadIds` para o `PipelineAdvancedFilters`.
 
 ### Detalhes técnicos
 
-- O `PipelineAdvancedFilters` já contém filtros detalhados (temperatura, score, etapa, corretor, origem, segmento, empreendimento, dias sem ação, período, visita, SLA, gerente) — tudo funcional.
-- Apenas ajustes visuais de sizing e label são necessários, sem lógica nova.
+- `ultima_acao_at` já está no `PipelineLead` type e é carregado no select do `usePipeline`.
+- A tabela `visitas` tem campos `pipeline_lead_id`, `status` e `data_visita` que permitem a consulta.
+- Nenhuma migração de banco necessária — todos os campos já existem.
 
