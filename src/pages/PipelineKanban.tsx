@@ -405,30 +405,27 @@ export default function PipelineKanban() {
 
         {/* ── TABLET HEADER (md to lg) ── */}
         <div className="hidden md:block lg:hidden">
-          <div className="flex items-center gap-2" style={{ height: 48, padding: "0 16px", borderBottom: "1px solid #E2E8F0" }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Pipeline</span>
-            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>{filteredLeads.length}</span>
+          <div className="flex items-center gap-2 h-12 px-4 border-b border-slate-200 dark:border-gray-700">
+            <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Pipeline</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">{filteredLeads.length}</span>
 
             <div className="flex-1" />
 
             {/* Tab switcher - icons only */}
-            <div className="flex items-center" style={{ background: "#F1F5F9", borderRadius: 7, padding: 2 }}>
+            <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-[7px] p-0.5">
               {[
-                { key: "kanban", icon: <LayoutGrid style={{ height: 12, width: 12 }} />, label: "Kanban" },
-                { key: "inteligencia", icon: <Brain style={{ height: 12, width: 12 }} />, label: "Intel" },
+                { key: "kanban", icon: <LayoutGrid className="h-3 w-3" />, label: "Kanban" },
+                { key: "inteligencia", icon: <Brain className="h-3 w-3" />, label: "Intel" },
               ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   title={tab.label}
-                  className="flex items-center gap-1"
-                  style={{
-                    padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                    background: activeTab === tab.key ? "#fff" : "transparent",
-                    boxShadow: activeTab === tab.key ? "0 1px 3px rgba(0,0,0,0.09)" : "none",
-                    color: activeTab === tab.key ? "#1E293B" : "#64748B",
-                    border: "none", cursor: "pointer",
-                  }}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold border-none cursor-pointer ${
+                    activeTab === tab.key
+                      ? "bg-white dark:bg-gray-700 shadow-sm text-slate-800 dark:text-slate-100"
+                      : "bg-transparent text-slate-500 dark:text-slate-400"
+                  }`}
                 >
                   {tab.icon}
                   <span className="hidden xl:inline">{tab.label}</span>
@@ -439,13 +436,11 @@ export default function PipelineKanban() {
             {(isAdmin || isGestor) && (
               <Select value={corretorFilter} onValueChange={setCorretorFilter}>
                 <SelectTrigger
-                  className="h-7 text-[10px] w-[110px] shrink-0"
-                  style={{
-                    borderRadius: 7, fontSize: 10, fontWeight: 600,
-                    border: corretorFilter !== "all" ? "1px solid #BFDBFE" : "1px solid #E2E8F0",
-                    background: corretorFilter !== "all" ? "#EFF6FF" : "#fff",
-                    color: corretorFilter !== "all" ? "#1D4ED8" : "#64748B",
-                  }}
+                  className={`h-7 text-[10px] w-[110px] shrink-0 rounded-[7px] font-semibold ${
+                    corretorFilter !== "all"
+                      ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
+                      : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
+                  }`}
                 >
                   <SelectValue placeholder="Corretores" />
                 </SelectTrigger>
@@ -469,33 +464,24 @@ export default function PipelineKanban() {
               isManager={isGestor || isAdmin}
             />
 
-            <div className="relative" style={{ width: 120 }}>
-              <Search className="absolute top-1/2 -translate-y-1/2" style={{ left: 8, height: 12, width: 12, color: "#94A3B8" }} />
+            <div className="relative w-[120px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 dark:text-slate-500" />
               <input
                 placeholder="Buscar..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="w-full outline-none"
-                style={{
-                  height: 30, borderRadius: 7, background: "#F8FAFC",
-                  border: "1px solid #E2E8F0", paddingLeft: 26, paddingRight: 8,
-                  fontSize: 11, fontWeight: 500,
-                }}
+                className="w-full outline-none h-[30px] rounded-[7px] bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 pl-[26px] pr-2 text-[11px] font-medium text-slate-800 dark:text-slate-100"
               />
             </div>
 
-            <button onClick={handleRefresh} disabled={refreshing} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #E2E8F0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} style={{ color: "#64748B" }} />
+            <button onClick={handleRefresh} disabled={refreshing} className="w-7 h-7 rounded-[7px] border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer">
+              <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
             </button>
 
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
-                style={{
-                  background: "#2563EB", color: "#fff", borderRadius: 8,
-                  padding: "6px 10px", fontWeight: 700, fontSize: 11, border: "none",
-                  cursor: "pointer", whiteSpace: "nowrap",
-                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-2.5 py-1.5 font-bold text-[11px] border-none cursor-pointer whitespace-nowrap"
               >
                 + Novo Lead
               </button>
@@ -503,26 +489,22 @@ export default function PipelineKanban() {
           </div>
 
           {/* Tablet line 2: status chips + fila ceo */}
-          <div className="flex items-center gap-2 overflow-x-auto" style={{ height: 32, padding: "0 16px" }}>
+          <div className="flex items-center gap-2 overflow-x-auto h-8 px-4">
             {/* Status chips */}
             {[
-              { key: "em_dia" as const, label: "Em dia", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", count: clientStatusCounts.em_dia },
-              { key: "desatualizado" as const, label: "Desatual.", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", count: clientStatusCounts.desatualizado },
-              { key: "tarefa_atrasada" as const, label: "Atrasado", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA", count: clientStatusCounts.tarefa_atrasada },
+              { key: "em_dia" as const, label: "Em dia", color: "#059669", bg: "bg-emerald-50 dark:bg-emerald-950", border: "border-emerald-300 dark:border-emerald-800", count: clientStatusCounts.em_dia },
+              { key: "desatualizado" as const, label: "Desatual.", color: "#D97706", bg: "bg-amber-50 dark:bg-amber-950", border: "border-amber-300 dark:border-amber-800", count: clientStatusCounts.desatualizado },
+              { key: "tarefa_atrasada" as const, label: "Atrasado", color: "#DC2626", bg: "bg-red-50 dark:bg-red-950", border: "border-red-300 dark:border-red-800", count: clientStatusCounts.tarefa_atrasada },
             ].map(chip => (
               <button
                 key={chip.key}
                 onClick={() => setClientStatusFilter(f => f === chip.key ? "todos" : chip.key)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 4,
-                  padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
-                  background: clientStatusFilter === chip.key ? chip.bg : "#fff",
-                  color: chip.color,
-                  border: clientStatusFilter === chip.key ? `1.5px solid ${chip.border}` : "1px solid #E2E8F0",
-                  cursor: "pointer", whiteSpace: "nowrap",
-                }}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer whitespace-nowrap border ${
+                  clientStatusFilter === chip.key ? `${chip.bg} ${chip.border}` : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700"
+                }`}
+                style={{ color: chip.color }}
               >
-                <div style={{ width: 5, height: 5, borderRadius: "50%", background: chip.color }} />
+                <div className="w-[5px] h-[5px] rounded-full" style={{ background: chip.color }} />
                 {chip.label} {chip.count > 0 && chip.count}
               </button>
             ))}
@@ -531,26 +513,19 @@ export default function PipelineKanban() {
               <>
                 <button
                   onClick={() => setFilaCeoFilter(f => !f)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 3,
-                    padding: "2px 8px", borderRadius: 100, fontSize: 10, fontWeight: 700,
-                    background: filaCeoFilter ? "#F5F3FF" : "#fff",
-                    color: filaCeoFilter ? "#7C3AED" : "#94A3B8",
-                    border: filaCeoFilter ? "1.5px solid #C4B5FD" : "1px solid #E2E8F0",
-                    cursor: "pointer", whiteSpace: "nowrap",
-                  }}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer whitespace-nowrap border ${
+                    filaCeoFilter
+                      ? "bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-800"
+                      : "bg-white dark:bg-gray-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-gray-700"
+                  }`}
                 >
                   📥 CEO {filaCeoCount}
                 </button>
                 <button
                   onClick={() => setDispatchOpen(true)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 3,
-                    height: 20, padding: "0 6px", borderRadius: 6, fontSize: 9, fontWeight: 700,
-                    background: "#7C3AED", color: "#fff", border: "none", cursor: "pointer",
-                  }}
+                  className="flex items-center gap-1 h-5 px-1.5 rounded-md text-[9px] font-bold bg-violet-600 text-white border-none cursor-pointer"
                 >
-                  <Rocket style={{ height: 10, width: 10 }} /> Disparar
+                  <Rocket className="h-[10px] w-[10px]" /> Disparar
                 </button>
               </>
             )}
@@ -558,23 +533,20 @@ export default function PipelineKanban() {
             {isAdmin && activeTab === "kanban" && (
               <button
                 onClick={() => { if (selectionMode) { clearSelection(); } else { setSelectionMode(true); } }}
-                style={{
-                  height: 22, borderRadius: 6, padding: "0 8px",
-                  border: selectionMode ? "1px solid #2563EB" : "1px solid #E2E8F0",
-                  background: selectionMode ? "#EFF6FF" : "#fff",
-                  color: selectionMode ? "#2563EB" : "#64748B",
-                  fontSize: 10, fontWeight: 600, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 3,
-                }}
+                className={`h-[22px] rounded-md px-2 text-[10px] font-semibold cursor-pointer flex items-center gap-1 border ${
+                  selectionMode
+                    ? "border-blue-600 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400"
+                    : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
+                }`}
               >
-                {selectionMode ? <CheckSquare style={{ height: 10, width: 10 }} /> : <Square style={{ height: 10, width: 10 }} />}
+                {selectionMode ? <CheckSquare className="h-[10px] w-[10px]" /> : <Square className="h-[10px] w-[10px]" />}
                 {selectionMode ? "Selec..." : "Selec."}
               </button>
             )}
 
             {hasAnyFilter && (
-              <button onClick={clearAllFilters} style={{ fontSize: 9, fontWeight: 600, color: "#DC2626", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2 }}>
-                <X style={{ height: 9, width: 9 }} /> Limpar
+              <button onClick={clearAllFilters} className="text-[9px] font-semibold text-red-600 bg-transparent border-none cursor-pointer flex items-center gap-0.5">
+                <X className="h-[9px] w-[9px]" /> Limpar
               </button>
             )}
           </div>
