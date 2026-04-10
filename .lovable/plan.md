@@ -1,49 +1,30 @@
 
 
-# Plano Revisado: Auto-Reply IA WhatsApp
+# Correção da Roleta: Fase 1 — Plano Final (com guarda no RPC)
 
-## Correção aplicada
+## 3 mudanças cirúrgicas
 
-O `whatsapp-ai-reply` vai usar **o mesmo motor de IA que todas as funções HOMI já usam**: Lovable AI Gateway (`ai-helpers.ts`) com `google/gemini-2.5-flash`. Sem Anthropic, sem Claude — tudo centralizado no mesmo helper.
+### 1. Edge Function `distribute-lead/index.ts`
+Linha ~109: trocar `const forceDispatch = true` por `const forceDispatch = (action === "dispatch_fila_ceo")`
 
-## O que será feito
+### 2. UI `src/hooks/useRoleta.ts`
+Ordenar fila por `ultima_distribuicao_at ASC NULLS FIRST` em vez de contagem agregada do dia. Indicador "Próximo" passa a refletir a ordem real do motor.
 
-### 1. Migração SQL
-- Criar tabela `whatsapp_ai_log` (id, created_at, telefone, nome_contato, mensagem_recebida, tipo_mensagem, filtro_resultado, filtro_motivo, resposta_ia, lead_id, corretor_nome, status, erro_detalhe)
-- RLS para authenticated + Realtime habilitado
-- Adicionar coluna `ai_replied BOOLEAN DEFAULT FALSE` em `pipeline_leads`
+### 3. Migração SQL — Diagnóstico no RPC `distribuir_lead_atomico`
 
-### 2. Nova Edge Function: `whatsapp-ai-reply/index.ts`
-- Usa `callAI` + `requireApiKey` de `_shared/ai-helpers.ts` (mesmo que homi-ana, homi-chat, etc.)
-- Carrega empreendimentos via `_shared/enterprise-knowledge.ts`
-- System prompt com persona HOMI: saudação personalizada, sem prometer tempo de resposta
-- Envia resposta via Meta API (WHATSAPP_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID)
-- Insere em `whatsapp_ai_log` com `resposta_ia`
-- Marca `ai_replied = true` no lead
-- Registra na timeline (`pipeline_atividades`)
-- Trata mídia (áudio/foto/doc): saudação padrão sem interpretar conteúdo
-
-### 3. Modificar `whatsapp-webhook/index.ts`
-- Em `handleUnknownReply`: após criar lead + distribuir, chamar `whatsapp-ai-reply` se `ai_replied = false` e sem janela 24h ativa
-- Inserir em `whatsapp_ai_log` em todos os cenários (aprovado, erro, descartado)
-- Em `handleExistingLeadReply`: NÃO chamar IA
-
-### 4. Nova aba "Entradas WhatsApp" na Roleta
-- Componente `WhatsAppEntradasTab.tsx` com Realtime
-- Colunas: Horário, Contato, Mensagem, Filtro (badge), Resposta IA, Corretor, Status (badge)
-- Filtros: dropdown Status + busca telefone/nome
-- Últimos 100 registros, `created_at DESC`
-- Adicionar tab em `RoletaLeads.tsx`
-
-### 5. Nenhuma aba existente alterada
+**INSTRUÇÃO CRÍTICA**: Na migração SQL do `distribuir_lead_atomico`, **não alterar nenhuma lógica de seleção de corretor, filtros de elegibilidade ou fluxo de attempt 1/attempt 2**. Apenas adicionar contadores de diagnóstico (`total_fila`, `total_eligible`, `total_blocked_na_roleta`, `failure_reason`) ao objeto de retorno quando `v_chosen_auth_id IS NULL` no attempt 1. O resto da função fica idêntico.
 
 ## Arquivos
 
 | Ação | Arquivo |
 |------|---------|
-| Criar | Migração SQL |
-| Criar | `supabase/functions/whatsapp-ai-reply/index.ts` |
-| Criar | `src/components/roleta/WhatsAppEntradasTab.tsx` |
-| Modificar | `supabase/functions/whatsapp-webhook/index.ts` |
-| Modificar | `src/pages/RoletaLeads.tsx` |
+| Modificar | `supabase/functions/distribute-lead/index.ts` |
+| Modificar | `src/hooks/useRoleta.ts` |
+| Migração SQL | `distribuir_lead_atomico` (só diagnóstico, zero alteração de lógica) |
+
+## O que NÃO muda
+- Nenhuma lógica de seleção/filtro/attempt no RPC
+- Nenhuma alteração em aceite/rejeição
+- Nenhuma aba existente da Roleta
+- Centralização da fila fica para Fase 2
 
