@@ -1,23 +1,49 @@
 
 
-## Plano: Aplicar Migração Cirúrgica da Roleta (5 Correções)
+# Plano Revisado: Auto-Reply IA WhatsApp
 
-A migração SQL que você escreveu está completa e validada contra o estado atual do banco. Vou aplicá-la usando a ferramenta de migração do banco de dados.
+## Correção aplicada
 
-### O que será executado
+O `whatsapp-ai-reply` vai usar **o mesmo motor de IA que todas as funções HOMI já usam**: Lovable AI Gateway (`ai-helpers.ts`) com `google/gemini-2.5-flash`. Sem Anthropic, sem Claude — tudo centralizado no mesmo helper.
 
-Uma única migração SQL com 5 partes:
+## O que será feito
 
-1. **Cleanup de credenciamentos** — Fecha duplicados (40-79 por corretor → 1-2), desativa linhas órfãs na `roleta_fila`
-2. **Fix trigger offline (Bug #3)** — Converte `NEW.user_id` → `profiles.id` antes de filtrar `roleta_fila`
-3. **Fix rejeitar_lead (Bug #2)** — Aceita `'aguardando_aceite'` além de `'pendente'`
-4. **Fix trigger distribuição (Bugs #1 e #4)** — EXCEPTION limpa todos os campos; guard para `pendente_distribuicao`; preserva advisory lock, LIKE bidirecional, DISTINCT ON
-5. **Recriar trigger** — Adiciona `AND NEW.aceite_status IS DISTINCT FROM 'pendente_distribuicao'` no WHEN
+### 1. Migração SQL
+- Criar tabela `whatsapp_ai_log` (id, created_at, telefone, nome_contato, mensagem_recebida, tipo_mensagem, filtro_resultado, filtro_motivo, resposta_ia, lead_id, corretor_nome, status, erro_detalhe)
+- RLS para authenticated + Realtime habilitado
+- Adicionar coluna `ai_replied BOOLEAN DEFAULT FALSE` em `pipeline_leads`
 
-### Notas técnicas
+### 2. Nova Edge Function: `whatsapp-ai-reply/index.ts`
+- Usa `callAI` + `requireApiKey` de `_shared/ai-helpers.ts` (mesmo que homi-ana, homi-chat, etc.)
+- Carrega empreendimentos via `_shared/enterprise-knowledge.ts`
+- System prompt com persona HOMI: saudação personalizada, sem prometer tempo de resposta
+- Envia resposta via Meta API (WHATSAPP_ACCESS_TOKEN + WHATSAPP_PHONE_NUMBER_ID)
+- Insere em `whatsapp_ai_log` com `resposta_ia`
+- Marca `ai_replied = true` no lead
+- Registra na timeline (`pipeline_atividades`)
+- Trata mídia (áudio/foto/doc): saudação padrão sem interpretar conteúdo
 
-- A Parte 1 (UPDATE de dados) precisa ser executada via ferramenta de insert/update, não migração
-- As Partes 2-5 (DDL: CREATE OR REPLACE FUNCTION, DROP/CREATE TRIGGER) vão na migração
-- Toda a lógica existente preservada: `pg_advisory_xact_lock`, LIKE bidirecional, `rc.data = v_today_date`, DISTINCT ON + ORDER BY
-- Nenhuma alteração de frontend
+### 3. Modificar `whatsapp-webhook/index.ts`
+- Em `handleUnknownReply`: após criar lead + distribuir, chamar `whatsapp-ai-reply` se `ai_replied = false` e sem janela 24h ativa
+- Inserir em `whatsapp_ai_log` em todos os cenários (aprovado, erro, descartado)
+- Em `handleExistingLeadReply`: NÃO chamar IA
+
+### 4. Nova aba "Entradas WhatsApp" na Roleta
+- Componente `WhatsAppEntradasTab.tsx` com Realtime
+- Colunas: Horário, Contato, Mensagem, Filtro (badge), Resposta IA, Corretor, Status (badge)
+- Filtros: dropdown Status + busca telefone/nome
+- Últimos 100 registros, `created_at DESC`
+- Adicionar tab em `RoletaLeads.tsx`
+
+### 5. Nenhuma aba existente alterada
+
+## Arquivos
+
+| Ação | Arquivo |
+|------|---------|
+| Criar | Migração SQL |
+| Criar | `supabase/functions/whatsapp-ai-reply/index.ts` |
+| Criar | `src/components/roleta/WhatsAppEntradasTab.tsx` |
+| Modificar | `supabase/functions/whatsapp-webhook/index.ts` |
+| Modificar | `src/pages/RoletaLeads.tsx` |
 
