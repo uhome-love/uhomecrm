@@ -614,6 +614,16 @@ export default function PipelineKanban() {
                 </Select>
               )}
 
+              <PipelineAdvancedFilters
+                filters={filters}
+                onChange={setFilters}
+                stages={pipeline.stages}
+                segmentos={pipeline.segmentos}
+                leads={pipeline.leads}
+                corretorNomes={pipeline.corretorNomes}
+                isManager={isGestor || isAdmin}
+              />
+
               {/* Search */}
               <div className="relative transition-all duration-200" style={{ width: filters.search ? 200 : 160 }}>
                 <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
