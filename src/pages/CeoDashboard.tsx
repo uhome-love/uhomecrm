@@ -193,13 +193,12 @@ export default function CeoDashboard() {
   const insertFilaForCred = useCallback(async (cred: any) => {
     const segmentoIds = [cred.segmento_1_id, cred.segmento_2_id].filter(Boolean) as string[];
     for (const segId of segmentoIds) {
-      const { data: existing } = await supabase.from("roleta_fila")
-        .select("posicao").eq("data", hoje).eq("segmento_id", segId).eq("janela", cred.janela).eq("ativo", true)
-        .order("posicao", { ascending: false }).limit(1);
-      const nextPos = (existing?.[0]?.posicao || 0) + 1;
-      await supabase.from("roleta_fila").insert({
-        corretor_id: cred.corretor_id, segmento_id: segId, janela: cred.janela,
-        posicao: nextPos, data: hoje, ativo: true, credenciamento_id: cred.id,
+      await supabase.rpc("upsert_roleta_fila" as any, {
+        p_corretor_id: cred.corretor_id,
+        p_segmento_id: segId,
+        p_janela: cred.janela,
+        p_data: hoje,
+        p_credenciamento_id: cred.id,
       });
     }
   }, [hoje]);

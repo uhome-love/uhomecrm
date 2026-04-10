@@ -518,57 +518,15 @@ export function useRoleta() {
 
       if (!cred) throw new Error("Credenciamento não encontrado");
 
-      // Add to fila for each segmento (skip if already in fila for that segmento today)
+      // Add to fila for each segmento via atomic RPC
       const segmentoIds = [cred.segmento_1_id, cred.segmento_2_id].filter(Boolean) as string[];
       for (const segId of segmentoIds) {
-        // Check if corretor already has an ACTIVE entry for this segmento today
-        const { data: alreadyActive } = await supabase.from("roleta_fila")
-          .select("id")
-          .eq("data", hoje)
-          .eq("segmento_id", segId)
-          .eq("corretor_id", cred.corretor_id)
-          .eq("ativo", true)
-          .limit(1);
-
-        if (alreadyActive && alreadyActive.length > 0) continue;
-
-        // Check if there's an INACTIVE entry we can reactivate (same janela)
-        const { data: inactiveEntry } = await supabase.from("roleta_fila")
-          .select("id")
-          .eq("data", hoje)
-          .eq("segmento_id", segId)
-          .eq("corretor_id", cred.corretor_id)
-          .eq("janela", cred.janela)
-          .eq("ativo", false)
-          .limit(1);
-
-        if (inactiveEntry && inactiveEntry.length > 0) {
-          // Reactivate existing entry
-          await supabase.from("roleta_fila")
-            .update({ ativo: true, credenciamento_id: credId, janela: cred.janela })
-            .eq("id", inactiveEntry[0].id);
-          continue;
-        }
-
-        // Create new entry
-        const { data: existing } = await supabase.from("roleta_fila")
-          .select("posicao")
-          .eq("data", hoje)
-          .eq("segmento_id", segId)
-          .eq("ativo", true)
-          .order("posicao", { ascending: false })
-          .limit(1);
-
-        const nextPos = (existing?.[0]?.posicao || 0) + 1;
-
-        await supabase.from("roleta_fila").insert({
-          corretor_id: cred.corretor_id,
-          segmento_id: segId,
-          janela: cred.janela,
-          posicao: nextPos,
-          data: hoje,
-          ativo: true,
-          credenciamento_id: credId,
+        await supabase.rpc("upsert_roleta_fila", {
+          p_corretor_id: cred.corretor_id,
+          p_segmento_id: segId,
+          p_janela: cred.janela,
+          p_data: hoje,
+          p_credenciamento_id: credId,
         });
       }
 
@@ -675,51 +633,15 @@ export function useRoleta() {
         credId = newCred?.id || null;
       }
 
-      // Add to roleta_fila (same logic as aprovarCredenciamento)
+      // Add to roleta_fila via atomic RPC
       if (credId) {
-        const { data: alreadyActive } = await supabase.from("roleta_fila")
-          .select("id")
-          .eq("data", hoje)
-          .eq("segmento_id", segmentoId)
-          .eq("corretor_id", corretorProfileId)
-          .eq("ativo", true)
-          .limit(1);
-
-        if (!alreadyActive || alreadyActive.length === 0) {
-          const { data: inactiveEntry } = await supabase.from("roleta_fila")
-            .select("id")
-            .eq("data", hoje)
-            .eq("segmento_id", segmentoId)
-            .eq("corretor_id", corretorProfileId)
-            .eq("janela", janela)
-            .eq("ativo", false)
-            .limit(1);
-
-          if (inactiveEntry && inactiveEntry.length > 0) {
-            await supabase.from("roleta_fila")
-              .update({ ativo: true, credenciamento_id: credId, janela })
-              .eq("id", inactiveEntry[0].id);
-          } else {
-            const { data: existing } = await supabase.from("roleta_fila")
-              .select("posicao")
-              .eq("data", hoje)
-              .eq("segmento_id", segmentoId)
-              .eq("ativo", true)
-              .order("posicao", { ascending: false })
-              .limit(1);
-
-            const nextPos = (existing?.[0]?.posicao || 0) + 1;
-            await supabase.from("roleta_fila").insert({
-              corretor_id: corretorProfileId,
-              segmento_id: segmentoId,
-              janela,
-              posicao: nextPos,
-              data: hoje,
-              ativo: true,
-              credenciamento_id: credId,
-            });
-          }
-        }
+        await supabase.rpc("upsert_roleta_fila", {
+          p_corretor_id: corretorProfileId,
+          p_segmento_id: segmentoId,
+          p_janela: janela,
+          p_data: hoje,
+          p_credenciamento_id: credId,
+        });
       }
 
       const { data: profile } = await supabase.from("profiles").select("nome").eq("id", corretorProfileId).single();
