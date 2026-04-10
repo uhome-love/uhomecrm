@@ -521,7 +521,7 @@ export function useRoleta() {
       // Add to fila for each segmento via atomic RPC
       const segmentoIds = [cred.segmento_1_id, cred.segmento_2_id].filter(Boolean) as string[];
       for (const segId of segmentoIds) {
-        await supabase.rpc("upsert_roleta_fila", {
+        await supabase.rpc("upsert_roleta_fila" as any, {
           p_corretor_id: cred.corretor_id,
           p_segmento_id: segId,
           p_janela: cred.janela,
@@ -635,7 +635,7 @@ export function useRoleta() {
 
       // Add to roleta_fila via atomic RPC
       if (credId) {
-        await supabase.rpc("upsert_roleta_fila", {
+        await supabase.rpc("upsert_roleta_fila" as any, {
           p_corretor_id: corretorProfileId,
           p_segmento_id: segmentoId,
           p_janela: janela,
