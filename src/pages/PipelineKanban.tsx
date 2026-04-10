@@ -574,7 +574,7 @@ export default function PipelineKanban() {
               {(isAdmin || isGestor) && (
                 <Select value={corretorFilter} onValueChange={setCorretorFilter}>
                   <SelectTrigger
-                    className={`h-[32px] text-[12px] w-[170px] shrink-0 rounded-lg font-medium ${
+                    className={`h-[32px] text-[12px] w-[155px] shrink-0 rounded-lg font-medium ${
                       corretorFilter !== "all"
                         ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
                         : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
@@ -595,7 +595,7 @@ export default function PipelineKanban() {
               {Object.keys(campaignTagCounts).length > 0 && (
                 <Select value={campaignTagFilter} onValueChange={setCampaignTagFilter}>
                   <SelectTrigger
-                    className={`h-[32px] text-[12px] w-[190px] shrink-0 rounded-lg font-medium ${
+                    className={`h-[32px] text-[12px] w-[170px] shrink-0 rounded-lg font-medium ${
                       campaignTagFilter !== "all"
                         ? "border-[#4F46E5] bg-[#4F46E5]/5 dark:bg-[#4F46E5]/10 text-[#4F46E5]"
                         : "border-[#e8e8f0] dark:border-white/[0.07] bg-[#f7f7fb] dark:bg-white/[0.04] text-[#52525b] dark:text-[#a1a1aa]"
@@ -625,7 +625,7 @@ export default function PipelineKanban() {
               />
 
               {/* Search */}
-              <div className="relative transition-all duration-200" style={{ width: filters.search ? 200 : 160 }}>
+              <div className="relative transition-all duration-200" style={{ width: filters.search ? 180 : 130 }}>
                 <Search size={12} strokeWidth={1.5} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] dark:text-[#52525b]" />
                 <input
                   placeholder="Buscar..."
