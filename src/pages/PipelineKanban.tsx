@@ -288,13 +288,11 @@ export default function PipelineKanban() {
             {(isAdmin || isGestor) && (
               <Select value={corretorFilter} onValueChange={setCorretorFilter}>
                 <SelectTrigger
-                  className="h-7 text-[10px] w-[100px] shrink-0"
-                  style={{
-                    borderRadius: 7, fontSize: 10, fontWeight: 600,
-                    border: corretorFilter !== "all" ? "1px solid #BFDBFE" : "1px solid #E2E8F0",
-                    background: corretorFilter !== "all" ? "#EFF6FF" : "#fff",
-                    color: corretorFilter !== "all" ? "#1D4ED8" : "#64748B",
-                  }}
+                  className={`h-7 text-[10px] w-[100px] shrink-0 rounded-[7px] text-[10px] font-semibold ${
+                    corretorFilter !== "all"
+                      ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
+                      : "border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-500 dark:text-slate-400"
+                  }`}
                 >
                   <SelectValue placeholder="Corretor" />
                 </SelectTrigger>
@@ -324,32 +322,18 @@ export default function PipelineKanban() {
                 setMobileSearchOpen(v => !v);
                 setTimeout(() => mobileSearchRef.current?.focus(), 100);
               }}
-              className="relative"
-              style={{
-                width: 24, height: 24, borderRadius: 6,
-                border: "1px solid #E2E8F0", background: "#fff",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer",
-              }}
+              className="relative w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
             >
-              <Search className="h-3 w-3" style={{ color: "#64748B" }} />
+              <Search className="h-3 w-3 text-slate-500 dark:text-slate-400" />
               {filters.search && (
-                <div style={{
-                  position: "absolute", top: -2, right: -2,
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: "#3B82F6",
-                }} />
+                <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
               )}
             </button>
 
             {canAdd && activeTab === "kanban" && (
               <button
                 onClick={() => setAddOpen(true)}
-                style={{
-                  background: "#4F46E5", color: "#fff", borderRadius: 7,
-                  padding: "5px 10px", fontWeight: 700, fontSize: 12, border: "none",
-                  cursor: "pointer", whiteSpace: "nowrap",
-                }}
+                className="bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-[7px] px-2.5 py-[5px] font-bold text-xs border-none cursor-pointer whitespace-nowrap"
               >
                 + Novo
               </button>
@@ -358,67 +342,63 @@ export default function PipelineKanban() {
 
           {/* Mobile search bar (expandable) */}
           {(mobileSearchOpen || filters.search) && (
-            <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in" style={{ borderBottom: "1px solid #E2E8F0" }}>
-              <Search className="h-3.5 w-3.5 shrink-0" style={{ color: "#94A3B8" }} />
+            <div className="flex items-center gap-2 px-3 py-1.5 animate-fade-in border-b border-slate-200 dark:border-gray-700">
+              <Search className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
               <input
                 ref={mobileSearchRef}
                 type="text"
                 placeholder="Buscar lead por nome, telefone..."
                 value={filters.search}
                 onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="flex-1 bg-transparent text-sm outline-none"
-                style={{ fontSize: 12, color: "#1E293B", height: 28 }}
+                className="flex-1 bg-transparent text-xs text-slate-800 dark:text-slate-100 outline-none h-7"
               />
               <button
                 onClick={() => {
                   setFilters(f => ({ ...f, search: "" }));
                   setMobileSearchOpen(false);
                 }}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
+                className="bg-transparent border-none cursor-pointer p-0.5"
               >
-                <X className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
+                <X className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
               </button>
             </div>
           )}
 
           {/* Line 2 mobile: Status chips compact */}
-          <div className="flex items-center gap-3 px-3 pb-2" style={{ borderBottom: "1px solid #E2E8F0" }}>
+          <div className="flex items-center gap-3 px-3 pb-2 border-b border-slate-200 dark:border-gray-700">
             <button
               onClick={() => setClientStatusFilter(f => f === "em_dia" ? "todos" : "em_dia")}
-              className="flex items-center gap-1"
-              style={{ fontSize: 11, fontWeight: 600, color: "#059669", background: "none", border: "none", cursor: "pointer" }}
+              className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-transparent border-none cursor-pointer"
             >
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#059669" }} />
+              <div className="w-[5px] h-[5px] rounded-full bg-emerald-600" />
               {clientStatusCounts.em_dia}
             </button>
             <button
               onClick={() => setClientStatusFilter(f => f === "desatualizado" ? "todos" : "desatualizado")}
-              className="flex items-center gap-1"
-              style={{ fontSize: 11, fontWeight: 600, color: "#D97706", background: "none", border: "none", cursor: "pointer" }}
+              className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-transparent border-none cursor-pointer"
             >
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#D97706" }} />
+              <div className="w-[5px] h-[5px] rounded-full bg-amber-600" />
               {clientStatusCounts.desatualizado}
             </button>
             <button
               onClick={() => setClientStatusFilter(f => f === "tarefa_atrasada" ? "todos" : "tarefa_atrasada")}
-              className="flex items-center gap-1"
-              style={{ fontSize: 11, fontWeight: 600, color: "#DC2626", background: "none", border: "none", cursor: "pointer" }}
+              className="flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-transparent border-none cursor-pointer"
             >
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#DC2626" }} />
+              <div className="w-[5px] h-[5px] rounded-full bg-red-600" />
               {clientStatusCounts.tarefa_atrasada}
             </button>
             <div className="flex-1" />
             {hasAnyFilter && (
-              <button onClick={clearAllFilters} style={{ fontSize: 10, fontWeight: 600, color: "#DC2626", background: "none", border: "none", cursor: "pointer" }}>
-                <X style={{ height: 10, width: 10 }} /> Limpar
+              <button onClick={clearAllFilters} className="text-[10px] font-semibold text-red-600 bg-transparent border-none cursor-pointer">
+                <X className="h-[10px] w-[10px] inline" /> Limpar
               </button>
             )}
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              className="w-6 h-6 rounded-md border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center cursor-pointer"
             >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} style={{ color: "#64748B" }} />
+              <RefreshCw className={`h-3 w-3 text-slate-500 dark:text-slate-400 ${refreshing ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
