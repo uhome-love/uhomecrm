@@ -237,6 +237,8 @@ Deno.serve(async (req) => {
             stage_changed_at: new Date().toISOString(),
             dados_site: record,
             tipo_acao: tipo,
+            origem: 'site_uhome',
+            origem_detalhe: origemDetalheLabel || origemComponente || `site_${tipo}`,
             origem_ref: origemRef,
             imovel_codigo: imovelCodigo || undefined,
             imovel_url: imovelUrl || undefined,
