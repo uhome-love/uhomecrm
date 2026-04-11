@@ -530,6 +530,21 @@ export function useRoleta() {
         });
       }
 
+      // Belt-and-suspenders: ensure na_roleta = true in corretor_disponibilidade
+      const { data: corretorProfile } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("id", cred.corretor_id)
+        .single();
+      if (corretorProfile?.user_id) {
+        await supabase
+          .from("corretor_disponibilidade")
+          .upsert(
+            { user_id: corretorProfile.user_id, na_roleta: true, status: "na_empresa" as string, segmentos: [] },
+            { onConflict: "user_id" }
+          );
+      }
+
       toast.success("Corretor aprovado e adicionado à fila!");
       await Promise.all([loadCredenciamentos(), loadFila()]);
     } catch (e: any) {
@@ -642,6 +657,21 @@ export function useRoleta() {
           p_data: hoje,
           p_credenciamento_id: credId,
         });
+      }
+
+      // Belt-and-suspenders: ensure na_roleta = true in corretor_disponibilidade
+      const { data: corretorProfile2 } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("id", corretorProfileId)
+        .single();
+      if (corretorProfile2?.user_id) {
+        await supabase
+          .from("corretor_disponibilidade")
+          .upsert(
+            { user_id: corretorProfile2.user_id, na_roleta: true, status: "na_empresa" as string, segmentos: [] },
+            { onConflict: "user_id" }
+          );
       }
 
       const { data: profile } = await supabase.from("profiles").select("nome").eq("id", corretorProfileId).single();
