@@ -297,7 +297,8 @@ export default function AceiteLeads() {
   const fetchPending = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const now = new Date().toISOString();
+    // Add 60s buffer to account for browser clock drift
+    const now = new Date(Date.now() - 60_000).toISOString();
     const { data } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead, campanha")

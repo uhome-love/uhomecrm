@@ -267,7 +267,8 @@ export function AppSidebar() {
   // Fetch aceite leads pendentes for corretor
   const fetchAceitePendentes = useCallback(async () => {
     if (!user || isAdmin || isGestor || isBackoffice) return;
-    const now = new Date().toISOString();
+    // Add 60s buffer to account for browser clock drift
+    const now = new Date(Date.now() - 60_000).toISOString();
     const { count } = await supabase
       .from("pipeline_leads")
       .select("id", { count: "exact", head: true })
