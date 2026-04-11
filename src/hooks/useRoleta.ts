@@ -348,8 +348,8 @@ export function useRoleta() {
 
     // Get auth user IDs to count ONLY roleta-distributed leads (not manual transfers)
     const authUserIds = (profiles || []).map(p => p.user_id).filter(Boolean) as string[];
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    // BUG5 fix: use BRT date for lead count, not local timezone
+    const todayStart = hoje + "T00:00:00-03:00";
 
     // Count leads distributed via roleta TODAY per corretor (acao='distribuido' only)
     const { data: todayDistribuicoes } = authUserIds.length > 0
@@ -358,7 +358,7 @@ export function useRoleta() {
           .select("corretor_id")
           .in("corretor_id", authUserIds)
           .eq("acao", "distribuido")
-          .gte("created_at", todayStart.toISOString())
+          .gte("created_at", todayStart)
       : { data: [] };
 
     // Build count map: auth_user_id → count
@@ -478,6 +478,12 @@ export function useRoleta() {
     if (!user) return;
     setSubmitting(true);
     try {
+      // Get corretor info before updating
+      const { data: credData } = await supabase.from("roleta_credenciamentos")
+        .select("corretor_id")
+        .eq("id", credenciamentoId)
+        .single();
+
       await supabase.from("roleta_credenciamentos")
         .update({ status: "saiu", saiu_em: new Date().toISOString() })
         .eq("id", credenciamentoId);
@@ -485,6 +491,22 @@ export function useRoleta() {
       await supabase.from("roleta_fila")
         .update({ ativo: false })
         .eq("credenciamento_id", credenciamentoId);
+
+      // BUG4 fix: also set na_roleta = false in corretor_disponibilidade
+      if (credData?.corretor_id) {
+        const { data: corretorProfile } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("id", credData.corretor_id)
+          .single();
+        if (corretorProfile?.user_id) {
+          await supabase
+            .from("corretor_disponibilidade")
+            .update({ na_roleta: false })
+            .eq("user_id", corretorProfile.user_id);
+        }
+      }
+
       toast.success("Você saiu da roleta.");
       await Promise.all([loadCredenciamentos(), loadFila()]);
     } catch (e: any) {
@@ -654,13 +676,17 @@ export function useRoleta() {
 
       // Add to roleta_fila via atomic RPC
       if (credId) {
-        await supabase.rpc("upsert_roleta_fila" as any, {
+        const { error: rpcError } = await supabase.rpc("upsert_roleta_fila" as any, {
           p_corretor_id: corretorProfileId,
           p_segmento_id: segmentoId,
           p_janela: janela,
           p_data: hoje,
           p_credenciamento_id: credId,
         });
+        if (rpcError) {
+          console.error("upsert_roleta_fila error:", rpcError);
+          throw new Error(`Erro ao inserir na fila: ${rpcError.message}`);
+        }
       }
 
       // Belt-and-suspenders: ensure na_roleta = true in corretor_disponibilidade
