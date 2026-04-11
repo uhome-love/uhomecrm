@@ -358,7 +358,7 @@ export function useRoleta() {
           .select("corretor_id")
           .in("corretor_id", authUserIds)
           .eq("acao", "distribuido")
-          .gte("created_at", todayStart.toISOString())
+          .gte("created_at", todayStart)
       : { data: [] };
 
     // Build count map: auth_user_id → count
