@@ -9317,16 +9317,27 @@ export type Database = {
         Returns: Json
       }
       reset_roleta_turno: { Args: never; Returns: undefined }
-      upsert_roleta_fila: {
-        Args: {
-          p_corretor_id: string
-          p_credenciamento_id?: string
-          p_data?: string
-          p_janela: string
-          p_segmento_id: string
-        }
-        Returns: undefined
-      }
+      upsert_roleta_fila:
+        | {
+            Args: {
+              p_corretor_id: string
+              p_credenciamento_id?: string
+              p_data: string
+              p_janela: string
+              p_segmento_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_corretor_id: string
+              p_credenciamento_id?: string
+              p_data?: string
+              p_janela: string
+              p_segmento_id: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role: "admin" | "gestor" | "corretor" | "backoffice" | "rh"
