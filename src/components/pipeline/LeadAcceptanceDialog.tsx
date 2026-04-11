@@ -48,7 +48,7 @@ export default function LeadAcceptanceDialog({ lead, open, onClose, onResult }: 
   const [selectedReason, setSelectedReason] = useState("ocupado");
   const [selectedStatus, setSelectedStatus] = useState("ligando_agora");
   const [loading, setLoading] = useState(false);
-  const [remaining, setRemaining] = useState(0);
+  const [remaining, setRemaining] = useState(-1);
 
   // Countdown timer
   useEffect(() => {
@@ -62,13 +62,14 @@ export default function LeadAcceptanceDialog({ lead, open, onClose, onResult }: 
     return () => clearInterval(iv);
   }, [lead?.aceite_expira_em, open]);
 
-  // Auto-close when timer expires
+  // Auto-close when timer expires (only when countdown actually reaches 0, not initial state)
   useEffect(() => {
     if (remaining === 0 && open && lead) {
       toast.warning("Tempo expirado! Lead será redistribuído.");
       onClose();
       onResult();
     }
+    // remaining === -1 is the sentinel/initial value, ignore it
   }, [remaining, open, lead]);
 
   const handleAccept = useCallback(async () => {
@@ -128,12 +129,14 @@ export default function LeadAcceptanceDialog({ lead, open, onClose, onResult }: 
         </DialogHeader>
 
         {/* Timer */}
-        <div className={`text-center py-2 rounded-lg font-mono text-lg font-bold ${
-          isUrgent ? "bg-destructive/10 text-destructive" : "bg-amber-500/10 text-amber-600"
-        }`}>
-          <Clock className="inline h-4 w-4 mr-1 -mt-0.5" />
-          {mins}:{secs.toString().padStart(2, "0")}
-        </div>
+        {remaining >= 0 && (
+          <div className={`text-center py-2 rounded-lg font-mono text-lg font-bold ${
+            isUrgent ? "bg-destructive/10 text-destructive" : "bg-amber-500/10 text-amber-600"
+          }`}>
+            <Clock className="inline h-4 w-4 mr-1 -mt-0.5" />
+            {mins}:{secs.toString().padStart(2, "0")}
+          </div>
+        )}
 
         {/* Lead info */}
         <div className="space-y-2 border rounded-lg p-3 bg-muted/30">

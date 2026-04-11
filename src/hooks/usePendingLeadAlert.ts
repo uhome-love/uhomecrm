@@ -22,12 +22,14 @@ export function usePendingLeadAlert() {
 
   const checkPending = useCallback(async () => {
     if (!user) return;
+    // Add 60s buffer to account for browser clock drift
+    const bufferDate = new Date(Date.now() - 60_000).toISOString();
     const { data } = await supabase
       .from("pipeline_leads")
       .select("id, nome, telefone, email, empreendimento, origem, observacoes, aceite_expira_em, distribuido_em, prioridade_lead")
       .eq("corretor_id", user.id)
       .in("aceite_status", ["pendente", "aguardando_aceite"])
-      .gt("aceite_expira_em", new Date().toISOString())
+      .gt("aceite_expira_em", bufferDate)
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
@@ -66,8 +68,17 @@ export function usePendingLeadAlert() {
 
   // Poll every 15s as backup
   useEffect(() => {
-    const iv = setInterval(checkPending, 30_000);
+    const iv = setInterval(checkPending, 15_000);
     return () => clearInterval(iv);
+  }, [checkPending]);
+
+  // Check immediately when tab gains focus
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === "visible") checkPending();
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
   }, [checkPending]);
 
   return {
