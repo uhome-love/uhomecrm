@@ -233,14 +233,13 @@ export function useCeoDashboard(period: DashPeriod, customRange?: { start: strin
         }
       }
       // Fetch ALL corretores (team members) to show even those with 0 leads
-      const { data: allMembers } = await supabase.from("team_members").select("user_id");
-      const allMemberIds = [...new Set((allMembers || []).map(m => m.user_id).filter(Boolean) as string[])];
+      const { data: allMembers } = await supabase.from("team_members").select("user_id, nome");
+      const memberList = (allMembers || []).filter((m: any) => m.user_id) as { user_id: string; nome: string }[];
+      const uniqueMembers = new Map(memberList.map(m => [m.user_id, m.nome || "Corretor"]));
       let leadsPorCorretor: { nome: string; count: number }[] = [];
-      if (allMemberIds.length > 0) {
-        const { data: corrProfs } = await supabase.from("profiles").select("user_id, nome").in("user_id", allMemberIds);
-        const nameMap = new Map((corrProfs || []).map(p => [p.user_id, p.nome || "Corretor"] as [string, string]));
-        leadsPorCorretor = allMemberIds
-          .map(id => ({ nome: (nameMap.get(id) || "Corretor") as string, count: corrLeadMap.get(id) || 0 }))
+      if (uniqueMembers.size > 0) {
+        leadsPorCorretor = Array.from(uniqueMembers.entries())
+          .map(([id, nome]) => ({ nome, count: corrLeadMap.get(id) || 0 }))
           .sort((a, b) => b.count - a.count);
       }
 
