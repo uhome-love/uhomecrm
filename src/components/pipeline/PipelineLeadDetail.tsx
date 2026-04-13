@@ -42,6 +42,7 @@ import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
 import StageCoachBar from "./StageCoachBar";
+import LeadFlagControls from "./LeadFlagControls";
 import { CallFocusOverlay } from "./CallFocusOverlay";
 import WhatsAppFocusFlow from "./WhatsAppFocusFlow";
 import { ptBR } from "date-fns/locale";
@@ -561,6 +562,16 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           origem={lead.origem}
           nextTask={nextTask}
           noContactAlert={noContactAlert}
+        />
+
+        {/* ════════════ FLAG CONTROLS ════════════ */}
+        <LeadFlagControls
+          leadId={lead.id}
+          stageTipo={(currentStage as any)?.tipo || ""}
+          flagStatus={lead.flag_status as Record<string, string> | null}
+          onUpdate={(updated) => {
+            // Trigger refresh via existing reload mechanism
+          }}
         />
 
         {/* ════════════ ABAS ════════════ */}
