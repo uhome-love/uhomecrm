@@ -182,13 +182,14 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
 
   const handleInativar = useCallback(async () => {
     if (!inativarMotivo) { toast.error("Selecione um motivo"); return; }
+    if (!tipoDescarte) { toast.error("Selecione o tipo de descarte"); return; }
     setInativando(true);
     try {
       const descarteStage = stages.find(s => s.tipo === "descarte");
       const motivoTexto = inativarMotivo === "outro"
         ? `Inativado: ${inativarObs.trim() || "Outro motivo"}`
         : `Inativado: ${inativarMotivo}`;
-      await onUpdate(lead.id, { motivo_descarte: motivoTexto } as any);
+      await onUpdate(lead.id, { motivo_descarte: motivoTexto, tipo_descarte: tipoDescarte } as any);
       if (descarteStage) await onMove(lead.id, descarteStage.id, motivoTexto);
       toast.success("Lead inativado com sucesso");
       setInativarOpen(false);
@@ -196,7 +197,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     } catch (err: any) {
       toast.error("Erro ao inativar: " + (err.message || ""));
     } finally { setInativando(false); }
-  }, [inativarMotivo, inativarObs, stages, lead.id, onUpdate, onMove, onOpenChange]);
+  }, [inativarMotivo, inativarObs, tipoDescarte, stages, lead.id, onUpdate, onMove, onOpenChange]);
 
   // Keyboard shortcuts
   useEffect(() => {
