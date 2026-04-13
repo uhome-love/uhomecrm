@@ -449,7 +449,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                   {((lead as any).tags || []).includes("MELNICK_DAY") ? "🔥 Remover Melnick Day" : "🔥 Marcar Melnick Day"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setInativarOpen(true); }}>
+                <DropdownMenuItem className="text-destructive" onClick={() => { setInativarMotivo(""); setInativarObs(""); setTipoDescarte("reengajavel"); setInativarOpen(true); }}>
                   <Ban className="h-3.5 w-3.5 mr-2" /> Inativar Lead
                 </DropdownMenuItem>
                 {isAdmin && onDelete && (
@@ -807,6 +807,21 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 <Textarea value={inativarObs} onChange={e => setInativarObs(e.target.value)} placeholder="Descreva..." className="resize-none" rows={3} />
               </div>
             )}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Tipo de descarte *</Label>
+              <Select value={tipoDescarte} onValueChange={setTipoDescarte}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reengajavel">🔄 Temporário (pode reengajar)</SelectItem>
+                  <SelectItem value="definitivo">⛔ Definitivo (não contactar)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {tipoDescarte === "definitivo" 
+                  ? "O lead não receberá mais nenhuma comunicação." 
+                  : "O lead poderá ser reengajado por nutrição automática."}
+              </p>
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setInativarOpen(false)} disabled={inativando}>Cancelar</Button>
