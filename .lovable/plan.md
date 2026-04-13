@@ -1,40 +1,43 @@
 
 
-# Explicação dos Flags e Plano de Ajuste
+# Plano Unificado: Redesign Visual + Nova Cor #4969FF
 
-## Como funciona hoje
+## O que será feito
 
-### Onde o corretor edita os flags?
-Os flags são editados **dentro do modal do lead** (ao clicar no card). Existe um componente `LeadFlagControls` que aparece abaixo da barra de coaching (StageCoachBar). Dependendo da etapa, ele mostra:
+Redesign completo do CRM com visual moderno e profissional, usando **#4969FF** como cor de destaque, aplicado consistentemente em todas as páginas.
 
-- **Sem Contato**: Select "Tentativas" (0-7)
-- **Contato Inicial**: Select "Impressão" (Gostou/Não gostou) + Select "Intenção" (Morar/Investir)
-- **Busca**: Select "Busca pendente / Imóveis enviados"
-- **Aquecimento**: Select "Prazo recontato" (30/60/90 dias)
-- **Visita**: Select "Marcada / Realizada / No-show / Reagendada"
-- **Pós-Visita**: Checkboxes (Feedback, Simulação, Objeções) + Select Interesse
+## Alterações
 
-Quando o corretor altera um desses, salva no campo `flag_status` do lead, e o badge aparece no card do Kanban (no lugar do "NOVO" ou "OA").
+### 1. Nova paleta de cores em `src/index.css`
+Substituir toda a escala `--primary-*` (de `#3B82F6` para `#4969FF`), atualizar `--brand-medium`, e refinar o dark mode com fundos mais profundos e contrastantes.
 
-### Problema atual
-1. O corretor não sabe que precisa abrir o lead para preencher — não há indicação visual de que falta preencher
-2. O ícone de **temperatura** (🔥 quente / 🌡️ morno / ❄️ frio) ainda aparece nos cards mas vocês não usam — polui a visualização
+### 2. Substituir cores hardcoded em ~80 arquivos
+Trocar todas as ocorrências de `#4F46E5` e `#3B82F6` por `#4969FF` ou pelo token CSS `hsl(var(--primary-500))` nos componentes. Arquivos principais:
+- `UhomeLogo.tsx` — cor do texto "Sales" e ícones Homi
+- `GlobalDateFilterBar.tsx` — tabs ativas
+- `PageHeader.tsx` — ícone e tabs
+- `CorretorDashboard.tsx` — gradientes do header
+- `PipelineCard.tsx` — badges e labels
+- `CampaignHeader.tsx` — gradiente de fundo
+- `Auth.tsx` — loader e gradientes
+- `TabEmpresa.tsx`, `CeoDashboard.tsx`, `HomiAssistant.tsx`, `WhatsAppFocusFlow.tsx`, `RadarImoveisTab.tsx`, etc.
 
-## O que vamos fazer
+### 3. Visual moderno global
+- Cards: border-radius 12-16px, sombras mais suaves, padding maior
+- Tipografia: valores de KPI maiores, labels mais leves
+- Espaçamento mais generoso entre seções
+- Botões de ação mais arredondados e limpos
+- Superfícies: fundo off-white com cards brancos puros (light) / deep-slate com cards escuros (dark)
 
-### 1. Remover temperatura dos cards
-Remover o ícone de temperatura (Flame/Snowflake/ThermometerSun) que aparece ao lado dos badges no `PipelineCard.tsx`. Limpar imports e lógica do `tempConfig`.
+### 4. Dark mode refinado
+- Background principal: `#0A0E1A`
+- Cards: `#12162A`
+- Sidebar: tom mais profundo
+- Melhor contraste com o novo indigo `#4969FF`
 
-### 2. Mostrar indicador "⚠️ Preencher" quando flag está vazio
-Nos cards que ainda não têm flag preenchido, em vez de mostrar "NOVO"/"OA", mostrar um badge **"⚠️ Preencher"** em amarelo para que o corretor saiba que precisa abrir e definir o status.
-
-### 3. Melhorar visibilidade dos controles no modal
-Adicionar um título claro na seção de flags dentro do modal (ex: "📋 Status da Etapa") com uma borda destacada para que o corretor identifique facilmente onde preencher.
-
-## Arquivos alterados
-
-| Arquivo | Mudança |
-|---|---|
-| `PipelineCard.tsx` | Remover `tempConfig`, imports de Flame/Snowflake/ThermometerSun, e o badge de temperatura. Adicionar badge "⚠️ Preencher" como fallback quando não há flags e não há originTag relevante |
-| `LeadFlagControls.tsx` | Adicionar título/header visual "Status da Etapa" para ficar claro o que é |
+## Resultado esperado
+- Visual sofisticado e profissional (menos "infantil")
+- Cor UHome `#4969FF` como destaque único em todo o sistema
+- Consistência total entre páginas e modos claro/escuro
+- Nenhuma funcionalidade alterada — apenas aparência
 
