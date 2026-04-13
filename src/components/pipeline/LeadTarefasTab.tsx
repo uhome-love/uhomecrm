@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { PipelineTarefa } from "@/hooks/usePipelineLeadData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import TaskCompletionDialog from "./TaskCompletionDialog";
 
 const TIPO_BUTTONS = [
   { value: "ligar", label: "Ligar", emoji: "📞" },
@@ -73,9 +74,8 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   const [editHora, setEditHora] = useState("");
   const [editObs, setEditObs] = useState("");
 
-  // Completion prompt
-  const [completingId, setCompletingId] = useState<string | null>(null);
-  const [completionNote, setCompletionNote] = useState("");
+  // Completion prompt — now uses TaskCompletionDialog
+  const [completingTarefa, setCompletingTarefa] = useState<PipelineTarefa | null>(null);
 
   const today = startOfDay(new Date());
   const pendentes = tarefas.filter(t => t.status === "pendente");
@@ -126,13 +126,12 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
   };
 
   const handleConcluir = async (tarefa: PipelineTarefa) => {
-    setCompletingId(tarefa.id);
-    setCompletionNote("");
+    setCompletingTarefa(tarefa);
   };
 
-  const confirmConcluir = async () => {
-    if (!completingId) return;
-    await onToggleTarefa(completingId, "pendente");
+  const handleCompletionConfirm = async (obs: string, novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }) => {
+    if (!completingTarefa) return;
+    await onToggleTarefa(completingTarefa.id, "pendente");
 
     // Update lead
     await supabase.from("pipeline_leads").update({
@@ -141,11 +140,11 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
     } as any).eq("id", leadId);
 
     // Register in history if note provided
-    if (completionNote.trim()) {
+    if (obs.trim()) {
       await supabase.from("pipeline_atividades").insert({
         pipeline_lead_id: leadId,
         tipo: "followup",
-        titulo: completionNote.trim(),
+        titulo: obs.trim(),
         descricao: null,
         data: todayBRT(),
         hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
@@ -155,13 +154,25 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
       } as any);
     }
 
-    toast.success("Tarefa concluída ✅");
-    setCompletingId(null);
-    setCompletionNote("");
+    // Create new task if requested
+    if (novaTarefa) {
+      const titulo = `${TIPO_LABELS[novaTarefa.tipo] || novaTarefa.tipo}: ${leadNome}`;
+      await onAddTarefa({
+        tipo: novaTarefa.tipo,
+        titulo,
+        descricao: novaTarefa.obs || null,
+        vence_em: novaTarefa.vence_em,
+        hora_vencimento: novaTarefa.hora_vencimento || null,
+      } as any);
+    }
+
+    toast.success(novaTarefa ? "Tarefa concluída e nova criada ✅" : "Tarefa concluída ✅");
+    setCompletingTarefa(null);
     onReload();
+
     // Only prompt next action if no more pending tasks remain after this one
-    const remainingPending = pendentes.filter(t => t.id !== completingId);
-    if (remainingPending.length === 0) {
+    const remainingPending = pendentes.filter(t => t.id !== completingTarefa.id);
+    if (remainingPending.length === 0 && !novaTarefa) {
       onNextAction?.();
     }
   };
@@ -474,29 +485,14 @@ export default function LeadTarefasTab({ leadId, leadNome, leadTelefone, leadEma
         </DialogContent>
       </Dialog>
 
-      {/* Completion prompt */}
-      <Dialog open={!!completingId} onOpenChange={() => setCompletingId(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader><DialogTitle>✅ O que aconteceu?</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">Registre brevemente o resultado (opcional — será salvo no histórico)</p>
-            <Textarea
-              placeholder="Ex: Cliente atendeu, pediu proposta por email"
-              value={completionNote}
-              onChange={e => setCompletionNote(e.target.value)}
-              rows={3}
-            />
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={() => { confirmConcluir(); }}>
-                Pular
-              </Button>
-              <Button size="sm" onClick={confirmConcluir}>
-                💾 Salvar e concluir
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Completion dialog with new task option */}
+      <TaskCompletionDialog
+        open={!!completingTarefa}
+        onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
+        tarefaTitulo={completingTarefa?.titulo || ""}
+        leadNome={leadNome}
+        onConfirm={handleCompletionConfirm}
+      />
     </div>
   );
 }

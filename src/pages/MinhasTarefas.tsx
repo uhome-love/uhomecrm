@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
+import TaskCompletionDialog from "@/components/pipeline/TaskCompletionDialog";
 import { lazy, Suspense } from "react";
 
 const CorretorScriptsView = lazy(() => import("@/components/scripts/CorretorScriptsView"));
@@ -234,17 +235,66 @@ export default function MinhasTarefas() {
   const filteredTarefas = activeTab === "todas" ? pendentes : activeTab === "atrasadas" ? atrasadas : activeTab === "hoje" ? hoje :
     activeTab === "amanha" ? amanha : activeTab === "concluidas" ? concluidas : semana;
 
-  const handleConcluir = async (id: string, leadId: string) => {
+  // Completion dialog state
+  const [completingTarefa, setCompletingTarefa] = useState<TarefaComLead | null>(null);
+
+  const handleConcluir = async (tarefa: TarefaComLead) => {
+    setCompletingTarefa(tarefa);
+  };
+
+  const handleCompletionConfirm = async (obs: string, novaTarefa?: { tipo: string; vence_em: string; hora_vencimento: string; obs: string }) => {
+    if (!completingTarefa || !user) return;
+    const id = completingTarefa.id;
+    const leadId = completingTarefa.pipeline_lead_id;
+
     if (categoria === "negocios") {
       await supabase.from("negocios_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
-      toast.success("Tarefa concluída ✅");
-      queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
-      return;
+    } else {
+      await supabase.from("pipeline_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
+      await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", leadId);
     }
-    await supabase.from("pipeline_tarefas").update({ status: "concluida", concluida_em: new Date().toISOString() } as any).eq("id", id);
-    await supabase.from("pipeline_leads").update({ ultima_acao_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any).eq("id", leadId);
-    toast.success("Tarefa concluída ✅");
+
+    // Register observation in history
+    if (obs.trim() && categoria === "leads") {
+      await supabase.from("pipeline_atividades").insert({
+        pipeline_lead_id: leadId,
+        tipo: "followup",
+        titulo: obs.trim(),
+        descricao: null,
+        data: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+        hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
+        prioridade: "media",
+        status: "concluida",
+        created_by: user.id,
+      } as any);
+    }
+
+    // Create new task if requested
+    if (novaTarefa && categoria === "leads") {
+      const leadNome = completingTarefa.lead_nome || "Lead";
+      const TIPO_LABELS_MAP: Record<string, string> = {
+        follow_up: "Follow-up", ligar: "Ligar", whatsapp: "WhatsApp", enviar_proposta: "Enviar proposta",
+        enviar_material: "Enviar material", marcar_visita: "Marcar visita",
+      };
+      const titulo = `${TIPO_LABELS_MAP[novaTarefa.tipo] || novaTarefa.tipo}: ${leadNome}`;
+      await supabase.from("pipeline_tarefas").insert({
+        pipeline_lead_id: leadId,
+        tipo: novaTarefa.tipo,
+        titulo,
+        descricao: novaTarefa.obs || null,
+        prioridade: "media",
+        status: "pendente",
+        responsavel_id: user.id,
+        vence_em: novaTarefa.vence_em,
+        hora_vencimento: novaTarefa.hora_vencimento || null,
+        created_by: user.id,
+      } as any);
+    }
+
+    toast.success(novaTarefa ? "Tarefa concluída e nova criada ✅" : "Tarefa concluída ✅");
+    setCompletingTarefa(null);
     queryClient.invalidateQueries({ queryKey: ["minhas-tarefas"] });
+    queryClient.invalidateQueries({ queryKey: ["minhas-tarefas-negocios"] });
     queryClient.invalidateQueries({ queryKey: ["agenda-widget"] });
   };
 
@@ -469,7 +519,7 @@ export default function MinhasTarefas() {
                         <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1" onClick={() => setScriptsOpen(true)}>
                           <BookOpen className="h-3.5 w-3.5" /> Scripts
                         </Button>
-                        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => handleConcluir(tarefa.id, tarefa.pipeline_lead_id)}>
+                        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => handleConcluir(tarefa)}>
                           <CheckCircle2 className="h-3.5 w-3.5" /> Concluir
                         </Button>
                         <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => openEditTarefa(tarefa)}>
@@ -745,6 +795,15 @@ export default function MinhasTarefas() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Task Completion Dialog */}
+      <TaskCompletionDialog
+        open={!!completingTarefa}
+        onOpenChange={(v) => { if (!v) setCompletingTarefa(null); }}
+        tarefaTitulo={completingTarefa?.titulo || ""}
+        leadNome={completingTarefa?.lead_nome}
+        onConfirm={handleCompletionConfirm}
+      />
     </div>
   );
 }

@@ -38,6 +38,7 @@ import LeadHistoricoTab from "./LeadHistoricoTab";
 import WhatsAppTemplatesDialog from "./WhatsAppTemplatesDialog";
 import QuickActionMenu from "./QuickActionMenu";
 import NextActionModal from "./NextActionModal";
+import CardScheduleVisitDialog from "./CardScheduleVisitDialog";
 import EmpreendimentoCombobox from "@/components/ui/empreendimento-combobox";
 import RadarImoveisTab from "./RadarImoveisTab";
 import LeadImoveisIndicadosTab from "./LeadImoveisIndicadosTab";
@@ -117,6 +118,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
   const [tipoDescarte, setTipoDescarte] = useState<string>("reengajavel");
   const [inativando, setInativando] = useState(false);
   const [nextActionOpen, setNextActionOpen] = useState(false);
+  const [scheduleVisitOpen, setScheduleVisitOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
 
   const currentStage = stages.find(s => s.id === lead.stage_id);
@@ -660,7 +662,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
                 <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                   <MapPin className="h-4 w-4" /> Visitas do Lead
                 </h4>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { onOpenChange(false); setTimeout(() => { navigate(`/agenda-visitas?lead=${lead.id}&nome=${encodeURIComponent(lead.nome)}&telefone=${encodeURIComponent(lead.telefone || "")}&empreendimento=${encodeURIComponent(lead.empreendimento || "")}`); }, 200); }}>
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setScheduleVisitOpen(true)}>
                   <Calendar className="h-3 w-3" /> + Agendar Visita
                 </Button>
               </div>
@@ -897,6 +899,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         lead={{ id: lead.id, nome: lead.nome, telefone: lead.telefone, empreendimento: lead.empreendimento, stage_id: lead.stage_id }}
         stageTipo={currentStage?.tipo}
         onRefresh={leadData.reload}
+      />
+      <CardScheduleVisitDialog
+        open={scheduleVisitOpen}
+        onOpenChange={(v) => { setScheduleVisitOpen(v); if (!v) leadData.reload(); }}
+        lead={lead as any}
+        stages={stages}
+        onMoveLead={onMove}
       />
     </Sheet>
   );
