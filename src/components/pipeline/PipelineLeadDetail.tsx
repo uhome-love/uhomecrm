@@ -900,6 +900,13 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
         stageTipo={currentStage?.tipo}
         onRefresh={leadData.reload}
       />
+      <CardScheduleVisitDialog
+        open={scheduleVisitOpen}
+        onOpenChange={(v) => { setScheduleVisitOpen(v); if (!v) leadData.reload(); }}
+        lead={lead as any}
+        stages={stages}
+        onMoveLead={onMove}
+      />
     </Sheet>
   );
 }
