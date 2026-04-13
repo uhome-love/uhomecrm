@@ -1,80 +1,40 @@
 
 
-# Conclusao da Reestruturacao: Residuais + Flags Visuais
+# Explicação dos Flags e Plano de Ajuste
 
-## Resumo
+## Como funciona hoje
 
-Atualizar ~15 arquivos com referencias residuais aos stages antigos (qualificacao, possivel_visita, visita_marcada, visita_realizada, em_evolucao) e implementar badges visuais de `flag_status` nos cards do pipeline + controles no modal do lead.
+### Onde o corretor edita os flags?
+Os flags são editados **dentro do modal do lead** (ao clicar no card). Existe um componente `LeadFlagControls` que aparece abaixo da barra de coaching (StageCoachBar). Dependendo da etapa, ele mostra:
 
-## Tarefa 1 — Atualizar referencias residuais (~12 arquivos)
+- **Sem Contato**: Select "Tentativas" (0-7)
+- **Contato Inicial**: Select "Impressão" (Gostou/Não gostou) + Select "Intenção" (Morar/Investir)
+- **Busca**: Select "Busca pendente / Imóveis enviados"
+- **Aquecimento**: Select "Prazo recontato" (30/60/90 dias)
+- **Visita**: Select "Marcada / Realizada / No-show / Reagendada"
+- **Pós-Visita**: Checkboxes (Feedback, Simulação, Objeções) + Select Interesse
 
-**Arquivos e mudancas:**
+Quando o corretor altera um desses, salva no campo `flag_status` do lead, e o badge aparece no card do Kanban (no lugar do "NOVO" ou "OA").
 
-| Arquivo | Mudanca |
+### Problema atual
+1. O corretor não sabe que precisa abrir o lead para preencher — não há indicação visual de que falta preencher
+2. O ícone de **temperatura** (🔥 quente / 🌡️ morno / ❄️ frio) ainda aparece nos cards mas vocês não usam — polui a visualização
+
+## O que vamos fazer
+
+### 1. Remover temperatura dos cards
+Remover o ícone de temperatura (Flame/Snowflake/ThermometerSun) que aparece ao lado dos badges no `PipelineCard.tsx`. Limpar imports e lógica do `tempConfig`.
+
+### 2. Mostrar indicador "⚠️ Preencher" quando flag está vazio
+Nos cards que ainda não têm flag preenchido, em vez de mostrar "NOVO"/"OA", mostrar um badge **"⚠️ Preencher"** em amarelo para que o corretor saiba que precisa abrir e definir o status.
+
+### 3. Melhorar visibilidade dos controles no modal
+Adicionar um título claro na seção de flags dentro do modal (ex: "📋 Status da Etapa") com uma borda destacada para que o corretor identifique facilmente onde preencher.
+
+## Arquivos alterados
+
+| Arquivo | Mudança |
 |---|---|
-| `WhatsAppTemplatesDialog.tsx` | templatesPorEtapa: `qualificacao` → `busca`, `possivel_visita` → `aquecimento`, `visita_marcada` → `visita`, `visita_realizada` → `pos_visita` |
-| `useLeadIntelligence.ts` | `isVisita`: `["visita_marcada","visita_realizada"]` → `["visita","pos_visita"]` |
-| `LeadSequenceSuggestion.tsx` | stages arrays: `possibilidade_visita` → `aquecimento`, `visita_realizada` → `pos_visita` |
-| `RelatoriosTab.tsx` | Funnel: substituir `qualificacao`, `possivel_visita`, `visita_marcada`, `visita_realizada`, `em_evolucao` → `busca`, `aquecimento`, `visita`, `pos_visita` |
-| `SaudeOperacao.tsx` | `.in("etapa", ...)`: `visita_marcada/realizada` → `visita`, `pos_visita` |
-| `ForecastPonderadoPanel.tsx` | STAGE_PROBABILITY: remover antigos, adicionar `busca: 20`, `aquecimento: 30`, `visita: 50`, `pos_visita: 65` |
-| `JourneyMapBoard.tsx` | PHASE_THEMES: adicionar `busca`, `aquecimento`, `pos_visita`; atualizar `getThemeForStage` fallbacks |
-| `CampanhasVozContent.tsx` | SelectItem: `qualificacao` → `busca` |
-| `SequenceTemplates.tsx` | trigger_config `stage_tipo: "qualificacao"` → `"busca"` |
-| `useLeadProgression.ts` | `fase_destino: "visita_realizada"` → `"pos_visita"` |
-| `site-events/index.ts` | `reativarLead`: `.eq('tipo', 'qualificacao')` → `.eq('tipo', 'busca')` |
-| `NotificationPreferences.tsx` | Label cosmético apenas (manter `visita_marcada` como key de notificacao — nao e stage type) |
-
-## Tarefa 2 — Adicionar `flag_status` ao tipo PipelineLead
-
-No `usePipeline.ts`, adicionar `flag_status?: Record<string, string> | null` ao interface `PipelineLead` e incluir na query de select.
-
-## Tarefa 3 — Flags visuais no PipelineCard
-
-Adicionar um bloco de badges entre ROW 3 e ROW 4 no `PipelineCard.tsx` que le `(lead as any).flag_status` e exibe:
-
-- **Visita**: badges coloridos "Marcada" / "Realizada" / "No-show" / "Reagendada"
-- **Sem Contato**: badge "Tentativa X/7" (lido do flag_status)
-- **Contato Inicial**: badges "Gostou" / "Nao gostou" / Timing
-- **Busca**: "Busca pendente" / "Imoveis enviados"
-- **Aquecimento**: prazo de recontato
-- **Pos-Visita**: "Simulacao enviada" / "Objecoes"
-
-Cada badge: pequeno pill colorido (9-10px font, estilo dos tags existentes).
-
-## Tarefa 4 — Flags visuais no JourneyMissionCard
-
-Mesmo conceito simplificado: 1 badge contextual abaixo do nome do lead, lendo `flag_status`.
-
-## Tarefa 5 — Controles de flag no modal do lead
-
-Em `PipelineLeadDetail.tsx`, adicionar secao contextual (abaixo do stage coach bar) com controles por etapa:
-
-- **Visita**: Select com opcoes Marcada/Realizada/No-show/Reagendada
-- **Sem Contato**: Input numerico "Tentativas" (1-7)
-- **Contato Inicial**: Toggle "Gostou do imovel?" + Select "Intencao" (Morar/Investir) + Select "Timing"
-- **Busca**: Toggles "Busca iniciada" / "Imoveis enviados" / "Interesse"
-- **Aquecimento**: Select prazo (30/60/90 dias)
-- **Pos-Visita**: Toggles "Feedback coletado" / "Simulacao enviada" / "Objecoes mapeadas" + Select "Interesse"
-
-Ao alterar, faz `supabase.update({ flag_status: {...} })` no lead.
-
-## Tarefa 6 — Migration SQL: remover stages antigos vazios
-
-Deletar stages com 0 leads: Qualificacao, Possivel Visita, Visita Marcada, Visita Realizada (IDs confirmados vazios no DB).
-
-## Ordem de execucao
-
-1. Migration SQL (remover stages vazios)
-2. Tipo PipelineLead + query
-3. Atualizar 12 arquivos com referencias residuais
-4. Flags visuais nos cards
-5. Controles de flag no modal
-
-## Detalhes tecnicos
-
-- `flag_status` ja existe como coluna jsonb no banco (confirmado)
-- Stages antigos tem 0 leads (migracao anterior funcionou)
-- ~633 linhas no PipelineCard.tsx — flags inseridos na linha ~395
-- ~895 linhas no PipelineLeadDetail.tsx — controles inseridos apos o StageCoachBar
+| `PipelineCard.tsx` | Remover `tempConfig`, imports de Flame/Snowflake/ThermometerSun, e o badge de temperatura. Adicionar badge "⚠️ Preencher" como fallback quando não há flags e não há originTag relevante |
+| `LeadFlagControls.tsx` | Adicionar título/header visual "Status da Etapa" para ficar claro o que é |
 
