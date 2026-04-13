@@ -1,1114 +1,1250 @@
+/**
+ * /imoveis page — unified search engine mirroring uhome.com.br,
+ * adapted for CRM dark theme with broker-specific actions.
+ * Layout: cards on the left + map always visible on the right (desktop).
+ * Mobile: list fullscreen + "Ver mapa" button opens fullscreen overlay.
+ * Infinite scroll (load more) instead of pagination per doc spec.
+ */
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState, EmptyState } from "@/components/ui/screen-states";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
+import { supabaseSite } from "@/lib/supabaseSite";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Slider } from "@/components/ui/slider";
 import {
-  Search, Building2, Loader2, ChevronLeft, ChevronRight, Phone,
-  MapPin, Megaphone, Check, X, Share2, Link2, Copy, CalendarClock,
-  LayoutGrid, List, Heart, Zap,
-  Sparkles, Brain, ArrowRight, Map, MessageCircle, Bookmark, Users
+  Search, Heart, Share2, Link2, Copy,
+  Loader2, X, MapPin, RotateCcw, MessageCircle, Phone,
+  ArrowUpDown, Map as MapIcon, List, Bell, Sparkles, Send, SlidersHorizontal,
 } from "lucide-react";
-import PropertyMap from "@/components/imoveis/PropertyMap";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { FilterPill, PillOption } from "@/components/imoveis/SiteFilterPill";
+import { SitePropertyCard } from "@/components/imoveis/SitePropertyCard";
+import { SearchMapBox } from "@/components/imoveis/SearchMapBox";
 import PropertyPreviewDrawer from "@/components/imoveis/PropertyPreviewDrawer";
-import FilterChip from "@/components/imoveis/FilterChip";
+import { SearchAlertModal } from "@/components/imoveis/SearchAlertModal";
+import {
+  siteImovelToMapPin,
+  type SiteImovel, type MapPin as MapPinType, type BuscaFilters,
+  formatPreco, CIDADES_PERMITIDAS, PROPERTY_TYPES,
+} from "@/services/siteImoveis";
+import {
+  fetchSiteImoveisRemote as fetchSiteImoveis,
+  fetchMapPinsRemote as fetchMapPins,
+  fetchBairrosRemote as fetchBairros,
+  fetchImovelBySlugRemote as fetchImovelBySlug,
+} from "@/services/siteImoveisRemote";
+import {
+  useImoveisSearchStore, filtersFromParams, filtersToParams, type MapBounds,
+} from "@/stores/imoveisSearchStore";
+import { useAuth } from "@/hooks/useAuth";
+import { useAISearch } from "@/hooks/useAISearch";
+import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
-import { getVitrinePublicUrl } from "@/lib/vitrineUrl";
-import { useAISearch } from "@/hooks/useAISearch";
-import { PropertyCardGrid, PropertyCardList } from "@/components/imoveis/PropertyCards";
-import { getNum, fmtBRL, fmtCompact } from "@/lib/imovelHelpers";
-import { useImoveisFilters } from "@/hooks/useImoveisFilters";
-import { useImoveisSearch } from "@/hooks/useImoveisSearch";
-import { usePostgRESTFacets } from "@/hooks/usePostgRESTFacets";
-import { useLeadContext } from "@/hooks/useLeadContext";
-import { useLeadPropertyProfile } from "@/hooks/useLeadPropertyProfile";
-import { useLeadMatch } from "@/hooks/useLeadMatch";
-import LeadSearchModal from "@/components/imoveis/LeadSearchModal";
-import MatchConfirmModal from "@/components/imoveis/MatchConfirmModal";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { motion, AnimatePresence } from "framer-motion";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+const PAGE_SIZE = 24;
+
+const precoRanges = [
+  { label: "Até R$ 300k", min: 0, max: 300000 },
+  { label: "R$ 300k – 600k", min: 300000, max: 600000 },
+  { label: "R$ 600k – 1M", min: 600000, max: 1000000 },
+  { label: "R$ 1M – 2M", min: 1000000, max: 2000000 },
+  { label: "R$ 2M – 5M", min: 2000000, max: 5000000 },
+  { label: "Acima de R$ 5M", min: 5000000, max: 0 },
+];
+
+const areaRanges = [
+  { label: "Até 50m²", min: 0, max: 50 },
+  { label: "50 – 100m²", min: 50, max: 100 },
+  { label: "100 – 200m²", min: 100, max: 200 },
+  { label: "200 – 400m²", min: 200, max: 400 },
+  { label: "Acima de 400m²", min: 400, max: 0 },
+];
+
+const sortLabels: Record<string, string> = {
+  recentes: "Mais recentes",
+  preco_asc: "Menor preço",
+  preco_desc: "Maior preço",
+  area_desc: "Maior área",
+};
+
+const quartoOptions = [1, 2, 3, 4];
+
+function fmtPrecoLabel(min: number, max: number): string {
+  const fmt = (v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(v % 1000000 === 0 ? 0 : 1)}M` : `${(v / 1000).toFixed(0)}k`;
+  if (min && max) return `R$ ${fmt(min)} – ${fmt(max)}`;
+  if (min) return `A partir de R$ ${fmt(min)}`;
+  if (max) return `Até R$ ${fmt(max)}`;
+  return "";
+}
+
+function fmtAreaLabel(min: number, max: number): string {
+  if (min && max) return `${min} – ${max}m²`;
+  if (min) return `A partir de ${min}m²`;
+  if (max) return `Até ${max}m²`;
+  return "";
+}
+
+// ── Visualizado helpers ──
+const VIEWED_KEY = "imoveis_visualizados";
+function getViewedSlugs(): Set<string> {
+  try {
+    const raw = localStorage.getItem(VIEWED_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+function markViewed(slug: string) {
+  try {
+    const set = getViewedSlugs();
+    set.add(slug);
+    localStorage.setItem(VIEWED_KEY, JSON.stringify([...set]));
+  } catch { /* ignore */ }
+}
+
+// ── Scroll restore helpers ──
+const SCROLL_KEY = "imoveis_scroll";
+
 export default function ImoveisPage() {
   const { user } = useAuth();
-  const { searchWithAI, clearAISearch, removeTag, aiLoading, aiResult, aiError, aiProperties, aiTotal, aiSearchTime } = useAISearch();
-  const { leadId, leadNome, hasLeadContext, trackEvent } = useLeadContext();
-  const { profile: leadProfile } = useLeadPropertyProfile(leadId);
+  const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { filters, setFilter, setFilters, resetFilters } = useImoveisSearchStore();
 
-  // ── Dynamic facets ──
-  const { bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets, statusImovelFacets, cidadeFacets, fetchBairrosByCidade } = usePostgRESTFacets();
+  // Sync URL → store on mount
+  useEffect(() => {
+    const fromUrl = filtersFromParams(searchParams);
+    if (Object.keys(fromUrl).length > 0) setFilters(fromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // ── Filters ──
-  const filters = useImoveisFilters(bairroFacets, tipoFacets, construtoraFacets, empreendimentoFacets, cidadeFacets, fetchBairrosByCidade);
-  const {
-    contrato, tipo, setTipo, bairro, setBairro, bairroSearch, setBairroSearch,
-    dormitorios, setDormitorios, suitesFilter, setSuitesFilter,
-    vagas, setVagas, areaRange, setAreaRange, valorRange, setValorRange,
-    somenteObras, setSomenteObras, campanhaAtiva, setCampanhaAtiva,
-    uhomeOnly, setUhomeOnly, search, setSearch, sortBy, setSortBy,
-    construtora, setConstrutora, construtoraSearch, setConstrutoraSearch,
-    empreendimento, setEmpreendimento, empreendimentoSearch, setEmpreendimentoSearch,
-    situacao, setSituacao,
-    cidade, setCidade, cidadeOptions,
-    filteredBairros, tipoOptions, filteredConstrutoras, filteredEmpreendimentos,
-    activeFilters, clearAllFilters, filterKey,
-  } = filters;
-  const { codigoBusca, setCodigoBusca } = filters;
+  // Sync store → URL on filter change
+  const debouncedFilters = useDebounce(filters, 400);
+  useEffect(() => {
+    const params = filtersToParams(debouncedFilters);
+    setSearchParams(params, { replace: true });
+  }, [debouncedFilters, setSearchParams]);
 
-  // ── UI state (local to page) ──
-  const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
+  // ── View state ──
+  const [page, setPage] = useState(0);
+  const [allImoveis, setAllImoveis] = useState<SiteImovel[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [searchMode, setSearchMode] = useState<"normal" | "ai">("normal");
-  const [aiQuery, setAiQuery] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [mobileMapOpen, setMobileMapOpen] = useState(false);
+  const [viewedSlugs, setViewedSlugs] = useState<Set<string>>(getViewedSlugs);
+  const activeBounds = filters.bounds;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Vitrine selection
+  // Sort dropdown
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  // Close sort on outside click
+  useEffect(() => {
+    if (!sortOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [sortOpen]);
+
+  // Vitrine
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [creatingVitrine, setCreatingVitrine] = useState(false);
   const [vitrineLink, setVitrineLink] = useState<string | null>(null);
 
-  // Lead Match
-  const leadMatch = useLeadMatch();
-  const [leadSearchOpen, setLeadSearchOpen] = useState(false);
-  const [matchConfirmOpen, setMatchConfirmOpen] = useState(false);
+  // Bairro search
+  const [bairroInput, setBairroInput] = useState("");
+  const [showBairroDropdown, setShowBairroDropdown] = useState(false);
+  const bairroInputRef = useRef<HTMLInputElement>(null);
 
   // Preview drawer
-  const [previewItem, setPreviewItem] = useState<any>(null);
+  const [previewItem, setPreviewItem] = useState<SiteImovel | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const openPreview = (item: any) => { setPreviewItem(item); setPreviewOpen(true); };
-  const closePreview = () => setPreviewOpen(false);
 
-  // ── Search ──
-  const {
-    loading, fetchError, page, totalPages, total, searchTimeMs, sortedImoveis,
-    campanhaOverrides, suggestions, showSuggestions, setShowSuggestions,
-    handleSearchChange, handleSuggestionClick, handleSearch, fetchPage, fetchRef,
-  } = useImoveisSearch({
-    filters: {
-      search, contrato, tipo, bairro, dormitorios, suitesFilter, vagas,
-      areaRange, valorRange, somenteObras, uhomeOnly, campanhaAtiva, sortBy,
-      construtora, empreendimento, situacao, cidade, codigoBusca,
-    },
-    filterKey,
-    setSearch,
-    setBairro: (fn) => setBairro(fn as any),
-    setCampanhaAtiva,
-    setUhomeOnly,
-    showFavoritesOnly,
-    favorites,
-  });
+  // Alert modal
+  const [alertOpen, setAlertOpen] = useState(false);
 
-  // ── Lead adherence scoring (when lead context + profile exists) ──
-  const scorePropertyForLead = useCallback((item: any): number => {
-    if (!leadProfile) return 0;
-    let score = 0;
-    const preco = getNum(item, "valor_venda", "valor") || 0;
-    // Valor (25pts)
-    if (leadProfile.valor_min || leadProfile.valor_max) {
-      const aboveMin = !leadProfile.valor_min || preco >= leadProfile.valor_min;
-      const belowMax = !leadProfile.valor_max || preco <= leadProfile.valor_max;
-      if (aboveMin && belowMax) score += 25;
-      else if (!leadProfile.valor_max || preco <= leadProfile.valor_max * 1.15) score += 12;
-    } else score += 12;
-    // Bairro (20pts)
-    const bairro = item.endereco_bairro || item.bairro || "";
-    if (leadProfile.bairros?.length && bairro) {
-      const nb = bairro.toLowerCase();
-      if (leadProfile.bairros.some((b: string) => nb.includes(b.toLowerCase()))) score += 20;
-    } else score += 10;
-    // Dorms (15pts)
-    const dorms = getNum(item, "dormitorios") || 0;
-    if (leadProfile.dormitorios_min && dorms > 0) {
-      if (dorms >= leadProfile.dormitorios_min) score += 15;
-      else if (dorms === leadProfile.dormitorios_min - 1) score += 7;
-    } else score += 7;
-    // Tipo (10pts)
-    if (leadProfile.tipos?.length && item.tipo) {
-      if (leadProfile.tipos.some((t: string) => (item.tipo || "").toLowerCase().includes(t.toLowerCase()))) score += 10;
-    } else score += 5;
-    // Suítes (5pts)
-    if (leadProfile.suites_min && (getNum(item, "suites") || 0) >= leadProfile.suites_min) score += 5;
-    else if (!leadProfile.suites_min) score += 2;
-    // Vagas (5pts)
-    if (leadProfile.vagas_min && (getNum(item, "garagens", "vagas") || 0) >= leadProfile.vagas_min) score += 5;
-    else if (!leadProfile.vagas_min) score += 2;
+  // ── AI Search ──
+  const { searchWithAI, clearAISearch, aiLoading, aiResult } = useAISearch();
+  const [aiMode, setAiMode] = useState(false);
+  const [aiInput, setAiInput] = useState("");
+  const [aiActiveQuery, setAiActiveQuery] = useState<string | null>(null);
+  const aiThrottleRef = useRef(0);
 
-    return Math.min(Math.round((score / 85) * 100), 99);
-  }, [leadProfile]);
+  const handleAISearch = useCallback(async () => {
+    if (!aiInput.trim()) return;
+    const now = Date.now();
+    if (now - aiThrottleRef.current < 3000) {
+      toast.info("Aguarde alguns segundos entre buscas IA");
+      return;
+    }
+    aiThrottleRef.current = now;
+    const query = aiInput.trim();
+    setAiActiveQuery(query);
 
-  // When sorting by aderência, re-sort; also attach scores for badge display
-  const displayImoveis = useMemo(() => {
-    if (!hasLeadContext || !leadProfile || sortBy !== "aderencia") return sortedImoveis;
-    return [...sortedImoveis].sort((a, b) => scorePropertyForLead(b) - scorePropertyForLead(a));
-  }, [sortedImoveis, hasLeadContext, leadProfile, sortBy, scorePropertyForLead]);
+    // Call the existing AI search which invokes ai-search-imoveis edge function
+    await searchWithAI(query);
 
-  // Prev/next navigation in preview
-  const previewIndex = previewItem ? displayImoveis.findIndex((it: any) => {
-    const pid = String(previewItem.codigo || previewItem.id_imovel || previewItem.id);
-    const iid = String(it.codigo || it.id_imovel || it.id);
-    return pid === iid;
-  }) : -1;
-  const hasPrevPreview = previewIndex > 0;
-  const hasNextPreview = previewIndex >= 0 && previewIndex < displayImoveis.length - 1;
-  const goToPrevPreview = () => { if (hasPrevPreview) setPreviewItem(displayImoveis[previewIndex - 1]); };
-  const goToNextPreview = () => { if (hasNextPreview) setPreviewItem(displayImoveis[previewIndex + 1]); };
-  const previewPositionLabel = previewIndex >= 0 ? `${previewIndex + 1} / ${displayImoveis.length}` : undefined;
+    // Apply discovered filters to the store if aiResult has them
+    // The AI search results are displayed via aiResult/aiProperties in the existing hook
+    // But for the new UX, we want to apply filters to the store
+    setAiMode(false);
+    setAiInput("");
+  }, [aiInput, searchWithAI]);
 
-  // ── Favorites persistence ──
+  // When AI result comes back, apply its filters to the store
   useEffect(() => {
-    const saved = localStorage.getItem(`uhome-favorites-${user?.id}`);
+    if (!aiResult?.filters || !aiActiveQuery) return;
+    const f = aiResult.filters;
+    const updates: any = {};
+    if (f.tipos?.length) updates.tipo = f.tipos[0];
+    if (f.dormitorios?.length) updates.quartos = Number(f.dormitorios[0]) || 0;
+    if (f.vagas_min) updates.vagas = f.vagas_min;
+    if (f.valor_min) updates.precoMin = f.valor_min;
+    if (f.valor_max) updates.precoMax = f.valor_max;
+    if (f.area_min) updates.areaMin = f.area_min;
+    if (f.bairros?.length) updates.bairro = f.bairros.join(",");
+    if (aiResult.text_query) updates.q = aiResult.text_query;
+    setFilters(updates);
+    setPage(0);
+    setAllImoveis([]);
+  }, [aiResult, aiActiveQuery, setFilters]);
+
+  const handleClearAI = useCallback(() => {
+    clearAISearch();
+    setAiActiveQuery(null);
+    resetFilters();
+    setPage(0);
+    setAllImoveis([]);
+  }, [clearAISearch, resetFilters]);
+
+  // Scroll restore on mount
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem(SCROLL_KEY);
+    if (savedScroll && scrollContainerRef.current) {
+      const val = parseInt(savedScroll, 10);
+      requestAnimationFrame(() => {
+        scrollContainerRef.current?.scrollTo(0, val);
+      });
+      sessionStorage.removeItem(SCROLL_KEY);
+    }
+  }, []);
+
+  // Load favorites
+  useEffect(() => {
+    const saved = localStorage.getItem(`uhome-site-favorites-${user?.id}`);
     if (saved) setFavorites(new Set(JSON.parse(saved)));
   }, [user?.id]);
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = useCallback((id: string) => {
     setFavorites(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      localStorage.setItem(`uhome-favorites-${user?.id}`, JSON.stringify([...next]));
+      localStorage.setItem(`uhome-site-favorites-${user?.id}`, JSON.stringify([...next]));
       return next;
     });
-  };
+  }, [user?.id]);
 
-  // ── Helpers ──
-  const getPreco = (item: any): string => {
-    const venda = getNum(item, "valor_venda", "preco_venda", "valor", "price");
-    if (venda) return fmtBRL(venda);
-    return "Consultar";
-  };
-
-  const toggleSelect = (id: string) => {
+  const toggleSelect = useCallback((id: string) => {
     setSelectedIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
     setVitrineLink(null);
-  };
+  }, []);
 
-  // ── Render ──
-  return (
-    <div className="min-h-screen bg-[#f0f0f5] dark:bg-[#0e1525] flex flex-col">
-      <PropertyPreviewDrawer
-        item={previewItem}
-        open={previewOpen}
-        onClose={closePreview}
-        isFavorite={previewItem ? favorites.has(String(previewItem.codigo || previewItem.id_imovel || previewItem.id)) : false}
-        onFavorite={toggleFavorite}
-        getPreco={getPreco}
-        selectMode={selectMode}
-        isSelected={previewItem ? selectedIds.has(String(previewItem.codigo || previewItem.id_imovel || previewItem.id)) : false}
-        onToggleSelect={toggleSelect}
-        onPrev={goToPrevPreview}
-        onNext={goToNextPreview}
-        hasPrev={hasPrevPreview}
-        hasNext={hasNextPreview}
-        positionLabel={previewPositionLabel}
-        trackEvent={hasLeadContext ? trackEvent : undefined}
+  // ── Bairros ──
+  const { data: bairros = [] } = useQuery({
+    queryKey: ["site-bairros"],
+    queryFn: fetchBairros,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const bairrosSelecionados = useMemo(() => {
+    return filters.bairro ? filters.bairro.split(",").map(s => s.trim()).filter(Boolean) : [];
+  }, [filters.bairro]);
+
+  const bairroSuggestions = useMemo(() => {
+    const all = bairros.map(b => b.bairro);
+    const filtered = all.filter(b => !bairrosSelecionados.includes(b));
+    if (!bairroInput.trim()) return filtered.slice(0, 8);
+    const q = bairroInput.toLowerCase();
+    return filtered.filter(b => b.toLowerCase().includes(q)).slice(0, 10);
+  }, [bairroInput, bairrosSelecionados, bairros]);
+
+  const hasSearchFilters = !!(
+    filters.tipo || filters.bairro || filters.precoMin || filters.precoMax ||
+    filters.areaMin || filters.areaMax || filters.quartos || filters.vagas ||
+    filters.banheiros || filters.q || filters.codigo || (filters.cidade && filters.cidade !== "Porto Alegre") ||
+    filters.statusImovel || filters.statusImovelList?.length || filters.condominioNome || filters.financiavel || filters.mobiliado ||
+    filters.comodidades?.length || filters.entregaAnoMin || filters.entregaAnoMax
+  );
+
+  const advancedFilterCount = [
+    filters.banheiros > 0, filters.vagas > 0, !!filters.codigo, !!filters.condominioNome,
+    filters.financiavel, filters.mobiliado, (filters.comodidades?.length || 0) > 0,
+    filters.entregaAnoMin > 0, filters.entregaAnoMax > 0,
+  ].filter(Boolean).length;
+
+  const addBairro = useCallback((nome: string) => {
+    const next = [...bairrosSelecionados, nome];
+    setFilter("bairro", next.join(","));
+    setBairroInput("");
+    setPage(0);
+    setAllImoveis([]);
+  }, [bairrosSelecionados, setFilter]);
+
+  const removeBairro = useCallback((nome: string) => {
+    const next = bairrosSelecionados.filter(b => b !== nome);
+    setFilter("bairro", next.join(","));
+    setPage(0);
+    setAllImoveis([]);
+  }, [bairrosSelecionados, setFilter]);
+
+  // ── Query filters ──
+  const queryFilters = useMemo((): BuscaFilters => ({
+    tipo: filters.tipo || undefined,
+    bairros: bairrosSelecionados.length > 0 ? bairrosSelecionados : undefined,
+    cidade: filters.cidade || undefined,
+    precoMin: filters.precoMin || undefined,
+    precoMax: filters.precoMax || undefined,
+    areaMin: filters.areaMin || undefined,
+    areaMax: filters.areaMax || undefined,
+    quartos: filters.quartos || undefined,
+    banheiros: filters.banheiros || undefined,
+    vagas: filters.vagas || undefined,
+    q: filters.q || undefined,
+    codigo: filters.codigo || undefined,
+    ordem: filters.ordem,
+    limit: PAGE_SIZE,
+    offset: page * PAGE_SIZE,
+    bounds: activeBounds,
+    statusImovel: filters.statusImovel || undefined,
+    statusImovelList: filters.statusImovelList?.length ? filters.statusImovelList : undefined,
+    condominioNome: filters.condominioNome || undefined,
+    financiavel: filters.financiavel || undefined,
+    mobiliado: filters.mobiliado || undefined,
+    comodidades: filters.comodidades?.length ? filters.comodidades : undefined,
+    entregaAnoMin: filters.entregaAnoMin || undefined,
+    entregaAnoMax: filters.entregaAnoMax || undefined,
+  }), [filters, bairrosSelecionados, page, activeBounds]);
+
+  const debouncedQueryFilters = useDebounce(
+    queryFilters,
+    page > 0 ? 0 : (!hasSearchFilters && !activeBounds ? 0 : 300)
+  );
+
+  // ── Data query ──
+  const { data: result, isLoading, isError, error: fetchError, isFetching } = useQuery({
+    queryKey: ["site-imoveis", debouncedQueryFilters],
+    queryFn: () => fetchSiteImoveis(debouncedQueryFilters),
+    staleTime: 3 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+
+  const EMPTY_ARR: SiteImovel[] = useMemo(() => [], []);
+  const currentPageData = result?.data ?? EMPTY_ARR;
+  const rawTotal = result?.count ?? 0;
+  const searchTimeMs = result?.search_time_ms;
+
+  // Track the last known good total (from page 0 queries with actual count)
+  const lastKnownTotal = useRef(0);
+  useEffect(() => {
+    if (page === 0 && rawTotal > 0) {
+      lastKnownTotal.current = rawTotal;
+    }
+  }, [rawTotal, page]);
+
+  // Use last known total when current page returns 0 count (416 fallback)
+  const total = rawTotal > 0 ? rawTotal : (page > 0 ? lastKnownTotal.current : 0);
+
+  // Accumulate items for load-more
+  useEffect(() => {
+    if (currentPageData.length === 0 && page === 0) {
+      setAllImoveis([]);
+      return;
+    }
+    if (page === 0) {
+      setAllImoveis(currentPageData);
+    } else {
+      setAllImoveis(prev => {
+        const existingIds = new Set(prev.map(i => i.id));
+        const newItems = currentPageData.filter(i => !existingIds.has(i.id));
+        return [...prev, ...newItems];
+      });
+    }
+  }, [currentPageData, page]);
+
+  const imoveis = page === 0
+    ? (allImoveis.length > 0 ? allImoveis : currentPageData)
+    : allImoveis;
+  // Stop loading more when current page returned no new data OR we have all items
+  const hasMore = currentPageData.length > 0 && imoveis.length < total;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const isInitialListPending = page === 0 && imoveis.length === 0 && (isLoading || isFetching);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasMore || isLoading || isFetching) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isFetching) {
+          setPage(p => p + 1);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, isFetching]);
+
+  // ── Map pins ──
+  const mapPinFilters = useMemo((): BuscaFilters => ({
+    tipo: filters.tipo || undefined,
+    bairros: bairrosSelecionados.length > 0 ? bairrosSelecionados : undefined,
+    cidade: filters.cidade || undefined,
+    precoMin: filters.precoMin || undefined,
+    precoMax: filters.precoMax || undefined,
+    quartos: filters.quartos || undefined,
+    vagas: filters.vagas || undefined,
+    q: filters.q || undefined,
+    ordem: filters.ordem,
+    bounds: activeBounds,
+  }), [filters, bairrosSelecionados, activeBounds]);
+
+  const { data: mapPins = [] } = useQuery({
+    queryKey: ["site-map-pins", mapPinFilters],
+    queryFn: () => fetchMapPins(mapPinFilters),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const effectiveMapPins = useMemo<MapPinType[]>(() => {
+    if (mapPins.length > 0) return mapPins;
+    return imoveis
+      .map((item) => siteImovelToMapPin(item, activeBounds))
+      .filter((pin): pin is MapPinType => Boolean(pin));
+  }, [mapPins, imoveis, activeBounds]);
+
+  // ── Active filters count ──
+  const hasActiveFilters = hasSearchFilters || !!aiActiveQuery || !!activeBounds;
+
+  // ── Preview drawer ──
+  const openPreview = useCallback((item: SiteImovel) => {
+    // Save scroll position
+    if (scrollContainerRef.current) {
+      sessionStorage.setItem(SCROLL_KEY, String(scrollContainerRef.current.scrollTop));
+    }
+    // Mark as viewed
+    markViewed(item.slug);
+    setViewedSlugs(prev => new Set(prev).add(item.slug));
+    setPreviewItem(item);
+    setPreviewOpen(true);
+  }, []);
+
+  const previewGetPreco = useCallback((item: any) => formatPreco(item.preco), []);
+
+  // ── Vitrine creation ──
+  const createVitrine = useCallback(async () => {
+    if (!user) return;
+    setCreatingVitrine(true);
+    try {
+      const { data, error } = await supabase.from("vitrines").insert({
+        created_by: user.id,
+        titulo: "Seleção de Imóveis",
+        tipo: "property_selection",
+        imovel_ids: [...selectedIds] as any,
+        imovel_codigos: [...selectedIds],
+      }).select("id").single();
+      if (error) throw error;
+      const link = getVitrinePublicUrl(data.id);
+      setVitrineLink(link);
+      navigator.clipboard.writeText(link);
+      toast.success("Vitrine criada! Link copiado.");
+    } catch {
+      toast.error("Erro ao criar vitrine");
+    } finally {
+      setCreatingVitrine(false);
+    }
+  }, [user, selectedIds]);
+
+  // Reset page on filter change
+  useEffect(() => {
+    setPage(0);
+    setAllImoveis([]);
+  }, [filters.tipo, filters.bairro, filters.cidade, filters.precoMin, filters.precoMax, filters.quartos, filters.vagas, filters.ordem, filters.q, filters.statusImovel, filters.statusImovelList, filters.condominioNome, filters.financiavel, filters.mobiliado, filters.comodidades, filters.entregaAnoMin, filters.entregaAnoMax, activeBounds]);
+
+  // Clear bounds
+  const clearBounds = useCallback(() => {
+    setFilter("bounds", null);
+    setPage(0);
+    setAllImoveis([]);
+  }, [setFilter]);
+
+  // ── Helpers ──
+  const precoLabel = precoRanges.find(r => r.min === filters.precoMin && r.max === filters.precoMax)?.label;
+  const areaLabel = areaRanges.find(r => r.min === filters.areaMin && r.max === filters.areaMax)?.label || (filters.areaMin || filters.areaMax ? fmtAreaLabel(filters.areaMin, filters.areaMax) : undefined);
+  const cidadeLabel = filters.cidade || "Porto Alegre";
+  const tipoLabel = PROPERTY_TYPES.find(t => t.value === filters.tipo)?.label;
+
+  // Bairro display for subheader
+  const bairroDisplay = bairrosSelecionados.length > 0
+    ? bairrosSelecionados.length <= 3
+      ? `, ${bairrosSelecionados.join(", ")}`
+      : `, ${bairrosSelecionados.slice(0, 3).join(", ")} +${bairrosSelecionados.length - 3}`
+    : "";
+
+  // ── Build card list with CTA card inserted after 6th ──
+  const renderCards = useMemo(() => {
+    const cards: React.ReactNode[] = [];
+    imoveis.forEach((item, idx) => {
+      cards.push(
+        <SitePropertyCard
+          key={item.id}
+          imovel={item}
+          index={idx}
+          highlighted={hoveredId === item.id}
+          isFavorite={favorites.has(item.id)}
+          onToggleFavorite={toggleFavorite}
+          selectMode={selectMode}
+          isSelected={selectedIds.has(item.id)}
+          onToggleSelect={toggleSelect}
+          onPreview={openPreview}
+          onHover={setHoveredId}
+          isViewed={viewedSlugs.has(item.slug)}
+        />
+      );
+
+      // Insert CTA card after 6th item
+      if (idx === 5 && imoveis.length > 6) {
+        cards.push(
+          <motion.div
+            key="cta-ia"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.2 }}
+            className="flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 border border-primary/20 p-6 text-center"
+            style={{ aspectRatio: "4/3" }}
+          >
+            <Sparkles className="h-8 w-8 text-primary mb-3" />
+            <h3 className="text-base font-bold text-foreground mb-1.5">Não encontrou o ideal?</h3>
+            <p className="text-xs text-muted-foreground mb-4 max-w-[200px]">
+              Use a Busca IA para descrever em linguagem natural
+            </p>
+            <Button
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); setAiMode(true); }}
+              className="gap-1.5 rounded-full"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Tentar Busca IA
+            </Button>
+          </motion.div>
+        );
+      }
+    });
+    return cards;
+  }, [imoveis, hoveredId, favorites, selectMode, selectedIds, viewedSlugs, toggleFavorite, toggleSelect, openPreview]);
+
+  const mapContent = (
+    <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
+      <SearchMapBox
+        pins={effectiveMapPins}
+        onBoundsSearch={(bounds) => { setFilter("bounds", bounds); setPage(0); setAllImoveis([]); }}
+        onBoundsChange={() => {}}
+        onPinClick={async (pin) => {
+          const found = imoveis.find(i => i.id === pin.id);
+          if (found) {
+            openPreview(found);
+            return;
+          }
+          const fetched = pin.slug ? await fetchImovelBySlug(pin.slug) : null;
+          if (fetched) openPreview(fetched);
+        }}
       />
+    </ErrorBoundary>
+  );
 
-      {/* Lead context banner */}
-      {hasLeadContext && (
-        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
-          <span className="text-xs font-medium text-primary">
-            🔗 Buscando imóveis para: <strong>{leadNome || "Lead"}</strong>
-          </span>
-        </div>
+  return (
+    <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden bg-background">
+      {/* Preview drawer */}
+      {previewItem && (
+        <PropertyPreviewDrawer
+          item={previewItem}
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          isFavorite={favorites.has(previewItem.id)}
+          onFavorite={toggleFavorite}
+          getPreco={previewGetPreco}
+          selectMode={selectMode}
+          isSelected={selectedIds.has(previewItem.id)}
+          onToggleSelect={toggleSelect}
+        />
       )}
 
-      {/* Lead Match banner */}
-      {leadMatch.hasMatch && (
-        <div className="bg-accent/50 border-b border-accent px-4 py-2 flex items-center justify-center gap-2">
-          <span className="text-xs font-medium text-foreground">
-            🔍 Buscando imóveis para <strong>{leadMatch.matchedLead!.nome}</strong>
+      {/* Alert modal */}
+      {user && (
+        <SearchAlertModal
+          open={alertOpen}
+          onClose={() => setAlertOpen(false)}
+          filters={filters}
+          queryIA={aiActiveQuery}
+          userId={user.id}
+        />
+      )}
+
+      {/* ── Mobile fullscreen map overlay ── */}
+      <AnimatePresence>
+        {isMobile && mobileMapOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background flex flex-col"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/95 backdrop-blur-sm">
+              <span className="text-sm font-semibold text-foreground">{total.toLocaleString("pt-BR")} imóveis no mapa</span>
+              <Button variant="ghost" size="sm" onClick={() => setMobileMapOpen(false)} className="gap-1.5">
+                <List className="h-4 w-4" /> Ver lista
+              </Button>
+            </div>
+            <div className="flex-1">{mapContent}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── AI Search overlay ── */}
+      <AnimatePresence>
+        {aiMode && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="z-40 border-b border-primary/30 bg-primary/5 px-4 sm:px-5 py-3"
+          >
+            <div className="flex items-center gap-2 max-w-2xl mx-auto">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                <Sparkles className="h-4 w-4 text-primary" />
+              </div>
+              <div className="relative flex-1">
+                <input
+                  autoFocus
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAISearch(); if (e.key === "Escape") { setAiMode(false); setAiInput(""); } }}
+                  placeholder='Descreva o imóvel ideal... ex: "apartamento 2 quartos perto do Iguatemi até 800k"'
+                  className="w-full rounded-full border border-primary/30 bg-background px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary transition-colors"
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={handleAISearch}
+                disabled={aiLoading || !aiInput.trim()}
+                className="gap-1.5 rounded-full shrink-0"
+              >
+                {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Buscar
+              </Button>
+              <button onClick={() => { setAiMode(false); setAiInput(""); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── AI Query active chip ── */}
+      {aiActiveQuery && !aiMode && (
+        <div className="z-30 border-b border-primary/20 bg-primary/5 px-4 sm:px-5 py-2 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[12px] font-semibold text-primary">
+            <Sparkles className="h-3 w-3" />
+            IA: "{aiActiveQuery}"
           </span>
-          <button onClick={leadMatch.clearMatch} className="ml-2 p-0.5 rounded-full hover:bg-muted transition-colors">
-            <X className="h-3.5 w-3.5 text-muted-foreground" />
+          <button onClick={handleClearAI} className="text-xs text-muted-foreground hover:text-foreground transition-colors underline">
+            Limpar busca IA
           </button>
         </div>
       )}
 
-      {/* ── Sticky top bar ── */}
-      <div className="sticky top-0 z-30 bg-[#f0f0f5]/95 dark:bg-[#0e1525]/95 backdrop-blur-md border-b border-[#e8e8f0] dark:border-white/10">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6">
-          {/* Row 1: Header + Search + Actions */}
-          <div className="py-2.5 flex items-center gap-2.5">
-            {/* Icon + Title */}
-            <div className="w-7 h-7 rounded-[7px] bg-[#4969FF] flex items-center justify-center flex-shrink-0">
-              <Building2 size={13} strokeWidth={1.5} className="text-white" />
-            </div>
-            <h1 className="text-[16px] font-bold tracking-[-0.3px] text-[#0a0a0a] dark:text-[#fafafa] hidden md:block">Imóveis</h1>
-            {!loading && (
-              <span className="text-[12px] text-[#a1a1aa] hidden md:inline">
-                {total.toLocaleString()} disponíveis{searchTimeMs != null ? ` · ${searchTimeMs}ms` : ""}
-              </span>
-            )}
-
-            {/* Search input */}
-            {searchMode === "normal" ? (
-              <div className="relative flex-1 max-w-[280px] z-50">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#a1a1aa]" strokeWidth={1.5} />
-                <input
-                  ref={searchInputRef}
-                  placeholder="Bairro, cidade ou tipo..."
-                  value={search}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  className="w-full pl-9 pr-8 h-[36px] text-[13px] bg-[#f7f7fb] dark:bg-white/5 border border-[#e8e8f0] dark:border-white/10 rounded-[9px] focus:border-[#4969FF] outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
-                />
-                {search && (
-                  <button onClick={() => { setSearch(""); setShowSuggestions(false); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#a1a1aa] hover:text-[#0a0a0a]">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                {/* Autocomplete dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-[#18181b] border border-[#e8e8f0] dark:border-white/10 rounded-[12px] shadow-xl z-50 max-h-72 overflow-y-auto">
-                    {(() => {
-                      const bairros = suggestions.filter(s => s.type === "bairro");
-                      const empreendimentos = suggestions.filter(s => s.type === "empreendimento");
-                      const codigos = suggestions.filter(s => s.type === "codigo");
-                      return (
-                        <>
-                          {bairros.length > 0 && (
-                            <div className="px-3 pt-2.5 pb-1">
-                              <p className="text-[10px] font-semibold text-[#a1a1aa] uppercase tracking-wider">Bairros</p>
-                              {bairros.map((s, i) => (
-                                <button key={i} onClick={() => handleSuggestionClick(s)} className="w-full text-left px-2 py-1.5 text-sm hover:bg-[#f7f7fb] dark:hover:bg-white/5 rounded-md flex items-center gap-2">
-                                  <MapPin className="h-3.5 w-3.5 text-[#a1a1aa]" /> {s.value}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          {empreendimentos.length > 0 && (
-                            <div className="px-3 pt-2 pb-1 border-t border-[#e8e8f0] dark:border-white/10">
-                              <p className="text-[10px] font-semibold text-[#a1a1aa] uppercase tracking-wider">Empreendimentos</p>
-                              {empreendimentos.map((s, i) => (
-                                <button key={i} onClick={() => handleSuggestionClick(s)} className="w-full text-left px-2 py-1.5 text-sm hover:bg-[#f7f7fb] dark:hover:bg-white/5 rounded-md flex items-center gap-2">
-                                  <Building2 className="h-3.5 w-3.5 text-[#a1a1aa]" /> {s.value}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          {codigos.length > 0 && (
-                            <div className="px-3 pt-2 pb-2.5 border-t border-[#e8e8f0] dark:border-white/10">
-                              <p className="text-[10px] font-semibold text-[#a1a1aa] uppercase tracking-wider">Códigos</p>
-                              {codigos.map((s, i) => (
-                                <button key={i} onClick={() => handleSuggestionClick(s)} className="w-full text-left px-2 py-1.5 text-sm hover:bg-[#f7f7fb] dark:hover:bg-white/5 rounded-md flex items-center gap-2 font-mono">
-                                  <Search className="h-3.5 w-3.5 text-[#a1a1aa]" /> {s.value}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* AI search input */
-              <div className="relative flex-1 max-w-[360px]">
-                <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#6366f1]" />
-                <input
-                  placeholder="Descreva o imóvel... ex: 3 dorm perto do Iguatemi até 1M"
-                  value={aiQuery}
-                  onChange={(e) => setAiQuery(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && aiQuery.trim().length >= 3) searchWithAI(aiQuery); }}
-                  className="w-full pl-9 pr-28 h-[36px] text-[13px] bg-[#f7f7fb] dark:bg-white/5 border border-[#6366f1]/30 rounded-[9px] focus:border-[#4969FF] outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a1a1aa]"
-                />
-                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  {aiQuery && (
-                    <button onClick={() => { setAiQuery(""); clearAISearch(); }} className="text-[#a1a1aa] hover:text-[#0a0a0a] p-1 rounded-full">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => searchWithAI(aiQuery)}
-                    className="h-[28px] px-3 rounded-[7px] text-[12px] font-semibold bg-[#4969FF] hover:bg-[#3350E6] text-white flex items-center gap-1"
-                    disabled={aiLoading || aiQuery.trim().length < 3}
-                  >
-                    {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
-                    Buscar
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Busca IA toggle */}
-            <button
-              onClick={() => { searchMode === "ai" ? (setSearchMode("normal"), clearAISearch()) : setSearchMode("ai"); }}
-              className={cn(
-                "flex items-center gap-1.5 h-[36px] px-4 text-[12px] font-medium rounded-[9px] whitespace-nowrap transition-all border",
-                searchMode === "ai"
-                  ? "bg-[#4969FF] text-white border-[#4969FF]"
-                  : "border-[#4969FF] text-[#4969FF] hover:bg-[#4969FF]/5"
-              )}
+      {/* ── Sticky filter bar ── */}
+      <div className="z-50 border-b border-border bg-background relative">
+        <div className="flex items-center gap-2 overflow-x-auto px-4 sm:px-5 py-3 scrollbar-hide">
+          {/* Search input with bairro chips */}
+          <div className="shrink-0">
+            <div
+              className="flex flex-wrap items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 transition-colors focus-within:border-primary"
+              style={{ minWidth: isMobile ? 180 : 240, maxWidth: isMobile ? 280 : 420 }}
+              onClick={() => { setShowBairroDropdown(true); bairroInputRef.current?.focus(); }}
             >
-              <Sparkles size={12} strokeWidth={1.5} /> Busca IA
-            </button>
-
-            <div className="flex-1" />
-
-            {/* Right actions */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => { setShowFavoritesOnly(!showFavoritesOnly); }}
-                className={cn(
-                  "flex items-center gap-1.5 h-[36px] px-3 text-[12px] font-medium rounded-[9px] border transition-all",
-                  showFavoritesOnly
-                    ? "bg-[#4969FF] text-white border-[#4969FF]"
-                    : "text-[#52525b] bg-[#f7f7fb] dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 hover:border-[#4969FF] hover:text-[#4969FF]"
-                )}
-              >
-                <Heart className={cn("h-3.5 w-3.5", showFavoritesOnly && "fill-current")} />
-                <span className="hidden sm:inline">Favoritos</span>
-                {favorites.size > 0 && <span className="text-[10px] font-bold ml-0.5">{favorites.size}</span>}
-              </button>
-              <button
-                onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); setVitrineLink(null); }}
-                className={cn(
-                  "flex items-center gap-1.5 h-[36px] px-3 text-[12px] font-medium rounded-[9px] border transition-all",
-                  selectMode
-                    ? "bg-[#4969FF] text-white border-[#4969FF]"
-                    : "text-[#52525b] bg-[#f7f7fb] dark:bg-white/5 border-[#e8e8f0] dark:border-white/10 hover:border-[#4969FF] hover:text-[#4969FF]"
-                )}
-              >
-                <Share2 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{selectMode ? `${selectedIds.size} selecionados` : "Vitrine"}</span>
-              </button>
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              {bairrosSelecionados.map(b => (
+                <span key={b} className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[12px] font-medium text-primary">
+                  {b}
+                  <X className="h-3 w-3 cursor-pointer opacity-60 hover:opacity-100" onClick={(e) => { e.stopPropagation(); removeBairro(b); }} />
+                </span>
+              ))}
+              <input
+                ref={bairroInputRef}
+                type="text"
+                value={bairroInput}
+                onChange={(e) => { setBairroInput(e.target.value); setShowBairroDropdown(true); }}
+                onFocus={() => setShowBairroDropdown(true)}
+                onBlur={() => setTimeout(() => setShowBairroDropdown(false), 200)}
+                onKeyDown={(e) => {
+                  if (e.key === "Backspace" && !bairroInput && bairrosSelecionados.length > 0) removeBairro(bairrosSelecionados[bairrosSelecionados.length - 1]);
+                  if (e.key === "Enter" && bairroInput && bairroSuggestions.length > 0) { e.preventDefault(); addBairro(bairroSuggestions[0]); }
+                  if (e.key === "Escape") { setShowBairroDropdown(false); bairroInputRef.current?.blur(); }
+                }}
+                placeholder={bairrosSelecionados.length > 0 ? "Adicionar bairro..." : "Bairro, cidade ou tipo..."}
+                className="min-w-[80px] flex-1 border-none bg-transparent py-1 text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
+              />
             </div>
           </div>
 
-          {/* Row 2: Filter chips */}
-          <div className="pb-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-            {/* Preço */}
-            <FilterChip
-              label={valorRange[0] > 0 || valorRange[1] < 5_000_000 ? `${fmtCompact(valorRange[0])} — ${valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}` : "Preço"}
-              active={valorRange[0] > 0 || valorRange[1] < 5_000_000}
-              onClear={() => setValorRange([0, 5_000_000])}
-            >
-              <div className="w-64 space-y-3">
-                <p className="text-xs font-semibold text-foreground">Faixa de preço</p>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground whitespace-nowrap">{fmtCompact(valorRange[0])}</span>
-                  <span className="text-muted-foreground">—</span>
-                  <span className="text-muted-foreground whitespace-nowrap">{valorRange[1] >= 5_000_000 ? "5M+" : fmtCompact(valorRange[1])}</span>
-                </div>
-                <Slider min={0} max={5_000_000} step={50_000} value={valorRange} onValueChange={(v) => setValorRange(v as [number, number])} />
-              </div>
-            </FilterChip>
+          {/* AI Search button */}
+          <button
+            onClick={() => setAiMode(!aiMode)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all shrink-0",
+              aiMode || aiActiveQuery
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground hover:border-primary/50 hover:text-primary"
+            )}
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Busca IA
+          </button>
 
-            {/* Dormitórios */}
-            <FilterChip
-              label={dormitorios.length > 0 ? dormitorios.map(d => `${d} dorm`).join(", ") : "Dormitórios"}
-              active={dormitorios.length > 0}
-              onClear={() => setDormitorios([])}
-            >
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-foreground">Dormitórios <span className="text-muted-foreground font-normal">(múltipla seleção)</span></p>
+          {/* Cidade */}
+          <FilterPill label={cidadeLabel} value={cidadeLabel} active={!!filters.cidade && filters.cidade !== "Porto Alegre"} onClear={() => { setFilter("cidade", "Porto Alegre"); setPage(0); setAllImoveis([]); }}>
+            <PillOption selected={!filters.cidade || filters.cidade === "Porto Alegre"} onClick={() => { setFilter("cidade", "Porto Alegre"); setPage(0); setAllImoveis([]); }}>Porto Alegre</PillOption>
+            {CIDADES_PERMITIDAS.filter(c => c !== "Porto Alegre").map(c => (
+              <PillOption key={c} selected={filters.cidade === c} onClick={() => { setFilter("cidade", filters.cidade === c ? "Porto Alegre" : c); setPage(0); setAllImoveis([]); }}>{c}</PillOption>
+            ))}
+          </FilterPill>
+
+          {/* Tipo */}
+          <FilterPill label="Tipo" value={tipoLabel} active={!!filters.tipo} onClear={() => { setFilter("tipo", ""); setPage(0); setAllImoveis([]); }}>
+            {PROPERTY_TYPES.map(t => (
+              <PillOption key={t.value} selected={filters.tipo === t.value} onClick={() => { setFilter("tipo", filters.tipo === t.value ? "" : t.value); setPage(0); setAllImoveis([]); }}>{t.label}</PillOption>
+            ))}
+          </FilterPill>
+
+          {/* Status do Imóvel — multi-select */}
+          <FilterPill
+            label="Status"
+            value={filters.statusImovelList?.length ? (filters.statusImovelList.length === 1 ? filters.statusImovelList[0] : `${filters.statusImovelList.length} status`) : undefined}
+            active={!!(filters.statusImovelList?.length)}
+            onClear={() => { setFilter("statusImovelList", []); setFilter("entregaAnoMin", 0); setFilter("entregaAnoMax", 0); setPage(0); setAllImoveis([]); }}
+          >
+            {["Usado", "Novo", "Em construção", "Na planta"].map(s => {
+              const selected = filters.statusImovelList?.includes(s);
+              return (
+                <PillOption key={s} selected={!!selected} onClick={() => {
+                  const current = filters.statusImovelList || [];
+                  const next = selected ? current.filter(v => v !== s) : [...current, s];
+                  setFilter("statusImovelList", next);
+                  // Clear entrega if no construction statuses
+                  if (!next.includes("Em construção") && !next.includes("Na planta")) {
+                    setFilter("entregaAnoMin", 0);
+                    setFilter("entregaAnoMax", 0);
+                  }
+                  setPage(0); setAllImoveis([]);
+                }}>{s}</PillOption>
+              );
+            })}
+            {/* Entrega range — only when Em construção or Na planta is selected */}
+            {(filters.statusImovelList?.includes("Em construção") || filters.statusImovelList?.includes("Na planta")) && (
+              <div className="mt-2 border-t border-border pt-3 px-1">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Previsão de entrega</p>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={filters.entregaAnoMin || ""}
+                    onChange={(e) => { setFilter("entregaAnoMin", Number(e.target.value) || 0); setPage(0); setAllImoveis([]); }}
+                    className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="">A partir de</option>
+                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <span className="text-xs text-muted-foreground">–</span>
+                  <select
+                    value={filters.entregaAnoMax || ""}
+                    onChange={(e) => { setFilter("entregaAnoMax", Number(e.target.value) || 0); setPage(0); setAllImoveis([]); }}
+                    className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="">Até</option>
+                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031].map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+          </FilterPill>
+
+
+          <FilterPill
+            label="Preço"
+            value={precoLabel || (filters.precoMin || filters.precoMax ? fmtPrecoLabel(filters.precoMin, filters.precoMax) : undefined)}
+            active={!!(filters.precoMin || filters.precoMax)}
+            onClear={() => { setFilter("precoMin", 0); setFilter("precoMax", 0); setPage(0); setAllImoveis([]); }}
+          >
+            {precoRanges.map(r => (
+              <PillOption
+                key={r.label}
+                selected={filters.precoMin === r.min && filters.precoMax === r.max}
+                onClick={() => {
+                  const isSel = filters.precoMin === r.min && filters.precoMax === r.max;
+                  setFilter("precoMin", isSel ? 0 : r.min);
+                  setFilter("precoMax", isSel ? 0 : r.max);
+                  setPage(0);
+                  setAllImoveis([]);
+                }}
+              >{r.label}</PillOption>
+            ))}
+            <div className="mt-2 border-t border-border pt-3 px-1">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Valor personalizado</p>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">R$</span>
+                  <input type="number" placeholder="Mín" value={filters.precoMin || ""} onChange={(e) => setFilter("precoMin", Number(e.target.value) || 0)}
+                    className="w-full rounded-lg border border-border bg-background py-2 pl-8 pr-2 text-[13px] text-foreground outline-none transition-colors focus:border-primary" />
+                </div>
+                <span className="text-xs text-muted-foreground">–</span>
+                <div className="relative flex-1">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">R$</span>
+                  <input type="number" placeholder="Máx" value={filters.precoMax || ""} onChange={(e) => setFilter("precoMax", Number(e.target.value) || 0)}
+                    className="w-full rounded-lg border border-border bg-background py-2 pl-8 pr-2 text-[13px] text-foreground outline-none transition-colors focus:border-primary" />
+                </div>
+              </div>
+            </div>
+          </FilterPill>
+
+          {/* Quartos */}
+          <FilterPill label="Quartos" value={filters.quartos ? `${filters.quartos}+ quartos` : undefined} active={!!filters.quartos} onClear={() => { setFilter("quartos", 0); setPage(0); setAllImoveis([]); }}>
+            {quartoOptions.map(q => (
+              <PillOption key={q} selected={filters.quartos === q} onClick={() => { setFilter("quartos", filters.quartos === q ? 0 : q); setPage(0); setAllImoveis([]); }}>{q}+ quartos</PillOption>
+            ))}
+          </FilterPill>
+
+          {/* Área */}
+          <FilterPill label="Área" value={areaLabel} active={!!(filters.areaMin || filters.areaMax)} onClear={() => { setFilter("areaMin", 0); setFilter("areaMax", 0); setPage(0); setAllImoveis([]); }}>
+            {areaRanges.map(r => (
+              <PillOption
+                key={r.label}
+                selected={filters.areaMin === r.min && filters.areaMax === r.max}
+                onClick={() => {
+                  const isSel = filters.areaMin === r.min && filters.areaMax === r.max;
+                  setFilter("areaMin", isSel ? 0 : r.min);
+                  setFilter("areaMax", isSel ? 0 : r.max);
+                  setPage(0);
+                  setAllImoveis([]);
+                }}
+              >{r.label}</PillOption>
+            ))}
+          </FilterPill>
+
+          {/* +Filtros */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all shrink-0",
+                  (filters.banheiros || filters.vagas)
+                    || filters.codigo || filters.condominioNome || filters.financiavel || filters.mobiliado
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/50"
+                )}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                + Filtros
+                {advancedFilterCount > 0 && (
+                  <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {advancedFilterCount}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 max-h-[70vh] overflow-y-auto p-4 space-y-4">
+              <p className="text-sm font-semibold text-foreground">Filtros avançados</p>
+
+              {/* Banheiros */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Banheiros</p>
                 <div className="flex gap-1.5">
-                  {["1", "2", "3", "4"].map(v => {
-                    const selected = dormitorios.includes(v);
+                  {[1, 2, 3, 4].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => { setFilter("banheiros", filters.banheiros === n ? 0 : n); setPage(0); setAllImoveis([]); }}
+                      className={cn(
+                        "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+                        filters.banheiros === n
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-foreground hover:border-primary/40"
+                      )}
+                    >{n}+</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vagas */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vagas</p>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => { setFilter("vagas", filters.vagas === n ? 0 : n); setPage(0); setAllImoveis([]); }}
+                      className={cn(
+                        "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+                        filters.vagas === n
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-foreground hover:border-primary/40"
+                      )}
+                    >{n}+</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Comodidades */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Comodidades</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {["Piscina", "Churrasqueira", "Sacada", "Elevador", "Pet friendly", "Móveis planejados", "Ar condicionado", "Vista panorâmica", "Espaço gourmet", "Dep. empregada", "Lareira", "Terraço"].map(c => {
+                    const selected = filters.comodidades?.includes(c);
                     return (
-                      <button key={v} onClick={() => setDormitorios(prev => selected ? prev.filter(d => d !== v) : [...prev, v])} className={cn(
-                        "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
-                        selected
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/40"
-                      )}>
-                        {v}
-                      </button>
+                      <label key={c} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!selected}
+                          onChange={() => {
+                            const current = filters.comodidades || [];
+                            const next = selected ? current.filter(v => v !== c) : [...current, c];
+                            setFilter("comodidades", next);
+                            setPage(0); setAllImoveis([]);
+                          }}
+                          className="h-3.5 w-3.5 rounded border-border text-primary accent-primary"
+                        />
+                        <span className="text-[12px] text-foreground">{c}</span>
+                      </label>
                     );
                   })}
                 </div>
               </div>
-            </FilterChip>
 
-            {/* Tipo */}
-            <FilterChip
-              label={tipo.length > 0 ? tipo.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(", ") : "Tipo"}
-              active={tipo.length > 0}
-              onClear={() => setTipo([])}
-            >
-              <div className="space-y-1 w-48">
-                <p className="text-xs font-semibold text-foreground mb-2">Tipo de imóvel <span className="text-muted-foreground font-normal">(múltipla)</span></p>
-                {tipoOptions.map((facet) => {
-                  const selected = tipo.includes(facet.value);
-                  const label = facet.value.charAt(0).toUpperCase() + facet.value.slice(1);
-                  return (
-                    <button key={facet.value} onClick={() => setTipo(prev => selected ? prev.filter(t => t !== facet.value) : [...prev, facet.value])} className={cn(
-                      "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all flex items-center gap-2",
-                      selected ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50"
-                    )}>
-                      <Check className={cn("h-3 w-3 shrink-0", selected ? "opacity-100" : "opacity-0")} />
-                      <span className="flex-1">{label}</span>
-                      {facet.count > 0 && <span className="text-[10px] text-muted-foreground">({facet.count})</span>}
-                    </button>
-                  );
-                })}
+              {/* Empreendimento/Condomínio */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Empreendimento</p>
+                <input
+                  type="text"
+                  placeholder="Buscar empreendimento…"
+                  value={filters.condominioNome}
+                  onChange={(e) => { setFilter("condominioNome", e.target.value); }}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+                />
               </div>
-            </FilterChip>
 
-            {/* Cidade */}
-            <FilterChip
-              label={cidade.length === 1 ? cidade[0] : cidade.length > 1 ? `${cidade.length} cidades` : "Cidade"}
-              active={!(cidade.length === 1 && cidade[0] === "Porto Alegre")}
-              onClear={() => setCidade(["Porto Alegre"])}
-            >
-              <div className="space-y-1 w-48">
-                <p className="text-xs font-semibold text-foreground mb-2">Cidade <span className="text-muted-foreground font-normal">(múltipla)</span></p>
-                {cidadeOptions.map((facet) => {
-                  const selected = cidade.includes(facet.value);
-                  return (
-                    <button key={facet.value} onClick={() => {
-                      setCidade(prev => {
-                        if (selected) {
-                          const next = prev.filter(c => c !== facet.value);
-                          return next.length === 0 ? ["Porto Alegre"] : next;
-                        }
-                        return [...prev, facet.value];
-                      });
-                      // Clear bairro selections when city changes
-                      setBairro([]);
-                    }} className={cn(
-                      "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all flex items-center gap-2",
-                      selected ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50"
-                    )}>
-                      <Check className={cn("h-3 w-3 shrink-0", selected ? "opacity-100" : "opacity-0")} />
-                      <span className="flex-1">{facet.value}</span>
-                      {facet.count > 0 && <span className="text-[10px] text-muted-foreground">({facet.count})</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </FilterChip>
-
-            {/* Bairro */}
-            <FilterChip label={bairro.length > 0 ? (bairro.length <= 2 ? bairro.join(", ") : `${bairro.length} bairros`) : "Bairro"} active={bairro.length > 0} onClear={() => setBairro([])}>
-              <div className="w-56">
-                <Command>
-                  <CommandInput placeholder="Buscar bairro..." value={bairroSearch} onValueChange={setBairroSearch} className="h-8" />
-                  <CommandList className="max-h-48">
-                    <CommandEmpty>
-                      {bairroSearch ? (
-                        <button className="w-full px-3 py-2 text-sm text-left hover:bg-accent rounded" onClick={() => { setBairro(prev => [...prev, bairroSearch]); setBairroSearch(""); }}>
-                          Usar "<strong>{bairroSearch}</strong>"
-                        </button>
-                      ) : "Nenhum encontrado"}
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {bairro.length > 0 && (
-                        <CommandItem value="__limpar__" onSelect={() => { setBairro([]); setBairroSearch(""); }}>
-                          <X className="mr-2 h-3 w-3 text-muted-foreground" /> Limpar seleção
-                        </CommandItem>
-                      )}
-                      {filteredBairros.map((facet) => {
-                        const selected = bairro.includes(facet.value);
-                        return (
-                          <CommandItem key={facet.value} value={facet.value} onSelect={() => { setBairro(prev => selected ? prev.filter(x => x !== facet.value) : [...prev, facet.value]); setBairroSearch(""); }}>
-                            <Check className={cn("mr-2 h-3 w-3", selected ? "opacity-100" : "opacity-0")} />
-                            <span className="flex-1">{facet.value}</span>
-                            {facet.count > 0 && <span className="text-[10px] text-muted-foreground ml-1">({facet.count})</span>}
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </div>
-            </FilterChip>
-
-            {/* Construtora — only show if facets exist */}
-            {filteredConstrutoras.length > 0 && (
-            <FilterChip label={construtora.length > 0 ? (construtora.length <= 2 ? construtora.join(", ") : `${construtora.length} construtoras`) : "Construtora"} active={construtora.length > 0} onClear={() => setConstrutora([])}>
-              <div className="w-56">
-                <Command>
-                  <CommandInput placeholder="Buscar construtora..." value={construtoraSearch} onValueChange={setConstrutoraSearch} className="h-8" />
-                  <CommandList className="max-h-48">
-                    <CommandEmpty>Nenhuma encontrada</CommandEmpty>
-                    <CommandGroup>
-                      {construtora.length > 0 && (
-                        <CommandItem value="__limpar__" onSelect={() => { setConstrutora([]); setConstrutoraSearch(""); }}>
-                          <X className="mr-2 h-3 w-3 text-muted-foreground" /> Limpar seleção
-                        </CommandItem>
-                      )}
-                      {filteredConstrutoras.map((facet) => {
-                        const selected = construtora.includes(facet.value);
-                        return (
-                          <CommandItem key={facet.value} value={facet.value} onSelect={() => { setConstrutora(prev => selected ? prev.filter(x => x !== facet.value) : [...prev, facet.value]); setConstrutoraSearch(""); }}>
-                            <Check className={cn("mr-2 h-3 w-3", selected ? "opacity-100" : "opacity-0")} />
-                            <span className="flex-1">{facet.value}</span>
-                            {facet.count > 0 && <span className="text-[10px] text-muted-foreground ml-1">({facet.count})</span>}
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </div>
-            </FilterChip>
-            )}
-
-            {/* Empreendimento — only show if facets exist */}
-            {filteredEmpreendimentos.length > 0 && (
-            <FilterChip label={empreendimento.length > 0 ? (empreendimento.length <= 2 ? empreendimento.join(", ") : `${empreendimento.length} empreend.`) : "Empreendimento"} active={empreendimento.length > 0} onClear={() => setEmpreendimento([])}>
-              <div className="w-56">
-                <Command>
-                  <CommandInput placeholder="Buscar empreendimento..." value={empreendimentoSearch} onValueChange={setEmpreendimentoSearch} className="h-8" />
-                  <CommandList className="max-h-48">
-                    <CommandEmpty>Nenhum encontrado</CommandEmpty>
-                    <CommandGroup>
-                      {empreendimento.length > 0 && (
-                        <CommandItem value="__limpar__" onSelect={() => { setEmpreendimento([]); setEmpreendimentoSearch(""); }}>
-                          <X className="mr-2 h-3 w-3 text-muted-foreground" /> Limpar seleção
-                        </CommandItem>
-                      )}
-                      {filteredEmpreendimentos.map((facet) => {
-                        const selected = empreendimento.includes(facet.value);
-                        return (
-                          <CommandItem key={facet.value} value={facet.value} onSelect={() => { setEmpreendimento(prev => selected ? prev.filter(x => x !== facet.value) : [...prev, facet.value]); setEmpreendimentoSearch(""); }}>
-                            <Check className={cn("mr-2 h-3 w-3", selected ? "opacity-100" : "opacity-0")} />
-                            <span className="flex-1 truncate">{facet.value}</span>
-                            {facet.count > 0 && <span className="text-[10px] text-muted-foreground ml-1">({facet.count})</span>}
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </div>
-            </FilterChip>
-            )}
-
-            {/* Situação — uses status field from Typesense (Usado, Novo, Em construção, Na planta) */}
-            <FilterChip
-              label={situacao.length > 0 ? situacao.join(", ") : "Situação"}
-              active={situacao.length > 0}
-              onClear={() => setSituacao([])}
-            >
-              <div className="space-y-2 w-48">
-                <p className="text-xs font-semibold text-foreground mb-2">Situação do imóvel <span className="text-muted-foreground font-normal">(múltipla)</span></p>
-                {(statusImovelFacets.length > 0 ? statusImovelFacets : [
-                  { value: "Usado", count: 0 },
-                  { value: "Novo", count: 0 },
-                  { value: "Em construção", count: 0 },
-                  { value: "Na planta", count: 0 },
-                ]).map(opt => {
-                  const selected = situacao.includes(opt.value);
-                  const emoji = opt.value === "Usado" ? "🏠" : opt.value === "Novo" ? "✨" : opt.value === "Em construção" ? "🏗️" : "📋";
-                  return (
-                    <button key={opt.value} onClick={() => setSituacao(prev => selected ? prev.filter(s => s !== opt.value) : [...prev, opt.value])} className={cn(
-                      "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all flex items-center gap-2",
-                      selected ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50"
-                    )}>
-                      <Check className={cn("h-3 w-3 shrink-0", selected ? "opacity-100" : "opacity-0")} />
-                      <span>{emoji} {opt.value}</span>
-                      {opt.count > 0 && <span className="text-[10px] text-muted-foreground ml-auto">({opt.count})</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </FilterChip>
-
-            {/* More filters */}
-            <FilterChip
-              label="Mais filtros"
-              active={!!(suitesFilter && suitesFilter !== "all") || !!(vagas && vagas !== "all") || (areaRange[0] > 0 || areaRange[1] < 500) || somenteObras || !!codigoBusca}
-            >
-              <div className="w-64 space-y-4">
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-foreground">Suítes</p>
-                  <div className="flex gap-1.5">
-                    {["all", "1", "2", "3"].map(v => (
-                      <button key={v} onClick={() => setSuitesFilter(v === "all" ? "" : v)} className={cn(
-                        "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
-                        (suitesFilter === v || (!suitesFilter && v === "all"))
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/40"
-                      )}>
-                        {v === "all" ? "Todos" : `${v}+`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-foreground">Vagas</p>
-                  <div className="flex gap-1.5">
-                    {["all", "1", "2", "3"].map(v => (
-                      <button key={v} onClick={() => setVagas(v === "all" ? "" : v)} className={cn(
-                        "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
-                        (vagas === v || (!vagas && v === "all"))
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/40"
-                      )}>
-                        {v === "all" ? "Todos" : `${v}+`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-foreground">
-                    Área: {areaRange[0]}m² — {areaRange[1] >= 500 ? "500+" : areaRange[1]}m²
-                  </p>
-                  <Slider min={0} max={500} step={10} value={areaRange} onValueChange={(v) => setAreaRange(v as [number, number])} />
-                </div>
-
-                <label className="flex items-center gap-2 text-xs cursor-pointer select-none pt-1 border-t border-border/50">
-                  <input type="checkbox" checked={somenteObras} onChange={(e) => setSomenteObras(e.target.checked)} className="rounded border-border" />
-                  <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground font-medium">Em obras / na planta</span>
-                </label>
-
-                <div className="space-y-2 pt-1 border-t border-border/50">
-                  <p className="text-xs font-semibold text-foreground">Código do imóvel</p>
+              {/* Toggles */}
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
-                    type="text"
-                    placeholder="Ex: 74726-UH"
-                    value={codigoBusca}
-                    onChange={(e) => setCodigoBusca(e.target.value)}
-                    className="w-full h-8 px-2.5 text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:border-primary outline-none"
+                    type="checkbox"
+                    checked={filters.financiavel}
+                    onChange={(e) => { setFilter("financiavel", e.target.checked); setPage(0); setAllImoveis([]); }}
+                    className="h-4 w-4 rounded border-border text-primary accent-primary"
                   />
-                </div>
+                  <span className="text-[13px] text-foreground">Aceita financiamento</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.mobiliado}
+                    onChange={(e) => { setFilter("mobiliado", e.target.checked); setPage(0); setAllImoveis([]); }}
+                    className="h-4 w-4 rounded border-border text-primary accent-primary"
+                  />
+                  <span className="text-[13px] text-foreground">Mobiliado</span>
+                </label>
               </div>
-            </FilterChip>
 
-            {/* Quick toggles */}
-            <div className="border-l border-border/50 pl-2 ml-1 flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => { setCampanhaAtiva(!campanhaAtiva); setUhomeOnly(false); }}
-                className={cn(
-                  "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
-                  campanhaAtiva ? "bg-primary/10 border-primary/30 text-primary" : "bg-background border-border text-muted-foreground hover:border-primary/40"
-                )}
-              >
-                <Megaphone className="h-3 w-3" /> Campanha
+              {/* Código do imóvel */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Código do imóvel</p>
+                <input
+                  type="text"
+                  placeholder="Ex: 74726-UH"
+                  value={filters.codigo}
+                  onChange={(e) => { setFilter("codigo", e.target.value); setPage(0); setAllImoveis([]); }}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+                />
+              </div>
+
+              {/* Limpar avançados */}
+              {(filters.banheiros > 0 || filters.vagas > 0 || !!filters.codigo || !!filters.condominioNome || filters.financiavel || filters.mobiliado || (filters.comodidades?.length || 0) > 0) && (
+                <button
+                  onClick={() => { setFilter("banheiros", 0); setFilter("vagas", 0); setFilter("codigo", ""); setFilter("condominioNome", ""); setFilter("financiavel", false); setFilter("mobiliado", false); setFilter("comodidades", []); setPage(0); setAllImoveis([]); }}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Limpar filtros avançados
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {/* Divider + actions */}
+          <div className="border-l border-border/50 pl-2 ml-1 flex items-center gap-1.5 shrink-0">
+            {hasActiveFilters && (
+              <button onClick={() => { resetFilters(); handleClearAI(); setPage(0); setAllImoveis([]); }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-border bg-card text-muted-foreground hover:text-foreground transition-all">
+                <RotateCcw className="h-3 w-3" /> Limpar
               </button>
-              
+            )}
+            <Button onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); setVitrineLink(null); }} variant={selectMode ? "default" : "ghost"} size="sm" className="gap-1.5 h-9 rounded-full">
+              <Share2 className="h-4 w-4" />
+              <span className="hidden sm:inline">{selectMode ? `${selectedIds.size} selecionados` : "Vitrine"}</span>
+            </Button>
+          </div>
+        </div>
+        {/* Bairro dropdown — outside overflow container */}
+        {showBairroDropdown && bairroSuggestions.length > 0 && (
+          <div className="absolute left-4 sm:left-5 top-full z-[60] mt-1 max-h-64 w-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-xl">
+            <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Bairros</p>
+            {bairroSuggestions.map(b => (
               <button
-                onClick={() => setLeadSearchOpen(true)}
-                className={cn(
-                  "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
-                  leadMatch.hasMatch ? "bg-primary/10 border-primary/30 text-primary" : "bg-background border-border text-muted-foreground hover:border-primary/40"
-                )}
+                key={b}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => addBairro(b)}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent/50"
               >
-                <Users className="h-3 w-3" /> Match Lead
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {b}
               </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Subheader: counter + bounds badge + sort + alert ── */}
+      <div className={`relative flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-background px-4 sm:px-5 py-3 ${sortOpen ? "z-30" : "z-0"}`}>
+        <div className="flex items-center gap-2">
+          {isLoading && page === 0 ? <Skeleton className="h-7 w-40" /> : (
+            <div>
+             <div className="text-lg font-extrabold leading-tight text-foreground">
+                 {total.toLocaleString("pt-BR")} imóveis
+                 {searchTimeMs != null && (
+                   <span className="ml-1.5 text-xs font-normal text-muted-foreground">· {searchTimeMs}ms</span>
+                 )}
+               </div>
+               <div className="mt-0.5 text-xs text-muted-foreground">
+                 {imoveis.length > 0 && `Mostrando ${imoveis.length.toLocaleString("pt-BR")} de ${total.toLocaleString("pt-BR")} · `}
+                 à venda em {filters.cidade || "Porto Alegre"}{bairroDisplay}
+               </div>
             </div>
+          )}
+
+          {filters.bounds && (
+            <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+              <MapPin className="h-3 w-3" />
+              Mapa
+              <button onClick={clearBounds} className="ml-0.5 font-bold leading-none hover:opacity-70">×</button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Alert */}
+          <button
+            onClick={() => setAlertOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            <Bell className="h-3.5 w-3.5" /> Alerta
+          </button>
+
+          {/* Sort */}
+          <div className="relative" ref={sortRef}>
+            <button
+              onClick={() => setSortOpen(!sortOpen)}
+              className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-foreground"
+            >
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              {sortLabels[filters.ordem] || "Mais recentes"}
+            </button>
+            {sortOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute right-0 top-full z-30 mt-1 w-44 rounded-xl border border-border bg-card p-1 shadow-xl"
+              >
+                {Object.entries(sortLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setFilter("ordem", key as any); setSortOpen(false); }}
+                    className={`block w-full rounded-lg px-3 py-2 text-left text-[13px] transition-colors ${
+                      filters.ordem === key
+                        ? "bg-primary/10 font-medium text-primary"
+                        : "text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Main content ── */}
-      {viewMode === "map" ? (
-        /* ═══ MAP SPLIT VIEW ═══ */
-        <div className="flex-1 flex overflow-hidden w-full">
-          {/* Left: property list */}
-          <div className="w-[420px] xl:w-[480px] shrink-0 h-[calc(100vh-120px)] overflow-y-auto px-4 py-3 space-y-3 border-r border-[#e8e8f0] dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                {loading ? <Skeleton className="h-4 w-24" /> : (
-                  <>
-                    <p className="text-[14px] font-bold text-[#0a0a0a] dark:text-white">{total.toLocaleString()} imóveis</p>
-                    <p className="text-[11px] text-[#a1a1aa]">Mostrando {displayImoveis.length}{cidade.length === 1 ? ` · à venda em ${cidade[0]}` : ""}</p>
-                  </>
-                )}
-              </div>
-              <div className="flex border border-border/60 rounded-lg overflow-hidden">
-                <button onClick={() => setViewMode("grid")} className={cn("p-1.5 transition-colors", "bg-background text-muted-foreground hover:bg-muted")}><LayoutGrid className="h-4 w-4" /></button>
-                <button onClick={() => setViewMode("list")} className={cn("p-1.5 transition-colors", "bg-background text-muted-foreground hover:bg-muted")}><List className="h-4 w-4" /></button>
-                <button onClick={() => setViewMode("map")} className="p-1.5 bg-primary text-primary-foreground"><Map className="h-4 w-4" /></button>
-              </div>
-            </div>
-            {fetchError ? (
-              <div className="text-center py-8">
-                <Search className="h-8 w-8 mx-auto text-destructive/30 mb-2" />
-                <p className="text-sm font-medium text-foreground">Erro ao carregar</p>
-                <p className="text-xs text-muted-foreground mt-1">{fetchError}</p>
-                <Button variant="outline" size="sm" className="mt-2 text-xs" onClick={() => fetchPage(1)}>Tentar novamente</Button>
-              </div>
-            ) : loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Card key={i} className="overflow-hidden border-border/40">
-                    <div className="flex"><Skeleton className="w-32 h-28 rounded-none shrink-0" /><div className="flex-1 p-2.5 space-y-1.5"><Skeleton className="h-4 w-1/3" /><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/2" /></div></div>
-                  </Card>
-                ))}
-              </div>
-            ) : displayImoveis.length === 0 ? (
-              <div className="text-center py-8">
-                <Search className="h-8 w-8 mx-auto text-muted-foreground/20 mb-2" />
-                <p className="text-sm font-medium text-foreground">Nenhum imóvel</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {displayImoveis.map((item, idx) => {
-                  const isCampanha = campanhaOverrides.some((c) => c.codigo === item.codigo);
-                  const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
-                  return <PropertyCardList key={item.id_imovel || item.codigo || idx} item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} getPreco={getPreco} onPreview={openPreview} />;
-                })}
-                {totalPages > 1 && !campanhaAtiva && (
-                  <div className="flex items-center justify-center gap-2 py-3">
-                    <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchPage(page - 1)} className="gap-1 rounded-full text-xs"><ChevronLeft className="h-3 w-3" /></Button>
-                    <span className="text-xs text-muted-foreground tabular-nums">{page}/{totalPages}</span>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchPage(page + 1)} className="gap-1 rounded-full text-xs"><ChevronRight className="h-3 w-3" /></Button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          {/* Right: map */}
-          <div className="flex-1 h-[calc(100vh-120px)]">
-            <ErrorBoundary fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Erro ao carregar mapa</div>}>
-              <PropertyMap
-                properties={displayImoveis}
-                loading={loading}
-                onFavorite={toggleFavorite}
-                favorites={favorites}
-                getPreco={getPreco}
-                className="h-full w-full rounded-none border-0"
-              />
-            </ErrorBoundary>
-          </div>
-        </div>
-      ) : (
-        /* ═══ GRID / LIST VIEW ═══ */
-        <div className="flex-1 max-w-[1400px] mx-auto w-full px-4 md:px-6 py-4">
-          {/* Vitrine bar */}
-          {selectMode && selectedIds.size > 0 && (
-            <Card className="p-3 mb-4 flex items-center justify-between bg-primary/5 border-primary/20 flex-wrap gap-2">
-              <span className="text-sm font-medium">{selectedIds.size} imóvel(is) selecionado(s)</span>
-              <div className="flex items-center gap-2">
-                {vitrineLink ? (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Input value={vitrineLink} readOnly className="text-xs h-8 w-64" />
-                    <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }}><Copy className="h-3.5 w-3.5" /></Button>
-                    <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção de imóveis: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer" onClick={() => { if (hasLeadContext) trackEvent({ event_type: "vitrine_sent", payload: { link: vitrineLink, channel: "whatsapp" } }); }}>
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-1"><Phone className="h-3.5 w-3.5" /> WhatsApp</Button>
-                    </a>
-                  </div>
-                ) : (
-                  <Button size="sm" disabled={creatingVitrine} onClick={async () => {
-                    if (!user) return;
-                    setCreatingVitrine(true);
-                    try {
-                      const { data, error } = await supabase.from("vitrines").insert({ created_by: user.id, titulo: "Seleção de Imóveis", tipo: "property_selection", imovel_ids: [...selectedIds] as any }).select("id").single();
-                      if (error) throw error;
-                      const link = getVitrinePublicUrl(data.id);
-                      setVitrineLink(link); navigator.clipboard.writeText(link); toast.success("Vitrine criada! Link copiado.");
-                      if (hasLeadContext) trackEvent({ event_type: "vitrine_created", vitrine_id: data.id, payload: { imovel_ids: [...selectedIds], link } });
-                    } catch { toast.error("Erro ao criar vitrine"); } finally { setCreatingVitrine(false); }
-                  }} className="gap-1.5">
-                    {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />} Gerar Link
-                  </Button>
-                )}
-              </div>
-            </Card>
-          )}
-
-          {/* ═══ AI SEARCH RESULTS ═══ */}
-          {searchMode === "ai" ? (
-            <div className="space-y-4">
-              {aiLoading && (
-                <Card className="p-6 border-violet-200/50 dark:border-violet-800/30">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-primary flex items-center justify-center">
-                      <Brain className="h-4 w-4 text-white animate-pulse" />
+      {/* ── Vitrine bar ── */}
+      <AnimatePresence>
+        {selectMode && selectedIds.size > 0 && !isMobile && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-border/30">
+            <div className="px-5 py-2.5">
+              <Card className="p-3 flex items-center justify-between bg-primary/5 border-primary/20 flex-wrap gap-2">
+                <span className="text-sm font-medium">{selectedIds.size} imóvel(is) selecionado(s)</span>
+                <div className="flex items-center gap-2">
+                  {vitrineLink ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Input value={vitrineLink} readOnly className="text-xs h-8 w-64" />
+                      <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }}><Copy className="h-3.5 w-3.5" /></Button>
+                      <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção de imóveis: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1"><Phone className="h-3.5 w-3.5" /> WhatsApp</Button>
+                      </a>
                     </div>
-                    <div className="space-y-1.5 flex-1"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
-                  </div>
-                </Card>
-              )}
-              {aiError && <Card className="p-4 border-destructive/30 bg-destructive/5"><p className="text-sm text-destructive">{aiError}</p></Card>}
-              {aiResult && !aiLoading && (
-                <>
-                  <Card className="p-4 border-violet-200/50 dark:border-violet-800/30">
-                    <div className="flex items-start gap-3">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-primary flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles className="h-3.5 w-3.5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground font-medium">{aiResult.explicacao}</p>
-                        {aiResult.sugestao_alternativa && <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1"><ArrowRight className="h-3 w-3 shrink-0" /> {aiResult.sugestao_alternativa}</p>}
-                        {aiSearchTime != null && <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-0.5"><Zap className="h-2.5 w-2.5" /> {aiSearchTime}ms</p>}
-                      </div>
-                    </div>
-                  </Card>
-                  {aiResult.tags.length > 0 && (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">Filtros IA:</span>
-                      {aiResult.tags.map(tag => (
-                        <span key={tag.key} className={cn("inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border", tag.category === "perfil" ? "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20" : "bg-primary/8 text-primary border-primary/20")}>
-                          {tag.label}
-                          <button onClick={() => removeTag(tag.key)} className="hover:bg-primary/20 rounded-full p-0.5 -mr-0.5"><X className="h-2.5 w-2.5" /></button>
-                        </span>
-                      ))}
-                      <button onClick={() => { clearAISearch(); setAiQuery(""); }} className="text-xs text-muted-foreground hover:text-foreground ml-1 underline underline-offset-2">Limpar</button>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">{aiTotal > 0 ? `${aiProperties.length} imóveis` : "Nenhum resultado"}{aiTotal > 0 && <span className="text-muted-foreground font-normal"> • por aderência</span>}</span>
-                    <div className="flex border border-border/60 rounded-lg overflow-hidden">
-                      <button onClick={() => setViewMode("grid")} className={cn("p-1.5 transition-colors", viewMode === "grid" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}><LayoutGrid className="h-4 w-4" /></button>
-                      <button onClick={() => setViewMode("list")} className={cn("p-1.5 transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}><List className="h-4 w-4" /></button>
-                      <button onClick={() => setViewMode("map")} className={cn("p-1.5 transition-colors", "bg-background text-muted-foreground hover:bg-muted")}><Map className="h-4 w-4" /></button>
-                    </div>
-                  </div>
-                  {aiProperties.length === 0 ? (
-                    <Card className="p-16 text-center border-border/40"><Sparkles className="h-12 w-12 mx-auto text-muted-foreground/20 mb-4" /><p className="text-lg font-semibold text-foreground">Nenhum imóvel encontrado</p><p className="text-sm text-muted-foreground mt-1">Tente descrever de outra forma</p></Card>
                   ) : (
-                    <div className={cn("grid gap-4", "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
-                      {aiProperties.map(({ item, score }, idx) => {
-                        const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
-                        return (
-                          <div key={item.id_imovel || item.codigo || idx} className="relative">
-                            <div className={cn("absolute top-3 left-3 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold shadow-sm backdrop-blur-sm", score >= 90 ? "bg-emerald-500/90 text-white" : score >= 75 ? "bg-primary/90 text-primary-foreground" : score >= 60 ? "bg-amber-500/90 text-white" : "bg-muted/90 text-foreground")}>
-                              <Sparkles className="h-2.5 w-2.5" />{score}%
-                            </div>
-                            <PropertyCardGrid item={item} idx={idx} isCampanha={false} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} getPreco={getPreco} onPreview={openPreview} />
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <Button size="sm" disabled={creatingVitrine} onClick={createVitrine} className="gap-1.5">
+                      {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />} Gerar Vitrine
+                    </Button>
                   )}
-                </>
-              )}
-              {!aiResult && !aiLoading && !aiError && (
-                <Card className="p-12 text-center border-violet-200/30 dark:border-violet-800/20">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 to-primary flex items-center justify-center mx-auto mb-4"><Brain className="h-7 w-7 text-white" /></div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">Busca Inteligente por IA</h3>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">Descreva o imóvel que você procura em linguagem natural.</p>
-                  <div className="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
-                    {["apartamento 3 dorm perto do Iguatemi até 1M", "studio para investir em Porto Alegre", "casa em condomínio com 3 suítes", "imóvel alto padrão com vista", "lançamento com entrada facilitada", "compacto para Airbnb"].map(s => (
-                      <button key={s} onClick={() => { setAiQuery(s); searchWithAI(s); }} className="text-xs px-3 py-1.5 rounded-full border border-violet-200 dark:border-violet-800/40 text-muted-foreground hover:text-violet-700 dark:hover:text-violet-300 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-all">{s}</button>
-                    ))}
-                  </div>
-                </Card>
-              )}
+                </div>
+              </Card>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Main content: cards (left) + map (right) ── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Cards column */}
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 pt-3 pb-5 sm:px-5" style={{ minWidth: 0 }}>
+          {isError ? (
+            <ErrorState
+              title="Erro ao carregar imóveis"
+              description={fetchError instanceof Error ? fetchError.message : "Erro desconhecido"}
+              action={{ label: "Tentar novamente", onClick: () => {} }}
+            />
+          ) : isInitialListPending ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-4 w-1/3" />
+                </div>
+              ))}
+            </div>
+          ) : imoveis.length === 0 ? (
+            <EmptyState
+              title="Nenhum imóvel encontrado"
+              description="Tente ajustar seus filtros ou termo de busca."
+              icon={<Search className="h-10 w-10 text-muted-foreground/30" />}
+              action={hasActiveFilters ? { label: "Limpar filtros", onClick: () => { resetFilters(); handleClearAI(); setPage(0); setAllImoveis([]); } } : undefined}
+            />
           ) : (
             <>
-              {activeFilters.length > 0 && (
-                <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-                  {activeFilters.map(f => (
-                    <span key={f.key} className="inline-flex items-center gap-1 bg-primary/8 text-primary text-xs font-medium px-2.5 py-1 rounded-full border border-primary/20">
-                      {f.label}
-                      <button onClick={f.onRemove} className="hover:bg-primary/20 rounded-full p-0.5 -mr-0.5"><X className="h-3 w-3" /></button>
-                    </span>
-                  ))}
-                  <button onClick={clearAllFilters} className="text-xs text-muted-foreground hover:text-foreground ml-1 underline underline-offset-2">Limpar tudo</button>
+              <div className="grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
+                {renderCards}
+              </div>
+
+              {/* Load more */}
+              {hasMore && (
+                <div ref={loadMoreRef} className="flex items-center justify-center pt-8 pb-4">
+                  {isFetching ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando mais imóveis...
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setPage(p => p + 1)}
+                      className="rounded-full border border-border px-8 py-3 text-sm font-semibold text-foreground transition-all hover:border-foreground hover:shadow-md active:scale-[0.97]"
+                    >
+                      Ver mais imóveis ({imoveis.length.toLocaleString("pt-BR")} de {total.toLocaleString("pt-BR")})
+                    </button>
+                  )}
                 </div>
               )}
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  {loading ? <Skeleton className="h-4 w-24" /> : (
-                    <>
-                      <p className="text-[14px] font-bold text-[#0a0a0a] dark:text-white">{total.toLocaleString()} imóveis</p>
-                      <p className="text-[11px] text-[#a1a1aa]">Mostrando {displayImoveis.length}{searchTimeMs != null ? ` · ${searchTimeMs}ms` : ""}{cidade.length === 1 ? ` · ${cidade[0]}` : ""}</p>
-                    </>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[140px] h-8 text-xs border-border/60"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="relevancia">Relevância</SelectItem>
-                      <SelectItem value="menor_preco">Menor preço</SelectItem>
-                      <SelectItem value="maior_preco">Maior preço</SelectItem>
-                      <SelectItem value="maior_area">Maior área</SelectItem>
-                      {hasLeadContext && <SelectItem value="aderencia">Aderência ao lead</SelectItem>}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex border border-border/60 rounded-lg overflow-hidden">
-                    <button onClick={() => setViewMode("grid")} className={cn("p-1.5 transition-colors", viewMode === "grid" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}><LayoutGrid className="h-4 w-4" /></button>
-                    <button onClick={() => setViewMode("list")} className={cn("p-1.5 transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}><List className="h-4 w-4" /></button>
-                    <button onClick={() => setViewMode("map")} className={cn("p-1.5 transition-colors", "bg-background text-muted-foreground hover:bg-muted")}><Map className="h-4 w-4" /></button>
-                  </div>
-                </div>
-              </div>
-              {fetchError ? (
-                <ErrorState
-                  title="Erro ao carregar imóveis"
-                  description={fetchError}
-                  action={{ label: "Tentar novamente", onClick: () => fetchPage(1) }}
-                />
-              ) : loading ? (
-                <div className={cn("grid gap-4", "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <Card key={i} className="overflow-hidden border-border/40">
-                      <div><Skeleton className="aspect-[16/10] rounded-none" /><div className="p-3.5 space-y-2"><Skeleton className="h-5 w-2/3" /><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-1/2" /></div></div>
-                    </Card>
-                  ))}
-                </div>
-              ) : displayImoveis.length === 0 ? (
-                <EmptyState
-                  title="Nenhum imóvel encontrado"
-                  description="Tente ajustar seus filtros ou termo de busca."
-                  icon={<Search className="h-10 w-10 text-muted-foreground/30" />}
-                  action={activeFilters.length > 0 ? { label: "Limpar filtros", onClick: clearAllFilters } : undefined}
-                />
-              ) : (
-                <>
-                  <div className={cn("grid gap-4", "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
-                    {displayImoveis.map((item, idx) => {
-                      const isCampanha = campanhaOverrides.some((c) => c.codigo === item.codigo);
-                      const imovelId = String(item.codigo || item.id_imovel || item.id || idx);
-                      return (
-                        <div key={item.id_imovel || item.codigo || idx} className="relative">
-                          {hasLeadContext && leadProfile && sortBy === "aderencia" && (() => {
-                            const score = scorePropertyForLead(item);
-                            return score > 0 ? (
-                              <div className={cn("absolute top-3 left-3 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold shadow-sm backdrop-blur-sm",
-                                score >= 80 ? "bg-emerald-500/90 text-white" : score >= 60 ? "bg-primary/90 text-primary-foreground" : score >= 40 ? "bg-amber-500/90 text-white" : "bg-muted/90 text-foreground"
-                              )}>
-                                <Sparkles className="h-2.5 w-2.5" />{score}%
-                              </div>
-                            ) : null;
-                          })()}
-                          {leadMatch.hasMatch && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); leadMatch.toggleImovel(imovelId); }}
-                              className={cn(
-                                "absolute top-3 right-3 z-20 p-1.5 rounded-full shadow-sm backdrop-blur-sm transition-all",
-                                leadMatch.matchedCodigos.has(imovelId)
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-background/70 text-muted-foreground hover:bg-background"
-                              )}
-                            >
-                              <Bookmark className={cn("h-4 w-4", leadMatch.matchedCodigos.has(imovelId) && "fill-current")} />
-                            </button>
-                          )}
-                          <PropertyCardGrid item={item} idx={idx} isCampanha={isCampanha} selectMode={selectMode} isSelected={selectedIds.has(imovelId)} onToggleSelect={toggleSelect} onFavorite={toggleFavorite} isFavorite={favorites.has(imovelId)} getPreco={getPreco} onPreview={openPreview} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {totalPages > 1 && !campanhaAtiva && (
-                    <div className="flex items-center justify-center gap-3 pt-6 pb-2">
-                      <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => fetchPage(page - 1)} className="gap-1 rounded-full"><ChevronLeft className="h-4 w-4" /> Anterior</Button>
-                      <span className="text-sm text-muted-foreground font-medium tabular-nums">{page} de {totalPages}</span>
-                      <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => fetchPage(page + 1)} className="gap-1 rounded-full">Próxima <ChevronRight className="h-4 w-4" /></Button>
-                    </div>
-                  )}
-                </>
+
+              {!hasMore && imoveis.length > 0 && (
+                <p className="text-center text-xs text-muted-foreground pt-6 pb-4">
+                  Mostrando todos os {imoveis.length.toLocaleString("pt-BR")} imóveis
+                </p>
               )}
             </>
           )}
         </div>
-      )}
 
-      {/* ── Mobile fixed selection bar ── */}
-      {selectMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-50 md:hidden safe-bottom">
-          <div className="bg-background/95 backdrop-blur-md border-t border-border/60 px-4 py-3 flex items-center gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
+        {/* Map — desktop always visible */}
+        <div className="relative hidden w-[40%] shrink-0 border-l border-border lg:block">
+          {mapContent}
+        </div>
+      </div>
+
+      {/* ── Mobile bottom bar ── */}
+      {isMobile && !mobileMapOpen && (
+        <div className="fixed bottom-0 inset-x-0 z-40 safe-bottom">
+          <div
+            className="bg-background/95 backdrop-blur-md border-t border-border px-4 py-3 flex items-center gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
             style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
           >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">
-                {selectedIds.size} imóve{selectedIds.size === 1 ? "l" : "is"}
-              </p>
-              <p className="text-[10px] text-muted-foreground">selecionado{selectedIds.size > 1 ? "s" : ""}</p>
-            </div>
-            {vitrineLink ? (
+            {selectMode && selectedIds.size > 0 ? (
               <>
-                <Button
-                  size="sm" variant="outline"
-                  onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }}
-                  className="h-9 px-3 gap-1.5 rounded-lg text-xs font-semibold shrink-0"
-                >
-                  <Copy className="h-3.5 w-3.5" /> Copiar
-                </Button>
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção de imóveis: ${vitrineLink}`)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  onClick={() => { if (hasLeadContext) trackEvent({ event_type: "vitrine_sent", payload: { link: vitrineLink, channel: "whatsapp" } }); }}
-                >
-                  <Button size="sm" className="h-9 px-3 gap-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
-                    <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground truncate">{selectedIds.size} imóve{selectedIds.size === 1 ? "l" : "is"}</p>
+                </div>
+                {vitrineLink ? (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(vitrineLink); toast.success("Link copiado!"); }} className="h-9 px-3 gap-1.5 rounded-lg text-xs font-semibold shrink-0">
+                      <Copy className="h-3.5 w-3.5" /> Copiar
+                    </Button>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(`Confira esta seleção: ${vitrineLink}`)}`} target="_blank" rel="noopener noreferrer">
+                      <Button size="sm" className="h-9 px-3 gap-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
+                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                      </Button>
+                    </a>
+                  </>
+                ) : (
+                  <Button size="sm" disabled={creatingVitrine} onClick={createVitrine} className="h-9 px-4 gap-1.5 rounded-lg text-xs font-bold shrink-0">
+                    {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />} Gerar Vitrine
                   </Button>
-                </a>
+                )}
               </>
             ) : (
-              <Button
-                size="sm" disabled={creatingVitrine}
-                onClick={async () => {
-                  if (!user) return;
-                  setCreatingVitrine(true);
-                  try {
-                    const { data, error } = await supabase.from("vitrines").insert({ created_by: user.id, titulo: "Seleção de Imóveis", tipo: "property_selection", imovel_ids: [...selectedIds] as any }).select("id").single();
-                    if (error) throw error;
-                    const link = getVitrinePublicUrl(data.id);
-                    setVitrineLink(link); navigator.clipboard.writeText(link); toast.success("Vitrine criada! Link copiado.");
-                    if (hasLeadContext) trackEvent({ event_type: "vitrine_created", vitrine_id: data.id, payload: { imovel_ids: [...selectedIds], link } });
-                  } catch { toast.error("Erro ao criar vitrine"); } finally { setCreatingVitrine(false); }
-                }}
-                className="h-9 px-4 gap-1.5 rounded-lg text-xs font-bold shrink-0"
-              >
-                {creatingVitrine ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
-                Gerar Vitrine
-              </Button>
+              <div className="flex w-full gap-2">
+                <Button
+                  onClick={() => setMobileMapOpen(true)}
+                  className="flex-1 h-11 gap-2 rounded-xl font-semibold shadow-lg"
+                >
+                  <MapIcon className="h-4 w-4" />
+                  Ver mapa · {total.toLocaleString("pt-BR")}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAlertOpen(true)}
+                  className="h-11 px-4 rounded-xl font-semibold shrink-0"
+                >
+                  <Bell className="h-4 w-4" />
+                </Button>
+              </div>
             )}
           </div>
         </div>
       )}
-      {/* Lead Match floating counter */}
-      {leadMatch.hasMatch && leadMatch.matchedCodigos.size > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <div className="bg-primary text-primary-foreground rounded-xl shadow-lg px-4 py-3 flex items-center gap-3">
-            <Bookmark className="h-4 w-4 fill-current shrink-0" />
-            <span className="text-sm font-medium">
-              {leadMatch.matchedCodigos.size} imóve{leadMatch.matchedCodigos.size === 1 ? "l" : "is"} para {leadMatch.matchedLead!.nome}
-            </span>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="text-xs h-7 px-3"
-              onClick={() => setMatchConfirmOpen(true)}
-            >
-              Salvar Indicação
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Lead Search Modal */}
-      <LeadSearchModal
-        open={leadSearchOpen}
-        onOpenChange={setLeadSearchOpen}
-        onSelect={(lead) => {
-          leadMatch.selectLead(lead);
-          // Auto-populate filters from lead profile if available
-          if (lead.bairro_regiao) {
-            setBairro([lead.bairro_regiao]);
-          }
-        }}
-      />
-
-      {/* Match Confirm Modal */}
-      <MatchConfirmModal
-        open={matchConfirmOpen}
-        onOpenChange={setMatchConfirmOpen}
-        leadNome={leadMatch.matchedLead?.nome || ""}
-        imoveis={displayImoveis.filter(item => {
-          const id = String(item.codigo || item.id_imovel || item.id);
-          return leadMatch.matchedCodigos.has(id);
-        })}
-        getPreco={getPreco}
-        saving={leadMatch.saving}
-        onConfirm={async (obs) => {
-          const ok = await leadMatch.saveIndicacoes(obs);
-          if (ok) setMatchConfirmOpen(false);
-        }}
-      />
     </div>
   );
 }
