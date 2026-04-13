@@ -157,8 +157,11 @@ Sempre utilize gatilhos de venda como: escassez, oportunidade, valorização, qu
 TIPOS DE AJUDA QUE VOCÊ DEVE GERAR:
 Se o corretor pedir ajuda, entregue: Mensagem pronta, ou Script de ligação, ou Pergunta estratégica, ou Estratégia de follow up. Sempre focando na conversão.
 
-EMPREENDIMENTOS QUE VOCÊ CONHECE:
+EMPREENDIMENTOS (RESUMO):
 ${allEmpreendimentos}
+
+CONHECIMENTO DETALHADO DOS EMPREENDIMENTOS:
+${detailedKnowledge}
 
 Use sempre os diferenciais de cada produto quando ajudar o corretor.
 
@@ -179,7 +182,7 @@ REGRAS IMPORTANTES:
 Seu objetivo é simples: ajudar o corretor da Uhome a vender mais imóveis.` + ragContext;
 
     const finalSystemPrompt = customSystem
-      ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + ragContext
+      ? customSystem + "\n\nCONTEXTO DOS EMPREENDIMENTOS:\n" + allEmpreendimentos + "\n\nDETALHES:\n" + detailedKnowledge + ragContext
       : systemPrompt;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
