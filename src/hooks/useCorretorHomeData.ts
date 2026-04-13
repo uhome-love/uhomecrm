@@ -193,7 +193,10 @@ export function useCorretorHomeData() {
     staleTime: 60_000,
   });
 
-  const totalLeads = funil.reduce((sum, f) => sum + f.count, 0);
+  // Exclude descarte and convertido from total leads count
+  const totalLeads = funil
+    .filter(f => !["Descarte", "Negócio Criado"].includes(f.stage_nome))
+    .reduce((sum, f) => sum + f.count, 0);
 
   return {
     followUps,
