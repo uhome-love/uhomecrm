@@ -186,13 +186,22 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
     if (!tipoDescarte) { toast.error("Selecione o tipo de descarte"); return; }
     setInativando(true);
     try {
-      const descarteStage = stages.find(s => s.tipo === "descarte");
       const motivoTexto = inativarMotivo === "outro"
         ? `Inativado: ${inativarObs.trim() || "Outro motivo"}`
         : `Inativado: ${inativarMotivo}`;
-      await onUpdate(lead.id, { motivo_descarte: motivoTexto, tipo_descarte: tipoDescarte } as any);
-      if (descarteStage) await onMove(lead.id, descarteStage.id, motivoTexto);
-      toast.success("Lead inativado com sucesso");
+
+      if (tipoDescarte === "definitivo") {
+        // Definitivo: archive lead in current stage, no moving to descarte
+        await onUpdate(lead.id, { motivo_descarte: motivoTexto, tipo_descarte: "definitivo", arquivado: true } as any);
+        toast.success("Lead inativado definitivamente (arquivado)");
+      } else {
+        // Reengajável: move to descarte stage for nurturing
+        const descarteStage = stages.find(s => s.tipo === "descarte");
+        await onUpdate(lead.id, { motivo_descarte: motivoTexto, tipo_descarte: "reengajavel" } as any);
+        if (descarteStage) await onMove(lead.id, descarteStage.id, motivoTexto);
+        toast.success("Lead movido para descarte (reengajável)");
+      }
+
       setInativarOpen(false);
       onOpenChange(false);
     } catch (err: any) {
@@ -798,7 +807,7 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">
-              Selecione o motivo para inativar <strong>{lead.nome}</strong>. O lead será movido para descarte.
+              Selecione o motivo e o tipo de inativação para <strong>{lead.nome}</strong>.
             </p>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Motivo *</Label>
@@ -819,18 +828,18 @@ export default function PipelineLeadDetail({ lead, stages, segmentos, corretorNo
               </div>
             )}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Tipo de descarte *</Label>
+              <Label className="text-sm font-medium">O que fazer com o lead? *</Label>
               <Select value={tipoDescarte} onValueChange={setTipoDescarte}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="reengajavel">🔄 Temporário (pode reengajar)</SelectItem>
-                  <SelectItem value="definitivo">⛔ Definitivo (não contactar)</SelectItem>
+                  <SelectItem value="reengajavel">🔄 Descartar (nutrição/oferta ativa)</SelectItem>
+                  <SelectItem value="definitivo">⛔ Inativar definitivo (arquivar)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
                 {tipoDescarte === "definitivo" 
-                  ? "O lead não receberá mais nenhuma comunicação." 
-                  : "O lead poderá ser reengajado por nutrição automática."}
+                  ? "O lead será arquivado na etapa atual. Não receberá comunicação nem entrará em listas." 
+                  : "O lead será movido para Descarte e poderá ser reengajado por nutrição automática ou oferta ativa."}
               </p>
             </div>
           </div>

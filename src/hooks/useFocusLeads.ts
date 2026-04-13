@@ -64,15 +64,17 @@ export function useFocusLeads(
       const today = new Date();
       const todayStr = today.toISOString().split("T")[0];
 
-      // 1. Get stages for name mapping
+      // 1. Get stages for name mapping — exclude descarte and convertido
       const { data: stagesData } = await supabase
         .from("pipeline_stages")
-        .select("id, nome, pipeline_tipo")
+        .select("id, nome, tipo, pipeline_tipo")
         .eq("pipeline_tipo", pipelineTipo);
 
       const stageMap: Record<string, string> = {};
       let stageIds: string[] = [];
       for (const s of stagesData || []) {
+        // Exclude descarte and convertido stages from Focus Mode
+        if ((s as any).tipo === "descarte" || (s as any).tipo === "convertido") continue;
         stageMap[s.id] = s.nome;
         stageIds.push(s.id);
       }
