@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, Copy, ExternalLink, Check } from "lucide-react";
+import { X, Copy, ExternalLink, Check, Pencil, MessageSquarePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
