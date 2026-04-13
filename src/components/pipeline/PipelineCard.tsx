@@ -267,52 +267,60 @@ const PipelineCard = memo(function PipelineCard({
             {cleanName(lead.nome)}
           </span>
           <div className="flex items-center gap-1 shrink-0">
-            {/* Flag status badge inline — replaces NOVO/OA when present */}
+            {/* Flag status badges inline — replaces NOVO/OA when present */}
             {(() => {
               const fs = lead.flag_status as Record<string, string> | null;
               const st = stage?.tipo;
+              const badges: { label: string; color: string; bg: string }[] = [];
+
               if (fs && st) {
-                const FLAG_INLINE: Record<string, Record<string, { label: string; color: string; bg: string }>> = {
-                  visita: {
+                if (st === "sem_contato" && fs.tentativas && parseInt(fs.tentativas) > 0) {
+                  const n = parseInt(fs.tentativas);
+                  badges.push({ label: `☎️ ${n}/7`, color: n >= 5 ? "#DC2626" : "#6B7280", bg: n >= 5 ? "rgba(220,38,38,0.12)" : "rgba(107,114,128,0.12)" });
+                }
+                if (st === "contato_inicial") {
+                  if (fs.impressao === "gostou") badges.push({ label: "👍", color: "#059669", bg: "rgba(5,150,105,0.12)" });
+                  if (fs.impressao === "nao_gostou") badges.push({ label: "👎", color: "#DC2626", bg: "rgba(220,38,38,0.12)" });
+                  if (fs.intencao === "morar") badges.push({ label: "🏠", color: "#2563EB", bg: "rgba(37,99,235,0.12)" });
+                  if (fs.intencao === "investir") badges.push({ label: "💰", color: "#7C3AED", bg: "rgba(124,58,237,0.12)" });
+                }
+                if (st === "busca") {
+                  if (fs.status_busca === "busca_pendente") badges.push({ label: "🔍 Pendente", color: "#D97706", bg: "rgba(217,119,6,0.12)" });
+                  if (fs.status_busca === "imoveis_enviados") badges.push({ label: "📨 Enviados", color: "#059669", bg: "rgba(5,150,105,0.12)" });
+                }
+                if (st === "aquecimento" && fs.prazo) {
+                  badges.push({ label: `⏰ ${fs.prazo}d`, color: "#D97706", bg: "rgba(217,119,6,0.12)" });
+                }
+                if (st === "visita" && fs.status_visita) {
+                  const map: Record<string, { label: string; color: string; bg: string }> = {
                     marcada: { label: "📅 Marcada", color: "#2563EB", bg: "rgba(37,99,235,0.12)" },
                     realizada: { label: "✅ Realizada", color: "#059669", bg: "rgba(5,150,105,0.12)" },
                     no_show: { label: "❌ No-show", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
                     reagendada: { label: "🔁 Reagendada", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
-                  },
-                  sem_contato: {},
-                  contato_inicial: {
-                    gostou: { label: "👍 Gostou", color: "#059669", bg: "rgba(5,150,105,0.12)" },
-                    nao_gostou: { label: "👎 Não gostou", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
-                  },
-                  busca: {
-                    busca_pendente: { label: "🔍 Pendente", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
-                    imoveis_enviados: { label: "📨 Enviados", color: "#059669", bg: "rgba(5,150,105,0.12)" },
-                  },
-                  pos_visita: {
-                    alto: { label: "🔥 Alto", color: "#DC2626", bg: "rgba(220,38,38,0.12)" },
-                    medio: { label: "🟡 Médio", color: "#D97706", bg: "rgba(217,119,6,0.12)" },
-                    baixo: { label: "❄️ Baixo", color: "#6B7280", bg: "rgba(107,114,128,0.12)" },
-                  },
-                };
-                let flagCfg: { label: string; color: string; bg: string } | null = null;
-                if (st === "visita" && fs.status_visita) flagCfg = FLAG_INLINE.visita?.[fs.status_visita] || null;
-                else if (st === "contato_inicial" && fs.impressao) flagCfg = FLAG_INLINE.contato_inicial?.[fs.impressao] || null;
-                else if (st === "busca" && fs.status_busca) flagCfg = FLAG_INLINE.busca?.[fs.status_busca] || null;
-                else if (st === "pos_visita" && fs.interesse) flagCfg = FLAG_INLINE.pos_visita?.[fs.interesse] || null;
-                else if (st === "sem_contato" && fs.tentativas && parseInt(fs.tentativas) > 0) {
-                  flagCfg = { label: `☎️ ${fs.tentativas}/7`, color: parseInt(fs.tentativas) >= 5 ? "#DC2626" : "#6B7280", bg: parseInt(fs.tentativas) >= 5 ? "rgba(220,38,38,0.12)" : "rgba(107,114,128,0.12)" };
+                  };
+                  const cfg = map[fs.status_visita];
+                  if (cfg) badges.push(cfg);
                 }
-                if (flagCfg) {
-                  return (
-                    <span style={{
-                      fontSize: 10, fontWeight: 700,
-                      padding: "2px 6px", borderRadius: 4,
-                      background: flagCfg.bg, color: flagCfg.color,
-                    }}>
-                      {flagCfg.label}
-                    </span>
-                  );
+                if (st === "pos_visita") {
+                  if (fs.feedback_coletado === "sim") badges.push({ label: "💬", color: "#059669", bg: "rgba(5,150,105,0.12)" });
+                  if (fs.simulacao_enviada === "sim") badges.push({ label: "💰", color: "#2563EB", bg: "rgba(37,99,235,0.12)" });
+                  if (fs.objecoes_mapeadas === "sim") badges.push({ label: "🤔", color: "#D97706", bg: "rgba(217,119,6,0.12)" });
+                  if (fs.interesse === "alto") badges.push({ label: "🔥", color: "#DC2626", bg: "rgba(220,38,38,0.12)" });
+                  if (fs.interesse === "medio") badges.push({ label: "🟡", color: "#D97706", bg: "rgba(217,119,6,0.12)" });
+                  if (fs.interesse === "baixo") badges.push({ label: "❄️", color: "#6B7280", bg: "rgba(107,114,128,0.12)" });
                 }
+              }
+
+              if (badges.length > 0) {
+                return badges.map((b, i) => (
+                  <span key={i} style={{
+                    fontSize: 10, fontWeight: 700,
+                    padding: "2px 6px", borderRadius: 4,
+                    background: b.bg, color: b.color,
+                  }}>
+                    {b.label}
+                  </span>
+                ));
               }
               // Fallback: show origin tag
               if (originTag) {
